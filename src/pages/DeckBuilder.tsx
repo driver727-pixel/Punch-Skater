@@ -4,15 +4,31 @@ import { useDecks } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
 import { CardArt } from "../components/CardArt";
 import { exportJson } from "../lib/storage";
+import { useTier } from "../context/TierContext";
 
 export function DeckBuilder() {
   const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck } = useDecks();
   const { cards } = useCollection();
+  const { tier, openUpgradeModal } = useTier();
 
   const [activeDeck, setActiveDeck] = useState<DeckPayload | null>(null);
   const [newDeckName, setNewDeckName] = useState("");
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState("");
+
+  if (tier !== "tier3") {
+    return (
+      <div className="page">
+        <h1 className="page-title">Deck Builder</h1>
+        <div className="empty-state">
+          <span className="empty-icon">🗂️</span>
+          <p>The Deck Builder is available on the <strong>Deck Master</strong> tier.</p>
+          <p className="page-sub">Manage multiple decks, edit all cards, and build custom character rosters.</p>
+          <button className="btn-primary" onClick={openUpgradeModal}>Upgrade to Deck Master — $10</button>
+        </div>
+      </div>
+    );
+  }
 
   const handleCreate = () => {
     const name = newDeckName.trim() || `Deck ${decks.length + 1}`;
@@ -70,7 +86,6 @@ export function DeckBuilder() {
       <h1 className="page-title">Deck Builder</h1>
 
       <div className="deck-layout">
-        {/* Sidebar: deck list */}
         <div className="deck-sidebar">
           <div className="deck-create">
             <input
@@ -120,7 +135,6 @@ export function DeckBuilder() {
           </div>
         </div>
 
-        {/* Main: active deck contents + add cards */}
         <div className="deck-main">
           {!activeDeck ? (
             <div className="empty-state">

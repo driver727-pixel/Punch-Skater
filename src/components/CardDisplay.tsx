@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
+import { ShareModal } from "./ShareModal";
 
 interface CardDisplayProps {
   card: CardPayload;
@@ -8,6 +10,8 @@ interface CardDisplayProps {
   onSave?: () => void;
   onRemove?: () => void;
   isSaved?: boolean;
+  showShare?: boolean;
+  saveLabel?: string;
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -17,7 +21,8 @@ const RARITY_COLORS: Record<string, string> = {
   Legendary: "#ffaa00",
 };
 
-export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved }: CardDisplayProps) {
+export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved, showShare = false, saveLabel }: CardDisplayProps) {
+  const [sharing, setSharing] = useState(false);
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const accent = card.visuals.accentColor || "#00ff88";
 
@@ -95,7 +100,12 @@ export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved }
             onClick={onSave}
             disabled={isSaved}
           >
-            {isSaved ? "✓ Saved" : "Save to Collection"}
+            {saveLabel ?? (isSaved ? "✓ Saved" : "Save to Collection")}
+          </button>
+        )}
+        {showShare && (
+          <button className="btn-outline" onClick={() => setSharing(true)}>
+            ↗ Share
           </button>
         )}
         {onRemove && (
@@ -104,6 +114,8 @@ export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved }
           </button>
         )}
       </div>
+
+      {sharing && <ShareModal card={card} onClose={() => setSharing(false)} />}
     </div>
   );
 }

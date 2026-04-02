@@ -3,6 +3,8 @@ import type { CardPayload, Archetype, Rarity, StyleVibe, District, CardPrompts }
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
+import { useTier } from "../context/TierContext";
+import { TIERS } from "../lib/tiers";
 
 const ARCHETYPES: Archetype[] = ["Runner", "Ghost", "Bruiser", "Tech", "Medic"];
 const RARITIES: Rarity[] = ["Common", "Uncommon", "Rare", "Legendary"];
@@ -11,7 +13,9 @@ const DISTRICTS: District[] = ["Neon District", "The Sprawl", "Chrome Heights", 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff00aa", "#ffaa00", "#8b5cf6", "#ff4444", "#44ffff"];
 
 export function CardForge() {
-  const { addCard, hasCard } = useCollection();
+  const { addCard, hasCard, cards } = useCollection();
+  const { tier, openUpgradeModal } = useTier();
+  const tierData = TIERS[tier];
 
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "Runner",
@@ -30,14 +34,53 @@ export function CardForge() {
     setGenerated(generateCard(prompts));
   };
 
+  const canSave = tierData.canSave;
+  const cardLimit = tierData.cardLimit;
+  const atLimit = canSave && cardLimit !== null && cards.length >= cardLimit;
+
   const handleSave = () => {
+    if (!canSave) {
+      openUpgradeModal();
+      return;
+    }
+    if (atLimit) {
+      openUpgradeModal();
+      return;
+    }
     if (generated) addCard(generated);
   };
+
+  const saveLabel = () => {
+    if (!canSave) return "🔒 Upgrade to Save";
+    if (atLimit) return `🔒 Limit Reached (${cardLimit} cards)`;
+    if (generated && hasCard(generated.id)) return "✓ Saved";
+    return "Save to Collection";
+  };
+
+  const saveBtnDisabled = !!(generated && hasCard(generated.id));
 
   return (
     <div className="page">
       <h1 className="page-title">Card Forge</h1>
       <p className="page-sub">Configure your courier and forge a unique card.</p>
+
+      {tier === "free" && (
+        <div className="tier-banner">
+          <span>
+            🛹 <strong>Free Tier</strong> — Generate cards and share them. Upgrade to save your collection.
+          </span>
+          <button className="btn-primary btn-sm" onClick={openUpgradeModal}>Upgrade</button>
+        </div>
+      )}
+      {tier === "tier2" && cardLimit !== null && (
+        <div className="tier-banner tier-banner--info">
+          <span>
+            ⚡ <strong>Street Creator</strong> — {cards.length}/{cardLimit} cards saved.
+            {atLimit && " Upgrade for unlimited cards."}
+          </span>
+          {atLimit && <button className="btn-primary btn-sm" onClick={openUpgradeModal}>Upgrade</button>}
+        </div>
+      )}
 
       <div className="forge-layout">
         <div className="forge-form">
@@ -133,7 +176,9 @@ export function CardForge() {
             <CardDisplay
               card={generated}
               onSave={handleSave}
-              isSaved={hasCard(generated.id)}
+              isSaved={saveBtnDisabled || (!canSave) || atLimit}
+              saveLabel={saveLabel()}
+              showShare={true}
             />
           ) : (
             <div className="empty-preview">

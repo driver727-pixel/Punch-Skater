@@ -361,3 +361,228 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* ===== Nav Right ===== */
+.nav-right { display: flex; align-items: center; gap: 8px; }
+.nav-logout {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+/* ===== Support Button ===== */
+.support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid #c09000;
+  color: #f0c040;
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.support-btn:hover {
+  background: rgba(240,192,64,0.12);
+  border-color: #f0c040;
+  color: #ffe080;
+}
+
+/* ===== Tier Badge Button in Nav ===== */
+.tier-badge-btn {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tier-badge-btn--free {
+  border-color: var(--text-dim);
+  color: var(--text-dim);
+  background: transparent;
+}
+.tier-badge-btn--free:hover { border-color: var(--text); color: var(--text); }
+
+.tier-badge-btn--tier2 {
+  border-color: var(--accent2);
+  color: var(--accent2);
+  background: rgba(0,204,255,0.08);
+}
+.tier-badge-btn--tier2:hover { background: rgba(0,204,255,0.18); }
+
+.tier-badge-btn--tier3 {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(139,92,246,0.1);
+}
+.tier-badge-btn--tier3:hover { background: rgba(139,92,246,0.22); }
+
+/* ===== Tier Banner (in-page) ===== */
+.tier-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  background: rgba(0,255,136,0.05);
+  border: 1px solid rgba(0,255,136,0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.tier-banner strong { color: var(--accent); }
+.tier-banner--info {
+  background: rgba(0,204,255,0.05);
+  border-color: rgba(0,204,255,0.2);
+}
+.tier-banner--info strong { color: var(--accent2); }
+
+/* ===== Tier Lock Note (in detail panel) ===== */
+.tier-lock-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(255,68,68,0.06);
+  border: 1px solid rgba(255,68,68,0.2);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ===== Page Header Actions ===== */
+.page-header-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-panel--sm { max-width: 460px; }
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+
+.modal-title { font-size: 20px; color: var(--accent); letter-spacing: 2px; margin-bottom: 4px; }
+.modal-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; }
+
+/* ===== Tier Cards (inside modal) ===== */
+.tier-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 680px) { .tier-cards { grid-template-columns: 1fr; } }
+
+.tier-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+.tier-card--active { border-color: var(--accent2); }
+.tier-card--featured { border-color: var(--purple); }
+
+.tier-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--purple);
+  color: #fff;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.tier-name { font-size: 15px; font-weight: bold; color: var(--text); letter-spacing: 1px; }
+.tier-price { font-size: 18px; color: var(--accent); font-weight: bold; margin-bottom: 4px; }
+.tier-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+
+.tier-features {
+  list-style: none;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+.tier-features li { font-size: 11px; color: var(--text-dim); }
+.tier-features li::before { content: ""; }
+
+.tier-select-btn { width: 100%; margin-top: 8px; }
+.btn-featured { border-color: var(--purple); color: var(--purple); }
+.btn-featured:hover:not(:disabled) { background: var(--purple); color: #fff; }
+
+/* ===== Tier Signup Step ===== */
+.tier-signup { display: flex; flex-direction: column; gap: 14px; max-width: 400px; }
+.tier-back { align-self: flex-start; font-size: 12px; }
+.tier-signup-title { font-size: 16px; color: var(--accent); letter-spacing: 1px; }
+.tier-signup-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+.tier-error { font-size: 12px; color: var(--danger); }
+
+/* ===== Share Modal ===== */
+.share-text-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.share-text {
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+.share-actions { display: flex; gap: 10px; flex-wrap: wrap; }
