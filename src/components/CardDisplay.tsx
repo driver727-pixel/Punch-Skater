@@ -79,8 +79,8 @@ export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved }
         </div>
         <div className="trait">
           <span className="trait-label">ACTIVE</span>
-          <span className="trait-name">{card.traits.activAbility.name}</span>
-          <p className="trait-desc">{card.traits.activAbility.description}</p>
+          <span className="trait-name">{card.traits.activeAbility.name}</span>
+          <p className="trait-desc">{card.traits.activeAbility.description}</p>
         </div>
       </div>
 

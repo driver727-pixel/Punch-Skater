@@ -97,7 +97,7 @@ export function generateCard(prompts: CardPrompts): CardPayload {
 
   const personalityTags = rng.pickN(PERSONALITY_TAGS, 3);
   const passiveTrait = rng.pick(PASSIVE_TRAITS);
-  const activAbility = rng.pick(ACTIVE_ABILITIES);
+  const activeAbility = rng.pick(ACTIVE_ABILITIES);
   const flavorText = rng.pick(FLAVOR_TEXTS);
 
   const helmetStyle = rng.pick(HELMET_STYLES);
@@ -128,7 +128,7 @@ export function generateCard(prompts: CardPrompts): CardPayload {
     traits: {
       personalityTags,
       passiveTrait,
-      activAbility,
+      activeAbility,
     },
     flavorText,
     visuals: {

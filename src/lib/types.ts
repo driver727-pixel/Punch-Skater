@@ -25,7 +25,7 @@ export interface CardPayload {
   traits: {
     personalityTags: string[];
     passiveTrait: { name: string; description: string };
-    activAbility: { name: string; description: string };
+    activeAbility: { name: string; description: string };
   };
   flavorText: string;
   visuals: {
