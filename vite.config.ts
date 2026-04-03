@@ -1,14 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig({
   base: '/',
   plugins: [
+    nodePolyfills(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // We removed the strict 'includeAssets' list so it won't fail if files are missing
       manifest: {
         name: 'Skater Punk Deck Builder',
         short_name: 'SkaterPunk',
@@ -21,7 +22,7 @@ export default defineConfig({
             src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any' 
+            purpose: 'any'
           }
         ]
       }
