@@ -1,16 +1,23 @@
 import { useState } from "react";
-import type { CardPayload, Archetype, Rarity, StyleVibe, District, CardPrompts } from "../lib/types";
-import { generateCard } from "../lib/generator";
+import type { CardPayload, Archetype, Rarity, Style, Vibe, District, CardPrompts } from "../lib/types";
+import { generateCard, STORAGE_PACK_LABELS } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
 
-const ARCHETYPES: Archetype[] = ["Runner", "Ghost", "Bruiser", "Tech", "Medic"];
-const RARITIES: Rarity[] = ["Common", "Uncommon", "Rare", "Legendary"];
-const STYLE_VIBES: StyleVibe[] = ["Street", "Corporate", "Underground", "Neon", "Chrome"];
-const DISTRICTS: District[] = ["Neon District", "The Sprawl", "Chrome Heights", "Undercity", "Corporate Core"];
+const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef"];
+const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
+const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union"];
+const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic"];
+const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville"];
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff00aa", "#ffaa00", "#8b5cf6", "#ff4444", "#44ffff"];
+
+const DISTRICT_HINTS: Record<District, string> = {
+  Airaway:      "☁️ Floating City in the Clouds",
+  Nightshade:   "🌆 Cyberpunk Megalopolis",
+  Batteryville: "🌵 Off-grid Solar/Wind Camp",
+};
 
 export function CardForge() {
   const { addCard, hasCard, cards } = useCollection();
@@ -18,11 +25,13 @@ export function CardForge() {
   const tierData = TIERS[tier];
 
   const [prompts, setPrompts] = useState<CardPrompts>({
-    archetype: "Runner",
-    rarity: "Common",
-    styleVibe: "Street",
-    district: "Neon District",
+    archetype: "Ninja",
+    rarity: "Punch Skater",
+    style: "Street",
+    vibe: "Grunge",
+    district: "Nightshade",
     accentColor: "#00ff88",
+    stamina: 5,
   });
 
   const [generated, setGenerated] = useState<CardPayload | null>(null);
@@ -115,15 +124,30 @@ export function CardForge() {
           </div>
 
           <div className="form-group">
-            <label>Style Vibe</label>
+            <label>Style</label>
             <div className="pill-group">
-              {STYLE_VIBES.map((s) => (
+              {STYLES.map((s) => (
                 <button
                   key={s}
-                  className={`pill ${prompts.styleVibe === s ? "selected" : ""}`}
-                  onClick={() => set("styleVibe", s)}
+                  className={`pill ${prompts.style === s ? "selected" : ""}`}
+                  onClick={() => set("style", s)}
                 >
                   {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Vibe</label>
+            <div className="pill-group">
+              {VIBES.map((v) => (
+                <button
+                  key={v}
+                  className={`pill ${prompts.vibe === v ? "selected" : ""}`}
+                  onClick={() => set("vibe", v)}
+                >
+                  {v}
                 </button>
               ))}
             </div>
@@ -142,6 +166,26 @@ export function CardForge() {
                 </button>
               ))}
             </div>
+            <p className="form-hint">{DISTRICT_HINTS[prompts.district]}</p>
+          </div>
+
+          <div className="form-group">
+            <label>Stamina — {prompts.stamina}</label>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              value={prompts.stamina}
+              onChange={(e) => set("stamina", Number(e.target.value))}
+              className="stamina-slider"
+            />
+            <p className="form-hint">
+              {STORAGE_PACK_LABELS[
+                prompts.stamina <= 2 ? "shopping-bag" :
+                prompts.stamina <= 5 ? "backpack" :
+                prompts.stamina <= 8 ? "cardboard-box" : "duffel-bag"
+              ]}
+            </p>
           </div>
 
           <div className="form-group">

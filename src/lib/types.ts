@@ -4,11 +4,20 @@ export interface CardPayload {
   prompts: {
     archetype: string;
     rarity: string;
-    styleVibe: string;
+    style: string;
+    vibe: string;
     district: string;
     accentColor: string;
+    stamina: number;
   };
+  /** Master seed: frameSeed::backgroundSeed::characterSeed */
   seed: string;
+  /** Layer-1 seed — determined by rarity alone */
+  frameSeed: string;
+  /** Layer-2 seed — determined by district alone */
+  backgroundSeed: string;
+  /** Layer-3 seed — determined by archetype, style, vibe, stamina */
+  characterSeed: string;
   identity: {
     name: string;
     crew: string;
@@ -21,6 +30,7 @@ export interface CardPayload {
     tech: number;
     grit: number;
     rep: number;
+    stamina: number;
   };
   traits: {
     personalityTags: string[];
@@ -34,6 +44,7 @@ export interface CardPayload {
     jacketStyle: string;
     colorScheme: string;
     accentColor: string;
+    storagePackStyle: string;
   };
   tags: string[];
   createdAt: string;
@@ -48,15 +59,18 @@ export interface DeckPayload {
   updatedAt: string;
 }
 
-export type Archetype = "Runner" | "Ghost" | "Bruiser" | "Tech" | "Medic";
-export type Rarity = "Common" | "Uncommon" | "Rare" | "Legendary";
-export type StyleVibe = "Street" | "Corporate" | "Underground" | "Neon" | "Chrome";
-export type District = "Neon District" | "The Sprawl" | "Chrome Heights" | "Undercity" | "Corporate Core";
+export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Chef";
+export type Rarity = "Legendary" | "Rare" | "Master" | "Apprentice" | "Punch Skater";
+export type Style = "Corporate" | "Street" | "Off-grid" | "Military" | "Union";
+export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic";
+export type District = "Airaway" | "Nightshade" | "Batteryville";
 
 export interface CardPrompts {
   archetype: Archetype;
   rarity: Rarity;
-  styleVibe: StyleVibe;
+  style: Style;
+  vibe: Vibe;
   district: District;
   accentColor: string;
+  stamina: number;
 }

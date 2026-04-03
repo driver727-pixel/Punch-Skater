@@ -15,10 +15,11 @@ interface CardDisplayProps {
 }
 
 const RARITY_COLORS: Record<string, string> = {
-  Common: "#aaaaaa",
-  Uncommon: "#44dd88",
-  Rare: "#4488ff",
-  Legendary: "#ffaa00",
+  "Punch Skater": "#aa9988",
+  Apprentice:     "#44ddaa",
+  Master:         "#cc44ff",
+  Rare:           "#4488ff",
+  Legendary:      "#ffaa00",
 };
 
 export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved, showShare = false, saveLabel }: CardDisplayProps) {
@@ -53,7 +54,9 @@ export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved, 
         <div className="card-subline">
           <span>{card.prompts.archetype}</span>
           <span className="sep">·</span>
-          <span>{card.identity.crew}</span>
+          <span>{card.prompts.style}</span>
+          <span className="sep">·</span>
+          <span>{card.prompts.vibe}</span>
         </div>
         <div className="card-subline">
           <span style={{ opacity: 0.6 }}>{card.identity.manufacturer}</span>
@@ -69,11 +72,12 @@ export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved, 
       </div>
 
       <div className="card-stats">
-        <StatBar label="SPD" value={card.stats.speed} color={accent} />
+        <StatBar label="SPD" value={card.stats.speed}   color={accent} />
         <StatBar label="STL" value={card.stats.stealth} color={accent} />
-        <StatBar label="TCH" value={card.stats.tech} color={accent} />
-        <StatBar label="GRT" value={card.stats.grit} color={accent} />
-        <StatBar label="REP" value={card.stats.rep} color={accent} />
+        <StatBar label="TCH" value={card.stats.tech}    color={accent} />
+        <StatBar label="GRT" value={card.stats.grit}    color={accent} />
+        <StatBar label="REP" value={card.stats.rep}     color={accent} />
+        <StatBar label="STA" value={card.stats.stamina} color={accent} />
       </div>
 
       <div className="card-traits">

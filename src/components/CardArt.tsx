@@ -6,26 +6,6 @@ interface CardArtProps {
   height?: number;
 }
 
-const DISTRICT_COLORS: Record<string, string> = {
-  "Neon District": "#ff00aa",
-  "The Sprawl": "#ff6600",
-  "Chrome Heights": "#88ccff",
-  "Undercity": "#aa44ff",
-  "Corporate Core": "#00ccff",
-};
-
-const RARITY_STARS: Record<string, number> = {
-  Common: 1,
-  Uncommon: 2,
-  Rare: 3,
-  Legendary: 4,
-};
-
-/**
- * Deterministic pseudo-random float in [0, 1) from a string seed + integer index.
- * Uses a fast multiply-xor-shift hash so cards render identically on every re-render
- * (replacing the previous Math.random() calls that caused window lights to flicker).
- */
 function seededVal(seed: string, idx: number): number {
   let h = idx * 2654435761;
   for (let i = 0; i < seed.length; i++) {
@@ -33,625 +13,979 @@ function seededVal(seed: string, idx: number): number {
     h ^= h >>> 13;
   }
   h = Math.imul(h ^ (h >>> 16), 2246822519);
-  // Modulo 1000 then divide: maps the 32-bit unsigned value to three decimal places in [0, 1)
   return ((h >>> 0) % 1000) / 1000;
 }
 
-// Jacket style → torso fill color
-const JACKET_COLORS: Record<string, string> = {
-  Synthleather: "#1e1e3a",
-  ChromeVest:   "#2a2a3a",
-  NeonStripe:   "#1a2030",
-  DataWeave:    "#0f2a2a",
-  SteelMesh:    "#252530",
-};
+// LAYER 1 - Card Frame
 
-// Board style → deck color / stripe
-const BOARD_COLORS: Record<string, string> = {
-  "Slick-90":    "#1a1a2e",
-  VortexDeck:    "#1a1422",
-  GhostRide:     "#141428",
-  NeonCruiser:   "#0a1a1a",
-  IronSlider:    "#1a1a20",
-};
+interface FrameProps {
+  width: number;
+  height: number;
+  rarity: string;
+  frameSeed: string;
+  uid: string;
+}
+
+function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
+  const w = width;
+  const h = height;
+
+  if (rarity === "Legendary") {
+    const particles = Array.from({ length: 22 }, (_, i) => {
+      const side = Math.floor(seededVal(frameSeed, i * 3) * 4);
+      const pos  = seededVal(frameSeed, i * 3 + 1);
+      const off  = seededVal(frameSeed, i * 3 + 2) * 6 + 1;
+      let px: number, py: number;
+      if (side === 0)      { px = pos * w; py = off; }
+      else if (side === 1) { px = w - off; py = pos * h; }
+      else if (side === 2) { px = pos * w; py = h - off; }
+      else                 { px = off;     py = pos * h; }
+      return {
+        x: px, y: py,
+        r: 0.8 + seededVal(frameSeed, 100 + i) * 1.8,
+        op: 0.45 + seededVal(frameSeed, 150 + i) * 0.55,
+      };
+    });
+    const corners = [
+      { x: 2, y: 2 }, { x: w - 14, y: 2 }, { x: 2, y: h - 14 }, { x: w - 14, y: h - 14 },
+    ];
+    const shimmerPos = 0.1 + seededVal(frameSeed, 200) * 0.8;
+    return (
+      <>
+        <defs>
+          <filter id={`${uid}_lgGlow`} x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id={`${uid}_spkGlow`} x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <linearGradient id={`${uid}_lgRainbow`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stopColor="#ff0080" stopOpacity="0.8" />
+            <stop offset="25%"  stopColor="#ffaa00" stopOpacity="0.9" />
+            <stop offset="50%"  stopColor="#00ffcc" stopOpacity="0.8" />
+            <stop offset="75%"  stopColor="#aa44ff" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#ff0080" stopOpacity="0.8" />
+          </linearGradient>
+          <linearGradient id={`${uid}_lgShimmer`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"                                    stopColor="#ffffcc" stopOpacity="0" />
+            <stop offset={`${(shimmerPos - 0.05) * 100}%`}      stopColor="#ffffcc" stopOpacity="0" />
+            <stop offset={`${shimmerPos * 100}%`}               stopColor="#ffffcc" stopOpacity="0.22" />
+            <stop offset={`${(shimmerPos + 0.05) * 100}%`}      stopColor="#ffffcc" stopOpacity="0" />
+            <stop offset="100%"                                  stopColor="#ffffcc" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <rect x={1} y={1} width={w - 2} height={h - 2} rx={5}
+          fill="none" stroke={`url(#${uid}_lgRainbow)`} strokeWidth="2.5"
+          filter={`url(#${uid}_lgGlow)`} />
+        <rect x={4} y={4} width={w - 8} height={h - 8} rx={3}
+          fill="none" stroke="#ffdd66" strokeWidth="1" strokeOpacity="0.5" />
+        <rect x={0} y={0} width={w} height={h} fill={`url(#${uid}_lgShimmer)`} rx={5} />
+        {corners.map((c, i) => (
+          <g key={i}>
+            <rect x={c.x} y={c.y} width={12} height={12} rx={2}
+              fill="#ffaa00" fillOpacity="0.18" stroke="#ffdd00" strokeWidth="0.8" strokeOpacity="0.7" />
+            <rect x={c.x + 4} y={c.y + 4} width={4} height={4} rx={1}
+              fill="#ffdd00" fillOpacity="0.6" />
+          </g>
+        ))}
+        {particles.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={p.r}
+            fill="#ffcc44" fillOpacity={p.op} filter={`url(#${uid}_spkGlow)`} />
+        ))}
+      </>
+    );
+  }
+
+  if (rarity === "Rare") {
+    const gemCorners = [
+      { x: 3, y: 3 }, { x: w - 9, y: 3 }, { x: 3, y: h - 9 }, { x: w - 9, y: h - 9 },
+    ];
+    return (
+      <>
+        <defs>
+          <filter id={`${uid}_rareGlow`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <rect x={1} y={1} width={w - 2} height={h - 2} rx={4}
+          fill="none" stroke="#66aaff" strokeWidth="2" filter={`url(#${uid}_rareGlow)`} />
+        <rect x={3} y={3} width={w - 6} height={h - 6} rx={3}
+          fill="none" stroke="#4488ff" strokeWidth="0.8" strokeOpacity="0.6" />
+        <rect x={5} y={5} width={w - 10} height={h - 10} rx={2}
+          fill="none" stroke="#88aaff" strokeWidth="0.4" strokeOpacity="0.35" />
+        {gemCorners.map((c, i) => (
+          <polygon key={i}
+            points={`${c.x + 3},${c.y} ${c.x + 6},${c.y + 2} ${c.x + 6},${c.y + 5} ${c.x + 3},${c.y + 6} ${c.x},${c.y + 5} ${c.x},${c.y + 2}`}
+            fill="#4488ff" fillOpacity="0.4" stroke="#88ccff" strokeWidth="0.6" />
+        ))}
+        {Array.from({ length: 5 }, (_, i) => {
+          const xPos = (i + 1) / 6 * w;
+          return (
+            <line key={i} x1={xPos} y1={1} x2={xPos} y2={4}
+              stroke="#88ccff" strokeWidth="0.8"
+              strokeOpacity={0.3 + seededVal(frameSeed, i) * 0.5} />
+          );
+        })}
+      </>
+    );
+  }
+
+  if (rarity === "Master") {
+    return (
+      <>
+        <defs>
+          <filter id={`${uid}_masterGlow`} x="-15%" y="-15%" width="130%" height="130%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <rect x={2} y={2} width={w - 4} height={h - 4} rx={4}
+          fill="none" stroke="#cc44ff" strokeWidth="1.5" filter={`url(#${uid}_masterGlow)`} />
+        <rect x={4.5} y={4.5} width={w - 9} height={h - 9} rx={3}
+          fill="none" stroke="#dd88ff" strokeWidth="0.6" strokeOpacity="0.5" />
+        {[{ x: 2, y: 2 }, { x: w - 8, y: 2 }, { x: 2, y: h - 8 }, { x: w - 8, y: h - 8 }].map((c, i) => (
+          <rect key={i} x={c.x} y={c.y} width={6} height={6} rx={1}
+            fill="#cc44ff" fillOpacity="0.3" stroke="#dd88ff" strokeWidth="0.7" />
+        ))}
+      </>
+    );
+  }
+
+  if (rarity === "Apprentice") {
+    return (
+      <>
+        <defs>
+          <linearGradient id={`${uid}_appGrad`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stopColor="#44ddaa" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#44aadd" stopOpacity="0.7" />
+          </linearGradient>
+        </defs>
+        <rect x={2} y={2} width={w - 4} height={h - 4} rx={3}
+          fill="none" stroke={`url(#${uid}_appGrad)`} strokeWidth="1.2" />
+        {[{ cx: 6, cy: 6 }, { cx: w - 6, cy: 6 }, { cx: 6, cy: h - 6 }, { cx: w - 6, cy: h - 6 }].map((c, i) => (
+          <circle key={i} cx={c.cx} cy={c.cy} r={2.5}
+            fill="none" stroke="#44ddaa" strokeWidth="0.8" strokeOpacity="0.6" />
+        ))}
+      </>
+    );
+  }
+
+  if (rarity === "Punch Skater") {
+    const bandageAngles = [20, -15, 30, -25];
+    const bruisePositions = [
+      { x: 4, y: 4, r: 5 }, { x: w - 8, y: 4, r: 4 },
+      { x: 4, y: h - 8, r: 5 }, { x: w - 7, y: h - 7, r: 4 },
+    ];
+    return (
+      <>
+        <rect x={2} y={2} width={w - 4} height={h - 4} rx={2}
+          fill="none" stroke="#c8b89a" strokeWidth="1.2" strokeOpacity="0.75" />
+        {bandageAngles.map((angle, i) => {
+          const cx = i < 2 ? 8 + i * (w - 16) : 8 + (i - 2) * (w - 16);
+          const cy = i < 2 ? 6 : h - 6;
+          return (
+            <rect key={i} x={cx - 10} y={cy - 3} width={20} height={5} rx={1}
+              fill="#e8d8b0" fillOpacity="0.45" stroke="#c8b89a" strokeWidth="0.5"
+              transform={`rotate(${angle},${cx},${cy})`} />
+          );
+        })}
+        {bruisePositions.map((b, i) => (
+          <circle key={i} cx={b.x} cy={b.y} r={b.r} fill="#6644aa" fillOpacity="0.25" />
+        ))}
+      </>
+    );
+  }
+
+  return null;
+}
+
+// LAYER 2 - Background
 
 interface BackgroundProps {
   width: number;
   height: number;
-  districtColor: string;
-  seed: string;
+  district: string;
+  backgroundSeed: string;
   uid: string;
 }
 
-function CityscapeBackground({ width, height, districtColor, seed, uid }: BackgroundProps) {
-  // Mid-ground buildings (slightly taller, lighter fill)
-  const midBuildings = [
-    { x: 5,   w: 25, h: 70 },
-    { x: 55,  w: 30, h: 85 },
-    { x: 110, w: 28, h: 75 },
-    { x: 168, w: 32, h: 80 },
-  ];
-
-  // Foreground buildings (darker, deeper silhouette)
-  const fgBuildings = [
-    { x: 0,   w: 30, h: 80 },
-    { x: 28,  w: 20, h: 60 },
-    { x: 46,  w: 35, h: 100 },
-    { x: 79,  w: 25, h: 70 },
-    { x: 102, w: 40, h: 90 },
-    { x: 140, w: 22, h: 55 },
-    { x: 160, w: 38, h: 95 },
-  ];
-
-  const horizon = height * 0.55;
-
-  // Deterministic stars
-  const stars = Array.from({ length: 14 }, (_, i) => ({
-    x: seededVal(seed, i * 3)     * width,
-    y: seededVal(seed, i * 3 + 1) * horizon * 0.7,
-    r: seededVal(seed, i * 3 + 2) > 0.7 ? 1.2 : 0.6,
+function AirawayBackground({ width: w, height: h, backgroundSeed: seed, uid }: BackgroundProps) {
+  const horizon = h * 0.52;
+  const clouds = Array.from({ length: 8 }, (_, i) => ({
+    cx: seededVal(seed, i * 4)     * w,
+    cy: seededVal(seed, i * 4 + 1) * horizon * 0.9 + h * 0.05,
+    rx: 14 + seededVal(seed, i * 4 + 2) * 20,
+    ry: 6  + seededVal(seed, i * 4 + 3) * 8,
   }));
-
-  // Deterministic rain streaks
-  const rain = Array.from({ length: 10 }, (_, i) => ({
-    x:  seededVal(seed, 100 + i * 2)       * width,
-    y:  seededVal(seed, 100 + i * 2 + 1)   * horizon,
-    len: 4 + seededVal(seed, 200 + i) * 6,
+  const floatingBuildings = [
+    { x: 10, y: horizon - 55, w: 20, h: 40 },
+    { x: 50, y: horizon - 70, w: 30, h: 55 },
+    { x: 105, y: horizon - 60, w: 25, h: 45 },
+    { x: 160, y: horizon - 65, w: 28, h: 50 },
+  ];
+  const birds = Array.from({ length: 6 }, (_, i) => ({
+    x: seededVal(seed, 200 + i * 2) * w,
+    y: seededVal(seed, 201 + i * 2) * horizon * 0.6 + h * 0.04,
   }));
-
-  // Moon position (deterministic, top-right area)
-  const moonX = width * (0.75 + seededVal(seed, 300) * 0.15);
-  const moonY = height * (0.05 + seededVal(seed, 301) * 0.08);
-
-  // Perspective street lines converging toward center
-  const vanishX = width / 2;
-  const vanishY = horizon;
-
   return (
     <>
       <defs>
-        <linearGradient id={`${uid}_skyGrad`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${uid}_airSky`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#87ceeb" />
+          <stop offset="60%"  stopColor="#b0e0f8" />
+          <stop offset="100%" stopColor="#d4f1ff" />
+        </linearGradient>
+        <linearGradient id={`${uid}_airGround`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#e8f8ff" />
+          <stop offset="100%" stopColor="#c8eeff" />
+        </linearGradient>
+        <filter id={`${uid}_softGlow`} x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      <rect width={w} height={h} fill={`url(#${uid}_airSky)`} />
+      {Array.from({ length: 8 }, (_, i) => {
+        const angle = (i / 8) * Math.PI * 2;
+        return (
+          <line key={i}
+            x1={w * 0.75} y1={h * 0.12}
+            x2={w * 0.75 + Math.cos(angle) * 18} y2={h * 0.12 + Math.sin(angle) * 18}
+            stroke="#ffe066" strokeWidth="0.6" strokeOpacity="0.35" />
+        );
+      })}
+      <circle cx={w * 0.75} cy={h * 0.12} r={7} fill="#ffe066" fillOpacity="0.85"
+        filter={`url(#${uid}_softGlow)`} />
+      {clouds.map((c, i) => (
+        <ellipse key={i} cx={c.cx} cy={c.cy} rx={c.rx} ry={c.ry}
+          fill="white" fillOpacity={0.55 + seededVal(seed, 100 + i) * 0.3} />
+      ))}
+      {floatingBuildings.map((b, i) => (
+        <g key={i}>
+          <ellipse cx={b.x + b.w / 2} cy={b.y + b.h + 4} rx={b.w * 0.8} ry={5}
+            fill="white" fillOpacity="0.7" />
+          <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={2}
+            fill="#d8eeff" stroke="#8bbfdd" strokeWidth="0.8" strokeOpacity="0.7" />
+          {Array.from({ length: Math.floor(b.h / 10) }, (_, wi) => (
+            <rect key={wi} x={b.x + 4} y={b.y + 5 + wi * 10} width={4} height={3} rx={0.5}
+              fill="#aaddff"
+              fillOpacity={seededVal(seed, i * 30 + wi + 300) > 0.4 ? 0.8 : 0.15} />
+          ))}
+          {i < floatingBuildings.length - 1 && (
+            <line x1={b.x + b.w} y1={b.y + 10}
+              x2={floatingBuildings[i + 1].x} y2={floatingBuildings[i + 1].y + 10}
+              stroke="#8bbfdd" strokeWidth="0.5" strokeOpacity="0.5" strokeDasharray="2,2" />
+          )}
+        </g>
+      ))}
+      <rect x={0} y={horizon} width={w} height={h - horizon} fill={`url(#${uid}_airGround)`} />
+      {Array.from({ length: 5 }, (_, i) => (
+        <ellipse key={i}
+          cx={(i + 0.5) / 5 * w + seededVal(seed, 500 + i) * 10} cy={horizon + 4}
+          rx={20 + seededVal(seed, 510 + i) * 15} ry={8}
+          fill="white" fillOpacity={0.55 + seededVal(seed, 520 + i) * 0.3} />
+      ))}
+      {birds.map((b, i) => (
+        <g key={i} transform={`translate(${b.x},${b.y})`}>
+          <path d="M0,0 Q2,-2 4,0 Q6,-2 8,0"
+            fill="none" stroke="#446688" strokeWidth="0.7" strokeOpacity="0.6" />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function NightshadeBackground({ width: w, height: h, backgroundSeed: seed, uid }: BackgroundProps) {
+  const horizon = h * 0.55;
+  const midBuildings = [
+    { x: 5, w: 25, h: 70 }, { x: 55, w: 30, h: 85 },
+    { x: 110, w: 28, h: 75 }, { x: 168, w: 32, h: 80 },
+  ];
+  const fgBuildings = [
+    { x: 0, w: 30, h: 80 }, { x: 28, w: 20, h: 60 }, { x: 46, w: 35, h: 100 },
+    { x: 79, w: 25, h: 70 }, { x: 102, w: 40, h: 90 }, { x: 140, w: 22, h: 55 },
+    { x: 160, w: 38, h: 95 },
+  ];
+  const stars = Array.from({ length: 14 }, (_, i) => ({
+    x: seededVal(seed, i * 3) * w, y: seededVal(seed, i * 3 + 1) * horizon * 0.7,
+    r: seededVal(seed, i * 3 + 2) > 0.7 ? 1.2 : 0.6,
+  }));
+  const rain = Array.from({ length: 10 }, (_, i) => ({
+    x: seededVal(seed, 100 + i * 2) * w, y: seededVal(seed, 100 + i * 2 + 1) * horizon,
+    len: 4 + seededVal(seed, 200 + i) * 6,
+  }));
+  const moonX = w * (0.75 + seededVal(seed, 300) * 0.15);
+  const moonY = h  * (0.05 + seededVal(seed, 301) * 0.08);
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${uid}_nsSky`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"   stopColor="#020208" />
           <stop offset="55%"  stopColor="#070718" />
           <stop offset="100%" stopColor="#0d0d2f" />
         </linearGradient>
-        <linearGradient id={`${uid}_glowGrad`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor={districtColor} stopOpacity="0.5" />
-          <stop offset="100%" stopColor={districtColor} stopOpacity="0" />
+        <linearGradient id={`${uid}_nsGlow`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#ff00aa" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#ff00aa" stopOpacity="0" />
         </linearGradient>
-        <linearGradient id={`${uid}_groundGrad`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${uid}_nsGround`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"   stopColor="#0a0a18" />
           <stop offset="100%" stopColor="#050510" />
         </linearGradient>
-        {/* Film grain filter */}
-        <filter id={`${uid}_grain`} x="0%" y="0%" width="100%" height="100%">
+        <filter id={`${uid}_nsGrain`} x="0%" y="0%" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise" />
           <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise" />
           <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blended" />
           <feComposite in="blended" in2="SourceGraphic" operator="in" />
         </filter>
-        {/* CRT scanlines pattern */}
-        <pattern id={`${uid}_scanlines`} x="0" y="0" width={width} height="2" patternUnits="userSpaceOnUse">
-          <rect x="0" y="0" width={width} height="1" fill="black" fillOpacity="0.08" />
-          <rect x="0" y="1" width={width} height="1" fill="black" fillOpacity="0" />
+        <pattern id={`${uid}_nsScan`} x="0" y="0" width={w} height="2" patternUnits="userSpaceOnUse">
+          <rect x="0" y="0" width={w} height="1" fill="black" fillOpacity="0.08" />
+          <rect x="0" y="1" width={w} height="1" fill="black" fillOpacity="0" />
         </pattern>
       </defs>
-
-      {/* Sky */}
-      <rect width={width} height={height} fill={`url(#${uid}_skyGrad)`} />
-
-      {/* Stars */}
+      <rect width={w} height={h} fill={`url(#${uid}_nsSky)`} />
       {stars.map((s, i) => (
-        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="white" fillOpacity={0.4 + seededVal(seed, 400 + i) * 0.5} />
+        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="white"
+          fillOpacity={0.4 + seededVal(seed, 400 + i) * 0.5} />
       ))}
-
-      {/* Moon */}
       <circle cx={moonX} cy={moonY} r={5} fill="#d0d8f0" fillOpacity="0.6" />
       <circle cx={moonX + 2} cy={moonY - 1} r={4} fill="#0d0d2f" fillOpacity="0.75" />
-
-      {/* Rain streaks */}
       {rain.map((r, i) => (
-        <line
-          key={i}
-          x1={r.x}
-          y1={r.y}
-          x2={r.x + 1}
-          y2={r.y + r.len}
-          stroke="white"
-          strokeWidth="0.4"
-          strokeOpacity={0.08 + seededVal(seed, 500 + i) * 0.1}
-        />
+        <line key={i} x1={r.x} y1={r.y} x2={r.x + 1} y2={r.y + r.len}
+          stroke="white" strokeWidth="0.4"
+          strokeOpacity={0.08 + seededVal(seed, 500 + i) * 0.1} />
       ))}
-
-      {/* Horizon glow */}
-      <rect x={0} y={horizon * 0.8} width={width} height={height * 0.2} fill={`url(#${uid}_glowGrad)`} />
-
-      {/* Mid-ground buildings */}
+      <rect x={0} y={horizon * 0.8} width={w} height={h * 0.2} fill={`url(#${uid}_nsGlow)`} />
       {midBuildings.map((b, i) => (
-        <g key={`mg-${i}`}>
-          <rect
-            x={b.x}
-            y={horizon - b.h}
-            width={b.w}
-            height={b.h}
-            fill="#0c0c1e"
-            stroke={districtColor}
-            strokeWidth="0.75"
-            strokeOpacity="0.5"
-          />
-          {/* Windows */}
-          {Array.from({ length: Math.floor(b.h / 10) }).map((_, wi) => (
-            <rect
-              key={wi}
-              x={b.x + 4}
-              y={horizon - b.h + 6 + wi * 10}
-              width={5}
-              height={3}
-              fill={districtColor}
-              fillOpacity={seededVal(seed, i * 50 + wi) > 0.45 ? 0.75 : 0.07}
-            />
+        <g key={`ns-mg-${i}`}>
+          <rect x={b.x} y={horizon - b.h} width={b.w} height={b.h}
+            fill="#0c0c1e" stroke="#ff00aa" strokeWidth="0.75" strokeOpacity="0.5" />
+          {Array.from({ length: Math.floor(b.h / 10) }, (_, wi) => (
+            <rect key={wi} x={b.x + 4} y={horizon - b.h + 6 + wi * 10} width={5} height={3}
+              fill="#ff00aa"
+              fillOpacity={seededVal(seed, i * 50 + wi) > 0.45 ? 0.75 : 0.07} />
           ))}
-          {/* Neon sign block (on some buildings) */}
           {seededVal(seed, 600 + i) > 0.5 && (
-            <rect
-              x={b.x + 3}
-              y={horizon - b.h - 6}
-              width={b.w - 6}
-              height={5}
-              rx={1}
-              fill={districtColor}
-              fillOpacity="0.3"
-              stroke={districtColor}
-              strokeWidth="0.5"
-            />
+            <rect x={b.x + 3} y={horizon - b.h - 6} width={b.w - 6} height={5} rx={1}
+              fill="#ff00aa" fillOpacity="0.3" stroke="#ff00aa" strokeWidth="0.5" />
           )}
-          {/* Rooftop antenna */}
           {b.h > 70 && (
             <>
-              <line
-                x1={b.x + b.w / 2}
-                y1={horizon - b.h}
-                x2={b.x + b.w / 2}
-                y2={horizon - b.h - 10}
-                stroke="#666"
-                strokeWidth="0.75"
-              />
-              <circle cx={b.x + b.w / 2} cy={horizon - b.h - 11} r={1.5} fill="#ff2222" fillOpacity="0.9" />
+              <line x1={b.x + b.w / 2} y1={horizon - b.h} x2={b.x + b.w / 2} y2={horizon - b.h - 10}
+                stroke="#666" strokeWidth="0.75" />
+              <circle cx={b.x + b.w / 2} cy={horizon - b.h - 11} r={1.5}
+                fill="#ff2222" fillOpacity="0.9" />
             </>
           )}
         </g>
       ))}
-
-      {/* Foreground buildings (darker silhouette layer) */}
       {fgBuildings.map((b, i) => (
-        <g key={`fg-${i}`}>
-          <rect
-            x={b.x}
-            y={horizon - b.h}
-            width={b.w}
-            height={b.h}
-            fill="#0d0d1a"
-            stroke={districtColor}
-            strokeWidth="0.5"
-            strokeOpacity="0.6"
-          />
-          {/* Window lights */}
-          {Array.from({ length: Math.floor(b.h / 12) }).map((_, wi) => (
-            <rect
-              key={wi}
-              x={b.x + 4}
-              y={horizon - b.h + 8 + wi * 12}
-              width={4}
-              height={3}
-              fill={districtColor}
-              fillOpacity={seededVal(seed, i * 80 + wi + 1000) > 0.4 ? 0.8 : 0.08}
-            />
+        <g key={`ns-fg-${i}`}>
+          <rect x={b.x} y={horizon - b.h} width={b.w} height={b.h}
+            fill="#0d0d1a" stroke="#ff00aa" strokeWidth="0.5" strokeOpacity="0.6" />
+          {Array.from({ length: Math.floor(b.h / 12) }, (_, wi) => (
+            <rect key={wi} x={b.x + 4} y={horizon - b.h + 8 + wi * 12} width={4} height={3}
+              fill="#ff00aa"
+              fillOpacity={seededVal(seed, i * 80 + wi + 1000) > 0.4 ? 0.8 : 0.08} />
           ))}
-          {/* Antenna on tall buildings */}
           {b.h >= 90 && (
             <>
-              <line
-                x1={b.x + b.w / 2}
-                y1={horizon - b.h}
-                x2={b.x + b.w / 2}
-                y2={horizon - b.h - 8}
-                stroke="#555"
-                strokeWidth="0.6"
-              />
-              <circle cx={b.x + b.w / 2} cy={horizon - b.h - 9} r={1.2} fill="#ff3333" fillOpacity="0.85" />
+              <line x1={b.x + b.w / 2} y1={horizon - b.h} x2={b.x + b.w / 2} y2={horizon - b.h - 8}
+                stroke="#555" strokeWidth="0.6" />
+              <circle cx={b.x + b.w / 2} cy={horizon - b.h - 9} r={1.2}
+                fill="#ff3333" fillOpacity="0.85" />
             </>
           )}
         </g>
       ))}
-
-      {/* Ground */}
-      <rect x={0} y={horizon} width={width} height={height - horizon} fill={`url(#${uid}_groundGrad)`} />
-
-      {/* Perspective street lines */}
+      <rect x={0} y={horizon} width={w} height={h - horizon} fill={`url(#${uid}_nsGround)`} />
       {[0.18, 0.38, 0.62, 0.82].map((t, i) => (
-        <line
-          key={i}
-          x1={t * width}
-          y1={height}
-          x2={vanishX}
-          y2={vanishY}
-          stroke={districtColor}
-          strokeWidth="0.5"
-          strokeOpacity={0.15 + i * 0.05}
-        />
+        <line key={i} x1={t * w} y1={h} x2={w / 2} y2={horizon}
+          stroke="#ff00aa" strokeWidth="0.5" strokeOpacity={0.15 + i * 0.05} />
       ))}
-      {/* Horizontal street lines */}
-      <line x1={0} y1={height * 0.72} x2={width} y2={height * 0.72} stroke={districtColor} strokeWidth="0.5" strokeOpacity="0.25" />
-      <line x1={0} y1={height * 0.85} x2={width} y2={height * 0.85} stroke={districtColor} strokeWidth="0.4" strokeOpacity="0.15" />
-
-      {/* Wet pavement reflections — mirror window dots */}
+      <line x1={0} y1={h * 0.72} x2={w} y2={h * 0.72}
+        stroke="#ff00aa" strokeWidth="0.5" strokeOpacity="0.25" />
+      <line x1={0} y1={h * 0.85} x2={w} y2={h * 0.85}
+        stroke="#ff00aa" strokeWidth="0.4" strokeOpacity="0.15" />
       {fgBuildings.slice(0, 4).map((b, i) =>
-        Array.from({ length: Math.min(2, Math.floor(b.h / 12)) }).map((_, wi) => (
+        Array.from({ length: Math.min(2, Math.floor(b.h / 12)) }, (_, wi) =>
           seededVal(seed, i * 80 + wi + 1000) > 0.4 ? (
-            <circle
-              key={`ref-${i}-${wi}`}
-              cx={b.x + 6}
-              cy={horizon + (wi + 1) * 8}
-              r={2}
-              fill={districtColor}
-              fillOpacity={0.12 - wi * 0.03}
-            />
+            <circle key={`ns-ref-${i}-${wi}`} cx={b.x + 6} cy={horizon + (wi + 1) * 8} r={2}
+              fill="#ff00aa" fillOpacity={0.12 - wi * 0.03} />
           ) : null
-        ))
+        )
       )}
-
-      {/* CRT scanlines overlay */}
-      <rect width={width} height={height} fill={`url(#${uid}_scanlines)`} />
-
-      {/* Film grain overlay */}
-      <rect width={width} height={height} fill="transparent" filter={`url(#${uid}_grain)`} opacity="0.06" />
+      <rect width={w} height={h} fill={`url(#${uid}_nsScan)`} />
+      <rect width={w} height={h} fill="transparent" filter={`url(#${uid}_nsGrain)`} opacity="0.06" />
     </>
   );
 }
 
-interface FigureProps {
+function BatteryvilleBackground({ width: w, height: h, backgroundSeed: seed, uid }: BackgroundProps) {
+  const horizon = h * 0.5;
+  const stars = Array.from({ length: 18 }, (_, i) => ({
+    x: seededVal(seed, i * 3) * w, y: seededVal(seed, i * 3 + 1) * horizon * 0.85,
+    r: seededVal(seed, i * 3 + 2) > 0.65 ? 1.4 : 0.7,
+    op: 0.4 + seededVal(seed, 100 + i) * 0.55,
+  }));
+  const panels = Array.from({ length: 6 }, (_, i) => ({
+    x: 10 + i * 28 + seededVal(seed, 200 + i) * 8,
+    y: horizon + 15 + seededVal(seed, 210 + i) * 10,
+  }));
+  const turbines = [
+    { x: w * 0.18, topY: horizon - 35 },
+    { x: w * 0.55, topY: horizon - 45 },
+    { x: w * 0.85, topY: horizon - 38 },
+  ];
+  const cabins = [
+    { x: 20, y: horizon - 14, w: 24, h: 14 },
+    { x: 80, y: horizon - 18, w: 30, h: 18 },
+    { x: 145, y: horizon - 12, w: 22, h: 12 },
+  ];
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${uid}_bvSky`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#0a0a1e" />
+          <stop offset="50%"  stopColor="#1a0e2a" />
+          <stop offset="100%" stopColor="#2a1a0a" />
+        </linearGradient>
+        <linearGradient id={`${uid}_bvGround`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#3a2a0a" />
+          <stop offset="100%" stopColor="#2a1a05" />
+        </linearGradient>
+        <linearGradient id={`${uid}_bvHorizon`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#ff6600" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#ff6600" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <rect width={w} height={h} fill={`url(#${uid}_bvSky)`} />
+      {stars.map((s, i) => (
+        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="white" fillOpacity={s.op} />
+      ))}
+      <circle cx={w * 0.2} cy={h * 0.1} r={6} fill="#e8e0c8" fillOpacity="0.7" />
+      <circle cx={w * 0.2 + 2.5} cy={h * 0.1 - 1} r={4.5} fill="#0a0a1e" fillOpacity="0.8" />
+      <rect x={0} y={horizon * 0.75} width={w} height={h * 0.25} fill={`url(#${uid}_bvHorizon)`} />
+      {turbines.map((t, i) => (
+        <g key={i}>
+          <line x1={t.x} y1={horizon} x2={t.x} y2={t.topY} stroke="#887744" strokeWidth="1.5" />
+          {[0, 120, 240].map((deg, bi) => {
+            const rad = (deg + seededVal(seed, 300 + i * 3 + bi) * 30) * Math.PI / 180;
+            return (
+              <line key={bi} x1={t.x} y1={t.topY}
+                x2={t.x + Math.cos(rad) * 12} y2={t.topY + Math.sin(rad) * 12}
+                stroke="#aaaaaa" strokeWidth="1" strokeOpacity="0.75" />
+            );
+          })}
+          <circle cx={t.x} cy={t.topY} r={2} fill="#cccccc" fillOpacity="0.8" />
+        </g>
+      ))}
+      {cabins.map((c, i) => (
+        <g key={i}>
+          <rect x={c.x} y={c.y} width={c.w} height={c.h} rx={1}
+            fill="#4a3010" stroke="#887744" strokeWidth="0.7" strokeOpacity="0.8" />
+          <polygon
+            points={`${c.x - 2},${c.y} ${c.x + c.w / 2},${c.y - c.h * 0.6} ${c.x + c.w + 2},${c.y}`}
+            fill="#5a3818" stroke="#887744" strokeWidth="0.6" strokeOpacity="0.7" />
+          <rect x={c.x + c.w * 0.3} y={c.y + 3} width={c.w * 0.3} height={c.h * 0.4} rx={1}
+            fill="#ffcc44" fillOpacity={seededVal(seed, 400 + i) > 0.3 ? 0.5 : 0.05} />
+        </g>
+      ))}
+      <rect x={0} y={horizon} width={w} height={h - horizon} fill={`url(#${uid}_bvGround)`} />
+      {panels.map((p, i) => (
+        <g key={i}>
+          <rect x={p.x} y={p.y} width={16} height={8} rx={1}
+            fill="#223344" stroke="#44aacc" strokeWidth="0.6"
+            transform={`rotate(-15,${p.x + 8},${p.y + 4})`} />
+          <line x1={p.x + 8} y1={p.y} x2={p.x + 8} y2={p.y + 8}
+            stroke="#44aacc" strokeWidth="0.3" strokeOpacity="0.5"
+            transform={`rotate(-15,${p.x + 8},${p.y + 4})`} />
+          <line x1={p.x + 8} y1={p.y + 5} x2={p.x + 8} y2={p.y + 13}
+            stroke="#887744" strokeWidth="0.8" />
+        </g>
+      ))}
+      <circle cx={w * 0.5} cy={horizon + 8} r={4} fill="#ff6600" fillOpacity="0.25" />
+      <circle cx={w * 0.5} cy={horizon + 8} r={2} fill="#ffaa00" fillOpacity="0.5" />
+    </>
+  );
+}
+
+function CardBackground(props: BackgroundProps) {
+  if (props.district === "Airaway")      return <AirawayBackground {...props} />;
+  if (props.district === "Batteryville") return <BatteryvilleBackground {...props} />;
+  return <NightshadeBackground {...props} />;
+}
+
+// LAYER 3 - Character
+
+interface CharacterProps {
   cx: number;
   cy: number;
   accentColor: string;
-  jacketStyle: string;
-  boardStyle: string;
-  helmetStyle: string;
+  archetype: string;
+  style: string;
+  vibe: string;
+  storagePackStyle: string;
+  characterSeed: string;
 }
 
-function CourierFigure({ cx, cy, accentColor, jacketStyle, boardStyle, helmetStyle }: FigureProps) {
-  const torsoColor  = JACKET_COLORS[jacketStyle]  || "#1e1e3a";
-  const boardColor  = BOARD_COLORS[boardStyle]    || "#1a1a2e";
-  const hasNeonStripe = boardStyle === "NeonCruiser";
+function CharacterHead({ cx, cy, accentColor, archetype }: {
+  cx: number; cy: number; accentColor: string; archetype: string;
+}) {
+  const baseHead = (
+    <circle cx={cx} cy={cy - 18} r={11} fill="#1e1e3a" stroke={accentColor} strokeWidth="1.5" />
+  );
 
-  // Helmet style variants
-  const hasDome    = helmetStyle === "DomeShell";
-  const hasFullVisor = helmetStyle === "Visor-X" || helmetStyle === "HoloShade";
+  if (archetype === "Ninja") {
+    return (
+      <>
+        {baseHead}
+        <path d={`M${cx - 11},${cy - 18} A11,11 0 0,1 ${cx + 11},${cy - 18}`}
+          fill="#0a0a1a" fillOpacity="0.85" stroke={accentColor} strokeWidth="1" />
+        <rect x={cx - 9} y={cy - 25} width={18} height={9} rx={3}
+          fill="#0a0a1a" stroke={accentColor} strokeWidth="0.8" />
+        <rect x={cx - 7} y={cy - 21} width={14} height={2.5} rx={1}
+          fill={accentColor} fillOpacity="0.6" />
+        <line x1={cx - 9} y1={cy - 25} x2={cx + 9} y2={cy - 25}
+          stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.5" />
+      </>
+    );
+  }
 
+  if (archetype === "Punk Rocker") {
+    return (
+      <>
+        {baseHead}
+        {[-3, 0, 3].map((dx, i) => (
+          <rect key={i} x={cx + dx - 1.5} y={cy - 33 + i} width={3} height={16 - i * 2} rx={1.5}
+            fill={i === 1 ? accentColor : "#ff2244"} fillOpacity={0.9 - i * 0.15} />
+        ))}
+        {[-8, -4, 0, 4, 8].map((dx, i) => (
+          <polygon key={i}
+            points={`${cx + dx},${cy - 8} ${cx + dx - 2},${cy - 4} ${cx + dx + 2},${cy - 4}`}
+            fill="#333" stroke={accentColor} strokeWidth="0.5" />
+        ))}
+        <rect x={cx - 9} y={cy - 22} width={8} height={5} rx={2}
+          fill={accentColor} fillOpacity="0.5" stroke={accentColor} strokeWidth="0.8" />
+        <rect x={cx + 1} y={cy - 22} width={8} height={5} rx={2}
+          fill={accentColor} fillOpacity="0.5" stroke={accentColor} strokeWidth="0.8" />
+        <line x1={cx - 1} y1={cy - 20} x2={cx + 1} y2={cy - 20}
+          stroke={accentColor} strokeWidth="0.8" />
+      </>
+    );
+  }
+
+  if (archetype === "Ex Military") {
+    return (
+      <>
+        {baseHead}
+        <path d={`M${cx - 10},${cy - 24} Q${cx},${cy - 32} ${cx + 12},${cy - 22}`}
+          fill="#4a5a2a" stroke="#6a7a3a" strokeWidth="0.8" />
+        <rect x={cx - 7} y={cy - 12} width={14} height={4} rx={2}
+          fill="#2a1a0a" fillOpacity="0.4" />
+        <path d={`M${cx - 5},${cy - 7} Q${cx},${cy - 5} ${cx + 5},${cy - 7}`}
+          fill="none" stroke={accentColor} strokeWidth="0.7" strokeOpacity="0.6" />
+        <rect x={cx - 7} y={cy - 21} width={4} height={2.5} rx={1}
+          fill={accentColor} fillOpacity="0.55" />
+        <rect x={cx + 3} y={cy - 21} width={4} height={2.5} rx={1}
+          fill={accentColor} fillOpacity="0.55" />
+      </>
+    );
+  }
+
+  if (archetype === "Hacker") {
+    return (
+      <>
+        {baseHead}
+        {[-6, -2, 2, 6].map((dx, i) => (
+          <path key={i}
+            d={`M${cx + dx},${cy - 28} Q${cx + dx + 2},${cy - 33} ${cx + dx + 4},${cy - 28}`}
+            fill="#333355" stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.4" />
+        ))}
+        <rect x={cx - 11} y={cy - 24} width={22} height={9} rx={3}
+          fill="#111133" stroke={accentColor} strokeWidth="1" />
+        <circle cx={cx - 5} cy={cy - 20} r={3.5}
+          fill={accentColor} fillOpacity="0.3" stroke={accentColor} strokeWidth="0.8" />
+        <circle cx={cx + 5} cy={cy - 20} r={3.5}
+          fill={accentColor} fillOpacity="0.3" stroke={accentColor} strokeWidth="0.8" />
+        <line x1={cx - 11} y1={cy - 27} x2={cx + 11} y2={cy - 27}
+          stroke={accentColor} strokeWidth="1" strokeOpacity="0.5" />
+        <line x1={cx + 9} y1={cy - 27} x2={cx + 12} y2={cy - 32}
+          stroke={accentColor} strokeWidth="0.7" />
+        <circle cx={cx + 12} cy={cy - 32} r={1} fill={accentColor} fillOpacity="0.8" />
+      </>
+    );
+  }
+
+  if (archetype === "Chef") {
+    return (
+      <>
+        {baseHead}
+        <rect x={cx - 8} y={cy - 36} width={16} height={14} rx={4}
+          fill="#f0f0f0" fillOpacity="0.85" stroke="#cccccc" strokeWidth="0.8" />
+        <ellipse cx={cx} cy={cy - 36} rx={9} ry={5} fill="#f8f8f8" fillOpacity="0.9" />
+        <rect x={cx - 10} y={cy - 24} width={20} height={5} rx={1}
+          fill={accentColor} fillOpacity="0.55" stroke={accentColor} strokeWidth="0.6" />
+        <circle cx={cx + 10} cy={cy - 22} r={2.5} fill={accentColor} fillOpacity="0.5" />
+        <rect x={cx - 7} y={cy - 21} width={4} height={3} rx={1}
+          fill={accentColor} fillOpacity="0.6" />
+        <rect x={cx + 3} y={cy - 21} width={4} height={3} rx={1}
+          fill={accentColor} fillOpacity="0.6" />
+      </>
+    );
+  }
+
+  return baseHead;
+}
+
+function CharacterBody({ cx, cy, accentColor, style }: {
+  cx: number; cy: number; accentColor: string; style: string;
+}) {
+  if (style === "Corporate") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={30} rx={3}
+          fill="#1a1a2e" stroke={accentColor} strokeWidth="1" />
+        <polygon points={`${cx},${cy - 10} ${cx - 8},${cy} ${cx},${cy - 2}`}
+          fill="#111122" stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.7" />
+        <polygon points={`${cx},${cy - 10} ${cx + 8},${cy} ${cx},${cy - 2}`}
+          fill="#111122" stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.7" />
+        <polygon points={`${cx - 2},${cy - 8} ${cx + 2},${cy - 8} ${cx + 1},${cy + 10} ${cx - 1},${cy + 10}`}
+          fill={accentColor} fillOpacity="0.7" />
+        <rect x={cx - 4} y={cy - 10} width={8} height={4} rx={1}
+          fill="#e8e8e8" fillOpacity="0.6" />
+        <rect x={cx - 16} y={cy - 10} width={8} height={6} rx={2}
+          fill="#1a1a2e" stroke={accentColor} strokeWidth="0.8" />
+        <rect x={cx + 8}  y={cy - 10} width={8} height={6} rx={2}
+          fill="#1a1a2e" stroke={accentColor} strokeWidth="0.8" />
+      </>
+    );
+  }
+  if (style === "Street") {
+    return (
+      <>
+        <rect x={cx - 13} y={cy - 10} width={26} height={30} rx={5}
+          fill="#222244" stroke={accentColor} strokeWidth="1" />
+        <path d={`M${cx - 10},${cy - 10} Q${cx},${cy - 18} ${cx + 10},${cy - 10}`}
+          fill="#2a2a55" stroke={accentColor} strokeWidth="0.8" strokeOpacity="0.6" />
+        <rect x={cx - 8} y={cy + 8} width={16} height={8} rx={2}
+          fill="#1a1a33" stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.5" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#1a1a3a" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#1a1a3a" />
+        <line x1={cx - 9} y1={cy + 22} x2={cx - 4} y2={cy + 22}
+          stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.4" />
+        <line x1={cx + 3} y1={cy + 25} x2={cx + 8} y2={cy + 25}
+          stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.4" />
+      </>
+    );
+  }
+  if (style === "Off-grid") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={28} rx={3}
+          fill="#3a3010" stroke={accentColor} strokeWidth="1" />
+        <rect x={cx - 10} y={cy - 4} width={7} height={6} rx={1}
+          fill="#2a2208" stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.7" />
+        <rect x={cx + 3} y={cy - 4} width={7} height={6} rx={1}
+          fill="#2a2208" stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.7" />
+        <line x1={cx - 12} y1={cy + 5} x2={cx + 12} y2={cy + 5}
+          stroke={accentColor} strokeWidth="0.8" strokeOpacity="0.5" />
+        <rect x={cx - 11} y={cy + 18} width={9} height={14} rx={2} fill="#3a3010" />
+        <rect x={cx + 2}  y={cy + 18} width={9} height={14} rx={2} fill="#3a3010" />
+        <rect x={cx - 11} y={cy + 22} width={7} height={5} rx={1}
+          fill="#2a2208" stroke={accentColor} strokeWidth="0.4" strokeOpacity="0.5" />
+      </>
+    );
+  }
+  if (style === "Military") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={30} rx={3}
+          fill="#3a4428" stroke="#5a6438" strokeWidth="1" />
+        <rect x={cx - 10} y={cy - 6} width={6} height={5} rx={1} fill="#2a3018" fillOpacity="0.6" />
+        <rect x={cx + 4}  y={cy}     width={7} height={4} rx={1} fill="#4a5430" fillOpacity="0.5" />
+        <rect x={cx - 8}  y={cy + 8} width={8} height={4} rx={1} fill="#2a3018" fillOpacity="0.55" />
+        <rect x={cx - 3} y={cy - 6} width={6} height={8} rx={1}
+          fill="#ccccaa" fillOpacity="0.4" stroke="#aaaaaa" strokeWidth="0.5" />
+        <line x1={cx} y1={cy - 10} x2={cx} y2={cy - 6}
+          stroke="#aaaaaa" strokeWidth="0.5" strokeOpacity="0.5" />
+        <rect x={cx - 16} y={cy - 10} width={8} height={6} rx={2}
+          fill="#3a4428" stroke={accentColor} strokeWidth="0.7" />
+        <rect x={cx + 8}  y={cy - 10} width={8} height={6} rx={2}
+          fill="#3a4428" stroke={accentColor} strokeWidth="0.7" />
+      </>
+    );
+  }
+  if (style === "Union") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={28} rx={3}
+          fill="#ff8800" fillOpacity="0.75" stroke={accentColor} strokeWidth="1" />
+        <line x1={cx - 12} y1={cy}     x2={cx + 12} y2={cy}
+          stroke="#ffff88" strokeWidth="2" strokeOpacity="0.6" />
+        <line x1={cx - 12} y1={cy + 8} x2={cx + 12} y2={cy + 8}
+          stroke="#ffff88" strokeWidth="2" strokeOpacity="0.6" />
+        <rect x={cx - 10} y={cy - 10} width={20} height={18} rx={2}
+          fill="#2255aa" fillOpacity="0.4" />
+        <rect x={cx - 9} y={cy - 8} width={8} height={6} rx={1}
+          fill="#222255" stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.7" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#333355" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#333355" />
+      </>
+    );
+  }
   return (
-    <g>
-      {/* Motion trail */}
-      <ellipse cx={cx - 14} cy={cy + 20} rx={18} ry={8} fill={accentColor} fillOpacity="0.06" />
-      <ellipse cx={cx - 22} cy={cy + 22} rx={10} ry={5} fill={accentColor} fillOpacity="0.04" />
-
-      {/* Board trucks */}
-      <rect x={cx - 22} y={cy + 33} width={6} height={3} rx={1} fill="#333" stroke={accentColor} strokeWidth="0.5" />
-      <rect x={cx + 16} y={cy + 33} width={6} height={3} rx={1} fill="#333" stroke={accentColor} strokeWidth="0.5" />
-
-      {/* Board */}
-      <rect x={cx - 28} y={cy + 28} width={56} height={8} rx={4} fill={boardColor} stroke={accentColor} strokeWidth="1.5" />
-      {/* Board grip tape texture */}
-      {[0, 1, 2].map(i => (
-        <line key={i}
-          x1={cx - 20 + i * 12} y1={cy + 29}
-          x2={cx - 20 + i * 12} y2={cy + 35}
-          stroke={accentColor} strokeWidth="0.4" strokeOpacity="0.3"
-        />
-      ))}
-      {/* NeonCruiser board stripe */}
-      {hasNeonStripe && (
-        <line x1={cx - 26} y1={cy + 32} x2={cx + 26} y2={cy + 32} stroke={accentColor} strokeWidth="1.2" strokeOpacity="0.7" />
-      )}
-
-      {/* Wheels */}
-      <circle cx={cx - 18} cy={cy + 40} r={6} fill="#111" stroke={accentColor} strokeWidth="1.5" />
-      <circle cx={cx + 18} cy={cy + 40} r={6} fill="#111" stroke={accentColor} strokeWidth="1.5" />
-      {/* Wheel spokes */}
-      {[0, 1, 2].map(i => {
-        const angle = (i / 3) * Math.PI;
-        const dx = Math.cos(angle) * 4.5;
-        const dy = Math.sin(angle) * 4.5;
-        return (
-          <g key={i}>
-            <line x1={cx - 18 - dx} y1={cy + 40 - dy} x2={cx - 18 + dx} y2={cy + 40 + dy} stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.5" />
-            <line x1={cx + 18 - dx} y1={cy + 40 - dy} x2={cx + 18 + dx} y2={cy + 40 + dy} stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.5" />
-          </g>
-        );
-      })}
-      {/* Wheel glow cores */}
-      <circle cx={cx - 18} cy={cy + 40} r={3} fill={accentColor} fillOpacity="0.7" />
-      <circle cx={cx + 18} cy={cy + 40} r={3} fill={accentColor} fillOpacity="0.7" />
-
-      {/* Legs */}
+    <>
+      <rect x={cx - 12} y={cy - 10} width={24} height={30} rx={4}
+        fill="#1e1e3a" stroke={accentColor} strokeWidth="1" />
+      <line x1={cx} y1={cy - 10} x2={cx} y2={cy + 20}
+        stroke={accentColor} strokeWidth="2" strokeOpacity="0.7" />
+      <rect x={cx - 16} y={cy - 10} width={8} height={6} rx={2}
+        fill="#1e1e3a" stroke={accentColor} strokeWidth="0.8" />
+      <rect x={cx + 8}  y={cy - 10} width={8} height={6} rx={2}
+        fill="#1e1e3a" stroke={accentColor} strokeWidth="0.8" />
       <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#14142a" />
       <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#14142a" />
-      {/* Knee pads */}
-      <rect x={cx - 11} y={cy + 23} width={9}  height={5} rx={2} fill="#252540" stroke={accentColor} strokeWidth="0.6" />
-      <rect x={cx + 2}  y={cy + 23} width={9}  height={5} rx={2} fill="#252540" stroke={accentColor} strokeWidth="0.6" />
+    </>
+  );
+}
 
-      {/* Body / torso */}
-      <rect x={cx - 12} y={cy - 10} width={24} height={30} rx={4} fill={torsoColor} stroke={accentColor} strokeWidth="1" />
-      {/* Jacket stripe */}
-      <line x1={cx} y1={cy - 10} x2={cx} y2={cy + 20} stroke={accentColor} strokeWidth="2" strokeOpacity="0.7" />
-      {/* Chest badge */}
-      <rect x={cx - 5} y={cy - 6} width={10} height={7} rx={1} fill={accentColor} fillOpacity="0.25" stroke={accentColor} strokeWidth="0.5" />
-      <circle cx={cx} cy={cy - 2} r={1.5} fill={accentColor} fillOpacity="0.8" />
-
-      {/* Shoulder pads */}
-      <rect x={cx - 16} y={cy - 10} width={8}  height={6} rx={2} fill={torsoColor} stroke={accentColor} strokeWidth="0.8" />
-      <rect x={cx + 8}  y={cy - 10} width={8}  height={6} rx={2} fill={torsoColor} stroke={accentColor} strokeWidth="0.8" />
-
-      {/* Arm extended */}
-      <rect x={cx + 10} y={cy - 5} width={14} height={6} rx={3} fill={torsoColor} stroke={accentColor} strokeWidth="1"
-        transform={`rotate(-20,${cx + 10},${cy - 2})`} />
-      {/* Hand / fist */}
-      <circle cx={cx + 25} cy={cy - 9} r={4} fill={torsoColor} stroke={accentColor} strokeWidth="1"
-        transform={`rotate(-20,${cx + 10},${cy - 2})`} />
-
-      {/* Head */}
-      <circle cx={cx} cy={cy - 18} r={11} fill="#1e1e3a" stroke={accentColor} strokeWidth="1.5" />
-
-      {/* Helmet variants */}
-      {hasDome && (
-        <path d={`M${cx - 10},${cy - 18} A10,10 0 0,1 ${cx + 10},${cy - 18}`}
-          fill={accentColor} fillOpacity="0.15" stroke={accentColor} strokeWidth="0.8" />
-      )}
-      {hasFullVisor ? (
-        <>
-          <rect x={cx - 9} y={cy - 24} width={18} height={8} rx={3} fill={accentColor} fillOpacity="0.35" stroke={accentColor} strokeWidth="0.8" />
-          <rect x={cx - 7} y={cy - 23} width={14} height={5} rx={2} fill={accentColor} fillOpacity="0.2" />
-        </>
-      ) : (
-        <>
-          <path d={`M${cx - 8},${cy - 22} Q${cx},${cy - 28} ${cx + 8},${cy - 22}`} fill={accentColor} fillOpacity="0.5" />
-          <rect x={cx - 8} y={cy - 22} width={16} height={5} rx={2} fill={accentColor} fillOpacity="0.6" />
-        </>
-      )}
-
-      {/* Glow under board */}
+function CharacterBoard({ cx, cy, accentColor, vibe, characterSeed }: {
+  cx: number; cy: number; accentColor: string; vibe: string; characterSeed: string;
+}) {
+  if (vibe === "Grunge") {
+    return (
+      <>
+        <ellipse cx={cx - 16} cy={cy + 22} rx={20} ry={9} fill={accentColor} fillOpacity="0.05" />
+        <rect x={cx - 24} y={cy + 34} width={8} height={4} rx={1} fill="#555" stroke="#888" strokeWidth="0.5" />
+        <rect x={cx + 16} y={cy + 34} width={8} height={4} rx={1} fill="#555" stroke="#888" strokeWidth="0.5" />
+        <rect x={cx - 30} y={cy + 28} width={60} height={10} rx={5}
+          fill="#2a1a0a" stroke="#887755" strokeWidth="1.5" />
+        {[-10, 0, 10].map((dx, i) => (
+          <line key={i} x1={cx + dx} y1={cy + 29} x2={cx + dx + 4} y2={cy + 37}
+            stroke="#ffcc88" strokeWidth="0.4" strokeOpacity="0.3" />
+        ))}
+        <circle cx={cx - 20} cy={cy + 42} r={8} fill="#222" stroke="#887755" strokeWidth="1.5" />
+        <circle cx={cx + 20} cy={cy + 42} r={8} fill="#222" stroke="#887755" strokeWidth="1.5" />
+        {[0, 1, 2].map(i => {
+          const angle = (i / 3) * Math.PI;
+          const dx = Math.cos(angle) * 6, dy = Math.sin(angle) * 6;
+          return (
+            <g key={i}>
+              <line x1={cx - 20 - dx} y1={cy + 42 - dy} x2={cx - 20 + dx} y2={cy + 42 + dy}
+                stroke="#887755" strokeWidth="0.7" strokeOpacity="0.5" />
+              <line x1={cx + 20 - dx} y1={cy + 42 - dy} x2={cx + 20 + dx} y2={cy + 42 + dy}
+                stroke="#887755" strokeWidth="0.7" strokeOpacity="0.5" />
+            </g>
+          );
+        })}
+        <ellipse cx={cx} cy={cy + 46} rx={26} ry={4} fill={accentColor} fillOpacity="0.15" />
+      </>
+    );
+  }
+  if (vibe === "Neon") {
+    return (
+      <>
+        <ellipse cx={cx - 14} cy={cy + 20} rx={18} ry={8} fill={accentColor} fillOpacity="0.08" />
+        <rect x={cx - 22} y={cy + 33} width={6} height={3} rx={1} fill="#333" stroke={accentColor} strokeWidth="0.5" />
+        <rect x={cx + 16} y={cy + 33} width={6} height={3} rx={1} fill="#333" stroke={accentColor} strokeWidth="0.5" />
+        <rect x={cx - 28} y={cy + 28} width={56} height={8} rx={4}
+          fill="#0a0a1a" stroke={accentColor} strokeWidth="2" />
+        <rect x={cx - 26} y={cy + 34} width={52} height={1} rx={0.5}
+          fill={accentColor} fillOpacity="0.7" />
+        <circle cx={cx - 18} cy={cy + 40} r={6} fill="#111" stroke={accentColor} strokeWidth="1.5" />
+        <circle cx={cx + 18} cy={cy + 40} r={6} fill="#111" stroke={accentColor} strokeWidth="1.5" />
+        <circle cx={cx - 18} cy={cy + 40} r={4} fill="none" stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.5" />
+        <circle cx={cx + 18} cy={cy + 40} r={4} fill="none" stroke={accentColor} strokeWidth="0.6" strokeOpacity="0.5" />
+        <circle cx={cx - 18} cy={cy + 40} r={2.5} fill={accentColor} fillOpacity="0.8" />
+        <circle cx={cx + 18} cy={cy + 40} r={2.5} fill={accentColor} fillOpacity="0.8" />
+        <ellipse cx={cx} cy={cy + 44} rx={22} ry={3} fill={accentColor} fillOpacity="0.2" />
+      </>
+    );
+  }
+  if (vibe === "Chrome") {
+    return (
+      <>
+        <ellipse cx={cx - 12} cy={cy + 20} rx={14} ry={6} fill="#aaccff" fillOpacity="0.06" />
+        <rect x={cx - 20} y={cy + 33} width={5} height={2} rx={0.5} fill="#aabbcc" stroke="#88aacc" strokeWidth="0.4" />
+        <rect x={cx + 15} y={cy + 33} width={5} height={2} rx={0.5} fill="#aabbcc" stroke="#88aacc" strokeWidth="0.4" />
+        <rect x={cx - 26} y={cy + 29} width={52} height={6} rx={3}
+          fill="#b0c8e0" stroke="#aaccee" strokeWidth="1.2" />
+        <line x1={cx - 20} y1={cy + 31} x2={cx + 20} y2={cy + 31}
+          stroke="white" strokeWidth="0.6" strokeOpacity="0.5" />
+        <circle cx={cx - 16} cy={cy + 38} r={5} fill="#c0d0e0" stroke="#88aacc" strokeWidth="1" />
+        <circle cx={cx + 16} cy={cy + 38} r={5} fill="#c0d0e0" stroke="#88aacc" strokeWidth="1" />
+        <circle cx={cx - 16} cy={cy + 38} r={2} fill="#aaccee" fillOpacity="0.8" />
+        <circle cx={cx + 16} cy={cy + 38} r={2} fill="#aaccee" fillOpacity="0.8" />
+        <ellipse cx={cx} cy={cy + 42} rx={18} ry={2.5} fill="#88aacc" fillOpacity="0.15" />
+      </>
+    );
+  }
+  if (vibe === "Plastic") {
+    const plasticColors = ["#ff4488", "#44ffaa", "#ffcc00", "#44aaff"];
+    const wc = plasticColors[Math.floor(seededVal(characterSeed, 350) * 4)];
+    return (
+      <>
+        <ellipse cx={cx - 12} cy={cy + 20} rx={14} ry={6} fill={wc} fillOpacity="0.05" />
+        <rect x={cx - 19} y={cy + 33} width={5} height={2} rx={0.5} fill="#e0e0e0" stroke="#cccccc" strokeWidth="0.4" />
+        <rect x={cx + 14} y={cy + 33} width={5} height={2} rx={0.5} fill="#e0e0e0" stroke="#cccccc" strokeWidth="0.4" />
+        <rect x={cx - 24} y={cy + 30} width={48} height={5} rx={2.5}
+          fill="#f0e8ff" stroke="#ddbbff" strokeWidth="1" />
+        <line x1={cx - 22} y1={cy + 32.5} x2={cx + 22} y2={cy + 32.5}
+          stroke={wc} strokeWidth="1.2" strokeOpacity="0.7" />
+        <circle cx={cx - 14} cy={cy + 37} r={4} fill={wc} stroke="#ffffff" strokeWidth="0.8" fillOpacity="0.85" />
+        <circle cx={cx + 14} cy={cy + 37} r={4} fill={wc} stroke="#ffffff" strokeWidth="0.8" fillOpacity="0.85" />
+        <circle cx={cx - 14} cy={cy + 37} r={1.5} fill="white" fillOpacity="0.7" />
+        <circle cx={cx + 14} cy={cy + 37} r={1.5} fill="white" fillOpacity="0.7" />
+        <ellipse cx={cx} cy={cy + 40} rx={16} ry={2} fill={wc} fillOpacity="0.12" />
+      </>
+    );
+  }
+  return (
+    <>
+      <ellipse cx={cx - 14} cy={cy + 20} rx={18} ry={8} fill={accentColor} fillOpacity="0.06" />
+      <rect x={cx - 22} y={cy + 33} width={6} height={3} rx={1} fill="#333" stroke={accentColor} strokeWidth="0.5" />
+      <rect x={cx + 16} y={cy + 33} width={6} height={3} rx={1} fill="#333" stroke={accentColor} strokeWidth="0.5" />
+      <rect x={cx - 28} y={cy + 28} width={56} height={8} rx={4}
+        fill="#1a1a2e" stroke={accentColor} strokeWidth="1.5" />
+      <circle cx={cx - 18} cy={cy + 40} r={6} fill="#111" stroke={accentColor} strokeWidth="1.5" />
+      <circle cx={cx + 18} cy={cy + 40} r={6} fill="#111" stroke={accentColor} strokeWidth="1.5" />
+      <circle cx={cx - 18} cy={cy + 40} r={3} fill={accentColor} fillOpacity="0.7" />
+      <circle cx={cx + 18} cy={cy + 40} r={3} fill={accentColor} fillOpacity="0.7" />
       <ellipse cx={cx} cy={cy + 43} rx={22} ry={4} fill={accentColor} fillOpacity="0.25" />
-      {/* Data trail from wheels */}
-      <ellipse cx={cx - 18} cy={cy + 46} rx={4} ry={1.5} fill={accentColor} fillOpacity="0.15" />
-      <ellipse cx={cx + 18} cy={cy + 46} rx={4} ry={1.5} fill={accentColor} fillOpacity="0.15" />
+    </>
+  );
+}
 
-      {/* Faint body ambient glow */}
+function StoragePack({ cx, cy, accentColor, packStyle }: {
+  cx: number; cy: number; accentColor: string; packStyle: string;
+}) {
+  if (packStyle === "shopping-bag") {
+    return (
+      <>
+        <rect x={cx + 10} y={cy - 5} width={14} height={6} rx={3}
+          fill="#1e1e3a" stroke={accentColor} strokeWidth="1"
+          transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+        <rect x={cx + 22} y={cy - 2} width={10} height={13} rx={2}
+          fill={accentColor} fillOpacity="0.35" stroke={accentColor} strokeWidth="0.8"
+          transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+        <path d={`M${cx + 24},${cy - 2} Q${cx + 27},${cy - 7} ${cx + 30},${cy - 2}`}
+          fill="none" stroke={accentColor} strokeWidth="0.8"
+          transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+      </>
+    );
+  }
+  if (packStyle === "backpack") {
+    return (
+      <>
+        <rect x={cx - 18} y={cy - 8} width={12} height={20} rx={3}
+          fill="#2a2a4a" stroke={accentColor} strokeWidth="0.8" strokeOpacity="0.7" />
+        <line x1={cx - 15} y1={cy - 8} x2={cx - 12} y2={cy + 8}
+          stroke={accentColor} strokeWidth="0.8" strokeOpacity="0.5" />
+        <rect x={cx - 14} y={cy - 10} width={8} height={3} rx={1.5}
+          fill={accentColor} fillOpacity="0.4" stroke={accentColor} strokeWidth="0.5" />
+        <rect x={cx - 17} y={cy + 4} width={10} height={7} rx={2}
+          fill="#222240" stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.6" />
+        <rect x={cx + 10} y={cy - 5} width={14} height={6} rx={3}
+          fill="#1e1e3a" stroke={accentColor} strokeWidth="1"
+          transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+        <circle cx={cx + 25} cy={cy - 9} r={4}
+          fill="#1e1e3a" stroke={accentColor} strokeWidth="1"
+          transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+      </>
+    );
+  }
+  if (packStyle === "cardboard-box") {
+    return (
+      <>
+        <rect x={cx - 18} y={cy + 5} width={36} height={6} rx={3}
+          fill="#1e1e3a" stroke={accentColor} strokeWidth="0.8" />
+        <rect x={cx - 16} y={cy - 8} width={32} height={24} rx={2}
+          fill="#c8a860" stroke="#a08040" strokeWidth="1.2" />
+        <line x1={cx} y1={cy - 8} x2={cx} y2={cy - 4} stroke="#a08040" strokeWidth="0.8" />
+        <line x1={cx - 16} y1={cy - 5} x2={cx + 16} y2={cy - 5}
+          stroke="#a08040" strokeWidth="0.8" strokeOpacity="0.7" />
+        <rect x={cx - 4} y={cy - 8} width={8} height={24} rx={1}
+          fill="#d4b870" fillOpacity="0.4" />
+        <line x1={cx - 4} y1={cy - 8} x2={cx - 4} y2={cy + 16}
+          stroke="#a08040" strokeWidth="0.4" strokeOpacity="0.5" />
+        <line x1={cx + 4} y1={cy - 8} x2={cx + 4} y2={cy + 16}
+          stroke="#a08040" strokeWidth="0.4" strokeOpacity="0.5" />
+      </>
+    );
+  }
+  if (packStyle === "duffel-bag") {
+    return (
+      <>
+        <line x1={cx - 10} y1={cy - 10} x2={cx + 14} y2={cy + 15}
+          stroke={accentColor} strokeWidth="1.2" strokeOpacity="0.6" />
+        <rect x={cx + 8} y={cy + 10} width={22} height={14} rx={6}
+          fill="#1a2a3a" stroke={accentColor} strokeWidth="1" />
+        <line x1={cx + 10} y1={cy + 17} x2={cx + 28} y2={cy + 17}
+          stroke={accentColor} strokeWidth="0.8" strokeOpacity="0.6" />
+        <path d={`M${cx + 12},${cy + 10} Q${cx + 15},${cy + 6} ${cx + 18},${cy + 10}`}
+          fill="none" stroke={accentColor} strokeWidth="0.8" strokeOpacity="0.7" />
+        <rect x={cx + 10} y={cy - 5} width={14} height={6} rx={3}
+          fill="#1e1e3a" stroke={accentColor} strokeWidth="1"
+          transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+        <circle cx={cx + 25} cy={cy - 9} r={4}
+          fill="#1e1e3a" stroke={accentColor} strokeWidth="1"
+          transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+      </>
+    );
+  }
+  return (
+    <>
+      <rect x={cx + 10} y={cy - 5} width={14} height={6} rx={3}
+        fill="#1e1e3a" stroke={accentColor} strokeWidth="1"
+        transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+      <circle cx={cx + 25} cy={cy - 9} r={4}
+        fill="#1e1e3a" stroke={accentColor} strokeWidth="1"
+        transform={`rotate(-20,${cx + 10},${cy - 2})`} />
+    </>
+  );
+}
+
+function CardCharacter({ cx, cy, accentColor, archetype, style, vibe, storagePackStyle }: CharacterProps) {
+  return (
+    <g>
+      <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#14142a" />
+      <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#14142a" />
+      <rect x={cx - 11} y={cy + 23} width={9} height={5} rx={2} fill="#252540" stroke={accentColor} strokeWidth="0.6" />
+      <rect x={cx + 2}  y={cy + 23} width={9} height={5} rx={2} fill="#252540" stroke={accentColor} strokeWidth="0.6" />
+      <CharacterBoard cx={cx} cy={cy} accentColor={accentColor} vibe={vibe} characterSeed={characterSeed} />
+      <CharacterBody cx={cx} cy={cy} accentColor={accentColor} style={style} />
+      <StoragePack cx={cx} cy={cy} accentColor={accentColor} packStyle={storagePackStyle} />
+      <CharacterHead cx={cx} cy={cy} accentColor={accentColor} archetype={archetype} />
       <ellipse cx={cx} cy={cy + 10} rx={14} ry={20} fill={accentColor} fillOpacity="0.04" />
     </g>
   );
 }
 
-interface RarityFrameProps {
-  width: number;
-  height: number;
-  rarity: string;
-  uid: string;
-  seed: string;
-}
+const RARITY_STARS: Record<string, number> = {
+  "Punch Skater": 1,
+  Apprentice: 2,
+  Master: 3,
+  Rare: 4,
+  Legendary: 5,
+};
 
-function RarityFrame({ width, height, rarity, uid, seed }: RarityFrameProps) {
-  if (rarity === "Legendary") {
-    // Deterministic particle sparks distributed near the four edges
-    const particles = Array.from({ length: 18 }, (_, i) => {
-      const side = Math.floor(seededVal(seed, 2000 + i * 3) * 4);
-      const pos  = seededVal(seed, 2001 + i * 3);
-      const off  = seededVal(seed, 2002 + i * 3) * 6 + 1;
-      let px: number, py: number;
-      if (side === 0)      { px = pos * width;        py = off; }
-      else if (side === 1) { px = width - off;         py = pos * height; }
-      else if (side === 2) { px = pos * width;         py = height - off; }
-      else                 { px = off;                 py = pos * height; }
-      return { x: px, y: py, r: 0.8 + seededVal(seed, 2050 + i) * 1.6, op: 0.45 + seededVal(seed, 2100 + i) * 0.55 };
-    });
-
-    // Corner ornament positions
-    const corners = [
-      { x: 2,          y: 2 },
-      { x: width - 10, y: 2 },
-      { x: 2,          y: height - 10 },
-      { x: width - 10, y: height - 10 },
-    ];
-
-    return (
-      <>
-        <defs>
-          <filter id={`${uid}_goldGlow`} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-          <filter id={`${uid}_sparkGlow`} x="-150%" y="-150%" width="400%" height="400%">
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-
-        {/* Outer glow border */}
-        <rect x={2} y={2} width={width - 4} height={height - 4} rx={4}
-          fill="none" stroke="#ffaa00" strokeWidth="1.5" strokeOpacity="0.6"
-          filter={`url(#${uid}_goldGlow)`} />
-        {/* Inner accent border */}
-        <rect x={4} y={4} width={width - 8} height={height - 8} rx={3}
-          fill="none" stroke="#ffaa00" strokeWidth="0.5" strokeOpacity="0.35" />
-
-        {/* Corner ornaments */}
-        {corners.map((c, i) => (
-          <rect key={i} x={c.x} y={c.y} width={8} height={8} rx={1}
-            fill="#ffaa00" fillOpacity="0.15" stroke="#ffaa00" strokeWidth="0.6" strokeOpacity="0.55" />
-        ))}
-
-        {/* Particle sparks */}
-        {particles.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={p.r}
-            fill="#ffaa00" fillOpacity={p.op}
-            filter={`url(#${uid}_sparkGlow)`} />
-        ))}
-      </>
-    );
-  }
-  if (rarity === "Rare") {
-    return (
-      <>
-        <defs>
-          <filter id={`${uid}_blueGlow`} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-        <rect x={2} y={2} width={width - 4} height={height - 4} rx={4}
-          fill="none" stroke="#4488ff" strokeWidth="1" strokeOpacity="0.5"
-          filter={`url(#${uid}_blueGlow)`} />
-      </>
-    );
-  }
-  return null;
-}
-
-interface StyleVibeOverlayProps {
-  width: number;
-  height: number;
-  styleVibe: string;
-  seed: string;
-  uid: string;
-}
-
-function StyleVibeOverlay({ width, height, styleVibe, seed, uid }: StyleVibeOverlayProps) {
-  if (styleVibe === "Chrome") {
-    // Thin horizontal and vertical chrome grid lines
-    const hLines = Array.from({ length: 9 }, (_, i) => (i + 1) / 10);
-    const vLines = Array.from({ length: 6 }, (_, i) => (i + 1) / 7);
-
-    // Specular highlight bands (deterministic placement)
-    const bands = Array.from({ length: 3 }, (_, i) => ({
-      x: (0.15 + seededVal(seed, 3000 + i) * 0.7) * width - 8,
-      op: 0.04 + seededVal(seed, 3010 + i) * 0.05,
-    }));
-
-    return (
-      <>
-        <defs>
-          <linearGradient id={`${uid}_chromeSheen`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%"   stopColor="#aaddff" stopOpacity="0" />
-            <stop offset="50%"  stopColor="#aaddff" stopOpacity="0.09" />
-            <stop offset="100%" stopColor="#aaddff" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id={`${uid}_chromeBand`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stopColor="#cceeFF" stopOpacity="0" />
-            <stop offset="50%"  stopColor="#cceeff" stopOpacity="1" />
-            <stop offset="100%" stopColor="#cceeFF" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        {/* Metallic grid */}
-        {hLines.map((t, i) => (
-          <line key={`ch-h${i}`}
-            x1={0} y1={t * height} x2={width} y2={t * height}
-            stroke="#88ccff" strokeWidth="0.3" strokeOpacity="0.1" />
-        ))}
-        {vLines.map((t, i) => (
-          <line key={`ch-v${i}`}
-            x1={t * width} y1={0} x2={t * width} y2={height}
-            stroke="#88ccff" strokeWidth="0.3" strokeOpacity="0.08" />
-        ))}
-
-        {/* Diagonal accent lines (chrome "brushed metal" look) */}
-        {Array.from({ length: 5 }, (_, i) => {
-          const ox = seededVal(seed, 3020 + i) * width;
-          return (
-            <line key={`ch-d${i}`}
-              x1={ox} y1={0} x2={ox - height * 0.4} y2={height}
-              stroke="#88ccff" strokeWidth="0.4"
-              strokeOpacity={0.06 + seededVal(seed, 3030 + i) * 0.06} />
-          );
-        })}
-
-        {/* Specular highlight bands */}
-        {bands.map((b, i) => (
-          <rect key={i} x={b.x} y={0} width={16} height={height}
-            fill={`url(#${uid}_chromeBand)`} opacity={b.op} />
-        ))}
-
-        {/* Full-card chrome sheen */}
-        <rect width={width} height={height} fill={`url(#${uid}_chromeSheen)`} />
-      </>
-    );
-  }
-
-  if (styleVibe === "Underground") {
-    // Scratch marks — thin white lines at random angles
-    const scratches = Array.from({ length: 14 }, (_, i) => ({
-      x1:  seededVal(seed, 4000 + i * 4)     * width,
-      y1:  seededVal(seed, 4001 + i * 4)     * height,
-      dx: (seededVal(seed, 4002 + i * 4) - 0.5) * 50,
-      dy: (seededVal(seed, 4003 + i * 4) - 0.5) * 25,
-      op:  0.07 + seededVal(seed, 4100 + i) * 0.09,
-    }));
-
-    // Spray-paint splatter dots
-    const splatters = Array.from({ length: 8 }, (_, i) => ({
-      cx: seededVal(seed, 4200 + i * 3)     * width,
-      cy: seededVal(seed, 4201 + i * 3)     * height,
-      r:  2 + seededVal(seed, 4202 + i * 3) * 7,
-      op: 0.04 + seededVal(seed, 4300 + i) * 0.07,
-    }));
-
-    // Crosshatch cluster (concentrated in one corner)
-    const hatchOriginX = seededVal(seed, 4400) * width  * 0.5;
-    const hatchOriginY = seededVal(seed, 4401) * height * 0.5;
-    const hatches = Array.from({ length: 8 }, (_, i) => ({
-      x1: hatchOriginX + i * 4,
-      y1: hatchOriginY,
-      x2: hatchOriginX + i * 4 - 12,
-      y2: hatchOriginY + 20,
-      op: 0.08 + seededVal(seed, 4410 + i) * 0.07,
-    }));
-
-    return (
-      <>
-        {/* Scratch marks */}
-        {scratches.map((s, i) => (
-          <line key={`ug-s${i}`}
-            x1={s.x1} y1={s.y1} x2={s.x1 + s.dx} y2={s.y1 + s.dy}
-            stroke="white" strokeWidth="0.5" strokeOpacity={s.op}
-            strokeLinecap="round" />
-        ))}
-
-        {/* Spray splatters */}
-        {splatters.map((s, i) => (
-          <circle key={`ug-sp${i}`}
-            cx={s.cx} cy={s.cy} r={s.r}
-            fill="white" fillOpacity={s.op} />
-        ))}
-
-        {/* Crosshatch cluster */}
-        {hatches.map((h, i) => (
-          <line key={`ug-hx${i}`}
-            x1={h.x1} y1={h.y1} x2={h.x2} y2={h.y2}
-            stroke="white" strokeWidth="0.5" strokeOpacity={h.op} />
-        ))}
-      </>
-    );
-  }
-
-  return null;
-}
+const RARITY_STAR_COLOR: Record<string, string> = {
+  "Punch Skater": "#aa9988",
+  Apprentice:     "#44ddaa",
+  Master:         "#cc44ff",
+  Rare:           "#4488ff",
+  Legendary:      "#ffaa00",
+};
 
 export function CardArt({ card, width = 200, height = 140 }: CardArtProps) {
-  const accent        = card.visuals.accentColor || "#00ff88";
-  const districtColor = DISTRICT_COLORS[card.prompts.district] || accent;
-  const stars         = RARITY_STARS[card.prompts.rarity] || 1;
-  const isLegendary   = card.prompts.rarity === "Legendary";
-  const starColor     = isLegendary ? "#ffaa00" : accent;
-
-  // Stable UID from card id (strip non-alphanumeric, cap length)
-  const uid = card.id.replace(/[^a-z0-9]/gi, "").slice(0, 16) || "ca";
+  const accent    = card.visuals.accentColor || "#00ff88";
+  const stars     = RARITY_STARS[card.prompts.rarity] || 1;
+  const starColor = RARITY_STAR_COLOR[card.prompts.rarity] || accent;
+  const uid       = card.id.replace(/[^a-z0-9]/gi, "").slice(0, 16) || "ca";
 
   return (
     <svg
@@ -661,54 +995,46 @@ export function CardArt({ card, width = 200, height = 140 }: CardArtProps) {
       style={{ display: "block" }}
       aria-label={`Card art for ${card.identity.name}`}
     >
-      <CityscapeBackground
+      <CardBackground
         width={width}
         height={height}
-        districtColor={districtColor}
-        seed={card.seed}
+        district={card.prompts.district}
+        backgroundSeed={card.backgroundSeed}
         uid={uid}
       />
-      <StyleVibeOverlay
-        width={width}
-        height={height}
-        styleVibe={card.prompts.styleVibe}
-        seed={card.seed}
-        uid={uid}
-      />
-      <CourierFigure
+      <CardCharacter
         cx={width / 2}
         cy={height * 0.55}
         accentColor={accent}
-        jacketStyle={card.visuals.jacketStyle}
-        boardStyle={card.visuals.boardStyle}
-        helmetStyle={card.visuals.helmetStyle}
+        archetype={card.prompts.archetype}
+        style={card.prompts.style}
+        vibe={card.prompts.vibe}
+        storagePackStyle={card.visuals.storagePackStyle}
+        characterSeed={card.characterSeed}
       />
-      <RarityFrame width={width} height={height} rarity={card.prompts.rarity} uid={uid} seed={card.seed} />
-      {/* Rarity stars */}
+      <CardFrame
+        width={width}
+        height={height}
+        rarity={card.prompts.rarity}
+        frameSeed={card.frameSeed}
+        uid={uid}
+      />
       {Array.from({ length: stars }).map((_, i) => (
         <polygon
           key={i}
           points="0,-5 1.5,-1.5 5,-1.5 2.5,1 3.5,5 0,2.5 -3.5,5 -2.5,1 -5,-1.5 -1.5,-1.5"
           fill={starColor}
-          fillOpacity={isLegendary ? 1 : 0.9}
+          fillOpacity={card.prompts.rarity === "Legendary" ? 1 : 0.9}
           transform={`translate(${width / 2 - (stars - 1) * 7 + i * 14}, 12)`}
         />
       ))}
-      {/* District label */}
-      <text
-        x={width - 4}
-        y={height - 4}
-        textAnchor="end"
-        fontSize="6"
-        fill={districtColor}
-        fontFamily="monospace"
-        fillOpacity="0.8"
-      >
+      <text x={width - 4} y={height - 4} textAnchor="end" fontSize="6"
+        fill={accent} fontFamily="monospace" fillOpacity="0.8">
         {card.prompts.district}
       </text>
-      {/* Archetype badge */}
-      <rect x={2} y={2} width={40} height={12} rx={3} fill={accent} fillOpacity="0.2" stroke={accent} strokeWidth="0.5" />
-      <text x={22} y={11} textAnchor="middle" fontSize="7" fill={accent} fontFamily="monospace">
+      <rect x={2} y={2} width={44} height={12} rx={3}
+        fill={accent} fillOpacity="0.2" stroke={accent} strokeWidth="0.5" />
+      <text x={24} y={11} textAnchor="middle" fontSize="7" fill={accent} fontFamily="monospace">
         {card.prompts.archetype.toUpperCase()}
       </text>
     </svg>
