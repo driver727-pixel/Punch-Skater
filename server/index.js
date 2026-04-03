@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { route } from '@fal-ai/server-proxy/express';
+import { handler } from '@fal-ai/server-proxy/express';
 import 'dotenv/config';
 
 const app = express();
@@ -11,7 +11,7 @@ app.use(cors({
 }));
 
 // This automatically handles all /api/fal/* requests and attaches your key
-app.all('/api/fal/*', route);
+app.all('/api/fal/*', handler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
