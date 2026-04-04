@@ -1,10 +1,15 @@
 import { Component, ReactNode } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
 import { Nav } from "./components/Nav";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { CardForge } from "./pages/CardForge";
 import { Collection } from "./pages/Collection";
 import { DeckBuilder } from "./pages/DeckBuilder";
+import { EditCard } from "./pages/EditCard";
+import { Trades } from "./pages/Trades";
+import { Login } from "./pages/Login";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -29,20 +34,33 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 function App() {
   return (
     <BrowserRouter>
-      <TierProvider>
-        <ErrorBoundary>
-          <div className="app">
-            <Nav />
-            <main className="main">
-              <Routes>
-                <Route path="/" element={<CardForge />} />
-                <Route path="/collection" element={<Collection />} />
-                <Route path="/decks" element={<DeckBuilder />} />
-              </Routes>
-            </main>
-          </div>
-        </ErrorBoundary>
-      </TierProvider>
+      <AuthProvider>
+        <TierProvider>
+          <ErrorBoundary>
+            <div className="app">
+              <Nav />
+              <main className="main">
+                <Routes>
+                  <Route path="/" element={<CardForge />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/collection" element={
+                    <ProtectedRoute><Collection /></ProtectedRoute>
+                  } />
+                  <Route path="/decks" element={
+                    <ProtectedRoute><DeckBuilder /></ProtectedRoute>
+                  } />
+                  <Route path="/edit/:cardId" element={
+                    <ProtectedRoute><EditCard /></ProtectedRoute>
+                  } />
+                  <Route path="/trades" element={
+                    <ProtectedRoute><Trades /></ProtectedRoute>
+                  } />
+                </Routes>
+              </main>
+            </div>
+          </ErrorBoundary>
+        </TierProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

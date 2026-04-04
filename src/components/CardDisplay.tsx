@@ -9,6 +9,7 @@ interface CardDisplayProps {
   compact?: boolean;
   onSave?: () => void;
   onRemove?: () => void;
+  onEdit?: () => void;
   isSaved?: boolean;
   showShare?: boolean;
   saveLabel?: string;
@@ -26,7 +27,7 @@ const RARITY_COLORS: Record<string, string> = {
   Legendary:      "#ffaa00",
 };
 
-export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved, showShare = false, saveLabel, imageUrl, imageLoading }: CardDisplayProps) {
+export function CardDisplay({ card, compact = false, onSave, onRemove, onEdit, isSaved, showShare = false, saveLabel, imageUrl, imageLoading }: CardDisplayProps) {
   const [sharing, setSharing] = useState(false);
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const accent = card.visuals.accentColor || "#00ff88";
@@ -134,6 +135,11 @@ export function CardDisplay({ card, compact = false, onSave, onRemove, isSaved, 
             disabled={isSaved}
           >
             {saveLabel ?? (isSaved ? "✓ Saved" : "Save to Collection")}
+          </button>
+        )}
+        {onEdit && (
+          <button className="btn-outline" onClick={onEdit}>
+            ✎ Edit
           </button>
         )}
         {showShare && (

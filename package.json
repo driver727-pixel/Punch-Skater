@@ -13,14 +13,15 @@
     "start": "node server/index.js"
   },
   "dependencies": {
+    "@fal-ai/server-proxy": "^1.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "firebase": "^12.11.0",
     "lucide-react": "^0.454.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.5.0",
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "@fal-ai/server-proxy": "^1.2.1",
-    "dotenv": "^16.0.3"
+    "react-router-dom": "^7.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

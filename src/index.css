@@ -640,3 +640,253 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   border-radius: 4px;
   background: rgba(255,68,68,0.08);
 }
+
+/* ===== Nav Badge & User Menu ===== */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: bold;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.user-menu-wrap { position: relative; }
+
+.user-avatar-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,255,136,0.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 14px;
+  font-family: var(--font);
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.user-avatar-btn:hover { background: rgba(0,255,136,0.28); }
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 200px;
+  z-index: 500;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.user-dropdown-email {
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  word-break: break-all;
+}
+.user-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.user-dropdown-item:hover { background: var(--bg3); }
+
+/* ===== Login Page ===== */
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+}
+.login-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.login-logo { font-size: 36px; margin-bottom: 4px; }
+.login-title { font-size: 22px; color: var(--accent); letter-spacing: 3px; font-weight: bold; }
+.login-subtitle { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 16px; }
+
+.login-tabs {
+  display: flex;
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.login-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.login-tab--active { background: var(--bg2); color: var(--accent); }
+
+.login-form { width: 100%; display: flex; flex-direction: column; gap: 0; }
+.login-error { font-size: 12px; color: var(--danger); margin: 4px 0; }
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 16px 0;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.login-divider span { margin: 0 10px; }
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-google:hover:not(:disabled) { background: #f5f5f5; }
+.btn-google:disabled { opacity: 0.5; cursor: default; }
+
+.login-guest { margin-top: 12px; font-size: 12px; color: var(--text-dim); }
+.login-guest-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent2);
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ===== Trades Page ===== */
+.trades-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+  margin-bottom: 24px;
+}
+.trade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 5px;
+}
+.trades-list { display: flex; flex-direction: column; gap: 12px; }
+.trade-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.trade-info { flex: 1; min-width: 0; }
+.trade-card-name { font-size: 14px; font-weight: bold; color: var(--text); }
+.trade-card-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.trade-from { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+.trade-actions-row { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.trade-status { font-size: 11px; letter-spacing: 1px; font-weight: bold; }
+
+/* ===== Trade Modal ===== */
+.trade-card-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.trade-pick-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 4px;
+  transition: border-color 0.15s;
+}
+.trade-pick-thumb:hover { border-color: var(--accent); }
+.trade-pick-thumb--active { border-color: var(--accent2); }
+.trade-pick-name { font-size: 10px; color: var(--text-dim); max-width: 84px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trade-selected-info { font-size: 12px; color: var(--text); padding: 8px 0; }
+
+/* ===== Migration Banner ===== */
+.migration-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text);
+  flex-wrap: wrap;
+}
+.migration-actions { display: flex; gap: 8px; flex-shrink: 0; }
