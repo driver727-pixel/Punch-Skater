@@ -597,8 +597,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 .share-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ===== AI Image Art ===== */
-.card-art-image { display: block; width: 160px; height: 112px; object-fit: cover; border-radius: 4px; }
-.card-art-image--full { width: 200px; height: 140px; border-radius: 6px; }
+.card-art-image { display: block; width: 112px; height: 160px; object-fit: cover; border-radius: 4px; }
+.card-art-image--full { width: 140px; height: 200px; border-radius: 6px; }
 
 /* Skeleton loader shown while AI image is being fetched */
 @keyframes shimmer {
@@ -615,8 +615,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   letter-spacing: 1px;
 }
 .card-art-skeleton {
-  width: 160px;
-  height: 112px;
+  width: 112px;
+  height: 160px;
   border-radius: 4px;
   background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
   background-size: 800px 100%;
@@ -626,8 +626,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   justify-content: center;
 }
 .card-art-skeleton--full {
-  width: 200px;
-  height: 140px;
+  width: 140px;
+  height: 200px;
   border-radius: 6px;
   flex-direction: column;
   gap: 6px;
