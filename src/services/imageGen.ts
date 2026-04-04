@@ -2,18 +2,19 @@ import { hashSeedToInt } from "../utils/hash";
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 //
-// Set the following in your .env file (never commit real keys):
-//
+// OPTION A — Direct access (simplest for local dev, exposes key to browser):
 //   VITE_FAL_KEY=your_fal_ai_key_here
 //
-// To route through the backend proxy instead (recommended for production),
-// point VITE_IMAGE_API_URL at the full proxy endpoint, e.g.:
+// OPTION B — Backend proxy (recommended for production):
+//   1. Deploy server/index.js to any Node.js host (Render, Railway, etc.)
+//      and set the FAL_KEY env var on that host.
+//   2. Point VITE_IMAGE_API_URL at the deployed proxy endpoint, e.g.:
+//        VITE_IMAGE_API_URL=https://your-server.onrender.com/api/generate-image
 //
-//   server/index.js  (@fal-ai/server-proxy):
-//     VITE_IMAGE_API_URL=https://your-server.onrender.com/api/fal/fal-ai/flux/dev
-//
-//   server/proxy.ts  (manual proxy):
-//     VITE_IMAGE_API_URL=https://your-server.onrender.com/api/generate-image
+//   For local development, start the proxy with `npm start` (port 3001) and
+//   set:  VITE_IMAGE_API_URL=/api/generate-image
+//   The Vite dev server proxy (configured in vite.config.ts) will forward
+//   /api/* requests to localhost:3001.
 //
 // When VITE_IMAGE_API_URL is set the Authorization header is omitted because
 // the proxy adds it server-side.
