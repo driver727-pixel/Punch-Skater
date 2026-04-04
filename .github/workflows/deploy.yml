@@ -28,6 +28,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_FAL_KEY: ${{ secrets.VITE_FAL_KEY }}
+          VITE_IMAGE_API_URL: ${{ secrets.VITE_IMAGE_API_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
