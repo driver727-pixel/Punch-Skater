@@ -18,11 +18,9 @@ import { hashSeedToInt } from "../utils/hash";
 // When VITE_IMAGE_API_URL is set the Authorization header is omitted because
 // the proxy adds it server-side.
 
-const API_URL =
-  (import.meta.env.VITE_IMAGE_API_URL as string | undefined) ??
-  "https://fal.run/fal-ai/flux/dev";
-
-const FAL_KEY = import.meta.env.VITE_FAL_KEY as string | undefined;
+const PROXY_API_URL = (import.meta.env.VITE_IMAGE_API_URL as string | undefined)?.trim();
+const API_URL = PROXY_API_URL || "https://fal.run/fal-ai/flux/dev";
+const FAL_KEY = (import.meta.env.VITE_FAL_KEY as string | undefined)?.trim();
 
 // ── Generation parameters ──────────────────────────────────────────────────────
 // Adjust these to trade off quality vs. generation speed.
@@ -59,7 +57,13 @@ export async function generateImage(
   // Build headers — omit Authorization when routing through the backend proxy
   // (the proxy adds the key server-side to keep it off the client).
   const headers: HeadersInit = { "Content-Type": "application/json" };
-  const usingProxy = Boolean(import.meta.env.VITE_IMAGE_API_URL);
+  const usingProxy = Boolean(PROXY_API_URL);
+  if (!usingProxy && !FAL_KEY) {
+    throw new Error(
+      "Image generation is not configured. Set VITE_FAL_KEY for direct Fal.ai access or VITE_IMAGE_API_URL to route requests through a proxy.",
+    );
+  }
+
   if (!usingProxy && FAL_KEY) {
     headers["Authorization"] = `Key ${FAL_KEY}`;
   }
@@ -84,8 +88,14 @@ export async function generateImage(
     } catch {
       // ignore parse errors for the error body
     }
+    const authHint =
+      response.status === 401
+        ? usingProxy
+          ? " Check that the proxy server has a valid FAL_KEY configured."
+          : " Check that VITE_FAL_KEY is set, or configure VITE_IMAGE_API_URL to use an authenticated proxy."
+        : "";
     throw new Error(
-      `Image generation failed: ${response.status} ${response.statusText}${detail ? ` — ${detail}` : ""}`,
+      `Image generation failed: ${response.status} ${response.statusText}${detail ? ` — ${detail}` : ""}${authHint}`,
     );
   }
 
