@@ -31,7 +31,7 @@ const ARCHETYPE_HINTS: Record<Archetype, string> = {
   "Hacker":      "💻 Tech specialist — high Tech & Rep. Cracks any system, reads every sensor, owns the grid.",
   "Chef":        "👨‍🍳 Underground food courier — apron, chef hat, pot or pan. Balanced stats with a Speed bonus.",
   "Olympic":     "🏅 High-performance athlete — high Rep & Speed. Coordinated team apparel, premium fabrics, clean professional look.",
-  "Fash":        "🎩 Sharp-dressed enforcer — very high Rep. Neck tie, jacket, lapels, coat-of-arms insignia. Upper-class prep-school energy.",
+  "Fash":        "🎩 Sharp-dressed enforcer — very high Rep. Necktie, jacket, lapels, coat-of-arms insignia. Upper-class prep-school energy.",
 };
 
 const RARITY_HINTS: Record<Rarity, string> = {
