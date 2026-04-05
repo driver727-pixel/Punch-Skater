@@ -99,9 +99,9 @@ export function CardForge() {
 
     const { frameSeed, backgroundSeed, characterSeed } = card;
 
-    // The character prompt includes district-specific bag visuals, so the
-    // effective character cache key combines characterSeed with district.
-    const charCacheKey = `${characterSeed}|${latestPrompts.district}`;
+    // Character layer cache key is based on characterSeed alone (no district)
+    // so the character image stays untouched when only the district changes.
+    const charCacheKey = characterSeed;
 
     // Determine which layers are stale
     const needsBackground = backgroundSeed !== lastSeedsRef.current.background;
@@ -203,7 +203,7 @@ export function CardForge() {
     // Reset only the URLs for stale layers so the UI shows loading skeletons
     // for the changing layers while keeping the others intact.
     const { frameSeed, backgroundSeed, characterSeed } = buildSeed(prompts);
-    const charCacheKey = `${characterSeed}|${prompts.district}`;
+    const charCacheKey = characterSeed;
     if (backgroundSeed !== lastSeedsRef.current.background) {
       setLayerUrls((prev) => ({ ...prev, background: null }));
     }
@@ -234,9 +234,20 @@ export function CardForge() {
     setGenerated(card);
     hasGeneratedRef.current = true;
 
-    // Reset all layers and regenerate immediately
-    setLayerUrls({ background: null, character: null, frame: null });
-    lastSeedsRef.current = { background: null, character: null, frame: null };
+    // Only reset the URL for each layer whose underlying seed has changed
+    // (or hasn't been generated yet).  Unchanged layers keep their current
+    // image so the user sees a smooth, targeted update rather than a full
+    // refresh of everything.
+    const { frameSeed, backgroundSeed, characterSeed } = card;
+    if (backgroundSeed !== lastSeedsRef.current.background) {
+      setLayerUrls((prev) => ({ ...prev, background: null }));
+    }
+    if (characterSeed !== lastSeedsRef.current.character) {
+      setLayerUrls((prev) => ({ ...prev, character: null }));
+    }
+    if (frameSeed !== lastSeedsRef.current.frame) {
+      setLayerUrls((prev) => ({ ...prev, frame: null }));
+    }
 
     fetchLayers(card, prompts);
   };
