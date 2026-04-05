@@ -112,23 +112,29 @@ export function buildSeed(prompts: CardPrompts): {
 export function generateCard(prompts: CardPrompts): CardPayload {
   const { frameSeed, backgroundSeed, characterSeed, masterSeed } = buildSeed(prompts);
 
-  // Use master seed for identity / stat generation so the full card is still reproducible
-  const rng = createSeededRandom(masterSeed);
+  // Character-specific properties (name, traits, visuals) are seeded by
+  // characterSeed so they remain stable when only district or rarity changes.
+  const charRng = createSeededRandom(characterSeed);
 
-  const firstName = rng.pick(FIRST_NAMES);
-  const lastName = rng.pick(LAST_NAMES);
-  const crew = rng.pick(CREWS);
-  const manufacturer = rng.pick(MANUFACTURERS);
+  const firstName = charRng.pick(FIRST_NAMES);
+  const lastName = charRng.pick(LAST_NAMES);
+  const crew = charRng.pick(CREWS);
+  const manufacturer = charRng.pick(MANUFACTURERS);
 
-  const serialSuffix = String(seedFromString(masterSeed) % 10000).padStart(4, "0");
+  // Serial suffix is stable across district/rarity changes; only the district
+  // prefix updates to reflect where the courier is currently operating.
+  const serialSuffix = String(Math.abs(seedFromString(characterSeed)) % 10000).padStart(4, "0");
   const districtCode = prompts.district.replace(/\s/g, "").slice(0, 2).toUpperCase();
   const serialNumber = `${districtCode}-${new Date().getFullYear()}-${serialSuffix}`;
 
   const bias = ARCHETYPE_BIAS[prompts.archetype] || {};
   const mult = RARITY_MULTIPLIERS[prompts.rarity] || 1.0;
 
+  // Stats are derived from the character seed so they don't change when only
+  // district changes; the rarity multiplier is still applied deterministically,
+  // so raising rarity still increases stats.
   const rawStat = (key: string) =>
-    clamp(Math.round((rng.range(3, 8) + (bias[key] || 0)) * mult), 1, 10);
+    clamp(Math.round((charRng.range(3, 8) + (bias[key] || 0)) * mult), 1, 10);
 
   const stats = {
     speed: rawStat("speed"),
@@ -139,15 +145,15 @@ export function generateCard(prompts: CardPrompts): CardPayload {
     stamina: clamp(prompts.stamina, 1, 10),
   };
 
-  const personalityTags = rng.pickN(PERSONALITY_TAGS, 3);
-  const passiveTrait = rng.pick(PASSIVE_TRAITS);
-  const activeAbility = rng.pick(ACTIVE_ABILITIES);
-  const flavorText = rng.pick(FLAVOR_TEXTS);
+  const personalityTags = charRng.pickN(PERSONALITY_TAGS, 3);
+  const passiveTrait = charRng.pick(PASSIVE_TRAITS);
+  const activeAbility = charRng.pick(ACTIVE_ABILITIES);
+  const flavorText = charRng.pick(FLAVOR_TEXTS);
 
-  const helmetStyle = rng.pick(HELMET_STYLES);
-  const boardStyle = rng.pick(BOARD_STYLES);
-  const jacketStyle = rng.pick(JACKET_STYLES);
-  const colorScheme = rng.pick(COLOR_SCHEMES);
+  const helmetStyle = charRng.pick(HELMET_STYLES);
+  const boardStyle = charRng.pick(BOARD_STYLES);
+  const jacketStyle = charRng.pick(JACKET_STYLES);
+  const colorScheme = charRng.pick(COLOR_SCHEMES);
   const storagePackStyle = storagePackFromStamina(prompts.stamina);
 
   const tags = [

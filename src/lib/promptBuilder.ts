@@ -110,12 +110,28 @@ const DISTRICT_BAG_DESCRIPTIONS: Record<string, string[]> = {
 
 // ── Internal helpers ───────────────────────────────────────────────────────────
 
+/**
+ * Generic bag description keyed only by stamina tier.
+ * Used in the character-layer prompt so that the character image is independent
+ * of the district (changing district only regenerates the background layer).
+ */
+const STAMINA_BAG_DESCRIPTIONS: string[] = [
+  "a small courier pouch",
+  "a standard backpack",
+  "a large cargo box",
+  "a heavy duffel bag",
+];
+
+function characterBagDescription(stamina: number): string {
+  const tier = stamina <= 2 ? 0 : stamina <= 5 ? 1 : stamina <= 8 ? 2 : 3;
+  return STAMINA_BAG_DESCRIPTIONS[tier];
+}
+
+/** District-specific bag used by the legacy single-image prompt only. */
 function bagDescription(district: string, stamina: number): string {
   const tier = stamina <= 2 ? 0 : stamina <= 5 ? 1 : stamina <= 8 ? 2 : 3;
   const list: string[] | undefined = DISTRICT_BAG_DESCRIPTIONS[district];
-  return list
-    ? list[tier]
-    : ["a small courier pouch", "a standard backpack", "a large cargo box", "a heavy duffel bag"][tier];
+  return list ? list[tier] : STAMINA_BAG_DESCRIPTIONS[tier];
 }
 
 function staminaState(stamina: number): string {
@@ -149,22 +165,23 @@ export function buildBackgroundPrompt(district: District): string {
  *
  * The character is rendered against a plain white background so it can be
  * composited over the background layer using CSS mix-blend-mode: multiply.
- * The bag/package is district-specific so changing the district also updates
- * which type of bag the courier carries.
- * Changing archetype, style, vibe, stamina, or district regenerates this layer.
+ * The bag/package description is based on stamina alone — it does NOT depend
+ * on the district, so the character layer is only regenerated when archetype,
+ * style, vibe, or stamina changes (matching the `characterSeed` cache key).
+ * Changing district or rarity leaves this layer untouched.
  */
 export function buildCharacterPrompt(prompts: CardPrompts): string {
-  const clothing = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
-  const pose     = ARCHETYPE_POSES[prompts.archetype] ?? prompts.archetype;
-  const board    = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
-  const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
-  const bag      = bagDescription(prompts.district, prompts.stamina);
-  const state    = staminaState(prompts.stamina);
+  const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
+  const pose      = ARCHETYPE_POSES[prompts.archetype] ?? prompts.archetype;
+  const board     = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
+  const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
+  const bagDesc   = characterBagDescription(prompts.stamina);
+  const state     = staminaState(prompts.stamina);
 
   return (
     `Full-body portrait of a ${prompts.archetype} skater courier, ` +
     `wearing ${clothing}, ${pose}, ` +
-    `carrying ${bag}, riding ${board} skateboard. ` +
+    `carrying ${bagDesc}, riding ${board} skateboard. ` +
     `Character is ${state}. ` +
     `Mood: ${mood}. ` +
     `Isolated on a plain white background, full figure visible from head to toe, centred. ` +
