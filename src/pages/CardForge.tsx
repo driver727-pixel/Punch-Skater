@@ -5,6 +5,7 @@ import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from ".
 import { generateImage, removeBackground, isImageGenConfigured } from "../services/imageGen";
 import { getCachedImage, setCachedImage } from "../services/imageCache";
 import { CardDisplay } from "../components/CardDisplay";
+import { ShareModal } from "../components/ShareModal";
 import { useCollection } from "../hooks/useCollection";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
@@ -110,6 +111,7 @@ export function CardForge() {
 
   // 0–1 opacity applied to the character layer (1 = fully opaque / solid portrait).
   const [characterBlend, setCharacterBlend] = useState(1);
+  const [sharing, setSharing] = useState(false);
 
   // Track the seed used to generate each layer so we can skip unchanged layers.
   const lastSeedsRef = useRef<LayerSeeds>({
@@ -540,19 +542,29 @@ export function CardForge() {
           )}
           {generated ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", width: "100%" }}>
-              <CardDisplay
-                card={generated}
-                onSave={handleSave}
-                isSaved={saveBtnDisabled || (!canSave) || atLimit}
-                saveLabel={saveLabel()}
-                showShare={true}
-                backgroundImageUrl={layerUrls.background ?? undefined}
-                characterImageUrl={layerUrls.character  ?? undefined}
-                frameImageUrl={layerUrls.frame          ?? undefined}
-                layerLoading={layerLoading}
-                imageLoading={anyLayerLoading}
-                characterBlend={characterBlend}
-              />
+              <div className="forge-card-wrapper">
+                <div className="forge-card-side">
+                  <button
+                    className="btn-primary"
+                    onClick={handleSave}
+                    disabled={saveBtnDisabled || (!canSave) || atLimit}
+                  >
+                    {saveLabel()}
+                  </button>
+                  <button className="btn-outline" onClick={() => setSharing(true)}>
+                    ↗ Share
+                  </button>
+                </div>
+                <CardDisplay
+                  card={generated}
+                  backgroundImageUrl={layerUrls.background ?? undefined}
+                  characterImageUrl={layerUrls.character  ?? undefined}
+                  frameImageUrl={layerUrls.frame          ?? undefined}
+                  layerLoading={layerLoading}
+                  imageLoading={anyLayerLoading}
+                  characterBlend={characterBlend}
+                />
+              </div>
               {isImageGenConfigured && layerUrls.character && (
                 <div className="blend-control">
                   <span className="blend-control__label">
@@ -578,6 +590,7 @@ export function CardForge() {
           )}
         </div>
       </div>
+      {sharing && generated && <ShareModal card={generated} onClose={() => setSharing(false)} />}
     </div>
   );
 }
