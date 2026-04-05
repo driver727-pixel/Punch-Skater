@@ -9,17 +9,53 @@ import { useCollection } from "../hooks/useCollection";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
 
-const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef"];
+const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Olympic", "Fash"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union"];
-const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic"];
-const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville"];
+const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
+const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "Glass City"];
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff00aa", "#ffaa00", "#8b5cf6", "#ff4444", "#44ffff"];
 
 const DISTRICT_HINTS: Record<District, string> = {
-  Airaway:      "☁️ Floating City in the Clouds",
-  Nightshade:   "🌆 Cyberpunk Megalopolis",
-  Batteryville: "🌵 Off-grid Solar/Wind Camp",
+  Airaway:      "☁️ Floating sky-city above the clouds — levitating platforms & glass sky-bridges",
+  Nightshade:   "🌑 Underground subway labyrinth (aka The Murk) — neon skateboards, blacklight murals & subterranean communes",
+  Batteryville: "🌵 Off-grid desert compound — solar arrays, wind turbines & salvaged-tech markets",
+  "The Grid":   "⚙️ Diesel-punk industrial wasteland — defunct refineries & oil derricks controlled by rival Marxist factions",
+  "Glass City": "🏙️ Cyberpunk neon megalopolis — glass skyscrapers & decayed roads where only electric skateboarders rule",
+};
+
+const ARCHETYPE_HINTS: Record<Archetype, string> = {
+  "Ninja":       "⚔️ Swift stealth courier — high Speed & Stealth. Silent, shadow-walking, disappears in the dark.",
+  "Punk Rocker": "🎸 Rebel street performer — high Grit & Rep. Loud, defiant, and impossible to ignore.",
+  "Ex Military": "🪖 Tactical veteran — high Grit with balanced stats. Disciplined, armoured, mission-focused.",
+  "Hacker":      "💻 Tech specialist — high Tech & Rep. Cracks any system, reads every sensor, owns the grid.",
+  "Chef":        "👨‍🍳 Underground food courier — apron, chef hat, pot or pan. Balanced stats with a Speed bonus.",
+  "Olympic":     "🏅 High-performance athlete — high Rep & Speed. Coordinated team apparel, premium fabrics, clean professional look.",
+  "Fash":        "🎩 Sharp-dressed enforcer — very high Rep. Necktie, jacket, lapels, coat-of-arms insignia. Upper-class prep-school energy.",
+};
+
+const RARITY_HINTS: Record<Rarity, string> = {
+  "Punch Skater": "🛹 Common — gritty, low-budget courier just starting out",
+  "Apprentice":   "⚡ Uncommon — energetic and hopeful, learning the ropes",
+  "Master":       "🌟 Skilled — confident and polished, respected on every route",
+  "Rare":         "💎 Rare — dynamic and striking, a legend in the making",
+  "Legendary":    "🔱 Legendary — epic, otherworldly, the stuff of courier myth",
+};
+
+const STYLE_HINTS: Record<Style, string> = {
+  Corporate:  "👔 Sleek suit & high-tech earpiece — fits right into Corporate zones",
+  Street:     "🧢 Hoodie & cargo pants with graffiti patches — versatile urban style",
+  "Off-grid": "🪓 Survivalist gear & utility belts — built for the wilderness",
+  Military:   "🪖 Tactical fatigues & body armour — combat-ready at all times",
+  Union:      "🔧 Worker overalls covered in solidarity badge patches",
+};
+
+const VIBE_HINTS: Record<Vibe, string> = {
+  Grunge:   "🔩 Worn & weathered — battle-scarred board with duct-tape repairs",
+  Neon:     "💡 Glowing neon — lights up the dark, visible from a mile away",
+  Chrome:   "✨ Sleek chrome finish — mirror-polished, blinding reflections",
+  Plastic:  "🎨 Bright colourful plastic — loud, playful, and hard to miss",
+  Recycled: "♻️ Tattered DIY junk build — repurposed scrap and leftover materials, very punk",
 };
 
 // ── Layer state helpers ────────────────────────────────────────────────────────
@@ -315,11 +351,13 @@ export function CardForge() {
                   key={a}
                   className={`pill ${prompts.archetype === a ? "selected" : ""}`}
                   onClick={() => set("archetype", a)}
+                  title={ARCHETYPE_HINTS[a]}
                 >
                   {a}
                 </button>
               ))}
             </div>
+            <p className="form-hint">{ARCHETYPE_HINTS[prompts.archetype]}</p>
           </div>
 
           <div className="form-group">
@@ -330,11 +368,13 @@ export function CardForge() {
                   key={r}
                   className={`pill ${prompts.rarity === r ? "selected" : ""}`}
                   onClick={() => set("rarity", r)}
+                  title={RARITY_HINTS[r]}
                 >
                   {r}
                 </button>
               ))}
             </div>
+            <p className="form-hint">{RARITY_HINTS[prompts.rarity]}</p>
           </div>
 
           <div className="form-group">
@@ -345,11 +385,13 @@ export function CardForge() {
                   key={s}
                   className={`pill ${prompts.style === s ? "selected" : ""}`}
                   onClick={() => set("style", s)}
+                  title={STYLE_HINTS[s]}
                 >
                   {s}
                 </button>
               ))}
             </div>
+            <p className="form-hint">{STYLE_HINTS[prompts.style]}</p>
           </div>
 
           <div className="form-group">
@@ -360,11 +402,14 @@ export function CardForge() {
                   key={v}
                   className={`pill ${prompts.vibe === v ? "selected" : ""}`}
                   onClick={() => set("vibe", v)}
+                  title={VIBE_HINTS[v]}
                 >
                   {v}
                 </button>
               ))}
             </div>
+            <p className="form-hint">{VIBE_HINTS[prompts.vibe]}</p>
+            <p className="form-hint form-hint--secondary">Vibe sets the look and finish of your electric skateboard.</p>
           </div>
 
           <div className="form-group">
@@ -375,6 +420,7 @@ export function CardForge() {
                   key={d}
                   className={`pill ${prompts.district === d ? "selected" : ""}`}
                   onClick={() => set("district", d)}
+                  title={DISTRICT_HINTS[d]}
                 >
                   {d}
                 </button>
@@ -382,7 +428,7 @@ export function CardForge() {
             </div>
             <p className="form-hint">{DISTRICT_HINTS[prompts.district]}</p>
             <p className="form-hint form-hint--secondary">
-              District changes background scene and courier bag style.
+              District sets the background scene and the style of your courier bag.
             </p>
           </div>
 
@@ -402,6 +448,9 @@ export function CardForge() {
                 prompts.stamina <= 5 ? "backpack" :
                 prompts.stamina <= 8 ? "cardboard-box" : "duffel-bag"
               ]}
+            </p>
+            <p className="form-hint form-hint--secondary">
+              Stamina controls how much cargo your courier carries and affects all base stats.
             </p>
           </div>
 
@@ -425,6 +474,9 @@ export function CardForge() {
                 title="Custom color"
               />
             </div>
+            <p className="form-hint form-hint--secondary">
+              Accent color tints the SVG card frame and highlight details.
+            </p>
           </div>
 
           <button className="btn-primary btn-lg" onClick={handleGenerate}>

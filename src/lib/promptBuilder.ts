@@ -12,13 +12,27 @@ const DISTRICT_BACKGROUND_DESCRIPTIONS: Record<string, string> = {
     "cloud-towers drifting in warm sunrise light, hot-air balloons and gliders in the distance, " +
     "golden hour rays filtering through cumulus clouds, volumetric god-rays, awe-inspiring scale",
   Nightshade:
-    "a neon-soaked cyberpunk megalopolis at night, rain-slicked streets reflecting towering holographic " +
-    "advertisements, dense vertical cityscape packed with cascading neon signs in magenta and cyan, " +
-    "flying vehicles leaving light trails, moody noir atmosphere, dramatic contrast",
+    "an underground society of perpetual subway lines, buried stations and giant industrial pipework, " +
+    "some areas are virtual cities submerged in total darkness except for the glow of neon skateboards and neon lights, " +
+    "long tunnels and side trails, literal massive pipes you can skate through, " +
+    "weird hippie communes with glowing mushroom farms, strange subterranean cult shrines, " +
+    "intense neon lighting and blacklight murals, 1990s Ninja Turtles meets Mario Bros aesthetic, " +
+    "vivid purples and greens with glowing graffiti",
   Batteryville:
     "a vast off-grid desert compound at golden hour, rows of gleaming solar-panel arrays and spinning wind " +
     "turbines against a burnt-amber sky, rugged salvaged-tech market stalls and corrugated-iron workshops, " +
     "dust devils in the distance, warm earthy tones, gritty frontier atmosphere",
+  "The Grid":
+    "an industrial wasteland of old refineries, rusting oil derricks and coal pits beyond the city limits, " +
+    "defunct corporate conglomerate megastructures now controlled by rival Marxist union gangs and international " +
+    "Communist factions, red banners and propaganda murals on crumbling concrete, diesel smoke and fire, " +
+    "diesel-punk aesthetic with heavy machinery and riveted ironwork, dramatic orange flare stacks at night",
+  "Glass City":
+    "a cyberpunk neon megalopolis of towering glass skyscrapers packed with holographic advertisements, " +
+    "decayed and cracked roads with no cars or bicycles anywhere — only electric skateboarders weaving through traffic, " +
+    "business executives riding expensive flying drone-copter vehicles overhead, " +
+    "neon reflections on rain-soaked pavement, dense vertical cityscape lit by a thousand screens, " +
+    "high-tech courier packs and sensor gear everywhere, dramatic cyberpunk atmosphere",
 };
 
 /**
@@ -26,8 +40,10 @@ const DISTRICT_BACKGROUND_DESCRIPTIONS: Record<string, string> = {
  */
 const DISTRICT_DESCRIPTIONS: Record<string, string> = {
   Airaway:      "a floating sky city with clouds and levitating platforms",
-  Nightshade:   "a rain-drenched neon-lit cyberpunk megalopolis at night",
+  Nightshade:   "an underground network of subway tunnels, neon-lit pipes and subterranean communes",
   Batteryville: "a rugged off-grid desert settlement with solar panels and wind turbines",
+  "The Grid":   "a diesel-punk industrial wasteland of defunct refineries and oil derricks controlled by rival factions",
+  "Glass City": "a cyberpunk neon megalopolis of glass skyscrapers where only electric skateboarders rule the streets",
 };
 
 const STYLE_CLOTHING: Record<string, string> = {
@@ -43,14 +59,17 @@ const ARCHETYPE_POSES: Record<string, string> = {
   "Punk Rocker":  "striking a defiant rock-star pose with arms wide",
   "Ex Military":  "standing at confident attention with arms crossed",
   "Hacker":       "typing on a holographic keyboard, screens reflected in goggles",
-  "Chef":         "brandishing a cleaver and a spray-can like weapons",
+  "Chef":         "wearing a white chef apron and tall chef hat, carrying a pot or pan, wearing kitchen non-slip shoes",
+  "Olympic":      "in a dynamic athletic stance, wearing coordinated high-performance team apparel with sponsor patches",
+  "Fash":         "standing upright in a sharp pressed uniform with necktie, jacket, lapels and coat-of-arms insignia",
 };
 
 const VIBE_BOARD: Record<string, string> = {
-  Grunge:  "a worn, weathered",
-  Neon:    "a glowing neon",
-  Chrome:  "a sleek chrome",
-  Plastic: "a bright colourful plastic",
+  Grunge:   "a worn, weathered",
+  Neon:     "a glowing neon",
+  Chrome:   "a sleek chrome",
+  Plastic:  "a bright colourful plastic",
+  Recycled: "a tattered DIY junk-built",
 };
 
 const RARITY_MOOD: Record<string, string> = {
@@ -95,16 +114,28 @@ const DISTRICT_BAG_DESCRIPTIONS: Record<string, string[]> = {
     "a massive anti-grav freight sling bearing the Airaway Sky-Dock authority stamp",
   ],
   Nightshade: [
-    "a neon-lit encrypted nano-courier bag with a blinking status LED",
-    "a cyberpunk backpack with glowing circuit-trace panels and hidden data-port pockets",
-    "a reinforced cargo crate plastered with holographic corporate logos and barcode stickers",
-    "a bulky duffel bag with neon-stripe accents, LED combination locks, and cable management loops",
+    "a small glow-stick-lit satchel patched with neon tape",
+    "a backpack covered in neon stickers and blinking LED strips",
+    "a large crate spray-painted with blacklight-reactive graffiti",
+    "a bulky duffel bag strung with glowsticks and neon cable ties",
   ],
   Batteryville: [
     "a patched canvas satchel decorated with hand-sewn solar-cell strips",
     "a rugged canvas survival pack bristling with utility pouches and carabiner clips",
     "a weathered wooden crate bound with salvaged wire and rope, marked with charcoal stencils",
     "a bulging military-surplus duffel bag packed with off-grid survival supplies",
+  ],
+  "The Grid": [
+    "a small riveted metal canister stencilled with union insignia",
+    "a heavy canvas pack with red faction patches and ration pouches",
+    "a rusted iron cargo box stamped with industrial union seals",
+    "a massive diesel-punk duffel bag bristling with tools and red armbands",
+  ],
+  "Glass City": [
+    "a compact high-tech courier pod with LED status indicators",
+    "a sleek tech backpack with solar-charging panels and sensor arrays",
+    "a reinforced delivery crate with QR code seals and neon tape",
+    "a heavy-duty cargo pack loaded with courier tech and neon signage",
   ],
 };
 
@@ -181,7 +212,7 @@ export function buildCharacterPrompt(prompts: CardPrompts): string {
   return (
     `Full-body portrait of a ${prompts.archetype} skater courier, ` +
     `wearing ${clothing}, ${pose}, ` +
-    `carrying ${bagDesc}, riding ${board} skateboard. ` +
+    `carrying ${bagDesc}, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     `Character is ${state}. ` +
     `Mood: ${mood}. ` +
     `Isolated on a plain white background, full figure visible from head to toe, centred. ` +
@@ -236,7 +267,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   return (
     `A hyper-realistic 3D cartoon-style portrait of a ${prompts.archetype} skater courier ` +
     `wearing ${clothing}, ${pose}, ` +
-    `carrying ${bag}, riding ${board} skateboard. ` +
+    `carrying ${bag}, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     `The background is ${district}. ` +
     `Character is ${state}. ` +
     `Mood: ${mood}. Stamina ${prompts.stamina}/10. ` +
