@@ -81,11 +81,11 @@ export interface TradePayload {
   updatedAt: string;
 }
 
-export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Chef";
+export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Chef" | "Olympic" | "Fash";
 export type Rarity = "Legendary" | "Rare" | "Master" | "Apprentice" | "Punch Skater";
 export type Style = "Corporate" | "Street" | "Off-grid" | "Military" | "Union";
-export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic";
-export type District = "Airaway" | "Nightshade" | "Batteryville";
+export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
+export type District = "Airaway" | "Nightshade" | "Batteryville" | "The Grid" | "Glass City";
 
 export interface CardPrompts {
   archetype: Archetype;

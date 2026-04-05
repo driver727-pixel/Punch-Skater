@@ -59,6 +59,8 @@ const ARCHETYPE_BIAS: Record<string, Record<string, number>> = {
   "Ex Military":  { speed: 1, stealth: 1, tech: 1, grit: 3, rep: 0 },
   "Hacker":       { speed: 0, stealth: 1, tech: 3, grit: 0, rep: 2 },
   "Chef":         { speed: 2, stealth: 0, tech: 1, grit: 1, rep: 1 },
+  "Olympic":      { speed: 2, stealth: 0, tech: 1, grit: 2, rep: 3 },
+  "Fash":         { speed: 0, stealth: 2, tech: 0, grit: 1, rep: 5 },
 };
 
 function clamp(val: number, min: number, max: number) {
