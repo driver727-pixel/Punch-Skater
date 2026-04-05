@@ -140,6 +140,8 @@ export function CardForge() {
 
     // Character layer cache key is based on characterSeed alone (no district)
     // so the character image stays untouched when only the district changes.
+    // The "v2" prefix busts any previously cached white-background images so that
+    // only black-background images (compatible with mix-blend-mode: screen) are used.
     const charCacheKey = characterSeed;
 
     // Determine which layers are stale
@@ -197,7 +199,7 @@ export function CardForge() {
 
     if (needsCharacter) {
       promises.push(
-        resolveLayer(`char::${charCacheKey}`, buildCharacterPrompt(latestPrompts), charCacheKey)
+        resolveLayer(`char::v2::${charCacheKey}`, buildCharacterPrompt(latestPrompts), charCacheKey)
           .then((imageUrl) => {
             setLayerUrls((prev) => ({ ...prev, character: imageUrl }));
             lastSeedsRef.current.character = charCacheKey;

@@ -194,8 +194,11 @@ export function buildBackgroundPrompt(district: District): string {
 /**
  * Builds a prompt for the **character layer** of a card.
  *
- * The character is rendered against a plain white background so it can be
- * composited over the background layer using CSS mix-blend-mode: multiply.
+ * The character is rendered against a solid pure black background so it can be
+ * composited over the background layer using CSS mix-blend-mode: screen.
+ * Screen blend drops the black background to transparent, leaving only the
+ * character visible with their bright rim-lit edges naturally "popping" over
+ * the district background layer beneath.
  * The bag/package description is based on stamina alone — it does NOT depend
  * on the district, so the character layer is only regenerated when archetype,
  * style, vibe, or stamina changes (matching the `characterSeed` cache key).
@@ -215,7 +218,8 @@ export function buildCharacterPrompt(prompts: CardPrompts): string {
     `carrying ${bagDesc}, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     `Character is ${state}. ` +
     `Mood: ${mood}. ` +
-    `Isolated on a plain white background, full figure visible from head to toe, centred. ` +
+    `Isolated on a solid pure black background, full figure visible from head to toe, centred. ` +
+    `Strong bright rim lighting around the entire silhouette, glowing edges, character pops off the black background. ` +
     `Minimal Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
     `vibrant and saturated 90s digital colors, dramatic rim lighting, realistic anatomy, chromium finish, ` +
     `epic action pose, 90s Marvel aesthetic. No kids. No teens. Adults aged 18-99 only. ` +
