@@ -108,6 +108,9 @@ export function CardForge() {
   });
   const [layerErrors, setLayerErrors] = useState<Partial<Record<keyof LayerUrls, string>>>({});
 
+  // 0–1 opacity applied to the character layer (1 = fully opaque / solid portrait).
+  const [characterBlend, setCharacterBlend] = useState(1);
+
   // Track the seed used to generate each layer so we can skip unchanged layers.
   const lastSeedsRef = useRef<LayerSeeds>({
     background: null,
@@ -506,18 +509,37 @@ export function CardForge() {
             </div>
           )}
           {generated ? (
-            <CardDisplay
-              card={generated}
-              onSave={handleSave}
-              isSaved={saveBtnDisabled || (!canSave) || atLimit}
-              saveLabel={saveLabel()}
-              showShare={true}
-              backgroundImageUrl={layerUrls.background ?? undefined}
-              characterImageUrl={layerUrls.character  ?? undefined}
-              frameImageUrl={layerUrls.frame          ?? undefined}
-              layerLoading={layerLoading}
-              imageLoading={anyLayerLoading}
-            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", width: "100%" }}>
+              <CardDisplay
+                card={generated}
+                onSave={handleSave}
+                isSaved={saveBtnDisabled || (!canSave) || atLimit}
+                saveLabel={saveLabel()}
+                showShare={true}
+                backgroundImageUrl={layerUrls.background ?? undefined}
+                characterImageUrl={layerUrls.character  ?? undefined}
+                frameImageUrl={layerUrls.frame          ?? undefined}
+                layerLoading={layerLoading}
+                imageLoading={anyLayerLoading}
+                characterBlend={characterBlend}
+              />
+              {isImageGenConfigured && layerUrls.character && (
+                <div className="blend-control">
+                  <span className="blend-control__label">
+                    <span>Character Blend</span>
+                    <span>{Math.round(characterBlend * 100)}%</span>
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(characterBlend * 100)}
+                    onChange={(e) => setCharacterBlend(Number(e.target.value) / 100)}
+                    className="stamina-slider"
+                  />
+                </div>
+              )}
+            </div>
           ) : (
             <div className="empty-preview">
               <span className="empty-icon">🛹</span>

@@ -31,6 +31,8 @@ interface CardDisplayProps {
   frameImageUrl?: string;
   /** Per-layer loading states — shows targeted skeletons for each layer. */
   layerLoading?: LayerLoading;
+  /** 0–1 opacity of the character layer (1 = fully opaque). Passed through to CompositeArt. */
+  characterBlend?: number;
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -71,6 +73,8 @@ interface CompositeArtProps {
   characterImageUrl?: string;
   frameImageUrl?: string;
   layerLoading?: LayerLoading;
+  /** 0–1 opacity applied to the character layer (1 = fully opaque). */
+  characterBlend?: number;
   /** Width hint for the SVG fallback only */
   width?: number;
   height?: number;
@@ -83,6 +87,7 @@ function CompositeArt({
   characterImageUrl,
   frameImageUrl,
   layerLoading,
+  characterBlend,
   width = 200,
   height = 140,
   fullSize = false,
@@ -111,12 +116,13 @@ function CompositeArt({
         </div>
       ) : null}
 
-      {/* Layer 2 – Character (courier portrait, multiply-blended) */}
+      {/* Layer 2 – Character (courier portrait, feathered-mask composited) */}
       {characterImageUrl ? (
         <img
           src={characterImageUrl}
           alt="character"
           className="card-art-layer card-art-layer--character"
+          style={characterBlend !== undefined ? { opacity: characterBlend } : undefined}
         />
       ) : layerLoading?.character ? (
         <div className="card-art-layer card-art-layer--character card-art-layer--loading">
@@ -157,6 +163,7 @@ export function CardDisplay({
   characterImageUrl,
   frameImageUrl,
   layerLoading,
+  characterBlend,
 }: CardDisplayProps) {
   const [sharing, setSharing] = useState(false);
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
@@ -183,6 +190,7 @@ export function CardDisplay({
             characterImageUrl={resolvedCharacter}
             frameImageUrl={resolvedFrame}
             layerLoading={resolvedLayerLoading}
+            characterBlend={characterBlend}
             width={160}
             height={112}
           />
@@ -224,6 +232,7 @@ export function CardDisplay({
           characterImageUrl={resolvedCharacter}
           frameImageUrl={resolvedFrame}
           layerLoading={resolvedLayerLoading}
+          characterBlend={characterBlend}
           fullSize
         />
       ) : imageLoading ? (
