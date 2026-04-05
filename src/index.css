@@ -672,10 +672,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 /*
  * Three AI-generated layers are stacked inside .card-art-composite:
  *   1. background  – district environment scene (normal blend)
- *   2. character   – courier portrait (normal blend, fully opaque)
+ *   2. character   – courier portrait on white BG (multiply blend removes white BG)
  *   3. frame       – ornate rarity border on black background (screen blend removes black BG)
  *
- * Character layer uses mix-blend-mode: normal — renders as a solid opaque layer.
+ * Character layer uses mix-blend-mode: multiply — white pixels (1,1,1) × background = background,
+ * so the white background becomes transparent and the character is composited over the scene.
  * Frame layer uses mix-blend-mode: screen — the black interior disappears and the
  * coloured gold/silver/foil border remains visible over any background colour.
  */
@@ -708,9 +709,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   mix-blend-mode: normal;
 }
 .card-art-layer--character {
-  /* Normal blend renders the character as fully opaque */
+  /* Multiply blend: white background becomes transparent, character composites over the scene */
   z-index: 2;
-  mix-blend-mode: normal;
+  mix-blend-mode: multiply;
   object-fit: contain;
 }
 .card-art-layer--frame {
