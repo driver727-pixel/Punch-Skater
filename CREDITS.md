@@ -30,6 +30,7 @@ listed here.
 | [Firebase](https://firebase.google.com) (Google) | Authentication & Firestore database |
 | [Express](https://expressjs.com) | Node.js server for the image-generation proxy |
 | [CORS](https://github.com/expressjs/cors) | Cross-Origin Resource Sharing middleware |
+| [express-rate-limit](https://github.com/express-rate-limit/express-rate-limit) | API rate-limiting middleware |
 | [dotenv](https://github.com/motdotla/dotenv) | Environment variable management |
 | [Render](https://render.com) | Cloud hosting for the proxy server |
 | [GitHub Pages](https://pages.github.com) | Static hosting for the front-end |
@@ -40,6 +41,7 @@ listed here.
 |---------|-------------|
 | [Fal.ai](https://fal.ai) | AI image generation infrastructure |
 | [FLUX.1 \[dev\]](https://blackforestlabs.ai) (Black Forest Labs) | Text-to-image foundation model |
+| [BiRefNet](https://github.com/ZhengPeng7/BiRefNet) | Background removal model via Fal.ai (MIT) |
 
 ## Linting & Code Quality
 
