@@ -237,57 +237,103 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 .card-full {
   background: var(--bg2);
   border: 2px solid;
-  border-radius: 8px;
-  padding: 16px;
-  width: 280px;
-  font-size: 12px;
+  border-radius: 4px;
+  padding: 5px;
+  width: 100px;
+  min-height: 400px;
+  font-size: 6px;
+  box-sizing: border-box;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  font-size: 11px;
+  margin-bottom: 4px;
+  font-size: 5px;
 }
-.card-serial { color: var(--text-dim); letter-spacing: 1px; }
-.card-rarity { letter-spacing: 2px; font-weight: bold; }
+.card-serial { color: var(--text-dim); letter-spacing: 0.5px; }
+.card-rarity { letter-spacing: 1px; font-weight: bold; }
 
-.card-identity { margin: 10px 0; }
-.card-name { font-size: 16px; font-weight: bold; color: var(--text); display: block; }
-.card-subline { display: flex; gap: 6px; align-items: center; color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+.card-identity { margin: 4px 0; }
+.card-name { font-size: 8px; font-weight: bold; color: var(--text); display: block; }
+.card-subline { display: flex; gap: 3px; align-items: center; color: var(--text-dim); font-size: 5px; margin-top: 1px; flex-wrap: wrap; }
 .sep { color: var(--border); }
 
-.card-personality { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.card-personality { display: flex; flex-wrap: wrap; gap: 2px; margin: 4px 0; }
 .tag {
-  font-size: 10px;
-  padding: 3px 8px;
+  font-size: 5px;
+  padding: 1px 3px;
   border: 1px solid;
-  border-radius: 10px;
-  letter-spacing: 1px;
+  border-radius: 5px;
+  letter-spacing: 0;
   opacity: 0.8;
 }
 
 /* ===== Stat Bar ===== */
-.card-stats { margin: 12px 0; display: flex; flex-direction: column; gap: 5px; }
-.stat-bar { display: flex; align-items: center; gap: 6px; }
-.stat-label { font-size: 10px; color: var(--text-dim); width: 28px; letter-spacing: 1px; flex-shrink: 0; }
-.stat-track { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
-.stat-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
-.stat-value { font-size: 11px; color: var(--text); width: 16px; text-align: right; flex-shrink: 0; }
+.card-stats { margin: 4px 0; display: flex; flex-direction: column; gap: 2px; }
+.stat-bar { display: flex; align-items: center; gap: 3px; }
+.stat-label { font-size: 5px; color: var(--text-dim); width: 16px; letter-spacing: 0.5px; flex-shrink: 0; }
+.stat-track { flex: 1; height: 2px; background: var(--bg3); border-radius: 1px; overflow: hidden; }
+.stat-fill { height: 100%; border-radius: 1px; transition: width 0.3s; }
+.stat-value { font-size: 5px; color: var(--text); width: 8px; text-align: right; flex-shrink: 0; }
+
+/* ===== Inline Active Ability (under STA bar) ===== */
+.stat-active {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  margin-top: 3px;
+  border-top: 1px solid var(--border);
+  padding-top: 3px;
+}
+.stat-active-body { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.stat-active-name { font-size: 6px; font-weight: bold; color: var(--text); display: block; }
+.stat-active-desc { font-size: 5px; color: var(--text-dim); margin: 0; line-height: 1.4; }
+
+/* ===== Inline Flavor Text (below active ability) ===== */
+.stat-flavor {
+  margin-top: 2px;
+  padding-left: 19px;
+}
+.stat-flavor-text {
+  font-size: 5px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.4;
+}
 
 /* ===== Card Traits ===== */
-.card-traits { margin: 12px 0; display: flex; flex-direction: column; gap: 8px; }
-.trait { background: var(--bg3); padding: 8px; border-radius: 4px; }
-.trait-label { font-size: 9px; color: var(--text-dim); letter-spacing: 2px; display: block; }
-.trait-name { font-size: 12px; font-weight: bold; display: block; margin: 2px 0; }
-.trait-desc { font-size: 11px; color: var(--text-dim); margin: 0; }
-
-/* ===== Card Flavor ===== */
-.card-flavor { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; font-size: 11px; color: var(--text-dim); font-style: italic; line-height: 1.6; }
+.card-traits { margin: 4px 0; display: flex; flex-direction: column; gap: 3px; }
+.trait { background: var(--bg3); padding: 3px; border-radius: 2px; }
+.trait-label { font-size: 5px; color: var(--text-dim); letter-spacing: 1px; display: block; }
+.trait-name { font-size: 6px; font-weight: bold; display: block; margin: 1px 0; }
+.trait-desc { font-size: 5px; color: var(--text-dim); margin: 0; line-height: 1.4; }
 
 /* ===== Card Actions ===== */
-.card-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+.card-actions { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ===== Print: exact playing-card dimensions ===== */
+@media print {
+  .card-full {
+    width: 63.5mm;
+    min-height: 88.9mm;
+    height: 88.9mm;
+    padding: 3mm;
+    font-size: 5pt;
+    border-radius: 2mm;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .card-name { font-size: 7pt; }
+  .card-header, .card-subline { font-size: 4pt; }
+  .stat-label, .stat-value, .stat-active-desc, .stat-active-name, .stat-flavor-text,
+  .trait-label, .trait-desc { font-size: 4pt; }
+  .trait-name, .stat-active-name { font-size: 5pt; }
+  .stat-track { height: 1.5pt; }
+  .card-actions { display: none; }
+  .layer-status-badges { display: none; }
+}
 
 /* ===== Collection ===== */
 .collection-layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
@@ -719,8 +765,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 }
 .card-art-composite--full {
   width: 100%;
-  height: 220px;
-  border-radius: 6px;
+  height: 70px;
+  border-radius: 3px;
   margin: 0 auto;
 }
 

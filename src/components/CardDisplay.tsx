@@ -278,6 +278,16 @@ export function CardDisplay({
         <StatBar label="GRT" value={card.stats.grit}    color={accent} />
         <StatBar label="REP" value={card.stats.rep}     color={accent} />
         <StatBar label="STA" value={card.stats.stamina} color={accent} />
+        <div className="stat-active">
+          <span className="stat-label">ACT</span>
+          <div className="stat-active-body">
+            <span className="stat-active-name">{card.traits.activeAbility.name}</span>
+            <p className="stat-active-desc">{card.traits.activeAbility.description}</p>
+          </div>
+        </div>
+        <div className="stat-flavor">
+          <em className="stat-flavor-text">&ldquo;{card.flavorText}&rdquo;</em>
+        </div>
       </div>
 
       <div className="card-traits">
@@ -286,15 +296,6 @@ export function CardDisplay({
           <span className="trait-name">{card.traits.passiveTrait.name}</span>
           <p className="trait-desc">{card.traits.passiveTrait.description}</p>
         </div>
-        <div className="trait">
-          <span className="trait-label">ACTIVE</span>
-          <span className="trait-name">{card.traits.activeAbility.name}</span>
-          <p className="trait-desc">{card.traits.activeAbility.description}</p>
-        </div>
-      </div>
-
-      <div className="card-flavor">
-        <em>&ldquo;{card.flavorText}&rdquo;</em>
       </div>
 
       <div className="card-actions">
