@@ -254,6 +254,11 @@ export function buildFramePrompt(rarity: Rarity): string {
   );
 }
 
+/** Standard poker card print dimensions (width × height, no bleed). */
+const PRINT_CARD_SIZE = "2.5×3.5 inch";
+/** Bleed allowance added to all four edges for print-safe cutting. */
+const PRINT_BLEED    = "0.125-inch";
+
 /**
  * Builds a prompt for the **card back** layer.
  *
@@ -271,9 +276,9 @@ export function buildCardBackPrompt(rarity: Rarity): string {
     `A print-ready playing card back design: ${border}. ` +
     `Perfect 180-degree point-symmetrical pattern — the artwork is identical when the card is rotated 180 degrees. ` +
     `Flat, clean vector-style graphic with bold geometric and ornamental shapes, no gradients or photographic elements. ` +
-    `Centred medallion motif with symmetrical radiating border elements covering the full card face edge-to-edge. ` +
+    `Centered medallion motif with symmetrical radiating border elements covering the full card face edge-to-edge. ` +
     `No characters, no people, no text, no numerals. ` +
-    `High-quality 300 DPI print-ready artwork sized for a 2.5×3.5 inch poker card with 0.125-inch bleed. ` +
+    `High-quality 300 DPI print-ready artwork sized for a ${PRINT_CARD_SIZE} poker card with ${PRINT_BLEED} bleed. ` +
     `Isolated on a solid dark background, strong contrast, clean bold lines. ` +
     `SFW, family friendly, PG rated, LGBTQIA+.`
   );

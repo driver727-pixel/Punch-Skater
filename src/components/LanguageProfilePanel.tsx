@@ -78,7 +78,8 @@ export function LanguageProfilePanel() {
         </div>
         <p className="lang-panel-locked-desc">
           Connect a{" "}
-          <a href="https://craftlingua.app" target="_blank" rel="noopener noreferrer">
+          <a href="https://craftlingua.app" target="_blank" rel="noopener noreferrer"
+             aria-label="Visit Craftlingua website">
             craftlingua.app
           </a>{" "}
           language profile to generate phonetically consistent names, catchphrases and conlang lore.
@@ -148,7 +149,8 @@ export function LanguageProfilePanel() {
         <div className="lang-panel-body">
           <p className="lang-panel-desc">
             Load a <code>language_profile.json</code> exported from{" "}
-            <a href="https://craftlingua.app" target="_blank" rel="noopener noreferrer">
+            <a href="https://craftlingua.app" target="_blank" rel="noopener noreferrer"
+               aria-label="Visit Craftlingua website">
               craftlingua.app
             </a>{" "}
             to generate phonetically consistent names, catchphrases, and conlang lore.{" "}
