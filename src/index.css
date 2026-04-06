@@ -1324,11 +1324,95 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 
 .lang-panel--loaded {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.lang-panel--loaded .lang-panel-top-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* ── Locked state (free tier) ──────────────────────────────────────────────── */
+
+.lang-panel--locked {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px 14px;
+  border-color: var(--border);
+  opacity: 0.9;
+}
+
+.lang-panel-locked-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lang-panel-lock-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: var(--purple);
+  border-radius: 999px;
+  padding: 2px 8px;
+  letter-spacing: 0.5px;
+}
+
+.lang-panel-locked-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.lang-panel-locked-desc a { color: var(--accent); text-decoration: none; }
+.lang-panel-locked-desc a:hover { text-decoration: underline; }
+
+/* ── Opt-in toggle ─────────────────────────────────────────────────────────── */
+
+.lang-panel-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  transition: border-color 0.15s;
+}
+.lang-panel-toggle:hover { border-color: var(--accent); }
+
+.lang-panel-toggle__checkbox {
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.lang-panel-toggle__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.lang-panel-toggle__hint {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
 }
 
 .lang-panel-info {

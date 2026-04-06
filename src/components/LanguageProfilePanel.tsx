@@ -1,24 +1,31 @@
 /**
  * LanguageProfilePanel.tsx
  * ─────────────────────────
- * Compact panel rendered inside CardForge that lets users load or clear a
- * Craftlingua language_profile.json export.
+ * Compact panel rendered inside CardForge that lets paid-tier users load a
+ * Craftlingua language_profile.json export and optionally apply it to card
+ * generation.
  *
  * Supported input methods:
  *  - Click/drag to upload a .json file
  *  - Paste raw JSON into the textarea
  *
- * Once a profile is loaded it is held in LanguageContext (localStorage-backed)
- * and used automatically for all subsequent card generations.
+ * The panel is locked for Free Rider accounts — an upgrade prompt is shown
+ * instead.  For paid tiers, loading a profile does NOT automatically enable it;
+ * the user must explicitly toggle "Apply to card generation" on.
  */
 
 import { useCallback, useRef, useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
+import { useTier } from "../context/TierContext";
+import { TIERS } from "../lib/tiers";
 import { parseCraftlinguaProfile } from "../lib/languageIngestion";
 import type { CraftlinguaEnvelope } from "../lib/types";
 
 export function LanguageProfilePanel() {
-  const { profile, vocabulary, loadProfile, clearProfile } = useLanguage();
+  const { profile, vocabulary, useCraftlingua, loadProfile, clearProfile, setUseCraftlingua } = useLanguage();
+  const { tier, openUpgradeModal } = useTier();
+  const canUseCraftlingua = TIERS[tier].canUseCraftlingua;
+
   const [expanded, setExpanded] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [error, setError] = useState("");
@@ -60,34 +67,80 @@ export function LanguageProfilePanel() {
     }
   }, [pasteText, applyProfile]);
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Locked state (free tier) ─────────────────────────────────────────────────
+
+  if (!canUseCraftlingua) {
+    return (
+      <div className="lang-panel lang-panel--locked">
+        <div className="lang-panel-locked-row">
+          <span className="lang-panel-title">🌐 CraftLingua Language Profiles</span>
+          <span className="lang-panel-lock-badge">🔒 Paid</span>
+        </div>
+        <p className="lang-panel-locked-desc">
+          Connect a{" "}
+          <a href="https://craftlingua.app" target="_blank" rel="noopener noreferrer"
+             aria-label="Visit Craftlingua website">
+            craftlingua.app
+          </a>{" "}
+          language profile to generate phonetically consistent names, catchphrases and conlang lore.
+          Available on Street Creator and above.
+        </p>
+        <button className="btn-primary btn-sm" onClick={openUpgradeModal}>
+          Upgrade to Unlock
+        </button>
+      </div>
+    );
+  }
+
+  // ── Loaded state (paid tier, profile active) ─────────────────────────────────
 
   if (profile && !expanded) {
     return (
       <div className="lang-panel lang-panel--loaded">
-        <div className="lang-panel-info">
-          <span className="lang-panel-badge">🌐</span>
-          <span className="lang-panel-name">{profile.language.name}</span>
-          <span className="lang-panel-code">({profile.language.code})</span>
-          <span className="lang-panel-count">{vocabulary.length} words</span>
+        <div className="lang-panel-top-row">
+          <div className="lang-panel-info">
+            <span className="lang-panel-badge">🌐</span>
+            <span className="lang-panel-name">{profile.language.name}</span>
+            <span className="lang-panel-code">({profile.language.code})</span>
+            <span className="lang-panel-count">{vocabulary.length} words</span>
+          </div>
+          <div className="lang-panel-actions">
+            <button className="btn-outline btn-sm" onClick={() => setExpanded(true)}>
+              ↺ Change
+            </button>
+            <button className="btn-danger btn-sm" onClick={clearProfile}>
+              ✕ Clear
+            </button>
+          </div>
         </div>
-        <div className="lang-panel-actions">
-          <button className="btn-outline btn-sm" onClick={() => setExpanded(true)}>
-            ↺ Change
-          </button>
-          <button className="btn-danger btn-sm" onClick={clearProfile}>
-            ✕ Clear
-          </button>
-        </div>
+        {/* Explicit opt-in toggle — not mandatory */}
+        <label className="lang-panel-toggle">
+          <input
+            type="checkbox"
+            checked={useCraftlingua}
+            onChange={(e) => setUseCraftlingua(e.target.checked)}
+            className="lang-panel-toggle__checkbox"
+          />
+          <span className="lang-panel-toggle__label">
+            Apply to card generation
+            <span className="lang-panel-toggle__hint">
+              {useCraftlingua
+                ? "✓ Conlang names, lore & graffiti enabled"
+                : "Off — profile loaded but not applied"}
+            </span>
+          </span>
+        </label>
       </div>
     );
   }
+
+  // ── Load / expand state ──────────────────────────────────────────────────────
 
   return (
     <div className="lang-panel">
       <div className="lang-panel-header" onClick={() => setExpanded((v) => !v)}>
         <span className="lang-panel-title">
-          🌐 Language Profile {profile ? `— ${profile.language.name}` : "(none)"}
+          🌐 CraftLingua Profile {profile ? `— ${profile.language.name}` : "(none)"}
         </span>
         <span className="lang-panel-chevron">{expanded ? "▲" : "▼"}</span>
       </div>
@@ -95,8 +148,12 @@ export function LanguageProfilePanel() {
       {expanded && (
         <div className="lang-panel-body">
           <p className="lang-panel-desc">
-            Load a <code>language_profile.json</code> exported from Craftlingua to generate
-            phonetically consistent names, catchphrases, and conlang lore for your cards.{" "}
+            Load a <code>language_profile.json</code> exported from{" "}
+            <a href="https://craftlingua.app" target="_blank" rel="noopener noreferrer"
+               aria-label="Visit Craftlingua website">
+              craftlingua.app
+            </a>{" "}
+            to generate phonetically consistent names, catchphrases, and conlang lore.{" "}
             <a href="/language_profile_example.json" target="_blank" rel="noopener noreferrer">
               Download example ↗
             </a>

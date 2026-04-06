@@ -102,7 +102,7 @@ function tagVocabulary(
 export function CardForge() {
   const { addCard, hasCard, cards } = useCollection();
   const { tier, openUpgradeModal } = useTier();
-  const { profile, vocabulary } = useLanguage();
+  const { profile, vocabulary, useCraftlingua } = useLanguage();
   const tierData = TIERS[tier];
 
   const [prompts, setPrompts] = useState<CardPrompts>({
@@ -292,7 +292,7 @@ export function CardForge() {
   useEffect(() => {
     if (!hasGeneratedRef.current) return;
 
-    const taggedVocabulary = tagVocabulary(vocabulary, profile);
+    const taggedVocabulary = useCraftlingua ? tagVocabulary(vocabulary, profile) : [];
     const newCard = generateCard(prompts, taggedVocabulary.length ? taggedVocabulary : undefined);
     setGenerated(newCard);
 
@@ -318,7 +318,7 @@ export function CardForge() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [prompts, vocabulary, profile]);
+  }, [prompts, vocabulary, profile, useCraftlingua]);
 
   const set = <K extends keyof CardPrompts>(key: K, val: CardPrompts[K]) =>
     setPrompts((p) => ({ ...p, [key]: val }));
@@ -326,7 +326,7 @@ export function CardForge() {
   const handleGenerate = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    const taggedVocabulary = tagVocabulary(vocabulary, profile);
+    const taggedVocabulary = useCraftlingua ? tagVocabulary(vocabulary, profile) : [];
     const card = generateCard(prompts, taggedVocabulary.length ? taggedVocabulary : undefined);
     setGenerated(card);
     hasGeneratedRef.current = true;
