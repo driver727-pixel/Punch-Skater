@@ -1565,3 +1565,531 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ===================================================================
+   3D Card Viewer
+   =================================================================== */
+
+.viewer3d-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  user-select: none;
+}
+
+.viewer3d-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  /* perspective for the 3D stage */
+  perspective: 900px;
+  perspective-origin: 50% 40%;
+}
+
+.viewer3d-card {
+  width: 252px;
+  height: 352px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.05s linear;
+  cursor: grab;
+}
+.viewer3d-card:active { cursor: grabbing; }
+
+/* Both faces */
+.viewer3d-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  border: 2px solid;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Front */
+.viewer3d-face--front {
+  background: #0a0a0f;
+}
+
+.viewer3d-art-composite,
+.viewer3d-art-svg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewer3d-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.viewer3d-layer--char {
+  mix-blend-mode: multiply;
+}
+.viewer3d-layer--frame {
+  mix-blend-mode: multiply;
+}
+
+/* Gloss overlay on the front face */
+.viewer3d-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.06) 40%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Back */
+.viewer3d-face--back {
+  background: #0f0f1a;
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  font-size: 7px;
+  font-family: 'Courier New', Courier, monospace;
+  color: #e0e0f0;
+}
+
+.viewer3d-back-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  color: #000;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+.viewer3d-back-name { font-size: 9px; letter-spacing: 1px; }
+.viewer3d-back-rarity { font-size: 7px; opacity: 0.75; }
+
+.viewer3d-back-portrait {
+  position: absolute;
+  top: 26px;
+  right: 6px;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.viewer3d-back-info {
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 58px; /* space for portrait */
+}
+.viewer3d-back-row { display: flex; gap: 4px; align-items: baseline; }
+.viewer3d-back-row-label { color: #7070a0; width: 52px; flex-shrink: 0; letter-spacing: 0.5px; }
+.viewer3d-back-row-value { color: #e0e0f0; }
+
+.viewer3d-back-stats {
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid #1e1e3a;
+  margin-top: 2px;
+}
+/* Scale down StatBar inside viewer */
+.viewer3d-back-stats .stat-bar { gap: 2px; }
+.viewer3d-back-stats .stat-label { font-size: 6px; width: 14px; }
+.viewer3d-back-stats .stat-value { font-size: 6px; width: 8px; }
+.viewer3d-back-stats .stat-track { height: 2px; }
+
+.viewer3d-back-trait {
+  padding: 3px 8px;
+  border-top: 1px solid #1e1e3a;
+}
+.viewer3d-back-trait-label {
+  display: block;
+  font-size: 6px;
+  color: #7070a0;
+  letter-spacing: 0.5px;
+  margin-bottom: 1px;
+}
+.viewer3d-back-trait-desc { font-size: 6px; color: #b0b0c8; margin: 0; line-height: 1.35; }
+
+.viewer3d-back-flavor {
+  padding: 3px 8px;
+  font-size: 6px;
+  font-style: italic;
+  color: #7070a0;
+  line-height: 1.35;
+  border-top: 1px solid #1e1e3a;
+}
+
+.viewer3d-back-tags {
+  padding: 3px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.viewer3d-back-tag {
+  font-size: 5px;
+  padding: 1px 3px;
+  border: 1px solid;
+  border-radius: 4px;
+  opacity: 0.75;
+}
+
+.viewer3d-back-serial {
+  padding: 2px 8px 6px;
+  font-size: 6px;
+  color: #7070a0;
+  letter-spacing: 1px;
+  margin-top: auto;
+}
+
+/* Controls row */
+.viewer3d-controls {
+  display: flex;
+  gap: 12px;
+}
+.viewer3d-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  color: #e0e0f0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  padding: 8px 18px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.viewer3d-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
+.viewer3d-btn--active { border-color: var(--accent); color: var(--accent); }
+
+.viewer3d-hint {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 1px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* ===================================================================
+   Print Modal (screen styles)
+   =================================================================== */
+
+.print-modal-panel { max-width: 680px; }
+
+.print-side-selector {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.print-side-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.print-side-option input { cursor: pointer; accent-color: var(--accent); }
+
+/* Two-card preview grid */
+.print-preview-area {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.print-preview-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.print-preview-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Bleed wrapper (adds visible crop marks) */
+.print-card-wrap {
+  position: relative;
+  /* 12px extra on each side for crop mark clearance */
+  padding: 12px;
+}
+
+/* Crop-mark corners */
+.print-bleed-marks { position: absolute; inset: 0; pointer-events: none; }
+.print-bleed-corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: rgba(255,255,255,0.4);
+  border-style: solid;
+}
+.print-bleed-corner--tl { top: 4px;  left: 4px;  border-width: 1px 0 0 1px; }
+.print-bleed-corner--tr { top: 4px;  right: 4px; border-width: 1px 1px 0 0; }
+.print-bleed-corner--bl { bottom: 4px; left: 4px;  border-width: 0 0 1px 1px; }
+.print-bleed-corner--br { bottom: 4px; right: 4px; border-width: 0 1px 1px 0; }
+
+/* Card face in preview — scaled-down (189×264 = 72% of 2.625×3.625in @96dpi) */
+.print-card {
+  width: 189px;
+  height: 264px;
+  border: 2px solid;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0f0f1a;
+  position: relative;
+  font-family: 'Courier New', Courier, monospace;
+  color: #e0e0f0;
+}
+
+.print-art-composite {
+  position: absolute;
+  inset: 0;
+}
+.print-art-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.print-art-layer--char  { mix-blend-mode: multiply; }
+.print-art-layer--frame { mix-blend-mode: multiply; }
+
+/* Back face in preview */
+.print-card--back {
+  display: flex;
+  flex-direction: column;
+  font-size: 6px;
+  overflow: hidden;
+}
+
+.print-back-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 7px;
+  color: #000;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+.print-back-name  { font-size: 8px; letter-spacing: 0.5px; }
+.print-back-rarity { font-size: 6px; opacity: 0.7; }
+
+.print-back-portrait {
+  position: absolute;
+  top: 22px;
+  right: 5px;
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.print-back-info {
+  padding: 3px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-right: 50px;
+}
+.print-back-row { display: flex; gap: 3px; align-items: baseline; }
+.print-back-row-label { color: #7070a0; width: 42px; flex-shrink: 0; font-size: 5px; letter-spacing: 0.3px; }
+.print-back-row-value { color: #e0e0f0; font-size: 5px; }
+
+.print-back-stats {
+  padding: 3px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-top: 1px solid #1e1e3a;
+}
+.print-back-stats .stat-bar  { gap: 2px; }
+.print-back-stats .stat-label { font-size: 5px; width: 12px; }
+.print-back-stats .stat-value { font-size: 5px; width: 8px; }
+.print-back-stats .stat-track { height: 2px; }
+
+.print-back-trait {
+  padding: 2px 6px;
+  border-top: 1px solid #1e1e3a;
+}
+.print-back-trait-label {
+  display: block;
+  font-size: 5px;
+  color: #7070a0;
+  letter-spacing: 0.3px;
+  margin-bottom: 1px;
+}
+.print-back-trait-desc { font-size: 5px; color: #b0b0c8; margin: 0; line-height: 1.3; }
+
+.print-back-flavor {
+  padding: 2px 6px;
+  font-size: 5px;
+  font-style: italic;
+  color: #7070a0;
+  line-height: 1.3;
+  border-top: 1px solid #1e1e3a;
+}
+
+.print-back-tags {
+  padding: 2px 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+}
+.print-back-tag {
+  font-size: 4px;
+  padding: 1px 2px;
+  border: 1px solid;
+  border-radius: 3px;
+  opacity: 0.75;
+}
+
+.print-back-serial {
+  padding: 2px 6px 4px;
+  font-size: 5px;
+  color: #7070a0;
+  letter-spacing: 0.5px;
+  margin-top: auto;
+}
+
+.print-modal-actions { display: flex; gap: 8px; }
+
+/* ===================================================================
+   @media print — actual print output
+   =================================================================== */
+
+/* The hidden print-only area is invisible on screen */
+.print-only-area { display: none; }
+
+@media print {
+  /* Hide absolutely everything except our print area */
+  body > *:not(.print-only-area),
+  #root { display: none !important; }
+
+  .print-only-area {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    background: #fff;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Each card on its own page */
+  .print-only-card-wrap {
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .print-only-bleed {
+    position: relative;
+    /* 2.75 × 3.75 in including 0.125in bleed on each side */
+    width: 2.75in;
+    height: 3.75in;
+  }
+
+  /* Crop marks (print) */
+  .print-bleed-corner {
+    border-color: #000;
+  }
+  .print-bleed-corner--tl { top: 0; left: 0; }
+  .print-bleed-corner--tr { top: 0; right: 0; }
+  .print-bleed-corner--bl { bottom: 0; left: 0; }
+  .print-bleed-corner--br { bottom: 0; right: 0; }
+
+  .print-only-card {
+    /* Live area: 2.5 × 3.5 in, centered inside bleed */
+    position: absolute;
+    top: 0.125in;
+    left: 0.125in;
+    width: 2.5in;
+    height: 3.5in;
+    border: 1.5pt solid;
+    border-radius: 3mm;
+    overflow: hidden;
+    background: #fff;
+    font-family: 'Courier New', Courier, monospace;
+    color: #000;
+    font-size: 6pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-only-card--back {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Reuse shared .print-back-* classes, just increase font sizes for print */
+  .print-only-card .print-back-header { padding: 6pt 8pt; }
+  .print-only-card .print-back-name   { font-size: 9pt; }
+  .print-only-card .print-back-rarity { font-size: 6pt; }
+  .print-only-card .print-back-portrait {
+    top: 24pt; right: 6pt;
+    width: 0.55in; height: 0.55in;
+  }
+  .print-only-card .print-back-info   { padding: 4pt 8pt; padding-right: 0.7in; gap: 2pt; }
+  .print-only-card .print-back-row-label { font-size: 5pt; width: 0.6in; }
+  .print-only-card .print-back-row-value { font-size: 5pt; }
+  .print-only-card .print-back-stats  { padding: 3pt 8pt; gap: 2pt; }
+  .print-only-card .print-back-stats .stat-label { font-size: 5pt; }
+  .print-only-card .print-back-stats .stat-value { font-size: 5pt; }
+  .print-only-card .print-back-stats .stat-track { height: 2pt; }
+  .print-only-card .print-back-trait  { padding: 3pt 8pt; }
+  .print-only-card .print-back-trait-label { font-size: 5pt; }
+  .print-only-card .print-back-trait-desc { font-size: 5pt; }
+  .print-only-card .print-back-flavor { padding: 2pt 8pt; font-size: 5pt; }
+  .print-only-card .print-back-tags   { padding: 2pt 8pt; gap: 2pt; }
+  .print-only-card .print-back-tag    { font-size: 4pt; }
+  .print-only-card .print-back-serial { padding: 2pt 8pt 6pt; font-size: 5pt; }
+
+  /* Composite art layers fill the print card face */
+  .print-only-card .print-art-composite,
+  .print-only-card .print-art-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .print-only-card .print-art-layer--char  { mix-blend-mode: multiply; }
+  .print-only-card .print-art-layer--frame { mix-blend-mode: multiply; }
+
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+}

@@ -3,6 +3,8 @@ import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { ShareModal } from "./ShareModal";
+import { CardViewer3D } from "./CardViewer3D";
+import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
 
 interface LayerLoading {
@@ -167,6 +169,8 @@ export function CardDisplay({
   characterBlend,
 }: CardDisplayProps) {
   const [sharing, setSharing] = useState(false);
+  const [viewing3D, setViewing3D] = useState(false);
+  const [printing, setPrinting] = useState(false);
   // false = show conlang (default for high-rarity), true = show English translation
   const [showEnglish, setShowEnglish] = useState(false);
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
@@ -361,6 +365,12 @@ export function CardDisplay({
             ✎ Edit
           </button>
         )}
+        <button className="btn-outline" onClick={() => setViewing3D(true)} title="View card in 3D">
+          ◈ 3D
+        </button>
+        <button className="btn-outline" onClick={() => setPrinting(true)} title="Print this card">
+          🖨 Print
+        </button>
         {showShare && (
           <button className="btn-outline" onClick={() => setSharing(true)}>
             ↗ Share
@@ -374,6 +384,26 @@ export function CardDisplay({
       </div>
 
       {sharing && <ShareModal card={card} onClose={() => setSharing(false)} />}
+      {viewing3D && (
+        <CardViewer3D
+          card={card}
+          backgroundImageUrl={resolvedBackground}
+          characterImageUrl={resolvedCharacter}
+          frameImageUrl={resolvedFrame}
+          characterBlend={characterBlend}
+          onClose={() => setViewing3D(false)}
+        />
+      )}
+      {printing && (
+        <PrintModal
+          card={card}
+          backgroundImageUrl={resolvedBackground}
+          characterImageUrl={resolvedCharacter}
+          frameImageUrl={resolvedFrame}
+          characterBlend={characterBlend}
+          onClose={() => setPrinting(false)}
+        />
+      )}
     </div>
   );
 }
