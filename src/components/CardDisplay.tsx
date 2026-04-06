@@ -371,7 +371,7 @@ export function CardDisplay({
         )}
         {!hideToolButtons && (
           <>
-            <button className="btn-outline" onClick={() => setViewing3D(true)} title="View card in 3D">
+            <button className="btn-outline btn-3d" onClick={() => setViewing3D(true)} title="View card in 3D">
               ◈ 3D
             </button>
             <button className="btn-outline" onClick={() => setPrinting(true)} title="Print this card">
