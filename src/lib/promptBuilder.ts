@@ -86,7 +86,7 @@ const RARITY_MOOD: Record<string, string> = {
  */
 const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
   "Punch Skater":
-    "a simple thin border with minimal hand-drawn grunge marks and rough corner scratches",
+    "a tattered border made of dirty gauze bandages wrapped around the card edges, stained dark red with dried blood, fraying loose ends at the corners, rough textile texture, gritty street-medicine aesthetic",
   Apprentice:
     "a clean double-line border with small stylised leaf flourishes at each corner",
   Master:

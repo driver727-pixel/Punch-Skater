@@ -60,9 +60,9 @@ export function Nav() {
     <>
       <nav className="nav">
         <div className="nav-brand">
-          <span className="nav-logo">⚡</span>
           <span className="nav-title">SKATER PUNK</span>
           <span className="nav-subtitle">DECK BUILDER</span>
+          <span className="nav-game-badge">A Sk8r Punk Game</span>
         </div>
 
         <div className="nav-links">

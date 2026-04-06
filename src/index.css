@@ -39,7 +39,6 @@ body {
 }
 
 .nav-brand { display: flex; align-items: center; gap: 8px; }
-.nav-logo { font-size: 22px; }
 .nav-title {
   font-size: 16px;
   font-weight: bold;
@@ -50,6 +49,17 @@ body {
   font-size: 11px;
   color: var(--text-dim);
   letter-spacing: 2px;
+}
+.nav-game-badge {
+  font-size: 10px;
+  font-weight: bold;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-left: 4px;
 }
 
 .nav-links { display: flex; gap: 4px; }
