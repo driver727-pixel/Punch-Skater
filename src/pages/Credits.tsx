@@ -34,6 +34,10 @@ export function Credits() {
             <a href="https://vite-pwa-org.netlify.app" target="_blank" rel="noopener noreferrer" className="credits-name">vite-plugin-pwa</a>
             <span className="credits-desc">Progressive Web App support (MIT)</span>
           </li>
+          <li className="credits-item">
+            <a href="https://github.com/davidmyersdev/vite-plugin-node-polyfills" target="_blank" rel="noopener noreferrer" className="credits-name">vite-plugin-node-polyfills</a>
+            <span className="credits-desc">Node.js API polyfills for browser builds (MIT)</span>
+          </li>
         </ul>
       </section>
 
@@ -63,6 +67,18 @@ export function Credits() {
             <span className="credits-desc">Node.js proxy server (MIT)</span>
           </li>
           <li className="credits-item">
+            <a href="https://github.com/expressjs/cors" target="_blank" rel="noopener noreferrer" className="credits-name">cors</a>
+            <span className="credits-desc">Express CORS middleware (MIT)</span>
+          </li>
+          <li className="credits-item">
+            <a href="https://github.com/express-rate-limit/express-rate-limit" target="_blank" rel="noopener noreferrer" className="credits-name">express-rate-limit</a>
+            <span className="credits-desc">API rate-limiting middleware (MIT)</span>
+          </li>
+          <li className="credits-item">
+            <a href="https://github.com/motdotla/dotenv" target="_blank" rel="noopener noreferrer" className="credits-name">dotenv</a>
+            <span className="credits-desc">Environment variable management (BSD-2-Clause)</span>
+          </li>
+          <li className="credits-item">
             <a href="https://render.com" target="_blank" rel="noopener noreferrer" className="credits-name">Render</a>
             <span className="credits-desc">Cloud hosting for proxy server</span>
           </li>
@@ -83,6 +99,32 @@ export function Credits() {
           <li className="credits-item">
             <a href="https://blackforestlabs.ai" target="_blank" rel="noopener noreferrer" className="credits-name">FLUX.1 [dev]</a>
             <span className="credits-desc">Text-to-image foundation model (Black Forest Labs)</span>
+          </li>
+          <li className="credits-item">
+            <a href="https://github.com/ZhengPeng7/BiRefNet" target="_blank" rel="noopener noreferrer" className="credits-name">BiRefNet</a>
+            <span className="credits-desc">Background removal model via Fal.ai (MIT)</span>
+          </li>
+        </ul>
+      </section>
+
+      <section className="credits-section">
+        <h2 className="credits-heading">Linting &amp; Code Quality</h2>
+        <ul className="credits-list">
+          <li className="credits-item">
+            <a href="https://eslint.org" target="_blank" rel="noopener noreferrer" className="credits-name">ESLint</a>
+            <span className="credits-desc">JavaScript / TypeScript linter (MIT)</span>
+          </li>
+          <li className="credits-item">
+            <a href="https://typescript-eslint.io" target="_blank" rel="noopener noreferrer" className="credits-name">typescript-eslint</a>
+            <span className="credits-desc">TypeScript ESLint rules (MIT)</span>
+          </li>
+          <li className="credits-item">
+            <a href="https://github.com/facebook/react/tree/main/packages/eslint-plugin-react-hooks" target="_blank" rel="noopener noreferrer" className="credits-name">eslint-plugin-react-hooks</a>
+            <span className="credits-desc">React Hooks linting rules (MIT)</span>
+          </li>
+          <li className="credits-item">
+            <a href="https://github.com/ArnaudBarre/eslint-plugin-react-refresh" target="_blank" rel="noopener noreferrer" className="credits-name">eslint-plugin-react-refresh</a>
+            <span className="credits-desc">Fast-refresh linting rules (MIT)</span>
           </li>
         </ul>
       </section>
@@ -113,10 +155,16 @@ export function Credits() {
       </section>
 
       <footer className="credits-legal">
-        <p>© {new Date().getFullYear()} SP Digital LLC. All Rights Reserved.</p>
+        <p>© 2025–{new Date().getFullYear()} SP Digital LLC. All Rights Reserved.</p>
         <p>
           "Punch Skater", the Punch Skater game, card mechanics, artwork concepts, and all
           associated intellectual property are owned exclusively by SP Digital LLC.
+        </p>
+        <p>
+          For copyright notices, DMCA takedown requests, or licensing inquiries, contact us via{" "}
+          <a href="https://punchskater.com" target="_blank" rel="noopener noreferrer" className="credits-link">
+            punchskater.com
+          </a>.
         </p>
         <p>
           See the <a href="/LICENSE.txt" target="_blank" rel="noopener noreferrer" className="credits-link">LICENSE</a> file for full terms.

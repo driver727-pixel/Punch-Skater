@@ -28,7 +28,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.resource.data.keys().hasOnly(['imageUrl', 'createdAt'])
         && request.resource.data.imageUrl is string
-        && request.resource.data.imageUrl.matches('https?://.+');
+        && request.resource.data.imageUrl.matches('https://.+');
       allow update, delete: if false;
     }
 

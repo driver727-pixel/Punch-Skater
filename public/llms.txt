@@ -42,7 +42,7 @@ Built with React 18, TypeScript, Vite, Firebase (Auth + Firestore), and Fal.ai F
 
 ## Legal
 
-© 2025 SP Digital LLC. All Rights Reserved.
+© 2025–2026 SP Digital LLC. All Rights Reserved.
 
 "Punch Skater", the Punch Skater game, card mechanics, artwork concepts, and all associated intellectual property are owned exclusively by SP Digital LLC. Unauthorized reproduction or distribution is prohibited.
 

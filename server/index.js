@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import 'dotenv/config';
 
 const app = express();
@@ -22,7 +23,27 @@ app.use(cors({
   origin: ['https://punchskater.com', 'https://driver727-pixel.github.io', 'http://localhost:5173'],
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '256kb' }));
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+// Each IP may call the image-generation / background-removal endpoints at most
+// 20 times per minute. This prevents abuse that would run up the Fal.ai bill.
+const imageRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many image requests — please wait a moment and try again.' },
+});
+
+// The import endpoint is cheaper to call, so allow a somewhat higher burst.
+const importRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many requests — please slow down.' },
+});
 
 const FAL_KEY = process.env.FAL_KEY || '';
 const FAL_URL = 'https://fal.run/fal-ai/flux/dev';
@@ -34,7 +55,7 @@ if (!FAL_KEY) {
 
 // Transparent proxy: the React front-end POSTs to /api/generate-image and
 // this server forwards the request to Fal.ai, attaching the secret key.
-app.post('/api/generate-image', async (req, res) => {
+app.post('/api/generate-image', imageRateLimit, async (req, res) => {
   try {
     const upstream = await fetch(FAL_URL, {
       method: 'POST',
@@ -63,7 +84,7 @@ app.post('/api/generate-image', async (req, res) => {
 
 // Background removal proxy: strips the white/solid background from a generated
 // character image and returns a transparent PNG via the Fal.ai birefnet model.
-app.post('/api/remove-background', async (req, res) => {
+app.post('/api/remove-background', imageRateLimit, async (req, res) => {
   try {
     const upstream = await fetch(BIREFNET_URL, {
       method: 'POST',
@@ -93,7 +114,7 @@ app.post('/api/remove-background', async (req, res) => {
 // ── JSON Import validation endpoint ──────────────────────────────────────────
 // Accepts a Craftlingua envelope, a collection export, or a raw CardPayload[]
 // array.  Validates structure and returns a report; does NOT persist any data.
-app.post('/api/import', (req, res) => {
+app.post('/api/import', importRateLimit, (req, res) => {
   const body = req.body;
 
   if (!body || typeof body !== 'object') {
