@@ -1,25 +1,33 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CardPayload } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardArt } from "../components/CardArt";
 import { TradeModal } from "../components/TradeModal";
+import { ImportModal } from "../components/ImportModal";
 import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
 
 export function Collection() {
-  const { cards, removeCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
+  const { cards, removeCard, addCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
   const navigate = useNavigate();
 
   const [selected, setSelected] = useState<CardPayload | null>(null);
   const [tradeTarget, setTradeTarget] = useState<CardPayload | null>(null);
+  const [showImport, setShowImport] = useState(false);
+
+  const existingIds = useMemo(() => new Set(cards.map((c) => c.id)), [cards]);
 
   const handleExport = () => {
     exportJson({ version: "1.0.0", cards, exportedAt: new Date().toISOString() }, "skpd-collection.json");
+  };
+
+  const handleImportCards = (incoming: CardPayload[]) => {
+    for (const card of incoming) addCard(card);
   };
 
   if (!tierData.canSave) {
@@ -61,11 +69,14 @@ export function Collection() {
         </div>
         <div className="page-header-actions">
           {atLimit && (
-            <button className="btn-primary btn-sm" onClick={openUpgradeModal}>
-              Upgrade for More
+              <button className="btn-primary btn-sm" onClick={openUpgradeModal}>
+                Upgrade for More
+              </button>
+            )}
+            <button className="btn-outline btn-sm" onClick={() => setShowImport(true)}>
+              Import JSON
             </button>
-          )}
-          <button className="btn-outline" onClick={handleExport} disabled={cards.length === 0}>
+            <button className="btn-outline" onClick={handleExport} disabled={cards.length === 0}>
             Export JSON
           </button>
         </div>
@@ -130,6 +141,14 @@ export function Collection() {
           cards={cards}
           preselectedCard={tradeTarget}
           onClose={() => setTradeTarget(null)}
+        />
+      )}
+
+      {showImport && (
+        <ImportModal
+          existingIds={existingIds}
+          onImport={handleImportCards}
+          onClose={() => setShowImport(false)}
         />
       )}
     </div>
