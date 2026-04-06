@@ -254,6 +254,31 @@ export function buildFramePrompt(rarity: Rarity): string {
   );
 }
 
+/**
+ * Builds a prompt for the **card back** layer.
+ *
+ * The back design uses the same rarity-based seed as the frame so it only
+ * regenerates when the rarity tier changes.  The pattern is point-symmetric
+ * (180° rotational symmetry) so the card looks identical when rotated during
+ * gameplay — a standard requirement for reversible playing cards.
+ *
+ * Style targets: flat, clean vector-style artwork intended for 300 DPI
+ * print output on a standard 2.5 × 3.5 inch poker card (with 0.125-inch bleed).
+ */
+export function buildCardBackPrompt(rarity: Rarity): string {
+  const border = RARITY_FRAME_DESCRIPTIONS[rarity] ?? "a plain decorative border";
+  return (
+    `A print-ready playing card back design: ${border}. ` +
+    `Perfect 180-degree point-symmetrical pattern — the artwork is identical when the card is rotated 180 degrees. ` +
+    `Flat, clean vector-style graphic with bold geometric and ornamental shapes, no gradients or photographic elements. ` +
+    `Centred medallion motif with symmetrical radiating border elements covering the full card face edge-to-edge. ` +
+    `No characters, no people, no text, no numerals. ` +
+    `High-quality 300 DPI print-ready artwork sized for a 2.5×3.5 inch poker card with 0.125-inch bleed. ` +
+    `Isolated on a solid dark background, strong contrast, clean bold lines. ` +
+    `SFW, family friendly, PG rated, LGBTQIA+.`
+  );
+}
+
 // ── Combined (single-image) prompt builder ─────────────────────────────────────
 
 /**

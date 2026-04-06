@@ -77,6 +77,12 @@ export interface CardPayload {
   characterImageUrl?: string;
   /** AI-generated frame layer URL (ornate playing-card border based on rarity). */
   frameImageUrl?: string;
+  /**
+   * AI-generated card back URL (rarity-based, 180° point-symmetric design).
+   * Generated alongside the frame layer and suitable for 300 DPI print output
+   * at standard poker card size (2.5 × 3.5 inch with 0.125-inch bleed).
+   */
+  backImageUrl?: string;
 }
 
 export interface DeckPayload {
