@@ -1901,8 +1901,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   height: 100%;
   object-fit: cover;
 }
-.print-art-layer--char  { mix-blend-mode: multiply; }
-.print-art-layer--frame { mix-blend-mode: multiply; }
+.print-art-layer--char  { mix-blend-mode: normal; }
+.print-art-layer--frame { mix-blend-mode: screen; }
 
 /* Back face in preview */
 .print-card--back {
@@ -2108,8 +2108,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
     height: 100%;
     object-fit: cover;
   }
-  .print-only-card .print-art-layer--char  { mix-blend-mode: multiply; }
-  .print-only-card .print-art-layer--frame { mix-blend-mode: multiply; }
+  .print-only-card .print-art-layer--char  { mix-blend-mode: normal; }
+  .print-only-card .print-art-layer--frame { mix-blend-mode: screen; }
 
   @page {
     size: letter portrait;
