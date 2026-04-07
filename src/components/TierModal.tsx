@@ -7,9 +7,7 @@ interface TierModalProps {
 }
 
 const CHECKOUT_API_URL =
-  import.meta.env.VITE_IMAGE_API_URL
-    ? import.meta.env.VITE_IMAGE_API_URL.replace(/\/api\/generate-image$/, "/api/create-checkout-session")
-    : "/api/create-checkout-session";
+  import.meta.env.VITE_CHECKOUT_API_URL ?? "/api/create-checkout-session";
 
 export function TierModal({ onClose }: TierModalProps) {
   const { tier, email, setTier } = useTier();

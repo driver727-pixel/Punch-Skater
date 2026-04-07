@@ -62,14 +62,17 @@ const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 
 // Allowed Stripe price IDs — only these may be used to create checkout sessions.
 const ALLOWED_PRICE_IDS = new Set([
-  'price_1R3UInRCr5JxQN06Z8O0k2yG', // Tier 1 Street Creator ($5)
-  'price_1R3UIoRCr5JxQN06K6M8l3zH', // Tier 2 Deck Master ($10)
+  'price_1R3UInRCr5JxQN06Z8O0k2yG', // tier2 Street Creator ($5)
+  'price_1R3UIoRCr5JxQN06K6M8l3zH', // tier3 Deck Master ($10)
 ]);
+
+// Stripe client — instantiated once at startup so it is reused across requests.
+const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 if (!FAL_KEY) {
   console.warn('⚠️  FAL_KEY environment variable is not set — requests will be rejected by Fal.ai.');
 }
-if (!STRIPE_SECRET_KEY) {
+if (!stripe) {
   console.warn('⚠️  STRIPE_SECRET_KEY environment variable is not set — checkout sessions will be unavailable.');
 }
 
@@ -223,7 +226,7 @@ app.post('/api/import', importRateLimit, (req, res) => {
 // returns the hosted payment page URL.  The caller supplies success_url and
 // cancel_url so the user is returned to the correct page after payment.
 app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => {
-  if (!STRIPE_SECRET_KEY) {
+  if (!stripe) {
     res.status(503).json({ error: 'Payment processing is not configured.' });
     return;
   }
@@ -237,8 +240,10 @@ app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => 
 
   const validUrl = (u) => {
     if (typeof u !== 'string') return false;
-    try { const p = new URL(u); return p.protocol === 'https:' || p.hostname === 'localhost'; }
-    catch { return false; }
+    try {
+      const p = new URL(u);
+      return p.protocol === 'https:' || (p.protocol === 'http:' && p.hostname === 'localhost');
+    } catch { return false; }
   };
 
   if (!validUrl(successUrl) || !validUrl(cancelUrl)) {
@@ -247,7 +252,6 @@ app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => 
   }
 
   try {
-    const stripe = new Stripe(STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
