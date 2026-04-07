@@ -11,9 +11,16 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
   type User,
+  type ConfirmationResult,
+  type ApplicationVerifier,
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
@@ -26,11 +33,15 @@ interface AuthContextValue {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  signInWithPhone: (phone: string, appVerifier: ApplicationVerifier) => Promise<ConfirmationResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const googleProvider = new GoogleAuthProvider();
+
+export { RecaptchaVerifier };
 
 async function upsertUserProfile(user: User) {
   await setDoc(
@@ -50,6 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle redirect result from Google sign-in
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        await upsertUserProfile(result.user).catch(() => {/* non-fatal */});
+      }
+    }).catch(() => {/* non-fatal */});
+
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setLoading(false);
@@ -74,11 +92,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    await signInWithPopup(auth, googleProvider);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Fall back to redirect when popup is blocked
+      if (
+        msg.includes("popup-blocked") ||
+        msg.includes("popup-closed-by-user") ||
+        msg.includes("cancelled-popup-request")
+      ) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+      throw err;
+    }
   }, []);
 
+  const sendPasswordReset = useCallback(async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  }, []);
+
+  const signInWithPhone = useCallback(
+    async (phone: string, appVerifier: ApplicationVerifier) => {
+      return signInWithPhoneNumber(auth, phone, appVerifier);
+    },
+    []
+  );
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, signInWithGoogle, sendPasswordReset, signInWithPhone }}>
       {children}
     </AuthContext.Provider>
   );

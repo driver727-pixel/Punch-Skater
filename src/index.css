@@ -1137,6 +1137,68 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-decoration: underline;
 }
 
+.login-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.login-success {
+  font-size: 12px;
+  color: var(--accent);
+  margin: 4px 0;
+}
+
+.login-forgot-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent2);
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: right;
+  padding: 2px 0 8px;
+  text-decoration: underline;
+  align-self: flex-end;
+}
+
+.login-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 6px;
+  text-decoration: underline;
+  padding: 0;
+}
+.login-back-btn:hover { color: var(--text); }
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-input-wrapper .input {
+  width: 100%;
+  padding-right: 40px;
+}
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-dim);
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.password-toggle:hover { color: var(--text); }
+
 /* ===== Trades Page ===== */
 .trades-tabs {
   display: flex;
