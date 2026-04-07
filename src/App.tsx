@@ -39,6 +39,7 @@ const Credits         = lazy(() => import("./pages/Credits").then(m => ({ defaul
 const Lore            = lazy(() => import("./pages/Lore").then(m => ({ default: m.Lore })));
 const PrivacyPolicy   = lazy(() => import("./pages/PrivacyPolicy").then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService  = lazy(() => import("./pages/TermsOfService").then(m => ({ default: m.TermsOfService })));
+const ResetPassword   = lazy(() => import("./pages/ResetPassword").then(m => ({ default: m.ResetPassword })));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -79,6 +80,7 @@ function App() {
                       <Route path="/lore" element={<Lore />} />
                       <Route path="/privacy" element={<PrivacyPolicy />} />
                       <Route path="/terms" element={<TermsOfService />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
                       <Route path="/collection" element={
                         <ProtectedRoute><Collection /></ProtectedRoute>
                       } />
