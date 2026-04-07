@@ -1153,6 +1153,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   flex-shrink: 0;
 }
 .site-footer__copy { letter-spacing: 0.5px; }
+.site-footer__nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 .site-footer__link {
   color: var(--text-dim);
   text-decoration: none;
@@ -1161,8 +1166,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 }
 .site-footer__link:hover { color: var(--accent); }
 
-/* ===== Credits Page ===== */
+/* ===== Credits Page / Legal Pages ===== */
 .credits-page { max-width: 800px; }
+.legal-body {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.legal-list {
+  list-style: disc;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
 .credits-section { margin-bottom: 32px; }
 .credits-heading {
   font-size: 13px;
