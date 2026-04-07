@@ -1,11 +1,33 @@
-import { Component, ReactNode, lazy, Suspense } from "react";
+import { Component, ReactNode, lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
 import { LanguageProvider } from "./context/LanguageContext";
+import { useTier } from "./context/TierContext";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+
+/** Applies data-theme and data-time attributes to <html> for CSS theming. */
+function ThemeApplier() {
+  const { tier } = useTier();
+
+  useEffect(() => {
+    const applyTime = () => {
+      const hour = new Date().getHours();
+      const isDay = hour >= 6 && hour < 20;
+      document.documentElement.setAttribute("data-time", isDay ? "day" : "night");
+    };
+
+    document.documentElement.setAttribute("data-theme", tier);
+    applyTime();
+
+    const interval = setInterval(applyTime, 60_000);
+    return () => clearInterval(interval);
+  }, [tier]);
+
+  return null;
+}
 
 const CardForge  = lazy(() => import("./pages/CardForge").then(m => ({ default: m.CardForge })));
 const Collection = lazy(() => import("./pages/Collection").then(m => ({ default: m.Collection })));
@@ -42,6 +64,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <TierProvider>
+          <ThemeApplier />
           <LanguageProvider>
             <ErrorBoundary>
               <div className="app">

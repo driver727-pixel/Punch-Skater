@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
@@ -39,6 +39,8 @@ interface CardDisplayProps {
   /** When true, the 3D-viewer and Print buttons (and their modals) are suppressed so a parent
    *  component can render them in a different location. */
   hideToolButtons?: boolean;
+  /** When provided, renders inline edit controls for name and bio/flavor text. */
+  onUpdate?: (updates: { name?: string; flavorText?: string }) => void;
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -171,12 +173,43 @@ export function CardDisplay({
   layerLoading,
   characterBlend,
   hideToolButtons = false,
+  onUpdate,
 }: CardDisplayProps) {
   const [sharing, setSharing] = useState(false);
   const [viewing3D, setViewing3D] = useState(false);
   const [printing, setPrinting] = useState(false);
   // false = show conlang (default for high-rarity), true = show English translation
   const [showEnglish, setShowEnglish] = useState(false);
+
+  // ── Inline editable name & bio ────────────────────────────────────────────
+  const [localName, setLocalName] = useState(card.identity.name);
+  const [localBio, setLocalBio] = useState(card.flavorText);
+  const [editingName, setEditingName] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+
+  // Sync local state when the card identity changes (e.g. a new card is forged)
+  useEffect(() => {
+    setLocalName(card.identity.name);
+    setLocalBio(card.flavorText);
+    setEditingName(false);
+    setEditingBio(false);
+  }, [card.id, card.identity.name, card.flavorText]);
+
+  const commitName = () => {
+    setEditingName(false);
+    const trimmed = localName.trim() || card.identity.name;
+    setLocalName(trimmed);
+    if (trimmed !== card.identity.name) onUpdate?.({ name: trimmed });
+  };
+
+  const commitBio = () => {
+    setEditingBio(false);
+    const trimmed = localBio.trim() || card.flavorText;
+    setLocalBio(trimmed);
+    if (trimmed !== card.flavorText) onUpdate?.({ flavorText: trimmed });
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const accent = card.visuals.accentColor || "#00ff88";
 
@@ -193,7 +226,7 @@ export function CardDisplay({
     : card.traits.activeAbility.description;
   const displayFlavorText = hasConlangLore && !showEnglish
     ? card.conlang!.flavorText
-    : card.flavorText;
+    : localBio;
 
   // Prefer layer URLs from props; fall back to card-stored URLs; then legacy imageUrl
   const resolvedBackground = backgroundImageUrl ?? card.backgroundImageUrl;
@@ -276,7 +309,29 @@ export function CardDisplay({
       )}
 
       <div className="card-identity">
-        <h2 className="card-name">{card.identity.name}</h2>
+        {onUpdate && editingName ? (
+          <input
+            className="card-edit-input"
+            value={localName}
+            onChange={(e) => setLocalName(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitName(); }
+              if (e.key === "Escape") { setLocalName(card.identity.name); setEditingName(false); }
+            }}
+            autoFocus
+            maxLength={40}
+          />
+        ) : (
+          <h2
+            className={`card-name${onUpdate ? " card-name--editable" : ""}`}
+            onClick={() => { if (onUpdate) { setEditingName(true); } }}
+            title={onUpdate ? "Click to rename" : undefined}
+          >
+            {localName}
+            {onUpdate && <span className="card-edit-hint">✎</span>}
+          </h2>
+        )}
         {card.conlang?.catchphrase && (
           <p className="card-catchphrase">
             &ldquo;{card.conlang.catchphrase}&rdquo;
@@ -327,9 +382,29 @@ export function CardDisplay({
           </div>
         </div>
         <div className="stat-flavor">
-          <em className={`stat-flavor-text${hasConlangLore && !showEnglish ? " conlang-text" : ""}`}>
-            &ldquo;{displayFlavorText}&rdquo;
-          </em>
+          {onUpdate && !hasConlangLore && editingBio ? (
+            <textarea
+              className="card-edit-textarea"
+              value={localBio}
+              onChange={(e) => setLocalBio(e.target.value)}
+              onBlur={commitBio}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setLocalBio(card.flavorText); setEditingBio(false); }
+              }}
+              autoFocus
+              rows={3}
+              maxLength={200}
+            />
+          ) : (
+            <em
+              className={`stat-flavor-text${hasConlangLore && !showEnglish ? " conlang-text" : ""}${onUpdate && !hasConlangLore ? " stat-flavor-text--editable" : ""}`}
+              onClick={() => { if (onUpdate && !hasConlangLore) setEditingBio(true); }}
+              title={onUpdate && !hasConlangLore ? "Click to edit bio" : undefined}
+            >
+              &ldquo;{displayFlavorText}&rdquo;
+              {onUpdate && !hasConlangLore && <span className="card-edit-hint">✎</span>}
+            </em>
+          )}
         </div>
       </div>
 

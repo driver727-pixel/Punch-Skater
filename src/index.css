@@ -2136,3 +2136,188 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
     margin: 0.5in;
   }
 }
+
+/* ===== Tier-based site themes ===== */
+/*
+ * data-theme is set on <html> by ThemeApplier based on the current tier.
+ * data-time ("day" | "night") is also set by ThemeApplier based on current hour.
+ *
+ * Free  → Punch Skater "bandaged" aesthetic: muted tans & worn browns
+ * Tier2 → Apprentice aesthetic: teal & energetic greens
+ * Tier3 → Legendary aesthetic: rich gold & amber
+ */
+
+/* Free / Punch Skater ─────────────────────────────────────────────── */
+[data-theme="free"] {
+  --bg:     #100e0c;
+  --bg2:    #181410;
+  --bg3:    #201a14;
+  --border: #2e2518;
+  --text:   #c0b8a0;
+  --text-dim: #6a5e4a;
+  --accent:   #aa9978;
+  --accent2:  #887460;
+  --purple:   #5a4030;
+}
+
+[data-theme="free"][data-time="day"] {
+  --bg:     #24201a;
+  --bg2:    #30281e;
+  --bg3:    #3c3226;
+  --border: #4a3e2c;
+}
+
+/* Street Creator / Apprentice ──────────────────────────────────────── */
+[data-theme="tier2"] {
+  --bg:     #081510;
+  --bg2:    #0e1e18;
+  --bg3:    #142a20;
+  --border: #1e3e2c;
+  --text:   #c8ecd8;
+  --text-dim: #547060;
+  --accent:   #44ddaa;
+  --accent2:  #22ccbb;
+  --purple:   #1a9978;
+}
+[data-theme="tier2"] .nav { border-bottom-color: rgba(68,221,170,0.2); }
+[data-theme="tier2"] .tier-badge-btn--tier2 { box-shadow: 0 0 8px rgba(68,221,170,0.25); }
+
+[data-theme="tier2"][data-time="day"] {
+  --bg:     #132a20;
+  --bg2:    #1c3828;
+  --bg3:    #254832;
+  --border: #306040;
+}
+
+/* Deck Master / Legendary ──────────────────────────────────────────── */
+[data-theme="tier3"] {
+  --bg:     #110e08;
+  --bg2:    #1a1408;
+  --bg3:    #241c0c;
+  --border: #382a10;
+  --text:   #f0e0b0;
+  --text-dim: #887840;
+  --accent:   #ffaa00;
+  --accent2:  #ff8820;
+  --purple:   #cc6600;
+}
+[data-theme="tier3"] .nav { border-bottom-color: rgba(255,170,0,0.25); }
+[data-theme="tier3"] .nav-title { text-shadow: 0 0 12px rgba(255,170,0,0.5); }
+[data-theme="tier3"] .tier-badge-btn--tier3 { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 8px rgba(255,170,0,0.3); }
+[data-theme="tier3"] .modal-title { color: var(--accent); }
+
+[data-theme="tier3"][data-time="day"] {
+  --bg:     #221a0c;
+  --bg2:    #302212;
+  --bg3:    #40301a;
+  --border: #584022;
+}
+
+/* ===== Nav auth-loading placeholder ===== */
+.nav-auth-loading {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* ===== Inline card name / bio editing ===== */
+/*
+ * The card is zoom: 3.5, so these styles are written at card-internal scale
+ * (e.g. font-size: 8px ≈ 28px after zoom).  Use card-internal px values.
+ */
+.card-name--editable {
+  cursor: pointer;
+  position: relative;
+}
+.card-name--editable:hover { opacity: 0.8; }
+
+.stat-flavor-text--editable {
+  cursor: pointer;
+}
+.stat-flavor-text--editable:hover { opacity: 0.8; }
+
+/* Pencil hint shown on editable fields */
+.card-edit-hint {
+  font-size: 5px;
+  opacity: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+  transition: opacity 0.15s;
+}
+.card-name--editable:hover .card-edit-hint,
+.stat-flavor-text--editable:hover .card-edit-hint {
+  opacity: 0.6;
+}
+
+/* Name input inside the card */
+.card-edit-input {
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  font-family: var(--font);
+  font-size: 8px;
+  font-weight: bold;
+  width: 100%;
+  padding: 1px 3px;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.3;
+}
+.card-edit-input:focus { border-color: var(--accent); box-shadow: 0 0 4px rgba(0,255,136,0.3); }
+
+/* Bio / flavor text textarea inside the card */
+.card-edit-textarea {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-dim);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  font-family: var(--font);
+  font-size: 5px;
+  font-style: italic;
+  width: 100%;
+  resize: none;
+  padding: 1px 3px;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+.card-edit-textarea:focus { border-color: var(--accent); box-shadow: 0 0 4px rgba(0,255,136,0.3); }
+
+/* ===== Tier badge tooltip ===== */
+/* Visual tooltip shown below the tier badge in the nav on hover */
+.tier-badge-btn {
+  position: relative;
+}
+.tier-badge-btn::after {
+  content: attr(data-tier-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  white-space: nowrap;
+  background: var(--bg2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 6px 10px;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 600;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.tier-badge-btn:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tier-coloured tooltip border accent */
+[data-theme] .tier-badge-btn::after { border-color: var(--accent); }
