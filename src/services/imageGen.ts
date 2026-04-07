@@ -33,7 +33,7 @@ export const isImageGenConfigured = Boolean(PROXY_API_URL);
 // Adjust these to trade off quality vs. generation speed.
 
 const IMAGE_SIZE         = "portrait_4_3";
-const INFERENCE_STEPS    = 28;
+const INFERENCE_STEPS    = 35;
 const GUIDANCE_SCALE     = 3.5;
 const NUM_IMAGES         = 1;
 const SAFETY_CHECKER     = true;

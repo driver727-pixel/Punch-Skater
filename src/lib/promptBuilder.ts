@@ -190,7 +190,7 @@ export function buildBackgroundPrompt(district: District, graffitiWords?: string
     `Environment scene: ${bg}. ` +
     graffitiLine +
     `Wide establishing shot, cinematic composition, absolutely no people, no characters, no text. ` +
-    `Minimal Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
+    `Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
     `vibrant and saturated 90s digital colors, dramatic rim lighting. Hyper-Realistic sci-fi setting. ` +
     `SFW, family friendly, PG rated, LGBTQIA+.`
   );
@@ -236,7 +236,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     genderLine +
     AGE_RESTRICTION +
     `Isolated on a plain white background, full figure visible from head to toe, centred. ` +
-    `Minimal Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
+    `Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
     `vibrant and saturated 90s digital colors, dramatic rim lighting, realistic anatomy, chromium finish, ` +
     `epic action pose, 90s Marvel aesthetic, sharp focus, crisp details, high resolution. ` +
     `SFW, family friendly, PG rated, LGBTQIA+.`
