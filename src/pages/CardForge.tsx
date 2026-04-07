@@ -6,6 +6,7 @@ import { CardViewer3D } from "../components/CardViewer3D";
 import { PrintModal } from "../components/PrintModal";
 import { generateImage, removeBackground, isImageGenConfigured } from "../services/imageGen";
 import { getCachedImage, setCachedImage } from "../services/imageCache";
+import { getStaticBackgroundUrl, getStaticFrameUrl } from "../services/staticAssets";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 
 const ARCHETYPES: Archetype[] = ["The Knights Technarchy", "Qu111s", "Iron Curtains", "D4rk $pider", "The Asclepians", "The Mesopotamian Society", "Hermes' Squirmies", "UCPS", "The Team"];
@@ -19,12 +20,28 @@ const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "
 
 // ── Image generation layer helpers ─────────────────────────────────────────────
 
+/** Maximum number of automatic retries per layer when a cached URL fails to load. */
+const MAX_LAYER_RETRIES = 1;
+
+/** Converts a display name to a kebab-case filename stem (e.g. "The Grid" → "the-grid"). */
+function toFileSlug(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "-");
+}
+
 interface LayerState {
   backgroundUrl?: string;
   characterUrl?: string;
   frameUrl?: string;
   loading: { background: boolean; character: boolean; frame: boolean };
   errors: string[];
+}
+
+/** Per-layer generation parameters stored for retry use by handleLayerError. */
+interface LayerGenParams {
+  key: string;
+  prompt: string;
+  seed: string;
+  postProcess?: (url: string) => Promise<string>;
 }
 
 const INITIAL_LAYER_STATE: LayerState = {
@@ -48,6 +65,18 @@ export function CardForge() {
   // Abort controller ref for cancelling in-flight image generation
   const abortRef = useRef<AbortController | null>(null);
 
+  // Per-layer retry tracking — each entry is the number of retries attempted for
+  // the current forge session.  Reset when handleForge starts a fresh forge.
+  const retryCountRef = useRef<Record<"background" | "character" | "frame", number>>({
+    background: 0, character: 0, frame: 0,
+  });
+
+  // Parameters stored for each layer so the retry handler can re-trigger
+  // generation without re-running the full forge flow.
+  const layerParamsRef = useRef<Record<"background" | "character" | "frame", LayerGenParams | null>>({
+    background: null, character: null, frame: null,
+  });
+
   // Clean up on unmount
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
@@ -65,23 +94,46 @@ export function CardForge() {
       seed: string,
       signal: AbortSignal,
       postProcess?: (url: string) => Promise<string>,
+      skipCache = false,
     ) => {
       setLayers((s) => ({ ...s, loading: { ...s.loading, [layer]: true } }));
       try {
-        // Check cache first
-        const cached = await getCachedImage(cacheKey);
-        if (signal.aborted) return;
-        if (cached) {
-          const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
-          setLayers((s) => ({
-            ...s,
-            [urlKey]: cached,
-            loading: { ...s.loading, [layer]: false },
-          }));
-          return;
+        if (!skipCache) {
+          // 1. Check for a pre-loaded static asset (served from public/assets/).
+          //    These are permanent files that never expire and consume no credits.
+          const staticUrl =
+            layer === "background"
+              ? getStaticBackgroundUrl(seed as District)
+              : layer === "frame"
+              ? getStaticFrameUrl(seed as Rarity)
+              : null;
+
+          if (staticUrl) {
+            if (signal.aborted) return;
+            const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
+            setLayers((s) => ({
+              ...s,
+              [urlKey]: staticUrl,
+              loading: { ...s.loading, [layer]: false },
+            }));
+            return;
+          }
+
+          // 2. Check the Firestore cache (write-once, shared across users).
+          const cached = await getCachedImage(cacheKey);
+          if (signal.aborted) return;
+          if (cached) {
+            const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
+            setLayers((s) => ({
+              ...s,
+              [urlKey]: cached,
+              loading: { ...s.loading, [layer]: false },
+            }));
+            return;
+          }
         }
 
-        // Generate via Fal.ai
+        // 3. Generate via Fal.ai
         const result = await generateImage(prompt, seed);
         if (signal.aborted) return;
 
@@ -93,7 +145,19 @@ export function CardForge() {
           if (signal.aborted) return;
         }
 
-        // Cache the result
+        // Log the URL so users can download and save as a static asset
+        if (layer === "background") {
+          console.info(`[StaticAsset] Generated background for ${seed}: ${finalUrl}`);
+          console.info(`  → Download and save to public/assets/backgrounds/${toFileSlug(seed)}.jpg`);
+          console.info(`  → Then register it in src/services/staticAssets.ts`);
+        } else if (layer === "frame") {
+          console.info(`[StaticAsset] Generated frame for ${seed}: ${finalUrl}`);
+          console.info(`  → Download and save to public/assets/frames/${toFileSlug(seed)}.jpg`);
+          console.info(`  → Then register it in src/services/staticAssets.ts`);
+        }
+
+        // Cache the result in Firestore (write-once; a concurrent write for the same
+        // key is harmless — the second write is silently rejected by the security rule)
         await setCachedImage(cacheKey, finalUrl);
 
         const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
@@ -131,14 +195,17 @@ export function CardForge() {
     // Reset layer state
     setLayers(INITIAL_LAYER_STATE);
 
+    // Reset per-layer retry counts for this new forge session
+    retryCountRef.current = { background: 0, character: 0, frame: 0 };
+
     if (!isImageGenConfigured) {
       setForging(false);
       return;
     }
 
     // Kick off all three layers in parallel
-    const bgPrompt   = buildBackgroundPrompt(prompts.district);
-    const charPrompt = buildCharacterPrompt(prompts);
+    const bgPrompt    = buildBackgroundPrompt(prompts.district);
+    const charPrompt  = buildCharacterPrompt(prompts);
     const framePrompt = buildFramePrompt(prompts.rarity);
 
     const bgKey    = `bg::${card.backgroundSeed}`;
@@ -149,20 +216,65 @@ export function CardForge() {
     const charSeed  = card.characterSeed;
     const frameSeed = card.frameSeed;
 
+    const charPostProcess = async (url: string) => {
+      const result = await removeBackground(url);
+      return result.imageUrl;
+    };
+
+    // Store params so handleLayerError can retry without re-running handleForge
+    layerParamsRef.current = {
+      background: { key: bgKey,    prompt: bgPrompt,    seed: bgSeed    },
+      character:  { key: charKey,  prompt: charPrompt,  seed: charSeed,  postProcess: charPostProcess },
+      frame:      { key: frameKey, prompt: framePrompt, seed: frameSeed  },
+    };
+
     // Background layer
     generateLayer("background", bgKey, bgPrompt, bgSeed, signal);
 
     // Character layer — post-process with background removal
-    generateLayer("character", charKey, charPrompt, charSeed, signal, async (url) => {
-      const result = await removeBackground(url);
-      return result.imageUrl;
-    });
+    generateLayer("character", charKey, charPrompt, charSeed, signal, charPostProcess);
 
     // Frame layer
     generateLayer("frame", frameKey, framePrompt, frameSeed, signal);
 
     setForging(false);
   }, [prompts, generateLayer]);
+
+  // ── Expired-URL retry handler ────────────────────────────────────────────
+  // Called when a composite img element fires onError (e.g. fal.ai CDN URL has
+  // expired).  Bypasses the Firestore cache and re-generates from fal.ai.
+  // Limited to one retry per layer per forge session to prevent infinite loops.
+  const handleLayerError = useCallback(
+    (layer: "background" | "character" | "frame") => {
+      const params = layerParamsRef.current?.[layer];
+      if (!params) return;
+
+      // Only retry once per layer per forge session
+      if (retryCountRef.current[layer] >= MAX_LAYER_RETRIES) return;
+      retryCountRef.current[layer] += 1;
+
+      // Clear the broken URL and errors, then re-generate skipping cache
+      setLayers((s) => ({
+        ...s,
+        [`${layer}Url`]: undefined,
+        errors: s.errors.filter((e) => !e.startsWith(`${layer}:`)),
+      }));
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      generateLayer(
+        layer,
+        params.key,
+        params.prompt,
+        params.seed,
+        controller.signal,
+        params.postProcess,
+        true, // skipCache — bypass the expired Firestore URL
+      );
+    },
+    [generateLayer],
+  );
 
   // ── Derive UI state ──────────────────────────────────────────────────────
   const isAnyLayerLoading = layers.loading.background || layers.loading.character || layers.loading.frame;
@@ -372,6 +484,7 @@ export function CardForge() {
                   layerLoading={layers.loading}
                   characterBlend={characterBlend}
                   hideToolButtons
+                  onLayerError={handleLayerError}
                   onUpdate={(updates) => {
                     setGenerated((prev) => {
                       if (!prev) return prev;
