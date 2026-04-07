@@ -12,14 +12,19 @@ const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker"
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union", "Olympic"];
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic"];
-const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville"];
+const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff00aa", "#ffaa00", "#8b5cf6", "#ff4444", "#44ffff"];
 
 const DISTRICT_HINTS: Record<District, string> = {
-  Airaway:      "☁️ Floating City in the Clouds",
-  Nightshade:   "🌆 Cyberpunk Megalopolis",
-  Batteryville: "🌵 Off-grid Solar/Wind Camp",
+  Airaway:          "☁️ Floating City in the Clouds",
+  "The Roads":      "🛣️ Open Courier Highways",
+  Batteryville:     "🌵 Off-grid Solar/Wind Camp",
+  "The Grid":       "🏭 Diesel-punk Industrial Zone",
+  Electropolis:     "🚔 Security Showcase District",
+  Nightshade:       "🌆 The Murk — Underground Tunnels & Neon Alleys",
+  "The Forest":     "🌲 Off-grid Agrarian Commune",
+  "Glass City":     "🏙️ Cyberpunk Megalopolis",
 };
 
 export function EditCard() {

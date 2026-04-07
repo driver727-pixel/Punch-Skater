@@ -17,7 +17,7 @@ export type Faction =
   | "Punch Skaters";
 
 export type Manufacturer = "UCA" | "DIY/Plywood" | "The Wooders" | "Dark Light Labs" | "Asclepian Medical" | "VoidRacer";
-export type District = "Airaway" | "The Roads" | "The Tunnels" | "Batteryville" | "The Grid" | "Electropolis" | "Nightshade" | "The Forest";
+export type District = "Airaway" | "The Roads" | "Batteryville" | "The Grid" | "Electropolis" | "Nightshade" | "The Forest" | "Glass City";
 export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Chef" | "Fash";
 export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legendary";
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";

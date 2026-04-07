@@ -43,12 +43,12 @@ export type Manufacturer =
 export type District = 
   | "Airaway" 
   | "The Roads" 
-  | "The Tunnels" 
   | "Batteryville" 
   | "The Grid" 
   | "Electropolis" 
-  | "Nightshade (The Murk)" 
-  | "The Forest";
+  | "Nightshade" 
+  | "The Forest"
+  | "Glass City";
 
 export interface CardPayload {
   id: string;

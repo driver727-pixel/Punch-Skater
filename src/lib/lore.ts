@@ -130,23 +130,6 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
     ],
   },
   {
-    name: "The Tunnels",
-    controlledBy: "Various underground crews — contested",
-    tagline: "You don't find the Tunnels. The Tunnels find you.",
-    description:
-      "A vast network of former transit tunnels running beneath the city. Vibrant " +
-      "communities have taken root here — subterranean homes, underground markets, " +
-      "and tight-knit skate gangs who treat these passages as sacred territory. " +
-      "The Tunnels are shaded, intimate, and deeply political. Knowing the right " +
-      "people is more important than knowing the routes.",
-    atmosphere: "Dim lighting, heat and humidity, spray-paint murals, low ceilings, acoustic echoes.",
-    crews: ["Nightshade Runners", "The Undercurrent", "Deep Burners"],
-    flavorTexts: [
-      "\"Every graffiti tag is a landmark. Learn to read them.\"",
-      "\"Wrong tunnel, wrong crew. You won't get a second warning.\"",
-    ],
-  },
-  {
     name: "Batteryville",
     controlledBy: "HexChain Logistics / Recycler Collectives",
     tagline: "The City runs on our power. We run on spite.",
@@ -239,6 +222,28 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
       "\"No screens. No trackers. No corp logos. Just wood and speed.\"",
       "\"A plywood deck built by hand will outlast anything Cascade ever manufactured.\"",
       "\"They don't trust you until you leave your device at the treeline.\"",
+    ],
+  },
+  {
+    name: "Glass City",
+    controlledBy: "Prism Media Group / Autonomous Systems",
+    tagline: "A million screens. Zero witnesses.",
+    description:
+      "The most densely surveilled district in existence — and somehow the most deserted. " +
+      "Glass City is a cyberpunk megalopolis of towering glass skyscrapers packed floor-to-ceiling " +
+      "with holographic advertisements, but the streets below are hauntingly empty. No cars, no " +
+      "bicycles, no pedestrians. Autonomous delivery drones handle every last-metre run; human " +
+      "couriers were phased out years ago by Prism Media Group's AI logistics division. Skaters " +
+      "who work Glass City do so illegally, darting between sensor sweeps and drone corridors, " +
+      "carrying packages the AI systems are not authorised to touch. Neon reflections pulse on " +
+      "rain-soaked pavement. Every surface is a screen. Nobody is watching — and yet everything " +
+      "is recorded.",
+    atmosphere: "Rain-soaked neon reflections, towering glass towers, holographic ads, silent drone traffic, no humans in sight.",
+    crews: ["Neon Ghosts", "The Static Pack", "Phantom Riders"],
+    flavorTexts: [
+      "\"The city looks alive. It isn't. The screens just make you think something's home.\"",
+      "\"Every sensor gap is a window. Every drone route is a door. Learn the schedule.\"",
+      "\"Glass City pays the best because nobody sane will skate it.\"",
     ],
   },
 ];
@@ -355,7 +360,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
   },
   {
     name: "Qu111s (Quills)",
-    districts: ["Nightshade", "The Tunnels"],
+    districts: ["Nightshade"],
     tagline: "The truth is in the data. We will release it.",
     description:
       "A guerrilla journalist organization that monitors the activities of the oligarchs. " +
@@ -388,7 +393,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
   },
   {
     name: "D4rk $pider",
-    districts: ["The Grid", "The Tunnels"],
+    districts: ["The Grid", "Nightshade"],
     tagline: "Data for blackmail. Blackmail for survival.",
     description:
       "Hackers on the dark web who mirror the Quills' methods but use data for blackmail " +
@@ -421,7 +426,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
   },
   {
     name: "The Knights Technarchy",
-    districts: ["Nightshade", "Airaway", "The Tunnels"],
+    districts: ["Nightshade", "Airaway"],
     tagline: "The Dark Lights see everything. Serve or be disappeared.",
     description:
       "Cyber ninja zealots who serve a massive secret society known as the Dark Lights. " +
