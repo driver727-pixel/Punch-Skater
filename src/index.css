@@ -2618,6 +2618,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--accent);
   font-weight: 700;
 }
+.referral-panel__count--error {
+  color: var(--text-dim);
+}
 .referral-panel__link-row {
   display: flex;
   gap: 8px;

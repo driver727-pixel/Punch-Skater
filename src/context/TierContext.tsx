@@ -79,7 +79,9 @@ export function TierProvider({ children }: { children: ReactNode }) {
     );
 
     // Claim asynchronously — visitorUid unknown at this point (auth is separate)
-    claimReferral(referrerUid, null);
+    claimReferral(referrerUid, null).catch((err) => {
+      console.warn("[Referral] Failed to record referral claim:", err);
+    });
   }, []);
 
   const canForge = TIERS[tier].canGenerate || generateCredits > 0;

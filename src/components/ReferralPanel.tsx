@@ -16,6 +16,8 @@ export function ReferralPanel() {
   const { generateCredits } = useTier();
   const [copied, setCopied] = useState(false);
   const [firestoreCredits, setFirestoreCredits] = useState<number | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(false);
+  const [creditsError, setCreditsError] = useState(false);
 
   const referralLink = user
     ? `${window.location.origin}/?ref=${user.uid}`
@@ -24,9 +26,17 @@ export function ReferralPanel() {
   // Load the live credit count from Firestore
   useEffect(() => {
     if (!user) return;
+    setCreditsLoading(true);
+    setCreditsError(false);
     getReferralCreditCount(user.uid)
-      .then(setFirestoreCredits)
-      .catch(() => setFirestoreCredits(null));
+      .then((count) => {
+        setFirestoreCredits(count);
+        setCreditsLoading(false);
+      })
+      .catch(() => {
+        setCreditsError(true);
+        setCreditsLoading(false);
+      });
   }, [user]);
 
   const handleCopy = useCallback(() => {
@@ -51,7 +61,15 @@ export function ReferralPanel() {
 
       <div className="referral-panel__credits">
         Credits earned:{" "}
-        <span className="referral-panel__count">{displayCredits}</span>
+        {creditsLoading ? (
+          <span className="referral-panel__count" aria-label="Loading credits…">…</span>
+        ) : creditsError ? (
+          <span className="referral-panel__count referral-panel__count--error" title="Could not load from server">
+            {generateCredits} <small>(local)</small>
+          </span>
+        ) : (
+          <span className="referral-panel__count">{displayCredits}</span>
+        )}
       </div>
 
       <div className="referral-panel__link-row">
