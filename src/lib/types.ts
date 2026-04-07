@@ -1,21 +1,11 @@
 /**
  * types.ts
  */
-
 export type Faction = 
-  | "United Corporations of America (UCA)"
-  | "Qu111s (Quills)"
-  | "Ne0n Legion"
-  | "Iron Curtains"
-  | "D4rk $pider"
-  | "The Asclepians"
-  | "The Mesopotamian Society"
-  | "The Knights Technarchy"
-  | "Hermes' Squirmies"
-  | "UCPS Workers"
-  | "Moonrisers"
-  | "The Wooders"
-  | "Punch Skaters";
+  | "United Corporations of America (UCA)" | "Qu111s (Quills)" | "Ne0n Legion"
+  | "Iron Curtains" | "D4rk $pider" | "The Asclepians" | "The Mesopotamian Society"
+  | "The Knights Technarchy" | "Hermes' Squirmies" | "UCPS Workers" | "Moonrisers"
+  | "The Wooders" | "Punch Skaters";
 
 export type Manufacturer = "UCA" | "DIY/Plywood" | "The Wooders" | "Dark Light Labs" | "Asclepian Medical" | "VoidRacer";
 export type District = "Airaway" | "The Roads" | "The Tunnels" | "Batteryville" | "The Grid" | "Electropolis" | "Nightshade" | "The Forest";
@@ -44,8 +34,4 @@ export interface CardPayload {
   activeAbility: string;
   flavorText: string;
   tags: string[];
-  // Seeds for image generation
-  frameSeed: string;
-  backgroundSeed: string;
-  characterSeed: string;
 }
