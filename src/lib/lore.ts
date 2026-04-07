@@ -20,7 +20,8 @@ export const LORE_CREWS: string[] = [
   "Hermes' Squirmies",
   "UCPS Workers",
   "Moonrisers",
-  "The Wooders"
+  "The Wooders",
+  "Punch Skaters"
 ];
 
 // ── Manufacturers ────────────────────────────────────────────────────────────
