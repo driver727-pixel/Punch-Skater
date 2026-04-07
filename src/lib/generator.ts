@@ -12,10 +12,7 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
     manufacturer: VIBE_TO_MANUFACTURER[prompts.vibe],
     passiveTrait: LORE_PASSIVE_TRAITS[0].name,
     activeAbility: LORE_ACTIVE_ABILITIES[0].name,
-    flavorText: `A ${prompts.rarity} courier spotted in ${prompts.district}.`,
-    tags: [prompts.style, prompts.vibe],
-    frameSeed: prompts.rarity,
-    backgroundSeed: prompts.district,
-    characterSeed: `${prompts.archetype}-${prompts.style}`
+    flavorText: `A ${prompts.rarity} ${prompts.archetype} delivery detected in ${prompts.district}.`,
+    tags: [prompts.style, prompts.vibe, prompts.rarity]
   };
 };
