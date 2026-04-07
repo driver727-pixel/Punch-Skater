@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { CardPrompts, CardPayload, Archetype, Rarity, Style, Vibe, District } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
+import { generateImage, removeBackground, isImageGenConfigured } from "../services/imageGen";
+import { getCachedImage, setCachedImage } from "../services/imageCache";
+import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 
 const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Olympic", "Fash"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
@@ -9,61 +12,341 @@ const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union"]
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest"];
 
+const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
+
+// ── Image generation layer helpers ─────────────────────────────────────────────
+
+interface LayerState {
+  backgroundUrl?: string;
+  characterUrl?: string;
+  frameUrl?: string;
+  loading: { background: boolean; character: boolean; frame: boolean };
+  errors: string[];
+}
+
+const INITIAL_LAYER_STATE: LayerState = {
+  loading: { background: false, character: false, frame: false },
+  errors: [],
+};
+
 export function CardForge() {
   const [prompts, setPrompts] = useState<CardPrompts>({
-    archetype: "Ninja", rarity: "Punch Skater", style: "Street", 
-    vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5
+    archetype: "Ninja", rarity: "Punch Skater", style: "Street",
+    vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5,
   });
   const [generated, setGenerated] = useState<CardPayload | null>(null);
+  const [layers, setLayers] = useState<LayerState>(INITIAL_LAYER_STATE);
+  const [characterBlend, setCharacterBlend] = useState(1);
+  const [forging, setForging] = useState(false);
 
-  const set = <K extends keyof CardPrompts>(key: K, val: CardPrompts[K]) => 
+  // Abort controller ref for cancelling in-flight image generation
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  const set = <K extends keyof CardPrompts>(key: K, val: CardPrompts[K]) =>
     setPrompts((p) => ({ ...p, [key]: val }));
 
-  const PillSection = ({ label, current, options, field }: { label: string, current: string, options: string[], field: keyof CardPrompts }) => (
-    <section className="mb-6">
-      <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">{label}</label>
-      <div className="flex flex-wrap gap-2">
-        {options.map(opt => (
-          <button 
-            key={opt} 
-            onClick={() => set(field, opt as CardPrompts[keyof CardPrompts])} 
-            className={`px-3 py-1 text-sm rounded-full border transition-all ${current === opt ? 'bg-yellow-500 text-black border-yellow-500 font-bold' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-    </section>
+  // ── Generate a single layer (background, character, or frame) ────────────
+  const generateLayer = useCallback(
+    async (
+      layer: "background" | "character" | "frame",
+      cacheKey: string,
+      prompt: string,
+      seed: string,
+      signal: AbortSignal,
+      postProcess?: (url: string) => Promise<string>,
+    ) => {
+      setLayers((s) => ({ ...s, loading: { ...s.loading, [layer]: true } }));
+      try {
+        // Check cache first
+        const cached = await getCachedImage(cacheKey);
+        if (signal.aborted) return;
+        if (cached) {
+          const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
+          setLayers((s) => ({
+            ...s,
+            [urlKey]: cached,
+            loading: { ...s.loading, [layer]: false },
+          }));
+          return;
+        }
+
+        // Generate via Fal.ai
+        const result = await generateImage(prompt, seed);
+        if (signal.aborted) return;
+
+        let finalUrl = result.imageUrl;
+
+        // Post-process (e.g., background removal for character layer)
+        if (postProcess) {
+          finalUrl = await postProcess(finalUrl);
+          if (signal.aborted) return;
+        }
+
+        // Cache the result
+        await setCachedImage(cacheKey, finalUrl);
+
+        const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
+        setLayers((s) => ({
+          ...s,
+          [urlKey]: finalUrl,
+          loading: { ...s.loading, [layer]: false },
+        }));
+      } catch (err) {
+        if (signal.aborted) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        setLayers((s) => ({
+          ...s,
+          loading: { ...s.loading, [layer]: false },
+          errors: [...s.errors, `${layer}: ${msg}`],
+        }));
+      }
+    },
+    [],
   );
 
+  // ── Main forge handler ───────────────────────────────────────────────────
+  const handleForge = useCallback(() => {
+    // Cancel any in-flight generation
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
+    // Generate card payload
+    const card = generateCard(prompts);
+    setGenerated(card);
+    setForging(true);
+
+    // Reset layer state
+    setLayers(INITIAL_LAYER_STATE);
+
+    if (!isImageGenConfigured) {
+      setForging(false);
+      return;
+    }
+
+    // Kick off all three layers in parallel
+    const bgPrompt   = buildBackgroundPrompt(prompts.district);
+    const charPrompt = buildCharacterPrompt(prompts);
+    const framePrompt = buildFramePrompt(prompts.rarity);
+
+    const bgKey    = `bg::${card.backgroundSeed}`;
+    const charKey  = `char::${card.characterSeed}`;
+    const frameKey = `frame::${card.frameSeed}`;
+
+    const bgSeed    = card.backgroundSeed;
+    const charSeed  = card.characterSeed;
+    const frameSeed = card.frameSeed;
+
+    // Background layer
+    generateLayer("background", bgKey, bgPrompt, bgSeed, signal);
+
+    // Character layer — post-process with background removal
+    generateLayer("character", charKey, charPrompt, charSeed, signal, async (url) => {
+      const result = await removeBackground(url);
+      return result.imageUrl;
+    });
+
+    // Frame layer
+    generateLayer("frame", frameKey, framePrompt, frameSeed, signal);
+
+    setForging(false);
+  }, [prompts, generateLayer]);
+
+  // ── Derive UI state ──────────────────────────────────────────────────────
+  const isAnyLayerLoading = layers.loading.background || layers.loading.character || layers.loading.frame;
+  const hasAnyLayerUrl = !!(layers.backgroundUrl || layers.characterUrl || layers.frameUrl);
+
   return (
-    <div className="page p-8 max-w-6xl mx-auto">
-      <h1 className="text-5xl font-black italic tracking-tighter mb-12 border-b-4 border-yellow-500 inline-block">CARD FORGE</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-        <div className="controls bg-gray-900/50 p-8 rounded-2xl border border-gray-800">
-          <PillSection label="Archetype" current={prompts.archetype} options={ARCHETYPES} field="archetype" />
-          <PillSection label="Rarity" current={prompts.rarity} options={RARITIES} field="rarity" />
-          <PillSection label="Style" current={prompts.style} options={STYLES} field="style" />
-          <PillSection label="Vibe" current={prompts.vibe} options={VIBES} field="vibe" />
-          <PillSection label="District" current={prompts.district} options={DISTRICTS} field="district" />
-          
-          <button 
-            onClick={() => setGenerated(generateCard(prompts))} 
-            className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-5 rounded-xl text-xl mt-8 shadow-[0_0_20px_rgba(234,179,8,0.3)] transition-all active:scale-95"
+    <div className="page">
+      <h1 className="page-title">CARD FORGE</h1>
+      <p className="page-sub">Configure your courier and forge a unique card</p>
+
+      <div className="forge-layout">
+        {/* ── Left column: form controls ── */}
+        <div className="forge-form">
+          <div className="form-group">
+            <label>Archetype</label>
+            <div className="pill-group">
+              {ARCHETYPES.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.archetype === opt ? " selected" : ""}`}
+                  onClick={() => set("archetype", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Rarity</label>
+            <div className="pill-group">
+              {RARITIES.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.rarity === opt ? " selected" : ""}`}
+                  onClick={() => set("rarity", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Style</label>
+            <div className="pill-group">
+              {STYLES.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.style === opt ? " selected" : ""}`}
+                  onClick={() => set("style", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Vibe</label>
+            <div className="pill-group">
+              {VIBES.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.vibe === opt ? " selected" : ""}`}
+                  onClick={() => set("vibe", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>District</label>
+            <div className="pill-group">
+              {DISTRICTS.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.district === opt ? " selected" : ""}`}
+                  onClick={() => set("district", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Accent Color</label>
+            <div className="color-group">
+              {ACCENT_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  className={`color-swatch${prompts.accentColor === c ? " selected" : ""}`}
+                  style={{ background: c }}
+                  onClick={() => set("accentColor", c)}
+                  title={c}
+                />
+              ))}
+              <input
+                type="color"
+                className="color-picker"
+                value={prompts.accentColor}
+                onChange={(e) => set("accentColor", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Stamina — {prompts.stamina}/10</label>
+            <input
+              type="range"
+              className="stamina-slider"
+              min={1}
+              max={10}
+              step={1}
+              value={prompts.stamina}
+              onChange={(e) => set("stamina", Number(e.target.value))}
+            />
+            <p className="form-hint">Higher stamina = heavier cargo capacity</p>
+          </div>
+
+          <button
+            className="btn-primary btn-lg btn-forge"
+            onClick={handleForge}
+            disabled={forging || isAnyLayerLoading}
           >
-            ⚡ FORGE COURIER CARD
+            {isAnyLayerLoading ? "✨ Generating…" : "⚡ FORGE COURIER CARD"}
           </button>
+
+          {/* Post-generation controls */}
+          {generated && (hasAnyLayerUrl || isAnyLayerLoading) && (
+            <div className="forge-generated-actions">
+              <div className="blend-control">
+                <label className="blend-control__label">
+                  <span>Character Blend</span>
+                  <span>{Math.round(characterBlend * 100)}%</span>
+                </label>
+                <input
+                  type="range"
+                  className="stamina-slider"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={characterBlend}
+                  onChange={(e) => setCharacterBlend(Number(e.target.value))}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="preview flex items-start justify-center pt-10">
+        {/* ── Right column: card preview ── */}
+        <div className="forge-preview">
           {generated ? (
-            <div className="sticky top-8">
-              <CardDisplay card={generated} />
+            <div className="forge-card-wrapper">
+              <div>
+                {/* Layer errors */}
+                {layers.errors.length > 0 && (
+                  <div className="forge-image-errors">
+                    {layers.errors.map((err, i) => (
+                      <p key={i} className="forge-image-error">{err}</p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Image gen not configured notice */}
+                {!isImageGenConfigured && (
+                  <p className="forge-image-notice">
+                    AI image generation is not configured. Set{" "}
+                    <code>VITE_IMAGE_API_URL</code> in your <code>.env</code> to
+                    enable Fal.ai layered artwork.
+                  </p>
+                )}
+
+                <CardDisplay
+                  card={generated}
+                  backgroundImageUrl={layers.backgroundUrl}
+                  characterImageUrl={layers.characterUrl}
+                  frameImageUrl={layers.frameUrl}
+                  layerLoading={layers.loading}
+                  characterBlend={characterBlend}
+                />
+              </div>
             </div>
           ) : (
-            <div className="text-center text-gray-700 py-20 border-2 border-dashed border-gray-800 rounded-3xl w-full">
-              <p className="text-6xl mb-4">🛹</p>
-              <p className="font-mono uppercase tracking-[0.2em] text-xs">Select prompts to initialize</p>
+            <div className="empty-preview">
+              <span className="empty-icon">🛹</span>
+              <span>Select prompts &amp; forge a card</span>
             </div>
           )}
         </div>
