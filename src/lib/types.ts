@@ -18,10 +18,10 @@ export type Faction =
 
 export type Manufacturer = "UCA" | "DIY/Plywood" | "The Wooders" | "Dark Light Labs" | "Asclepian Medical" | "VoidRacer";
 export type District = "Airaway" | "The Roads" | "The Tunnels" | "Batteryville" | "The Grid" | "Electropolis" | "Nightshade" | "The Forest";
-export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Chef" | "Olympic" | "Fash";
+export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Chef" | "Fash";
 export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legendary";
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
-export type Style = "Corporate" | "Street" | "Off-grid" | "Military" | "Union";
+export type Style = "Corporate" | "Street" | "Off-grid" | "Military" | "Union" | "Olympic";
 export type Gender = "Woman" | "Man" | "Non-binary";
 
 export interface CardPrompts {

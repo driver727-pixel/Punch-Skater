@@ -18,7 +18,6 @@ export const ARCHETYPE_TO_FACTION: Record<Archetype, Faction> = {
   "Ex Military":  "Iron Curtains",
   "Hacker":       "D4rk $pider",
   "Chef":         "UCPS Workers",
-  "Olympic":      "United Corporations of America (UCA)",
   "Fash":         "The Asclepians",
 };
 
@@ -317,19 +316,6 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
       "community goodwill as much as scratch. In Batteryville and Nightshade markets, a " +
       "well-connected Chef can access back-routes that don't exist on any map.",
     strengths: "Good Speed, high Grit, strong community access. Thrives in Batteryville and Nightshade.",
-  },
-  {
-    name: "Olympic",
-    tagline: "They built us to win. We found something more interesting to do with the training.",
-    description:
-      "Retired or disgraced athletes from the city's corporate-sponsored competitive " +
-      "sports leagues — maintained at enormous expense by their sponsoring corporations. " +
-      "The UCA openly employs Olympic couriers as showcase talent on its white-bike " +
-      "distribution routes, which makes them a prime target for Punch Skater broomstick " +
-      "attacks. When their contracts ended (usually not on good terms), the best athletes " +
-      "took the conditioning with them to the underground. They time themselves on every " +
-      "run, track personal records, and push physical limits as a matter of professional habit.",
-    strengths: "Maximum Speed, high Grit. Dominant in open-terrain districts and Airaway plazas.",
   },
   {
     name: "Fash",

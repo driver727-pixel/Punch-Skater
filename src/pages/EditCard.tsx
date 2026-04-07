@@ -10,7 +10,7 @@ import { useTier } from "../context/TierContext";
 
 const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
-const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union"];
+const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union", "Olympic"];
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
@@ -133,7 +133,7 @@ export function EditCard() {
           </div>
 
           <div className="form-group">
-            <label>Rarity</label>
+            <label>Class</label>
             <div className="pill-group">
               {RARITIES.map((r) => (
                 <button key={r} className={`pill ${prompts.rarity === r ? "selected" : ""}`} onClick={() => set("rarity", r)}>{r}</button>

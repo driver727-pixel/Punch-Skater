@@ -52,6 +52,7 @@ const STYLE_CLOTHING: Record<string, string> = {
   "Off-grid": "rugged off-grid survivalist gear with utility belts",
   Military:   "tactical military fatigues with body armour",
   Union:      "union worker overalls covered in badge patches",
+  Olympic:    "a coordinated high-end athletic ensemble — matching top and bottoms in sponsor colours, performance fabric, logo patches, and a professional snowboard warm-up suit or full snowsuit",
 };
 
 const ARCHETYPE_POSES: Record<string, string> = {
@@ -60,7 +61,6 @@ const ARCHETYPE_POSES: Record<string, string> = {
   "Ex Military":  "standing at confident attention with arms crossed",
   "Hacker":       "typing on a holographic keyboard, screens reflected in goggles",
   "Chef":         "wearing a white chef apron and tall chef hat, carrying a pot or pan, wearing kitchen non-slip shoes",
-  "Olympic":      "in a dynamic athletic stance, wearing coordinated high-performance team apparel with sponsor patches",
   "Fash":         "standing upright in a sharp pressed uniform with necktie, jacket, lapels and coat-of-arms insignia",
 };
 

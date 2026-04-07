@@ -56,7 +56,6 @@ const PERSONALITY_POOLS: Record<string, string[]> = {
   "Ex Military":   ["stoic",        "tactical",    "reliable",       "battle-hardened", "loyal"],
   "Hacker":        ["paranoid",     "curious",     "methodical",     "introverted", "brilliant"],
   "Chef":          ["resourceful",  "creative",    "stubborn",       "enduring",    "improviser"],
-  "Olympic":       ["competitive",  "disciplined", "focused",        "ambitious",   "driven"],
   "Fash":          ["vain",         "precise",     "status-obsessed","calculating", "polished"],
 };
 
@@ -70,7 +69,6 @@ const ARCHETYPE_MODS: Record<string, StatMods> = {
   "Ex Military":  { speed:  1, stealth:  0, tech:  1, grit:  3, rep:  0 },
   "Hacker":       { speed: -1, stealth:  2, tech:  3, grit:  0, rep:  0 },
   "Chef":         { speed:  0, stealth:  0, tech:  1, grit:  3, rep:  1 },
-  "Olympic":      { speed:  3, stealth:  0, tech:  0, grit:  1, rep:  2 },
   "Fash":         { speed:  1, stealth:  1, tech:  2, grit: -1, rep:  2 },
 };
 

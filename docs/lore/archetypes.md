@@ -117,28 +117,6 @@ well in any district but truly shines in Batteryville and Nightshade.
 
 ---
 
-## Olympic
-
-> *"They built us to win. We found something more interesting to do with the training."*
-
-**Origin:** Retired or disgraced athletes from the City's corporate-sponsored
-competitive sports leagues. Olympic couriers were once the fastest, strongest, most
-physically optimized humans in the City — maintained at enormous expense by their
-sponsoring corporations. When the contracts ended (usually not on good terms), they
-took the conditioning with them. The underground was happy to employ it.
-
-**Culture:** Competitive and driven by personal records. Olympic couriers don't
-just run jobs — they time themselves, track their personal bests, and push their
-physical limits every run. They bring a professional athlete's mentality to courier
-work: rest is training, nutrition is operational, and every improvement in time or
-efficiency is celebrated. Their raw physical ability makes them the most reliable
-speed-runners in the network.
-
-**Strengths:** Maximum Speed, high Grit. Dominant in open-terrain districts like
-Glass City and the elevated plazas of Airaway.
-
----
-
 ## Fash
 
 > *"Reputation doesn't just open doors. In Glass City, reputation IS the door."*
