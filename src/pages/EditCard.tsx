@@ -8,9 +8,9 @@ import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
 import { useTier } from "../context/TierContext";
 
-const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef"];
+const ARCHETYPES: Archetype[] = ["The Knights Technarchy", "Qu111s", "Iron Curtains", "D4rk $pider", "The Asclepians", "The Mesopotamian Society", "Hermes' Squirmies", "UCPS", "The Team"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
-const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union", "Olympic"];
+const STYLES: Style[] = ["Corporate", "Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Fascist", "Street", "Off-grid", "Military", "Union", "Olympic"];
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];

@@ -8,9 +8,9 @@ import { generateImage, removeBackground, isImageGenConfigured } from "../servic
 import { getCachedImage, setCachedImage } from "../services/imageCache";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 
-const ARCHETYPES: Archetype[] = ["Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Fash"];
+const ARCHETYPES: Archetype[] = ["The Knights Technarchy", "Qu111s", "Iron Curtains", "D4rk $pider", "The Asclepians", "The Mesopotamian Society", "Hermes' Squirmies", "UCPS", "The Team"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
-const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union", "Olympic"];
+const STYLES: Style[] = ["Corporate", "Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Fascist", "Street", "Off-grid", "Military", "Union", "Olympic"];
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
@@ -34,7 +34,7 @@ const INITIAL_LAYER_STATE: LayerState = {
 
 export function CardForge() {
   const [prompts, setPrompts] = useState<CardPrompts>({
-    archetype: "Ninja", rarity: "Punch Skater", style: "Street",
+    archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
     vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5,
     gender: "Non-binary",
   });

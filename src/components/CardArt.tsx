@@ -539,7 +539,7 @@ function CharacterHead({ cx, cy, accentColor, archetype }: {
     <circle cx={cx} cy={cy - 18} r={11} fill="#1e1e3a" stroke={accentColor} strokeWidth="1.5" />
   );
 
-  if (archetype === "Ninja") {
+  if (archetype === "The Knights Technarchy") {
     return (
       <>
         {baseHead}
@@ -555,7 +555,7 @@ function CharacterHead({ cx, cy, accentColor, archetype }: {
     );
   }
 
-  if (archetype === "Punk Rocker") {
+  if (archetype === "Qu111s") {
     return (
       <>
         {baseHead}
@@ -578,7 +578,7 @@ function CharacterHead({ cx, cy, accentColor, archetype }: {
     );
   }
 
-  if (archetype === "Ex Military") {
+  if (archetype === "Iron Curtains") {
     return (
       <>
         {baseHead}
@@ -596,7 +596,7 @@ function CharacterHead({ cx, cy, accentColor, archetype }: {
     );
   }
 
-  if (archetype === "Hacker") {
+  if (archetype === "D4rk $pider") {
     return (
       <>
         {baseHead}
@@ -620,7 +620,7 @@ function CharacterHead({ cx, cy, accentColor, archetype }: {
     );
   }
 
-  if (archetype === "Chef") {
+  if (archetype === "The Asclepians") {
     return (
       <>
         {baseHead}
@@ -634,6 +634,68 @@ function CharacterHead({ cx, cy, accentColor, archetype }: {
           fill={accentColor} fillOpacity="0.6" />
         <rect x={cx + 3} y={cy - 21} width={4} height={3} rx={1}
           fill={accentColor} fillOpacity="0.6" />
+      </>
+    );
+  }
+
+  if (archetype === "The Mesopotamian Society") {
+    return (
+      <>
+        {baseHead}
+        <path d={`M${cx - 12},${cy - 22} Q${cx},${cy - 34} ${cx + 12},${cy - 22}`}
+          fill="#8b6914" stroke="#c8970a" strokeWidth="0.8" />
+        <rect x={cx - 9} y={cy - 24} width={18} height={4} rx={1}
+          fill="#6b4f10" stroke="#c8970a" strokeWidth="0.6" />
+        <circle cx={cx - 6} cy={cy - 20} r={2.5}
+          fill={accentColor} fillOpacity="0.45" stroke={accentColor} strokeWidth="0.6" />
+        <circle cx={cx + 6} cy={cy - 20} r={2.5}
+          fill={accentColor} fillOpacity="0.45" stroke={accentColor} strokeWidth="0.6" />
+      </>
+    );
+  }
+
+  if (archetype === "Hermes' Squirmies") {
+    return (
+      <>
+        {baseHead}
+        <rect x={cx - 10} y={cy - 28} width={20} height={10} rx={3}
+          fill="#ff8800" fillOpacity="0.8" stroke="#ffaa00" strokeWidth="0.8" />
+        <rect x={cx - 8} y={cy - 22} width={16} height={3} rx={1}
+          fill="#ffaa00" fillOpacity="0.5" />
+        <circle cx={cx - 6} cy={cy - 21} r={2} fill={accentColor} fillOpacity="0.6" />
+        <circle cx={cx + 6} cy={cy - 21} r={2} fill={accentColor} fillOpacity="0.6" />
+      </>
+    );
+  }
+
+  if (archetype === "UCPS") {
+    return (
+      <>
+        {baseHead}
+        <path d={`M${cx - 12},${cy - 20} Q${cx},${cy - 30} ${cx + 12},${cy - 20}`}
+          fill="#224488" stroke="#4466cc" strokeWidth="0.8" />
+        <rect x={cx - 8} y={cy - 23} width={16} height={3} rx={1}
+          fill="#4466cc" fillOpacity="0.5" />
+        <rect x={cx - 6} y={cy - 21} width={4} height={2.5} rx={1}
+          fill={accentColor} fillOpacity="0.55" />
+        <rect x={cx + 2} y={cy - 21} width={4} height={2.5} rx={1}
+          fill={accentColor} fillOpacity="0.55" />
+      </>
+    );
+  }
+
+  if (archetype === "The Team") {
+    return (
+      <>
+        {baseHead}
+        <rect x={cx - 10} y={cy - 30} width={20} height={12} rx={4}
+          fill={accentColor} fillOpacity="0.5" stroke={accentColor} strokeWidth="0.9" />
+        <ellipse cx={cx} cy={cy - 30} rx={9} ry={4}
+          fill={accentColor} fillOpacity="0.35" />
+        <circle cx={cx - 5} cy={cy - 21} r={2.5}
+          fill={accentColor} fillOpacity="0.4" stroke={accentColor} strokeWidth="0.7" />
+        <circle cx={cx + 5} cy={cy - 21} r={2.5}
+          fill={accentColor} fillOpacity="0.4" stroke={accentColor} strokeWidth="0.7" />
       </>
     );
   }
@@ -734,6 +796,134 @@ function CharacterBody({ cx, cy, accentColor, style }: {
           fill="#222255" stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.7" />
         <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#333355" />
         <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#333355" />
+      </>
+    );
+  }
+  if (style === "Olympic") {
+    return (
+      <>
+        <rect x={cx - 13} y={cy - 10} width={26} height={30} rx={4}
+          fill={accentColor} fillOpacity="0.4" stroke={accentColor} strokeWidth="1.2" />
+        <rect x={cx - 11} y={cy - 8} width={22} height={4} rx={1}
+          fill={accentColor} fillOpacity="0.6" />
+        <rect x={cx - 10} y={cy + 8} width={20} height={5} rx={2}
+          fill={accentColor} fillOpacity="0.3" stroke={accentColor} strokeWidth="0.5" />
+        <circle cx={cx - 4} cy={cy - 4} r={2.5} fill={accentColor} fillOpacity="0.7" />
+        <circle cx={cx + 4} cy={cy - 4} r={2.5} fill={accentColor} fillOpacity="0.7" />
+        <rect x={cx - 16} y={cy - 10} width={8} height={6} rx={2}
+          fill={accentColor} fillOpacity="0.5" stroke={accentColor} strokeWidth="0.8" />
+        <rect x={cx + 8}  y={cy - 10} width={8} height={6} rx={2}
+          fill={accentColor} fillOpacity="0.5" stroke={accentColor} strokeWidth="0.8" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#1a1a2e" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#1a1a2e" />
+      </>
+    );
+  }
+  if (style === "Ninja") {
+    return (
+      <>
+        <rect x={cx - 11} y={cy - 10} width={22} height={30} rx={3}
+          fill="#0a0a1a" stroke={accentColor} strokeWidth="0.8" />
+        <line x1={cx - 11} y1={cy + 5} x2={cx + 11} y2={cy + 5}
+          stroke={accentColor} strokeWidth="0.5" strokeOpacity="0.4" />
+        <rect x={cx - 14} y={cy - 10} width={7} height={5} rx={2}
+          fill="#0a0a1a" stroke={accentColor} strokeWidth="0.6" />
+        <rect x={cx + 7}  y={cy - 10} width={7} height={5} rx={2}
+          fill="#0a0a1a" stroke={accentColor} strokeWidth="0.6" />
+        <rect x={cx - 9}  y={cy + 18} width={8} height={14} rx={2} fill="#080810" />
+        <rect x={cx + 1}  y={cy + 18} width={8} height={14} rx={2} fill="#080810" />
+      </>
+    );
+  }
+  if (style === "Punk Rocker") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={28} rx={3}
+          fill="#1a0a22" stroke={accentColor} strokeWidth="1" />
+        {[-8, 0, 8].map((dx, i) => (
+          <rect key={i} x={cx + dx - 2} y={cy - 8} width={4} height={4} rx={1}
+            fill={accentColor} fillOpacity={0.5 + i * 0.1} />
+        ))}
+        <line x1={cx - 12} y1={cy + 6} x2={cx + 12} y2={cy + 6}
+          stroke={accentColor} strokeWidth="1" strokeOpacity="0.5" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#1a0a22" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#1a0a22" />
+      </>
+    );
+  }
+  if (style === "Ex Military") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={30} rx={3}
+          fill="#3a4428" stroke="#5a6438" strokeWidth="1" />
+        <rect x={cx - 10} y={cy - 6} width={6} height={5} rx={1} fill="#2a3018" fillOpacity="0.6" />
+        <rect x={cx + 4}  y={cy}     width={7} height={4} rx={1} fill="#4a5430" fillOpacity="0.5" />
+        <rect x={cx - 11} y={cy + 10} width={22} height={5} rx={1}
+          fill="#ccccaa" fillOpacity="0.25" />
+        <rect x={cx - 14} y={cy - 10} width={7} height={5} rx={2}
+          fill="#3a4428" stroke="#5a6438" strokeWidth="0.7" />
+        <rect x={cx + 7}  y={cy - 10} width={7} height={5} rx={2}
+          fill="#3a4428" stroke="#5a6438" strokeWidth="0.7" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#2a3218" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#2a3218" />
+      </>
+    );
+  }
+  if (style === "Hacker") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={28} rx={3}
+          fill="#111133" stroke={accentColor} strokeWidth="1" />
+        {[-8, -2, 4].map((dy, i) => (
+          <line key={i} x1={cx - 10} y1={cy + dy} x2={cx + 10} y2={cy + dy}
+            stroke={accentColor} strokeWidth="0.5" strokeOpacity={0.3 + i * 0.1} />
+        ))}
+        <rect x={cx - 8} y={cy - 8} width={16} height={6} rx={2}
+          fill={accentColor} fillOpacity="0.2" stroke={accentColor} strokeWidth="0.6" />
+        <line x1={cx + 9} y1={cy - 5} x2={cx + 14} y2={cy - 10}
+          stroke={accentColor} strokeWidth="0.7" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#0a0a22" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#0a0a22" />
+      </>
+    );
+  }
+  if (style === "Chef") {
+    return (
+      <>
+        <rect x={cx - 11} y={cy - 10} width={22} height={30} rx={3}
+          fill="#f0f0f0" fillOpacity="0.8" stroke="#cccccc" strokeWidth="1" />
+        <line x1={cx - 2} y1={cy - 10} x2={cx - 2} y2={cy + 20}
+          stroke="#cccccc" strokeWidth="0.8" strokeOpacity="0.5" />
+        <rect x={cx - 9} y={cy - 5} width={4} height={3} rx={1}
+          fill={accentColor} fillOpacity="0.5" />
+        <rect x={cx - 9} y={cy + 2} width={4} height={3} rx={1}
+          fill={accentColor} fillOpacity="0.5" />
+        <rect x={cx - 14} y={cy - 10} width={7} height={5} rx={2}
+          fill="#f0f0f0" fillOpacity="0.7" stroke="#cccccc" strokeWidth="0.8" />
+        <rect x={cx + 7}  y={cy - 10} width={7} height={5} rx={2}
+          fill="#f0f0f0" fillOpacity="0.7" stroke="#cccccc" strokeWidth="0.8" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#d8d8d8" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#d8d8d8" />
+      </>
+    );
+  }
+  if (style === "Fascist") {
+    return (
+      <>
+        <rect x={cx - 12} y={cy - 10} width={24} height={30} rx={3}
+          fill="#6b4e1a" stroke="#a07830" strokeWidth="1" />
+        <rect x={cx - 10} y={cy - 6} width={8} height={5} rx={1}
+          fill="#8b6914" fillOpacity="0.6" />
+        <rect x={cx + 2}  y={cy + 2} width={7} height={4} rx={1}
+          fill="#c8970a" fillOpacity="0.4" />
+        <rect x={cx - 12} y={cy + 10} width={24} height={3} rx={1}
+          fill="#a07830" fillOpacity="0.5" />
+        <rect x={cx - 16} y={cy - 10} width={8} height={6} rx={2}
+          fill="#6b4e1a" stroke="#a07830" strokeWidth="0.8" />
+        <rect x={cx + 8}  y={cy - 10} width={8} height={6} rx={2}
+          fill="#6b4e1a" stroke="#a07830" strokeWidth="0.8" />
+        <rect x={cx - 10} y={cy + 18} width={8} height={14} rx={2} fill="#5a3e10" />
+        <rect x={cx + 2}  y={cy + 18} width={8} height={14} rx={2} fill="#5a3e10" />
       </>
     );
   }

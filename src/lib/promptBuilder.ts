@@ -47,21 +47,30 @@ const DISTRICT_DESCRIPTIONS: Record<string, string> = {
 };
 
 const STYLE_CLOTHING: Record<string, string> = {
-  Corporate:  "a sleek corporate suit with a high-tech earpiece",
-  Street:     "a street-style hoodie and cargo pants with graffiti patches",
-  "Off-grid": "rugged off-grid survivalist gear with utility belts",
-  Military:   "tactical military fatigues with body armour",
-  Union:      "union worker overalls covered in badge patches",
-  Olympic:    "a coordinated high-end athletic ensemble — matching top and bottoms in sponsor colours, performance fabric, logo patches, and a professional snowboard warm-up suit or full snowsuit",
+  Corporate:      "a sleek corporate suit with a high-tech earpiece",
+  Street:         "a street-style hoodie and cargo pants with graffiti patches",
+  "Off-grid":     "rugged off-grid survivalist gear with utility belts",
+  Military:       "tactical military fatigues with body armour",
+  Union:          "union worker overalls covered in badge patches",
+  Olympic:        "a coordinated high-end athletic ensemble — matching top and bottoms in sponsor colours, performance fabric, logo patches, and a professional snowboard warm-up suit or full snowsuit",
+  Ninja:          "all-black stealthy clothing with no visible logos or markings, dark form-fitting outfit",
+  "Punk Rocker":  "recycled DIY clothing with hand-sewn patches and improvised accessories",
+  "Ex Military":  "tactical fatigues with cheap-looking plastic body armor and roughly assembled gear",
+  Hacker:         "a dark hoodie with embedded tech and a screen-visor or goggles with small display screens",
+  Chef:           "a white chef apron and tall chef hat, kitchen non-slip shoes",
+  Fascist:        "rugged survivalist explorer gear with utility belts and cargo pockets",
 };
 
 const ARCHETYPE_POSES: Record<string, string> = {
-  "Ninja":        "crouched in a stealthy ready stance",
-  "Punk Rocker":  "striking a defiant rock-star pose with arms wide",
-  "Ex Military":  "standing at confident attention with arms crossed",
-  "Hacker":       "typing on a holographic keyboard, screens reflected in goggles",
-  "Chef":         "wearing a white chef apron and tall chef hat, carrying a pot or pan, wearing kitchen non-slip shoes",
-  "Fash":         "standing upright in a sharp pressed uniform with necktie, jacket, lapels and coat-of-arms insignia",
+  "The Knights Technarchy": "crouched in a stealthy ready stance, dressed in all black with no lights on the board",
+  "Qu111s":                 "standing with confident attention, arms crossed, defiant journalist pose",
+  "Iron Curtains":          "standing at attention in tactical fatigues with cheap-looking plastic body armor",
+  "D4rk $pider":            "typing on a holographic keyboard, screens reflected in goggles, wires and antennas on the board",
+  "The Asclepians":         "standing with sleek professional posture, high-tech earpiece visible, corporate logo on the board",
+  "The Mesopotamian Society":"defiant rock-star pose in rugged survivalist gear, all-terrain off-road mountain board style",
+  "Hermes' Squirmies":      "casual working stance in union worker overalls covered in badge patches",
+  "UCPS":                   "ready delivery stance, street-style hoodie and cargo pants, old-looking board with lights",
+  "The Team":               "professional athletic pose in a matching sponsor-logo ensemble, coordinated team colours",
 };
 
 const VIBE_BOARD: Record<string, string> = {

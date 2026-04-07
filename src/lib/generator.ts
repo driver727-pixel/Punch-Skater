@@ -19,11 +19,18 @@ export const STORAGE_PACK_LABELS: Record<string, string> = {
 // ── Visual style tables ────────────────────────────────────────────────────────
 
 const HELMET_STYLES: Record<string, string[]> = {
-  Corporate:  ["exec-visor",   "mirror-shield",  "corp-dome"],
-  Street:     ["graffiti-lid", "open-face",       "half-shell"],
-  "Off-grid": ["salvage-dome", "rough-cut",       "wrapped-rag"],
-  Military:   ["tac-helmet",   "battle-dome",     "combat-visor"],
-  Union:      ["hard-hat",     "bump-cap",        "safety-dome"],
+  Corporate:      ["exec-visor",   "mirror-shield",  "corp-dome"],
+  Street:         ["graffiti-lid", "open-face",       "half-shell"],
+  "Off-grid":     ["salvage-dome", "rough-cut",       "wrapped-rag"],
+  Military:       ["tac-helmet",   "battle-dome",     "combat-visor"],
+  Union:          ["hard-hat",     "bump-cap",        "safety-dome"],
+  Olympic:        ["aero-helm",    "pro-visor",       "race-dome"],
+  Ninja:          ["stealth-hood", "dark-cowl",       "shadow-wrap"],
+  "Punk Rocker":  ["mohawk-cap",   "studded-lid",     "diy-bucket"],
+  "Ex Military":  ["field-cap",    "patrol-helm",     "surplus-dome"],
+  Hacker:         ["screen-hood",  "goggle-cap",      "wire-helm"],
+  Chef:           ["chef-hat",     "bandana-wrap",    "kitchen-cap"],
+  Fascist:        ["explorer-hat", "safari-helm",     "utility-cap"],
 };
 
 const BOARD_STYLES: Record<string, string[]> = {
@@ -35,11 +42,18 @@ const BOARD_STYLES: Record<string, string[]> = {
 };
 
 const JACKET_STYLES: Record<string, string[]> = {
-  Corporate:  ["trench-corp",  "suit-jacket",   "exec-coat"],
-  Street:     ["bomber",       "hoodie-zip",    "denim-cut"],
-  "Off-grid": ["poncho",       "patched-vest",  "salvage-coat"],
-  Military:   ["field-jacket", "tac-vest",      "camo-coat"],
-  Union:      ["work-vest",    "hi-vis-jacket", "overalls"],
+  Corporate:      ["trench-corp",  "suit-jacket",    "exec-coat"],
+  Street:         ["bomber",       "hoodie-zip",     "denim-cut"],
+  "Off-grid":     ["poncho",       "patched-vest",   "salvage-coat"],
+  Military:       ["field-jacket", "tac-vest",       "camo-coat"],
+  Union:          ["work-vest",    "hi-vis-jacket",  "overalls"],
+  Olympic:        ["tracksuit-top","sponsor-jacket", "pro-warmup"],
+  Ninja:          ["stealth-wrap", "shadow-jacket",  "dark-cloak"],
+  "Punk Rocker":  ["patched-denim","studded-vest",   "diy-jacket"],
+  "Ex Military":  ["surplus-coat", "tac-surplus",    "cheap-armor-vest"],
+  Hacker:         ["dark-hoodie",  "cable-vest",     "screen-jacket"],
+  Chef:           ["chef-apron",   "kitchen-whites", "service-coat"],
+  Fascist:        ["explorer-vest","utility-coat",   "survival-jacket"],
 };
 
 const COLOR_SCHEMES: Record<string, string[]> = {
@@ -51,12 +65,15 @@ const COLOR_SCHEMES: Record<string, string[]> = {
 };
 
 const PERSONALITY_POOLS: Record<string, string[]> = {
-  "Ninja":         ["silent",       "precise",     "disciplined",    "observant",   "cold"],
-  "Punk Rocker":   ["loud",         "rebellious",  "charismatic",    "reckless",    "fearless"],
-  "Ex Military":   ["stoic",        "tactical",    "reliable",       "battle-hardened", "loyal"],
-  "Hacker":        ["paranoid",     "curious",     "methodical",     "introverted", "brilliant"],
-  "Chef":          ["resourceful",  "creative",    "stubborn",       "enduring",    "improviser"],
-  "Fash":          ["vain",         "precise",     "status-obsessed","calculating", "polished"],
+  "The Knights Technarchy": ["silent",       "precise",     "disciplined",   "observant",   "cold"],
+  "Qu111s":                 ["investigative","bold",        "principled",    "tenacious",   "sharp"],
+  "Iron Curtains":          ["stoic",        "tactical",    "reliable",      "battle-hardened", "loyal"],
+  "D4rk $pider":            ["paranoid",     "curious",     "methodical",    "introverted", "brilliant"],
+  "The Asclepians":         ["compassionate","resourceful", "precise",       "dedicated",   "strategic"],
+  "The Mesopotamian Society":["adventurous", "scholarly",   "meticulous",    "bold",        "calculating"],
+  "Hermes' Squirmies":      ["neutral",      "discreet",    "reliable",      "adaptable",   "professional"],
+  "UCPS":                   ["punctual",     "dutiful",     "street-smart",  "methodical",  "dependable"],
+  "The Team":               ["coordinated",  "athletic",    "competitive",   "disciplined", "cohesive"],
 };
 
 // ── Stat modifiers by archetype (added on top of a 1–7 base roll) ─────────────
@@ -64,12 +81,15 @@ const PERSONALITY_POOLS: Record<string, string[]> = {
 interface StatMods { speed: number; stealth: number; tech: number; grit: number; rep: number; }
 
 const ARCHETYPE_MODS: Record<string, StatMods> = {
-  "Ninja":        { speed:  2, stealth:  3, tech:  1, grit:  0, rep: -1 },
-  "Punk Rocker":  { speed:  1, stealth: -1, tech:  0, grit:  2, rep:  3 },
-  "Ex Military":  { speed:  1, stealth:  0, tech:  1, grit:  3, rep:  0 },
-  "Hacker":       { speed: -1, stealth:  2, tech:  3, grit:  0, rep:  0 },
-  "Chef":         { speed:  0, stealth:  0, tech:  1, grit:  3, rep:  1 },
-  "Fash":         { speed:  1, stealth:  1, tech:  2, grit: -1, rep:  2 },
+  "The Knights Technarchy":  { speed:  2, stealth:  3, tech:  1, grit:  0, rep: -1 },
+  "Qu111s":                  { speed:  1, stealth: -1, tech:  0, grit:  2, rep:  3 },
+  "Iron Curtains":           { speed:  1, stealth:  0, tech:  1, grit:  3, rep:  0 },
+  "D4rk $pider":             { speed: -1, stealth:  2, tech:  3, grit:  0, rep:  0 },
+  "The Asclepians":          { speed:  0, stealth:  0, tech:  1, grit:  3, rep:  1 },
+  "The Mesopotamian Society":{ speed:  1, stealth:  1, tech:  2, grit: -1, rep:  2 },
+  "Hermes' Squirmies":       { speed:  1, stealth:  1, tech:  0, grit:  1, rep:  1 },
+  "UCPS":                    { speed:  1, stealth:  0, tech:  0, grit:  1, rep:  2 },
+  "The Team":                { speed:  2, stealth: -1, tech:  0, grit:  2, rep:  2 },
 };
 
 const RARITY_MULTIPLIER: Record<Rarity, number> = {

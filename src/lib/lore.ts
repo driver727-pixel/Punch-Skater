@@ -13,12 +13,15 @@ export const LORE_CHARACTER_NAMES = [
 // ── Archetype → Faction mapping ────────────────────────────────────────────────
 
 export const ARCHETYPE_TO_FACTION: Record<Archetype, Faction> = {
-  "Ninja":        "The Knights Technarchy",
-  "Punk Rocker":  "Punch Skaters",
-  "Ex Military":  "Iron Curtains",
-  "Hacker":       "D4rk $pider",
-  "Chef":         "UCPS Workers",
-  "Fash":         "The Asclepians",
+  "The Knights Technarchy":  "The Knights Technarchy",
+  "Qu111s":                  "Qu111s (Quills)",
+  "Iron Curtains":           "Iron Curtains",
+  "D4rk $pider":             "D4rk $pider",
+  "The Asclepians":          "The Asclepians",
+  "The Mesopotamian Society":"The Mesopotamian Society",
+  "Hermes' Squirmies":       "Hermes' Squirmies",
+  "UCPS":                    "UCPS Workers",
+  "The Team":                "The Team",
 };
 
 // ── Vibe → Manufacturer mapping ────────────────────────────────────────────────
@@ -259,81 +262,101 @@ export interface ArchetypeLoreEntry {
 
 export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
   {
-    name: "Ninja",
-    tagline: "You don't see them coming. You don't see them going. You find the package and wonder how it got there.",
+    name: "The Knights Technarchy",
+    tagline: "The Dark Lights see everything. Serve or be disappeared.",
     description:
-      "Ninjas come from the city's shadow-ops ecosystem — former Axiom Dynamics black-site " +
-      "contractors, corporate counter-intelligence agents who went freelance, or street-trained " +
-      "operatives from Nightshade's most secretive crews. The Knights Technarchy recruit " +
-      "heavily from this archetype. They were paid to disappear and reappear somewhere they " +
-      "weren't expected. The courier underground offered a way to keep doing exactly that, " +
-      "but on their own terms. They have no logos, no visible crew markings, no distinctive " +
-      "gear — their rep is built entirely through demonstrated performance.",
+      "Cyber ninja zealots who serve a massive secret society known as the Dark Lights. " +
+      "They move packages between hidden temples, and few dare to open them for fear of " +
+      "being disappeared. The Knights Technarchy are predicted to attack the protagonist " +
+      "to acquire a sacred artifact. They have no logos, no visible crew markings — " +
+      "their rep is built entirely through fear and demonstrated precision.",
     strengths: "Maximum Stealth, elite Speed. Excels in surveillance-heavy districts. Penalty: low Rep.",
   },
   {
-    name: "Punk Rocker",
-    tagline: "Every run is a show. Every delivery is a statement. Every corp checkpoint we blow through is a verse in the song.",
+    name: "Qu111s",
+    tagline: "The truth is in the data. We will release it.",
     description:
-      "The anti-corporate music and art underground of Nightshade. Punk Rockers were " +
-      "buskers, graffiti artists, underground venue organizers, and scene architects before " +
-      "they found the courier network. They are the ones who tag corp surveillance cameras " +
-      "on the way through, who broadcast their deliveries on encrypted feeds, who treat " +
-      "every successful run as an act of rebellion. The Punch Skaters — the lowest rung of " +
-      "Esk8r — are predominantly this archetype: bruised, bloodied gutter punks who attack " +
-      "UCA white bikes with broomsticks.",
+      "A guerilla journalist organization that monitors the activities of the oligarchs. " +
+      "Known to protect individuals like Skids and plan to release intercepted data to " +
+      "incite a revolution. The Qu111s operate through couriers who blend in as everyday " +
+      "riders while carrying evidence that could topple the entire UCA power structure. " +
+      "Quill-01 is their most active field operative.",
     strengths: "Maximum Rep, high Grit. Thrives in Nightshade and open districts. Penalty: low Stealth.",
   },
   {
-    name: "Ex Military",
-    tagline: "Corps hired us to protect their assets. Turns out their biggest asset was us — and we quit.",
+    name: "Iron Curtains",
+    tagline: "Overthrow the oligarchy. By any means necessary.",
     description:
-      "Discharged soldiers from Axiom Dynamics' private defense forces, or veterans of the " +
-      "corporate border conflicts that the news feeds never covered. The Iron Curtains recruit " +
-      "heavily from this archetype — though many Ex Military couriers are unaware they're " +
-      "working for a UCA false-flag operation. They plan routes the way they planned " +
-      "operations — contingencies for every checkpoint, fallback routes mapped in advance, " +
-      "gear maintained to spec. Disciplined and methodical; often the ones who train new runners.",
+      "Publicly known as a Communist revolutionary insurgent group wanting to overthrow the " +
+      "oligarchy. They traffic in weapons and terrorism, viewing themselves as freedom fighters, " +
+      "and use stolen information as leverage. They recruit heavily from ex-military veterans. " +
+      "[Future Reveal Detail]: The Iron Curtains are later revealed to be a secret arm of the " +
+      "UCA, operating as a false flag revolutionary group to suck in malcontents and keep them impotent.",
     strengths: "High Grit, balanced stats. Adaptable across all districts. Steady performers over specialists.",
   },
   {
-    name: "Hacker",
-    tagline: "I don't need to know what's in the package. I built the encryption that's protecting it.",
+    name: "D4rk $pider",
+    tagline: "Data for blackmail. Blackmail for survival.",
     description:
-      "Former Cascade Technologies employees, dark-web data brokers, and self-taught " +
-      "intrusion specialists from The Grid's underground server farms. D4rk $pider recruits " +
-      "heavily from this pool — though nobody is sure if Dark Spider is a revolutionary " +
-      "front or just very skilled poor people. Hackers entered courier work because physical " +
-      "delivery is the only data channel that Cascade's surveillance AI can't intercept. " +
-      "They carry chips they often encrypted themselves — which means they know exactly how " +
-      "dangerous the information is. Analytical and paranoid in equal measure.",
+      "Hackers on the dark web who mirror the Qu111s' methods but use data for blackmail " +
+      "and scams rather than journalism. They carry chips they often encrypted themselves — " +
+      "which means they know exactly how dangerous the information is. " +
+      "[Mysterious Detail]: It is unknown if they are secretly funded by revolutionaries " +
+      "(like the Iron Curtains) or if they are simply poor people using their skills to earn money.",
     strengths: "Maximum Tech, strong Stealth. The Grid is their natural habitat.",
   },
   {
-    name: "Chef",
-    tagline: "I know every service entrance, every loading dock, every kitchen in this city. Turns out that's more useful than anyone thought.",
+    name: "The Asclepians",
+    tagline: "Medicine moves. People live. No questions asked.",
     description:
-      "Workers from the city's massive food service infrastructure — chain commissaries " +
-      "serving corp campuses, underground market vendors, private catering staff for " +
-      "executive events. The UCPS employs many Chefs because they move through the city's " +
-      "service economy invisibly: a courier who looks like a catering delivery is basically " +
-      "invisible to corp security. Practical and sociable — they trade in favors and " +
-      "community goodwill as much as scratch. In Batteryville and Nightshade markets, a " +
-      "well-connected Chef can access back-routes that don't exist on any map.",
+      "A medical humanitarian organization funded by rich oligarchy philanthropy. They use " +
+      "couriers to transport special medical gear, organs, or medicine to impoverished " +
+      "neighborhoods, though sometimes to rich people as well. These items are highly sought " +
+      "after and often stolen. The Asclepians placed Skids undercover after the Moonrisers " +
+      "recruited him — using his clean record as cover for a high-risk mission.",
     strengths: "Good Speed, high Grit, strong community access. Thrives in Batteryville and Nightshade.",
   },
   {
-    name: "Fash",
-    tagline: "Reputation doesn't just open doors. In Electropolis, reputation IS the door.",
+    name: "The Mesopotamian Society",
+    tagline: "Indiana Jones on an electric mountain skateboard.",
     description:
-      "Former insiders from the city's fashion and media industry — stylists, brand managers, " +
-      "influencer coordinators, and event producers who burned their corporate bridges but kept " +
-      "the connections and the access. The Asclepians favor this archetype for high-profile " +
-      "medical deliveries that need to move through Electropolis checkpoints without flagging " +
-      "Fuzz attention. Fash couriers can walk through corridors that would get anyone else " +
-      "detained, simply because Prism Media Group's facial-recognition index still shows them " +
-      "as friendly names. Image-obsessed and strategically social.",
+      "A university archaeological organization dedicated to tracking down and transporting " +
+      "rare artifacts for museums and wealthy Airaway mansions. Their work leads them into " +
+      "the Nightshade and into contact with secret religious cults who try to steal the items " +
+      "back. They are connected to the sacred artifact that the Knights Technarchy wants — " +
+      "the object that puts Skids in the crosshairs of multiple factions.",
     strengths: "Maximum Rep, high Tech. Unmatched Electropolis access. Penalty: limited Stealth.",
+  },
+  {
+    name: "Hermes' Squirmies",
+    tagline: "Any job. Any package. Any risk. Price adjusted accordingly.",
+    description:
+      "A neutral union of couriers with a strong policy on secrecy. They hide in plain " +
+      "sight by blending in as union blue collar workers. Hermes' Squirmies will take any " +
+      "job from any client with no ideological screening — a deliberate strategy that keeps " +
+      "them employable across all sides of every conflict. No questions. Price adjusted for risk.",
+    strengths: "Balanced stats. Neutral reputation. Works across all districts without faction penalties.",
+  },
+  {
+    name: "UCPS",
+    tagline: "Sanctioned delivery. Corporate rates. No questions.",
+    description:
+      "The postal service officially sanctioned by the Airaway governing body. The UCPS uses " +
+      "board-riding workers and is known to hire from Punch Skater crowds because of their " +
+      "knowledge of the 'ropes'. Working for the UCPS is a common cover identity for couriers " +
+      "who need to move through Electropolis checkpoints without Fuzz attention.",
+    strengths: "Good Speed, solid Rep. Moves through corp-controlled districts with reduced scrutiny.",
+  },
+  {
+    name: "The Team",
+    tagline: "Coordination wins races. Coordination wins everything.",
+    description:
+      "A neutral coordinated group of ex athletes who team up with such precision that they " +
+      "provide stiff competition for the big oligarchs. They dress like Olympic snowboarders — " +
+      "matching sponsored ensembles, high-end performance fabrics, coordinated team colors. " +
+      "Individually skilled but devastatingly effective as a unit. The oligarchs haven't " +
+      "figured out how to buy them — yet.",
+    strengths: "High Speed, high Grit. Exceptional in team-based operations. Strong Rep through visible performance.",
   },
 ];
 
