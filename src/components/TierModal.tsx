@@ -6,11 +6,17 @@ interface TierModalProps {
   onClose: () => void;
 }
 
+const CHECKOUT_API_URL =
+  import.meta.env.VITE_IMAGE_API_URL
+    ? import.meta.env.VITE_IMAGE_API_URL.replace(/\/api\/generate-image$/, "/api/create-checkout-session")
+    : "/api/create-checkout-session";
+
 export function TierModal({ onClose }: TierModalProps) {
   const { tier, email, setTier } = useTier();
   const [signupEmail, setSignupEmail] = useState(email);
   const [signupStep, setSignupStep] = useState<TierLevel | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSelectTier = (level: TierLevel) => {
     if (level === "free") {
@@ -22,7 +28,7 @@ export function TierModal({ onClose }: TierModalProps) {
     setError("");
   };
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (!signupStep) return;
     const emailVal = signupEmail.trim();
     if (!emailVal || !emailVal.includes("@")) {
@@ -30,20 +36,40 @@ export function TierModal({ onClose }: TierModalProps) {
       return;
     }
     const tierData = TIERS[signupStep];
-    if (!tierData.stripeUrl) return;
+    if (!tierData.stripePriceId) return;
 
     // Store email so it's available after Stripe redirect
     saveEmail(emailVal);
 
-    // Build redirect URL with tier & email params so we can restore state
+    // Build the success URL with tier & email params so we can restore state
     const redirectBase = window.location.origin + window.location.pathname;
-    const returnUrl = `${redirectBase}?tier=${signupStep}&email=${encodeURIComponent(emailVal)}`;
-    const paymentUrl = `${tierData.stripeUrl}?success_url=${encodeURIComponent(returnUrl)}&client_reference_id=${encodeURIComponent(emailVal)}`;
-    window.open(paymentUrl, "_blank", "noopener");
+    const successUrl = `${redirectBase}?tier=${signupStep}&email=${encodeURIComponent(emailVal)}`;
+    const cancelUrl = `${redirectBase}`;
 
-    // Also set tier locally (optimistic — works for demo/test mode)
-    setTier(signupStep, emailVal);
-    onClose();
+    setLoading(true);
+    setError("");
+    try {
+      const resp = await fetch(CHECKOUT_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId: tierData.stripePriceId,
+          successUrl,
+          cancelUrl,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.url) {
+        setError(data.error ?? "Failed to start checkout. Please try again.");
+        return;
+      }
+      // Redirect to the Stripe-hosted checkout page
+      window.location.href = data.url;
+    } catch {
+      setError("Network error — please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const tierOrder: TierLevel[] = ["free", "tier2", "tier3"];
@@ -101,8 +127,8 @@ export function TierModal({ onClose }: TierModalProps) {
               onKeyDown={(e) => e.key === "Enter" && handleProceedToPayment()}
             />
             {error && <p className="tier-error">{error}</p>}
-            <button className="btn-primary btn-lg" onClick={handleProceedToPayment}>
-              Continue to Payment — {TIERS[signupStep].price}
+            <button className="btn-primary btn-lg" onClick={handleProceedToPayment} disabled={loading}>
+              {loading ? "Redirecting to payment…" : `Continue to Payment — ${TIERS[signupStep].price}`}
             </button>
           </div>
         )}

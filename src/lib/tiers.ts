@@ -12,6 +12,8 @@ export interface Tier {
   description: string;
   features: string[];
   stripeUrl: string | null;
+  /** Stripe Price ID used to create a Checkout Session for this tier. */
+  stripePriceId: string | null;
 }
 
 export const TIERS: Record<TierLevel, Tier> = {
@@ -30,6 +32,7 @@ export const TIERS: Record<TierLevel, Tier> = {
       "No account required",
     ],
     stripeUrl: null,
+    stripePriceId: null,
   },
   tier2: {
     level: "tier2",
@@ -48,6 +51,7 @@ export const TIERS: Record<TierLevel, Tier> = {
       "CraftLingua language profiles",
     ],
     stripeUrl: "https://buy.stripe.com/test_00w28jdz66xd4PudNM9sk01",
+    stripePriceId: "price_1R3UInRCr5JxQN06Z8O0k2yG",
   },
   tier3: {
     level: "tier3",
@@ -66,6 +70,7 @@ export const TIERS: Record<TierLevel, Tier> = {
       "CraftLingua language profiles",
     ],
     stripeUrl: "https://buy.stripe.com/test_3cI7sD2Us1cTbdSgZY9sk02",
+    stripePriceId: "price_1R3UIoRCr5JxQN06K6M8l3zH",
   },
 };
 
