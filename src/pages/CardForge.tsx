@@ -357,6 +357,19 @@ export function CardForge() {
   const cardLimit = tierData.cardLimit;
   const atLimit = canSave && cardLimit !== null && cards.length >= cardLimit;
 
+  const handleGeneratedUpdate = (updates: { name?: string; flavorText?: string }) => {
+    setGenerated((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        identity: updates.name !== undefined
+          ? { ...prev.identity, name: updates.name }
+          : prev.identity,
+        flavorText: updates.flavorText ?? prev.flavorText,
+      };
+    });
+  };
+
   const handleSave = () => {
     if (!canSave) { openUpgradeModal(); return; }
     if (atLimit)  { openUpgradeModal(); return; }
@@ -624,6 +637,7 @@ export function CardForge() {
                 imageLoading={anyLayerLoading}
                 characterBlend={characterBlend}
                 hideToolButtons={true}
+                onUpdate={handleGeneratedUpdate}
               />
             </div>
           ) : (

@@ -15,7 +15,7 @@ import { TierModal } from "./TierModal";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const tierData = TIERS[tier];
   const uid = user?.uid ?? null;
@@ -85,12 +85,15 @@ export function Nav() {
           <button
             className={`tier-badge-btn tier-badge-btn--${tier}`}
             onClick={openUpgradeModal}
-            title="Manage your tier"
+            title={`Pricing Tier: ${tierData.name} — Your tier sets the site's visual aesthetic. Click to manage.`}
+            data-tier-tooltip={`Pricing Tier: ${tierData.name}`}
           >
-            {tierData.name}
+            Pricing Tier: {tierData.name}
           </button>
 
-          {user ? (
+          {authLoading ? (
+            <span className="nav-auth-loading" aria-label="Loading…" />
+          ) : user ? (
             <div className="user-menu-wrap" ref={menuRef}>
               <button
                 className="user-avatar-btn"

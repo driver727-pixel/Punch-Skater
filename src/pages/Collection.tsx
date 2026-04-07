@@ -11,7 +11,7 @@ import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
 
 export function Collection() {
-  const { cards, removeCard, addCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
+  const { cards, removeCard, addCard, updateCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
   const navigate = useNavigate();
@@ -28,6 +28,19 @@ export function Collection() {
 
   const handleImportCards = (incoming: CardPayload[]) => {
     for (const card of incoming) addCard(card);
+  };
+
+  const handleCardUpdate = (updates: { name?: string; flavorText?: string }) => {
+    if (!selected) return;
+    const updated: CardPayload = {
+      ...selected,
+      identity: updates.name !== undefined
+        ? { ...selected.identity, name: updates.name }
+        : selected.identity,
+      flavorText: updates.flavorText ?? selected.flavorText,
+    };
+    updateCard(updated);
+    setSelected(updated);
   };
 
   if (!tierData.canSave) {
@@ -112,6 +125,7 @@ export function Collection() {
                 card={selected}
                 showShare={true}
                 onEdit={tierData.canSave ? () => navigate(`/edit/${selected.id}`) : undefined}
+                onUpdate={tierData.canSave ? handleCardUpdate : undefined}
                 onRemove={tierData.canEditDecks ? () => {
                   removeCard(selected.id);
                   setSelected(null);
