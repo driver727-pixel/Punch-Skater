@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { CardPrompts, CardPayload, Archetype, Rarity, Style, Vibe, District } from "../lib/types";
+import { CardPrompts, CardPayload, Archetype, Rarity, Style, Vibe, District, Gender } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { generateImage, removeBackground, isImageGenConfigured } from "../services/imageGen";
@@ -11,6 +11,7 @@ const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Leg
 const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union"];
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest"];
+const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
@@ -33,6 +34,7 @@ export function CardForge() {
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "Ninja", rarity: "Punch Skater", style: "Street",
     vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5,
+    gender: "Non-binary",
   });
   const [generated, setGenerated] = useState<CardPayload | null>(null);
   const [layers, setLayers] = useState<LayerState>(INITIAL_LAYER_STATE);
@@ -238,6 +240,21 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.district === opt ? " selected" : ""}`}
                   onClick={() => set("district", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Gender</label>
+            <div className="pill-group">
+              {GENDERS.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.gender === opt ? " selected" : ""}`}
+                  onClick={() => set("gender", opt)}
                 >
                   {opt}
                 </button>

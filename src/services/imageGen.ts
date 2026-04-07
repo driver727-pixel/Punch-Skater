@@ -40,12 +40,16 @@ const SAFETY_CHECKER     = true;
 
 /**
  * MANDATORY negative prompt — automatically appended to every request inside
- * generateImage(). These terms can never be removed by editing prompt builders.
+ * generateImage(). Safety terms can never be removed by editing prompt builders.
+ * Quality terms (blur, low-res) are included here to prevent fuzzy outputs on
+ * any seed, especially on the character layer after background removal.
  */
 const NEGATIVE_PROMPT =
   "nsfw, child, children, under age, underage, x rated, r rated, unclothed, undressed, " +
   "nudity, naked, exposed, gore, sexually explicit, porn, pornographic, rape, sexual assault, " +
-  "death, killing, kill, murder, violence, decapitation, mutilation, kids, minors";
+  "death, killing, kill, murder, violence, decapitation, mutilation, kids, minors, " +
+  "blurry, blur, fuzzy, soft focus, out of focus, low resolution, low quality, degraded, " +
+  "pixelated, jpeg artifacts, compression artifacts, watermark, signature";
 
 /**
  * MANDATORY positive suffix — automatically appended to every prompt inside

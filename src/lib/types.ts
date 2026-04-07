@@ -22,6 +22,7 @@ export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Ch
 export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legendary";
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
 export type Style = "Corporate" | "Street" | "Off-grid" | "Military" | "Union";
+export type Gender = "Woman" | "Man" | "Non-binary";
 
 export interface CardPrompts {
   archetype: Archetype;
@@ -31,6 +32,7 @@ export interface CardPrompts {
   district: District;
   accentColor: string;
   stamina: number;
+  gender: Gender;
 }
 
 // ── Conlang overlay (CraftLingua integration) ─────────────────────────────────

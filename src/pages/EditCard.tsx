@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { CardPayload, Archetype, Rarity, Style, Vibe, District, CardPrompts } from "../lib/types";
+import type { CardPayload, Archetype, Rarity, Style, Vibe, District, CardPrompts, Gender } from "../lib/types";
 import { generateCard, STORAGE_PACK_LABELS } from "../lib/generator";
 import { buildImagePrompt } from "../lib/promptBuilder";
 import { generateImage, isImageGenConfigured } from "../services/imageGen";
@@ -13,6 +13,7 @@ const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Leg
 const STYLES: Style[] = ["Corporate", "Street", "Off-grid", "Military", "Union"];
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville"];
+const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff00aa", "#ffaa00", "#8b5cf6", "#ff4444", "#44ffff"];
 
 const DISTRICT_HINTS: Record<District, string> = {
@@ -49,6 +50,7 @@ export function EditCard() {
         district: original.prompts.district as District,
         accentColor: original.prompts.accentColor,
         stamina: original.prompts.stamina,
+        gender: (original.prompts.gender as Gender) ?? "Non-binary",
       });
       // Show the original card as starting preview
       setPreview(original);
@@ -165,6 +167,15 @@ export function EditCard() {
               ))}
             </div>
             <p className="form-hint">{DISTRICT_HINTS[prompts.district]}</p>
+          </div>
+
+          <div className="form-group">
+            <label>Gender</label>
+            <div className="pill-group">
+              {GENDERS.map((g) => (
+                <button key={g} className={`pill${prompts.gender === g ? " selected" : ""}`} onClick={() => set("gender", g)}>{g}</button>
+              ))}
+            </div>
           </div>
 
           <div className="form-group">

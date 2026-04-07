@@ -86,7 +86,7 @@ const RARITY_MULTIPLIER: Record<Rarity, number> = {
 
 export const generateCard = (prompts: CardPrompts): CardPayload => {
   // ── Seeds ──────────────────────────────────────────────────────────────────
-  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.vibe}|${prompts.stamina}`;
+  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.vibe}|${prompts.stamina}|${prompts.gender}`;
   const backgroundSeed = prompts.district;
   const frameSeed      = prompts.rarity;
   const masterSeed     = `${frameSeed}::${backgroundSeed}::${characterSeed}`;
