@@ -55,8 +55,8 @@ export const TIERS: Record<TierLevel, Tier> = {
       "Export your collection",
       "CraftLingua language profiles",
     ],
-    stripeUrl: "https://buy.stripe.com/test_00w28jdz66xd4PudNM9sk01",
-    stripePriceId: "price_1R3UInRCr5JxQN06Z8O0k2yG",
+    stripeUrl: "https://buy.stripe.com/4gW2bUeLCceFa3x8M2",
+    stripePriceId: "price_1TJOKHRCr5JxQN06wMYFHTm5",
   },
   tier3: {
     level: "tier3",
@@ -75,8 +75,8 @@ export const TIERS: Record<TierLevel, Tier> = {
       "Edit & delete any card",
       "CraftLingua language profiles",
     ],
-    stripeUrl: "https://buy.stripe.com/test_3cI7sD2Us1cTbdSgZY9sk02",
-    stripePriceId: "price_1R3UIoRCr5JxQN06K6M8l3zH",
+    stripeUrl: "https://buy.stripe.com/cNi5kF3XOcFA4DH1w25ZC01",
+    stripePriceId: "price_1TJOKrRCr5JxQN06RyDF02bi",
   },
 };
 

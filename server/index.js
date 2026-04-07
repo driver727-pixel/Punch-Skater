@@ -62,8 +62,8 @@ const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 
 // Allowed Stripe price IDs — only these may be used to create checkout sessions.
 const ALLOWED_PRICE_IDS = new Set([
-  'price_1R3UInRCr5JxQN06Z8O0k2yG', // tier2 Street Creator ($5)
-  'price_1R3UIoRCr5JxQN06K6M8l3zH', // tier3 Deck Master ($10)
+  'price_1TJOKHRCr5JxQN06wMYFHTm5', // tier2 Street Creator ($5)
+  'price_1TJOKrRCr5JxQN06RyDF02bi', // tier3 Deck Master ($10)
 ]);
 
 // Stripe client — instantiated once at startup so it is reused across requests.
