@@ -1,97 +1,35 @@
 # World Overview
 
-## The City
+## Locations and Governance
+The world is mostly unified under the structure of the **United Corporations of America (UCA)**, which operates from the elevated, shining city of **Airaway**. Airaway is home to a consortium of leading corporations that cooperatively manage global infrastructure. The wealthy reside in mansions here, utilizing elevators and tubes for transit. For security reasons, Airaway has outlawed all old-fashioned motorized vehicles. One can still see the occasional Recreational Vehicle, or Off-Road 4x4 vehicle from time to time.
 
-There is no country anymore. There is only the City.
+Below Airaway, the ground-level infrastructure has been naturally repurposed:
 
-No one remembers when the last government dissolved — the corps bought out the legislatures
-so gradually that the handover barely made the news cycles. What remains is a
-three-hundred-kilometer sprawl of megastructures, transit rails, subterranean markets,
-and open-air arenas called the City. It has no official name. Residents simply call it
-what it is.
+* **The former Roads** were relinquished by traditional vehicles when flying drone transport became commonplace, creating sprawling, dedicated avenues for skaters.
+* **Underground tunnels** now serve as a vast network of shaded, intimate transit lanes, where a vibrant, close-knit community has established unique subterranean homes and hangouts.
+* **Key lower-city areas** include **Batteryville** (where protagonist Skids grew up), **The Grid** (where his parents worked), and **Electropolis** (where city security, known as the "Fuzz," pushes skaters to designated transit corridors to maintain order).
+* **The Nightshade (aka the Murk)** is a specific area featuring tunnels utilized by tight-knit, territorial skate crews for rapid transit and private meetings.
+* **Outside the main city complex** is a wood-based, agrarian forest settlement of **Ludites** who try to build without technology. The settlement resembles an Ewok village, featuring wooden boardwalks and tree trunks that the “Wooders” love for grinding. (They’re named that because of their insistence on exclusively using wood for their skateboard decks.)
 
-The City is divided into administrative zones called **districts**, each controlled by one
-or more corporate entities. The borders shift as merger wars and hostile acquisitions
-reshape who owns which stretch of pavement. Citizens live under the law of whatever corp
-holds their sector — and if you don't like it, you skate somewhere else.
+## Transportation and the Fate of Bicycles
+**Esk8 (Electric Skateboards)** became the ubiquitous transportation method worldwide, being cheaper than flying cars and ideal for the decayed roads. The most effective analog transportation system is the **Skater Courier**, who could but mostly don’t use Roller blading (because they need their feet free) and is highly sought after by competing factions.
 
-## The Corporate Order
+Most Bicycles are rare, junky, and hard to own, mostly because of the **Punch Skaters**. The low-level skaters attack anyone riding a bike, typically with a broomstick in the spokes. Especially the branded **UCA Bikes**. The United Corporations of America (UCA) does provide identical white bikes to their workers and families, and these bikes are seen as a symbol of complicity to the mega corps. Key Factions and Organizations. Thus the Punch Skaters have been targeting them relentlessly. 
 
-Six dominant corps and dozens of mid-tier players run the City's economy. The big six are:
+Information and data storage are key commodities, often trafficked via thumb drives and other off-grid storage devices to avoid hackers.
 
-- **Axiom Dynamics** — Defense contracting and private security. If you see armored
-  boots on the ground, they belong to Axiom.
-- **Prism Media Group** — Information, entertainment, and the public feeds. They control
-  the narrative, or at least try to.
-- **HexChain Logistics** — The official package-delivery network. Clean, tracked,
-  surveilled, and 40% slower than a Punch Skater.
-- **NovaChem** — Pharmaceutical and augmentation labs. Their products keep the City
-  moving and their quarterly numbers rising.
-- **VertexBank** — Financial infrastructure. Every transaction, every credit, every
-  debt in the City flows through their nodes.
-- **Cascade Technologies** — AI, server farms, and the data backbone of the City.
-  Home district: The Grid.
+## Key Factions and Organizations
+* **Qu111s (Quills):** A guerilla journalist organization that monitors the activities of the oligarchs. They are known to protect individuals like Skids and plan to release data to incite a revolution.
+* **Ne0n(Neon) Legion:** Thieves and mercenaries for hire who steal information to sell back to the oligarchs or other political interests.
+* **Iron Curtains:** Publicly known as a Communist revolutionary insurgent group wanting to overthrow the oligarchy. They traffic in weapons and terrorism, viewing themselves as freedom fighters, and use stolen information as leverage. [Future Reveal Detail]: The Iron Curtains are later revealed to be a secret arm of the UCA, operating as a false flag revolutionary group to suck in malcontents and keep them impotent.
+* **D4rk $pider (Dark Spider):** Hackers on the dark web who mirror the Qu111’s but use data for blackmail and scams. [Mysterious Detail]: It is unknown if they are secretly funded by revolutionaries (like the Iron Curtains) or if they are simply poor people using their skills to earn money.
+* **The Asclepians:** A medical humanitarian organization funded by rich oligarchy philanthropy. They use couriers to transport special medical gear, organs, or medicine to impoverished neighborhoods, though sometimes to rich people as well. These items are highly sought after and often stolen.
+* **The Mesopotamian Society:** A University Archeological organization dedicated to tracking down and transporting rare artifacts ("Indiana Jones on an Electric Mountain Skateboard") for museums and wealthy Airaway mansions. Their work leads them to the Nightshade and secret religious cults who try to steal the items back.
+* **The Knights Technarchy:** Cyber ninja zealots who serve a massive secret society known as the **Dark Lights**. They move packages between hidden temples, and few dare to open them for fear of being disappeared. They are predicted to attack the protagonist to acquire a sacred artifact.
+* **Hermes' Squirmies:** A neutral union of couriers with a strong policy on secrecy. They will take any job, with the price adjusted for risk.
+* **United Corporation Postal Service (UCPS):** The postal service sanctioned by the Airaway governing body. They use board-riding workers and are known to hire from the Punch Skater crowds because of their knowledge of the "ropes".
 
-The corps nominally compete but informally cooperate to maintain the status quo. The one
-thing they all agree on: the courier underground is a threat to their control of
-information flow.
+## The Lowest Rung: Punch Skaters
+The **Punch Skater** is a coined phrase referring to the lowest rung of Esk8r (Electric Skateboarder): bruised, bloodied gutter punks. The term is both a noun and a verb, and everyone in this world generally wants to "punch them”. AKA Skater Punk, Punk Skater, Esk8r Punk, Punky Skater, Punk Esk8r, Punchy Skater, Skater Punched. 
 
-## The Courier Underground
-
-Before Punch Skaters, the only way to move sensitive materials — physical or digital —
-without corporate surveillance was to walk. Too slow, too exposed. Then the skate culture
-of Nightshade district found a new purpose.
-
-The first couriers weren't organized. They were freelancers, running contraband between
-underground markets and black-market data brokers in the neon alleys below the elevated
-corp towers. They were fast, anonymous, and impossible to track on foot. They became
-essential.
-
-Word spread. What started as a handful of Nightshade runners grew into a city-wide
-network of interconnected crews. The **Courier Underground** isn't an organization — it's
-a culture, a mutual-aid economy, a set of unspoken rules. You carry the package. You
-don't ask what's in it. You deliver it. You get paid.
-
-The corps call them criminals. The people call them the only mail service that actually
-works.
-
-## Punch Skaters
-
-Not every courier is called a Punch Skater. The title is earned.
-
-A **Punch Skater** is a courier who has run enough deliveries, survived enough close
-calls, and built enough reputation in the underground to be recognized by the network.
-The name comes from an old Nightshade tradition: if you outrun an Axiom security sweep
-and make your delivery anyway, you punch the board — a flat-palm slap to the deck — as
-a signal to anyone watching that the run is complete.
-
-Cards in this game represent these legendary couriers at various stages of their careers,
-from fresh Apprentices running their first jobs in the back alleys of Batteryville to
-fully Legendary operatives who can move through a corp tower's lobby without triggering
-a single sensor.
-
-## The Delivery Economy
-
-Packages in the City range from mundane to world-altering:
-
-- **Data chips** — encrypted intelligence packages too sensitive for any digital channel
-- **Biologics** — NovaChem black-market augmentations, untested gene mods, or
-  synthetic stimulants
-- **Contraband hardware** — unregistered equipment, jammers, weapons, bypass tools
-- **Physical documents** — printed records that leave no digital trace
-- **People** — sometimes the package is a person who needs to disappear
-
-Payment comes in untraceable credit chips called **scratch**. Reputation — measured as
-**Rep** on courier cards — determines how much scratch you can command per run, and
-which crews are willing to work with you.
-
-## The Code
-
-Every crew teaches its runners the Code. It isn't written down anywhere, but every
-Punch Skater knows it:
-
-1. **The package gets there.** Whatever happens, the delivery completes.
-2. **You don't open the package.** What you don't know can't be extracted.
-3. **You don't sell out your crew.** Corps will offer deals. Turn them down.
-4. **Speed is survival.** If you're standing still, you're a target.
-5. **Reputation is everything.** Your name is your license. Protect it.
+They are the most amateur, unclassed, and faction-less grunts, who probably do the stealing of sought-after medical gear. They are outlawed in Airaway and considered a nuisance whom professional skaters hate being associated with.
