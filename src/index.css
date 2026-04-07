@@ -36,14 +36,16 @@ body {
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .nav-brand { display: flex; align-items: center; gap: 8px; }
 .nav-title {
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 900;
   color: var(--accent);
   letter-spacing: 3px;
+  text-shadow: 0 0 12px rgba(0, 255, 136, 0.2);
 }
 .nav-subtitle {
   font-size: 11px;
@@ -53,13 +55,14 @@ body {
 .nav-game-badge {
   font-size: 10px;
   font-weight: bold;
-  color: #fff;
+  color: #000;
   background: var(--accent);
   border-radius: 4px;
   padding: 2px 7px;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-left: 4px;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
 }
 
 .nav-links { display: flex; gap: 4px; }
@@ -71,21 +74,38 @@ body {
   letter-spacing: 1px;
   border: 1px solid transparent;
   border-radius: 4px;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  font-weight: bold;
 }
-.nav-link:hover { color: var(--text); border-color: var(--border); }
-.nav-link.active { color: var(--accent); border-color: var(--accent); }
+.nav-link:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+.nav-link.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.15);
+}
 
 /* ===== Layout ===== */
 .app { display: flex; flex-direction: column; min-height: 100vh; }
 .main { flex: 1; overflow-y: auto; }
 .page { padding: 24px; max-width: 1200px; margin: 0 auto; }
-.page-title { font-size: 24px; color: var(--accent); letter-spacing: 2px; margin-bottom: 4px; }
-.page-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; }
+.page-title {
+  font-size: 26px;
+  color: var(--accent);
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+}
+.page-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; letter-spacing: 0.5px; }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
 
 /* ===== Buttons ===== */
-button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .btn-primary {
   background: transparent;
@@ -95,10 +115,35 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   border-radius: 4px;
   font-size: 13px;
   letter-spacing: 1px;
+  font-weight: bold;
+  text-transform: uppercase;
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.15);
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent); color: #000; }
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+  color: #000;
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.4);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); }
 .btn-primary:disabled { opacity: 0.5; cursor: default; }
 .btn-primary.btn-lg { padding: 12px 28px; font-size: 15px; width: 100%; margin-top: 16px; }
+
+/* Forge-specific primary CTA */
+.btn-forge {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  border-width: 2px;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.2), inset 0 0 0 1px rgba(0, 255, 136, 0.08);
+}
+.btn-forge:hover:not(:disabled) {
+  box-shadow: 0 0 32px rgba(0, 255, 136, 0.5), inset 0 0 0 1px rgba(0, 255, 136, 0.15);
+}
+.btn-forge:disabled {
+  animation: pulse 1.2s ease-in-out infinite;
+}
 
 .btn-outline {
   background: transparent;
@@ -107,8 +152,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   padding: 8px 16px;
   border-radius: 4px;
   font-size: 13px;
+  letter-spacing: 0.5px;
 }
-.btn-outline:hover { color: var(--text); border-color: var(--text-dim); }
+.btn-outline:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-1px);
+}
+.btn-outline:active { transform: translateY(0) scale(0.98); }
 
 .btn-3d {
   color: var(--accent2);
@@ -154,7 +206,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 
 /* ===== Pills ===== */
 .form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 11px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 8px; text-transform: uppercase; }
+.form-group label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
 .form-hint { font-size: 11px; color: var(--text-dim); margin: 6px 0 0; opacity: 0.75; }
 .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill {
@@ -165,9 +225,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   border-radius: 20px;
   font-size: 12px;
   font-family: var(--font);
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
 }
-.pill:hover { border-color: var(--accent); color: var(--text); }
-.pill.selected { border-color: var(--accent); color: var(--accent); background: rgba(0,255,136,0.1); }
+.pill:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(0, 255, 136, 0.04);
+  transform: translateY(-1px);
+}
+.pill.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 255, 136, 0.1);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+  font-weight: bold;
+}
 
 /* ===== Color Picker ===== */
 .color-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -205,8 +278,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
 .forge-form {
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 24px;
+  padding: 28px;
   border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 .forge-preview {
   background: var(--bg2);
@@ -216,6 +290,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.15s; }
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  position: sticky;
+  top: 24px;
 }
 
 /* Card wrapper — centers the zoomed card inside the preview panel */
