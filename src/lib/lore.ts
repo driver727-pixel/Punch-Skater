@@ -241,6 +241,28 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
       "\"They don't trust you until you leave your device at the treeline.\"",
     ],
   },
+  {
+    name: "Glass City",
+    controlledBy: "Prism Media Group / Autonomous Systems",
+    tagline: "A million screens. Zero witnesses.",
+    description:
+      "The most densely surveilled district in existence — and somehow the most deserted. " +
+      "Glass City is a cyberpunk megalopolis of towering glass skyscrapers packed floor-to-ceiling " +
+      "with holographic advertisements, but the streets below are hauntingly empty. No cars, no " +
+      "bicycles, no pedestrians. Autonomous delivery drones handle every last-metre run; human " +
+      "couriers were phased out years ago by Prism Media Group's AI logistics division. Skaters " +
+      "who work Glass City do so illegally, darting between sensor sweeps and drone corridors, " +
+      "carrying packages the AI systems are not authorised to touch. Neon reflections pulse on " +
+      "rain-soaked pavement. Every surface is a screen. Nobody is watching — and yet everything " +
+      "is recorded.",
+    atmosphere: "Rain-soaked neon reflections, towering glass towers, holographic ads, silent drone traffic, no humans in sight.",
+    crews: ["Neon Ghosts", "The Static Pack", "Phantom Riders"],
+    flavorTexts: [
+      "\"The city looks alive. It isn't. The screens just make you think something's home.\"",
+      "\"Every sensor gap is a window. Every drone route is a door. Learn the schedule.\"",
+      "\"Glass City pays the best because nobody sane will skate it.\"",
+    ],
+  },
 ];
 
 // ── Archetype lore ─────────────────────────────────────────────────────────────
