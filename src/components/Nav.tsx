@@ -78,6 +78,9 @@ export function Nav() {
           <NavLink to="/trades" className={({ isActive }) => `nav-link${isActive ? " active" : ""}${pendingTrades > 0 ? " nav-link--badge" : ""}`}>
             Trades{pendingTrades > 0 && <span className="nav-badge">{pendingTrades}</span>}
           </NavLink>
+          <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            Codex
+          </NavLink>
         </div>
 
         <div className="nav-right">
