@@ -7,3 +7,5 @@ services:
     envVars:
       - key: FAL_KEY
         sync: false   # REQUIRED: set this secret in the Render dashboard
+      - key: STRIPE_SECRET_KEY
+        sync: false   # REQUIRED: set this secret in the Render dashboard
