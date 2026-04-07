@@ -2,6 +2,8 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { CardPrompts, CardPayload, Archetype, Rarity, Style, Vibe, District, Gender } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
+import { CardViewer3D } from "../components/CardViewer3D";
+import { PrintModal } from "../components/PrintModal";
 import { generateImage, removeBackground, isImageGenConfigured } from "../services/imageGen";
 import { getCachedImage, setCachedImage } from "../services/imageCache";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
@@ -40,6 +42,8 @@ export function CardForge() {
   const [layers, setLayers] = useState<LayerState>(INITIAL_LAYER_STATE);
   const [characterBlend, setCharacterBlend] = useState(1);
   const [forging, setForging] = useState(false);
+  const [viewing3D, setViewing3D] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   // Abort controller ref for cancelling in-flight image generation
   const abortRef = useRef<AbortController | null>(null);
@@ -306,22 +310,32 @@ export function CardForge() {
           </button>
 
           {/* Post-generation controls */}
-          {generated && (hasAnyLayerUrl || isAnyLayerLoading) && (
+          {generated && (
             <div className="forge-generated-actions">
-              <div className="blend-control">
-                <label className="blend-control__label">
-                  <span>Character Blend</span>
-                  <span>{Math.round(characterBlend * 100)}%</span>
-                </label>
-                <input
-                  type="range"
-                  className="stamina-slider"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={characterBlend}
-                  onChange={(e) => setCharacterBlend(Number(e.target.value))}
-                />
+              {(hasAnyLayerUrl || isAnyLayerLoading) && (
+                <div className="blend-control">
+                  <label className="blend-control__label">
+                    <span>Character Blend</span>
+                    <span>{Math.round(characterBlend * 100)}%</span>
+                  </label>
+                  <input
+                    type="range"
+                    className="stamina-slider"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={characterBlend}
+                    onChange={(e) => setCharacterBlend(Number(e.target.value))}
+                  />
+                </div>
+              )}
+              <div className="forge-generated-buttons">
+                <button className="btn-outline btn-3d" onClick={() => setViewing3D(true)} title="View card in 3D">
+                  ◈ 3D
+                </button>
+                <button className="btn-outline" onClick={() => setPrinting(true)} title="Print this card">
+                  🖨 Print
+                </button>
               </div>
             </div>
           )}
@@ -357,6 +371,19 @@ export function CardForge() {
                   frameImageUrl={layers.frameUrl}
                   layerLoading={layers.loading}
                   characterBlend={characterBlend}
+                  hideToolButtons
+                  onUpdate={(updates) => {
+                    setGenerated((prev) => {
+                      if (!prev) return prev;
+                      return {
+                        ...prev,
+                        identity: updates.name
+                          ? { ...prev.identity, name: updates.name }
+                          : prev.identity,
+                        flavorText: updates.flavorText ?? prev.flavorText,
+                      };
+                    });
+                  }}
                 />
               </div>
             </div>
@@ -368,6 +395,28 @@ export function CardForge() {
           )}
         </div>
       </div>
+
+      {/* 3D viewer and print modals — rendered at page level since tool buttons are hidden on the card */}
+      {generated && viewing3D && (
+        <CardViewer3D
+          card={generated}
+          backgroundImageUrl={layers.backgroundUrl}
+          characterImageUrl={layers.characterUrl}
+          frameImageUrl={layers.frameUrl}
+          characterBlend={characterBlend}
+          onClose={() => setViewing3D(false)}
+        />
+      )}
+      {generated && printing && (
+        <PrintModal
+          card={generated}
+          backgroundImageUrl={layers.backgroundUrl}
+          characterImageUrl={layers.characterUrl}
+          frameImageUrl={layers.frameUrl}
+          characterBlend={characterBlend}
+          onClose={() => setPrinting(false)}
+        />
+      )}
     </div>
   );
 }
