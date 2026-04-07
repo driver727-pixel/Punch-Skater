@@ -1,135 +1,86 @@
+/**
+ * types.ts
+ * Unified Type Definitions for Punch-Skater.
+ * Merges Craftlingua translation schemas with Skater Punk world-building.
+ */
+
+// ── World Building Types ─────────────────────────────────────────────────────
+
+/**
+ * Primary factions and crews from the Skater Punk doc.
+ * Includes the "Moonrisers" and the "Iron Curtains" (False Flag).
+ */
+export type Faction = 
+  | "United Corporations of America (UCA)"
+  | "Qu111s (Quills)"
+  | "Ne0n Legion"
+  | "Iron Curtains"
+  | "D4rk $pider"
+  | "The Asclepians"
+  | "The Mesopotamian Society"
+  | "The Knights Technarchy"
+  | "Hermes' Squirmies"
+  | "UCPS Workers"
+  | "Moonrisers"
+  | "The Wooders"
+  | "Punch Skaters";
+
+/**
+ * Origins of hardware, from high-tech "Dark Light Labs" 
+ * to Skids' "DIY/Plywood" builds.
+ */
+export type Manufacturer = 
+  | "UCA" 
+  | "DIY/Plywood" 
+  | "The Wooders" 
+  | "Dark Light Labs" 
+  | "Asclepian Medical" 
+  | "VoidRacer";
+
+/**
+ * Locations defined in the Skater Punk geography.
+ */
+export type District = 
+  | "Airaway" 
+  | "The Roads" 
+  | "The Tunnels" 
+  | "Batteryville" 
+  | "The Grid" 
+  | "Electropolis" 
+  | "Nightshade (The Murk)" 
+  | "The Forest";
+
+// ── Game Mechanics ────────────────────────────────────────────────────────────
+
+export interface PassiveTrait {
+  name: string;
+  description: string;
+  sourceFaction?: Faction;
+}
+
+export interface ActiveAbility {
+  name: string;
+  description: string;
+  cooldown?: number; 
+  cost?: string; // e.g. "1 Damage" or "Broomstick"
+}
+
 export interface CardPayload {
   id: string;
-  version: "1.0.0";
-  prompts: {
-    archetype: string;
-    rarity: string;
-    style: string;
-    vibe: string;
-    district: string;
-    accentColor: string;
-    stamina: number;
-  };
-  /** Master seed: frameSeed::backgroundSeed::characterSeed */
-  seed: string;
-  /** Layer-1 seed — determined by rarity alone */
-  frameSeed: string;
-  /** Layer-2 seed — determined by district alone */
-  backgroundSeed: string;
-  /** Layer-3 seed — determined by archetype, style, vibe, stamina */
-  characterSeed: string;
-  identity: {
-    name: string;
-    crew: string;
-    manufacturer: string;
-    serialNumber: string;
-  };
-  stats: {
-    speed: number;
-    stealth: number;
-    tech: number;
-    grit: number;
-    rep: number;
-    stamina: number;
-  };
-  traits: {
-    personalityTags: string[];
-    passiveTrait: { name: string; description: string };
-    activeAbility: { name: string; description: string };
-  };
-  flavorText: string;
-  visuals: {
-    helmetStyle: string;
-    boardStyle: string;
-    jacketStyle: string;
-    colorScheme: string;
-    accentColor: string;
-    storagePackStyle: string;
-  };
-  tags: string[];
-  createdAt: string;
-  /**
-   * Constructed-language data generated when a Craftlingua language profile was
-   * active at card-creation time.  Only present on cards forged with an active
-   * profile.
-   */
-  conlang?: {
-    /** Name of the conlang used to generate this data (e.g. "Neon-Kana"). */
-    languageName: string;
-    /** BCP-47-style language code (e.g. "nnk"). */
-    languageCode: string;
-    /** Character name generated from the constructed language vocabulary. */
-    name: string;
-    /** Signature catchphrase in the constructed language. */
-    catchphrase: string;
-    /** Passive trait description translated to the constructed language. */
-    passiveTrait: string;
-    /** Active ability description translated to the constructed language. */
-    activeAbility: string;
-    /** Flavor text translated to the constructed language. */
-    flavorText: string;
-  };
-  /** AI-generated illustration URL (single combined image — backward-compatible). */
-  imageUrl?: string;
-  /** AI-generated background layer URL (district scene, no characters). */
-  backgroundImageUrl?: string;
-  /** AI-generated character layer URL (courier portrait on white background). */
-  characterImageUrl?: string;
-  /** AI-generated frame layer URL (ornate playing-card border based on rarity). */
-  frameImageUrl?: string;
-  /**
-   * AI-generated card back URL (rarity-based, 180° point-symmetric design).
-   * Generated alongside the frame layer and suitable for 300 DPI print output
-   * at standard poker card size (2.5 × 3.5 inch with 0.125-inch bleed).
-   */
-  backImageUrl?: string;
-}
-
-export interface DeckPayload {
-  id: string;
-  version: "1.0.0";
   name: string;
-  cards: CardPayload[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type TradeStatus = "pending" | "accepted" | "declined" | "cancelled";
-
-export interface TradePayload {
-  id: string;
-  fromUid: string;
-  fromEmail: string;
-  toUid: string;
-  toEmail: string;
-  offeredCard: CardPayload;
-  status: TradeStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type Archetype = "Ninja" | "Punk Rocker" | "Ex Military" | "Hacker" | "Chef" | "Olympic" | "Fash";
-export type Rarity = "Legendary" | "Rare" | "Master" | "Apprentice" | "Punch Skater";
-export type Style = "Corporate" | "Street" | "Off-grid" | "Military" | "Union";
-export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
-export type District = "Airaway" | "Nightshade" | "Batteryville" | "The Grid" | "Glass City";
-
-export interface CardPrompts {
-  archetype: Archetype;
-  rarity: Rarity;
-  style: Style;
-  vibe: Vibe;
+  crew: Faction;
   district: District;
-  accentColor: string;
-  stamina: number;
+  manufacturer: Manufacturer;
+  passiveTrait: string;
+  activeAbility: string;
+  flavorText: string;
+  tags: string[];
 }
 
 // ── Craftlingua / JSON Import ─────────────────────────────────────────────────
 
 /**
  * A single vocabulary entry exported from Craftlingua.app.
- * Each word carries an optional `cardField` hint so the importer knows
- * which part of a card the constructed-language term enriches.
  */
 export interface CraftlinguaWord {
   /** The word or phrase in the constructed language. */
@@ -139,8 +90,8 @@ export interface CraftlinguaWord {
   /** Romanised or IPA pronunciation (optional). */
   phonetic?: string;
   /**
-   * Which card field this term maps to.
-   * Extend this union as new card fields become available.
+   * Maps terms to specific card fields. 
+   * Updated to include Skater Punk specific categories.
    */
   cardField?:
     | "name"
@@ -151,60 +102,36 @@ export interface CraftlinguaWord {
     | "tag"
     | "manufacturer"
     | "district";
-  /** Free-form metadata for forward compatibility with future Craftlingua fields. */
+  /** Free-form metadata for forward compatibility. */
   meta?: Record<string, unknown>;
 }
 
 /**
  * Top-level JSON envelope produced by Craftlingua.app exports.
- * The importer also accepts the older `{ version, exportedAt, cards }` collection
- * export format and plain `CardPayload[]` arrays.
  */
 export interface CraftlinguaEnvelope {
-  /** Must be "craftlingua" to identify the source. */
   source: "craftlingua";
-  /** Craftlingua schema version (semver string). */
   version: string;
-  /** ISO 8601 export timestamp. */
   exportedAt: string;
-  /** Metadata about the constructed language being exported. */
   language: {
-    /** Full name of the conlang, e.g. "Neon-Kana". */
     name: string;
-    /** Short identifier / BCP-47-style code, e.g. "nnk". */
     code: string;
-    /** Human-readable description (optional). */
     description?: string;
   };
-  /** Vocabulary list — words/phrases mapped to card fields. */
   vocabulary?: CraftlinguaWord[];
-  /**
-   * Pre-built card objects ready to be added to the collection.
-   * These are validated against the CardPayload schema before import.
-   */
   cards?: Partial<CardPayload>[];
 }
 
-/** Validation error for a single card during import. */
 export interface ImportCardError {
-  /** Zero-based position in the source array. */
   index: number;
-  /** Card id if present in the source data. */
   id?: string;
-  /** Human-readable validation messages. */
   errors: string[];
 }
 
-/** Result returned by the client-side `validateImport` helper. */
 export interface ImportResult {
-  /** Cards that passed validation and are ready to save. */
   accepted: CardPayload[];
-  /** Cards that failed validation, with reasons. */
   rejected: ImportCardError[];
-  /** Total number of card entries seen in the source. */
   total: number;
-  /** Craftlingua language metadata when present in the envelope. */
   language?: CraftlinguaEnvelope["language"];
-  /** Vocabulary entries when present in the envelope. */
   vocabulary?: CraftlinguaWord[];
 }
