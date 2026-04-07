@@ -6,6 +6,11 @@ import 'dotenv/config';
 
 const app = express();
 
+// Render (and most PaaS reverse-proxies) add X-Forwarded-For so Express can
+// determine the real client IP.  Without trust proxy = 1, express-rate-limit
+// throws a ValidationError and rate-limiting cannot identify callers correctly.
+app.set('trust proxy', 1);
+
 // ── Security headers ─────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');

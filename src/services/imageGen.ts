@@ -33,7 +33,7 @@ export const isImageGenConfigured = Boolean(PROXY_API_URL);
 // Adjust these to trade off quality vs. generation speed.
 
 const IMAGE_SIZE         = "portrait_4_3";
-const INFERENCE_STEPS    = 28;   // 28 is the sweet-spot for FLUX.1 dev — full quality, ~20% faster than 35
+const INFERENCE_STEPS    = 35;   // 35 produces noticeably sharper detail than 28; FLUX.1 dev quality sweet-spot
 const GUIDANCE_SCALE     = 3.5;
 const NUM_IMAGES         = 1;
 const SAFETY_CHECKER     = true;
