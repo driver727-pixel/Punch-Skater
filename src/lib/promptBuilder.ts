@@ -33,6 +33,10 @@ const DISTRICT_BACKGROUND_DESCRIPTIONS: Record<string, string> = {
     "autonomous delivery drones hovering silently overhead, " +
     "neon reflections on rain-soaked pavement, dense vertical cityscape lit by a thousand screens, " +
     "high-tech sensor gear and floating holo-signs everywhere, dramatic cyberpunk atmosphere, no humans, no figures",
+  "The Forest":
+    "a vast biopunk wilderness reclaimed by nature, ancient towering trees wrapped in bioluminescent vines and glowing moss, " +
+    "rusted skeletal megastructures half-swallowed by roots and canopy, makeshift rope bridges between treetop settlements, " +
+    "dappled green-gold light filtering through a dense forest ceiling, mist and fireflies, primeval solitude",
 };
 
 /**
@@ -44,6 +48,7 @@ const DISTRICT_DESCRIPTIONS: Record<string, string> = {
   Batteryville: "a rugged off-grid desert settlement with solar panels and wind turbines",
   "The Grid":   "a diesel-punk industrial wasteland of defunct refineries and oil derricks controlled by rival factions",
   "Glass City": "a cyberpunk neon megalopolis of glass skyscrapers — empty streets with no cars and no people, only neon reflections and drones",
+  "The Forest": "a biopunk wilderness of towering trees and bioluminescent vines reclaiming rusted megastructures, treetop settlements in misty solitude",
 };
 
 const STYLE_CLOTHING: Record<string, string> = {

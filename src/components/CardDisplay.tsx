@@ -41,6 +41,8 @@ interface CardDisplayProps {
   hideToolButtons?: boolean;
   /** When provided, renders inline edit controls for name and bio/flavor text. */
   onUpdate?: (updates: { name?: string; flavorText?: string }) => void;
+  /** Called when a composite image layer fails to load (e.g. expired fal.ai URL). */
+  onLayerError?: (layer: "background" | "character" | "frame") => void;
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -87,6 +89,8 @@ interface CompositeArtProps {
   width?: number;
   height?: number;
   fullSize?: boolean;
+  /** Called when one of the composite image layers fails to load (e.g. expired URL). */
+  onLayerError?: (layer: "background" | "character" | "frame") => void;
 }
 
 function CompositeArt({
@@ -99,6 +103,7 @@ function CompositeArt({
   width = 200,
   height = 140,
   fullSize = false,
+  onLayerError,
 }: CompositeArtProps) {
   const hasAnyLayer =
     backgroundImageUrl || characterImageUrl || frameImageUrl ||
@@ -117,6 +122,7 @@ function CompositeArt({
           src={backgroundImageUrl}
           alt="background"
           className="card-art-layer card-art-layer--background"
+          onError={() => onLayerError?.("background")}
         />
       ) : layerLoading?.background ? (
         <div className="card-art-layer card-art-layer--background card-art-layer--loading">
@@ -131,6 +137,7 @@ function CompositeArt({
           alt="character"
           className="card-art-layer card-art-layer--character"
           style={characterBlend !== undefined ? { opacity: characterBlend } : undefined}
+          onError={() => onLayerError?.("character")}
         />
       ) : layerLoading?.character ? (
         <div className="card-art-layer card-art-layer--character card-art-layer--loading">
@@ -144,6 +151,7 @@ function CompositeArt({
           src={frameImageUrl}
           alt="frame"
           className="card-art-layer card-art-layer--frame"
+          onError={() => onLayerError?.("frame")}
         />
       ) : layerLoading?.frame ? (
         <div className="card-art-layer card-art-layer--frame card-art-layer--loading">
@@ -174,6 +182,7 @@ export function CardDisplay({
   characterBlend,
   hideToolButtons = false,
   onUpdate,
+  onLayerError,
 }: CardDisplayProps) {
   const [sharing, setSharing] = useState(false);
   const [viewing3D, setViewing3D] = useState(false);
@@ -252,6 +261,7 @@ export function CardDisplay({
             characterBlend={characterBlend}
             width={160}
             height={112}
+            onLayerError={onLayerError}
           />
         ) : resolvedImageUrl ? (
           <img
@@ -293,6 +303,7 @@ export function CardDisplay({
           layerLoading={resolvedLayerLoading}
           characterBlend={characterBlend}
           fullSize
+          onLayerError={onLayerError}
         />
       ) : imageLoading ? (
         <div className="card-art-skeleton card-art-skeleton--full">
