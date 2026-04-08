@@ -6,7 +6,7 @@ import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
 import { PrintModal } from "../components/PrintModal";
 import { ReferralPanel } from "../components/ReferralPanel";
-import { generateImage, removeBackground, isImageGenConfigured } from "../services/imageGen";
+import { generateImage, removeBackground, isImageGenConfigured, getImageDimensions, type ImageGenOptions } from "../services/imageGen";
 import { getCachedImage, setCachedImage } from "../services/imageCache";
 import { getStaticBackgroundUrl, getStaticFrameUrl } from "../services/staticAssets";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
@@ -28,6 +28,14 @@ const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "
 
 /** Maximum number of automatic retries per layer when a cached URL fails to load. */
 const MAX_LAYER_RETRIES = 1;
+const CHARACTER_CACHE_VERSION = "v2-hq";
+const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
+  imageSize: { width: 1024, height: 1536 },
+  numInferenceSteps: 45,
+  guidanceScale: 4,
+};
+const CHARACTER_MIN_DIMENSIONS = { width: 900, height: 1300 };
+const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
 
 /** Converts a display name to a kebab-case filename stem (e.g. "The Grid" → "the-grid"). */
 function toFileSlug(name: string): string {
@@ -46,8 +54,11 @@ interface LayerState {
 interface LayerGenParams {
   key: string;
   prompt: string;
-  seed: string;
+  seed?: string;
+  attempts?: Array<{ seed: string; generationOptions?: ImageGenOptions }>;
   postProcess?: (url: string) => Promise<string>;
+  validateResult?: (url: string) => Promise<void>;
+  generationOptions?: ImageGenOptions;
 }
 
 const INITIAL_LAYER_STATE: LayerState = {
@@ -106,9 +117,12 @@ export function CardForge() {
       layer: "background" | "character" | "frame",
       cacheKey: string,
       prompt: string,
-      seed: string,
+      seed: string | undefined,
       signal: AbortSignal,
       postProcess?: (url: string) => Promise<string>,
+      validateResult?: (url: string) => Promise<void>,
+      generationOptions?: ImageGenOptions,
+      attempts?: Array<{ seed: string; generationOptions?: ImageGenOptions }>,
       skipCache = false,
     ) => {
       setLayers((s) => ({ ...s, loading: { ...s.loading, [layer]: true } }));
@@ -149,15 +163,46 @@ export function CardForge() {
         }
 
         // 3. Generate via Fal.ai
-        const result = await generateImage(prompt, seed);
-        if (signal.aborted) return;
+        const seedAttempts = attempts?.length
+          ? attempts
+          : seed
+            ? [{ seed, generationOptions }]
+            : [];
 
-        let finalUrl = result.imageUrl;
+        if (seedAttempts.length === 0) {
+          throw new Error(`No generation seed configured for ${layer} layer.`);
+        }
 
-        // Post-process (e.g., background removal for character layer)
-        if (postProcess) {
-          finalUrl = await postProcess(finalUrl);
-          if (signal.aborted) return;
+        let finalUrl: string | null = null;
+        let lastGenerationError: unknown = null;
+
+        for (const attempt of seedAttempts) {
+          try {
+            const result = await generateImage(prompt, attempt.seed, attempt.generationOptions ?? generationOptions);
+            if (signal.aborted) return;
+
+            let candidateUrl = result.imageUrl;
+
+            // Post-process (e.g., background removal for character layer)
+            if (postProcess) {
+              candidateUrl = await postProcess(candidateUrl);
+              if (signal.aborted) return;
+            }
+
+            if (validateResult) {
+              await validateResult(candidateUrl);
+              if (signal.aborted) return;
+            }
+
+            finalUrl = candidateUrl;
+            break;
+          } catch (err) {
+            lastGenerationError = err;
+          }
+        }
+
+        if (!finalUrl) {
+          throw lastGenerationError ?? new Error(`Failed to generate ${layer} layer.`);
         }
 
         // Log the URL so users can download and save as a static asset
@@ -234,7 +279,7 @@ export function CardForge() {
     const framePrompt = buildFramePrompt(prompts.rarity);
 
     const bgKey    = `bg::${card.backgroundSeed}`;
-    const charKey  = `char::${card.characterSeed}`;
+    const charKey  = `char::${CHARACTER_CACHE_VERSION}::${card.characterSeed}`;
     const frameKey = `frame::${card.frameSeed}`;
 
     const bgSeed    = card.backgroundSeed;
@@ -245,11 +290,31 @@ export function CardForge() {
       const result = await removeBackground(url);
       return result.imageUrl;
     };
+    const validateCharacterLayer = async (url: string) => {
+      const { width, height } = await getImageDimensions(url);
+      if (width < CHARACTER_MIN_DIMENSIONS.width || height < CHARACTER_MIN_DIMENSIONS.height) {
+        throw new Error(
+          `Character layer came back too small (${width}×${height}); retrying a higher-quality render.`,
+        );
+      }
+    };
+    const charAttempts = CHARACTER_SEED_VARIANTS.map((variant) => ({
+      seed: `${charSeed}|${variant}`,
+      generationOptions: CHARACTER_GENERATION_OPTIONS,
+    }));
 
     // Store params so handleLayerError can retry without re-running handleForge
     layerParamsRef.current = {
       background: { key: bgKey,    prompt: bgPrompt,    seed: bgSeed    },
-      character:  { key: charKey,  prompt: charPrompt,  seed: charSeed,  postProcess: charPostProcess },
+      character:  {
+        key: charKey,
+        prompt: charPrompt,
+        seed: charSeed,
+        attempts: charAttempts,
+        postProcess: charPostProcess,
+        validateResult: validateCharacterLayer,
+        generationOptions: CHARACTER_GENERATION_OPTIONS,
+      },
       frame:      { key: frameKey, prompt: framePrompt, seed: frameSeed  },
     };
 
@@ -257,7 +322,17 @@ export function CardForge() {
     generateLayer("background", bgKey, bgPrompt, bgSeed, signal);
 
     // Character layer — post-process with background removal
-    generateLayer("character", charKey, charPrompt, charSeed, signal, charPostProcess);
+    generateLayer(
+      "character",
+      charKey,
+      charPrompt,
+      charSeed,
+      signal,
+      charPostProcess,
+      validateCharacterLayer,
+      CHARACTER_GENERATION_OPTIONS,
+      charAttempts,
+    );
 
     // Frame layer
     generateLayer("frame", frameKey, framePrompt, frameSeed, signal);
@@ -295,6 +370,9 @@ export function CardForge() {
         params.seed,
         controller.signal,
         params.postProcess,
+        params.validateResult,
+        params.generationOptions,
+        params.attempts,
         true, // skipCache — bypass the expired Firestore URL
       );
     },
