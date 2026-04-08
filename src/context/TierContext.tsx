@@ -84,7 +84,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
         saveTier(data.tier);
       }
     }).catch(() => {/* non-fatal */});
-  }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // ── Handle referral link on first mount ───────────────────────────────────
   useEffect(() => {

@@ -162,7 +162,7 @@ export function Admin() {
         </div>
         <button
           className="btn-outline"
-          onClick={() => { setSearch(""); loadUsers(); setLastDoc(null); }}
+          onClick={() => { setSearch(""); setUsers([]); setLastDoc(null); loadUsers(); }}
         >
           Refresh
         </button>
