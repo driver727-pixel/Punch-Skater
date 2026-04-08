@@ -88,6 +88,7 @@ export function CardForge() {
   const [viewing3D, setViewing3D] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [savedCard, setSavedCard] = useState<CardPayload | null>(null);
   const [isFirstCard, setIsFirstCard] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -420,7 +421,7 @@ export function CardForge() {
   const hasAnyLayerUrl = !!(layers.backgroundUrl || layers.characterUrl || layers.frameUrl);
 
   // ── Save to Collection ───────────────────────────────────────────────────
-  const handleSaveToCollection = useCallback(() => {
+  const handleSaveToCollection = useCallback(async () => {
     if (!generated) return;
     if (!tierData.canSave) {
       openUpgradeModal();
@@ -435,6 +436,7 @@ export function CardForge() {
     }
 
     setSaving(true);
+    setSaveError(null);
 
     // Capture whether this is the user's first card BEFORE updating state
     const firstCard = cards.length === 0;
@@ -447,11 +449,16 @@ export function CardForge() {
       frameImageUrl: layers.frameUrl,
     };
 
-    addCard(cardToSave);
-
-    setSaving(false);
-    setIsFirstCard(firstCard);
-    setSavedCard(cardToSave);
+    try {
+      await addCard(cardToSave);
+      setIsFirstCard(firstCard);
+      setSavedCard(cardToSave);
+    } catch (err) {
+      console.error("Failed to save card:", err);
+      setSaveError("Failed to save card. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }, [generated, layers, tierData, cards, addCard, openUpgradeModal]);
 
   // ── Download composed card as JPEG ──────────────────────────────────────
@@ -660,7 +667,7 @@ export function CardForge() {
                     disabled={saving}
                     title="Save card to your Collection"
                   >
-                    💾 Save to Collection
+                    {saving ? "💾 Saving…" : "💾 Save to Collection"}
                   </button>
                 ) : (
                   <button
@@ -680,6 +687,9 @@ export function CardForge() {
                   {downloading ? "⏳ Saving…" : "⬇ Download JPG"}
                 </button>
               </div>
+              {saveError && (
+                <p className="forge-image-error" role="alert">{saveError}</p>
+              )}
             </div>
           )}
         </div>

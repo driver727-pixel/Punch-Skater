@@ -49,9 +49,9 @@ export function useCollection() {
   }, [cards, uid]);
 
   // ── Card mutations ────────────────────────────────────────────────────────
-  const addCard = useCallback((card: CardPayload) => {
+  const addCard = useCallback(async (card: CardPayload): Promise<void> => {
     if (uid) {
-      setDoc(doc(db, "users", uid, "cards", card.id), card).catch(console.error);
+      await setDoc(doc(db, "users", uid, "cards", card.id), card);
     } else {
       setCards((prev) => (prev.some((c) => c.id === card.id) ? prev : [...prev, card]));
     }
