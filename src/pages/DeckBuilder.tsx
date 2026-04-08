@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { DeckPayload, CardPayload } from "../lib/types";
 import { useDecks, DECK_CARD_LIMIT } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
-import { CardArt } from "../components/CardArt";
+import { CardThumbnail } from "../components/CardThumbnail";
 import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
@@ -169,7 +169,7 @@ export function DeckBuilder() {
               <span className="empty-icon">🗂️</span>
               <p>
                 {decks.length === 0
-                  ? "No decks yet. Forge a card and click \"Save to Deck\" to get started."
+                  ? "No decks yet. Save cards to your Collection first, then add them here to build a deck."
                   : "Select a deck to view its cards."}
               </p>
             </div>
@@ -202,7 +202,7 @@ export function DeckBuilder() {
                         {card ? (
                           <div className="deck-slot-card">
                             <div className="deck-slot-art">
-                              <CardArt card={card} width={110} height={76} />
+                              <CardThumbnail card={card} width={110} height={76} />
                             </div>
                             <div className="deck-slot-info">
                               <span className="card-name">{card.identity.name}</span>
@@ -234,7 +234,7 @@ export function DeckBuilder() {
                   <div className="card-grid card-grid--small">
                     {availableCards.map((card) => (
                       <div key={card.id} className="card-thumb card-thumb--add">
-                        <CardArt card={card} width={120} height={84} />
+                        <CardThumbnail card={card} width={120} height={84} />
                         <div className="card-thumb-info">
                           <span className="card-name">{card.identity.name}</span>
                           <span className="card-sub">{card.prompts.archetype}</span>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { CardPayload } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
 import { CardDisplay } from "../components/CardDisplay";
-import { CardArt } from "../components/CardArt";
+import { CardThumbnail } from "../components/CardThumbnail";
 import { TradeModal } from "../components/TradeModal";
 import { ImportModal } from "../components/ImportModal";
 import { exportJson } from "../lib/storage";
@@ -109,7 +109,7 @@ export function Collection() {
                 className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""}`}
                 onClick={() => setSelected(selected?.id === card.id ? null : card)}
               >
-                <CardArt card={card} width={160} height={112} />
+                <CardThumbnail card={card} width={160} height={112} />
                 <div className="card-thumb-info">
                   <span className="card-name">{card.identity.name}</span>
                   <span className="card-sub">{card.prompts.archetype} · {card.prompts.rarity}</span>

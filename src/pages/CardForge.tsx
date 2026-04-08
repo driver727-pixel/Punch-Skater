@@ -12,7 +12,6 @@ import { getStaticBackgroundUrl, getStaticFrameUrl } from "../services/staticAss
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 import { useTier } from "../context/TierContext";
 import { useCollection } from "../hooks/useCollection";
-import { useDecks } from "../hooks/useDecks";
 import { TIERS } from "../lib/tiers";
 
 const ARCHETYPES: Archetype[] = ["The Knights Technarchy", "Qu111s", "Iron Curtains", "D4rk $pider", "The Asclepians", "The Mesopotamian Society", "Hermes' Squirmies", "UCPS", "The Team"];
@@ -60,7 +59,6 @@ export function CardForge() {
   const tierData = TIERS[tier];
   const navigate = useNavigate();
   const { addCard, cards } = useCollection();
-  const { saveCardToFirstDeck } = useDecks();
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
     vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5,
@@ -72,9 +70,8 @@ export function CardForge() {
   const [forging, setForging] = useState(false);
   const [viewing3D, setViewing3D] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const [savingToDeck, setSavingToDeck] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [savedCard, setSavedCard] = useState<CardPayload | null>(null);
-  const [savedDeckFull, setSavedDeckFull] = useState(false);
   const [isFirstCard, setIsFirstCard] = useState(false);
 
   // Abort controller ref for cancelling in-flight image generation
@@ -305,19 +302,27 @@ export function CardForge() {
   const isAnyLayerLoading = layers.loading.background || layers.loading.character || layers.loading.frame;
   const hasAnyLayerUrl = !!(layers.backgroundUrl || layers.characterUrl || layers.frameUrl);
 
-  // ── Save to Deck ─────────────────────────────────────────────────────────
-  const handleSaveToDeck = useCallback(() => {
+  // ── Save to Collection ───────────────────────────────────────────────────
+  const handleSaveToCollection = useCallback(() => {
     if (!generated) return;
     if (!tierData.canSave) {
       openUpgradeModal();
       return;
     }
-    setSavingToDeck(true);
+
+    // Enforce collection card limit for the current tier
+    const cardLimit = tierData.cardLimit;
+    if (cardLimit !== null && cards.length >= cardLimit) {
+      openUpgradeModal();
+      return;
+    }
+
+    setSaving(true);
 
     // Capture whether this is the user's first card BEFORE updating state
     const firstCard = cards.length === 0;
 
-    // Attach current layer URLs to the card so the deck shows them
+    // Attach current layer URLs to the card so the collection shows them
     const cardToSave: CardPayload = {
       ...generated,
       backgroundImageUrl: layers.backgroundUrl,
@@ -326,13 +331,11 @@ export function CardForge() {
     };
 
     addCard(cardToSave);
-    const { deckFull } = saveCardToFirstDeck(cardToSave);
 
-    setSavingToDeck(false);
+    setSaving(false);
     setIsFirstCard(firstCard);
-    setSavedDeckFull(deckFull);
     setSavedCard(cardToSave);
-  }, [generated, layers, tierData, addCard, saveCardToFirstDeck, openUpgradeModal]);
+  }, [generated, layers, tierData, cards, addCard, openUpgradeModal]);
 
   return (
     <div className="page">
@@ -516,19 +519,19 @@ export function CardForge() {
                 {tierData.canSave ? (
                   <button
                     className="btn-primary"
-                    onClick={handleSaveToDeck}
-                    disabled={savingToDeck}
-                    title="Save card to your deck"
+                    onClick={handleSaveToCollection}
+                    disabled={saving}
+                    title="Save card to your Collection"
                   >
-                    💾 Save to Deck
+                    💾 Save to Collection
                   </button>
                 ) : (
                   <button
                     className="btn-outline"
                     onClick={openUpgradeModal}
-                    title="Upgrade to save cards to a deck"
+                    title="Upgrade to save cards to your Collection"
                   >
-                    🔒 Save to Deck
+                    🔒 Save to Collection
                   </button>
                 )}
               </div>
@@ -613,28 +616,23 @@ export function CardForge() {
           onClose={() => setPrinting(false)}
         />
       )}
-      {/* ── Save-to-deck celebration overlay ── */}
+      {/* ── Save-to-collection celebration overlay ── */}
       {savedCard && (
-        <div className="save-celebrate-overlay" onClick={() => { setSavedCard(null); navigate("/decks"); }}>
+        <div className="save-celebrate-overlay" onClick={() => { setSavedCard(null); navigate("/collection"); }}>
           <div className="save-celebrate-modal" onClick={(e) => e.stopPropagation()}>
             <div className="save-celebrate-emoji">🎉</div>
             <h2 className="save-celebrate-title">
               {isFirstCard
-                ? "Congrats! You forged your first player card!"
-                : "Card forged and saved!"}
+                ? "Congrats! You saved your first card!"
+                : "Card saved to your Collection!"}
             </h2>
             <p className="save-celebrate-name">{savedCard.identity.name}</p>
             <p className="save-celebrate-seed">SEED · {savedCard.seed}</p>
-            {savedDeckFull && (
-              <p className="save-celebrate-notice">
-                Your deck is full — visit My Decks to manage your cards.
-              </p>
-            )}
             <button
               className="btn-primary"
-              onClick={() => { setSavedCard(null); navigate("/decks"); }}
+              onClick={() => { setSavedCard(null); navigate("/collection"); }}
             >
-              Go to My Decks →
+              Go to My Collection →
             </button>
           </div>
         </div>
