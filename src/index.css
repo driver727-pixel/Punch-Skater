@@ -1036,9 +1036,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transform-origin: bottom center;
 }
 .card-art-layer--frame {
-  /* Screen blend: black interior becomes transparent, coloured foil border stays visible */
+  /* Screen blend: black interior becomes transparent, coloured foil border stays visible.
+     object-fit: fill stretches the frame to exactly match the container so the border
+     aligns with the card edges regardless of the frame image's intrinsic aspect ratio. */
   z-index: 3;
   mix-blend-mode: screen;
+  object-fit: fill;
 }
 .card-art-layer--loading {
   display: flex;
@@ -2154,6 +2157,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .viewer3d-layer--frame {
   mix-blend-mode: screen; /* black background of frame image becomes transparent; colored border stays visible */
+  object-fit: fill;       /* stretch to exactly match the card surface so the border aligns with the edges */
 }
 
 /* Gloss overlay on the front face */
