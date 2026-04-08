@@ -38,6 +38,12 @@ const GUIDANCE_SCALE     = 3.5;
 const NUM_IMAGES         = 1;
 const SAFETY_CHECKER     = true;
 
+export interface ImageGenOptions {
+  imageSize?: string | { width: number; height: number };
+  numInferenceSteps?: number;
+  guidanceScale?: number;
+}
+
 /**
  * MANDATORY negative prompt — automatically appended to every request inside
  * generateImage(). Safety terms can never be removed by editing prompt builders.
@@ -64,6 +70,11 @@ export interface ImageGenResult {
   imageUrl: string;
 }
 
+export interface ImageDimensions {
+  width: number;
+  height: number;
+}
+
 // ── Service ────────────────────────────────────────────────────────────────────
 
 /**
@@ -78,6 +89,7 @@ export interface ImageGenResult {
 export async function generateImage(
   prompt: string,
   masterSeed: string,
+  options: ImageGenOptions = {},
 ): Promise<ImageGenResult> {
   const seed = hashSeedToInt(masterSeed);
 
@@ -97,9 +109,9 @@ export async function generateImage(
     prompt: safePrompt,
     negative_prompt: NEGATIVE_PROMPT,
     seed,
-    image_size: IMAGE_SIZE,
-    num_inference_steps: INFERENCE_STEPS,
-    guidance_scale: GUIDANCE_SCALE,
+    image_size: options.imageSize ?? IMAGE_SIZE,
+    num_inference_steps: options.numInferenceSteps ?? INFERENCE_STEPS,
+    guidance_scale: options.guidanceScale ?? GUIDANCE_SCALE,
     num_images: NUM_IMAGES,
     enable_safety_checker: SAFETY_CHECKER,
   });
@@ -176,4 +188,14 @@ export async function removeBackground(imageUrl: string): Promise<ImageGenResult
   }
 
   return { imageUrl: resultUrl };
+}
+
+export async function getImageDimensions(imageUrl: string): Promise<ImageDimensions> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error(`Failed to inspect generated image: ${imageUrl}`));
+    img.src = imageUrl;
+  });
 }
