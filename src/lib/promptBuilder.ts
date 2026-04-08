@@ -31,9 +31,9 @@ const STYLE_CLOTHING: Record<string, string> = {
 
 const ARCHETYPE_POSES: Record<string, string> = {
   "The Knights Technarchy": "crouched in a stealthy ready stance, dressed in all black with no lights on the board",
-  "Qu111s":                 "standing with confident attention, arms crossed, defiant journalist pose",
-  "Iron Curtains":          "standing at attention in tactical fatigues with cheap-looking plastic body armor",
-  "D4rk $pider":            "typing on a holographic keyboard, screens reflected in goggles, wires and antennas on the board",
+  "Qu111s":                 "a defiant, heroic investigative reporter striking an exaggerated, dynamic action pose, intensely determined expression, dramatically windswept hair, riding a low tech electric skateboard with smaller all-terrain wheels",
+  "Iron Curtains":          "a hyper-muscular mercenary, 90s comic book military, big muscles bodybuilder type, exaggerated pose and facial expression, riding big girthy electric skateboards on big chunky off-road wheels",
+  "D4rk $pider":            "a cyber-hacker wearing mirrored wrap-around visor shades, surrounded by thick glowing neon-green fiber-optic cables, fiercely typing on a chunky retro-futuristic mechanical hacking deck, riding a high tech electric skateboard with lots of wires and antennas",
   "The Asclepians":         "standing with sleek professional posture, high-tech earpiece visible, corporate logo on the board",
   "The Mesopotamian Society":"defiant rock-star pose in rugged survivalist gear, all-terrain off-road mountain board style",
   "Hermes' Squirmies":      "casual working stance in union worker overalls covered in badge patches",
@@ -190,11 +190,9 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     `Mood: ${mood}. ` +
     genderLine +
     AGE_RESTRICTION +
-    `Isolated on a plain white background, full figure visible from head to toe, centred. ` +
     `Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
-    `vibrant and saturated 90s digital colors, dramatic rim lighting, realistic anatomy, chromium finish, ` +
-    `epic action pose, 90s Marvel aesthetic, tack-sharp focus, ultra-crisp details, high resolution, ` +
-    `perfectly in focus, pin-sharp, no blur, no soft focus, no depth-of-field. ` +
+    `vibrant and saturated 90s digital colors, dramatic rim lighting. ` +
+    `Isolated on a solid neutral medium-gray studio background, full figure visible from head to toe, centred. ` +
     `SFW, family friendly, PG rated, LGBTQIA+.`
   );
 }
