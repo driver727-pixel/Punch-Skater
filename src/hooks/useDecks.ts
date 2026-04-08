@@ -108,6 +108,10 @@ export function useDecks() {
   /**
    * Reorder a card within a deck by swapping it from `fromIndex` to `toIndex`.
    */
+  /**
+   * Remove a card from every deck that contains it.
+   * Useful when deleting a card from the collection entirely.
+   */
   const removeCardFromAllDecks = useCallback((cardId: string) => {
     for (const deck of decksRef.current) {
       if (deck.cards.some((c) => c.id === cardId)) {
