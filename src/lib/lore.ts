@@ -309,11 +309,11 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
     name: "D4rk $pider",
     tagline: "Data for blackmail. Blackmail for survival.",
     description:
-      "Hackers on the dark web who mirror the Qu111s' methods but use data for blackmail " +
-      "and scams rather than journalism. They carry chips they often encrypted themselves — " +
-      "which means they know exactly how dangerous the information is. " +
-      "[Mysterious Detail]: It is unknown if they are secretly funded by revolutionaries " +
-      "(like the Iron Curtains) or if they are simply poor people using their skills to earn money.",
+      "Hackers on the dark web who mirror the others methods but use data for blackmail " +
+      "and scams rather than journalism. Predominantly Hackers and ESK8 Couriers. " +
+      "It is unknown whether Dark Spider aka D4rk $pider is secretly funded by " +
+      "revolutionary interests or whether they are truly poverty stricken but skilled " +
+      "people using their abilities to survive.",
     strengths: "Maximum Tech, strong Stealth. The Grid is their natural habitat.",
   },
   {
@@ -430,11 +430,11 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     districts: ["The Grid", "Nightshade"],
     tagline: "Data for blackmail. Blackmail for survival.",
     description:
-      "Hackers on the dark web who mirror the Quills' methods but use data for blackmail " +
-      "and scams rather than journalism. Predominantly Hacker archetypes. " +
-      "[Unresolved detail]: It is unknown whether D4rk $pider is secretly funded by " +
-      "revolutionary interests (like the real Iron Curtains) or whether they are simply " +
-      "skilled poor people using their abilities to survive.",
+      "Hackers on the dark web who mirror the others methods but use data for blackmail " +
+      "and scams rather than journalism. Predominantly Hackers and ESK8 Couriers. " +
+      "It is unknown whether Dark Spider aka D4rk $pider is secretly funded by " +
+      "revolutionary interests or whether they are truly poverty stricken but skilled " +
+      "people using their abilities to survive.",
   },
   {
     name: "The Asclepians",
