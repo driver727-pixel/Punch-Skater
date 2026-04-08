@@ -33,12 +33,12 @@ import type { District, Rarity } from "../lib/types";
 //   Airaway: "/assets/backgrounds/airaway.jpg",
 
 const BACKGROUND_ASSETS: Partial<Record<District, string>> = {
-  // Airaway:      "/assets/backgrounds/airaway.jpg",
-  // Nightshade:   "/assets/backgrounds/nightshade.jpg",
-  // Batteryville: "/assets/backgrounds/batteryville.jpg",
-  // "The Grid":   "/assets/backgrounds/the-grid.jpg",
-  // "The Forest": "/assets/backgrounds/the-forest.jpg",
-  // "Glass City": "/assets/backgrounds/glass-city.jpg",
+  Airaway:      "/assets/backgrounds/airaway.jpg",
+  Nightshade:   "/assets/backgrounds/nightshade.jpg",
+  Batteryville: "/assets/backgrounds/batteryville.jpg",
+  "The Grid":   "/assets/backgrounds/the-grid.jpg",
+  "The Forest": "/assets/backgrounds/the-forest.jpg",
+  "Glass City": "/assets/backgrounds/glass-city.jpg",
 };
 
 // ── Frame registry ─────────────────────────────────────────────────────────────
