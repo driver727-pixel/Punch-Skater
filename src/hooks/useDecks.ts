@@ -108,6 +108,18 @@ export function useDecks() {
   /**
    * Reorder a card within a deck by swapping it from `fromIndex` to `toIndex`.
    */
+  const removeCardFromAllDecks = useCallback((cardId: string) => {
+    for (const deck of decksRef.current) {
+      if (deck.cards.some((c) => c.id === cardId)) {
+        saveDeck({
+          ...deck,
+          cards: deck.cards.filter((c) => c.id !== cardId),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }, [saveDeck]);
+
   const moveCardInDeck = useCallback((deckId: string, fromIndex: number, toIndex: number) => {
     const deck = decksRef.current.find((d) => d.id === deckId);
     if (!deck) return;
@@ -150,5 +162,5 @@ export function useDecks() {
     return { deckFull: false };
   }, [uid, addCardToDeck]);
 
-  return { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck, saveCardToFirstDeck };
+  return { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, removeCardFromAllDecks, renameDeck, moveCardInDeck, saveCardToFirstDeck };
 }

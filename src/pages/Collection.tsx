@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CardPayload } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
+import { useDecks } from "../hooks/useDecks";
 import { CardDisplay } from "../components/CardDisplay";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { CardThumbnail } from "../components/CardThumbnail";
@@ -13,6 +14,7 @@ import { TIERS } from "../lib/tiers";
 
 export function Collection() {
   const { cards, removeCard, addCard, updateCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
+  const { removeCardFromAllDecks } = useDecks();
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
   const navigate = useNavigate();
@@ -128,6 +130,7 @@ export function Collection() {
                 onEdit={tierData.canSave ? () => navigate(`/edit/${selected.id}`) : undefined}
                 onUpdate={tierData.canSave ? handleCardUpdate : undefined}
                 onRemove={tierData.canEditDecks ? () => {
+                  removeCardFromAllDecks(selected.id);
                   removeCard(selected.id);
                   setSelected(null);
                 } : undefined}
