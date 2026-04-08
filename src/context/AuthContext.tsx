@@ -25,6 +25,7 @@ import {
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import { syncReferralCredits } from "../services/referrals";
+import { isAdminEmail } from "../lib/adminUtils";
 
 interface AuthContextValue {
   user: User | null;
@@ -44,6 +45,7 @@ const googleProvider = new GoogleAuthProvider();
 export { RecaptchaVerifier };
 
 async function upsertUserProfile(user: User) {
+  const adminFields = isAdminEmail(user.email ?? "") ? { isAdmin: true } : {};
   await setDoc(
     doc(db, "userProfiles", user.uid),
     {
@@ -51,6 +53,7 @@ async function upsertUserProfile(user: User) {
       email: user.email ?? "",
       displayName: user.displayName ?? user.email?.split("@")[0] ?? "Skater",
       updatedAt: serverTimestamp(),
+      ...adminFields,
     },
     { merge: true }
   );

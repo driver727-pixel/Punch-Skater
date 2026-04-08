@@ -15,7 +15,12 @@ service cloud.firestore {
     // ── Public user profiles (email look-up for trading) ─────────────────────
     match /userProfiles/{uid} {
       allow read:  if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && (
+        // Owners may always update their own profile
+        request.auth.uid == uid
+        // Admins (marked isAdmin: true in their own profile) may update any profile
+        || (get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true)
+      );
     }
 
     // ── Image cache ──────────────────────────────────────────────────────────

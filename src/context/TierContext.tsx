@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { loadTier, saveTier, loadEmail, saveEmail, clearAccount, TIERS, type TierLevel } from "../lib/tiers";
 import { claimReferral, REFERRAL_CREDITS_KEY } from "../services/referrals";
+import { useAuth } from "./AuthContext";
+import { db } from "../lib/firebase";
 
 function loadStoredCredits(): number {
   const v = localStorage.getItem(REFERRAL_CREDITS_KEY);
@@ -58,10 +61,30 @@ function extractReferrerUid(): string | null {
 }
 
 export function TierProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [tier, setTierState] = useState<TierLevel>(resolveInitialTier);
   const [email, setEmailState] = useState<string>(resolveInitialEmail);
   const [generateCredits, setGenerateCredits] = useState<number>(loadStoredCredits);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // ── Sync tier from Firestore when user logs in ────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    getDoc(doc(db, "userProfiles", user.uid)).then((snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      // Admin users always get tier3
+      if (data.isAdmin) {
+        setTierState("tier3");
+        saveTier("tier3");
+        return;
+      }
+      if (data.tier === "tier2" || data.tier === "tier3") {
+        setTierState(data.tier);
+        saveTier(data.tier);
+      }
+    }).catch(() => {/* non-fatal */});
+  }, [user]);
 
   // ── Handle referral link on first mount ───────────────────────────────────
   useEffect(() => {
@@ -93,7 +116,11 @@ export function TierProvider({ children }: { children: ReactNode }) {
       setEmailState(newEmail);
       saveEmail(newEmail);
     }
-  }, []);
+    if (user) {
+      setDoc(doc(db, "userProfiles", user.uid), { tier: level }, { merge: true })
+        .catch(() => {/* non-fatal */});
+    }
+  }, [user]);
 
   const logout = useCallback(() => {
     clearAccount();
