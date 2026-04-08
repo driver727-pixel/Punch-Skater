@@ -57,13 +57,12 @@ const RARITY_MOOD: Record<string, string> = {
   Legendary:      "epic, otherworldly, and awe-inspiring",
 };
 
-/**
- * Ornate border descriptions keyed by rarity tier.
- * Used by buildFramePrompt to produce a playing-card-style overlay.
- */
 const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
   "Punch Skater":
-    "a tattered border made of dirty gauze bandages wrapped around the card edges, stained dark red with dried blood, fraying loose ends at the corners, rough textile texture, gritty street-medicine aesthetic",
+    "a rough border of dirty gauze bandage strips haphazardly wrapped around the card edges — " +
+    "asymmetric and organic, with more strips clustered on one side than the other. " +
+    "Irregular dark-red dried-blood splatter dots scattered unevenly around the border, " +
+    "heavier on the top-left, sparser on the bottom-right. Fraying loose ends. Gritty street-medicine aesthetic.",
   Apprentice:
     "a clean double-line border with small stylised leaf flourishes at each corner",
   Master:
@@ -71,8 +70,10 @@ const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
   Rare:
     "an elaborate gilded border with detailed botanical motifs, layered petals and scrollwork along every edge",
   Legendary:
-    "a spectacular gold-and-jewel border with intricate mythological floral patterns, " +
-    "large jewelled corner medallions, and cascading tendrils of foliage all around the edge",
+    "a cyberpunk neon-tube border — electric cyan glowing tubes along the outer edge with hot-pink inner accent lines, " +
+    "corner circuit-board junction plates with small magenta indicator nodes, " +
+    "irregular circuit-trace tick marks along each side, and scattered neon glow dots. " +
+    "Dark background. Hard sci-fi, no fantasy, no gold, no foliage.",
 };
 
 /**
@@ -209,11 +210,19 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
  */
 export function buildFramePrompt(rarity: Rarity): string {
   const border = RARITY_FRAME_DESCRIPTIONS[rarity] ?? "a plain decorative border";
+  const isPunchSkater = rarity === "Punch Skater";
+  const isLegendary   = rarity === "Legendary";
+  const accentPalette = isLegendary
+    ? "Electric cyan, hot pink, magenta neon."
+    : "Gold, silver, titanium foil, decorative, accents.";
+  const layoutHint = isPunchSkater
+    ? "Asymmetric, organic, irregular placement — deliberately not mirrored,"
+    : "Symmetrical layout,";
   return (
     `A playing card border frame: ${border}. ` +
-    `Gold, silver, titanium foil, decorative, accents. ` +
+    `${accentPalette} ` +
     `The interior of the frame is completely flat black — only the border decoration is coloured. ` +
-    `Symmetrical layout, top-down flat graphic illustration style, isolated on black background, no characters, no text. ` +
+    `${layoutHint} top-down flat graphic illustration style, isolated on black background, no characters, no text. ` +
     `Clean vector-art look, high contrast, 4K. ` +
     `SFW, family friendly, PG rated, LGBTQIA+.`
   );
