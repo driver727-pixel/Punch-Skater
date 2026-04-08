@@ -7,6 +7,7 @@ import { useTier } from "./context/TierContext";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 
 /** Applies data-theme and data-time attributes to <html> for CSS theming. */
 function ThemeApplier() {
@@ -40,6 +41,7 @@ const Lore            = lazy(() => import("./pages/Lore").then(m => ({ default: 
 const PrivacyPolicy   = lazy(() => import("./pages/PrivacyPolicy").then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService  = lazy(() => import("./pages/TermsOfService").then(m => ({ default: m.TermsOfService })));
 const ResetPassword   = lazy(() => import("./pages/ResetPassword").then(m => ({ default: m.ResetPassword })));
+const Admin           = lazy(() => import("./pages/Admin").then(m => ({ default: m.Admin })));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -92,6 +94,9 @@ function App() {
                       } />
                       <Route path="/trades" element={
                         <ProtectedRoute><Trades /></ProtectedRoute>
+                      } />
+                      <Route path="/admin" element={
+                        <AdminRoute><Admin /></AdminRoute>
                       } />
                     </Routes>
                   </Suspense>

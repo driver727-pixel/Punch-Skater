@@ -12,6 +12,7 @@ import { TIERS } from "../lib/tiers";
 import { db } from "../lib/firebase";
 import { SupportButton } from "./SupportButton";
 import { TierModal } from "./TierModal";
+import { isAdminEmail } from "../lib/adminUtils";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
@@ -19,6 +20,7 @@ export function Nav() {
   const navigate = useNavigate();
   const tierData = TIERS[tier];
   const uid = user?.uid ?? null;
+  const isAdmin = isAdminEmail(user?.email ?? "");
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingTrades, setPendingTrades] = useState(0);
@@ -81,6 +83,11 @@ export function Nav() {
           <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
             Codex
           </NavLink>
+          {isAdmin && (
+            <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"}>
+              ⚙ Admin
+            </NavLink>
+          )}
         </div>
 
         <div className="nav-right">
