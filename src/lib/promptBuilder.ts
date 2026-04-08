@@ -1,43 +1,6 @@
-import type { CardPrompts, District, Rarity } from "./types";
+import type { CardPrompts, Rarity } from "./types";
 
 // ── Lookup tables ──────────────────────────────────────────────────────────────
-
-/**
- * Rich environment descriptions for the background layer.
- * Used by buildBackgroundPrompt – no characters in these descriptions.
- */
-const DISTRICT_BACKGROUND_DESCRIPTIONS: Record<string, string> = {
-  Airaway:
-    "an expansive floating sky-city above the clouds, levitating platforms connected by glass sky-bridges, " +
-    "cloud-towers drifting in warm sunrise light, hot-air balloons and gliders in the distance, " +
-    "golden hour rays filtering through cumulus clouds, volumetric god-rays, awe-inspiring scale",
-  Nightshade:
-    "an underground society of perpetual subway lines, buried stations and giant industrial pipework, " +
-    "some areas are virtual cities submerged in total darkness except for the glow of neon skateboards and neon lights, " +
-    "long tunnels and side trails, literal massive pipes you can skate through, " +
-    "weird hippie communes with glowing mushroom farms, strange subterranean cult shrines, " +
-    "intense neon lighting and blacklight murals, 1990s Ninja Turtles meets Mario Bros aesthetic, " +
-    "vivid purples and greens with glowing graffiti",
-  Batteryville:
-    "a vast off-grid desert compound at golden hour, rows of gleaming solar-panel arrays and spinning wind " +
-    "turbines against a burnt-amber sky, rugged salvaged-tech market stalls and corrugated-iron workshops, " +
-    "dust devils in the distance, warm earthy tones, gritty frontier atmosphere",
-  "The Grid":
-    "an industrial wasteland of old refineries, rusting oil derricks and coal pits beyond the city limits, " +
-    "defunct corporate conglomerate megastructures now controlled by rival Marxist union gangs and international " +
-    "Communist factions, red banners and propaganda murals on crumbling concrete, diesel smoke and fire, " +
-    "diesel-punk aesthetic with heavy machinery and riveted ironwork, dramatic orange flare stacks at night",
-  "Glass City":
-    "a cyberpunk neon megalopolis of towering glass skyscrapers packed with holographic advertisements, " +
-    "empty decayed and cracked roads with no cars, no bicycles, and no people anywhere — a hauntingly deserted urban canyon, " +
-    "autonomous delivery drones hovering silently overhead, " +
-    "neon reflections on rain-soaked pavement, dense vertical cityscape lit by a thousand screens, " +
-    "high-tech sensor gear and floating holo-signs everywhere, dramatic cyberpunk atmosphere, no humans, no figures",
-  "The Forest":
-    "a vast biopunk wilderness reclaimed by nature, ancient towering trees wrapped in bioluminescent vines and glowing moss, " +
-    "rusted skeletal megastructures half-swallowed by roots and canopy, makeshift rope bridges between treetop settlements, " +
-    "dappled green-gold light filtering through a dense forest ceiling, mist and fireflies, primeval solitude",
-};
 
 /**
  * Brief district description used inside the combined (single-image) prompt.
@@ -187,28 +150,6 @@ function staminaState(stamina: number): string {
 
 /** Shared age-restriction phrase appended to all character prompts. */
 const AGE_RESTRICTION = "No kids. No teens. Adults aged 18-99 only. ";
-
-/**
- * Builds a prompt for the **background layer** of a card.
- *
- * The result focuses entirely on the district environment — no characters,
- * no people, no text — making it suitable for use as a compositable backdrop.
- * Changing the district regenerates only this prompt (and its layer image).
- */
-export function buildBackgroundPrompt(district: District, graffitiWords?: string[]): string {
-  const bg = DISTRICT_BACKGROUND_DESCRIPTIONS[district] ?? district;
-  const graffitiLine = graffitiWords?.length
-    ? `Graffiti tags on the walls and surfaces read '${graffitiWords.join("' and '")}' in bold spray paint. `
-    : "";
-  return (
-    `Environment scene: ${bg}. ` +
-    graffitiLine +
-    `Wide establishing shot, cinematic composition, absolutely no people, no characters, no text. ` +
-    `Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
-    `vibrant and saturated 90s digital colors, dramatic rim lighting. Hyper-Realistic sci-fi setting. ` +
-    `SFW, family friendly, PG rated, LGBTQIA+.`
-  );
-}
 
 /**
  * Builds a prompt for the **character layer** of a card.

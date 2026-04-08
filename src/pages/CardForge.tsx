@@ -9,7 +9,7 @@ import { ReferralPanel } from "../components/ReferralPanel";
 import { generateImage, removeBackground, isImageGenConfigured, getImageDimensions, type ImageGenOptions } from "../services/imageGen";
 import { getCachedImage, setCachedImage } from "../services/imageCache";
 import { getStaticBackgroundUrl, getStaticBackgroundSmallUrl, getStaticFrameUrl } from "../services/staticAssets";
-import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
+import { buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 import { useTier } from "../context/TierContext";
 import { useCollection } from "../hooks/useCollection";
 import { TIERS } from "../lib/tiers";
@@ -289,7 +289,7 @@ export function CardForge() {
     }
 
     // Kick off all three layers in parallel
-    const bgPrompt    = buildBackgroundPrompt(prompts.district);
+    const bgPrompt    = "";
     const charPrompt  = buildCharacterPrompt(prompts);
     const framePrompt = buildFramePrompt(prompts.rarity);
 
