@@ -32,68 +32,76 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
   const h = height;
 
   if (rarity === "Legendary") {
-    const particles = Array.from({ length: 22 }, (_, i) => {
-      const side = Math.floor(seededVal(frameSeed, i * 3) * 4);
-      const pos  = seededVal(frameSeed, i * 3 + 1);
-      const off  = seededVal(frameSeed, i * 3 + 2) * 6 + 1;
-      let px: number, py: number;
-      if (side === 0)      { px = pos * w; py = off; }
-      else if (side === 1) { px = w - off; py = pos * h; }
-      else if (side === 2) { px = pos * w; py = h - off; }
-      else                 { px = off;     py = pos * h; }
-      return {
-        x: px, y: py,
-        r: 0.8 + seededVal(frameSeed, 100 + i) * 1.8,
-        op: 0.45 + seededVal(frameSeed, 150 + i) * 0.55,
-      };
+    // Cyberpunk neon-tube border — electric cyan outer tube, hot-pink inner tube,
+    // corner circuit junction plates, seed-driven tick marks and glow nodes.
+    const cr = 6; // corner radius for neon tubes
+    const circuitTicks = Array.from({ length: 18 }, (_, i) => {
+      const side   = i % 4;
+      const pos    = 0.1 + seededVal(frameSeed, i * 7)     * 0.8;
+      const tickLen= 3   + seededVal(frameSeed, i * 7 + 1) * 5;
+      const isCyan = seededVal(frameSeed, i * 7 + 2) > 0.45;
+      let x1: number, y1: number, x2: number, y2: number;
+      if (side === 0)      { x1 = pos * w;  y1 = 1;     x2 = x1;           y2 = 1 + tickLen; }
+      else if (side === 1) { x1 = w - 1;    y1 = pos * h; x2 = w - 1 - tickLen; y2 = y1; }
+      else if (side === 2) { x1 = pos * w;  y1 = h - 1; x2 = x1;           y2 = h - 1 - tickLen; }
+      else                 { x1 = 1;        y1 = pos * h; x2 = 1 + tickLen; y2 = y1; }
+      return { x1, y1, x2, y2, color: isCyan ? "#00eeff" : "#ff00cc" };
     });
-    const corners = [
-      { x: 2, y: 2 }, { x: w - 14, y: 2 }, { x: 2, y: h - 14 }, { x: w - 14, y: h - 14 },
-    ];
-    const shimmerPos = 0.1 + seededVal(frameSeed, 200) * 0.8;
+    const glowNodes = Array.from({ length: 10 }, (_, i) => {
+      const side = i % 4;
+      const pos  = 0.15 + seededVal(frameSeed, 200 + i * 4) * 0.7;
+      const r    = 1.2  + seededVal(frameSeed, 200 + i * 4 + 1) * 2;
+      const isCyan = seededVal(frameSeed, 200 + i * 4 + 2) > 0.5;
+      let x: number, y: number;
+      if (side === 0)      { x = pos * w; y = 2; }
+      else if (side === 1) { x = w - 2;   y = pos * h; }
+      else if (side === 2) { x = pos * w; y = h - 2; }
+      else                 { x = 2;       y = pos * h; }
+      return { x, y, r, color: isCyan ? "#00eeff" : "#ff44ff" };
+    });
     return (
       <>
         <defs>
-          <filter id={`${uid}_lgGlow`} x="-25%" y="-25%" width="150%" height="150%">
-            <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <filter id={`${uid}_lgCyberGlow`} x="-35%" y="-35%" width="170%" height="170%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
             <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
-          <filter id={`${uid}_spkGlow`} x="-200%" y="-200%" width="500%" height="500%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
+          <filter id={`${uid}_lgTightGlow`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="1.2" result="blur" />
             <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
-          <linearGradient id={`${uid}_lgRainbow`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%"   stopColor="#ff0080" stopOpacity="0.8" />
-            <stop offset="25%"  stopColor="#ffaa00" stopOpacity="0.9" />
-            <stop offset="50%"  stopColor="#00ffcc" stopOpacity="0.8" />
-            <stop offset="75%"  stopColor="#aa44ff" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#ff0080" stopOpacity="0.8" />
-          </linearGradient>
-          <linearGradient id={`${uid}_lgShimmer`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"                                    stopColor="#ffffcc" stopOpacity="0" />
-            <stop offset={`${(shimmerPos - 0.05) * 100}%`}      stopColor="#ffffcc" stopOpacity="0" />
-            <stop offset={`${shimmerPos * 100}%`}               stopColor="#ffffcc" stopOpacity="0.22" />
-            <stop offset={`${(shimmerPos + 0.05) * 100}%`}      stopColor="#ffffcc" stopOpacity="0" />
-            <stop offset="100%"                                  stopColor="#ffffcc" stopOpacity="0" />
-          </linearGradient>
         </defs>
-        <rect x={1} y={1} width={w - 2} height={h - 2} rx={5}
-          fill="none" stroke={`url(#${uid}_lgRainbow)`} strokeWidth="2.5"
-          filter={`url(#${uid}_lgGlow)`} />
-        <rect x={4} y={4} width={w - 8} height={h - 8} rx={3}
-          fill="none" stroke="#ffdd66" strokeWidth="1" strokeOpacity="0.5" />
-        <rect x={0} y={0} width={w} height={h} fill={`url(#${uid}_lgShimmer)`} rx={5} />
-        {corners.map((c, i) => (
-          <g key={i}>
-            <rect x={c.x} y={c.y} width={12} height={12} rx={2}
-              fill="#ffaa00" fillOpacity="0.18" stroke="#ffdd00" strokeWidth="0.8" strokeOpacity="0.7" />
-            <rect x={c.x + 4} y={c.y + 4} width={4} height={4} rx={1}
-              fill="#ffdd00" fillOpacity="0.6" />
+        {/* Outer neon tube — electric cyan */}
+        <rect x={1} y={1} width={w - 2} height={h - 2} rx={cr}
+          fill="none" stroke="#00eeff" strokeWidth="2.5" strokeOpacity="0.95"
+          filter={`url(#${uid}_lgCyberGlow)`} />
+        {/* Inner tube — hot pink / magenta */}
+        <rect x={5} y={5} width={w - 10} height={h - 10} rx={Math.max(1, cr - 3)}
+          fill="none" stroke="#ff00cc" strokeWidth="1" strokeOpacity="0.85"
+          filter={`url(#${uid}_lgTightGlow)`} />
+        {/* Corner circuit junction plates */}
+        {[
+          { x: 1,      y: 1 },      { x: w - 12, y: 1 },
+          { x: 1,      y: h - 12 }, { x: w - 12, y: h - 12 },
+        ].map((c, i) => (
+          <g key={i} filter={`url(#${uid}_lgTightGlow)`}>
+            <rect x={c.x} y={c.y} width={11} height={11} rx={1}
+              fill="none" stroke="#00eeff" strokeWidth="1.2" strokeOpacity="0.9" />
+            <rect x={c.x + 3.5} y={c.y + 3.5} width={4} height={4}
+              fill="#ff00cc" fillOpacity="0.85" />
           </g>
         ))}
-        {particles.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={p.r}
-            fill="#ffcc44" fillOpacity={p.op} filter={`url(#${uid}_spkGlow)`} />
+        {/* Seed-driven circuit tick marks along the border */}
+        {circuitTicks.map((t, i) => (
+          <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+            stroke={t.color} strokeWidth="0.9" strokeOpacity="0.9"
+            filter={`url(#${uid}_lgTightGlow)`} />
+        ))}
+        {/* Neon glow nodes at circuit junctions */}
+        {glowNodes.map((n, i) => (
+          <circle key={i} cx={n.x} cy={n.y} r={n.r}
+            fill={n.color} fillOpacity="0.9"
+            filter={`url(#${uid}_lgTightGlow)`} />
         ))}
       </>
     );
@@ -175,26 +183,53 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
   }
 
   if (rarity === "Punch Skater") {
-    const bandageAngles = [20, -15, 30, -25];
-    const bruisePositions = [
-      { x: 4, y: 4, r: 5 }, { x: w - 8, y: 4, r: 4 },
-      { x: 4, y: h - 8, r: 5 }, { x: w - 7, y: h - 7, r: 4 },
-    ];
+    // Asymmetric blood-spatter dots scattered around the border edges using frameSeed.
+    // Each dot's side, position, offset, radius and opacity are independently seeded so
+    // the distribution looks organic and hand-scattered rather than mirrored.
+    const spatters = Array.from({ length: 24 }, (_, i) => {
+      const side = Math.floor(seededVal(frameSeed, i * 6)     * 4);
+      const pos  = seededVal(frameSeed, i * 6 + 1);
+      const off  = seededVal(frameSeed, i * 6 + 2) * 16 + 1;
+      const r    = 0.5 + seededVal(frameSeed, i * 6 + 3) * 3.2;
+      const op   = 0.3  + seededVal(frameSeed, i * 6 + 4) * 0.6;
+      const dark = seededVal(frameSeed, i * 6 + 5) > 0.55;
+      let px: number, py: number;
+      if (side === 0)      { px = pos * w; py = off; }
+      else if (side === 1) { px = w - off; py = pos * h; }
+      else if (side === 2) { px = pos * w; py = h - off; }
+      else                 { px = off;     py = pos * h; }
+      return { x: px, y: py, r, op, color: dark ? "#5a0808" : "#8b1a1a" };
+    });
+    // Seeded bandage strips placed irregularly around the border — different
+    // counts per edge so the layout is never mirror-symmetric.
+    const bandages = Array.from({ length: 6 }, (_, i) => {
+      const side = Math.floor(seededVal(frameSeed, 200 + i * 5)     * 4);
+      const pos  = 0.1  + seededVal(frameSeed, 200 + i * 5 + 1) * 0.8;
+      const len  = 13   + seededVal(frameSeed, 200 + i * 5 + 2) * 12;
+      const ang  = (seededVal(frameSeed, 200 + i * 5 + 3) - 0.5)  * 60;
+      const thickness = 3.5 + seededVal(frameSeed, 200 + i * 5 + 4) * 2;
+      let cx: number, cy: number;
+      if (side === 0)      { cx = pos * w; cy = 5; }
+      else if (side === 1) { cx = w - 5;   cy = pos * h; }
+      else if (side === 2) { cx = pos * w; cy = h - 5; }
+      else                 { cx = 5;       cy = pos * h; }
+      return { cx, cy, len, ang, thickness };
+    });
     return (
       <>
         <rect x={2} y={2} width={w - 4} height={h - 4} rx={2}
           fill="none" stroke="#c8b89a" strokeWidth="1.2" strokeOpacity="0.75" />
-        {bandageAngles.map((angle, i) => {
-          const cx = i < 2 ? 8 + i * (w - 16) : 8 + (i - 2) * (w - 16);
-          const cy = i < 2 ? 6 : h - 6;
-          return (
-            <rect key={i} x={cx - 10} y={cy - 3} width={20} height={5} rx={1}
-              fill="#e8d8b0" fillOpacity="0.45" stroke="#c8b89a" strokeWidth="0.5"
-              transform={`rotate(${angle},${cx},${cy})`} />
-          );
-        })}
-        {bruisePositions.map((b, i) => (
-          <circle key={i} cx={b.x} cy={b.y} r={b.r} fill="#6644aa" fillOpacity="0.25" />
+        {bandages.map((b, i) => (
+          <rect key={i}
+            x={b.cx - b.len / 2} y={b.cy - b.thickness / 2}
+            width={b.len} height={b.thickness} rx={1}
+            fill="#e8d8b0" fillOpacity="0.5"
+            stroke="#c8b89a" strokeWidth="0.5"
+            transform={`rotate(${b.ang},${b.cx},${b.cy})`} />
+        ))}
+        {spatters.map((s, i) => (
+          <circle key={i} cx={s.x} cy={s.y} r={s.r}
+            fill={s.color} fillOpacity={s.op} />
         ))}
       </>
     );
