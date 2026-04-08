@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
+import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
 
 interface PrintModalProps {
   card: CardPayload;
@@ -141,11 +142,11 @@ export function PrintModal({
 
                   <div className="print-back-info">
                     {[
-                      ["ARCHETYPE", card.prompts.archetype],
+                      ["ARCHETYPE", getDisplayedArchetype(card)],
                       ["STYLE",     card.prompts.style],
                       ["VIBE",      card.prompts.vibe],
                       ["DISTRICT",  card.prompts.district],
-                      ["CREW",      card.identity.crew],
+                      ["CREW",      getDisplayedCrew(card)],
                       ["MFR",       card.identity.manufacturer],
                     ].map(([label, value]) => (
                       <div key={label} className="print-back-row">

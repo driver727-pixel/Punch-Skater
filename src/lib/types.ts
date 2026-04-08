@@ -22,6 +22,7 @@ export type District = "Airaway" | "The Roads" | "Batteryville" | "The Grid" | "
 export type Archetype =
   | "The Knights Technarchy"
   | "Qu111s"
+  | "Ne0n Legion"
   | "Iron Curtains"
   | "D4rk $pider"
   | "The Asclepians"
@@ -118,6 +119,13 @@ export interface CardPayload {
   frameImageUrl?: string;
   /** CraftLingua conlang overlay — present on Rare/Legendary cards with a linked language profile. */
   conlang?: ConlangOverlay;
+  discovery?: {
+    displayArchetype?: string;
+    revealedFaction?: Faction;
+    isSecretReveal?: boolean;
+    logoMark?: string;
+    unlockedAt?: string;
+  };
 }
 
 // ── Deck payload ──────────────────────────────────────────────────────────────

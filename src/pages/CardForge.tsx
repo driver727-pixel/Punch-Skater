@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CardPrompts, CardPayload, Archetype, Rarity, Style, Vibe, District, Gender } from "../lib/types";
+import type { CardPrompts, CardPayload, Rarity, Style, Vibe, District, Gender, Faction } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
@@ -12,10 +12,11 @@ import { getStaticBackgroundUrl, getStaticBackgroundSmallUrl, getStaticFrameUrl 
 import { buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 import { useTier } from "../context/TierContext";
 import { useCollection } from "../hooks/useCollection";
+import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { TIERS } from "../lib/tiers";
 import { downloadCardAsJpg } from "../services/cardDownload";
+import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, resolveSecretFaction } from "../lib/factionDiscovery";
 
-const ARCHETYPES: Archetype[] = ["The Knights Technarchy", "Qu111s", "Iron Curtains", "D4rk $pider", "The Asclepians", "The Mesopotamian Society", "Hermes' Squirmies", "UCPS", "The Team"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ["Corporate", "Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Fascist", "Street", "Off-grid", "Military", "Union", "Olympic"];
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
@@ -74,6 +75,7 @@ export function CardForge() {
   const tierData = TIERS[tier];
   const navigate = useNavigate();
   const { addCard, cards } = useCollection();
+  const { hasFaction, unlockFaction } = useFactionDiscovery();
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
     vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5,
@@ -89,6 +91,7 @@ export function CardForge() {
   const [savedCard, setSavedCard] = useState<CardPayload | null>(null);
   const [isFirstCard, setIsFirstCard] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
 
   // Abort controller ref for cancelling in-flight image generation
   const abortRef = useRef<AbortController | null>(null);
@@ -267,10 +270,28 @@ export function CardForge() {
     abortRef.current = controller;
     const { signal } = controller;
 
+    const displayArchetype = getForgeArchetypeLabel(prompts.archetype);
+    const secretFaction = resolveSecretFaction(prompts);
+    const generationPrompts =
+      secretFaction === "D4rk $pider"
+        ? { ...prompts, archetype: "D4rk $pider" as const }
+        : prompts;
+
     // Generate card payload
-    const card = generateCard(prompts);
+    const card = applyFactionBranding(
+      generateCard(generationPrompts),
+      displayArchetype,
+      secretFaction,
+    );
     setGenerated(card);
     setForging(true);
+    if (secretFaction) {
+      const isNew = !hasFaction(secretFaction);
+      unlockFaction(secretFaction);
+      setRevealedFaction({ faction: secretFaction, isNew });
+    } else {
+      setRevealedFaction(null);
+    }
 
     // Consume one referral credit when on the free tier
     if (generateCredits > 0) {
@@ -290,7 +311,7 @@ export function CardForge() {
 
     // Kick off all three layers in parallel
     const bgPrompt    = "";
-    const charPrompt  = buildCharacterPrompt(prompts);
+    const charPrompt  = buildCharacterPrompt(generationPrompts);
     const framePrompt = buildFramePrompt(prompts.rarity);
 
     const bgKey    = `bg::${card.backgroundSeed}`;
@@ -353,7 +374,7 @@ export function CardForge() {
     generateLayer("frame", frameKey, framePrompt, frameSeed, signal);
 
     setForging(false);
-  }, [prompts, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal]);
+  }, [prompts, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction]);
 
   // ── Expired-URL retry handler ────────────────────────────────────────────
   // Called when a composite img element fires onError (e.g. fal.ai CDN URL has
@@ -461,18 +482,19 @@ export function CardForge() {
         {/* ── Left column: form controls ── */}
         <div className="forge-form">
           <div className="form-group">
-            <label>Archetype</label>
+            <label>Cover Identity</label>
             <div className="pill-group">
-              {ARCHETYPES.map((opt) => (
+              {FORGE_ARCHETYPE_OPTIONS.map((opt) => (
                 <button
-                  key={opt}
-                  className={`pill${prompts.archetype === opt ? " selected" : ""}`}
-                  onClick={() => set("archetype", opt)}
+                  key={opt.value}
+                  className={`pill${prompts.archetype === opt.value ? " selected" : ""}`}
+                  onClick={() => set("archetype", opt.value)}
                 >
-                  {opt}
+                  {opt.label}
                 </button>
               ))}
             </div>
+            <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
           </div>
 
           <div className="form-group">
@@ -758,6 +780,36 @@ export function CardForge() {
             >
               Go to My Collection →
             </button>
+          </div>
+        </div>
+      )}
+      {revealedFaction && (
+        <div className="save-celebrate-overlay" onClick={() => setRevealedFaction(null)}>
+          <div className="save-celebrate-modal save-celebrate-modal--reveal" onClick={(e) => e.stopPropagation()}>
+            <div className="save-celebrate-emoji">🕷</div>
+            <h2 className="save-celebrate-title">
+              {revealedFaction.isNew
+                ? "Secret faction discovered!"
+                : "Faction signal reacquired!"}
+            </h2>
+            <p className="save-celebrate-name">{revealedFaction.faction}</p>
+            <p className="save-celebrate-notice">
+              Your forged card has been branded with the faction mark, and the Factions tab is now tracking what you know.
+            </p>
+            <div className="forge-generated-buttons">
+              <button
+                className="btn-primary"
+                onClick={() => { setRevealedFaction(null); navigate("/factions"); }}
+              >
+                Open Factions →
+              </button>
+              <button
+                className="btn-outline"
+                onClick={() => setRevealedFaction(null)}
+              >
+                Keep Forging
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { LORE_CHARACTER_NAMES, ARCHETYPE_TO_FACTION, VIBE_TO_MANUFACTURER, LORE_PASSIVE_TRAITS, LORE_ACTIVE_ABILITIES } from './lore';
-import { CardPayload, CardPrompts, Rarity } from './types';
+import type { CardPayload, CardPrompts, Rarity } from './types';
 import { createSeededRandom, seedFromString } from './prng';
 
 /** Rarities that unlock conlang/lore overlays on card display. */
@@ -67,6 +67,7 @@ const COLOR_SCHEMES: Record<string, string[]> = {
 const PERSONALITY_POOLS: Record<string, string[]> = {
   "The Knights Technarchy": ["silent",       "precise",     "disciplined",   "observant",   "cold"],
   "Qu111s":                 ["investigative","bold",        "principled",    "tenacious",   "sharp"],
+  "Ne0n Legion":            ["greedy",       "nimble",      "opportunistic", "slick",       "fearless"],
   "Iron Curtains":          ["stoic",        "tactical",    "reliable",      "battle-hardened", "loyal"],
   "D4rk $pider":            ["paranoid",     "curious",     "methodical",    "introverted", "brilliant"],
   "The Asclepians":         ["compassionate","resourceful", "precise",       "dedicated",   "strategic"],
@@ -83,6 +84,7 @@ interface StatMods { speed: number; stealth: number; tech: number; grit: number;
 const ARCHETYPE_MODS: Record<string, StatMods> = {
   "The Knights Technarchy":  { speed:  2, stealth:  3, tech:  1, grit:  0, rep: -1 },
   "Qu111s":                  { speed:  1, stealth: -1, tech:  0, grit:  2, rep:  3 },
+  "Ne0n Legion":             { speed:  2, stealth:  2, tech:  1, grit:  0, rep: -1 },
   "Iron Curtains":           { speed:  1, stealth:  0, tech:  1, grit:  3, rep:  0 },
   "D4rk $pider":             { speed: -1, stealth:  2, tech:  3, grit:  0, rep:  0 },
   "The Asclepians":          { speed:  0, stealth:  0, tech:  1, grit:  3, rep:  1 },

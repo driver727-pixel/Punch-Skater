@@ -349,12 +349,26 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 4px;
   font-size: 5px;
 }
+.card-secret-brand {
+  margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid rgba(168, 85, 247, 0.55);
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.12);
+  color: #d8b4fe;
+  font-size: 5px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
 .card-serial { color: var(--text-dim); letter-spacing: 0.5px; }
 .card-rarity { letter-spacing: 1px; font-weight: bold; }
 
 .card-identity { margin: 4px 0; }
 .card-name { font-size: 8px; font-weight: bold; color: var(--text); display: block; }
 .card-subline { display: flex; gap: 3px; align-items: center; color: var(--text-dim); font-size: 5px; margin-top: 1px; flex-wrap: wrap; }
+.card-secret-badge { color: #d8b4fe; font-size: 9px; }
 .sep { color: var(--border); }
 
 .card-personality { display: flex; flex-wrap: wrap; gap: 2px; margin: 4px 0; }
@@ -618,6 +632,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-align: center;
   box-shadow: 0 0 40px rgba(0, 255, 136, 0.2);
   animation: celebrate-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.save-celebrate-modal--reveal {
+  border-color: rgba(168, 85, 247, 0.75);
+  box-shadow: 0 0 44px rgba(168, 85, 247, 0.24);
 }
 
 @keyframes celebrate-pop-in {

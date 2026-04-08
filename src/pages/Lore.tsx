@@ -2,7 +2,6 @@ import {
   WORLD_LORE,
   DISTRICT_LORE,
   ARCHETYPE_LORE,
-  FACTION_LORE,
 } from "../lib/lore";
 
 export function Lore() {
@@ -18,12 +17,12 @@ export function Lore() {
           <p className="lore-body">{WORLD_LORE.summary}</p>
           <div className="lore-world-cols">
             <div>
-              <h3 className="lore-subheading">The Major Corps</h3>
-              <ul className="lore-list">
-                {WORLD_LORE.factions.map((f) => (
-                  <li key={f} className="lore-list-item">{f}</li>
-                ))}
-              </ul>
+              <h3 className="lore-subheading">Known Power Blocs</h3>
+              <p className="lore-body">
+                The city is crowded with corporate governments, courier unions, insurgent crews,
+                and shadow actors. Specific faction dossiers now stay obscured until you uncover
+                them through forging.
+              </p>
             </div>
             <div>
               <h3 className="lore-subheading">The Code</h3>
@@ -90,17 +89,12 @@ export function Lore() {
       {/* ── Factions / Crews ────────────────────────────────────────────── */}
       <section className="lore-section">
         <h2 className="lore-heading">Crews &amp; Factions</h2>
-        <div className="lore-faction-list">
-          {FACTION_LORE.map((f) => (
-            <div key={f.name} className="lore-faction-item">
-              <div className="lore-faction-header">
-                <span className="lore-faction-name">{f.name}</span>
-                <span className="lore-faction-districts">{f.districts.join(" · ")}</span>
-              </div>
-              <p className="lore-tagline lore-tagline--sm">"{f.tagline}"</p>
-              <p className="lore-body lore-body--sm">{f.description}</p>
-            </div>
-          ))}
+        <div className="lore-world-card">
+          <p className="lore-body">
+            Faction dossiers are now hidden behind discoveries in the Card Forge.
+            When a forged combination trips a secret signal, a new entry appears in the
+            Factions tab with its full lore profile.
+          </p>
         </div>
       </section>
     </div>

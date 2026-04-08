@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { CardPayload } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
 import { CardDisplay } from "../components/CardDisplay";
+import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { TradeModal } from "../components/TradeModal";
 import { ImportModal } from "../components/ImportModal";
@@ -112,7 +113,7 @@ export function Collection() {
                 <CardThumbnail card={card} width={160} height={112} />
                 <div className="card-thumb-info">
                   <span className="card-name">{card.identity.name}</span>
-                  <span className="card-sub">{card.prompts.archetype} · {card.prompts.rarity}</span>
+                  <span className="card-sub">{getDisplayedArchetype(card)} · {card.prompts.rarity}</span>
                 </div>
               </div>
             ))}

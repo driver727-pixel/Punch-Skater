@@ -6,6 +6,7 @@ import { ShareModal } from "./ShareModal";
 import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
+import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
 
 interface LayerLoading {
   background: boolean;
@@ -221,6 +222,8 @@ export function CardDisplay({
 
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const accent = card.visuals.accentColor || "#00ff88";
+  const displayedArchetype = getDisplayedArchetype(card);
+  const secretFactionCard = isSecretFactionCard(card);
 
   // Whether this card has conlang data and is a high-rarity tier
   const hasConlangLore =
@@ -275,7 +278,10 @@ export function CardDisplay({
         <div className="card-compact-info">
           <span className="card-name">{card.identity.name}</span>
           <span className="card-rarity" style={{ color: rarityColor }}>{card.prompts.rarity}</span>
-          <span className="card-archetype">{card.prompts.archetype}</span>
+          <span className="card-archetype">{displayedArchetype}</span>
+          {secretFactionCard && (
+            <span className="card-secret-badge">{card.discovery?.logoMark ?? card.discovery?.revealedFaction}</span>
+          )}
         </div>
       </div>
     );
@@ -287,6 +293,11 @@ export function CardDisplay({
         <span className="card-serial">{card.identity.serialNumber}</span>
         <span className="card-rarity" style={{ color: rarityColor }}>{card.prompts.rarity.toUpperCase()}</span>
       </div>
+      {secretFactionCard && (
+        <div className="card-secret-brand">
+          <span>{card.discovery?.logoMark ?? card.discovery?.revealedFaction}</span>
+        </div>
+      )}
 
       {/* Layer loading status badges */}
       {(layerLoading?.background || layerLoading?.character || layerLoading?.frame) && (
@@ -349,7 +360,7 @@ export function CardDisplay({
           </p>
         )}
         <div className="card-subline">
-          <span>{card.prompts.archetype}</span>
+          <span>{displayedArchetype}</span>
           <span className="sep">·</span>
           <span>{card.prompts.style}</span>
           <span className="sep">·</span>

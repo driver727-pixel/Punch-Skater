@@ -12,6 +12,7 @@ import type { TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 import { CardArt } from "../components/CardArt";
+import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { TradeModal } from "../components/TradeModal";
 import { useCollection } from "../hooks/useCollection";
 
@@ -149,7 +150,7 @@ export function Trades() {
                   <CardArt card={trade.offeredCard} width={80} height={56} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
-                    <div className="trade-card-sub">{trade.offeredCard.prompts.archetype} · {trade.offeredCard.prompts.rarity}</div>
+                    <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
                     <div className="trade-from">From: <strong>{trade.fromEmail}</strong></div>
                   </div>
                   <div className="trade-actions-row">
@@ -189,7 +190,7 @@ export function Trades() {
                   <CardArt card={trade.offeredCard} width={80} height={56} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
-                    <div className="trade-card-sub">{trade.offeredCard.prompts.archetype} · {trade.offeredCard.prompts.rarity}</div>
+                    <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
                     <div className="trade-from">To: <strong>{trade.toEmail}</strong></div>
                   </div>
                   <div className="trade-actions-row">

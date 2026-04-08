@@ -1,4 +1,5 @@
 import type { CardPayload } from "../lib/types";
+import { getDisplayedArchetype } from "../lib/cardIdentity";
 
 interface CardArtProps {
   card: CardPayload;
@@ -1196,7 +1197,7 @@ export function CardArt({ card, width = 200, height = 140 }: CardArtProps) {
         cx={width / 2}
         cy={height * 0.55}
         accentColor={accent}
-        archetype={card.prompts.archetype}
+        archetype={getDisplayedArchetype(card)}
         style={card.prompts.style}
         vibe={card.prompts.vibe}
         storagePackStyle={card.visuals.storagePackStyle}
@@ -1225,7 +1226,7 @@ export function CardArt({ card, width = 200, height = 140 }: CardArtProps) {
       <rect x={2} y={2} width={44} height={12} rx={3}
         fill={accent} fillOpacity="0.2" stroke={accent} strokeWidth="0.5" />
       <text x={24} y={11} textAnchor="middle" fontSize="7" fill={accent} fontFamily="monospace">
-        {card.prompts.archetype.toUpperCase()}
+        {getDisplayedArchetype(card).toUpperCase()}
       </text>
     </svg>
   );

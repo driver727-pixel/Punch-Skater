@@ -1,4 +1,4 @@
-import { Faction, Manufacturer, Archetype, Vibe, District } from './types';
+import type { Faction, Manufacturer, Archetype, Vibe, District } from './types';
 
 // ── Character names ────────────────────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ export const LORE_CHARACTER_NAMES = [
 export const ARCHETYPE_TO_FACTION: Record<Archetype, Faction> = {
   "The Knights Technarchy":  "The Knights Technarchy",
   "Qu111s":                  "Qu111s (Quills)",
+  "Ne0n Legion":             "Ne0n Legion",
   "Iron Curtains":           "Iron Curtains",
   "D4rk $pider":             "D4rk $pider",
   "The Asclepians":          "The Asclepians",
@@ -293,6 +294,16 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
       "[Future Reveal Detail]: The Iron Curtains are later revealed to be a secret arm of the " +
       "UCA, operating as a false flag revolutionary group to suck in malcontents and keep them impotent.",
     strengths: "High Grit, balanced stats. Adaptable across all districts. Steady performers over specialists.",
+  },
+  {
+    name: "Ne0n Legion",
+    tagline: "Information is a commodity. We are the market.",
+    description:
+      "A crew of thieves and mercenaries who steal information, rare goods, and leverage itself. " +
+      "They move like couriers but think like opportunists, selling what they can and vanishing " +
+      "before anybody decides to retaliate. Their members blend in with the city's noise until the " +
+      "job turns profitable — then they strike fast and leave the fallout to everyone else.",
+    strengths: "High Speed, strong Stealth, opportunistic Tech. Excels on smash-and-grab runs through neon districts.",
   },
   {
     name: "D4rk $pider",

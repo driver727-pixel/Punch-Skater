@@ -1,0 +1,64 @@
+import { useCallback, useEffect, useState } from "react";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import type { Faction } from "../lib/types";
+import { db } from "../lib/firebase";
+import { useAuth } from "../context/AuthContext";
+import { loadFactionDiscoveries, saveFactionDiscoveries } from "../lib/storage";
+
+function dedupeFactions(values: string[]): Faction[] {
+  return Array.from(new Set(values)).sort() as Faction[];
+}
+
+export function useFactionDiscovery() {
+  const { user } = useAuth();
+  const uid = user?.uid ?? null;
+  const [discoveredFactions, setDiscoveredFactions] = useState<Faction[]>([]);
+
+  useEffect(() => {
+    if (!uid) {
+      setDiscoveredFactions(dedupeFactions(loadFactionDiscoveries()));
+      return;
+    }
+
+    const localDiscoveries = dedupeFactions(loadFactionDiscoveries());
+    if (localDiscoveries.length > 0) {
+      setDoc(doc(db, "userProfiles", uid), { discoveredFactions: localDiscoveries }, { merge: true }).catch(console.error);
+    }
+
+    const unsub = onSnapshot(doc(db, "userProfiles", uid), (snap) => {
+      const profileDiscoveries = Array.isArray(snap.data()?.discoveredFactions)
+        ? (snap.data()?.discoveredFactions as string[])
+        : [];
+      const merged = dedupeFactions([...localDiscoveries, ...profileDiscoveries]);
+      setDiscoveredFactions(merged);
+      saveFactionDiscoveries(merged);
+
+      if (merged.length !== profileDiscoveries.length) {
+        setDoc(doc(db, "userProfiles", uid), { discoveredFactions: merged }, { merge: true }).catch(console.error);
+      }
+    });
+
+    return unsub;
+  }, [uid]);
+
+  const unlockFaction = useCallback((faction: Faction) => {
+    setDiscoveredFactions((prev) => {
+      const next = dedupeFactions([...prev, faction]);
+      saveFactionDiscoveries(next);
+
+      if (uid) {
+        setDoc(doc(db, "userProfiles", uid), { discoveredFactions: next }, { merge: true }).catch(console.error);
+      }
+
+      return next;
+    });
+  }, [uid]);
+
+  const hasFaction = useCallback((faction: Faction) => discoveredFactions.includes(faction), [discoveredFactions]);
+
+  return {
+    discoveredFactions,
+    hasFaction,
+    unlockFaction,
+  };
+}

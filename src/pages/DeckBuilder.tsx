@@ -3,6 +3,7 @@ import type { DeckPayload, CardPayload } from "../lib/types";
 import { useDecks, DECK_CARD_LIMIT } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
 import { CardThumbnail } from "../components/CardThumbnail";
+import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
@@ -206,7 +207,7 @@ export function DeckBuilder() {
                             </div>
                             <div className="deck-slot-info">
                               <span className="card-name">{card.identity.name}</span>
-                              <span className="card-sub">{card.prompts.archetype}</span>
+                              <span className="card-sub">{getDisplayedArchetype(card)}</span>
                               <button
                                 className="btn-danger btn-sm"
                                 onClick={() => handleRemoveCard(card.id)}
@@ -237,7 +238,7 @@ export function DeckBuilder() {
                         <CardThumbnail card={card} width={120} height={84} />
                         <div className="card-thumb-info">
                           <span className="card-name">{card.identity.name}</span>
-                          <span className="card-sub">{card.prompts.archetype}</span>
+                          <span className="card-sub">{getDisplayedArchetype(card)}</span>
                           <button
                             className="btn-primary btn-sm"
                             onClick={() => handleAddCard(card)}

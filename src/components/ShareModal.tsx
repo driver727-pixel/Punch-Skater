@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CardPayload } from "../lib/types";
+import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
 
 interface ShareModalProps {
   card: CardPayload;
@@ -10,8 +11,8 @@ export function ShareModal({ card, onClose }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
 
   const shareText = [
-    `🛹 ${card.identity.name} — ${card.prompts.archetype} · ${card.prompts.rarity}`,
-    `Crew: ${card.identity.crew}`,
+    `🛹 ${card.identity.name} — ${getDisplayedArchetype(card)} · ${card.prompts.rarity}`,
+    `Faction: ${getDisplayedCrew(card)}`,
     `Speed ${card.stats.speed} | Stealth ${card.stats.stealth} | Tech ${card.stats.tech} | Grit ${card.stats.grit} | Rep ${card.stats.rep}`,
     `"${card.flavorText}"`,
     `\n#SkaterPunkDeckBuilder`,
@@ -26,7 +27,7 @@ export function ShareModal({ card, onClose }: ShareModalProps) {
 
   const encodedCard = encodeURIComponent(
     JSON.stringify({
-      archetype: card.prompts.archetype,
+      archetype: getDisplayedArchetype(card),
       rarity: card.prompts.rarity,
       styleVibe: card.prompts.styleVibe,
       district: card.prompts.district,

@@ -2,6 +2,7 @@ import type { CardPayload, DeckPayload } from "./types";
 
 const COLLECTION_KEY = "skpd_collection";
 const DECKS_KEY = "skpd_decks";
+const FACTION_DISCOVERIES_KEY = "skpd_faction_discoveries";
 
 export function loadCollection(): CardPayload[] {
   try {
@@ -27,6 +28,19 @@ export function loadDecks(): DeckPayload[] {
 
 export function saveDecks(decks: DeckPayload[]): void {
   localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
+}
+
+export function loadFactionDiscoveries(): string[] {
+  try {
+    const raw = localStorage.getItem(FACTION_DISCOVERIES_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveFactionDiscoveries(factions: string[]): void {
+  localStorage.setItem(FACTION_DISCOVERIES_KEY, JSON.stringify(Array.from(new Set(factions)).sort()));
 }
 
 export function exportJson(data: unknown, filename: string): void {

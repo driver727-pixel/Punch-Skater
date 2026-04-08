@@ -13,6 +13,7 @@ import { db } from "../lib/firebase";
 import { SupportButton } from "./SupportButton";
 import { TierModal } from "./TierModal";
 import { isAdminEmail } from "../lib/adminUtils";
+import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
@@ -21,6 +22,7 @@ export function Nav() {
   const tierData = TIERS[tier];
   const uid = user?.uid ?? null;
   const isAdmin = isAdminEmail(user?.email ?? "");
+  const { discoveredFactions } = useFactionDiscovery();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingTrades, setPendingTrades] = useState(0);
@@ -83,6 +85,11 @@ export function Nav() {
           <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
             Codex
           </NavLink>
+          {discoveredFactions.length > 0 && (
+            <NavLink to="/factions" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              Factions
+            </NavLink>
+          )}
           {isAdmin && (
             <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"}>
               ⚙ Admin
