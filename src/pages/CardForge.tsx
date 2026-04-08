@@ -14,6 +14,7 @@ import { useTier } from "../context/TierContext";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
 import { TIERS } from "../lib/tiers";
+import { downloadCardAsJpg } from "../services/cardDownload";
 
 const ARCHETYPES: Archetype[] = ["The Knights Technarchy", "Qu111s", "Iron Curtains", "D4rk $pider", "The Asclepians", "The Mesopotamian Society", "Hermes' Squirmies", "UCPS", "The Team"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
@@ -87,6 +88,7 @@ export function CardForge() {
   const [savedCard, setSavedCard] = useState<CardPayload | null>(null);
   const [savedDeckFull, setSavedDeckFull] = useState(false);
   const [isFirstCard, setIsFirstCard] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   // Abort controller ref for cancelling in-flight image generation
   const abortRef = useRef<AbortController | null>(null);
@@ -412,6 +414,25 @@ export function CardForge() {
     setSavedCard(cardToSave);
   }, [generated, layers, tierData, addCard, saveCardToFirstDeck, openUpgradeModal]);
 
+  // ── Download composed card as JPEG ──────────────────────────────────────
+  const handleDownloadJpg = useCallback(async () => {
+    if (!generated) return;
+    setDownloading(true);
+    try {
+      await downloadCardAsJpg(
+        generated.identity.name,
+        layers.backgroundUrl,
+        layers.characterUrl,
+        layers.frameUrl,
+        characterBlend,
+      );
+    } catch (err) {
+      console.error("Card JPG download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  }, [generated, layers, characterBlend]);
+
   return (
     <div className="page">
       <h1 className="page-title">CARD FORGE</h1>
@@ -609,6 +630,14 @@ export function CardForge() {
                     🔒 Save to Deck
                   </button>
                 )}
+                <button
+                  className="btn-outline"
+                  onClick={handleDownloadJpg}
+                  disabled={downloading || isAnyLayerLoading}
+                  title="Download composed card as JPG"
+                >
+                  {downloading ? "⏳ Saving…" : "⬇ Download JPG"}
+                </button>
               </div>
             </div>
           )}
