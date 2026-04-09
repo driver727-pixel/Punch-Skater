@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { generateImage } from "../services/imageGen";
+import { generateImage, removeBackground } from "../services/imageGen";
 import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
 
 // ── Prompt template ────────────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ const ALL_ITEMS = buildAssetItems();
 
 // ── Component state ────────────────────────────────────────────────────────────
 
-type ItemStatus = "idle" | "loading" | "done" | "error";
+type ItemStatus = "idle" | "generating" | "removing-bg" | "done" | "error";
 
 interface ItemState {
   status: ItemStatus;
@@ -56,12 +56,14 @@ export function AssetGenerator() {
   }
 
   async function generateOne(item: AssetItem) {
-    setItemState(item.seedKey, { status: "loading", imageUrl: undefined, error: undefined });
+    setItemState(item.seedKey, { status: "generating", imageUrl: undefined, error: undefined });
     try {
-      const result = await generateImage(item.prompt, item.seedKey, {
+      const raw = await generateImage(item.prompt, item.seedKey, {
         imageSize: "square_hd",
       });
-      setItemState(item.seedKey, { status: "done", imageUrl: result.imageUrl });
+      setItemState(item.seedKey, { status: "removing-bg" });
+      const transparent = await removeBackground(raw.imageUrl);
+      setItemState(item.seedKey, { status: "done", imageUrl: transparent.imageUrl });
     } catch (err) {
       setItemState(item.seedKey, {
         status: "error",
@@ -79,7 +81,9 @@ export function AssetGenerator() {
   }
 
   const doneCount = ALL_ITEMS.filter((i) => states[i.seedKey]?.status === "done").length;
-  const loadingCount = ALL_ITEMS.filter((i) => states[i.seedKey]?.status === "loading").length;
+  const loadingCount = ALL_ITEMS.filter(
+    (i) => states[i.seedKey]?.status === "generating" || states[i.seedKey]?.status === "removing-bg",
+  ).length;
 
   const categories = Array.from(new Set(ALL_ITEMS.map((i) => i.category)));
 
@@ -123,8 +127,11 @@ export function AssetGenerator() {
                       {state.status === "idle" && (
                         <span className="asset-gen-placeholder">No image yet</span>
                       )}
-                      {state.status === "loading" && (
+                      {state.status === "generating" && (
                         <span className="asset-gen-spinner">⏳ Generating…</span>
+                      )}
+                      {state.status === "removing-bg" && (
+                        <span className="asset-gen-spinner">✂️ Removing background…</span>
                       )}
                       {state.status === "done" && state.imageUrl && (
                         <img
@@ -145,10 +152,16 @@ export function AssetGenerator() {
                       <button
                         className="btn-outline"
                         onClick={() => generateOne(item)}
-                        disabled={state.status === "loading" || runningAll}
+                        disabled={state.status === "generating" || state.status === "removing-bg" || runningAll}
                         title={item.prompt}
                       >
-                        {state.status === "loading" ? "⏳" : state.status === "done" ? "↺ Regenerate" : "▶ Generate"}
+                        {state.status === "generating"
+                          ? "⏳ Generating…"
+                          : state.status === "removing-bg"
+                          ? "✂️ Removing BG…"
+                          : state.status === "done"
+                          ? "↺ Regenerate"
+                          : "▶ Generate"}
                       </button>
                       {state.status === "error" && (
                         <span className="asset-gen-error-msg">{state.error}</span>
