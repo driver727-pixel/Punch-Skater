@@ -165,9 +165,9 @@ function BoardSummaryRow({
   config: BoardConfig;
   onEdit: (step: 0 | 1 | 2) => void;
 }) {
-  const type = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType)!;
-  const drive = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain)!;
-  const wheel = WHEEL_OPTIONS.find((o) => o.value === config.wheels)!;
+  const type = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
+  const drive = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
+  const wheel = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
 
   return (
     <div className="board-summary">
@@ -179,7 +179,7 @@ function BoardSummaryRow({
           onClick={() => onEdit(0)}
           title="Change board type"
         >
-          {type.icon} {type.label}
+          {type?.icon ?? "🛹"} {config.boardType}
         </button>
         <span className="board-summary__sep">·</span>
         <button
@@ -188,7 +188,7 @@ function BoardSummaryRow({
           onClick={() => onEdit(1)}
           title="Change drivetrain"
         >
-          {drive.icon} {drive.label}
+          {drive?.icon ?? "⚙️"} {drive?.label ?? config.drivetrain}
         </button>
         <span className="board-summary__sep">·</span>
         <button
@@ -197,7 +197,7 @@ function BoardSummaryRow({
           onClick={() => onEdit(2)}
           title="Change wheels"
         >
-          {wheel.icon} {wheel.label}
+          {wheel?.icon ?? "⚫"} {config.wheels}
         </button>
       </div>
     </div>

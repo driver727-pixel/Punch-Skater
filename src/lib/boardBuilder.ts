@@ -73,7 +73,7 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     label: "Slider",
     icon: "🎯",
     tagline: "Precision over power",
-    description: "Short stiff deck optimised for technical footwork, gaps, and micro-adjustments under pressure.",
+    description: "Short stiff deck optimized for technical footwork, gaps, and micro-adjustments under pressure.",
     statBonuses: { tech: 2, stealth: 1 },
   },
 ];
