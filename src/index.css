@@ -3186,6 +3186,205 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background: rgba(0, 0, 0, 0.2);
 }
 
+/* Lock-it-in row below the carousels */
+.board-builder__lock-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px 14px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Confirmation badge shown after successful lock-in */
+.board-builder__locked-badge {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+  animation: locked-badge-in 0.3s ease-out both;
+}
+
+@keyframes locked-badge-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Screen-shake applied to the whole builder container on lock-in */
+@keyframes builder-shake {
+  0%   { transform: translate(0,    0); }
+  12%  { transform: translate(-5px, 3px); }
+  25%  { transform: translate(5px, -3px); }
+  37%  { transform: translate(-4px, 2px); }
+  50%  { transform: translate(4px, -2px); }
+  62%  { transform: translate(-3px, 1px); }
+  75%  { transform: translate(3px, -1px); }
+  87%  { transform: translate(-1px, 1px); }
+  100% { transform: translate(0,    0); }
+}
+
+.board-builder--shake {
+  animation: builder-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ===== PowerSwitchButton ===== */
+
+/*
+ * Keyframe: button depress — heavy industrial plunge then release.
+ */
+@keyframes psb-depress {
+  0%   { transform: translateY(0)   scaleX(1); }
+  30%  { transform: translateY(6px) scaleX(0.97); }
+  60%  { transform: translateY(7px) scaleX(0.97); }
+  100% { transform: translateY(0)   scaleX(1); }
+}
+
+/*
+ * The outer button shell.  Dark metal plate with neon accent border and
+ * hazard-stripe end caps.
+ */
+.psb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  height: 46px;
+  min-width: 220px;
+  border: 2px solid rgba(0, 255, 136, 0.6);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg,
+      #1c1c28 0%,
+      #0e0e18 50%,
+      #1a1a25 100%);
+  cursor: pointer;
+  font-family: var(--font);
+  overflow: hidden;
+  /* Inset ridge to suggest thick metal housing */
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    0 4px 16px rgba(0, 0, 0, 0.6),
+    0 0 10px rgba(0, 255, 136, 0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  transform-origin: center bottom;
+}
+
+.psb:hover:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    0 6px 20px rgba(0, 0, 0, 0.7),
+    0 0 18px rgba(0, 255, 136, 0.35);
+}
+
+.psb:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Deep depress state — translateY handled via JS class + CSS animation */
+.psb--depressed {
+  animation: psb-depress 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* Hazard stripe end-caps */
+.psb__hazard {
+  display: block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 200, 0, 0.55)  0px,
+    rgba(255, 200, 0, 0.55)  5px,
+    rgba(0, 0, 0, 0.5)       5px,
+    rgba(0, 0, 0, 0.5)       10px
+  );
+  border-right: 1px solid rgba(255, 200, 0, 0.3);
+}
+
+.psb__hazard:last-child {
+  border-right: none;
+  border-left: 1px solid rgba(255, 200, 0, 0.3);
+}
+
+/* Central label area between the hazard caps */
+.psb__inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 100%;
+  /* Subtle vertical brushed-metal sheen */
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0)    0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0)    100%
+  );
+}
+
+.psb__icon {
+  font-size: 18px;
+  line-height: 1;
+  /* Keep icon crisp under animation */
+  will-change: transform;
+}
+
+.psb__label {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow:
+    0 0 8px  rgba(0, 255, 136, 0.7),
+    0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+/* ===== BoardComposite surge animation ===== */
+
+/*
+ * Keyframe: neon drop-shadow pulse that simulates a battery being connected.
+ */
+@keyframes composite-surge {
+  0%   {
+    filter: drop-shadow(0 0  0px rgba(0, 255, 136, 0));
+  }
+  20%  {
+    filter:
+      drop-shadow(0 0 16px rgba(0, 255, 136, 1))
+      drop-shadow(0 0 32px rgba(0, 204, 255, 0.8))
+      drop-shadow(0 0 48px rgba(0, 255, 136, 0.5));
+  }
+  50%  {
+    filter:
+      drop-shadow(0 0 24px rgba(0, 255, 136, 0.9))
+      drop-shadow(0 0 48px rgba(0, 204, 255, 0.6));
+  }
+  80%  {
+    filter:
+      drop-shadow(0 0 10px rgba(0, 255, 136, 0.6))
+      drop-shadow(0 0 20px rgba(0, 204, 255, 0.3));
+  }
+  100% {
+    filter: drop-shadow(0 0  0px rgba(0, 255, 136, 0));
+  }
+}
+
+.board-composite--surge {
+  animation: composite-surge 0.55s ease-out both;
+}
+
 /* ===== Card Board Loadout Section (on the card itself) ===== */
 .card-board {
   margin: 4px 0;
