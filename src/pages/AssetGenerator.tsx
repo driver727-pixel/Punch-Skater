@@ -1,18 +1,13 @@
 import { useState } from "react";
 import { generateImage } from "../services/imageGen";
-import {
-  BOARD_TYPE_OPTIONS,
-  DRIVETRAIN_OPTIONS,
-  WHEEL_OPTIONS,
-  type BoardOption,
-} from "../lib/boardBuilder";
+import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
 
 // ── Prompt template ────────────────────────────────────────────────────────────
 
-function buildAssetPrompt(componentName: string): string {
+function buildAssetPrompt(componentName: string, visualDescription: string): string {
   return (
-    `Macro product photography of an electric skateboard ${componentName}, ` +
-    `trading card art in the style of 1995 Fleer Ultra X-Men, isolated perfectly ` +
+    `Macro product photography of an electric skateboard ${componentName} -- ${visualDescription} ` +
+    `Trading card art in the style of 1995 Fleer Ultra X-Men, isolated perfectly ` +
     `in the center on a pure, solid #00FF00 green-screen background.`
   );
 }
@@ -27,36 +22,12 @@ interface AssetItem {
 }
 
 function buildAssetItems(): AssetItem[] {
-  const items: AssetItem[] = [];
-
-  for (const opt of BOARD_TYPE_OPTIONS as BoardOption<string>[]) {
-    items.push({
-      category: "Deck",
-      label: `${opt.icon} ${opt.label} Deck`,
-      seedKey: `deck-${opt.value}`,
-      prompt: buildAssetPrompt(`${opt.label} Deck`),
-    });
-  }
-
-  for (const opt of DRIVETRAIN_OPTIONS as BoardOption<string>[]) {
-    items.push({
-      category: "Drivetrain",
-      label: `${opt.icon} ${opt.label}`,
-      seedKey: `drivetrain-${opt.value}`,
-      prompt: buildAssetPrompt(`${opt.label} Drivetrain`),
-    });
-  }
-
-  for (const opt of WHEEL_OPTIONS as BoardOption<string>[]) {
-    items.push({
-      category: "Wheels",
-      label: `${opt.icon} ${opt.label} Wheels`,
-      seedKey: `wheels-${opt.value}`,
-      prompt: buildAssetPrompt(`${opt.label} Wheels`),
-    });
-  }
-
-  return items;
+  return BOARD_COMPONENT_CATALOG.map((model) => ({
+    category: model.category,
+    label: `${model.icon} ${model.name}`,
+    seedKey: model.seedKey,
+    prompt: buildAssetPrompt(model.name, model.description),
+  }));
 }
 
 const ALL_ITEMS = buildAssetItems();

@@ -144,6 +144,115 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
   },
 ];
 
+// ── Named component catalog ────────────────────────────────────────────────────
+
+/**
+ * A specific named product used as a source asset for fal.ai image generation.
+ * These are distinct from the abstract `BoardOption` gameplay categories —
+ * they carry a rich visual description so the asset generator can produce
+ * accurate product imagery for each component.
+ */
+export interface BoardComponentModel {
+  /** Top-level category label shown in the Asset Generator UI. */
+  category: "Deck" | "Wheel" | "Drivetrain";
+  /** Human-readable product name. */
+  name: string;
+  /** Detailed visual description fed to the fal.ai prompt. */
+  description: string;
+  /** Stable slug used as the image cache / seed key. */
+  seedKey: string;
+  /** Display icon. */
+  icon: string;
+}
+
+export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
+  // ── Decks ──────────────────────────────────────────────────────────────────
+  {
+    category: "Deck",
+    name: "Carbon Street Drop-Through",
+    description:
+      "A sleek, low-profile carbon fiber drop-through longboard deck with geometric grip tape.",
+    seedKey: "deck-carbon-street-drop-through",
+    icon: "🛹",
+  },
+  {
+    category: "Deck",
+    name: "Bamboo AT Top-Mount",
+    description:
+      "A wide, sturdy bamboo top-mount deck with aggressive, heavy-duty grip tape.",
+    seedKey: "deck-bamboo-at-top-mount",
+    icon: "🏕️",
+  },
+  {
+    category: "Deck",
+    name: "Off-Grid Mountain Board",
+    description:
+      "A flexible composite mountain board deck equipped with rugged foot bindings.",
+    seedKey: "deck-off-grid-mountain-board",
+    icon: "⛰️",
+  },
+  {
+    category: "Deck",
+    name: "Swallowtail Surf-Skate",
+    description:
+      "A short, wide cruiser deck with a distinct swallowtail shape and vibrant retro grip art.",
+    seedKey: "deck-swallowtail-surf-skate",
+    icon: "🏄",
+  },
+
+  // ── Wheels ─────────────────────────────────────────────────────────────────
+  {
+    category: "Wheel",
+    name: "100mm Urethane Street",
+    description:
+      "A set of smooth, translucent neon-green 100mm polyurethane street wheels.",
+    seedKey: "wheel-100mm-urethane-street",
+    icon: "🟡",
+  },
+  {
+    category: "Wheel",
+    name: "175mm Pneumatic AT",
+    description:
+      "A set of chunky, knobby 175mm rubber pneumatic all-terrain tires on metallic hubs.",
+    seedKey: "wheel-175mm-pneumatic-at",
+    icon: "🟢",
+  },
+  {
+    category: "Wheel",
+    name: "120mm Cloud Sliders",
+    description:
+      "Oversized, shock-absorbing 120mm foam-core urethane slider wheels.",
+    seedKey: "wheel-120mm-cloud-sliders",
+    icon: "⚪",
+  },
+
+  // ── Drivetrains ────────────────────────────────────────────────────────────
+  {
+    category: "Drivetrain",
+    name: "Dual Belt Drive",
+    description:
+      "Heavy-duty dual rear belt-drive motors with exposed mechanical pulleys and wide trucks.",
+    seedKey: "drivetrain-dual-belt-drive",
+    icon: "⚙️",
+  },
+  {
+    category: "Drivetrain",
+    name: "Sealed Gear Drive",
+    description:
+      "Rugged, fully enclosed gear-drive trucks built for high torque and off-road abuse.",
+    seedKey: "drivetrain-sealed-gear-drive",
+    icon: "🔩",
+  },
+  {
+    category: "Drivetrain",
+    name: "Stealth Hub Motors",
+    description:
+      "Sleek, minimalist in-wheel hub motors attached to precision carving trucks.",
+    seedKey: "drivetrain-stealth-hub-motors",
+    icon: "🔇",
+  },
+];
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 /** Returns the total additive stat bonuses across all three board selections. */
