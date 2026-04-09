@@ -1,31 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { CardPayload, Archetype, Rarity, Style, Vibe, District, CardPrompts, Gender } from "../lib/types";
-import { generateCard, STORAGE_PACK_LABELS } from "../lib/generator";
+import type { CardPayload, Rarity, Style, Vibe, District, CardPrompts, Gender } from "../lib/types";
+import { generateCard } from "../lib/generator";
 import { buildImagePrompt } from "../lib/promptBuilder";
 import { generateImage, isImageGenConfigured } from "../services/imageGen";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
 import { useTier } from "../context/TierContext";
+import { FORGE_ARCHETYPE_OPTIONS } from "../lib/factionDiscovery";
+import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
+import type { BoardConfig } from "../lib/boardBuilder";
 
-const ARCHETYPES: Archetype[] = ["The Knights Technarchy", "Qu111s", "Iron Curtains", "D4rk $pider", "The Asclepians", "The Mesopotamian Society", "Hermes' Squirmies", "UCPS", "The Team"];
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ["Corporate", "Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Fascist", "Street", "Off-grid", "Military", "Union", "Olympic"];
-const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic"];
-const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "Glass City"];
+const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
+const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
-const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff00aa", "#ffaa00", "#8b5cf6", "#ff4444", "#44ffff"];
-
-const DISTRICT_HINTS: Record<District, string> = {
-  Airaway:          "☁️ Floating City in the Clouds",
-  "The Roads":      "🛣️ Open Courier Highways",
-  Batteryville:     "🌵 Off-grid Solar/Wind Camp",
-  "The Grid":       "🏭 Diesel-punk Industrial Zone",
-  Electropolis:     "🚔 Security Showcase District",
-  Nightshade:       "🌆 The Murk — Underground Tunnels & Neon Alleys",
-  "The Forest":     "🌲 Off-grid Agrarian Commune",
-  "Glass City":     "🏙️ Cyberpunk Megalopolis",
-};
+const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
 export function EditCard() {
   const { cardId } = useParams<{ cardId: string }>();
@@ -36,6 +27,7 @@ export function EditCard() {
   const original = cards.find((c) => c.id === cardId) ?? null;
 
   const [prompts, setPrompts] = useState<CardPrompts | null>(null);
+  const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [preview, setPreview] = useState<CardPayload | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
@@ -48,7 +40,7 @@ export function EditCard() {
   useEffect(() => {
     if (original && !prompts) {
       setPrompts({
-        archetype: original.prompts.archetype as Archetype,
+        archetype: original.prompts.archetype,
         rarity: original.prompts.rarity as Rarity,
         style: original.prompts.style as Style,
         vibe: original.prompts.vibe as Vibe,
@@ -57,6 +49,7 @@ export function EditCard() {
         stamina: original.prompts.stamina,
         gender: (original.prompts.gender as Gender) ?? "Non-binary",
       });
+      if (original.board) setBoardConfig(original.board);
       // Show the original card as starting preview
       setPreview(original);
       setImageUrl(original.imageUrl ?? null);
@@ -101,7 +94,7 @@ export function EditCard() {
       ...newCard,
       id: original.id,
       createdAt: original.createdAt,
-      board: original.board,
+      board: boardConfig,
       boardLoadout: original.boardLoadout,
     };
     setPreview(merged);
@@ -131,12 +124,13 @@ export function EditCard() {
       <div className="forge-layout">
         <div className="forge-form">
           <div className="form-group">
-            <label>Archetype</label>
+            <label>Cover Identity</label>
             <div className="pill-group">
-              {ARCHETYPES.map((a) => (
-                <button key={a} className={`pill ${prompts.archetype === a ? "selected" : ""}`} onClick={() => set("archetype", a)}>{a}</button>
+              {FORGE_ARCHETYPE_OPTIONS.map((opt) => (
+                <button key={opt.value} className={`pill ${prompts.archetype === opt.value ? "selected" : ""}`} onClick={() => set("archetype", opt.value)}>{opt.label}</button>
               ))}
             </div>
+            <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
           </div>
 
           <div className="form-group">
@@ -173,7 +167,6 @@ export function EditCard() {
                 <button key={d} className={`pill ${prompts.district === d ? "selected" : ""}`} onClick={() => set("district", d)}>{d}</button>
               ))}
             </div>
-            <p className="form-hint">{DISTRICT_HINTS[prompts.district]}</p>
           </div>
 
           <div className="form-group">
@@ -186,19 +179,25 @@ export function EditCard() {
           </div>
 
           <div className="form-group">
-            <label>Stamina — {prompts.stamina}</label>
+            <label>Stamina — {prompts.stamina}/10</label>
             <input
-              type="range" min={1} max={10} value={prompts.stamina}
+              type="range" min={1} max={10} step={1} value={prompts.stamina}
               onChange={(e) => set("stamina", Number(e.target.value))}
               className="stamina-slider"
             />
-            <p className="form-hint">
-              {STORAGE_PACK_LABELS[
-                prompts.stamina <= 2 ? "shopping-bag" :
-                prompts.stamina <= 5 ? "backpack" :
-                prompts.stamina <= 8 ? "cardboard-box" : "duffel-bag"
-              ]}
+            <p className="form-hint">Higher stamina = heavier cargo capacity</p>
+          </div>
+
+          <div className="form-group">
+            <label>Board Loadout</label>
+            <p className="form-hint" style={{ marginBottom: 12 }}>
+              Build your electric skateboard — your most important piece of gear.
             </p>
+            <BoardBuilder
+              value={boardConfig}
+              onChange={setBoardConfig}
+              onSave={(config) => { setBoardConfig(config); }}
+            />
           </div>
 
           <div className="form-group">
