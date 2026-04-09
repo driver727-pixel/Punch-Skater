@@ -693,6 +693,63 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--text-dim);
 }
 
+/* ===== Nav Container & Mobile Menu ===== */
+.nav-container { position: relative; }
+
+.nav-hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: border-color 0.15s, color 0.15s;
+}
+.nav-hamburger:hover { border-color: var(--accent); color: var(--accent); }
+
+.nav-mobile-menu {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.nav-mobile-menu .nav-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 4px;
+}
+.nav-mobile-menu-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .nav-hamburger { display: inline-flex; align-items: center; }
+  .nav-links { display: none; }
+  .nav-desktop-only { display: none !important; }
+  .nav-mobile-menu { display: flex; }
+  .nav-subtitle { display: none; }
+  .nav-game-badge { display: none; }
+}
+
+@media (min-width: 769px) {
+  .nav-mobile-menu { display: none; }
+  .nav-hamburger { display: none; }
+}
+
+
 /* ===== Support Button ===== */
 .support-btn {
   display: inline-flex;
