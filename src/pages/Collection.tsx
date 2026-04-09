@@ -112,7 +112,7 @@ export function Collection() {
                 className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""}`}
                 onClick={() => setSelected(selected?.id === card.id ? null : card)}
               >
-                <CardThumbnail card={card} width={160} height={112} />
+                <CardThumbnail card={card} width={160} height={224} />
                 <div className="card-thumb-info">
                   <span className="card-name">{card.identity.name}</span>
                   <span className="card-sub">{getDisplayedArchetype(card)} · {card.prompts.rarity}</span>
