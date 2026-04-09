@@ -17,7 +17,7 @@ import { TIERS } from "../lib/tiers";
 import { downloadCardAsJpg } from "../services/cardDownload";
 import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, resolveSecretFaction } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
-import type { BoardConfig, BoardLoadout } from "../lib/boardBuilder";
+import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats } from "../lib/boardBuilder";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
@@ -85,7 +85,6 @@ export function CardForge() {
     gender: "Non-binary",
   });
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
-  const [boardLoadout, setBoardLoadout] = useState<BoardLoadout>(() => calculateBoardStats(DEFAULT_BOARD_CONFIG));
   const [generated, setGenerated] = useState<CardPayload | null>(null);
   const [layers, setLayers] = useState<LayerState>(INITIAL_LAYER_STATE);
   const [characterBlend, setCharacterBlend] = useState(1);
@@ -289,8 +288,9 @@ export function CardForge() {
       displayArchetype,
       secretFaction,
     );
-    // Attach the board loadout to the card
-    const cardWithBoard = { ...card, board: boardConfig, boardLoadout };
+    // Attach the board loadout to the card (always recompute from config to
+    // avoid stale stats when the user forges without clicking "Lock It In")
+    const cardWithBoard = { ...card, board: boardConfig, boardLoadout: calculateBoardStats(boardConfig) };
     setGenerated(cardWithBoard);
     setForging(true);
     if (secretFaction) {
@@ -382,7 +382,7 @@ export function CardForge() {
     generateLayer("frame", frameKey, framePrompt, frameSeed, signal);
 
     setForging(false);
-  }, [prompts, boardConfig, boardLoadout, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction]);
+  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction]);
 
   // ── Expired-URL retry handler ────────────────────────────────────────────
   // Called when a composite img element fires onError (e.g. fal.ai CDN URL has
@@ -628,7 +628,7 @@ export function CardForge() {
             <BoardBuilder
               value={boardConfig}
               onChange={setBoardConfig}
-              onSave={(config, loadout) => { setBoardConfig(config); setBoardLoadout(loadout); }}
+              onSave={(config) => { setBoardConfig(config); }}
             />
           </div>
 

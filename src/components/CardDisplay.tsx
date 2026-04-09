@@ -7,7 +7,7 @@ import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
-import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS, getBoardAssetUrls } from "../lib/boardBuilder";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS, getBoardAssetUrls } from "../lib/boardBuilder";
 import { BoardComposite } from "./BoardComposite";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 
@@ -474,6 +474,11 @@ export function CardDisplay({
               icon={WHEEL_OPTIONS.find((o) => o.value === card.board!.wheels)?.icon ?? "⚫"}
               label="WHEELS"
               value={card.board.wheels}
+            />
+            <BoardRow
+              icon={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.icon ?? "🔋"}
+              label="BATTERY"
+              value={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.label ?? card.board.battery}
             />
           </div>
           {card.boardLoadout && (

@@ -101,6 +101,8 @@ export function EditCard() {
       ...newCard,
       id: original.id,
       createdAt: original.createdAt,
+      board: original.board,
+      boardLoadout: original.boardLoadout,
     };
     setPreview(merged);
     setImageUrl(null);
