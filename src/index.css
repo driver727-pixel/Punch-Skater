@@ -3246,6 +3246,198 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-composite__layer--drivetrain { z-index: 20; }
 .board-composite__layer--deck       { z-index: 30; }
 
+/* ===== Conveyor Carousel ===== */
+
+/* Item dimensions exposed as a custom property for consistent reuse. */
+:root {
+  --conveyor-item-size: 110px;
+}
+
+/*
+ * Keyframe: belt tread slides leftward endlessly to simulate a running belt.
+ * The gradient repeats every 40px, so a 40px translation is a seamless loop.
+ */
+@keyframes conveyor-belt-move {
+  from { background-position: 0 0; }
+  to   { background-position: -40px 0; }
+}
+
+/* Keyframe: neon clamp pulse for the selected item */
+@keyframes clamp-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* Outer wrapper — full width, stacks vertically per belt */
+.conveyor {
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+}
+
+/* Label row above the belt */
+.conveyor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px 4px;
+}
+
+.conveyor__label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: bold;
+}
+
+.conveyor__selected-name {
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  font-weight: bold;
+  text-transform: uppercase;
+  min-width: 80px;
+  text-align: right;
+}
+
+/*
+ * The scrollable belt track.
+ * scroll-snap-type: x mandatory — items snap to center on scroll.
+ * The animated background gradient simulates moving metal treads.
+ */
+.conveyor__track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+
+  /* Mechanical tread pattern: alternating dark metallic bands */
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(0,0,0,0.55)   0px,
+    rgba(0,0,0,0.55)   18px,
+    rgba(255,255,255,0.04) 18px,
+    rgba(255,255,255,0.04) 20px,
+    rgba(0,0,0,0.45)   20px,
+    rgba(0,0,0,0.45)   38px,
+    rgba(255,200,0,0.07) 38px,
+    rgba(255,200,0,0.07) 40px
+  );
+  background-size: 40px 100%;
+  animation: conveyor-belt-move 0.8s linear infinite;
+}
+
+/* Pause belt animation while the user hovers over the track */
+.conveyor__track:hover {
+  animation-play-state: paused;
+}
+
+.conveyor__track::-webkit-scrollbar { display: none; }
+
+/* Spacer div that makes the first and last item snap-able to center */
+.conveyor__edge-spacer {
+  flex-shrink: 0;
+  width: calc(50vw - calc(var(--conveyor-item-size) / 2));
+  min-width: 40px;
+  pointer-events: none;
+}
+
+/*
+ * Individual component card — square industrial "part" sitting on the belt.
+ */
+.conveyor__item {
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  width: var(--conveyor-item-size);
+  height: var(--conveyor-item-size);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 8px;
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font);
+  color: var(--text-dim);
+  text-align: center;
+  /* Industrial corner notches via box-shadow outline */
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.04),
+    0 2px 8px rgba(0,0,0,0.5);
+  transition: border-color 0.15s, transform 0.2s, box-shadow 0.2s, color 0.15s;
+  position: relative;
+}
+
+.conveyor__item:hover {
+  border-color: rgba(0,255,136,0.4);
+  color: var(--text);
+  transform: translateY(-2px);
+}
+
+/*
+ * Selected state — item snapped to the assembly station.
+ * Scale 1.1× + neon glow + CSS pseudo-element "clamp" bars top & bottom.
+ */
+.conveyor__item--selected {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(0,255,136,0.07);
+  transform: scale(1.1);
+  box-shadow:
+    0 0 14px rgba(0,255,136,0.5),
+    0 0 28px rgba(0,255,136,0.2),
+    inset 0 0 0 1px rgba(0,255,136,0.15);
+  z-index: 2;
+}
+
+/* Top clamp bar */
+.conveyor__item--selected::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent);
+  animation: clamp-pulse 1.2s ease-in-out infinite;
+}
+
+/* Bottom clamp bar */
+.conveyor__item--selected::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent);
+  animation: clamp-pulse 1.2s ease-in-out infinite;
+}
+
+.conveyor__item-icon   { font-size: 22px; line-height: 1; }
+.conveyor__item-name   { font-size: 11px; font-weight: bold; color: var(--text); letter-spacing: 0.5px; }
+.conveyor__item-tagline {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+}
+
 /* ===== Asset Generator (/dev/asset-generator) ===== */
 .asset-gen-page { padding-bottom: 48px; }
 
