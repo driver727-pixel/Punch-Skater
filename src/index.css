@@ -91,7 +91,7 @@ body {
 /* ===== Layout ===== */
 .app { display: flex; flex-direction: column; min-height: 100vh; }
 .main { flex: 1; overflow-y: auto; }
-.page { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.page { padding: 24px; max-width: 960px; margin: 0 auto; }
 .page-title {
   font-size: 26px;
   color: var(--accent);
