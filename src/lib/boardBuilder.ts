@@ -344,7 +344,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
     category: "Battery",
     name: "Double-Stack Brick",
     description:
-      "Large capacity double-stack 12s4p battery enclosure for DIY electric skateboard, rugged ABS plastic, thick profile, industrial heat-sync fins, heavy-duty aesthetic.",
+      "Large capacity double-stack 12s4p battery enclosure for DIY electric skateboard, rugged ABS plastic, thick profile, industrial heat-sink fins, heavy-duty aesthetic.",
     seedKey: "battery-double-stack-brick",
     icon: "🧱",
     range: 8,
