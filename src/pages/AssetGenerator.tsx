@@ -6,7 +6,7 @@ import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
 
 function buildAssetPrompt(componentName: string, visualDescription: string): string {
   return (
-    `Macro product photography of an electric skateboard ${componentName} — ${visualDescription} ` +
+    `Macro product photography of an electric skateboard ${componentName} -- ${visualDescription} ` +
     `Trading card art in the style of 1995 Fleer Ultra X-Men, isolated perfectly ` +
     `in the center on a pure, solid #00FF00 green-screen background.`
   );
