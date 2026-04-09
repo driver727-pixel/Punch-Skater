@@ -16,6 +16,8 @@ import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { TIERS } from "../lib/tiers";
 import { downloadCardAsJpg } from "../services/cardDownload";
 import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, resolveSecretFaction } from "../lib/factionDiscovery";
+import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
+import type { BoardConfig } from "../lib/boardBuilder";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ["Corporate", "Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Fascist", "Street", "Off-grid", "Military", "Union", "Olympic"];
@@ -81,6 +83,7 @@ export function CardForge() {
     vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5,
     gender: "Non-binary",
   });
+  const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [generated, setGenerated] = useState<CardPayload | null>(null);
   const [layers, setLayers] = useState<LayerState>(INITIAL_LAYER_STATE);
   const [characterBlend, setCharacterBlend] = useState(1);
@@ -284,7 +287,9 @@ export function CardForge() {
       displayArchetype,
       secretFaction,
     );
-    setGenerated(card);
+    // Attach the board loadout to the card
+    const cardWithBoard = { ...card, board: boardConfig };
+    setGenerated(cardWithBoard);
     setForging(true);
     if (secretFaction) {
       const isNew = !hasFaction(secretFaction);
@@ -375,7 +380,7 @@ export function CardForge() {
     generateLayer("frame", frameKey, framePrompt, frameSeed, signal);
 
     setForging(false);
-  }, [prompts, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction]);
+  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction]);
 
   // ── Expired-URL retry handler ────────────────────────────────────────────
   // Called when a composite img element fires onError (e.g. fal.ai CDN URL has
@@ -611,6 +616,14 @@ export function CardForge() {
               onChange={(e) => set("stamina", Number(e.target.value))}
             />
             <p className="form-hint">Higher stamina = heavier cargo capacity</p>
+          </div>
+
+          <div className="form-group">
+            <label>Board Loadout</label>
+            <p className="form-hint" style={{ marginBottom: 12 }}>
+              Build your electric skateboard — your most important piece of gear.
+            </p>
+            <BoardBuilder value={boardConfig} onChange={setBoardConfig} />
           </div>
 
           <button

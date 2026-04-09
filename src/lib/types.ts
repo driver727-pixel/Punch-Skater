@@ -1,6 +1,7 @@
 /**
  * types.ts
  */
+export type { BoardType, Drivetrain, WheelType, BoardConfig } from "./boardBuilder";
 export type Faction =
   | "United Corporations of America (UCA)"
   | "Qu111s (Quills)"
@@ -110,6 +111,8 @@ export interface CardPayload {
   };
   flavorText: string;
   tags: string[];
+  /** Electric skateboard loadout attached to this character. */
+  board?: import("./boardBuilder").BoardConfig;
   createdAt: string;
   /** Legacy single-image URL (AI-generated illustration). */
   imageUrl?: string;

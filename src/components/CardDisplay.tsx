@@ -7,6 +7,7 @@ import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS } from "../lib/boardBuilder";
 
 interface LayerLoading {
   background: boolean;
@@ -451,6 +452,30 @@ export function CardDisplay({
         )}
       </div>
 
+      {/* Board loadout section — only shown if a board config is attached */}
+      {card.board && (
+        <div className="card-board">
+          <span className="card-board__label">BOARD</span>
+          <div className="card-board__rows">
+            <BoardRow
+              icon={BOARD_TYPE_OPTIONS.find((o) => o.value === card.board!.boardType)?.icon ?? "🛹"}
+              label="TYPE"
+              value={card.board.boardType}
+            />
+            <BoardRow
+              icon={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.icon ?? "⚙️"}
+              label="DRIVE"
+              value={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.label ?? card.board.drivetrain}
+            />
+            <BoardRow
+              icon={WHEEL_OPTIONS.find((o) => o.value === card.board!.wheels)?.icon ?? "⚫"}
+              label="WHEELS"
+              value={card.board.wheels}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="card-actions">
         {onSave && (
           <button
@@ -509,6 +534,26 @@ export function CardDisplay({
           onClose={() => setPrinting(false)}
         />
       )}
+    </div>
+  );
+}
+
+// ── Board row helper (used inside card-board section) ─────────────────────────
+
+function BoardRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="card-board__row">
+      <span className="card-board__icon">{icon}</span>
+      <span className="card-board__key">{label}</span>
+      <span className="card-board__val">{value}</span>
     </div>
   );
 }
