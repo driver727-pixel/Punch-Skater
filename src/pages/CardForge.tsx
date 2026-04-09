@@ -623,7 +623,11 @@ export function CardForge() {
             <p className="form-hint" style={{ marginBottom: 12 }}>
               Build your electric skateboard — your most important piece of gear.
             </p>
-            <BoardBuilder value={boardConfig} onChange={setBoardConfig} />
+            <BoardBuilder
+              value={boardConfig}
+              onChange={setBoardConfig}
+              onSave={setBoardConfig}
+            />
           </div>
 
           <button
