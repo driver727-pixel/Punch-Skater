@@ -8,16 +8,19 @@
  *   1. Board Type  — Street · AT · Mountain · Surf · Slider
  *   2. Drivetrain  — Belt · Hub · Gear · AWD
  *   3. Wheels      — Urethane · Pneumatic · Rubber
+ *   4. Battery     — SlimStealth · DoubleStack · TopPeli
  */
 
 export type BoardType = "Street" | "AT" | "Mountain" | "Surf" | "Slider";
 export type Drivetrain = "Belt" | "Hub" | "Gear" | "AWD";
 export type WheelType = "Urethane" | "Pneumatic" | "Rubber";
+export type BatteryType = "SlimStealth" | "DoubleStack" | "TopPeli";
 
 export interface BoardConfig {
   boardType: BoardType;
   drivetrain: Drivetrain;
   wheels: WheelType;
+  battery: BatteryType;
 }
 
 /** Stat keys that board bonuses can affect (mirrors CardPayload.stats). */
@@ -144,6 +147,55 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
   },
 ];
 
+// ── Battery options ────────────────────────────────────────────────────────────
+
+export interface BatteryOption {
+  value: BatteryType;
+  label: string;
+  icon: string;
+  tagline: string;
+  description: string;
+  /** Integer range 1–10. */
+  range: number;
+  /** When true the battery mounts on top of the deck. */
+  isTopMounted: boolean;
+  /** Additive stat bonuses applied when this option is chosen. */
+  statBonuses: Partial<Record<BoardStatKey, number>>;
+}
+
+export const BATTERY_OPTIONS: BatteryOption[] = [
+  {
+    value: "SlimStealth",
+    label: "Slim Stealth Pack",
+    icon: "🔋",
+    tagline: "Low profile, out of sight",
+    description: "Low profile, standard range, hidden carbon enclosure.",
+    range: 4,
+    isTopMounted: false,
+    statBonuses: { stealth: 2 },
+  },
+  {
+    value: "DoubleStack",
+    label: "Double-Stack Brick",
+    icon: "🧱",
+    tagline: "Built for the long haul",
+    description: "Heavy, thick enclosure meant for long journeys.",
+    range: 8,
+    isTopMounted: false,
+    statBonuses: { grit: 1, rep: 1 },
+  },
+  {
+    value: "TopPeli",
+    label: "Top-Mounted Peli Case",
+    icon: "📦",
+    tagline: "Rugged and waterproof",
+    description: "A rugged, waterproof utility box strapped to the top of the deck.",
+    range: 10,
+    isTopMounted: true,
+    statBonuses: { tech: 1, rep: 2 },
+  },
+];
+
 // ── Named component catalog ────────────────────────────────────────────────────
 
 /**
@@ -154,7 +206,7 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
  */
 export interface BoardComponentModel {
   /** Top-level category label shown in the Asset Generator UI. */
-  category: "Deck" | "Wheel" | "Drivetrain";
+  category: "Deck" | "Wheel" | "Drivetrain" | "Battery";
   /** Human-readable product name. */
   name: string;
   /** Detailed visual description fed to the fal.ai prompt. */
@@ -163,6 +215,18 @@ export interface BoardComponentModel {
   seedKey: string;
   /** Display icon. */
   icon: string;
+  /** Deck style descriptor (Decks only). */
+  style?: string;
+  /** Speed rating 1–10 (Drivetrains only). */
+  speed?: number;
+  /** Acceleration rating 1–10 (Drivetrains only). */
+  acceleration?: number;
+  /** Ideal terrain district (Wheels only). */
+  district?: string;
+  /** Range rating 1–10 (Batteries only). */
+  range?: number;
+  /** Whether the battery mounts on top of the deck (Batteries only). */
+  isTopMounted?: boolean;
 }
 
 export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
@@ -174,6 +238,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "A sleek, low-profile carbon fiber drop-through longboard deck with geometric grip tape.",
     seedKey: "deck-carbon-street-drop-through",
     icon: "🛹",
+    style: "Sleek",
   },
   {
     category: "Deck",
@@ -182,6 +247,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "A wide, sturdy bamboo top-mount deck with aggressive, heavy-duty grip tape.",
     seedKey: "deck-bamboo-at-top-mount",
     icon: "🏕️",
+    style: "Aggressive",
   },
   {
     category: "Deck",
@@ -190,6 +256,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "A flexible composite mountain board deck equipped with rugged foot bindings.",
     seedKey: "deck-off-grid-mountain-board",
     icon: "⛰️",
+    style: "Aggressive",
   },
   {
     category: "Deck",
@@ -198,6 +265,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "A short, wide cruiser deck with a distinct swallowtail shape and vibrant retro grip art.",
     seedKey: "deck-swallowtail-surf-skate",
     icon: "🏄",
+    style: "Retro",
   },
 
   // ── Wheels ─────────────────────────────────────────────────────────────────
@@ -208,6 +276,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "A set of smooth, translucent neon-green 100mm polyurethane street wheels.",
     seedKey: "wheel-100mm-urethane-street",
     icon: "🟡",
+    district: "Electropolis",
   },
   {
     category: "Wheel",
@@ -216,6 +285,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "A set of chunky, knobby 175mm rubber pneumatic all-terrain tires on metallic hubs.",
     seedKey: "wheel-175mm-pneumatic-at",
     icon: "🟢",
+    district: "The Forest",
   },
   {
     category: "Wheel",
@@ -224,6 +294,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "Oversized, shock-absorbing 120mm foam-core urethane slider wheels.",
     seedKey: "wheel-120mm-cloud-sliders",
     icon: "⚪",
+    district: "The Roads",
   },
 
   // ── Drivetrains ────────────────────────────────────────────────────────────
@@ -234,6 +305,8 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "Heavy-duty dual rear belt-drive motors with exposed mechanical pulleys and wide trucks.",
     seedKey: "drivetrain-dual-belt-drive",
     icon: "⚙️",
+    speed: 8,
+    acceleration: 6,
   },
   {
     category: "Drivetrain",
@@ -242,6 +315,8 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "Rugged, fully enclosed gear-drive trucks built for high torque and off-road abuse.",
     seedKey: "drivetrain-sealed-gear-drive",
     icon: "🔩",
+    speed: 6,
+    acceleration: 8,
   },
   {
     category: "Drivetrain",
@@ -250,6 +325,40 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "Sleek, minimalist in-wheel hub motors attached to precision carving trucks.",
     seedKey: "drivetrain-stealth-hub-motors",
     icon: "🔇",
+    speed: 7,
+    acceleration: 5,
+  },
+
+  // ── Batteries ──────────────────────────────────────────────────────────────
+  {
+    category: "Battery",
+    name: "Slim Stealth Pack",
+    description:
+      "Low profile, standard range, hidden carbon enclosure.",
+    seedKey: "battery-slim-stealth-pack",
+    icon: "🔋",
+    range: 4,
+    isTopMounted: false,
+  },
+  {
+    category: "Battery",
+    name: "Double-Stack Brick",
+    description:
+      "Heavy, thick enclosure meant for long journeys.",
+    seedKey: "battery-double-stack-brick",
+    icon: "🧱",
+    range: 8,
+    isTopMounted: false,
+  },
+  {
+    category: "Battery",
+    name: "Top-Mounted Peli Case",
+    description:
+      "A rugged, waterproof utility box strapped to the top of the deck.",
+    seedKey: "battery-top-mounted-peli-case",
+    icon: "📦",
+    range: 10,
+    isTopMounted: true,
   },
 ];
 
@@ -279,8 +388,15 @@ const WHEEL_SEED: Record<WheelType, string | null> = {
   Rubber:    "wheel-120mm-cloud-sliders",
 };
 
+/** Maps each BatteryType value to the seedKey of its representative asset. */
+const BATTERY_SEED: Record<BatteryType, string | null> = {
+  SlimStealth: "battery-slim-stealth-pack",
+  DoubleStack: "battery-double-stack-brick",
+  TopPeli:     "battery-top-mounted-peli-case",
+};
+
 /**
- * Returns the public asset URLs for all three board layers based on the active
+ * Returns the public asset URLs for all four board layers based on the active
  * `BoardConfig`. Assets live at `public/assets/boards/<seedKey>.png`.
  * Returns `null` for any component that has no catalog asset yet.
  */
@@ -288,30 +404,37 @@ export function getBoardAssetUrls(config: BoardConfig): {
   deckUrl: string | null;
   drivetrainUrl: string | null;
   wheelsUrl: string | null;
+  batteryUrl: string | null;
+  batteryIsTopMounted: boolean;
 } {
-  const deckSeed  = BOARD_TYPE_DECK_SEED[config.boardType];
-  const driveSeed = DRIVETRAIN_SEED[config.drivetrain];
-  const wheelSeed = WHEEL_SEED[config.wheels];
+  const deckSeed    = BOARD_TYPE_DECK_SEED[config.boardType];
+  const driveSeed   = DRIVETRAIN_SEED[config.drivetrain];
+  const wheelSeed   = WHEEL_SEED[config.wheels];
+  const batterySeed = BATTERY_SEED[config.battery];
+  const batteryOpt  = BATTERY_OPTIONS.find((o) => o.value === config.battery);
 
   return {
-    deckUrl:       deckSeed  ? `/assets/boards/${deckSeed}.png`  : null,
-    drivetrainUrl: driveSeed ? `/assets/boards/${driveSeed}.png` : null,
-    wheelsUrl:     wheelSeed ? `/assets/boards/${wheelSeed}.png` : null,
+    deckUrl:             deckSeed    ? `/assets/boards/${deckSeed}.png`    : null,
+    drivetrainUrl:       driveSeed   ? `/assets/boards/${driveSeed}.png`   : null,
+    wheelsUrl:           wheelSeed   ? `/assets/boards/${wheelSeed}.png`   : null,
+    batteryUrl:          batterySeed ? `/assets/boards/${batterySeed}.png` : null,
+    batteryIsTopMounted: batteryOpt?.isTopMounted ?? false,
   };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Returns the total additive stat bonuses across all three board selections. */
+/** Returns the total additive stat bonuses across all four board selections. */
 export function getBoardStatBonuses(
   config: BoardConfig,
 ): Partial<Record<BoardStatKey, number>> {
   const totals: Partial<Record<BoardStatKey, number>> = {};
-  const type = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
-  const drive = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
-  const wheel = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
+  const type    = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
+  const drive   = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
+  const wheel   = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
+  const battery = BATTERY_OPTIONS.find((o) => o.value === config.battery);
 
-  for (const option of [type, drive, wheel]) {
+  for (const option of [type, drive, wheel, battery]) {
     if (!option) continue;
     for (const [stat, bonus] of Object.entries(option.statBonuses) as [BoardStatKey, number][]) {
       totals[stat] = (totals[stat] ?? 0) + bonus;
@@ -322,10 +445,11 @@ export function getBoardStatBonuses(
 
 /** Human-readable one-line summary of a completed board config. */
 export function getBoardSummary(config: BoardConfig): string {
-  const type = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
-  const drive = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
-  const wheel = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
-  return [type?.icon, config.boardType, "·", drive?.label, "·", wheel?.label, "Wheels"]
+  const type    = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
+  const drive   = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
+  const wheel   = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
+  const battery = BATTERY_OPTIONS.find((o) => o.value === config.battery);
+  return [type?.icon, config.boardType, "·", drive?.label, "·", wheel?.label, "Wheels", "·", battery?.label]
     .filter(Boolean)
     .join(" ");
 }
@@ -335,4 +459,49 @@ export const DEFAULT_BOARD_CONFIG: BoardConfig = {
   boardType: "Street",
   drivetrain: "Belt",
   wheels: "Urethane",
+  battery: "SlimStealth",
 };
+
+// ── Board Loadout ──────────────────────────────────────────────────────────────
+
+/**
+ * Combined stats derived from a fully assembled board.
+ * Returned by `calculateBoardStats`.
+ */
+export interface BoardLoadout {
+  /** Visual style of the selected deck (e.g. 'Aggressive', 'Sleek', 'Retro'). */
+  style: string;
+  /** Drivetrain top-speed rating (1–10). */
+  speed: number;
+  /** Drivetrain acceleration rating (1–10). */
+  acceleration: number;
+  /** Ideal terrain district from the selected wheel. */
+  district: string;
+  /** Battery range rating (1–10). */
+  range: number;
+}
+
+/**
+ * Derives the combined `BoardLoadout` stats from the four chosen components.
+ * Values are sourced from the `BOARD_COMPONENT_CATALOG` entries that correspond
+ * to the active `BoardConfig` selections.
+ */
+export function calculateBoardStats(config: BoardConfig): BoardLoadout {
+  const deckSeed    = BOARD_TYPE_DECK_SEED[config.boardType];
+  const driveSeed   = DRIVETRAIN_SEED[config.drivetrain];
+  const wheelSeed   = WHEEL_SEED[config.wheels];
+  const batterySeed = BATTERY_SEED[config.battery];
+
+  const deckModel    = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === deckSeed);
+  const driveModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === driveSeed);
+  const wheelModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === wheelSeed);
+  const batteryModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === batterySeed);
+
+  return {
+    style:        deckModel?.style        ?? "Custom",
+    speed:        driveModel?.speed       ?? 5,
+    acceleration: driveModel?.acceleration ?? 5,
+    district:     wheelModel?.district    ?? "The Roads",
+    range:        batteryModel?.range     ?? 5,
+  };
+}

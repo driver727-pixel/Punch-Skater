@@ -1,26 +1,32 @@
 /**
  * BoardComposite.tsx
  *
- * Visually stacks three pre-generated skateboard component PNGs into a single
+ * Visually stacks four pre-generated skateboard component PNGs into a single
  * composite image. Layers are ordered from bottom to top:
  *
- *   Wheels (z-index: 10) → Drivetrain / Trucks (z-index: 20) → Deck (z-index: 30)
+ *   Wheels (z-index: 10) → Drivetrain / Trucks (z-index: 20)
+ *   → Under-mounted Battery (z-index: 25) → Deck (z-index: 30)
+ *   → Top-mounted Battery (z-index: 40)
  *
- * This ordering ensures trucks and wheels appear mounted underneath the board
- * regardless of the angle of the individual PNGs.  `object-fit: contain` keeps
- * each image un-distorted regardless of the component's native dimensions.
+ * The battery layer z-index is driven by the `batteryIsTopMounted` prop:
+ *   - false → z-index 25 (slides under the deck)
+ *   - true  → z-index 40 (sits on top of the deck)
  *
  * All URLs are optional — missing layers are simply not rendered.  The
- * component returns null when none of the three URLs are provided.
+ * component returns null when none of the four URLs are provided.
  */
 
 interface BoardCompositeProps {
-  /** URL of the deck layer PNG (top layer, z-index 30). */
+  /** URL of the deck layer PNG (z-index 30). */
   deckUrl?: string | null;
-  /** URL of the drivetrain / trucks layer PNG (middle layer, z-index 20). */
+  /** URL of the drivetrain / trucks layer PNG (z-index 20). */
   drivetrainUrl?: string | null;
-  /** URL of the wheels layer PNG (bottom layer, z-index 10). */
+  /** URL of the wheels layer PNG (z-index 10). */
   wheelsUrl?: string | null;
+  /** URL of the battery layer PNG (z-index 25 or 40 depending on mount position). */
+  batteryUrl?: string | null;
+  /** When true the battery renders above the deck (z-index 40). Defaults to false (z-index 25). */
+  batteryIsTopMounted?: boolean;
   /** Extra CSS class applied to the outer container. */
   className?: string;
 }
@@ -29,9 +35,13 @@ export function BoardComposite({
   deckUrl,
   drivetrainUrl,
   wheelsUrl,
+  batteryUrl,
+  batteryIsTopMounted = false,
   className,
 }: BoardCompositeProps) {
-  if (!deckUrl && !drivetrainUrl && !wheelsUrl) return null;
+  if (!deckUrl && !drivetrainUrl && !wheelsUrl && !batteryUrl) return null;
+
+  const batteryZIndex = batteryIsTopMounted ? 40 : 25;
 
   return (
     <div className={`board-composite${className ? ` ${className}` : ""}`}>
@@ -44,7 +54,7 @@ export function BoardComposite({
         />
       )}
 
-      {/* Middle layer — drivetrain / trucks */}
+      {/* Second layer — drivetrain / trucks */}
       {drivetrainUrl && (
         <img
           src={drivetrainUrl}
@@ -53,7 +63,17 @@ export function BoardComposite({
         />
       )}
 
-      {/* Top layer — deck */}
+      {/* Battery — z-index determined by mount position */}
+      {batteryUrl && (
+        <img
+          src={batteryUrl}
+          alt="battery"
+          className="board-composite__layer"
+          style={{ zIndex: batteryZIndex }}
+        />
+      )}
+
+      {/* Deck layer */}
       {deckUrl && (
         <img
           src={deckUrl}

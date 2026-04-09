@@ -1,21 +1,24 @@
 /**
  * BoardBuilder.tsx
  *
- * Assembly-line board loadout builder powered by three stacked ConveyorCarousel
- * belts:  Decks (top) → Drivetrains (middle) → Wheels (bottom).
+ * Assembly-line board loadout builder powered by four stacked ConveyorCarousel
+ * belts:  Decks (top) → Drivetrains → Wheels → Batteries (bottom).
  *
  * The live BoardComposite preview updates instantly as the user scrolls each belt.
  * A PowerSwitchButton at the bottom triggers a satisfying animation sequence before
- * firing the onSave callback to commit the board config to the character state.
+ * firing the onSave callback to commit the board config and loadout stats to the
+ * character state.
  */
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { BoardConfig } from "../lib/boardBuilder";
+import type { BoardConfig, BoardLoadout } from "../lib/boardBuilder";
 import {
   BOARD_TYPE_OPTIONS,
   DRIVETRAIN_OPTIONS,
   WHEEL_OPTIONS,
+  BATTERY_OPTIONS,
   DEFAULT_BOARD_CONFIG,
   getBoardAssetUrls,
+  calculateBoardStats,
 } from "../lib/boardBuilder";
 import { BoardComposite } from "./BoardComposite";
 import { ConveyorCarousel } from "./ConveyorCarousel";
@@ -25,8 +28,8 @@ import type { CarouselItem } from "./ConveyorCarousel";
 interface BoardBuilderProps {
   value: BoardConfig;
   onChange: (config: BoardConfig) => void;
-  /** Called after the lock-in animation finishes (~1 s) to persist the board config. */
-  onSave?: (config: BoardConfig) => void;
+  /** Called after the lock-in animation finishes (~1 s) to persist the board config and loadout. */
+  onSave?: (config: BoardConfig, loadout: BoardLoadout) => void;
 }
 
 // Map each option array into the slim shape ConveyorCarousel expects.
@@ -45,6 +48,13 @@ const DRIVETRAIN_ITEMS: CarouselItem[] = DRIVETRAIN_OPTIONS.map((o) => ({
 }));
 
 const WHEEL_ITEMS: CarouselItem[] = WHEEL_OPTIONS.map((o) => ({
+  value: o.value,
+  label: o.label,
+  icon: o.icon,
+  tagline: o.tagline,
+}));
+
+const BATTERY_ITEMS: CarouselItem[] = BATTERY_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
@@ -83,7 +93,7 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
       setTimeout(() => setShaking(false), 750),
       setTimeout(() => {
         setLocked(true);
-        onSave?.(value);
+        onSave?.(value, calculateBoardStats(value));
       }, 1000),
     );
   }, [value, onSave]);
@@ -94,11 +104,13 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
     onChange(next);
   }, [onChange]);
 
+  const assetUrls = getBoardAssetUrls(value);
+
   return (
     <div className={`board-builder${shaking ? " board-builder--shake" : ""}`}>
       {/* Live board composite preview — updates in real time */}
       <BoardComposite
-        {...getBoardAssetUrls(value)}
+        {...assetUrls}
         className={`board-builder__preview${surging ? " board-composite--surge" : ""}`}
       />
 
@@ -124,6 +136,14 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
         items={WHEEL_ITEMS}
         selected={value.wheels}
         onSelect={(v) => handleCarouselChange({ ...value, wheels: v as typeof value.wheels })}
+      />
+
+      {/* Belt 4 — Batteries */}
+      <ConveyorCarousel
+        label="Batteries"
+        items={BATTERY_ITEMS}
+        selected={value.battery}
+        onSelect={(v) => handleCarouselChange({ ...value, battery: v as typeof value.battery })}
       />
 
       {/* Finalization — PowerSwitchButton */}
