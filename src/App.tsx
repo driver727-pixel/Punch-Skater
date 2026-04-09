@@ -43,6 +43,7 @@ const PrivacyPolicy   = lazy(() => import("./pages/PrivacyPolicy").then(m => ({ 
 const TermsOfService  = lazy(() => import("./pages/TermsOfService").then(m => ({ default: m.TermsOfService })));
 const ResetPassword   = lazy(() => import("./pages/ResetPassword").then(m => ({ default: m.ResetPassword })));
 const Admin           = lazy(() => import("./pages/Admin").then(m => ({ default: m.Admin })));
+const AssetGenerator  = lazy(() => import("./pages/AssetGenerator").then(m => ({ default: m.AssetGenerator })));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -99,6 +100,9 @@ function App() {
                       } />
                       <Route path="/admin" element={
                         <AdminRoute><Admin /></AdminRoute>
+                      } />
+                      <Route path="/dev/asset-generator" element={
+                        <AdminRoute><AssetGenerator /></AdminRoute>
                       } />
                     </Routes>
                   </Suspense>
