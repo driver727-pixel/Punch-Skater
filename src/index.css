@@ -3413,6 +3413,147 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .card-board__key { color: var(--text-dim); width: 20px; letter-spacing: 0.5px; flex-shrink: 0; }
 .card-board__val { color: var(--text); font-weight: bold; }
 
+/* ===== Skateboard Stats Panel ===== */
+
+@keyframes neon-hum-cyan {
+  0%, 100% { box-shadow: 0 0 3px #00ccff, 0 0 6px #00ccff, inset 0 0 3px rgba(0,204,255,0.4); }
+  50%       { box-shadow: 0 0 6px #00ccff, 0 0 14px #00ccff, inset 0 0 6px rgba(0,204,255,0.7); }
+}
+@keyframes neon-hum-magenta {
+  0%, 100% { box-shadow: 0 0 3px #ff00cc, 0 0 6px #ff00cc, inset 0 0 3px rgba(255,0,204,0.4); }
+  50%       { box-shadow: 0 0 6px #ff00cc, 0 0 14px #ff00cc, inset 0 0 6px rgba(255,0,204,0.7); }
+}
+@keyframes neon-hum-green {
+  0%, 100% { box-shadow: 0 0 3px #00ff88, 0 0 6px #00ff88, inset 0 0 3px rgba(0,255,136,0.4); }
+  50%       { box-shadow: 0 0 6px #00ff88, 0 0 14px #00ff88, inset 0 0 6px rgba(0,255,136,0.7); }
+}
+
+.skate-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 3px;
+  padding: 3px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 2px;
+}
+
+.skate-stats-title {
+  display: block;
+  font-size: 5px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 1px;
+}
+
+.skate-stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.skate-stat-label {
+  font-size: 5px;
+  color: var(--text-dim);
+  width: 14px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.skate-stat-value {
+  font-size: 5px;
+  width: 6px;
+  text-align: right;
+  flex-shrink: 0;
+  color: var(--text);
+  font-weight: bold;
+}
+
+/* Outer glass tube */
+.neon-tube {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.12);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Inner glowing filament */
+.neon-filament {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.neon-tube--cyan .neon-filament {
+  background: linear-gradient(90deg, rgba(0,204,255,0.7), #00ccff);
+  box-shadow: 0 0 4px #00ccff, 0 0 8px #00ccff;
+}
+.neon-tube--cyan {
+  animation: neon-hum-cyan 2.4s ease-in-out infinite;
+}
+
+.neon-tube--magenta .neon-filament {
+  background: linear-gradient(90deg, rgba(255,0,204,0.7), #ff00cc);
+  box-shadow: 0 0 4px #ff00cc, 0 0 8px #ff00cc;
+}
+.neon-tube--magenta {
+  animation: neon-hum-magenta 2.8s ease-in-out infinite;
+}
+
+.neon-tube--green .neon-filament {
+  background: linear-gradient(90deg, rgba(0,255,136,0.7), #00ff88);
+  box-shadow: 0 0 4px #00ff88, 0 0 8px #00ff88;
+}
+.neon-tube--green {
+  animation: neon-hum-green 3.2s ease-in-out infinite;
+}
+
+/* Text stat rows (District / Style) */
+.skate-text-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 1px;
+  padding-top: 1px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.skate-text-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 5px;
+}
+
+.skate-text-key {
+  color: var(--text-dim);
+  width: 26px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.skate-text-val {
+  font-weight: bold;
+  letter-spacing: 0.3px;
+}
+
+.neon-label--green {
+  color: #00ff88;
+  text-shadow: 0 0 4px rgba(0,255,136,0.8);
+}
+
+.neon-label--cyan {
+  color: #00ccff;
+  text-shadow: 0 0 4px rgba(0,204,255,0.8);
+}
+
 /* ===== Board Composite ===== */
 
 /*

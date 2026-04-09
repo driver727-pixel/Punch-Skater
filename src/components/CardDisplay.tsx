@@ -9,6 +9,7 @@ import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
 import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS, getBoardAssetUrls } from "../lib/boardBuilder";
 import { BoardComposite } from "./BoardComposite";
+import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 
 interface LayerLoading {
   background: boolean;
@@ -475,6 +476,9 @@ export function CardDisplay({
               value={card.board.wheels}
             />
           </div>
+          {card.boardLoadout && (
+            <SkateboardStatsPanel loadout={card.boardLoadout} />
+          )}
         </div>
       )}
 
