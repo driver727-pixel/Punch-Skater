@@ -162,7 +162,6 @@ export function PrintModal({
                     <StatBar label="TCH" value={card.stats.tech}    color={accent} />
                     <StatBar label="GRT" value={card.stats.grit}    color={accent} />
                     <StatBar label="REP" value={card.stats.rep}     color={accent} />
-                    <StatBar label="STA" value={card.stats.stamina} color={accent} />
                   </div>
 
                   <div className="print-back-trait">
@@ -275,7 +274,6 @@ export function PrintModal({
                 <StatBar label="TCH" value={card.stats.tech}    color={accent} />
                 <StatBar label="GRT" value={card.stats.grit}    color={accent} />
                 <StatBar label="REP" value={card.stats.rep}     color={accent} />
-                <StatBar label="STA" value={card.stats.stamina} color={accent} />
               </div>
 
               <div className="print-back-trait">

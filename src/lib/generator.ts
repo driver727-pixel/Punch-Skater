@@ -5,15 +5,12 @@ import { createSeededRandom, seedFromString } from './prng';
 /** Rarities that unlock conlang/lore overlays on card display. */
 export const HIGH_RARITY_TIERS: ReadonlySet<Rarity> = new Set<Rarity>(["Rare", "Legendary"]);
 
-/**
- * Human-readable pack labels for each stamina bracket.
- * Key = storagePackStyle value produced by generateCard().
- */
+/** Human-readable pack labels keyed by storagePackStyle. */
 export const STORAGE_PACK_LABELS: Record<string, string> = {
-  "shopping-bag":  "🛍️ Light load — just the essentials",
-  "backpack":      "🎒 Standard kit — ready for most runs",
-  "cardboard-box": "📦 Heavy haul — stamina is everything",
-  "duffel-bag":    "🧳 Maximum carry — legendary endurance",
+  "shopping-bag":  "🛍️ Light load — quick courier carry",
+  "backpack":      "🎒 Standard kit — everyday courier gear",
+  "cardboard-box": "📦 Heavy haul — bulk cargo run",
+  "duffel-bag":    "🧳 Long run — overstuffed courier bag",
 };
 
 // ── Visual style tables ────────────────────────────────────────────────────────
@@ -64,6 +61,8 @@ const COLOR_SCHEMES: Record<string, string[]> = {
   Recycled: ["earthy-brown",  "salvage-green", "dull-orange"],
 };
 
+const STORAGE_PACK_STYLES = ["shopping-bag", "backpack", "cardboard-box", "duffel-bag"] as const;
+
 const PERSONALITY_POOLS: Record<string, string[]> = {
   "The Knights Technarchy": ["silent",       "precise",     "disciplined",   "observant",   "cold"],
   "Qu111s":                 ["investigative","bold",        "principled",    "tenacious",   "sharp"],
@@ -106,7 +105,7 @@ const RARITY_MULTIPLIER: Record<Rarity, number> = {
 
 export const generateCard = (prompts: CardPrompts): CardPayload => {
   // ── Seeds ──────────────────────────────────────────────────────────────────
-  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.vibe}|${prompts.stamina}|${prompts.gender}`;
+  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.vibe}|${prompts.gender}`;
   const backgroundSeed = prompts.district;
   const frameSeed      = prompts.rarity;
   const masterSeed     = `${frameSeed}::${backgroundSeed}::${characterSeed}`;
@@ -129,10 +128,7 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
   const rep     = rollStat(mods.rep);
 
   // ── Visuals ────────────────────────────────────────────────────────────────
-  const storagePackStyle =
-    prompts.stamina <= 2 ? "shopping-bag"  :
-    prompts.stamina <= 5 ? "backpack"      :
-    prompts.stamina <= 8 ? "cardboard-box" : "duffel-bag";
+  const storagePackStyle = charRng.pick([...STORAGE_PACK_STYLES]);
 
   const helmetStyle  = charRng.pick(HELMET_STYLES[prompts.style]  ?? ["standard-helm"]);
   const boardStyle   = charRng.pick(BOARD_STYLES[prompts.vibe]    ?? ["standard-deck"]);
@@ -170,7 +166,7 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
       manufacturer: VIBE_TO_MANUFACTURER[prompts.vibe],
       serialNumber,
     },
-    stats: { speed, stealth, tech, grit, rep, stamina: prompts.stamina },
+    stats: { speed, stealth, tech, grit, rep },
     traits: {
       passiveTrait,
       activeAbility,

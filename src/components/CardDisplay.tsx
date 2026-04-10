@@ -398,7 +398,6 @@ export function CardDisplay({
         <StatBar label="TCH" value={card.stats.tech}    color={accent} />
         <StatBar label="GRT" value={card.stats.grit}    color={accent} />
         <StatBar label="REP" value={card.stats.rep}     color={accent} />
-        <StatBar label="STA" value={card.stats.stamina} color={accent} />
         <div className="stat-active">
           <span className="stat-label">ACT</span>
           <div className="stat-active-body">

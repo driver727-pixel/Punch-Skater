@@ -51,7 +51,6 @@ export interface CardPrompts {
   vibe: Vibe;
   district: District;
   accentColor: string;
-  stamina: number;
   gender: Gender;
 }
 
@@ -90,7 +89,6 @@ export interface CardPayload {
     tech: number;
     grit: number;
     rep: number;
-    stamina: number;
   };
   traits: {
     passiveTrait: { name: string; description: string };

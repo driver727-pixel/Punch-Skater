@@ -75,79 +75,6 @@ const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
     "Dark background. Hard sci-fi, no fantasy, no gold, no foliage.",
 };
 
-/**
- * District-specific bag/package descriptions for each stamina tier.
- *
- * Stamina 1–2  → tier 0 (minimal carry)
- * Stamina 3–5  → tier 1 (backpack)
- * Stamina 6–8  → tier 2 (large box/crate)
- * Stamina 9–10 → tier 3 (max-capacity duffel)
- */
-const DISTRICT_BAG_DESCRIPTIONS: Record<string, string[]> = {
-  Airaway: [
-    "a small anti-gravity courier pouch with altitude stabilisers",
-    "a levitation-stabilised cloud-pack with built-in altitude sensors and sky-city insignia",
-    "a pressurised hover-cargo container with retractable grip handles",
-    "a massive anti-grav freight sling bearing the Airaway Sky-Dock authority stamp",
-  ],
-  Nightshade: [
-    "a small glow-stick-lit satchel patched with neon tape",
-    "a backpack covered in neon stickers and blinking LED strips",
-    "a large crate spray-painted with blacklight-reactive graffiti",
-    "a bulky duffel bag strung with glowsticks and neon cable ties",
-  ],
-  Batteryville: [
-    "a patched canvas satchel decorated with hand-sewn solar-cell strips",
-    "a rugged canvas survival pack bristling with utility pouches and carabiner clips",
-    "a weathered wooden crate bound with salvaged wire and rope, marked with charcoal stencils",
-    "a bulging military-surplus duffel bag packed with off-grid survival supplies",
-  ],
-  "The Grid": [
-    "a small riveted metal canister stencilled with union insignia",
-    "a heavy canvas pack with red faction patches and ration pouches",
-    "a rusted iron cargo box stamped with industrial union seals",
-    "a massive diesel-punk duffel bag bristling with tools and red armbands",
-  ],
-  "Glass City": [
-    "a compact high-tech courier pod with LED status indicators",
-    "a sleek tech backpack with solar-charging panels and sensor arrays",
-    "a reinforced delivery crate with QR code seals and neon tape",
-    "a heavy-duty cargo pack loaded with courier tech and neon signage",
-  ],
-};
-
-// ── Internal helpers ───────────────────────────────────────────────────────────
-
-/**
- * Generic bag description keyed only by stamina tier.
- * Used in the character-layer prompt so that the character image is independent
- * of the district (changing district only regenerates the background layer).
- */
-const STAMINA_BAG_DESCRIPTIONS: string[] = [
-  "a small courier pouch",
-  "a standard backpack",
-  "a large cargo box",
-  "a heavy duffel bag",
-];
-
-function characterBagDescription(stamina: number): string {
-  const tier = stamina <= 2 ? 0 : stamina <= 5 ? 1 : stamina <= 8 ? 2 : 3;
-  return STAMINA_BAG_DESCRIPTIONS[tier];
-}
-
-/** District-specific bag used by the legacy single-image prompt only. */
-function bagDescription(district: string, stamina: number): string {
-  const tier = stamina <= 2 ? 0 : stamina <= 5 ? 1 : stamina <= 8 ? 2 : 3;
-  const list: string[] | undefined = DISTRICT_BAG_DESCRIPTIONS[district];
-  return list ? list[tier] : STAMINA_BAG_DESCRIPTIONS[tier];
-}
-
-function staminaState(stamina: number): string {
-  if (stamina <= 3) return "visibly tired, carrying minimal gear";
-  if (stamina >= 8) return "fully loaded, carrying bulky cargo";
-  return "alert and ready, mid-weight gear";
-}
-
 /** Shared age-restriction phrase appended to all character prompts. */
 const AGE_RESTRICTION = "No kids. No teens. Adults aged 18-99 only. ";
 
@@ -157,18 +84,15 @@ const AGE_RESTRICTION = "No kids. No teens. Adults aged 18-99 only. ";
  * The character is rendered against a plain white background, which is then
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
- * The bag/package description is based on stamina alone — it does NOT depend
- * on the district, so the character layer is only regenerated when archetype,
- * style, vibe, or stamina changes (matching the `characterSeed` cache key).
- * Changing district or rarity leaves this layer untouched.
+ * The character layer is only regenerated when archetype, style, vibe, or gender
+ * changes (matching the `characterSeed` cache key). Changing district or rarity
+ * leaves this layer untouched.
  */
 export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
   const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
   const pose      = ARCHETYPE_POSES[prompts.archetype] ?? prompts.archetype;
   const board     = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
-  const bagDesc   = characterBagDescription(prompts.stamina);
-  const state     = staminaState(prompts.stamina);
   const graffitiLine = graffitiWords?.length
     ? `The skateboard deck and wheels feature graffiti tags or brand logos reading '${graffitiWords.join("' and '")}'. `
     : "";
@@ -184,9 +108,9 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     `Full-body portrait of a ${prompts.archetype} skater courier, ` +
     `facing directly toward the viewer, front-facing, looking at the camera, ` +
     `wearing ${clothing}, ${pose}, ` +
-    `carrying ${bagDesc}, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
+    `carrying courier gear, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     graffitiLine +
-    `Character is ${state}. ` +
+    `Character is alert and ready to move. ` +
     `Mood: ${mood}. ` +
     genderLine +
     AGE_RESTRICTION +
@@ -273,8 +197,6 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const district = DISTRICT_DESCRIPTIONS[prompts.district] ?? prompts.district;
   const board    = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
-  const bag      = bagDescription(prompts.district, prompts.stamina);
-  const state    = staminaState(prompts.stamina);
   const genderDesc =
     prompts.gender === "Woman" ? "a woman" :
     prompts.gender === "Man"   ? "a man" :
@@ -284,10 +206,10 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     `A hyper-realistic 3D cartoon-style portrait of a ${prompts.archetype} skater courier ` +
     `facing directly toward the viewer, front-facing, looking at the camera, ` +
     `wearing ${clothing}, ${pose}, ` +
-    `carrying ${bag}, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
+    `carrying courier gear, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     `The background is ${district}. ` +
-    `Character is ${state}. Character is ${genderDesc}. ` +
-    `Mood: ${mood}. Stamina ${prompts.stamina}/10. ` +
+    `Character is alert and ready to move. Character is ${genderDesc}. ` +
+    `Mood: ${mood}. ` +
     AGE_RESTRICTION +
     `Rendered in Unreal Engine, vibrant colours, octane render, cinematic lighting, 4K. ` +
     `SFW, Family Friendly, PG rated, LGBTQIA+.`
