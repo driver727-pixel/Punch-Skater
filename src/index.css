@@ -101,7 +101,7 @@ body {
   text-transform: uppercase;
   text-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
 }
-.page-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; letter-spacing: 0.5px; }
+.page-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 12px; letter-spacing: 0.5px; }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
 
 /* ===== Buttons ===== */
@@ -205,7 +205,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .input:focus { border-color: var(--accent); }
 
 /* ===== Pills ===== */
-.form-group { margin-bottom: 20px; }
+.form-group { margin-bottom: 12px; }
 .form-group label {
   display: block;
   font-size: 11px;
@@ -272,20 +272,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 /* ===== Card Forge Layout ===== */
-.forge-layout { display: grid; grid-template-columns: 1fr 420px; gap: 32px; }
+.forge-layout { display: grid; grid-template-columns: 1fr 420px; gap: 20px; }
 @media (max-width: 800px) { .forge-layout { grid-template-columns: 1fr; } }
 
 .forge-form {
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 28px;
+  padding: 18px;
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 .forge-preview {
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 24px;
+  padding: 16px;
   border-radius: 8px;
   display: flex;
   justify-content: center;
@@ -3184,7 +3184,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-builder__preview {
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.2);
-  max-height: 140px;
+  max-height: 60px;
+  max-width: 90px;
+  margin: 0 auto;
   overflow: hidden;
 }
 
