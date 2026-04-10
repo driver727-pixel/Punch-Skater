@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Environment variables — copy .env.example → .env and fill in your values
+# Never commit .env: it may contain secrets (FAL_KEY, STRIPE_SECRET_KEY, etc.)
+.env
+
 # Playwright test artifacts
 /test-results/
 /playwright-report/
