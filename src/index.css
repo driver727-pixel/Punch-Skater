@@ -3919,7 +3919,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 
   .forge-form .pill-group {
-    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  }
+
+  .forge-form .pill {
+    padding: 7px 10px;
+    font-size: 11px;
+    line-height: 1.3;
+    letter-spacing: 0.2px;
+  }
+
+  .forge-generated-buttons > button {
+    flex: 1 1 100%;
   }
 
   .conveyor__header {
@@ -3935,7 +3946,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 @media (max-width: 520px) {
   .forge-form .pill-group {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 }
 
