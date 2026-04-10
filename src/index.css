@@ -3931,7 +3931,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .forge-generated-buttons > button {
     flex: 1 1 100%;
-    width: 100%;
   }
 
   .conveyor__header {
