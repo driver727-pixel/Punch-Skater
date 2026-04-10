@@ -19,6 +19,7 @@ import type {
   ImportResult,
   ImportCardError,
 } from "./types";
+import { normalizeCardPayload } from "./styles";
 
 // ── Required top-level keys on a CardPayload ──────────────────────────────────
 
@@ -174,7 +175,7 @@ export function validateImport(raw: unknown): ImportResult {
   for (let i = 0; i < cardEntries.length; i++) {
     const { card, error } = validateCard(cardEntries[i], i);
     if (card) {
-      accepted.push(card);
+      accepted.push(normalizeCardPayload(card));
     } else if (error) {
       rejected.push(error);
     }

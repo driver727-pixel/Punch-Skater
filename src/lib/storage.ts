@@ -1,4 +1,5 @@
 import type { CardPayload, DeckPayload } from "./types";
+import { normalizeCardPayload } from "./styles";
 
 const COLLECTION_KEY = "skpd_collection";
 const DECKS_KEY = "skpd_decks";
@@ -7,7 +8,7 @@ const FACTION_DISCOVERIES_KEY = "skpd_faction_discoveries";
 export function loadCollection(): CardPayload[] {
   try {
     const raw = localStorage.getItem(COLLECTION_KEY);
-    return raw ? (JSON.parse(raw) as CardPayload[]) : [];
+    return raw ? (JSON.parse(raw) as CardPayload[]).map(normalizeCardPayload) : [];
   } catch {
     return [];
   }

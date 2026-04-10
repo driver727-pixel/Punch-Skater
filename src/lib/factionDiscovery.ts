@@ -1,4 +1,5 @@
-import type { Archetype, CardPayload, CardPrompts, District, Faction, Style } from "./types";
+import type { Archetype, CardPayload, CardPrompts, District, Faction } from "./types";
+import { remapStyleConnection } from "./styles";
 
 export interface ForgeArchetypeOption {
   value: Archetype;
@@ -19,7 +20,7 @@ export const FORGE_ARCHETYPE_OPTIONS: ForgeArchetypeOption[] = [
 
 const ARCHETYPE_LABEL_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [option.value, option.label]));
 
-const DARK_SPIDER_STYLE_MATCHES: ReadonlySet<Style> = new Set(["Ninja", "Hacker", "Military"]);
+const DARK_SPIDER_STYLE_MATCHES: ReadonlySet<string> = new Set(["Hacker", "Corporate", "Military"]);
 const DARK_SPIDER_VIBE_MATCHES = new Set(["Neon", "Plastic"]);
 const DARK_SPIDER_DISTRICT_MATCHES: ReadonlySet<District> = new Set([
   "Airaway",
@@ -35,7 +36,7 @@ export function getForgeArchetypeLabel(archetype: Archetype): string {
 export function resolveSecretFaction(prompts: CardPrompts): Faction | null {
   const darkSpiderMatch =
     prompts.rarity === "Apprentice" &&
-    (prompts.archetype === "D4rk $pider" || DARK_SPIDER_STYLE_MATCHES.has(prompts.style)) &&
+    (prompts.archetype === "D4rk $pider" || DARK_SPIDER_STYLE_MATCHES.has(remapStyleConnection(prompts.style))) &&
     DARK_SPIDER_VIBE_MATCHES.has(prompts.vibe) &&
     DARK_SPIDER_DISTRICT_MATCHES.has(prompts.district);
 

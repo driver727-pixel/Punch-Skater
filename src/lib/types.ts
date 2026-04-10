@@ -35,11 +35,8 @@ export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legend
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
 export type Style =
   | "Corporate"
-  | "Ninja"
   | "Punk Rocker"
   | "Ex Military"
-  | "Hacker"
-  | "Chef"
   | "Fascist"
   | "Street"
   | "Off-grid"

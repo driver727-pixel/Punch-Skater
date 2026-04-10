@@ -10,9 +10,10 @@ import { useTier } from "../context/TierContext";
 import { FORGE_ARCHETYPE_OPTIONS } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
+import { ACTIVE_STYLES } from "../lib/styles";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
-const STYLES: Style[] = ["Corporate", "Ninja", "Punk Rocker", "Ex Military", "Hacker", "Chef", "Fascist", "Street", "Off-grid", "Military", "Union", "Olympic"];
+const STYLES: Style[] = ACTIVE_STYLES;
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];

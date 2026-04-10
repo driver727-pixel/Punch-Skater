@@ -11,6 +11,7 @@ import type { CardPayload } from "../lib/types";
 import { loadCollection, saveCollection } from "../lib/storage";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
+import { normalizeCardPayload } from "../lib/styles";
 
 const MIGRATION_KEY_PREFIX = "skpd_migration_done_";
 
@@ -38,7 +39,7 @@ export function useCollection() {
 
     const colRef = collection(db, "users", uid, "cards");
     const unsub = onSnapshot(colRef, (snap) => {
-      setCards(snap.docs.map((d) => d.data() as CardPayload));
+      setCards(snap.docs.map((d) => normalizeCardPayload(d.data() as CardPayload)));
     });
     return unsub;
   }, [uid]);
@@ -50,10 +51,11 @@ export function useCollection() {
 
   // ── Card mutations ────────────────────────────────────────────────────────
   const addCard = useCallback(async (card: CardPayload): Promise<void> => {
+    const normalizedCard = normalizeCardPayload(card);
     if (uid) {
-      await setDoc(doc(db, "users", uid, "cards", card.id), card);
+      await setDoc(doc(db, "users", uid, "cards", normalizedCard.id), normalizedCard);
     } else {
-      setCards((prev) => (prev.some((c) => c.id === card.id) ? prev : [...prev, card]));
+      setCards((prev) => (prev.some((c) => c.id === normalizedCard.id) ? prev : [...prev, normalizedCard]));
     }
   }, [uid]);
 
@@ -66,10 +68,11 @@ export function useCollection() {
   }, [uid]);
 
   const updateCard = useCallback((card: CardPayload) => {
+    const normalizedCard = normalizeCardPayload(card);
     if (uid) {
-      setDoc(doc(db, "users", uid, "cards", card.id), card).catch(console.error);
+      setDoc(doc(db, "users", uid, "cards", normalizedCard.id), normalizedCard).catch(console.error);
     } else {
-      setCards((prev) => prev.map((c) => (c.id === card.id ? card : c)));
+      setCards((prev) => prev.map((c) => (c.id === normalizedCard.id ? normalizedCard : c)));
     }
   }, [uid]);
 
@@ -81,7 +84,7 @@ export function useCollection() {
     const local = loadCollection();
     if (local.length > 0) {
       const batch = writeBatch(db);
-      for (const card of local) {
+      for (const card of local.map(normalizeCardPayload)) {
         batch.set(doc(db, "users", uid, "cards", card.id), card);
       }
       await batch.commit();
