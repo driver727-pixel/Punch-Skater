@@ -279,8 +279,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-radius: 50%;
 }
 
-/* ===== Stamina Slider ===== */
-.stamina-slider {
+/* ===== Range Slider ===== */
+.range-slider {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -431,7 +431,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .stat-fill { height: 100%; border-radius: 1px; transition: width 0.3s; }
 .stat-value { font-size: 5px; color: var(--text); width: 8px; text-align: right; flex-shrink: 0; }
 
-/* ===== Inline Active Ability (under STA bar) ===== */
+/* ===== Inline Active Ability ===== */
 .stat-active {
   display: flex;
   align-items: flex-start;

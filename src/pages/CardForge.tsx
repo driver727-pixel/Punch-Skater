@@ -82,7 +82,7 @@ export function CardForge() {
   const { hasFaction, unlockFaction } = useFactionDiscovery();
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
-    vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88", stamina: 5,
+    vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88",
     gender: "Non-binary",
   });
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
@@ -611,20 +611,6 @@ export function CardForge() {
           </div>
 
           <div className="form-group">
-            <label>Stamina — {prompts.stamina}/10</label>
-            <input
-              type="range"
-              className="stamina-slider"
-              min={1}
-              max={10}
-              step={1}
-              value={prompts.stamina}
-              onChange={(e) => set("stamina", Number(e.target.value))}
-            />
-            <p className="form-hint">Higher stamina = heavier cargo capacity</p>
-          </div>
-
-          <div className="form-group">
             <label>Board Loadout</label>
             <p className="form-hint" style={{ marginBottom: 12 }}>
               Build your electric skateboard — your most important piece of gear.
@@ -666,7 +652,7 @@ export function CardForge() {
                   </label>
                   <input
                     type="range"
-                    className="stamina-slider"
+                    className="range-slider"
                     min={0}
                     max={1}
                     step={0.05}

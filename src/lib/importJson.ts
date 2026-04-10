@@ -37,9 +37,9 @@ const REQUIRED_KEYS: (keyof CardPayload)[] = [
   "createdAt",
 ];
 
-const REQUIRED_PROMPTS = ["archetype", "rarity", "style", "vibe", "district", "accentColor", "stamina"] as const;
+const REQUIRED_PROMPTS = ["archetype", "rarity", "style", "vibe", "district", "accentColor"] as const;
 const REQUIRED_IDENTITY = ["name", "crew", "manufacturer", "serialNumber"] as const;
-const REQUIRED_STATS = ["speed", "stealth", "tech", "grit", "rep", "stamina"] as const;
+const REQUIRED_STATS = ["speed", "stealth", "tech", "grit", "rep"] as const;
 const REQUIRED_VISUALS = ["helmetStyle", "boardStyle", "jacketStyle", "colorScheme", "accentColor", "storagePackStyle"] as const;
 
 // ── Per-card validation ───────────────────────────────────────────────────────
@@ -69,7 +69,6 @@ function validateCard(raw: unknown, index: number): { card: CardPayload | null; 
     for (const key of REQUIRED_PROMPTS) {
       if (p[key] === undefined) errors.push(`Missing prompts.${key}`);
     }
-    if (typeof p.stamina !== "number") errors.push("prompts.stamina must be a number");
   }
 
   // Identity sub-fields

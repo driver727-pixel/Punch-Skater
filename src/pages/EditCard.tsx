@@ -47,7 +47,6 @@ export function EditCard() {
         vibe: original.prompts.vibe as Vibe,
         district: original.prompts.district as District,
         accentColor: original.prompts.accentColor,
-        stamina: original.prompts.stamina,
         gender: (original.prompts.gender as Gender) ?? "Non-binary",
       });
       if (original.board) setBoardConfig(original.board);
@@ -177,16 +176,6 @@ export function EditCard() {
                 <button key={g} className={`pill${prompts.gender === g ? " selected" : ""}`} onClick={() => set("gender", g)}>{g}</button>
               ))}
             </div>
-          </div>
-
-          <div className="form-group">
-            <label>Stamina — {prompts.stamina}/10</label>
-            <input
-              type="range" min={1} max={10} step={1} value={prompts.stamina}
-              onChange={(e) => set("stamina", Number(e.target.value))}
-              className="stamina-slider"
-            />
-            <p className="form-hint">Higher stamina = heavier cargo capacity</p>
           </div>
 
           <div className="form-group">
