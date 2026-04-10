@@ -3249,7 +3249,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .board-builder__lock-row .psb {
   width: min(100%, 420px);
-  max-width: 100%;
   min-width: 0;
 }
 
@@ -3697,9 +3696,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   letter-spacing: 1px;
   font-weight: bold;
   text-transform: uppercase;
-  min-width: 0;
-  width: 100%;
-  text-align: left;
+  min-width: 80px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /*
@@ -3867,6 +3866,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .conveyor__header {
     padding: 6px 8px 4px;
+  }
+
+  .conveyor__selected-name {
+    min-width: 0;
+    width: 100%;
+    text-align: left;
   }
 }
 
