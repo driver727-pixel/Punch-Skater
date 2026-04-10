@@ -29,14 +29,19 @@ body {
 
 /* ===== Nav ===== */
 .nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 24px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
 }
 
 .nav-brand { display: flex; align-items: center; gap: 8px; }
@@ -91,7 +96,7 @@ body {
 /* ===== Layout ===== */
 .app { display: flex; flex-direction: column; min-height: 100vh; }
 .main { flex: 1; overflow-y: auto; }
-.page { padding: 24px; max-width: 960px; margin: 0 auto; }
+.page { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .page-title {
   font-size: 26px;
   color: var(--accent);
@@ -265,10 +270,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* ===== Stamina Slider ===== */
 .stamina-slider {
+  display: block;
   width: 100%;
+  max-width: 100%;
   accent-color: var(--accent);
   cursor: pointer;
   margin: 4px 0;
+  box-sizing: border-box;
 }
 
 /* ===== Card Forge Layout ===== */
@@ -3625,6 +3633,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 3px 10px 2px;
 }
 
@@ -3634,6 +3643,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
   color: var(--text-dim);
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .conveyor__selected-name {
@@ -3644,6 +3654,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
   min-width: 80px;
   text-align: right;
+  flex-shrink: 0;
 }
 
 /*

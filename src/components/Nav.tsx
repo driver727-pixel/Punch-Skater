@@ -108,6 +108,7 @@ export function Nav() {
     <>
       <div className="nav-container" ref={navContainerRef}>
         <nav className="nav">
+          <div className="nav-inner">
           <div className="nav-brand">
             <span className="nav-title">SKATER PUNK</span>
             <span className="nav-subtitle">DECK BUILDER</span>
@@ -175,6 +176,7 @@ export function Nav() {
             >
               {navOpen ? "✕" : "☰"}
             </button>
+          </div>
           </div>
         </nav>
 
