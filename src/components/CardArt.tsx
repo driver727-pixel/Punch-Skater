@@ -183,49 +183,69 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
   }
 
   if (rarity === "Punch Skater") {
-    // Asymmetric blood-spatter dots scattered around the border edges using frameSeed.
-    // Each dot's side, position, offset, radius and opacity are independently seeded so
-    // the distribution looks organic and hand-scattered rather than mirrored.
+    // Blood-spatter dots constrained to left/right side edges using frameSeed.
     const spatters = Array.from({ length: 24 }, (_, i) => {
-      const side = Math.floor(seededVal(frameSeed, i * 6)     * 4);
+      const side = seededVal(frameSeed, i * 6) > 0.5 ? 1 : 3;
       const pos  = seededVal(frameSeed, i * 6 + 1);
       const off  = seededVal(frameSeed, i * 6 + 2) * 16 + 1;
       const r    = 0.5 + seededVal(frameSeed, i * 6 + 3) * 3.2;
       const op   = 0.3  + seededVal(frameSeed, i * 6 + 4) * 0.6;
       const dark = seededVal(frameSeed, i * 6 + 5) > 0.55;
       let px: number, py: number;
-      if (side === 0)      { px = pos * w; py = off; }
-      else if (side === 1) { px = w - off; py = pos * h; }
-      else if (side === 2) { px = pos * w; py = h - off; }
-      else                 { px = off;     py = pos * h; }
+      if (side === 1) { px = w - off; py = pos * h; }
+      else            { px = off;     py = pos * h; }
       return { x: px, y: py, r, op, color: dark ? "#5a0808" : "#8b1a1a" };
     });
-    // Seeded bandage strips placed irregularly around the border — different
-    // counts per edge so the layout is never mirror-symmetric.
-    const bandages = Array.from({ length: 6 }, (_, i) => {
-      const side = Math.floor(seededVal(frameSeed, 200 + i * 5)     * 4);
-      const pos  = 0.1  + seededVal(frameSeed, 200 + i * 5 + 1) * 0.8;
-      const len  = 13   + seededVal(frameSeed, 200 + i * 5 + 2) * 12;
-      const ang  = (seededVal(frameSeed, 200 + i * 5 + 3) - 0.5)  * 60;
-      const thickness = 3.5 + seededVal(frameSeed, 200 + i * 5 + 4) * 2;
-      let cx: number, cy: number;
-      if (side === 0)      { cx = pos * w; cy = 5; }
-      else if (side === 1) { cx = w - 5;   cy = pos * h; }
-      else if (side === 2) { cx = pos * w; cy = h - 5; }
-      else                 { cx = 5;       cy = pos * h; }
-      return { cx, cy, len, ang, thickness };
+    // Two seeded, full-width wraps across top and bottom edges for the band-aid look.
+    const edgeWraps = [
+      {
+        cy: 1.8,
+        ang: (seededVal(frameSeed, 400) - 0.5) * 6,
+        thickness: 4.2 + seededVal(frameSeed, 401) * 1.8,
+        opacity: 0.46 + seededVal(frameSeed, 402) * 0.18,
+      },
+      {
+        cy: h - 1.8,
+        ang: (seededVal(frameSeed, 410) - 0.5) * 6,
+        thickness: 4.2 + seededVal(frameSeed, 411) * 1.8,
+        opacity: 0.46 + seededVal(frameSeed, 412) * 0.18,
+      },
+    ];
+    const frays = Array.from({ length: 8 }, (_, i) => {
+      const isTop = i < 4;
+      const side = i % 2 === 0 ? "left" : "right";
+      const baseY = isTop ? 2 : h - 2;
+      const x = side === "left"
+        ? -2 + seededVal(frameSeed, 500 + i * 3) * 5
+        : w - 3 + seededVal(frameSeed, 500 + i * 3) * 5;
+      const y = baseY + (seededVal(frameSeed, 501 + i * 3) - 0.5) * 3.5;
+      const len = 2.5 + seededVal(frameSeed, 502 + i * 3) * 3;
+      return { x, y, len };
     });
     return (
       <>
-        <rect x={2} y={2} width={w - 4} height={h - 4} rx={2}
-          fill="none" stroke="#c8b89a" strokeWidth="1.2" strokeOpacity="0.75" />
-        {bandages.map((b, i) => (
+        <rect x={0.6} y={0.6} width={w - 1.2} height={h - 1.2} rx={1.2}
+          fill="none" stroke="#c8b89a" strokeWidth="1.1" strokeOpacity="0.78" />
+        {edgeWraps.map((b, i) => (
           <rect key={i}
-            x={b.cx - b.len / 2} y={b.cy - b.thickness / 2}
-            width={b.len} height={b.thickness} rx={1}
-            fill="#e8d8b0" fillOpacity="0.5"
+            x={-1.5} y={b.cy - b.thickness / 2}
+            width={w + 3} height={b.thickness} rx={1}
+            fill="#e8d8b0" fillOpacity={b.opacity}
             stroke="#c8b89a" strokeWidth="0.5"
-            transform={`rotate(${b.ang},${b.cx},${b.cy})`} />
+            transform={`rotate(${b.ang},${w / 2},${b.cy})`} />
+        ))}
+        {frays.map((f, i) => (
+          <line
+            key={`fray-${i}`}
+            x1={f.x}
+            y1={f.y}
+            x2={f.x + (i % 2 === 0 ? -f.len : f.len)}
+            y2={f.y + (i < 4 ? -1 : 1)}
+            stroke="#d8c8a1"
+            strokeOpacity="0.45"
+            strokeWidth="0.5"
+            strokeLinecap="round"
+          />
         ))}
         {spatters.map((s, i) => (
           <circle key={i} cx={s.x} cy={s.y} r={s.r}

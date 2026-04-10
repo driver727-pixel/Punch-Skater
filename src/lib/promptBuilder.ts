@@ -58,10 +58,10 @@ const RARITY_MOOD: Record<string, string> = {
 
 const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
   "Punch Skater":
-    "a rough border of dirty gauze bandage strips haphazardly wrapped around the card edges — " +
-    "asymmetric and organic, with more strips clustered on one side than the other. " +
-    "Irregular dark-red dried-blood splatter dots scattered unevenly around the border, " +
-    "heavier on the top-left, sparser on the bottom-right. Fraying loose ends. Gritty street-medicine aesthetic.",
+    "an edge-to-edge rough frame hugging the very outer card boundary, like a playing card wrapped in dirty gauze bandages. " +
+    "Two main worn bandage wraps run across the full top edge and full bottom edge, visibly wrapping over the edges with frayed loose ends. " +
+    "Irregular dark-red dried-blood splatter dots appear along the left and right side edges only, with organic uneven spacing. " +
+    "Asymmetric, gritty street-medicine aesthetic.",
   Apprentice:
     "a clean double-line border with small stylised leaf flourishes at each corner",
   Master:
