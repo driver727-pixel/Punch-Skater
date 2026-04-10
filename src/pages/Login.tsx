@@ -163,8 +163,9 @@ export function Login() {
     <div className="page login-page">
       <div className="login-card">
         <div className="login-logo">⚡</div>
-        <h1 className="login-title">SKATER PUNK</h1>
+        <h1 className="login-title">Punch Skater</h1>
         <p className="login-subtitle">DECK BUILDER</p>
+        <p className="login-game-badge">A Sk8r Punk Game</p>
         {isAuthUnavailable && <p className="login-error">{firebaseUnavailableMessage}</p>}
 
         <div className="login-tabs">

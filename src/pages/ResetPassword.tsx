@@ -75,8 +75,9 @@ export function ResetPassword() {
     <div className="page login-page">
       <div className="login-card">
         <div className="login-logo">⚡</div>
-        <h1 className="login-title">SKATER PUNK</h1>
+        <h1 className="login-title">Punch Skater</h1>
         <p className="login-subtitle">DECK BUILDER</p>
+        <p className="login-game-badge">A Sk8r Punk Game</p>
 
         {step === "loading" && (
           <p className="login-hint">Verifying your reset link…</p>

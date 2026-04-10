@@ -1375,7 +1375,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .login-logo { font-size: 36px; margin-bottom: 4px; }
 .login-title { font-size: 22px; color: var(--accent); letter-spacing: 3px; font-weight: bold; }
-.login-subtitle { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 16px; }
+.login-subtitle { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 8px; }
+.login-game-badge {
+  font-size: 9px;
+  font-weight: bold;
+  color: #000;
+  display: inline-block;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--purple));
+  border-radius: 3px;
+  padding: 2px 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.4), 0 0 14px rgba(139, 92, 246, 0.3);
+  margin-bottom: 16px;
+}
 
 .login-tabs {
   display: flex;
