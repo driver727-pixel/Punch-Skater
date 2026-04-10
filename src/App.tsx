@@ -77,20 +77,7 @@ function App() {
               <div className="app">
                 <Nav />
                 {!isFirebaseConfigured && (
-                  <div
-                    style={{
-                      margin: "12px auto 0",
-                      maxWidth: "980px",
-                      padding: "12px 16px",
-                      border: "1px solid rgba(255, 68, 102, 0.45)",
-                      borderRadius: "12px",
-                      background: "rgba(255, 68, 102, 0.12)",
-                      color: "#ffd6de",
-                      textAlign: "center",
-                    }}
-                  >
-                    {firebaseUnavailableMessage}
-                  </div>
+                  <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                 )}
                 <main className="main">
                   <Suspense fallback={<div className="page-loading">Loading…</div>}>

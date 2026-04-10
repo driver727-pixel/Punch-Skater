@@ -18,20 +18,29 @@ const missingFirebaseConfig = Object.entries(firebaseConfig)
 export const firebaseUnavailableMessage = "Online sign-in and cloud sync are temporarily unavailable.";
 export const isFirebaseConfigured = missingFirebaseConfig.length === 0;
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
+const firebaseServices: {
+  app: FirebaseApp | null;
+  auth: Auth | null;
+  db: Firestore | null;
+} = (() => {
+  if (!isFirebaseConfigured) {
+    console.warn("[Firebase] Missing config:", missingFirebaseConfig.join(", "));
+    return { app: null, auth: null, db: null };
+  }
 
-if (isFirebaseConfigured) {
   try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    return {
+      app,
+      auth: getAuth(app),
+      db: getFirestore(app),
+    };
   } catch (error) {
     console.error("[Firebase] Initialization failed.", error);
+    return { app: null, auth: null, db: null };
   }
-} else {
-  console.warn("[Firebase] Missing config:", missingFirebaseConfig.join(", "));
-}
+})();
+
+const { app, auth, db } = firebaseServices;
 
 export { app, auth, db };
