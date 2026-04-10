@@ -24,14 +24,7 @@ let db: Firestore | null = null;
 
 if (isFirebaseConfigured) {
   try {
-    app = initializeApp({
-      apiKey: firebaseConfig.apiKey!,
-      authDomain: firebaseConfig.authDomain!,
-      projectId: firebaseConfig.projectId!,
-      storageBucket: firebaseConfig.storageBucket!,
-      messagingSenderId: firebaseConfig.messagingSenderId!,
-      appId: firebaseConfig.appId!,
-    });
+    app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
   } catch (error) {

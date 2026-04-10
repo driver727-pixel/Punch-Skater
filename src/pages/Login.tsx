@@ -376,7 +376,7 @@ export function Login() {
 }
 
 function friendlyError(msg: string): string {
-  if (msg.includes(firebaseUnavailableMessage)) return msg;
+  if (msg === firebaseUnavailableMessage) return msg;
   if (msg.includes("user-not-found") || msg.includes("wrong-password") || msg.includes("invalid-credential")) {
     return "Invalid email or password.";
   }
