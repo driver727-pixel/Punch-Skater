@@ -18,7 +18,6 @@ const STYLE_CLOTHING: Record<string, string> = {
   Corporate:      "a sleek corporate suit with a high-tech earpiece",
   Street:         "a street-style hoodie and cargo pants with graffiti patches",
   "Off-grid":     "rugged off-grid survivalist gear with utility belts",
-  Military:       "tactical military fatigues with body armour",
   Union:          "union worker overalls covered in badge patches",
   Olympic:        "a coordinated high-end athletic ensemble — matching top and bottoms in sponsor colours, performance fabric, logo patches, and a professional snowboard warm-up suit or full snowsuit",
   Ninja:          "all-black stealthy clothing with no visible logos or markings, dark form-fitting outfit",

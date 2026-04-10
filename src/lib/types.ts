@@ -40,7 +40,6 @@ export type Style =
   | "Fascist"
   | "Street"
   | "Off-grid"
-  | "Military"
   | "Union"
   | "Olympic";
 export type Gender = "Woman" | "Man" | "Non-binary";

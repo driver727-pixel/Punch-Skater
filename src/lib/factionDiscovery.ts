@@ -22,7 +22,7 @@ const ARCHETYPE_LABEL_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [opt
 
 // Legacy style cleanup keeps the Dark Spider reveal wired to the requested
 // successor styles after Ninja/Hacker were removed from the active style list.
-const DARK_SPIDER_STYLE_MATCHES: ReadonlySet<string> = new Set(["Corporate", "Military"]);
+const DARK_SPIDER_STYLE_MATCHES: ReadonlySet<string> = new Set(["Corporate", "Ex Military"]);
 const DARK_SPIDER_VIBE_MATCHES = new Set(["Neon", "Plastic"]);
 const DARK_SPIDER_DISTRICT_MATCHES: ReadonlySet<District> = new Set([
   "Airaway",

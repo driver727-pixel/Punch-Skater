@@ -2,8 +2,9 @@ import type { CardPayload, Style } from "./types";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
   Chef: "Union",
-  Ninja: "Military",
+  Ninja: "Ex Military",
   Hacker: "Corporate",
+  Military: "Ex Military",
 };
 
 export const ACTIVE_STYLES: Style[] = [
@@ -13,7 +14,6 @@ export const ACTIVE_STYLES: Style[] = [
   "Fascist",
   "Street",
   "Off-grid",
-  "Military",
   "Union",
   "Olympic",
 ];

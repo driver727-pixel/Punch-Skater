@@ -22,7 +22,7 @@ const HELMET_STYLES: Record<string, string[]> = {
   Corporate:      ["exec-visor",   "mirror-shield",  "corp-dome"],
   Street:         ["graffiti-lid", "open-face",       "half-shell"],
   "Off-grid":     ["salvage-dome", "rough-cut",       "wrapped-rag"],
-  Military:       ["tac-helmet",   "battle-dome",     "combat-visor"],
+
   Union:          ["hard-hat",     "bump-cap",        "safety-dome"],
   Olympic:        ["aero-helm",    "pro-visor",       "race-dome"],
   Ninja:          ["stealth-hood", "dark-cowl",       "shadow-wrap"],
@@ -45,7 +45,7 @@ const JACKET_STYLES: Record<string, string[]> = {
   Corporate:      ["trench-corp",  "suit-jacket",    "exec-coat"],
   Street:         ["bomber",       "hoodie-zip",     "denim-cut"],
   "Off-grid":     ["poncho",       "patched-vest",   "salvage-coat"],
-  Military:       ["field-jacket", "tac-vest",       "camo-coat"],
+
   Union:          ["work-vest",    "hi-vis-jacket",  "overalls"],
   Olympic:        ["tracksuit-top","sponsor-jacket", "pro-warmup"],
   Ninja:          ["stealth-wrap", "shadow-jacket",  "dark-cloak"],
