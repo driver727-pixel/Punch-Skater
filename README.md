@@ -25,10 +25,50 @@ Each generated card includes:
 - LocalStorage for persistence
 - No external UI libraries — pure CSS dark theme
 
+## API Key Security — Server-Side Proxy
+
+All AI image generation goes through a **server-side proxy** (`server/index.js`) so the
+Fal.ai API key (`FAL_KEY`) is **never exposed to the browser**.
+
+```
+Browser  →  POST /api/generate-image    →  proxy (adds Authorization: Key <FAL_KEY>)  →  fal.run
+Browser  →  POST /api/remove-background →  proxy (adds Authorization header)           →  fal.run
+```
+
+The proxy also enforces:
+- **Rate limiting** — 20 image requests per IP per minute (prevents credit drain)
+- **CORS** — restricted to the production domain and localhost
+
+### Environment variables
+
+Copy `.env.example` to `.env` and fill in the non-secret `VITE_*` client variables:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Where set | Purpose |
+|---|---|---|
+| `VITE_FIREBASE_*` | `.env` (client) | Firebase project config (public) |
+| `VITE_IMAGE_API_URL` | `.env` (client) | URL of the `/api/generate-image` proxy endpoint |
+| `VITE_CHECKOUT_API_URL` | `.env` (client) | URL of the `/api/create-checkout-session` endpoint |
+| `FAL_KEY` | Server env only | Fal.ai secret key — **never in `.env`** |
+| `STRIPE_SECRET_KEY` | Server env only | Stripe secret key — **never in `.env`** |
+
+> **Important:** `.env` is safe for `VITE_*` prefixed variables (bundled into the client
+> build and therefore public). **Secret server-side keys** (`FAL_KEY`, `STRIPE_SECRET_KEY`)
+> must be set directly as environment variables on the server host (e.g. Render dashboard)
+> and must **never** appear in `.env` or any committed file.
+
 ## Development
 
 ```bash
 npm install
+
+# Terminal 1 — start the proxy (requires FAL_KEY in your shell env)
+FAL_KEY=your_fal_ai_key_here npm start
+
+# Terminal 2 — start the Vite dev server (proxies /api/* to localhost:3001)
 npm run dev
 ```
 

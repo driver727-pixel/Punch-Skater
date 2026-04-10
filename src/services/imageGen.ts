@@ -15,7 +15,6 @@ import { hashSeedToInt } from "../utils/hash";
 // the proxy adds the FAL_KEY server-side so the key never reaches the client.
 
 const PROXY_API_URL = (import.meta.env.VITE_IMAGE_API_URL as string | undefined)?.trim();
-const API_URL = PROXY_API_URL || "https://fal.run/fal-ai/flux/dev";
 
 // Derive the background-removal URL from the generation URL by replacing the
 // last path segment.  e.g. "/api/generate-image" → "/api/remove-background".
@@ -116,7 +115,7 @@ export async function generateImage(
     enable_safety_checker: SAFETY_CHECKER,
   });
 
-  const response = await fetch(API_URL, { method: "POST", headers, body });
+  const response = await fetch(PROXY_API_URL, { method: "POST", headers, body });
 
   if (!response.ok) {
     let detail = "";
