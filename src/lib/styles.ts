@@ -2,7 +2,7 @@ import type { CardPayload, Style } from "./types";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
   Chef: "Union",
-  Ninja: "Hacker",
+  Ninja: "Military",
   Hacker: "Corporate",
 };
 
