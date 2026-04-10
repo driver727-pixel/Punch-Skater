@@ -20,11 +20,43 @@ async function downloadAssetImage(imageUrl: string, seedKey: string): Promise<vo
 
 // ── Prompt template ────────────────────────────────────────────────────────────
 
-function buildAssetPrompt(componentName: string, visualDescription: string): string {
+const ASSET_COMPONENT_DESCRIPTIONS: Record<string, string> = {
+  "deck-carbon-street-drop-through":
+    "A matte black carbon fiber street deck, showing subtle woven texture. Top-mount profile with standard mounting holes. High-detail finish.",
+  "deck-bamboo-at-top-mount":
+    "A light-grain bamboo all-terrain deck, showing clear wood grain texture and light grip tape. High concave shape for stability.",
+  "deck-off-grid-mountain-board":
+    "A rugged, thick composite mountainboard deck with aggressive concave. Foot straps visible. Textured grip.",
+  "deck-swallowtail-surf-skate":
+    "A wide, bamboo surf-skate deck with a distinctive notched swallowtail design. Single-fin graphical detail (e.g., stylized wave). Clear grip tape showing wood.",
+  "wheel-100mm-urethane-street":
+    "A set of four 100mm solid black polyurethane street wheels. Precision-machined metal core/hub visible. 80A durometer texture.",
+  "wheel-175mm-pneumatic-at":
+    "A single 175mm rugged pneumatic all-terrain rubber tire, complete with a deep knobby tread pattern and a 5-spoke black plastic hub.",
+  "wheel-120mm-cloud-sliders":
+    "A set of four 120mm translucent blue specialized 'cloud' wheels with an integrated honeycomb suspension pattern visible in the sidewall.",
+  "drivetrain-dual-belt-drive":
+    "A full rear-drive truck assembly: 300mm aluminum trucks, two large black electric motors (6374 size), dual timing belts, and motor mounts. Raw metal finish.",
+  "drivetrain-sealed-gear-drive":
+    "A high-performance rear-drive system: 300mm CNC-machined aluminum trucks with two large, fully enclosed matte black sealed gearboxes.",
+  "drivetrain-stealth-hub-motors":
+    "A rear-drive system: 300mm matte black street trucks where the electric motors are completely integrated and sealed inside the wheel cores (no visible gears/belts).",
+  "battery-slim-stealth-pack":
+    "A long, flat, ultra-low profile lithium-ion battery pack enclosure made of textured black plastic. Integrated charging port and power switch visible.",
+  "battery-double-stack-brick":
+    "A massive, thick, dual-layered (double-stack) block-style battery enclosure for high range. Rugged aluminum heat-sync fins visible on the surface.",
+  "battery-top-mounted-peli-case":
+    "A specific, yellow 'Pelican' case style (Peli-Case) top-mounted battery enclosure. Heavy-duty construction, rugged latches, and handle visible.",
+};
+
+function buildAssetPrompt(seedKey: string, fallbackDescription: string): string {
+  const componentDescription = ASSET_COMPONENT_DESCRIPTIONS[seedKey] ?? fallbackDescription;
   return (
-    `Macro product photography of an electric skateboard ${componentName} -- ${visualDescription} ` +
-    `Trading card art in the style of 1995 Fleer Ultra X-Men, isolated perfectly ` +
-    `in the center on a pure, solid #00FF00 green-screen background.`
+    `A high-fidelity product photograph of ${componentDescription} on a transparent background. ` +
+    `PERSPECTIVE: Isometric 45-degree downward camera angle (3/4 top-down view). ` +
+    `ORIENTATION: Object centered in frame, rotated exactly 45 degrees around the Y-axis, pointing toward the upper-right corner. ` +
+    `LIGHTING: Consistent soft studio lighting from the top-right, creating a subtle rim light and a soft contact shadow beneath the object. ` +
+    `STYLE: Realistic textures (metal, wood, rubber), sharp focus, no text or watermarks. No brand logo.`
   );
 }
 
@@ -42,7 +74,7 @@ function buildAssetItems(): AssetItem[] {
     category: model.category,
     label: `${model.icon} ${model.name}`,
     seedKey: model.seedKey,
-    prompt: buildAssetPrompt(model.name, model.description),
+    prompt: buildAssetPrompt(model.seedKey, model.description),
   }));
 }
 
