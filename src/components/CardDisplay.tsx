@@ -294,119 +294,100 @@ export function CardDisplay({
 
   return (
     <div className="card-full" style={{ borderColor: rarityColor, "--accent": accent } as React.CSSProperties}>
-      <div className="card-header">
-        <span className="card-serial">{card.identity.serialNumber}</span>
-        <span className="card-rarity" style={{ color: rarityColor }}>{card.prompts.rarity.toUpperCase()}</span>
-      </div>
-      {secretFactionCard && (
-        <div className="card-secret-brand">
-          <span>{card.discovery?.logoMark ?? card.discovery?.revealedFaction}</span>
+      {/* ── Top Half: Character image, name, and bio ── */}
+      <div className="card-half">
+        <div className="card-header">
+          <span className="card-serial">{card.identity.serialNumber}</span>
+          <span className="card-rarity" style={{ color: rarityColor }}>{card.prompts.rarity.toUpperCase()}</span>
         </div>
-      )}
+        {secretFactionCard && (
+          <div className="card-secret-brand">
+            <span>{card.discovery?.logoMark ?? card.discovery?.revealedFaction}</span>
+          </div>
+        )}
 
-      {/* Layer loading status badges */}
-      {(layerLoading?.background || layerLoading?.character || layerLoading?.frame) && (
-        <LayerStatusBadges loading={resolvedLayerLoading} />
-      )}
+        {/* Layer loading status badges */}
+        {(layerLoading?.background || layerLoading?.character || layerLoading?.frame) && (
+          <LayerStatusBadges loading={resolvedLayerLoading} />
+        )}
 
-      {/* Art area — layered composite takes priority over legacy single image */}
-      {hasLayeredImages || (layerLoading?.background || layerLoading?.character || layerLoading?.frame) ? (
-        <CompositeArt
-          card={card}
-          backgroundImageUrl={resolvedBackground}
-          characterImageUrl={resolvedCharacter}
-          frameImageUrl={resolvedFrame}
-          layerLoading={resolvedLayerLoading}
-          characterBlend={characterBlend}
-          fullSize
-          onLayerError={onLayerError}
-        />
-      ) : imageLoading ? (
-        <div className="card-art-skeleton card-art-skeleton--full">
-          <img src="/assets/loading.gif" alt="Loading…" className="card-art-loading-gif" />
-        </div>
-      ) : resolvedImageUrl ? (
-        <img
-          src={resolvedImageUrl}
-          alt={`${card.identity.name} illustration`}
-          className="card-art-image card-art-image--full"
-        />
-      ) : (
-        <CardArt card={card} width={200} height={140} />
-      )}
-
-      <div className="card-identity">
-        {onUpdate && editingName ? (
-          <input
-            className="card-edit-input"
-            value={localName}
-            onChange={(e) => setLocalName(e.target.value)}
-            onBlur={commitName}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); commitName(); }
-              if (e.key === "Escape") { setLocalName(card.identity.name); setEditingName(false); }
-            }}
-            autoFocus
-            maxLength={40}
+        {/* Art area — layered composite takes priority over legacy single image */}
+        {hasLayeredImages || (layerLoading?.background || layerLoading?.character || layerLoading?.frame) ? (
+          <CompositeArt
+            card={card}
+            backgroundImageUrl={resolvedBackground}
+            characterImageUrl={resolvedCharacter}
+            frameImageUrl={resolvedFrame}
+            layerLoading={resolvedLayerLoading}
+            characterBlend={characterBlend}
+            fullSize
+            onLayerError={onLayerError}
+          />
+        ) : imageLoading ? (
+          <div className="card-art-skeleton card-art-skeleton--full">
+            <img src="/assets/loading.gif" alt="Loading…" className="card-art-loading-gif" />
+          </div>
+        ) : resolvedImageUrl ? (
+          <img
+            src={resolvedImageUrl}
+            alt={`${card.identity.name} illustration`}
+            className="card-art-image card-art-image--full"
           />
         ) : (
-          <h2
-            className={`card-name${onUpdate ? " card-name--editable" : ""}`}
-            onClick={() => { if (onUpdate) { setEditingName(true); } }}
-            title={onUpdate ? "Click to rename" : undefined}
-          >
-            {localName}
-            {onUpdate && <span className="card-edit-hint">✎</span>}
-          </h2>
+          <CardArt card={card} width={200} height={140} />
         )}
-        {card.conlang?.catchphrase && (
-          <p className="card-catchphrase">
-            &ldquo;{card.conlang.catchphrase}&rdquo;
-          </p>
-        )}
-        <div className="card-subline">
-          <span>{displayedArchetype}</span>
-          <span className="sep">·</span>
-          <span>{card.prompts.style}</span>
-          <span className="sep">·</span>
-          <span>{card.prompts.vibe}</span>
-        </div>
-        <div className="card-subline">
-          <span style={{ opacity: 0.6 }}>{card.identity.manufacturer}</span>
-          <span className="sep">·</span>
-          <span style={{ opacity: 0.6 }}>{card.prompts.district}</span>
-          {card.conlang && (
-            <>
-              <span className="sep">·</span>
-              <span className="card-lang-badge" title={`Language: ${card.conlang.languageName}`}>
-                🌐 {card.conlang.languageCode.toUpperCase()}
-              </span>
-            </>
+
+        <div className="card-identity">
+          {onUpdate && editingName ? (
+            <input
+              className="card-edit-input"
+              value={localName}
+              onChange={(e) => setLocalName(e.target.value)}
+              onBlur={commitName}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); commitName(); }
+                if (e.key === "Escape") { setLocalName(card.identity.name); setEditingName(false); }
+              }}
+              autoFocus
+              maxLength={40}
+            />
+          ) : (
+            <h2
+              className={`card-name${onUpdate ? " card-name--editable" : ""}`}
+              onClick={() => { if (onUpdate) { setEditingName(true); } }}
+              title={onUpdate ? "Click to rename" : undefined}
+            >
+              {localName}
+              {onUpdate && <span className="card-edit-hint">✎</span>}
+            </h2>
           )}
-        </div>
-      </div>
-
-      <div className="card-personality">
-        {card.traits.personalityTags.map((t) => (
-          <span key={t} className="tag" style={{ borderColor: accent }}>{t}</span>
-        ))}
-      </div>
-
-      <div className="card-stats">
-        <StatBar label="SPD" value={card.stats.speed}   color={accent} />
-        <StatBar label="STL" value={card.stats.stealth} color={accent} />
-        <StatBar label="TCH" value={card.stats.tech}    color={accent} />
-        <StatBar label="GRT" value={card.stats.grit}    color={accent} />
-        <StatBar label="REP" value={card.stats.rep}     color={accent} />
-        <div className="stat-active">
-          <span className="stat-label">ACT</span>
-          <div className="stat-active-body">
-            <span className="stat-active-name">{card.traits.activeAbility.name}</span>
-            <p className={`stat-active-desc${hasConlangLore && !showEnglish ? " conlang-text" : ""}`}>
-              {activeAbilityDesc}
+          {card.conlang?.catchphrase && (
+            <p className="card-catchphrase">
+              &ldquo;{card.conlang.catchphrase}&rdquo;
             </p>
+          )}
+          <div className="card-subline">
+            <span>{displayedArchetype}</span>
+            <span className="sep">·</span>
+            <span>{card.prompts.style}</span>
+            <span className="sep">·</span>
+            <span>{card.prompts.vibe}</span>
+          </div>
+          <div className="card-subline">
+            <span style={{ opacity: 0.6 }}>{card.identity.manufacturer}</span>
+            <span className="sep">·</span>
+            <span style={{ opacity: 0.6 }}>{card.prompts.district}</span>
+            {card.conlang && (
+              <>
+                <span className="sep">·</span>
+                <span className="card-lang-badge" title={`Language: ${card.conlang.languageName}`}>
+                  🌐 {card.conlang.languageCode.toUpperCase()}
+                </span>
+              </>
+            )}
           </div>
         </div>
+
         <div className="stat-flavor">
           {onUpdate && !hasConlangLore && editingBio ? (
             <textarea
@@ -434,95 +415,121 @@ export function CardDisplay({
         </div>
       </div>
 
-      <div className="card-traits">
-        <div className="trait">
-          <span className="trait-label">PASSIVE</span>
-          <span className="trait-name">{card.traits.passiveTrait.name}</span>
-          <p className={`trait-desc${hasConlangLore && !showEnglish ? " conlang-text" : ""}`}>
-            {passiveTraitDesc}
-          </p>
-        </div>
-        {hasConlangLore && (
-          <div className="conlang-translate-row">
-            <button
-              className="btn-translate"
-              onClick={() => setShowEnglish((v) => !v)}
-              title={showEnglish ? "Show conlang lore" : "Translate to English"}
-            >
-              {showEnglish ? "🌐 Show Lore" : "🔤 Translate"}
-            </button>
+      {/* ── Bottom Half: Skateboard image and stats ── */}
+      <div className="card-half">
+        {/* Board loadout section — only shown if a board config is attached */}
+        {card.board && (
+          <div className="card-board">
+            <span className="card-board__label">BOARD</span>
+            <BoardComposite {...getBoardAssetUrls(card.board)} />
+            <div className="card-board__rows">
+              <BoardRow
+                icon={BOARD_TYPE_OPTIONS.find((o) => o.value === card.board!.boardType)?.icon ?? "🛹"}
+                label="TYPE"
+                value={card.board.boardType}
+              />
+              <BoardRow
+                icon={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.icon ?? "⚙️"}
+                label="DRIVE"
+                value={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.label ?? card.board.drivetrain}
+              />
+              <BoardRow
+                icon={WHEEL_OPTIONS.find((o) => o.value === card.board!.wheels)?.icon ?? "⚫"}
+                label="WHEELS"
+                value={card.board.wheels}
+              />
+              <BoardRow
+                icon={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.icon ?? "🔋"}
+                label="BATTERY"
+                value={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.label ?? card.board.battery}
+              />
+            </div>
+            {card.boardLoadout && (
+              <SkateboardStatsPanel loadout={card.boardLoadout} />
+            )}
           </div>
         )}
-      </div>
 
-      {/* Board loadout section — only shown if a board config is attached */}
-      {card.board && (
-        <div className="card-board">
-          <span className="card-board__label">BOARD</span>
-          <BoardComposite {...getBoardAssetUrls(card.board)} />
-          <div className="card-board__rows">
-            <BoardRow
-              icon={BOARD_TYPE_OPTIONS.find((o) => o.value === card.board!.boardType)?.icon ?? "🛹"}
-              label="TYPE"
-              value={card.board.boardType}
-            />
-            <BoardRow
-              icon={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.icon ?? "⚙️"}
-              label="DRIVE"
-              value={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.label ?? card.board.drivetrain}
-            />
-            <BoardRow
-              icon={WHEEL_OPTIONS.find((o) => o.value === card.board!.wheels)?.icon ?? "⚫"}
-              label="WHEELS"
-              value={card.board.wheels}
-            />
-            <BoardRow
-              icon={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.icon ?? "🔋"}
-              label="BATTERY"
-              value={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.label ?? card.board.battery}
-            />
+        <div className="card-stats">
+          <StatBar label="SPD" value={card.stats.speed}   color={accent} />
+          <StatBar label="STL" value={card.stats.stealth} color={accent} />
+          <StatBar label="TCH" value={card.stats.tech}    color={accent} />
+          <StatBar label="GRT" value={card.stats.grit}    color={accent} />
+          <StatBar label="REP" value={card.stats.rep}     color={accent} />
+          <div className="stat-active">
+            <span className="stat-label">ACT</span>
+            <div className="stat-active-body">
+              <span className="stat-active-name">{card.traits.activeAbility.name}</span>
+              <p className={`stat-active-desc${hasConlangLore && !showEnglish ? " conlang-text" : ""}`}>
+                {activeAbilityDesc}
+              </p>
+            </div>
           </div>
-          {card.boardLoadout && (
-            <SkateboardStatsPanel loadout={card.boardLoadout} />
+        </div>
+
+        <div className="card-personality">
+          {card.traits.personalityTags.map((t) => (
+            <span key={t} className="tag" style={{ borderColor: accent }}>{t}</span>
+          ))}
+        </div>
+
+        <div className="card-traits">
+          <div className="trait">
+            <span className="trait-label">PASSIVE</span>
+            <span className="trait-name">{card.traits.passiveTrait.name}</span>
+            <p className={`trait-desc${hasConlangLore && !showEnglish ? " conlang-text" : ""}`}>
+              {passiveTraitDesc}
+            </p>
+          </div>
+          {hasConlangLore && (
+            <div className="conlang-translate-row">
+              <button
+                className="btn-translate"
+                onClick={() => setShowEnglish((v) => !v)}
+                title={showEnglish ? "Show conlang lore" : "Translate to English"}
+              >
+                {showEnglish ? "🌐 Show Lore" : "🔤 Translate"}
+              </button>
+            </div>
           )}
         </div>
-      )}
 
-      <div className="card-actions">
-        {onSave && (
-          <button
-            className="btn-primary"
-            onClick={onSave}
-            disabled={isSaved}
-          >
-            {saveLabel ?? (isSaved ? "✓ Saved" : "Save to Collection")}
-          </button>
-        )}
-        {onEdit && (
-          <button className="btn-outline" onClick={onEdit}>
-            ✎ Edit
-          </button>
-        )}
-        {!hideToolButtons && (
-          <>
-            <button className="btn-outline btn-3d" onClick={() => setViewing3D(true)} title="View card in 3D">
-              ◈ 3D
+        <div className="card-actions">
+          {onSave && (
+            <button
+              className="btn-primary"
+              onClick={onSave}
+              disabled={isSaved}
+            >
+              {saveLabel ?? (isSaved ? "✓ Saved" : "Save to Collection")}
             </button>
-            <button className="btn-outline" onClick={() => setPrinting(true)} title="Print this card">
-              🖨 Print
+          )}
+          {onEdit && (
+            <button className="btn-outline" onClick={onEdit}>
+              ✎ Edit
             </button>
-          </>
-        )}
-        {showShare && (
-          <button className="btn-outline" onClick={() => setSharing(true)}>
-            ↗ Share
-          </button>
-        )}
-        {onRemove && (
-          <button className="btn-danger" onClick={onRemove}>
-            Remove
-          </button>
-        )}
+          )}
+          {!hideToolButtons && (
+            <>
+              <button className="btn-outline btn-3d" onClick={() => setViewing3D(true)} title="View card in 3D">
+                ◈ 3D
+              </button>
+              <button className="btn-outline" onClick={() => setPrinting(true)} title="Print this card">
+                🖨 Print
+              </button>
+            </>
+          )}
+          {showShare && (
+            <button className="btn-outline" onClick={() => setSharing(true)}>
+              ↗ Share
+            </button>
+          )}
+          {onRemove && (
+            <button className="btn-danger" onClick={onRemove}>
+              Remove
+            </button>
+          )}
+        </div>
       </div>
 
       {sharing && <ShareModal card={card} onClose={() => setSharing(false)} />}

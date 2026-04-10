@@ -3,6 +3,8 @@ import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
+import { BoardComposite } from "./BoardComposite";
+import { getBoardAssetUrls } from "../lib/boardBuilder";
 
 interface PrintModalProps {
   card: CardPayload;
@@ -92,7 +94,7 @@ export function PrintModal({
 
           {/* Print preview */}
           <div className="print-preview-area">
-            {/* Front preview */}
+            {/* Front preview — Character with name and bio */}
             <div className="print-preview-slot">
               <p className="print-preview-label">Front</p>
               <div className="print-card-wrap">
@@ -118,11 +120,15 @@ export function PrintModal({
                   ) : (
                     <CardArt card={card} width={189} height={264} />
                   )}
+                  <div className="print-front-overlay">
+                    <span className="print-front-name">{card.identity.name}</span>
+                    <p className="print-front-bio">&ldquo;{card.flavorText}&rdquo;</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Back preview */}
+            {/* Back preview — Skateboard with stats */}
             <div className="print-preview-slot">
               <p className="print-preview-label">Back</p>
               <div className="print-card-wrap">
@@ -136,9 +142,19 @@ export function PrintModal({
                     <span className="print-back-rarity">{card.prompts.rarity.toUpperCase()}</span>
                   </div>
 
-                  {characterImageUrl && (
-                    <img src={characterImageUrl} alt="portrait" className="print-back-portrait" />
+                  {card.board && (
+                    <div className="print-back-board">
+                      <BoardComposite {...getBoardAssetUrls(card.board)} />
+                    </div>
                   )}
+
+                  <div className="print-back-stats">
+                    <StatBar label="SPD" value={card.stats.speed}   color={accent} />
+                    <StatBar label="STL" value={card.stats.stealth} color={accent} />
+                    <StatBar label="TCH" value={card.stats.tech}    color={accent} />
+                    <StatBar label="GRT" value={card.stats.grit}    color={accent} />
+                    <StatBar label="REP" value={card.stats.rep}     color={accent} />
+                  </div>
 
                   <div className="print-back-info">
                     {[
@@ -156,14 +172,6 @@ export function PrintModal({
                     ))}
                   </div>
 
-                  <div className="print-back-stats">
-                    <StatBar label="SPD" value={card.stats.speed}   color={accent} />
-                    <StatBar label="STL" value={card.stats.stealth} color={accent} />
-                    <StatBar label="TCH" value={card.stats.tech}    color={accent} />
-                    <StatBar label="GRT" value={card.stats.grit}    color={accent} />
-                    <StatBar label="REP" value={card.stats.rep}     color={accent} />
-                  </div>
-
                   <div className="print-back-trait">
                     <span className="print-back-trait-label">
                       PASSIVE · {card.traits.passiveTrait.name}
@@ -177,8 +185,6 @@ export function PrintModal({
                     </span>
                     <p className="print-back-trait-desc">{card.traits.activeAbility.description}</p>
                   </div>
-
-                  <p className="print-back-flavor">&ldquo;{card.flavorText}&rdquo;</p>
 
                   <div className="print-back-tags">
                     {card.traits.personalityTags.map((t) => (
@@ -205,6 +211,7 @@ export function PrintModal({
 
       {/* ── Hidden printable area (only visible via @media print) ── */}
       <div className="print-only-area" aria-hidden>
+        {/* Front: Character with name and bio */}
         {side !== "back" && (
         <div className="print-only-card-wrap">
           <div className="print-only-bleed">
@@ -230,11 +237,16 @@ export function PrintModal({
               ) : (
                 <CardArt card={card} width={675} height={945} />
               )}
+              <div className="print-front-overlay">
+                <span className="print-front-name">{card.identity.name}</span>
+                <p className="print-front-bio">&ldquo;{card.flavorText}&rdquo;</p>
+              </div>
             </div>
           </div>
         </div>
         )}
 
+        {/* Back: Skateboard with stats */}
         {side !== "front" && (
         <div className="print-only-card-wrap">
           <div className="print-only-bleed">
@@ -248,25 +260,11 @@ export function PrintModal({
                 <span className="print-back-rarity">{card.prompts.rarity.toUpperCase()}</span>
               </div>
 
-              {characterImageUrl && (
-                <img src={characterImageUrl} alt="portrait" className="print-back-portrait" />
+              {card.board && (
+                <div className="print-back-board">
+                  <BoardComposite {...getBoardAssetUrls(card.board)} />
+                </div>
               )}
-
-              <div className="print-back-info">
-                {[
-                  ["ARCHETYPE", card.prompts.archetype],
-                  ["STYLE",     card.prompts.style],
-                  ["VIBE",      card.prompts.vibe],
-                  ["DISTRICT",  card.prompts.district],
-                  ["CREW",      card.identity.crew],
-                  ["MFR",       card.identity.manufacturer],
-                ].map(([label, value]) => (
-                  <div key={label} className="print-back-row">
-                    <span className="print-back-row-label">{label}</span>
-                    <span className="print-back-row-value">{value}</span>
-                  </div>
-                ))}
-              </div>
 
               <div className="print-back-stats">
                 <StatBar label="SPD" value={card.stats.speed}   color={accent} />
@@ -274,6 +272,22 @@ export function PrintModal({
                 <StatBar label="TCH" value={card.stats.tech}    color={accent} />
                 <StatBar label="GRT" value={card.stats.grit}    color={accent} />
                 <StatBar label="REP" value={card.stats.rep}     color={accent} />
+              </div>
+
+              <div className="print-back-info">
+                {[
+                  ["ARCHETYPE", getDisplayedArchetype(card)],
+                  ["STYLE",     card.prompts.style],
+                  ["VIBE",      card.prompts.vibe],
+                  ["DISTRICT",  card.prompts.district],
+                  ["CREW",      getDisplayedCrew(card)],
+                  ["MFR",       card.identity.manufacturer],
+                ].map(([label, value]) => (
+                  <div key={label} className="print-back-row">
+                    <span className="print-back-row-label">{label}</span>
+                    <span className="print-back-row-value">{value}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="print-back-trait">
@@ -289,8 +303,6 @@ export function PrintModal({
                 </span>
                 <p className="print-back-trait-desc">{card.traits.activeAbility.description}</p>
               </div>
-
-              <p className="print-back-flavor">&ldquo;{card.flavorText}&rdquo;</p>
 
               <div className="print-back-tags">
                 {card.traits.personalityTags.map((t) => (
