@@ -12,7 +12,7 @@ const firebaseConfig = {
 };
 
 const missingFirebaseConfig = Object.entries(firebaseConfig)
-  .filter(([, value]) => value == null)
+  .filter(([, value]) => value == null || value === '')
   .map(([key]) => key);
 
 export const firebaseUnavailableMessage = "Online sign-in and cloud sync are temporarily unavailable.";
