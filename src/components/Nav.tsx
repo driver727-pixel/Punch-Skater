@@ -32,7 +32,7 @@ export function Nav() {
 
   // Count pending incoming trades for the badge
   useEffect(() => {
-    if (!uid) { setPendingTrades(0); return; }
+    if (!uid || !db) { setPendingTrades(0); return; }
     const unsub = onSnapshot(
       query(
         collection(db, "trades"),

@@ -69,7 +69,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
 
   // ── Sync tier from Firestore when user logs in ────────────────────────────
   useEffect(() => {
-    if (!user) return;
+    if (!user || !db) return;
     getDoc(doc(db, "userProfiles", user.uid)).then((snap) => {
       if (!snap.exists()) return;
       const data = snap.data();
@@ -116,7 +116,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
       setEmailState(newEmail);
       saveEmail(newEmail);
     }
-    if (user) {
+    if (user && db) {
       setDoc(doc(db, "userProfiles", user.uid), { tier: level }, { merge: true })
         .catch(() => {/* non-fatal */});
     }
@@ -156,4 +156,3 @@ export function useTier() {
   if (!ctx) throw new Error("useTier must be used inside TierProvider");
   return ctx;
 }
-

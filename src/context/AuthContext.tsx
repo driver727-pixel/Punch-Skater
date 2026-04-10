@@ -23,7 +23,7 @@ import {
   type ApplicationVerifier,
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth, db, firebaseUnavailableMessage } from "../lib/firebase";
 import { syncReferralCredits } from "../services/referrals";
 import { isAdminEmail } from "../lib/adminUtils";
 
@@ -44,7 +44,12 @@ const googleProvider = new GoogleAuthProvider();
 
 export { RecaptchaVerifier };
 
+function createFirebaseUnavailableError() {
+  return new Error(firebaseUnavailableMessage);
+}
+
 async function upsertUserProfile(user: User) {
+  if (!db) return;
   const adminFields = isAdminEmail(user.email ?? "") ? { isAdmin: true } : {};
   await setDoc(
     doc(db, "userProfiles", user.uid),
@@ -64,6 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     // Handle redirect result from Google sign-in
     getRedirectResult(auth).then(async (result) => {
       if (result?.user) {
@@ -83,18 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    if (!auth) throw createFirebaseUnavailableError();
     await signInWithEmailAndPassword(auth, email, password);
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
+    if (!auth) throw createFirebaseUnavailableError();
     await createUserWithEmailAndPassword(auth, email, password);
   }, []);
 
   const signOut = useCallback(async () => {
+    if (!auth) return;
     await firebaseSignOut(auth);
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!auth) throw createFirebaseUnavailableError();
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err: unknown) {
@@ -112,11 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendPasswordReset = useCallback(async (email: string) => {
+    if (!auth) throw createFirebaseUnavailableError();
     await sendPasswordResetEmail(auth, email);
   }, []);
 
   const signInWithPhone = useCallback(
     async (phone: string, appVerifier: ApplicationVerifier) => {
+      if (!auth) throw createFirebaseUnavailableError();
       return signInWithPhoneNumber(auth, phone, appVerifier);
     },
     []

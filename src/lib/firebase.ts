@@ -1,6 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,6 +11,34 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const missingFirebaseConfig = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+export const firebaseUnavailableMessage = "Online sign-in and cloud sync are temporarily unavailable.";
+export const isFirebaseConfigured = missingFirebaseConfig.length === 0;
+
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+
+if (isFirebaseConfigured) {
+  try {
+    app = initializeApp({
+      apiKey: firebaseConfig.apiKey!,
+      authDomain: firebaseConfig.authDomain!,
+      projectId: firebaseConfig.projectId!,
+      storageBucket: firebaseConfig.storageBucket!,
+      messagingSenderId: firebaseConfig.messagingSenderId!,
+      appId: firebaseConfig.appId!,
+    });
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    console.error("[Firebase] Initialization failed.", error);
+  }
+} else {
+  console.warn("[Firebase] Missing config:", missingFirebaseConfig.join(", "));
+}
+
+export { app, auth, db };

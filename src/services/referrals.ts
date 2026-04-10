@@ -59,6 +59,7 @@ export async function claimReferral(
   referrerUid: string,
   visitorUid: string | null
 ): Promise<boolean> {
+  if (!db) return false;
   // Prevent self-referral
   if (visitorUid && visitorUid === referrerUid) return false;
 
@@ -88,6 +89,7 @@ export async function claimReferral(
  * Each unique claim = 1 earned generate credit.
  */
 export async function getReferralCreditCount(uid: string): Promise<number> {
+  if (!db) return 0;
   try {
     const q = query(
       collection(db, "referralClaims"),
@@ -110,4 +112,3 @@ export async function syncReferralCredits(uid: string): Promise<number> {
   localStorage.setItem(REFERRAL_CREDITS_KEY, String(count));
   return count;
 }
-

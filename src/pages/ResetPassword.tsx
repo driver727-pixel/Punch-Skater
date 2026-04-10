@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
-import { auth } from "../lib/firebase";
+import { auth, firebaseUnavailableMessage } from "../lib/firebase";
 
 type Step = "loading" | "form" | "success" | "invalid";
 
@@ -21,6 +21,11 @@ export function ResetPassword() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!auth) {
+      setError(firebaseUnavailableMessage);
+      setStep("invalid");
+      return;
+    }
     if (!oobCode) {
       setStep("invalid");
       return;
@@ -35,6 +40,10 @@ export function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) {
+      setError(firebaseUnavailableMessage);
+      return;
+    }
     if (password !== confirm) {
       setError("Passwords do not match.");
       return;
@@ -76,7 +85,7 @@ export function ResetPassword() {
         {step === "invalid" && (
           <>
             <p className="login-error" style={{ textAlign: "center", marginBottom: 16 }}>
-              This reset link is invalid or has expired.
+              {error || "This reset link is invalid or has expired."}
             </p>
             <button className="btn-primary btn-lg" onClick={() => navigate("/login")}>
               Back to Sign In

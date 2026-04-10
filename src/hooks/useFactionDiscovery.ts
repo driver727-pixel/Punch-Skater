@@ -18,7 +18,7 @@ export function useFactionDiscovery() {
   const [discoveredFactions, setDiscoveredFactions] = useState<Faction[]>([]);
 
   useEffect(() => {
-    if (!uid) {
+    if (!uid || !db) {
       setDiscoveredFactions(dedupeFactions(loadFactionDiscoveries()));
       return;
     }
@@ -49,7 +49,7 @@ export function useFactionDiscovery() {
       const next = dedupeFactions([...prev, faction]);
       saveFactionDiscoveries(next);
 
-      if (uid) {
+      if (uid && db) {
         setDoc(doc(db, "userProfiles", uid), { discoveredFactions: next }, { merge: true }).catch(console.error);
       }
 

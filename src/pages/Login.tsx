@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth, RecaptchaVerifier } from "../context/AuthContext";
-import { auth } from "../lib/firebase";
+import { auth, firebaseUnavailableMessage } from "../lib/firebase";
 import type { ConfirmationResult } from "firebase/auth";
 
 export function Login() {
@@ -9,6 +9,7 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string })?.from ?? "/";
+  const isAuthUnavailable = !auth;
 
   const [mode, setMode] = useState<"signin" | "signup" | "phone">("signin");
   const [email, setEmail] = useState("");
@@ -116,6 +117,10 @@ export function Login() {
   const handleSendSms = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recaptchaContainerRef.current) return;
+    if (!auth) {
+      setError(firebaseUnavailableMessage);
+      return;
+    }
     setError("");
     setLoading(true);
     try {
@@ -160,6 +165,7 @@ export function Login() {
         <div className="login-logo">⚡</div>
         <h1 className="login-title">SKATER PUNK</h1>
         <p className="login-subtitle">DECK BUILDER</p>
+        {isAuthUnavailable && <p className="login-error">{firebaseUnavailableMessage}</p>}
 
         <div className="login-tabs">
           <button
@@ -370,6 +376,7 @@ export function Login() {
 }
 
 function friendlyError(msg: string): string {
+  if (msg.includes(firebaseUnavailableMessage)) return msg;
   if (msg.includes("user-not-found") || msg.includes("wrong-password") || msg.includes("invalid-credential")) {
     return "Invalid email or password.";
   }
@@ -383,4 +390,3 @@ function friendlyError(msg: string): string {
   if (msg.includes("too-many-requests")) return "Too many attempts. Please try again later.";
   return "Something went wrong. Please try again.";
 }
-
