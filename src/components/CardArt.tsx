@@ -798,25 +798,6 @@ function CharacterBody({ cx, cy, accentColor, style }: {
       </>
     );
   }
-  if (style === "Military") {
-    return (
-      <>
-        <rect x={cx - 12} y={cy - 10} width={24} height={30} rx={3}
-          fill="#3a4428" stroke="#5a6438" strokeWidth="1" />
-        <rect x={cx - 10} y={cy - 6} width={6} height={5} rx={1} fill="#2a3018" fillOpacity="0.6" />
-        <rect x={cx + 4}  y={cy}     width={7} height={4} rx={1} fill="#4a5430" fillOpacity="0.5" />
-        <rect x={cx - 8}  y={cy + 8} width={8} height={4} rx={1} fill="#2a3018" fillOpacity="0.55" />
-        <rect x={cx - 3} y={cy - 6} width={6} height={8} rx={1}
-          fill="#ccccaa" fillOpacity="0.4" stroke="#aaaaaa" strokeWidth="0.5" />
-        <line x1={cx} y1={cy - 10} x2={cx} y2={cy - 6}
-          stroke="#aaaaaa" strokeWidth="0.5" strokeOpacity="0.5" />
-        <rect x={cx - 16} y={cy - 10} width={8} height={6} rx={2}
-          fill="#3a4428" stroke={accentColor} strokeWidth="0.7" />
-        <rect x={cx + 8}  y={cy - 10} width={8} height={6} rx={2}
-          fill="#3a4428" stroke={accentColor} strokeWidth="0.7" />
-      </>
-    );
-  }
   if (style === "Union") {
     return (
       <>
