@@ -32,7 +32,7 @@ const ASSET_COMPONENT_DESCRIPTIONS: Record<string, string> = {
   "wheel-100mm-urethane-street":
     "A set of four 100mm solid black polyurethane street wheels. Precision-machined metal core/hub visible. 80A durometer texture.",
   "wheel-175mm-pneumatic-at":
-    "A single 175mm rugged pneumatic all-terrain rubber tire, complete with a deep knobby tread pattern and a 5-spoke black plastic hub.",
+    "A set of four 175mm rugged pneumatic all-terrain rubber wheels, each with a deep knobby tread pattern and a 5-spoke black plastic hub.",
   "wheel-120mm-cloud-sliders":
     "A set of four 120mm translucent blue specialized 'cloud' wheels with an integrated honeycomb suspension pattern visible in the sidewall.",
   "drivetrain-dual-belt-drive":
