@@ -95,8 +95,16 @@ body {
 
 /* ===== Layout ===== */
 .app { display: flex; flex-direction: column; min-height: 100vh; }
-.main { flex: 1; overflow-y: auto; }
-.page { padding: 24px; max-width: 960px; margin: 0 auto; }
+.main {
+  flex: 1;
+  overflow-y: auto;
+}
+.page {
+  width: 100%;
+  max-width: min(1200px, 95vw);
+  padding: 24px 18px;
+  margin: 0 auto;
+}
 .page-title {
   font-size: 26px;
   color: var(--accent);
@@ -136,6 +144,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* Forge-specific primary CTA */
 .btn-forge {
+  display: block;
+  width: min(100%, 420px);
+  margin: 16px auto 0;
   padding: 14px 28px;
   font-size: 16px;
   font-weight: 900;
@@ -280,13 +291,24 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 /* ===== Card Forge Layout ===== */
-.forge-layout { display: grid; grid-template-columns: 1fr 420px; gap: 20px; }
-@media (max-width: 800px) { .forge-layout { grid-template-columns: 1fr; } }
+.forge-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 1180px) {
+  .forge-layout {
+    grid-template-columns: 1fr;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+}
 
 .forge-form {
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 18px;
+  padding: 16px;
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
@@ -301,6 +323,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   position: sticky;
   top: 24px;
+}
+
+.forge-form .pill-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.forge-form .pill {
+  width: 100%;
+  padding: 6px 10px;
+  text-align: center;
 }
 
 /* Card wrapper — centers the zoomed card inside the preview panel */
@@ -3040,6 +3074,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
+  width: 100%;
 }
 
 /* Step tabs row */
@@ -3203,10 +3238,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 14px;
   padding: 10px 14px;
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.25);
+}
+
+.board-builder__lock-row .psb {
+  width: min(100%, 420px);
+  min-width: 0;
 }
 
 /* Confirmation badge shown after successful lock-in */
@@ -3633,6 +3674,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 3px 10px 2px;
 }
@@ -3665,7 +3707,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .conveyor__track {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 8px 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -3716,7 +3758,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 6px 6px;
+  padding: 6px 5px;
   background: var(--bg3);
   border: 2px solid var(--border);
   border-radius: 4px;
@@ -3791,6 +3833,50 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--accent);
   letter-spacing: 0.3px;
   line-height: 1.3;
+}
+
+@media (max-width: 1180px) {
+  .forge-preview {
+    position: static;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --conveyor-item-size: 72px;
+  }
+
+  .page {
+    padding: 20px 12px;
+  }
+
+  .forge-form,
+  .forge-preview {
+    padding: 14px;
+  }
+
+  .forge-form .pill-group {
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  }
+
+  .conveyor__header {
+    padding: 6px 8px 4px;
+  }
+
+  .conveyor__selected-name {
+    min-width: 0;
+    width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .forge-form .pill-group {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===== Asset Generator (/dev/asset-generator) ===== */
