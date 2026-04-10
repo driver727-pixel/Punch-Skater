@@ -21,7 +21,7 @@
  * provided layer has fired its onLoad event.
  */
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface BoardCompositeProps {
   /** URL of the deck layer PNG (z-index 30). */
@@ -51,22 +51,36 @@ export function BoardComposite({
   // provided URL has fired onLoad — even when URLs change between renders.
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
 
-  if ([deckUrl, drivetrainUrl, wheelsUrl, batteryUrl].every((u) => !u)) return null;
-
-  const batteryZIndex = batteryIsTopMounted ? 40 : 25;
-
-  const providedUrls = [deckUrl, drivetrainUrl, wheelsUrl, batteryUrl].filter(
-    (u): u is string => !!u,
+  // Memoised list of currently-provided (non-null) URLs.
+  const providedUrls = useMemo(
+    () => [deckUrl, drivetrainUrl, wheelsUrl, batteryUrl].filter((u): u is string => !!u),
+    [deckUrl, drivetrainUrl, wheelsUrl, batteryUrl],
   );
-  const isLoading = providedUrls.some((url) => !loadedUrls.has(url));
 
-  const handleLoad = (url: string) =>
+  // When a URL is removed or replaced, drop stale entries from the loaded Set
+  // so the overlay correctly reappears for any new or changed layer.
+  useEffect(() => {
+    const current = new Set(providedUrls);
+    setLoadedUrls((prev) => {
+      const filtered = new Set([...prev].filter((url) => current.has(url)));
+      return filtered.size === prev.size ? prev : filtered;
+    });
+  }, [providedUrls]);
+
+  // Stable callback — does not close over any changing value.
+  const handleLoad = useCallback((url: string) => {
     setLoadedUrls((prev) => {
       if (prev.has(url)) return prev;
       const next = new Set(prev);
       next.add(url);
       return next;
     });
+  }, []);
+
+  if (providedUrls.length === 0) return null;
+
+  const batteryZIndex = batteryIsTopMounted ? 40 : 25;
+  const isLoading = providedUrls.some((url) => !loadedUrls.has(url));
 
   return (
     <div className={`board-composite${className ? ` ${className}` : ""}`}>
