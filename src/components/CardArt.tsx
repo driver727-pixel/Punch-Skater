@@ -211,15 +211,23 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
         opacity: 0.46 + seededVal(frameSeed, 412) * 0.18,
       },
     ];
+    const FRAY_LEFT_BASE_X = -2;
+    const FRAY_RIGHT_BASE_X = w - 3;
+    const FRAY_X_JITTER = 5;
+    const FRAY_TOP_BASE_Y = 2;
+    const FRAY_BOTTOM_BASE_Y = h - 2;
+    const FRAY_Y_JITTER = 3.5;
+    const FRAY_MIN_LENGTH = 2.5;
+    const FRAY_LENGTH_RANGE = 3;
     const frays = Array.from({ length: 8 }, (_, i) => {
       const isTop = i < 4;
       const side = i % 2 === 0 ? "left" : "right";
-      const baseY = isTop ? 2 : h - 2;
+      const baseY = isTop ? FRAY_TOP_BASE_Y : FRAY_BOTTOM_BASE_Y;
       const x = side === "left"
-        ? -2 + seededVal(frameSeed, 500 + i * 3) * 5
-        : w - 3 + seededVal(frameSeed, 500 + i * 3) * 5;
-      const y = baseY + (seededVal(frameSeed, 501 + i * 3) - 0.5) * 3.5;
-      const len = 2.5 + seededVal(frameSeed, 502 + i * 3) * 3;
+        ? FRAY_LEFT_BASE_X + seededVal(frameSeed, 500 + i * 3) * FRAY_X_JITTER
+        : FRAY_RIGHT_BASE_X + seededVal(frameSeed, 500 + i * 3) * FRAY_X_JITTER;
+      const y = baseY + (seededVal(frameSeed, 501 + i * 3) - 0.5) * FRAY_Y_JITTER;
+      const len = FRAY_MIN_LENGTH + seededVal(frameSeed, 502 + i * 3) * FRAY_LENGTH_RANGE;
       return { x, y, len };
     });
     return (
