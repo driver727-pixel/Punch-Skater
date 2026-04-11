@@ -197,18 +197,20 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
       return { x: px, y: py, r, op, color: dark ? "#5a0808" : "#8b1a1a" };
     });
     // Two seeded, full-width wraps across top and bottom edges for the band-aid look.
+    // Opacity is high (0.92–1.0) so the bandage obscures the background like a real
+    // bandage wrapped around a playing card.
     const edgeWraps = [
       {
         cy: 1.8,
         ang: (seededVal(frameSeed, 400) - 0.5) * 6,
         thickness: 4.2 + seededVal(frameSeed, 401) * 1.8,
-        opacity: 0.46 + seededVal(frameSeed, 402) * 0.18,
+        opacity: 0.92 + seededVal(frameSeed, 402) * 0.08,
       },
       {
         cy: h - 1.8,
         ang: (seededVal(frameSeed, 410) - 0.5) * 6,
         thickness: 4.2 + seededVal(frameSeed, 411) * 1.8,
-        opacity: 0.46 + seededVal(frameSeed, 412) * 0.18,
+        opacity: 0.92 + seededVal(frameSeed, 412) * 0.08,
       },
     ];
     const FRAY_LEFT_BASE_X = -2;
