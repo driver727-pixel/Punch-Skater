@@ -97,9 +97,14 @@ export function Nav() {
         </NavLink>
       )}
       {isAdmin && (
-        <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={onClick}>
-          ⚙ Admin
-        </NavLink>
+        <>
+          <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={onClick}>
+            ⚙ Admin
+          </NavLink>
+          <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={onClick}>
+            🎨 Assets
+          </NavLink>
+        </>
       )}
     </>
   );
