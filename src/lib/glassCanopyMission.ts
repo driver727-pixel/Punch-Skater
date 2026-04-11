@@ -1,4 +1,5 @@
 import { calculateBoardStats, getBoardStatBonuses } from "./boardBuilder";
+import type { CardPayload } from "./types";
 import type { BoardConfig, BoardLoadout, WheelType } from "./boardBuilder";
 
 type MissionCheckStat = "speed" | "acceleration" | "stealth" | "batteryRemaining";
@@ -123,6 +124,13 @@ export interface MissionResult {
   playerStats: MissionPlayerStats;
   inventory: MissionItem[];
   missionLog: string[];
+}
+
+export interface GlassCanopyMissionPreview {
+  playerDeck: MissionPlayerDeck;
+  runnerCard: CardPayload | null;
+  runnerLoadout: BoardLoadout | null;
+  stats: MissionPlayerStats;
 }
 
 interface MissionState {
@@ -397,4 +405,72 @@ const GLASS_CANOPY_MISSION: MissionDefinition = {
 
 export function runGlassCanopyMission(playerDeck: MissionPlayerDeck): MissionResult {
   return runMission(GLASS_CANOPY_MISSION, playerDeck);
+}
+
+function roundPreviewStat(value: number): number {
+  return Number(value.toFixed(1));
+}
+
+function resolveRunnerCard(cards: CardPayload[], runnerCardId?: string): CardPayload | null {
+  if (cards.length === 0) return null;
+  return cards.find((card) => card.id === runnerCardId) ?? cards[0];
+}
+
+export function buildGlassCanopyMissionPreview(
+  cards: CardPayload[],
+  runnerCardId?: string,
+): GlassCanopyMissionPreview {
+  const runnerCard = resolveRunnerCard(cards, runnerCardId);
+  const runnerBoard = runnerCard?.board;
+  const runnerLoadout = runnerCard?.boardLoadout ?? (runnerBoard ? calculateBoardStats(runnerBoard) : null);
+  const runnerBoardBonuses = runnerBoard ? getBoardStatBonuses(runnerBoard) : {};
+
+  if (!runnerCard) {
+    return {
+      playerDeck: {},
+      runnerCard: null,
+      runnerLoadout: null,
+      stats: calculateStartingStats({}),
+    };
+  }
+
+  const deckSize = cards.length || 1;
+  const totalStats = cards.reduce(
+    (acc, card) => {
+      acc.speed += card.stats.speed;
+      acc.stealth += card.stats.stealth;
+      acc.tech += card.stats.tech;
+      acc.grit += card.stats.grit;
+      acc.rep += card.stats.rep;
+      return acc;
+    },
+    { speed: 0, stealth: 0, tech: 0, grit: 0, rep: 0 },
+  );
+
+  const averageSpeed = totalStats.speed / deckSize;
+  const averageStealth = totalStats.stealth / deckSize;
+  const averageTech = totalStats.tech / deckSize;
+  const averageGrit = totalStats.grit / deckSize;
+  const averageRep = totalStats.rep / deckSize;
+
+  const playerDeck: MissionPlayerDeck = {
+    board: runnerBoard,
+    boardLoadout: runnerLoadout ?? undefined,
+    wheelType: runnerBoard?.wheels,
+    stats: {
+      speed: roundPreviewStat(averageSpeed * 0.6 + (runnerLoadout?.speed ?? 0) * 0.7 + averageRep * 0.15),
+      acceleration: roundPreviewStat(averageTech * 0.45 + averageGrit * 0.25 + (runnerLoadout?.acceleration ?? 0) * 0.7),
+      stealth: roundPreviewStat(averageStealth * 0.75 + averageTech * 0.15 + (runnerBoardBonuses.stealth ?? 0)),
+      batteryRemaining: roundPreviewStat((runnerLoadout?.range ?? 0) + averageTech + averageGrit / 2 + deckSize),
+      range: roundPreviewStat((runnerLoadout?.range ?? 0) + averageTech + averageGrit / 2 + deckSize),
+      health: roundPreviewStat(100 + averageGrit * 3),
+    },
+  };
+
+  return {
+    playerDeck,
+    runnerCard,
+    runnerLoadout,
+    stats: calculateStartingStats(playerDeck),
+  };
 }

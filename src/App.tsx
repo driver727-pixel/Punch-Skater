@@ -34,6 +34,7 @@ function ThemeApplier() {
 const CardForge  = lazy(() => import("./pages/CardForge").then(m => ({ default: m.CardForge })));
 const Collection = lazy(() => import("./pages/Collection").then(m => ({ default: m.Collection })));
 const DeckBuilder = lazy(() => import("./pages/DeckBuilder").then(m => ({ default: m.DeckBuilder })));
+const Mission = lazy(() => import("./pages/Mission").then(m => ({ default: m.Mission })));
 const EditCard   = lazy(() => import("./pages/EditCard").then(m => ({ default: m.EditCard })));
 const Trades     = lazy(() => import("./pages/Trades").then(m => ({ default: m.Trades })));
 const Login      = lazy(() => import("./pages/Login").then(m => ({ default: m.Login })));
@@ -99,6 +100,9 @@ function App() {
                       } />
                       <Route path="/decks" element={
                         <ProtectedRoute><DeckBuilder /></ProtectedRoute>
+                      } />
+                      <Route path="/mission" element={
+                        <ProtectedRoute><Mission /></ProtectedRoute>
                       } />
                       <Route path="/edit/:cardId" element={
                         <ProtectedRoute><EditCard /></ProtectedRoute>

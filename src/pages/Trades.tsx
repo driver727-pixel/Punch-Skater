@@ -67,13 +67,42 @@ export function Trades() {
     setActionLoading(trade.id);
     setError("");
     try {
+      const tradeRef = doc(db, "trades", trade.id);
+      const fromCardRef = doc(db, "users", trade.fromUid, "cards", trade.offeredCard.id);
+      const toCardRef = doc(db, "users", trade.toUid, "cards", trade.offeredCard.id);
+
       await runTransaction(db, async (tx) => {
-        // Remove card from offerer's collection
-        tx.delete(doc(db, "users", trade.fromUid, "cards", trade.offeredCard.id));
-        // Add card to recipient's (current user's) collection
-        tx.set(doc(db, "users", trade.toUid, "cards", trade.offeredCard.id), trade.offeredCard);
-        // Mark trade accepted
-        tx.update(doc(db, "trades", trade.id), {
+        const [tradeSnap, fromCardSnap, toCardSnap] = await Promise.all([
+          tx.get(tradeRef),
+          tx.get(fromCardRef),
+          tx.get(toCardRef),
+        ]);
+
+        if (!tradeSnap.exists()) {
+          throw new Error("This offer no longer exists.");
+        }
+
+        const currentTrade = tradeSnap.data() as TradePayload;
+
+        if (currentTrade.status !== "pending") {
+          throw new Error("This offer is no longer pending.");
+        }
+
+        if (currentTrade.toUid !== user.uid) {
+          throw new Error("This offer is no longer assigned to your account.");
+        }
+
+        if (!fromCardSnap.exists()) {
+          throw new Error("The sender no longer owns this card.");
+        }
+
+        if (toCardSnap.exists()) {
+          throw new Error("You already have this card in your collection.");
+        }
+
+        tx.delete(fromCardRef);
+        tx.set(toCardRef, currentTrade.offeredCard);
+        tx.update(tradeRef, {
           status: "accepted",
           updatedAt: new Date().toISOString(),
         });
@@ -129,10 +158,10 @@ export function Trades() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Trades</h1>
-          <p className="page-sub">Offer and manage card trades with other players.</p>
+          <p className="page-sub">Send, receive, and manage direct card offers with other players.</p>
         </div>
         <button className="btn-primary" onClick={() => setShowModal(true)} disabled={cards.length === 0}>
-          + New Trade Offer
+          + New Card Offer
         </button>
       </div>
 
@@ -164,7 +193,7 @@ export function Trades() {
           {inbox.length === 0 ? (
             <div className="empty-state">
               <span className="empty-icon">📬</span>
-              <p>No pending trade offers.</p>
+              <p>No pending incoming offers.</p>
             </div>
           ) : (
             <div className="trades-list">
@@ -244,8 +273,8 @@ export function Trades() {
         <>
           <div className="market-header">
             <p className="market-desc">
-              Live feed of cards actively offered for trade across the community.
-              See something you want? Reach out to the trader directly.
+              Live feed of cards actively offered across the community.
+              To claim one, contact the player and ask them to send the offer to your account email.
             </p>
           </div>
           {market.length === 0 ? (

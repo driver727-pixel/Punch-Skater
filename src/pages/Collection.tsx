@@ -41,13 +41,15 @@ export function Collection() {
     for (const card of incoming) addCard(card);
   };
 
-  const handleCardUpdate = (updates: { name?: string; flavorText?: string }) => {
+  const handleCardUpdate = (updates: { name?: string; age?: string; flavorText?: string }) => {
     if (!selected) return;
     const updated: CardPayload = {
       ...selected,
-      identity: updates.name !== undefined
-        ? { ...selected.identity, name: updates.name }
-        : selected.identity,
+      identity: {
+        ...selected.identity,
+        ...(updates.name !== undefined ? { name: updates.name } : {}),
+        ...(updates.age !== undefined ? { age: updates.age } : {}),
+      },
       flavorText: updates.flavorText ?? selected.flavorText,
     };
     updateCard(updated);
@@ -193,7 +195,7 @@ export function Collection() {
                   className="btn-outline btn-sm"
                   onClick={() => setTradeTarget(selected)}
                 >
-                  🤝 Offer Trade
+                  🤝 Send Offer
                 </button>
                 {tierData.canEditDecks ? (
                   <button

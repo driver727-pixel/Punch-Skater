@@ -7,7 +7,7 @@ import {
   doc,
   setDoc,
 } from "firebase/firestore";
-import type { CardPayload } from "../lib/types";
+import type { CardPayload, TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 import { CardArt } from "./CardArt";
@@ -32,10 +32,22 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
     const email = recipientEmail.trim().toLowerCase();
     if (!email || !email.includes("@")) { setError("Enter a valid recipient email."); return; }
     if (email === (user.email ?? "").toLowerCase()) { setError("You can't trade with yourself."); return; }
+    if (!cards.some((card) => card.id === selectedCard.id)) { setError("That card is no longer in your collection."); return; }
 
     setLoading(true);
     setError("");
     try {
+      const existingOffersSnap = await getDocs(
+        query(collection(db, "trades"), where("fromUid", "==", user.uid), where("status", "==", "pending"))
+      );
+      const alreadyOffered = existingOffersSnap.docs
+        .map((docSnap) => docSnap.data() as TradePayload)
+        .some((trade) => (trade.offeredCardId ?? trade.offeredCard?.id) === selectedCard.id);
+      if (alreadyOffered) {
+        setError("That card already has a pending offer.");
+        return;
+      }
+
       // Look up recipient by email
       const snap = await getDocs(
         query(collection(db, "userProfiles"), where("email", "==", email))
@@ -52,6 +64,7 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
         fromEmail: user.email ?? "",
         toUid: recipientProfile.uid,
         toEmail: recipientProfile.email,
+        offeredCardId: selectedCard.id,
         offeredCard: selectedCard,
         status: "pending",
         createdAt: new Date().toISOString(),
@@ -72,9 +85,9 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
           <button className="modal-close close-btn" onClick={onClose}>✕</button>
           <div style={{ textAlign: "center", padding: "32px 0" }}>
             <div style={{ fontSize: "40px", marginBottom: "12px" }}>🤝</div>
-            <h2 className="modal-title">Trade Offer Sent!</h2>
+            <h2 className="modal-title">Offer Sent!</h2>
             <p className="modal-sub">
-              Your offer for <strong>{selectedCard?.identity.name}</strong> has been sent to{" "}
+              Your card offer for <strong>{selectedCard?.identity.name}</strong> has been sent to{" "}
               <strong>{recipientEmail}</strong>.
             </p>
             <button className="btn-primary" onClick={onClose}>Close</button>
@@ -88,8 +101,8 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel modal-panel--sm" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close close-btn" onClick={onClose}>✕</button>
-        <h2 className="modal-title">Offer a Trade</h2>
-        <p className="modal-sub">Choose a card to give and enter the recipient's email.</p>
+        <h2 className="modal-title">Send a Card Offer</h2>
+        <p className="modal-sub">Choose one card from your collection and send the offer directly to another player.</p>
 
         <div className="form-group">
           <label>Card to Offer</label>

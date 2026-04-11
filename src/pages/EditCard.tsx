@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { CardPayload, Rarity, Style, Vibe, District, CardPrompts, Gender } from "../lib/types";
+import type { CardPayload, Rarity, Style, Vibe, District, CardPrompts, Gender, AgeGroup, BodyType } from "../lib/types";
 import { generateCard } from "../lib/generator";
-import { buildImagePrompt } from "../lib/promptBuilder";
-import { generateImage, isImageGenConfigured } from "../services/imageGen";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
 import { useTier } from "../context/TierContext";
 import { FORGE_ARCHETYPE_OPTIONS } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
+import { calculateBoardStats } from "../lib/boardBuilder";
 import { ACTIVE_STYLES } from "../lib/styles";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
@@ -17,6 +16,8 @@ const STYLES: Style[] = ACTIVE_STYLES;
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
+const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];
+const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Stocky", "Heavy"];
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
 export function EditCard() {
@@ -30,9 +31,6 @@ export function EditCard() {
   const [prompts, setPrompts] = useState<CardPrompts | null>(null);
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [preview, setPreview] = useState<CardPayload | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,11 +46,12 @@ export function EditCard() {
         district: original.prompts.district as District,
         accentColor: original.prompts.accentColor,
         gender: (original.prompts.gender as Gender) ?? "Non-binary",
+        ageGroup: (original.prompts.ageGroup as AgeGroup) ?? "Adult",
+        bodyType: (original.prompts.bodyType as BodyType) ?? "Athletic",
       });
       if (original.board) setBoardConfig(original.board);
       // Show the original card as starting preview
       setPreview(original);
-      setImageUrl(original.imageUrl ?? null);
     }
   }, [original, prompts]);
 
@@ -71,42 +70,24 @@ export function EditCard() {
     setSaved(false);
   };
 
-  const fetchImage = async (card: CardPayload, latestPrompts: CardPrompts) => {
-    if (!isImageGenConfigured) return;
-    setImageLoading(true);
-    setImageError(null);
-    try {
-      const prompt = buildImagePrompt(latestPrompts);
-      const result = await generateImage(prompt, card.seed);
-      setImageUrl(result.imageUrl);
-    } catch (err) {
-      setImageError(err instanceof Error ? err.message : "Image generation failed.");
-    } finally {
-      setImageLoading(false);
-    }
-  };
-
   const handlePreview = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const newCard = generateCard(prompts);
-    // Preserve original identity
     const merged: CardPayload = {
+      ...original,
       ...newCard,
       id: original.id,
       createdAt: original.createdAt,
       board: boardConfig,
-      boardLoadout: original.boardLoadout,
+      boardLoadout: calculateBoardStats(boardConfig),
     };
     setPreview(merged);
-    setImageUrl(null);
     setSaved(false);
-    fetchImage(merged, prompts);
   };
 
   const handleSaveEdit = () => {
     if (!preview) return;
-    const toSave: CardPayload = imageUrl ? { ...preview, imageUrl } : preview;
-    updateCard(toSave);
+    updateCard(preview);
     setSaved(true);
     setTimeout(() => navigate("/collection"), 800);
   };
@@ -179,6 +160,24 @@ export function EditCard() {
           </div>
 
           <div className="form-group">
+            <label>Age Group</label>
+            <div className="pill-group">
+              {AGE_GROUPS.map((ageGroup) => (
+                <button key={ageGroup} className={`pill${prompts.ageGroup === ageGroup ? " selected" : ""}`} onClick={() => set("ageGroup", ageGroup)}>{ageGroup}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Body Type</label>
+            <div className="pill-group">
+              {BODY_TYPES.map((bodyType) => (
+                <button key={bodyType} className={`pill${prompts.bodyType === bodyType ? " selected" : ""}`} onClick={() => set("bodyType", bodyType)}>{bodyType}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
             <label>Board Loadout</label>
             <p className="form-hint" style={{ marginBottom: 12 }}>
               Build your electric skateboard — your most important piece of gear.
@@ -230,19 +229,10 @@ export function EditCard() {
         </div>
 
         <div className="forge-preview">
-          {!isImageGenConfigured && (
-            <p className="forge-image-notice">
-              ℹ️ AI image generation is not configured — cards display SVG art.
-              Set <code>VITE_IMAGE_API_URL</code> in your <code>.env</code> to enable it.
-            </p>
-          )}
           {preview ? (
             <>
-              {imageError && <p className="forge-image-error">⚠️ {imageError}</p>}
               <CardDisplay
                 card={preview}
-                imageUrl={imageUrl ?? undefined}
-                imageLoading={imageLoading}
                 showShare={false}
               />
             </>

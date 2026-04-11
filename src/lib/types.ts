@@ -151,6 +151,7 @@ export interface TradePayload {
   fromEmail: string;
   toUid: string;
   toEmail: string;
+  offeredCardId?: string;
   offeredCard: CardPayload;
   status: "pending" | "accepted" | "declined" | "cancelled";
   createdAt: string;
