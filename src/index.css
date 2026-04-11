@@ -432,7 +432,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* ===== Card Full Display ===== */
 .card-full {
   background: var(--bg2);
-  border: 2px solid;
+  border: 2px solid var(--border);
   border-radius: 4px;
   padding: 5px;
   width: 100px;
@@ -612,7 +612,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   gap: 12px;
   background: var(--bg2);
-  border: 1px solid;
+  border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
   padding: 8px;
@@ -2474,7 +2474,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: absolute;
   inset: 0;
   border-radius: 10px;
-  border: 2px solid;
+  border: 2px solid var(--border);
   overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -2727,7 +2727,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-card {
   width: 189px;
   height: 264px;
-  border: 2px solid;
+  border: 2px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
   background: #0f0f1a;
@@ -2952,7 +2952,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     left: 0.125in;
     width: 2.5in;
     height: 3.5in;
-    border: 1.5pt solid;
+    border: 1.5pt solid #1a1840;
     border-radius: 3mm;
     overflow: hidden;
     background: #fff;
