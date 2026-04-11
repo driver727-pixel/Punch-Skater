@@ -10,7 +10,6 @@ import { useTier } from "../context/TierContext";
 import { useAuth } from "../context/AuthContext";
 import { TIERS } from "../lib/tiers";
 import { db } from "../lib/firebase";
-import { SupportButton } from "./SupportButton";
 import { TierModal } from "./TierModal";
 import { isAdminEmail } from "../lib/adminUtils";
 import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
@@ -120,7 +119,6 @@ export function Nav() {
           </div>
 
           <div className="nav-right">
-            <span className="nav-desktop-only"><SupportButton /></span>
             <button
               className={`tier-badge-btn tier-badge-btn--${tier} nav-desktop-only`}
               onClick={openUpgradeModal}
@@ -190,7 +188,6 @@ export function Nav() {
           <div className="nav-mobile-menu">
             {renderNavLinks(() => setNavOpen(false))}
             <div className="nav-mobile-menu-footer">
-              <SupportButton />
               <button
                 className={`tier-badge-btn tier-badge-btn--${tier}`}
                 onClick={() => { setNavOpen(false); openUpgradeModal(); }}

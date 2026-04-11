@@ -28,10 +28,7 @@ test.describe('Home page (Card Forge)', () => {
     await expect(page.getByRole('link', { name: /trades/i })).toBeVisible();
   });
 
-  test('shows the support button', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByText(/buy me a coffee/i)).toBeVisible();
-  });
+
 
   test('shows the site footer with copyright', async ({ page }) => {
     await page.goto('/');
