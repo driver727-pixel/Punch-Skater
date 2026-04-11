@@ -206,7 +206,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
  */
 export interface BoardComponentModel {
   /** Top-level category label shown in the Asset Generator UI. */
-  category: "Deck" | "Wheel" | "Drivetrain" | "Battery";
+  category: "Deck" | "Wheel" | "Drivetrain" | "Battery" | "Truck";
   /** Human-readable product name. */
   name: string;
   /** Detailed visual description fed to the fal.ai prompt. */
@@ -327,6 +327,16 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
     icon: "🔇",
     speed: 7,
     acceleration: 5,
+  },
+
+  // ── Trucks ─────────────────────────────────────────────────────────────────
+  {
+    category: "Truck",
+    name: "Front Truck",
+    description:
+      "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. A standalone electric skateboard front truck: anodized aluminum hanger and baseplate, precision kingpin and bushings, no motors or belts, clean machined finish, isolated on white background.",
+    seedKey: "front-truck",
+    icon: "🔧",
   },
 
   // ── Batteries ──────────────────────────────────────────────────────────────

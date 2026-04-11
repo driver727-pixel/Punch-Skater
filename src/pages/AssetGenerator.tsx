@@ -21,6 +21,8 @@ async function downloadAssetImage(imageUrl: string, seedKey: string): Promise<vo
 // ── Prompt template ────────────────────────────────────────────────────────────
 
 const ASSET_COMPONENT_DESCRIPTIONS: Record<string, string> = {
+  "front-truck":
+    "A standalone electric skateboard front truck: anodized aluminum hanger and baseplate, precision kingpin and bushings, no motors or belts, clean machined finish.",
   "deck-carbon-street-drop-through":
     "A matte black carbon fiber street deck, showing subtle woven texture. Top-mount profile with standard mounting holes. High-detail finish.",
   "deck-bamboo-at-top-mount":
