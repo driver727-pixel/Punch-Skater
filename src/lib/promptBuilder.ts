@@ -1,4 +1,4 @@
-import type { CardPrompts, Rarity } from "./types";
+import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
 
 // ── Lookup tables ──────────────────────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
  */
 export function buildFramePrompt(rarity: Rarity): string {
   const border = RARITY_FRAME_DESCRIPTIONS[rarity] ?? "a plain decorative border";
-  const isPunchSkater = rarity === "Punch Skater";
+  const isPunchSkater = rarity === PUNCH_SKATER_RARITY;
   const isLegendary   = rarity === "Legendary";
   const accentPalette = isLegendary
     ? "Electric cyan, hot pink, magenta neon."

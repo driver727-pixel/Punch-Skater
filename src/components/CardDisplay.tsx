@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { CardPayload } from "../lib/types";
+import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { ShareModal } from "./ShareModal";
@@ -112,9 +112,10 @@ function CompositeArt({
   const hasAnyLayer =
     backgroundImageUrl || characterImageUrl || frameImageUrl ||
     layerLoading?.background || layerLoading?.character || layerLoading?.frame;
-  const frameLayerClassName = card.prompts.rarity === "Punch Skater"
-    ? "card-art-layer card-art-layer--frame card-art-layer--frame-overscan"
-    : "card-art-layer card-art-layer--frame";
+  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
+  const backgroundLayerClassName = isPunchSkaterFrame
+    ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
+    : "card-art-layer card-art-layer--background";
 
   // No AI layer data at all — render SVG fallback
   if (!hasAnyLayer) {
@@ -128,7 +129,7 @@ function CompositeArt({
         <img
           src={backgroundImageUrl}
           alt="background"
-          className="card-art-layer card-art-layer--background"
+          className={backgroundLayerClassName}
           onError={() => onLayerError?.("background")}
         />
       ) : layerLoading?.background ? (
@@ -157,7 +158,7 @@ function CompositeArt({
         <img
           src={frameImageUrl}
           alt="frame"
-          className={frameLayerClassName}
+          className="card-art-layer card-art-layer--frame"
           onError={() => onLayerError?.("frame")}
         />
       ) : layerLoading?.frame ? (

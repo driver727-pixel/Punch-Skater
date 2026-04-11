@@ -1191,6 +1191,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 1;
   mix-blend-mode: normal;
 }
+.card-art-layer--background-inset {
+  transform: scale(0.85);
+  transform-origin: center;
+}
 .card-art-layer--character {
   /* Normal blend: character has a transparent background from background removal,
      so it composites cleanly over the background layer without any masking.
@@ -1208,10 +1212,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 3;
   mix-blend-mode: screen;
   object-fit: fill;
-}
-.card-art-layer--frame-overscan {
-  transform: scale(1.15);
-  transform-origin: center;
 }
 .card-art-layer--loading {
   display: flex;
@@ -2485,13 +2485,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   mix-blend-mode: normal; /* transparent PNG composites cleanly over background */
   object-fit: contain;    /* match card-art-layer--character; avoids cropping the portrait */
 }
+.viewer3d-layer--bg-inset {
+  transform: scale(0.85);
+  transform-origin: center;
+}
 .viewer3d-layer--frame {
   mix-blend-mode: screen; /* black background of frame image becomes transparent; colored border stays visible */
   object-fit: fill;       /* stretch to exactly match the card surface so the border aligns with the edges */
-}
-.viewer3d-layer--frame-overscan {
-  transform: scale(1.15);
-  transform-origin: center;
 }
 
 /* Gloss overlay on the front face */
@@ -2733,8 +2733,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .print-art-layer--char  { mix-blend-mode: normal; }
 .print-art-layer--frame { mix-blend-mode: screen; }
-.print-art-layer--frame-overscan {
-  transform: scale(1.15);
+.print-art-layer--bg-inset {
+  transform: scale(0.85);
   transform-origin: center;
 }
 
@@ -3003,8 +3003,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
   .print-only-card .print-art-layer--char  { mix-blend-mode: normal; }
   .print-only-card .print-art-layer--frame { mix-blend-mode: screen; }
-  .print-only-card .print-art-layer--frame-overscan {
-    transform: scale(1.15);
+  .print-only-card .print-art-layer--bg-inset {
+    transform: scale(0.85);
     transform-origin: center;
   }
 

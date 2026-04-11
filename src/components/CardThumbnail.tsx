@@ -1,4 +1,4 @@
-import type { CardPayload } from "../lib/types";
+import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 
 interface CardThumbnailProps {
@@ -14,9 +14,10 @@ interface CardThumbnailProps {
 export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnailProps) {
   const { backgroundImageUrl, characterImageUrl, frameImageUrl } = card;
   const hasLayers = backgroundImageUrl || characterImageUrl || frameImageUrl;
-  const frameLayerClassName = card.prompts.rarity === "Punch Skater"
-    ? "card-art-layer card-art-layer--frame card-art-layer--frame-overscan"
-    : "card-art-layer card-art-layer--frame";
+  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
+  const backgroundLayerClassName = isPunchSkaterFrame
+    ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
+    : "card-art-layer card-art-layer--background";
 
   if (!hasLayers) {
     return <CardArt card={card} width={width} height={height} />;
@@ -28,7 +29,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
         <img
           src={backgroundImageUrl}
           alt="background"
-          className="card-art-layer card-art-layer--background"
+          className={backgroundLayerClassName}
         />
       )}
       {characterImageUrl && (
@@ -42,7 +43,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
         <img
           src={frameImageUrl}
           alt="frame"
-          className={frameLayerClassName}
+          className="card-art-layer card-art-layer--frame"
         />
       )}
     </div>

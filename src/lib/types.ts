@@ -32,6 +32,7 @@ export type Archetype =
   | "UCPS"
   | "The Team";
 export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legendary";
+export const PUNCH_SKATER_RARITY: Rarity = "Punch Skater";
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
 export type Style =
   | "Corporate"
