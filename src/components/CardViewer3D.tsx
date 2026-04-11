@@ -41,6 +41,9 @@ export function CardViewer3D({
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
 
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
+  const frameLayerClassName = card.prompts.rarity === "Punch Skater"
+    ? "viewer3d-layer viewer3d-layer--frame viewer3d-layer--frame-overscan"
+    : "viewer3d-layer viewer3d-layer--frame";
 
   // ── Close on Escape ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -144,7 +147,7 @@ export function CardViewer3D({
                   />
                 )}
                 {frameImageUrl && (
-                  <img src={frameImageUrl} alt="frame" className="viewer3d-layer viewer3d-layer--frame" />
+                  <img src={frameImageUrl} alt="frame" className={frameLayerClassName} />
                 )}
               </div>
             ) : (

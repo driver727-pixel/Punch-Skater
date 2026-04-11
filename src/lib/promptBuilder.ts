@@ -146,6 +146,7 @@ export function buildFramePrompt(rarity: Rarity): string {
     `A playing card border frame: ${border}. ` +
     `${accentPalette} ` +
     `The interior of the frame is completely flat black — only the border decoration is coloured. ` +
+    `The border artwork must touch or slightly crop against all four image edges with zero outer margin, zero inset, and zero black padding around the outside. ` +
     `${layoutHint} top-down flat graphic illustration style, isolated on black background, no characters, no text. ` +
     `Clean vector-art look, high contrast, 4K. ` +
     `SFW, family friendly, PG rated, LGBTQIA+.`

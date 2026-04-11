@@ -112,6 +112,9 @@ function CompositeArt({
   const hasAnyLayer =
     backgroundImageUrl || characterImageUrl || frameImageUrl ||
     layerLoading?.background || layerLoading?.character || layerLoading?.frame;
+  const frameLayerClassName = card.prompts.rarity === "Punch Skater"
+    ? "card-art-layer card-art-layer--frame card-art-layer--frame-overscan"
+    : "card-art-layer card-art-layer--frame";
 
   // No AI layer data at all — render SVG fallback
   if (!hasAnyLayer) {
@@ -154,7 +157,7 @@ function CompositeArt({
         <img
           src={frameImageUrl}
           alt="frame"
-          className="card-art-layer card-art-layer--frame"
+          className={frameLayerClassName}
           onError={() => onLayerError?.("frame")}
         />
       ) : layerLoading?.frame ? (

@@ -54,6 +54,9 @@ export function PrintModal({
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
+  const frameLayerClassName = card.prompts.rarity === "Punch Skater"
+    ? "print-art-layer print-art-layer--frame print-art-layer--frame-overscan"
+    : "print-art-layer print-art-layer--frame";
   // Use the full print-quality background in the hidden printable area when available.
   const printBackgroundUrl = backgroundPrintUrl ?? backgroundImageUrl;
 
@@ -114,7 +117,7 @@ export function PrintModal({
                         />
                       )}
                       {frameImageUrl && (
-                        <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" />
+                        <img src={frameImageUrl} alt="frame" className={frameLayerClassName} />
                       )}
                     </div>
                   ) : (
@@ -231,7 +234,7 @@ export function PrintModal({
                     />
                   )}
                   {frameImageUrl && (
-                    <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" />
+                    <img src={frameImageUrl} alt="frame" className={frameLayerClassName} />
                   )}
                 </div>
               ) : (

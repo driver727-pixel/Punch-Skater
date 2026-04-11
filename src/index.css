@@ -1209,6 +1209,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   mix-blend-mode: screen;
   object-fit: fill;
 }
+.card-art-layer--frame-overscan {
+  transform: scale(1.15);
+  transform-origin: center;
+}
 .card-art-layer--loading {
   display: flex;
   align-items: center;
@@ -2485,6 +2489,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   mix-blend-mode: screen; /* black background of frame image becomes transparent; colored border stays visible */
   object-fit: fill;       /* stretch to exactly match the card surface so the border aligns with the edges */
 }
+.viewer3d-layer--frame-overscan {
+  transform: scale(1.15);
+  transform-origin: center;
+}
 
 /* Gloss overlay on the front face */
 .viewer3d-gloss {
@@ -2725,6 +2733,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .print-art-layer--char  { mix-blend-mode: normal; }
 .print-art-layer--frame { mix-blend-mode: screen; }
+.print-art-layer--frame-overscan {
+  transform: scale(1.15);
+  transform-origin: center;
+}
 
 /* Front face info overlay (name + bio shown over the character art) */
 .print-front-overlay {
@@ -2991,6 +3003,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
   .print-only-card .print-art-layer--char  { mix-blend-mode: normal; }
   .print-only-card .print-art-layer--frame { mix-blend-mode: screen; }
+  .print-only-card .print-art-layer--frame-overscan {
+    transform: scale(1.15);
+    transform-origin: center;
+  }
 
   @page {
     size: letter portrait;

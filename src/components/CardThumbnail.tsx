@@ -14,6 +14,9 @@ interface CardThumbnailProps {
 export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnailProps) {
   const { backgroundImageUrl, characterImageUrl, frameImageUrl } = card;
   const hasLayers = backgroundImageUrl || characterImageUrl || frameImageUrl;
+  const frameLayerClassName = card.prompts.rarity === "Punch Skater"
+    ? "card-art-layer card-art-layer--frame card-art-layer--frame-overscan"
+    : "card-art-layer card-art-layer--frame";
 
   if (!hasLayers) {
     return <CardArt card={card} width={width} height={height} />;
@@ -39,7 +42,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
         <img
           src={frameImageUrl}
           alt="frame"
-          className="card-art-layer card-art-layer--frame"
+          className={frameLayerClassName}
         />
       )}
     </div>
