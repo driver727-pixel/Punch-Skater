@@ -3,6 +3,7 @@ import type { DeckPayload, CardPayload } from "../lib/types";
 import { useDecks, DECK_CARD_LIMIT } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
 import { CardThumbnail } from "../components/CardThumbnail";
+import { DeckStatsPanel } from "../components/DeckStatsPanel";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
@@ -227,6 +228,11 @@ export function DeckBuilder() {
                   })}
                 </div>
               </div>
+
+              {/* Deck Stats — total power bars */}
+              {activeDeck.cards.length > 0 && (
+                <DeckStatsPanel cards={activeDeck.cards} maxCardsInDeck={DECK_CARD_LIMIT} />
+              )}
 
               {/* Add from collection */}
               {slotsRemaining > 0 && availableCards.length > 0 && (
