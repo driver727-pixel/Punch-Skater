@@ -1073,7 +1073,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* ===== AI Image Art ===== */
 .card-art-image { display: block; width: 112px; height: 160px; object-fit: cover; border-radius: 4px; }
-.card-art-image--full { width: 100%; height: auto; aspect-ratio: 5/7; border-radius: 6px; object-fit: cover; }
+.card-art-image--full { width: calc(100% - 6px); height: auto; aspect-ratio: 5/7; border-radius: 6px; object-fit: cover; margin: 0 auto; }
 
 /* Skeleton loader shown while AI image is being fetched */
 @keyframes shimmer {
@@ -1112,10 +1112,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 1;
 }
 .card-art-skeleton--full {
-  width: 100%;
+  width: calc(100% - 6px);
   height: auto;
   aspect-ratio: 5/7;
   border-radius: 6px;
+  margin: 0 auto;
 }
 
 /* Error message shown below the card when image gen fails */
@@ -1171,7 +1172,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-shrink: 0;
 }
 .card-art-composite--full {
-  width: 100%;
+  width: calc(100% - 6px);
   height: auto;
   aspect-ratio: 5/7;
   border-radius: 3px;
@@ -3509,11 +3510,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-summary__sep { color: var(--border); font-size: 12px; }
 
 /* BoardComposite preview inside the Board Builder wizard — portrait orientation,
-   sized to ~64 % of the player-card character image box (5 : 7 ratio). */
-.board-builder__preview {
+   sized to match the player-card skateboard image box (5 : 7 ratio).
+   Higher-specificity selector prevents .board-composite { width:100% } from
+   overriding the explicit width (both are single-class, but .board-composite
+   appears later in the file). */
+.board-composite.board-builder__preview {
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.2);
-  width: 58px;
+  width: min(294px, 100%);
   aspect-ratio: 5 / 7;
   margin: 8px auto;
   overflow: hidden;
