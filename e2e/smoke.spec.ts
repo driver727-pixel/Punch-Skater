@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-async function openPrimaryNavIfNeeded(page: Page) {
+async function ensureNavLinksVisible(page: Page) {
   const collectionLink = page.getByRole('link', { name: /collection/i });
   if (await collectionLink.isVisible().catch(() => false)) return;
 
@@ -26,7 +26,7 @@ test.describe('Home page (Card Forge)', () => {
 
   test('shows the Card Forge nav link as active', async ({ page }) => {
     await page.goto('/');
-    await openPrimaryNavIfNeeded(page);
+    await ensureNavLinksVisible(page);
     const cardForgeLink = page.getByRole('link', { name: /card forge/i });
     await expect(cardForgeLink).toBeVisible();
     await expect(cardForgeLink).toHaveClass(/active/);
@@ -34,7 +34,7 @@ test.describe('Home page (Card Forge)', () => {
 
   test('shows nav links for Collection, My Decks, Trades', async ({ page }) => {
     await page.goto('/');
-    await openPrimaryNavIfNeeded(page);
+    await ensureNavLinksVisible(page);
     await expect(page.getByRole('link', { name: /collection/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /my decks/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /trades/i })).toBeVisible();
