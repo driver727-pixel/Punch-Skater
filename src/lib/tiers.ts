@@ -3,7 +3,14 @@
 // truth for Stripe price IDs, buy URLs, and display price strings).
 // server/index.js derives its ALLOWED_PRICE_IDS from the same file, so only
 // one edit is required when the pricing structure changes.
-import tierPricing from "./tierPricing.json";
+import tierPricingRaw from "./tierPricing.json";
+
+interface TierPricingEntry {
+  price: string;
+  stripePriceId: string;
+  stripeUrl: string;
+}
+const tierPricing = tierPricingRaw as Record<"tier2" | "tier3", TierPricingEntry>;
 
 export type TierLevel = "free" | "tier2" | "tier3";
 

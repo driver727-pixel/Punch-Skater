@@ -8,8 +8,8 @@ import { createRequire } from 'module';
 // Load the shared pricing config — the single source of truth for Stripe
 // price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
 // to change prices; this file derives ALLOWED_PRICE_IDS from it automatically.
-const _require = createRequire(import.meta.url);
-const tierPricing = _require('../src/lib/tierPricing.json');
+const nodeRequire = createRequire(import.meta.url);
+const tierPricing = nodeRequire('../src/lib/tierPricing.json');
 
 const app = express();
 
