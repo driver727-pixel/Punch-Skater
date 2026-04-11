@@ -26,6 +26,10 @@ interface UserProfile {
 
 const PAGE_SIZE = 20;
 
+const ADMIN_API_URL =
+  (import.meta.env.VITE_ADMIN_API_URL as string | undefined)?.trim() ??
+  "/api/admin/create-user";
+
 const TIER_LABELS: Record<string, string> = {
   free: "Free Rider",
   tier2: "Street Creator ($5)",
@@ -62,7 +66,7 @@ export function Admin() {
     setCreating(true);
     try {
       const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/admin/create-user", {
+      const res = await fetch(ADMIN_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
