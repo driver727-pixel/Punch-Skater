@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { CardPayload } from "../lib/types";
+import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
@@ -41,6 +41,10 @@ export function CardViewer3D({
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
 
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
+  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
+  const backgroundLayerClassName = isPunchSkaterFrame
+    ? "viewer3d-layer viewer3d-layer--bg viewer3d-layer--bg-inset"
+    : "viewer3d-layer viewer3d-layer--bg";
 
   // ── Close on Escape ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -133,7 +137,7 @@ export function CardViewer3D({
             {hasAnyLayer ? (
               <div className="viewer3d-art-composite">
                 {backgroundImageUrl && (
-                  <img src={backgroundImageUrl} alt="background" className="viewer3d-layer viewer3d-layer--bg" />
+                  <img src={backgroundImageUrl} alt="background" className={backgroundLayerClassName} />
                 )}
                 {characterImageUrl && (
                   <img

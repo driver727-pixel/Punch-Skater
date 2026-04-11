@@ -1,4 +1,4 @@
-import type { CardPrompts, Rarity } from "./types";
+import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
 
 // ── Lookup tables ──────────────────────────────────────────────────────────────
 
@@ -59,10 +59,11 @@ const RARITY_MOOD: Record<string, string> = {
 
 const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
   "Punch Skater":
-    "an edge-to-edge rough frame hugging the very outer card boundary, like a playing card wrapped in dirty gauze bandages. " +
-    "Two main worn bandage wraps run across the full top edge and full bottom edge, visibly wrapping over the edges with frayed loose ends. " +
-    "Irregular dark-red dried-blood splatter dots appear along the left and right side edges only, with organic uneven spacing. " +
-    "Asymmetric, gritty street-medicine aesthetic.",
+    "an edge-to-edge frame that looks like a real poker card literally wrapped in oversized beige Band-Aid strips and adhesive bandages. " +
+    "Perforated adhesive rails run up the full left and right edges with evenly spaced punch holes. " +
+    "Chunky fabric bandage pads bunch up and fold over multiple corners like a slapped-together first-aid wrap. " +
+    "Muted tan cloth, off-white gauze, dusty pink padding, and a few dark-red medicine-stain splatters near the corners only. " +
+    "Asymmetric, grimy street-clinic aesthetic.",
   Apprentice:
     "a clean double-line border with small stylised leaf flourishes at each corner",
   Master:
@@ -134,18 +135,26 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
  */
 export function buildFramePrompt(rarity: Rarity): string {
   const border = RARITY_FRAME_DESCRIPTIONS[rarity] ?? "a plain decorative border";
-  const isPunchSkater = rarity === "Punch Skater";
+  const isPunchSkater = rarity === PUNCH_SKATER_RARITY;
   const isLegendary   = rarity === "Legendary";
-  const accentPalette = isLegendary
-    ? "Electric cyan, hot pink, magenta neon."
-    : "Gold, silver, titanium foil, decorative, accents.";
+  const accentPalette = isPunchSkater
+    ? "Aged beige adhesive cloth, tan canvas, off-white gauze, dusty pink padding, dried dark-red stains."
+    : isLegendary
+      ? "Electric cyan, hot pink, magenta neon."
+      : "Gold, silver, titanium foil, decorative accents.";
   const layoutHint = isPunchSkater
     ? "Asymmetric, organic, irregular placement — deliberately not mirrored,"
     : "Symmetrical layout,";
+  const punchSkaterBandAidHint = isPunchSkater
+    ? "It must read instantly as a trading card wrapped in rough Band-Aids, not as a fantasy border or ornate frame. " +
+      "Show perforated adhesive strips on the side rails and folded cloth bandage pads hugging the corners. "
+    : "";
   return (
     `A playing card border frame: ${border}. ` +
     `${accentPalette} ` +
     `The interior of the frame is completely flat black — only the border decoration is coloured. ` +
+    `The border artwork must touch or slightly crop against all four image edges with zero outer margin, zero inset, and zero black padding around the outside. ` +
+    punchSkaterBandAidHint +
     `${layoutHint} top-down flat graphic illustration style, isolated on black background, no characters, no text. ` +
     `Clean vector-art look, high contrast, 4K. ` +
     `SFW, family friendly, PG rated, LGBTQIA+.`

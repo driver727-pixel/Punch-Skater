@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CardPayload } from "../lib/types";
+import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
@@ -54,6 +54,10 @@ export function PrintModal({
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
+  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
+  const backgroundLayerClassName = isPunchSkaterFrame
+    ? "print-art-layer print-art-layer--bg print-art-layer--bg-inset"
+    : "print-art-layer print-art-layer--bg";
   // Use the full print-quality background in the hidden printable area when available.
   const printBackgroundUrl = backgroundPrintUrl ?? backgroundImageUrl;
 
@@ -103,7 +107,7 @@ export function PrintModal({
                   {hasAnyLayer ? (
                     <div className="print-art-composite">
                       {backgroundImageUrl && (
-                        <img src={backgroundImageUrl} alt="background" className="print-art-layer print-art-layer--bg" />
+                        <img src={backgroundImageUrl} alt="background" className={backgroundLayerClassName} />
                       )}
                       {characterImageUrl && (
                         <img
@@ -220,7 +224,7 @@ export function PrintModal({
               {hasAnyLayer ? (
                 <div className="print-art-composite">
                   {printBackgroundUrl && (
-                    <img src={printBackgroundUrl} alt="background" className="print-art-layer print-art-layer--bg" />
+                    <img src={printBackgroundUrl} alt="background" className={backgroundLayerClassName} />
                   )}
                   {characterImageUrl && (
                     <img
