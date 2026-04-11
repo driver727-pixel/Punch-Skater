@@ -46,8 +46,8 @@ interface CardDisplayProps {
   /** When true, hides the entire card-actions button row (Edit, 3D, Print, Share, Remove, Save)
    *  so a parent component can render all action buttons outside the card. */
   hideAllActions?: boolean;
-  /** When provided, renders inline edit controls for name and bio/flavor text. */
-  onUpdate?: (updates: { name?: string; flavorText?: string }) => void;
+  /** When provided, renders inline edit controls for name, age, and bio/flavor text. */
+  onUpdate?: (updates: { name?: string; age?: string; flavorText?: string }) => void;
   /** Called when a composite image layer fails to load (e.g. expired fal.ai URL). */
   onLayerError?: (layer: "background" | "character" | "frame") => void;
 }
@@ -202,25 +202,36 @@ export function CardDisplay({
   // false = show conlang (default for high-rarity), true = show English translation
   const [showEnglish, setShowEnglish] = useState(false);
 
-  // ── Inline editable name & bio ────────────────────────────────────────────
+  // ── Inline editable name, age & bio ──────────────────────────────────────
   const [localName, setLocalName] = useState(card.identity.name);
+  const [localAge, setLocalAge] = useState(card.identity.age ?? "");
   const [localBio, setLocalBio] = useState(card.flavorText);
   const [editingName, setEditingName] = useState(false);
+  const [editingAge, setEditingAge] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
 
   // Sync local state when the card identity changes (e.g. a new card is forged)
   useEffect(() => {
     setLocalName(card.identity.name);
+    setLocalAge(card.identity.age ?? "");
     setLocalBio(card.flavorText);
     setEditingName(false);
+    setEditingAge(false);
     setEditingBio(false);
-  }, [card.id, card.identity.name, card.flavorText]);
+  }, [card.id, card.identity.name, card.identity.age, card.flavorText]);
 
   const commitName = () => {
     setEditingName(false);
     const trimmed = localName.trim() || card.identity.name;
     setLocalName(trimmed);
     if (trimmed !== card.identity.name) onUpdate?.({ name: trimmed });
+  };
+
+  const commitAge = () => {
+    setEditingAge(false);
+    const trimmed = localAge.trim();
+    setLocalAge(trimmed);
+    if (trimmed !== (card.identity.age ?? "")) onUpdate?.({ age: trimmed });
   };
 
   const commitBio = () => {
@@ -369,6 +380,60 @@ export function CardDisplay({
               {onUpdate && <span className="card-edit-hint">✎</span>}
             </h2>
           )}
+
+          {/* Age field — shown when a value exists or when the card is editable */}
+          {(localAge || onUpdate) && (
+            onUpdate && editingAge ? (
+              <input
+                className="card-edit-input card-age-input"
+                value={localAge}
+                placeholder="Age"
+                onChange={(e) => setLocalAge(e.target.value)}
+                onBlur={commitAge}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commitAge(); }
+                  if (e.key === "Escape") { setLocalAge(card.identity.age ?? ""); setEditingAge(false); }
+                }}
+                autoFocus
+                maxLength={20}
+              />
+            ) : (
+              <p
+                className={`card-age${onUpdate ? " card-age--editable" : ""}`}
+                onClick={() => { if (onUpdate) setEditingAge(true); }}
+                title={onUpdate ? "Click to set age" : undefined}
+              >
+                {localAge || <span className="card-age-placeholder">Age</span>}
+                {onUpdate && <span className="card-edit-hint">✎</span>}
+              </p>
+            )
+          )}
+
+          {/* Bio field — shown directly under name/age */}
+          {onUpdate && editingBio ? (
+            <textarea
+              className="card-edit-textarea card-bio-textarea"
+              value={localBio}
+              onChange={(e) => setLocalBio(e.target.value)}
+              onBlur={commitBio}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setLocalBio(card.flavorText); setEditingBio(false); }
+              }}
+              autoFocus
+              rows={3}
+              maxLength={200}
+            />
+          ) : (
+            <p
+              className={`card-bio${onUpdate && !hasConlangLore ? " card-bio--editable" : ""}`}
+              onClick={() => { if (onUpdate && !hasConlangLore) setEditingBio(true); }}
+              title={onUpdate && !hasConlangLore ? "Click to edit bio" : undefined}
+            >
+              {localBio}
+              {onUpdate && !hasConlangLore && <span className="card-edit-hint">✎</span>}
+            </p>
+          )}
+
           {card.conlang?.catchphrase && (
             <p className="card-catchphrase">
               &ldquo;{card.conlang.catchphrase}&rdquo;
@@ -395,29 +460,11 @@ export function CardDisplay({
         </div>
 
         <div className="stat-flavor">
-          {onUpdate && !hasConlangLore && editingBio ? (
-            <textarea
-              className="card-edit-textarea"
-              value={localBio}
-              onChange={(e) => setLocalBio(e.target.value)}
-              onBlur={commitBio}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") { setLocalBio(card.flavorText); setEditingBio(false); }
-              }}
-              autoFocus
-              rows={3}
-              maxLength={200}
-            />
-          ) : (
-            <em
-              className={`stat-flavor-text${hasConlangLore && !showEnglish ? " conlang-text" : ""}${onUpdate && !hasConlangLore ? " stat-flavor-text--editable" : ""}`}
-              onClick={() => { if (onUpdate && !hasConlangLore) setEditingBio(true); }}
-              title={onUpdate && !hasConlangLore ? "Click to edit bio" : undefined}
-            >
+          {hasConlangLore && !showEnglish ? (
+            <em className="stat-flavor-text conlang-text">
               &ldquo;{displayFlavorText}&rdquo;
-              {onUpdate && !hasConlangLore && <span className="card-edit-hint">✎</span>}
             </em>
-          )}
+          ) : null}
         </div>
       </div>
 

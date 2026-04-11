@@ -771,8 +771,12 @@ export function CardForge() {
                       if (!prev) return prev;
                       return {
                         ...prev,
-                        identity: updates.name
-                          ? { ...prev.identity, name: updates.name }
+                        identity: (updates.name != null || updates.age != null)
+                          ? {
+                              ...prev.identity,
+                              ...(updates.name != null ? { name: updates.name } : {}),
+                              ...(updates.age != null ? { age: updates.age } : {}),
+                            }
                           : prev.identity,
                         flavorText: updates.flavorText ?? prev.flavorText,
                       };
