@@ -18,7 +18,6 @@ export type Faction =
   | "The Wooders"
   | "Punch Skaters";
 
-export type Manufacturer = "UCA" | "DIY/Plywood" | "The Wooders" | "Dark Light Labs" | "Asclepian Medical" | "VoidRacer";
 export type District = "Airaway" | "The Roads" | "Batteryville" | "The Grid" | "Electropolis" | "Nightshade" | "The Forest" | "Glass City";
 export type Archetype =
   | "The Knights Technarchy"
@@ -44,6 +43,8 @@ export type Style =
   | "Union"
   | "Olympic";
 export type Gender = "Woman" | "Man" | "Non-binary";
+export type AgeGroup = "Young Adult" | "Adult" | "Middle-aged" | "Senior";
+export type BodyType = "Slim" | "Athletic" | "Average" | "Stocky" | "Heavy";
 
 export interface CardPrompts {
   archetype: Archetype;
@@ -53,6 +54,8 @@ export interface CardPrompts {
   district: District;
   accentColor: string;
   gender: Gender;
+  ageGroup: AgeGroup;
+  bodyType: BodyType;
 }
 
 // ── Conlang overlay (CraftLingua integration) ─────────────────────────────────
@@ -81,7 +84,6 @@ export interface CardPayload {
   identity: {
     name: string;
     crew: Faction;
-    manufacturer: Manufacturer;
     serialNumber: string;
   };
   stats: {

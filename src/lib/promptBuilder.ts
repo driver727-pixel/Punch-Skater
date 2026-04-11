@@ -86,9 +86,9 @@ const AGE_RESTRICTION = "No kids. No teens. Adults aged 18-99 only. ";
  * The character is rendered against a plain white background, which is then
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
- * The character layer is only regenerated when archetype, style, vibe, or gender
- * changes (matching the `characterSeed` cache key). Changing district or rarity
- * leaves this layer untouched.
+ * The character layer is only regenerated when archetype, style, vibe, gender,
+ * ageGroup, or bodyType changes (matching the `characterSeed` cache key). Changing
+ * district or rarity leaves this layer untouched.
  */
 export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
   const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
@@ -104,7 +104,20 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     prompts.gender === "Man"   ? "a man" :
     /* Non-binary */             "a non-binary person";
 
-  const genderLine = `Character is ${genderDesc}. `;
+  const ageDesc =
+    prompts.ageGroup === "Young Adult" ? "young adult (20s)" :
+    prompts.ageGroup === "Adult"       ? "adult (30s)" :
+    prompts.ageGroup === "Middle-aged" ? "middle-aged (40s-50s)" :
+    /* Senior */                         "senior (60s+)";
+
+  const bodyDesc =
+    prompts.bodyType === "Slim"     ? "slim build" :
+    prompts.bodyType === "Athletic" ? "athletic build" :
+    prompts.bodyType === "Average"  ? "average build" :
+    prompts.bodyType === "Stocky"   ? "stocky build" :
+    /* Heavy */                       "heavy build";
+
+  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. `;
 
   return (
     `Full-body portrait of a ${prompts.archetype} skater courier, ` +
@@ -114,7 +127,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     graffitiLine +
     `Character is alert and ready to move. ` +
     `Mood: ${mood}. ` +
-    genderLine +
+    characterDesc +
     AGE_RESTRICTION +
     `Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
     `vibrant and saturated 90s digital colors, dramatic rim lighting. ` +
@@ -212,13 +225,26 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     prompts.gender === "Man"   ? "a man" :
     /* Non-binary */             "a non-binary person";
 
+  const ageDesc =
+    prompts.ageGroup === "Young Adult" ? "young adult (20s)" :
+    prompts.ageGroup === "Adult"       ? "adult (30s)" :
+    prompts.ageGroup === "Middle-aged" ? "middle-aged (40s-50s)" :
+    /* Senior */                         "senior (60s+)";
+
+  const bodyDesc =
+    prompts.bodyType === "Slim"     ? "slim build" :
+    prompts.bodyType === "Athletic" ? "athletic build" :
+    prompts.bodyType === "Average"  ? "average build" :
+    prompts.bodyType === "Stocky"   ? "stocky build" :
+    /* Heavy */                       "heavy build";
+
   return (
     `A hyper-realistic 3D cartoon-style portrait of a ${prompts.archetype} skater courier ` +
     `facing directly toward the viewer, front-facing, looking at the camera, ` +
     `wearing ${clothing}, ${pose}, ` +
     `carrying courier gear, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     `The background is ${district}. ` +
-    `Character is alert and ready to move. Character is ${genderDesc}. ` +
+    `Character is alert and ready to move. Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ` +
     `Mood: ${mood}. ` +
     AGE_RESTRICTION +
     `Rendered in Unreal Engine, vibrant colours, octane render, cinematic lighting, 4K. ` +

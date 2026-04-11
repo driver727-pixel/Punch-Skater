@@ -11,7 +11,7 @@ A cyberpunk-themed card deck builder game built with React, TypeScript, and Vite
 ## Card Attributes
 
 Each generated card includes:
-- **Identity**: Name, crew, manufacturer, serial number
+- **Identity**: Name, crew, serial number
 - **Stats**: Speed, Stealth, Tech, Grit, Rep (influenced by archetype and rarity)
 - **Traits**: Passive trait and active ability
 - **Visuals**: SVG card art with district-colored cityscape, skater courier figure, and rarity stars

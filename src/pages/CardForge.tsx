@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CardPrompts, CardPayload, Rarity, Style, Vibe, District, Gender, Faction } from "../lib/types";
+import type { CardPrompts, CardPayload, Rarity, Style, Vibe, District, Gender, AgeGroup, BodyType, Faction } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
@@ -26,6 +26,8 @@ const STYLES: Style[] = ACTIVE_STYLES;
 const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
+const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];
+const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Stocky", "Heavy"];
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
@@ -83,7 +85,7 @@ export function CardForge() {
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
     vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88",
-    gender: "Non-binary",
+    gender: "Non-binary", ageGroup: "Adult", bodyType: "Athletic",
   });
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [generated, setGenerated] = useState<CardPayload | null>(null);
@@ -582,6 +584,36 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.gender === opt ? " selected" : ""}`}
                   onClick={() => set("gender", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Age Group</label>
+            <div className="pill-group">
+              {AGE_GROUPS.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.ageGroup === opt ? " selected" : ""}`}
+                  onClick={() => set("ageGroup", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Body Type</label>
+            <div className="pill-group">
+              {BODY_TYPES.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.bodyType === opt ? " selected" : ""}`}
+                  onClick={() => set("bodyType", opt)}
                 >
                   {opt}
                 </button>

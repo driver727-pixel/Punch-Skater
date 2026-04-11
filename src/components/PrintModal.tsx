@@ -167,7 +167,6 @@ export function PrintModal({
                       ["VIBE",      card.prompts.vibe],
                       ["DISTRICT",  card.prompts.district],
                       ["CREW",      getDisplayedCrew(card)],
-                      ["MFR",       card.identity.manufacturer],
                     ].map(([label, value]) => (
                       <div key={label} className="print-back-row">
                         <span className="print-back-row-label">{label}</span>
@@ -285,7 +284,6 @@ export function PrintModal({
                   ["VIBE",      card.prompts.vibe],
                   ["DISTRICT",  card.prompts.district],
                   ["CREW",      getDisplayedCrew(card)],
-                  ["MFR",       card.identity.manufacturer],
                 ].map(([label, value]) => (
                   <div key={label} className="print-back-row">
                     <span className="print-back-row-label">{label}</span>

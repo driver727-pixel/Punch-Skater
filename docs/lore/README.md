@@ -18,9 +18,8 @@ source of truth for all narrative and worldbuilding decisions.
 All narrative content in these files is mirrored in `src/lib/lore.ts`, which exports
 structured data arrays consumed by:
 
-- **`src/lib/generator.ts`** — flavor texts, crew names, passive traits, active abilities,
-  and manufacturer names are pulled from `lore.ts` so generated cards always have
-  lore-accurate content.
+- **`src/lib/generator.ts`** — flavor texts, crew names, passive traits, and active abilities
+  are pulled from `lore.ts` so generated cards always have lore-accurate content.
 - **`src/pages/Lore.tsx`** — the in-app Codex page renders district, archetype, and
   faction entries directly from `lore.ts`.
 
