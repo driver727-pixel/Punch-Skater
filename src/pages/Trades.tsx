@@ -102,8 +102,10 @@ export function Trades() {
           throw new Error("You already have this card in your collection.");
         }
 
+        const currentOfferedCard = fromCardSnap.data() as TradePayload["offeredCard"];
+
         tx.delete(fromCardRef);
-        tx.set(toCardRef, currentTrade.offeredCard);
+        tx.set(toCardRef, currentOfferedCard);
         tx.update(tradeRef, {
           status: "accepted",
           updatedAt: new Date().toISOString(),
