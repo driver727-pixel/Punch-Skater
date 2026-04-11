@@ -1,7 +1,6 @@
 import {
   WORLD_LORE,
   DISTRICT_LORE,
-  ARCHETYPE_LORE,
 } from "../lib/lore";
 
 export function Lore() {
@@ -60,26 +59,6 @@ export function Lore() {
                 {d.flavorTexts.map((t) => (
                   <blockquote key={t} className="lore-flavor">{t}</blockquote>
                 ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Archetypes ──────────────────────────────────────────────────── */}
-      <section className="lore-section">
-        <h2 className="lore-heading">Archetypes</h2>
-        <div className="lore-grid">
-          {ARCHETYPE_LORE.map((a) => (
-            <div key={a.name} className="lore-card">
-              <div className="lore-card-header">
-                <span className="lore-card-name">{a.name}</span>
-              </div>
-              <p className="lore-tagline">"{a.tagline}"</p>
-              <p className="lore-body">{a.description}</p>
-              <div className="lore-card-meta">
-                <span className="lore-meta-label">Strengths</span>
-                <span className="lore-meta-value">{a.strengths}</span>
               </div>
             </div>
           ))}
