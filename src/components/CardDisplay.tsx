@@ -499,7 +499,7 @@ export function CardDisplay({
         <div className="card-actions">
           {onSave && (
             <button
-              className="btn-primary"
+              className="btn-primary btn-sm"
               onClick={onSave}
               disabled={isSaved}
             >
@@ -507,27 +507,27 @@ export function CardDisplay({
             </button>
           )}
           {onEdit && (
-            <button className="btn-outline" onClick={onEdit}>
+            <button className="btn-outline btn-sm" onClick={onEdit}>
               ✎ Edit
             </button>
           )}
           {!hideToolButtons && (
             <>
-              <button className="btn-outline btn-3d" onClick={() => setViewing3D(true)} title="View card in 3D">
+              <button className="btn-outline btn-3d btn-sm" onClick={() => setViewing3D(true)} title="View card in 3D">
                 ◈ 3D
               </button>
-              <button className="btn-outline" onClick={() => setPrinting(true)} title="Print this card">
+              <button className="btn-outline btn-sm" onClick={() => setPrinting(true)} title="Print this card">
                 🖨 Print
               </button>
             </>
           )}
           {showShare && (
-            <button className="btn-outline" onClick={() => setSharing(true)}>
+            <button className="btn-outline btn-sm" onClick={() => setSharing(true)}>
               ↗ Share
             </button>
           )}
           {onRemove && (
-            <button className="btn-danger" onClick={onRemove}>
+            <button className="btn-danger btn-sm" onClick={onRemove}>
               Remove
             </button>
           )}
