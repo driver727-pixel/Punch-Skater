@@ -1235,15 +1235,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* ── Loading GIF sizing ──────────────────────────────────────────────────────
  * Applied to every <img src="/assets/loading.gif"> used inside loading
- * skeletons and layer-loading divs.  Keeps the GIF centred and proportional
- * without breaking out of its container.
+ * skeletons and layer-loading divs.  Fills the entire container so the GIF
+ * covers / obscures any previous content behind it.
  */
 .card-art-loading-gif {
-  max-width: 40%;
-  max-height: 40%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 /* Inside the skeleton the GIF must sit below the ::after shimmer sweep */
 .card-art-skeleton .card-art-loading-gif {
@@ -3963,8 +3961,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-composite__loading-overlay .card-art-loading-gif {
   position: relative;
   z-index: 0;
-  max-width: 40%;
-  max-height: 40%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ===== Conveyor Carousel ===== */
