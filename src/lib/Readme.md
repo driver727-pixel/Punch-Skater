@@ -32,14 +32,6 @@ export type Faction =
   | "The Wooders"
   | "Punch Skaters";
 
-export type Manufacturer = 
-  | "UCA" 
-  | "DIY/Plywood" 
-  | "The Wooders" 
-  | "Dark Light Labs" 
-  | "Asclepian Medical" 
-  | "VoidRacer";
-
 export type District = 
   | "Airaway" 
   | "The Roads" 
@@ -55,7 +47,6 @@ export interface CardPayload {
   name: string;
   crew: Faction;
   district: District;
-  manufacturer: Manufacturer;
   passiveTrait: string;
   activeAbility: string;
   flavorText: string;

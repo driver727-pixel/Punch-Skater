@@ -180,7 +180,6 @@ export function CardViewer3D({
                 ["VIBE",      card.prompts.vibe],
                 ["DISTRICT",  card.prompts.district],
                 ["CREW",      getDisplayedCrew(card)],
-                ["MFR",       card.identity.manufacturer],
               ].map(([label, value]) => (
                 <div key={label} className="viewer3d-back-row">
                   <span className="viewer3d-back-row-label">{label}</span>

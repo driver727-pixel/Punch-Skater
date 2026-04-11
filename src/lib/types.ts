@@ -18,7 +18,6 @@ export type Faction =
   | "The Wooders"
   | "Punch Skaters";
 
-export type Manufacturer = "UCA" | "DIY/Plywood" | "The Wooders" | "Dark Light Labs" | "Asclepian Medical" | "VoidRacer";
 export type District = "Airaway" | "The Roads" | "Batteryville" | "The Grid" | "Electropolis" | "Nightshade" | "The Forest" | "Glass City";
 export type Archetype =
   | "The Knights Technarchy"
@@ -80,7 +79,6 @@ export interface CardPayload {
   identity: {
     name: string;
     crew: Faction;
-    manufacturer: Manufacturer;
     serialNumber: string;
   };
   stats: {

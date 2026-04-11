@@ -1,4 +1,4 @@
-import { LORE_CHARACTER_NAMES, ARCHETYPE_TO_FACTION, VIBE_TO_MANUFACTURER, LORE_PASSIVE_TRAITS, LORE_ACTIVE_ABILITIES } from './lore';
+import { LORE_CHARACTER_NAMES, ARCHETYPE_TO_FACTION, LORE_PASSIVE_TRAITS, LORE_ACTIVE_ABILITIES } from './lore';
 import type { CardPayload, CardPrompts, Rarity } from './types';
 import { createSeededRandom, seedFromString } from './prng';
 
@@ -163,7 +163,6 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
     identity: {
       name,
       crew:         ARCHETYPE_TO_FACTION[prompts.archetype],
-      manufacturer: VIBE_TO_MANUFACTURER[prompts.vibe],
       serialNumber,
     },
     stats: { speed, stealth, tech, grit, rep },

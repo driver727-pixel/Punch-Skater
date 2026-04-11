@@ -1,4 +1,4 @@
-import type { Faction, Manufacturer, Archetype, Vibe, District } from './types';
+import type { Faction, Archetype, District } from './types';
 
 // ── Character names ────────────────────────────────────────────────────────────
 
@@ -53,16 +53,6 @@ export const ARCHETYPE_TO_FACTION: Record<Archetype, Faction> = {
   "Hermes' Squirmies":       "Hermes' Squirmies",
   "UCPS":                    "UCPS Workers",
   "The Team":                "The Team",
-};
-
-// ── Vibe → Manufacturer mapping ────────────────────────────────────────────────
-
-export const VIBE_TO_MANUFACTURER: Record<Vibe, Manufacturer> = {
-  "Grunge":   "DIY/Plywood",
-  "Neon":     "VoidRacer",
-  "Chrome":   "Dark Light Labs",
-  "Plastic":  "UCA",
-  "Recycled": "The Wooders",
 };
 
 // ── Passive traits & active abilities ─────────────────────────────────────────
