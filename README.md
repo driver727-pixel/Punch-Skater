@@ -55,6 +55,8 @@ cp .env.example .env
 | `VITE_ADMIN_API_URL` | `.env` (client) | URL of the `/api/admin/create-user` endpoint |
 | `FAL_KEY` | Server env only | Fal.ai secret key — **never in `.env`** |
 | `STRIPE_SECRET_KEY` | Server env only | Stripe secret key — **never in `.env`** |
+| `FIREBASE_API_KEY` | Server env only | Firebase API key for admin user creation (falls back to `VITE_FIREBASE_API_KEY`) |
+| `ADMIN_EMAILS` | Server env only | Comma-separated admin emails (falls back to `VITE_ADMIN_EMAILS`) |
 
 > **Important:** `.env` is safe for `VITE_*` prefixed variables (bundled into the client
 > build and therefore public). **Secret server-side keys** (`FAL_KEY`, `STRIPE_SECRET_KEY`)

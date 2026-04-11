@@ -78,7 +78,7 @@ const adminUserRateLimit = rateLimit({
 
 const FAL_KEY = process.env.FAL_KEY || '';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
-const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || '';
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || '';
 const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
 const FAL_URL = 'https://fal.run/fal-ai/flux/dev';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
@@ -99,6 +99,9 @@ if (!FAL_KEY) {
 }
 if (!stripe) {
   console.warn('⚠️  STRIPE_SECRET_KEY environment variable is not set — checkout sessions will be unavailable.');
+}
+if (!FIREBASE_API_KEY) {
+  console.warn('⚠️  FIREBASE_API_KEY environment variable is not set — admin user creation will be unavailable.');
 }
 
 // Transparent proxy: the React front-end POSTs to /api/generate-image and
@@ -332,7 +335,7 @@ app.post('/api/admin/create-user', adminUserRateLimit, async (req, res) => {
   }
 
   // ── 2. Check admin privileges ────────────────────────────────────────────
-  const adminEmails = (process.env.VITE_ADMIN_EMAILS ?? '')
+  const adminEmails = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
