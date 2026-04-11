@@ -3511,11 +3511,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-summary__sep { color: var(--border); font-size: 12px; }
 
 /* BoardComposite preview inside the Board Builder wizard — portrait orientation,
-   sized to ~80 % of the player-card character image box (5 : 7 ratio). */
+   sized to ~64 % of the player-card character image box (5 : 7 ratio). */
 .board-builder__preview {
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.2);
-  width: 72px;
+  width: 58px;
   aspect-ratio: 5 / 7;
   margin: 8px auto;
   overflow: hidden;
