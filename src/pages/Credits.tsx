@@ -139,20 +139,7 @@ export function Credits() {
         </ul>
       </section>
 
-      <section className="credits-section">
-        <h2 className="credits-heading">Support the Developer</h2>
-        <div className="credits-card">
-          <p className="credits-desc">If you enjoy Punch Skater, consider buying Scott a coffee ☕</p>
-          <a
-            href="https://cash.app/$scottypay9"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="credits-link"
-          >
-            cash.app/$scottypay9
-          </a>
-        </div>
-      </section>
+
 
       <footer className="credits-legal">
         <p>© 2025–{new Date().getFullYear()} SP Digital LLC. All Rights Reserved.</p>

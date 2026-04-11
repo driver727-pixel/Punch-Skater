@@ -870,29 +870,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 
-/* ===== Support Button ===== */
-.support-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: transparent;
-  border: 1px solid #c09000;
-  color: #f0c040;
-  border-radius: 4px;
-  font-family: var(--font);
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  text-decoration: none;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.support-btn:hover {
-  background: rgba(240,192,64,0.12);
-  border-color: #f0c040;
-  color: #ffe080;
-}
-
 /* ===== Tier Badge Button in Nav ===== */
 .tier-badge-btn {
   padding: 4px 12px;
