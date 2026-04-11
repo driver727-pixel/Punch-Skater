@@ -65,7 +65,12 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
   );
 
   useEffect(() => {
-    if (!selectedCard || pendingOfferCardIds.includes(selectedCard.id) || !cards.some((card) => card.id === selectedCard.id)) {
+    const isSelectedCardInvalid =
+      !selectedCard ||
+      pendingOfferCardIds.includes(selectedCard.id) ||
+      !cards.some((card) => card.id === selectedCard.id);
+
+    if (isSelectedCardInvalid) {
       setSelectedCard(availableCards[0] ?? null);
     }
   }, [availableCards, cards, pendingOfferCardIds, selectedCard]);
