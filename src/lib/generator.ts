@@ -81,6 +81,9 @@ const PERSONALITY_POOLS: Record<string, string[]> = {
 /** Maximum value for a single stat.  5 stats × 200 = 1 000 max per card. */
 export const MAX_SINGLE_STAT = 200;
 
+/** Legacy single-stat ceiling used by the mission system. */
+export const LEGACY_STAT_MAX = 10;
+
 // ── Stat modifiers by archetype (added on top of a 20–140 base roll) ──────────
 
 interface StatMods { speed: number; stealth: number; tech: number; grit: number; rep: number; }
