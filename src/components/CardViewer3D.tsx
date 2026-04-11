@@ -195,7 +195,7 @@ export function CardViewer3D({
             {/* Stats */}
             <div className="viewer3d-back-stats">
               <StatBar label="SPD" value={card.stats.speed}   color={accent} />
-              <StatBar label="STL" value={card.stats.stealth} color={accent} />
+              <StatBar label="STLTH" value={card.stats.stealth} color={accent} />
               <StatBar label="TCH" value={card.stats.tech}    color={accent} />
               <StatBar label="GRT" value={card.stats.grit}    color={accent} />
               <StatBar label="REP" value={card.stats.rep}     color={accent} />

@@ -7,7 +7,7 @@ interface DeckStatsPanelProps {
 
 const STAT_DEFS = [
   { key: "speed",   label: "SPD", color: "#00ccff", glow: "rgba(0,204,255,0.7)"   },
-  { key: "stealth", label: "STH", color: "#00ff88", glow: "rgba(0,255,136,0.7)"   },
+  { key: "stealth", label: "STLTH", color: "#00ff88", glow: "rgba(0,255,136,0.7)"   },
   { key: "tech",    label: "TCH", color: "#cc44ff", glow: "rgba(204,68,255,0.7)"  },
   { key: "grit",    label: "GRT", color: "#ff6644", glow: "rgba(255,102,68,0.7)"  },
   { key: "rep",     label: "REP", color: "#ffdd00", glow: "rgba(255,221,0,0.7)"   },

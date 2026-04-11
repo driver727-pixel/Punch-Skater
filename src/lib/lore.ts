@@ -27,7 +27,6 @@ export const LORE_CHARACTER_NAMES = [
   "Chronos Key",
   "Vanguard Zero",
   "Titan Apex",
-  "The Midnight Syndicate",
   "Echo Protocol",
   "Aether Wing",
   "Aero Mercer",

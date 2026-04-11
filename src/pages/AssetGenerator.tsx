@@ -80,6 +80,14 @@ function buildAssetItems(): AssetItem[] {
 
 const ALL_ITEMS = buildAssetItems();
 
+const IRREGULAR_PLURALS: Record<string, string> = {
+  Battery: "Batteries",
+};
+
+function pluralizeCategory(cat: string): string {
+  return IRREGULAR_PLURALS[cat] ?? (cat.endsWith("s") ? cat : `${cat}s`);
+}
+
 // ── Component state ────────────────────────────────────────────────────────────
 
 type ItemStatus = "idle" | "generating" | "removing-bg" | "done" | "error";
@@ -192,7 +200,7 @@ export function AssetGenerator() {
         const catItems = ALL_ITEMS.filter((i) => i.category === cat);
         return (
           <section key={cat} className="asset-gen-section">
-            <h2 className="asset-gen-section-title">{cat.endsWith("s") ? cat : `${cat}s`}</h2>
+            <h2 className="asset-gen-section-title">{pluralizeCategory(cat)}</h2>
             <div className="asset-gen-grid">
               {catItems.map((item) => {
                 const state = states[item.seedKey];

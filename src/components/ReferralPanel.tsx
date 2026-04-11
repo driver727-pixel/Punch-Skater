@@ -55,7 +55,7 @@ export function ReferralPanel() {
     <div className="referral-panel" data-testid="referral-panel">
       <h3 className="referral-panel__title">🎟 Referral Credits</h3>
       <p className="referral-panel__desc">
-        Share your link below. Every friend who visits earns you{" "}
+        Share your link below. Every friend who creates a free account earns you{" "}
         <strong>1 free generate credit</strong>.
       </p>
 
