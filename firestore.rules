@@ -44,7 +44,9 @@ service cloud.firestore {
     match /trades/{tradeId} {
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.fromUid ||
-        request.auth.uid == resource.data.toUid
+        request.auth.uid == resource.data.toUid ||
+        // Community Market: any signed-in player may browse pending listings
+        resource.data.status == 'pending'
       );
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.fromUid;

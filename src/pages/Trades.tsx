@@ -7,6 +7,8 @@ import {
   doc,
   updateDoc,
   runTransaction,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import type { TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
@@ -16,7 +18,7 @@ import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { TradeModal } from "../components/TradeModal";
 import { useCollection } from "../hooks/useCollection";
 
-type Tab = "inbox" | "outbox";
+type Tab = "inbox" | "outbox" | "market";
 
 export function Trades() {
   const { user } = useAuth();
@@ -25,6 +27,7 @@ export function Trades() {
   const [tab, setTab] = useState<Tab>("inbox");
   const [inbox, setInbox] = useState<TradePayload[]>([]);
   const [outbox, setOutbox] = useState<TradePayload[]>([]);
+  const [market, setMarket] = useState<TradePayload[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -42,7 +45,21 @@ export function Trades() {
       (snap) => setOutbox(snap.docs.map((d) => d.data() as TradePayload))
     );
 
-    return () => { inboxUnsub(); outboxUnsub(); };
+    const marketUnsub = onSnapshot(
+      query(
+        collection(db, "trades"),
+        where("status", "==", "pending"),
+        orderBy("createdAt", "desc"),
+        limit(50)
+      ),
+      (snap) => {
+        const all = snap.docs.map((d) => d.data() as TradePayload);
+        // Exclude the current user's own listings (already in Inbox / Sent)
+        setMarket(all.filter((t) => t.fromUid !== uid && t.toUid !== uid));
+      }
+    );
+
+    return () => { inboxUnsub(); outboxUnsub(); marketUnsub(); };
   }, [uid]);
 
   const handleAccept = async (trade: TradePayload) => {
@@ -134,6 +151,12 @@ export function Trades() {
         >
           Sent
         </button>
+        <button
+          className={`login-tab ${tab === "market" ? "login-tab--active" : ""}`}
+          onClick={() => setTab("market")}
+        >
+          🌐 Market {market.length > 0 && <span className="trade-badge trade-badge--market">{market.length}</span>}
+        </button>
       </div>
 
       {tab === "inbox" && (
@@ -209,6 +232,53 @@ export function Trades() {
                         Cancel
                       </button>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === "market" && (
+        <>
+          <div className="market-header">
+            <p className="market-desc">
+              Live feed of cards actively offered for trade across the community.
+              See something you want? Reach out to the trader directly.
+            </p>
+          </div>
+          {market.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-icon">🏪</span>
+              <p>No community listings right now. Be the first to offer a trade!</p>
+            </div>
+          ) : (
+            <div className="market-grid">
+              {market.map((trade) => (
+                <div key={trade.id} className="market-card">
+                  <div className="market-card-art">
+                    <CardArt card={trade.offeredCard} width={100} height={70} />
+                  </div>
+                  <div className="market-card-info">
+                    <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
+                    <div className="trade-card-sub">
+                      {getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}
+                    </div>
+                    <div className="market-card-district">
+                      {trade.offeredCard.prompts.district}
+                    </div>
+                    <div className="market-card-trader">
+                      <span className="market-trader-label">Offered by</span>{" "}
+                      <strong>{trade.fromEmail}</strong>
+                    </div>
+                    <div className="market-card-age">
+                      {new Date(trade.createdAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}
