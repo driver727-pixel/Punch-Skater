@@ -229,7 +229,7 @@ export function AccountSettings() {
             </button>
           ) : (
             <form className="account-form" onSubmit={handleDeleteAccount}>
-              <p className="login-error" style={{ marginBottom: 8 }}>
+              <p className="login-error account-delete-warning">
                 This action is <strong>permanent</strong>. All your data will be lost.
               </p>
               {isEmailUser && (

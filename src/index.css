@@ -799,6 +799,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 ::-webkit-scrollbar-track { background: var(--bg); border-left: 1px solid var(--border); }
 ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 0; box-shadow: 0 0 6px rgba(0,255,136,0.5); }
 ::-webkit-scrollbar-thumb:hover { background: #00ffaa; box-shadow: 0 0 10px rgba(0,255,136,0.8); }
+/* Firefox */
+* { scrollbar-color: var(--accent) var(--bg); scrollbar-width: thin; }
 
 /* ===== Nav Right ===== */
 .nav-right { display: flex; align-items: center; gap: 8px; }
@@ -1688,6 +1690,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .account-danger-actions .btn-outline {
   flex: 0 0 auto;
 }
+.account-delete-warning { margin-bottom: 8px; }
 
 /* ===== Trades Page ===== */
 .trades-tabs {
