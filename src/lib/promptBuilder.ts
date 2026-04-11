@@ -29,15 +29,16 @@ const STYLE_CLOTHING: Record<string, string> = {
 };
 
 const ARCHETYPE_POSES: Record<string, string> = {
-  "The Knights Technarchy": "crouched in a stealthy ready stance, dressed in all black with no lights on the board",
+  "The Knights Technarchy": "crouched in a dynamic stealthy combat stance, one hand reaching for a concealed weapon, weight shifted forward ready to spring into action, dressed in all black with no lights on the board",
   "Qu111s":                 "a defiant, heroic investigative reporter striking an exaggerated, dynamic action pose, intensely determined expression, dramatically windswept hair, riding a low tech electric skateboard with smaller all-terrain wheels",
+  "Ne0n Legion":            "mid-kickflip in a flashy acrobatic trick pose, one arm raised high trailing neon light streaks, body twisted in a dynamic aerial spin with an electrifying expression",
   "Iron Curtains":          "a hyper-muscular mercenary, 90s comic book military, big muscles bodybuilder type, exaggerated pose and facial expression, riding big girthy electric skateboards on big chunky off-road wheels",
   "D4rk $pider":            "a cyber-hacker wearing mirrored wrap-around visor shades, surrounded by thick glowing neon-green fiber-optic cables, fiercely typing on a chunky retro-futuristic mechanical hacking deck, riding a high tech electric skateboard with lots of wires and antennas",
-  "The Asclepians":         "standing with sleek professional posture, high-tech earpiece visible, corporate logo on the board",
+  "The Asclepians":         "striking a commanding power pose with one arm thrust forward pointing decisively, chin raised with fierce confidence, one foot planted firmly on the board, high-tech earpiece visible, corporate logo on the board",
   "The Mesopotamian Society":"defiant rock-star pose in rugged survivalist gear, all-terrain off-road mountain board style",
-  "Hermes' Squirmies":      "casual working stance in union worker overalls covered in badge patches",
-  "UCPS":                   "ready delivery stance, street-style hoodie and cargo pants, old-looking board with lights",
-  "The Team":               "professional athletic pose in a matching sponsor-logo ensemble, coordinated team colours",
+  "Hermes' Squirmies":      "lunging forward in a dramatic mid-delivery sprint, one arm swinging a heavy parcel overhead, body leaning hard into a sharp turn with intense determination, in union worker overalls covered in badge patches",
+  "UCPS":                   "in an explosive action-hero leap over an obstacle, one arm clutching a package tight to the chest, legs kicked out in a dynamic hurdle pose, street-style hoodie and cargo pants, old-looking board with lights",
+  "The Team":               "in a triumphant victory pose with both fists pumped skyward, muscles tensed, fierce competitive grin, powerful athletic stance, in a matching sponsor-logo ensemble, coordinated team colours",
 };
 
 const VIBE_BOARD: Record<string, string> = {
@@ -90,7 +91,7 @@ const AGE_RESTRICTION = "No kids. No teens. Adults aged 18-99 only. ";
  */
 export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
   const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
-  const pose      = ARCHETYPE_POSES[prompts.archetype] ?? prompts.archetype;
+  const pose      = ARCHETYPE_POSES[prompts.archetype] ?? `striking a dramatic comic book action pose, dynamic and powerful`;
   const board     = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const graffitiLine = graffitiWords?.length
@@ -193,7 +194,7 @@ export function buildCardBackPrompt(rarity: Rarity): string {
  */
 export function buildImagePrompt(prompts: CardPrompts): string {
   const clothing = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
-  const pose     = ARCHETYPE_POSES[prompts.archetype] ?? prompts.archetype;
+  const pose     = ARCHETYPE_POSES[prompts.archetype] ?? `striking a dramatic comic book action pose, dynamic and powerful`;
   const district = DISTRICT_DESCRIPTIONS[prompts.district] ?? prompts.district;
   const board    = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
