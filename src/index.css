@@ -3595,6 +3595,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .admin-empty { text-align: center; color: var(--text-dim); padding: 32px; font-size: 13px; }
 .admin-loading { text-align: center; color: var(--text-dim); padding: 20px; font-size: 13px; }
 
+.admin-create-user {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.admin-section-title { font-size: 14px; font-weight: 700; color: var(--text); margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.6px; }
+.admin-create-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+.admin-create-form .form-group { margin-bottom: 0; }
+
 /* ===== Board Builder ===== */
 
 /* Container for the entire 3-step wizard */

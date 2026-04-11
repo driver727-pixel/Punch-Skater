@@ -60,8 +60,19 @@ const checkoutRateLimit = rateLimit({
   message: { error: 'Too many checkout requests — please wait a moment and try again.' },
 });
 
+// Admin user-creation — very tightly rate-limited.
+const adminUserRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many admin requests — please wait a moment and try again.' },
+});
+
 const FAL_KEY = process.env.FAL_KEY || '';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || '';
+const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
 const FAL_URL = 'https://fal.run/fal-ai/flux/dev';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 
@@ -267,6 +278,96 @@ app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => 
   } catch (err) {
     console.error('Stripe checkout error:', err);
     res.status(500).json({ error: 'Failed to create checkout session.' });
+  }
+});
+
+// ── Admin: Create user ────────────────────────────────────────────────────────
+// Creates a new Firebase Auth user on behalf of an authenticated admin.
+// The caller must supply a valid Firebase ID token in the Authorization header.
+// The token is verified via the Firebase Auth REST API; only emails listed in
+// VITE_ADMIN_EMAILS may use this endpoint.
+app.post('/api/admin/create-user', adminUserRateLimit, async (req, res) => {
+  if (!FIREBASE_API_KEY) {
+    res.status(503).json({ error: 'Firebase is not configured on this server.' });
+    return;
+  }
+
+  // ── 1. Verify caller's ID token ──────────────────────────────────────────
+  const authHeader = req.headers.authorization ?? '';
+  const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!idToken) {
+    res.status(401).json({ error: 'Missing Authorization header.' });
+    return;
+  }
+
+  let callerEmail;
+  try {
+    const lookupRes = await fetch(
+      `${FIREBASE_AUTH_URL}:lookup?key=${FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      }
+    );
+    const lookupData = await lookupRes.json();
+    if (!lookupRes.ok || !Array.isArray(lookupData.users) || lookupData.users.length === 0) {
+      res.status(401).json({ error: 'Invalid or expired ID token.' });
+      return;
+    }
+    callerEmail = (lookupData.users[0].email ?? '').toLowerCase();
+  } catch (err) {
+    console.error('Token verification error:', err);
+    res.status(500).json({ error: 'Could not verify identity.' });
+    return;
+  }
+
+  // ── 2. Check admin privileges ────────────────────────────────────────────
+  const adminEmails = (process.env.VITE_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (adminEmails.length === 0) {
+    res.status(503).json({ error: 'Admin email list is not configured on this server.' });
+    return;
+  }
+
+  if (!adminEmails.includes(callerEmail)) {
+    res.status(403).json({ error: 'Forbidden: admin access required.' });
+    return;
+  }
+
+  // ── 3. Validate payload ──────────────────────────────────────────────────
+  const { email, password } = req.body ?? {};
+  if (!email || typeof email !== 'string') {
+    res.status(400).json({ error: 'email is required.' });
+    return;
+  }
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    res.status(400).json({ error: 'password must be at least 6 characters.' });
+    return;
+  }
+
+  // ── 4. Create the new user via Firebase Auth REST API ────────────────────
+  try {
+    const signUpRes = await fetch(
+      `${FIREBASE_AUTH_URL}:signUp?key=${FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password, returnSecureToken: false }),
+      }
+    );
+    const signUpData = await signUpRes.json();
+    if (!signUpRes.ok) {
+      const msg = signUpData?.error?.message ?? 'Failed to create user.';
+      res.status(400).json({ error: msg });
+      return;
+    }
+    res.status(201).json({ uid: signUpData.localId, email: signUpData.email });
+  } catch (err) {
+    console.error('Create user error:', err);
+    res.status(500).json({ error: 'Failed to create user.' });
   }
 });
 

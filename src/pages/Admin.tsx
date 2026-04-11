@@ -11,7 +11,7 @@ import {
   getCountFromServer,
   type DocumentSnapshot,
 } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { db, auth } from "../lib/firebase";
 import { TIERS, type TierLevel } from "../lib/tiers";
 import { isAdminEmail } from "../lib/adminUtils";
 
@@ -43,6 +43,48 @@ export function Admin() {
   const [hasMore, setHasMore] = useState(false);
   const [savingUid, setSavingUid] = useState<string | null>(null);
   const [successUid, setSuccessUid] = useState<string | null>(null);
+
+  // ── Create user ────────────────────────────────────────────────────────────
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [createSuccess, setCreateSuccess] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateUser = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError("");
+    setCreateSuccess("");
+    if (!auth?.currentUser) {
+      setCreateError("You must be signed in to create users.");
+      return;
+    }
+    setCreating(true);
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/admin/create-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ email: newEmail.trim(), password: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error ?? "Failed to create user.");
+      } else {
+        setCreateSuccess(`✓ Account created for ${data.email}`);
+        setNewEmail("");
+        setNewPassword("");
+      }
+    } catch (err) {
+      console.error("Create user error:", err);
+      setCreateError("Network error — could not reach the server.");
+    } finally {
+      setCreating(false);
+    }
+  }, [newEmail, newPassword]);
 
   // ── Fetch user count ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -121,6 +163,41 @@ export function Admin() {
           <h1 className="page-title">⚙ Admin Panel</h1>
           <p className="page-sub">Manage users and access tiers.</p>
         </div>
+      </div>
+
+      {/* ── Create user ────────────────────────────────────────────────────── */}
+      <div className="admin-create-user">
+        <h2 className="admin-section-title">Create New Account</h2>
+        <form className="admin-create-form" onSubmit={handleCreateUser}>
+          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+            <input
+              className="input"
+              type="email"
+              placeholder="Email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              required
+              autoComplete="off"
+            />
+          </div>
+          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+            <input
+              className="input"
+              type="password"
+              placeholder="Password (min. 6 chars)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+          </div>
+          <button className="btn-primary" type="submit" disabled={creating}>
+            {creating ? "⏳ Creating…" : "Create Account"}
+          </button>
+        </form>
+        {createError && <p className="admin-error">{createError}</p>}
+        {createSuccess && <p className="admin-saved" style={{ marginTop: 8 }}>{createSuccess}</p>}
       </div>
 
       {/* ── Stats row ──────────────────────────────────────────────────────── */}
