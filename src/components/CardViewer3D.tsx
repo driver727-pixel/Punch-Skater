@@ -129,7 +129,7 @@ export function CardViewer3D({
           onTouchEnd={onMouseUp}
         >
           {/* ── Front face ── */}
-          <div className="viewer3d-face viewer3d-face--front" style={{ borderColor: rarityColor }}>
+          <div className="viewer3d-face viewer3d-face--front">
             {hasAnyLayer ? (
               <div className="viewer3d-art-composite">
                 {backgroundImageUrl && (
@@ -159,7 +159,7 @@ export function CardViewer3D({
           {/* ── Back face ── */}
           <div
             className="viewer3d-face viewer3d-face--back"
-            style={{ borderColor: rarityColor, "--accent": accent } as React.CSSProperties}
+            style={{ "--accent": accent } as React.CSSProperties}
           >
             {/* Back-face header */}
             <div className="viewer3d-back-header" style={{ background: rarityColor }}>

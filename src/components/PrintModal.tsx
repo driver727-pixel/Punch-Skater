@@ -99,7 +99,7 @@ export function PrintModal({
               <p className="print-preview-label">Front</p>
               <div className="print-card-wrap">
                 <BleedMarks />
-                <div className="print-card print-card--front" style={{ borderColor: rarityColor }}>
+                <div className="print-card print-card--front">
                   {hasAnyLayer ? (
                     <div className="print-art-composite">
                       {backgroundImageUrl && (
@@ -135,7 +135,7 @@ export function PrintModal({
                 <BleedMarks />
                 <div
                   className="print-card print-card--back"
-                  style={{ borderColor: rarityColor, "--accent": accent } as React.CSSProperties}
+                  style={{ "--accent": accent } as React.CSSProperties}
                 >
                   <div className="print-back-header" style={{ background: rarityColor }}>
                     <span className="print-back-name">{card.identity.name}</span>
@@ -216,7 +216,7 @@ export function PrintModal({
         <div className="print-only-card-wrap">
           <div className="print-only-bleed">
             <BleedMarks />
-            <div className="print-only-card" style={{ borderColor: rarityColor }}>
+            <div className="print-only-card">
               {hasAnyLayer ? (
                 <div className="print-art-composite">
                   {printBackgroundUrl && (
@@ -253,7 +253,7 @@ export function PrintModal({
             <BleedMarks />
             <div
               className="print-only-card print-only-card--back"
-              style={{ borderColor: rarityColor, "--accent": accent } as React.CSSProperties}
+              style={{ "--accent": accent } as React.CSSProperties}
             >
               <div className="print-back-header" style={{ background: rarityColor }}>
                 <span className="print-back-name">{card.identity.name}</span>

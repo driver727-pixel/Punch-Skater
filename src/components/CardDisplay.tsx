@@ -254,7 +254,7 @@ export function CardDisplay({
 
   if (compact) {
     return (
-      <div className="card-compact" style={{ borderColor: rarityColor }}>
+      <div className="card-compact">
         {imageLoading && !hasLayeredImages ? (
           <div className="card-art-skeleton">
             <img src="/assets/loading.gif" alt="Loading…" className="card-art-loading-gif" />
@@ -293,7 +293,7 @@ export function CardDisplay({
   }
 
   return (
-    <div className="card-full" style={{ borderColor: rarityColor, "--accent": accent } as React.CSSProperties}>
+    <div className="card-full" style={{ "--accent": accent } as React.CSSProperties}>
       {/* ── Top Half: Character image, name, and bio ── */}
       <div className="card-half">
         <div className="card-header">
