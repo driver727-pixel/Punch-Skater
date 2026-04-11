@@ -42,6 +42,8 @@ export type Style =
   | "Union"
   | "Olympic";
 export type Gender = "Woman" | "Man" | "Non-binary";
+export type AgeGroup = "Young Adult" | "Adult" | "Middle-aged" | "Senior";
+export type BodyType = "Slim" | "Athletic" | "Average" | "Stocky" | "Heavy";
 
 export interface CardPrompts {
   archetype: Archetype;
@@ -51,6 +53,8 @@ export interface CardPrompts {
   district: District;
   accentColor: string;
   gender: Gender;
+  ageGroup: AgeGroup;
+  bodyType: BodyType;
 }
 
 // ── Conlang overlay (CraftLingua integration) ─────────────────────────────────
