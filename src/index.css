@@ -714,6 +714,116 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-top: 8px;
 }
 
+/* ===== Deck Stats Panel ===== */
+.deck-stats-panel {
+  background: var(--bg2);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 24px rgba(0,255,136,0.07), 3px 3px 0 rgba(0,255,136,0.08);
+}
+.deck-stats-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--accent);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0,255,136,0.6), 2px 2px 0 rgba(0,0,0,0.5);
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 8px;
+}
+.deck-stats-bars { display: flex; flex-direction: column; gap: 10px; }
+.deck-stats-row { display: flex; align-items: center; gap: 10px; }
+.deck-stats-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  width: 36px;
+  flex-shrink: 0;
+  text-shadow: 0 0 6px currentColor;
+}
+.deck-stats-track {
+  flex: 1;
+  height: 14px;
+  background: var(--bg3);
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+.deck-stats-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 1;
+}
+.deck-stats-notch {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--bg);
+  opacity: 0.5;
+  z-index: 2;
+  transform: translateX(-50%);
+}
+.deck-stats-value {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 1px;
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+  text-shadow: 0 0 6px currentColor;
+}
+
+/* Grand total meter */
+.deck-stats-total {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.deck-stats-total-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  width: 36px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+.deck-stats-total-track {
+  flex: 1;
+  height: 10px;
+  background: var(--bg3);
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.deck-stats-total-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #00ccff, #00ff88, #cc44ff, #ff6644, #ffdd00);
+  box-shadow: 0 0 10px rgba(0,255,136,0.5), 0 0 20px rgba(204,68,255,0.3);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.deck-stats-total-value {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(0,255,136,0.7);
+  width: 58px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.deck-stats-total-max { font-size: 10px; color: var(--text-dim); }
+
 /* ===== Save-to-Deck Celebration Overlay ===== */
 .save-celebrate-overlay {
   position: fixed;
