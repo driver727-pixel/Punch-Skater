@@ -1192,7 +1192,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   mix-blend-mode: normal;
 }
 .card-art-layer--background-inset {
-  transform: scale(0.85);
+  transform: scale(0.88);
   transform-origin: center;
 }
 .card-art-layer--character {
@@ -2486,7 +2486,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   object-fit: contain;    /* match card-art-layer--character; avoids cropping the portrait */
 }
 .viewer3d-layer--bg-inset {
-  transform: scale(0.85);
+  transform: scale(0.88);
   transform-origin: center;
 }
 .viewer3d-layer--frame {
@@ -2734,7 +2734,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-art-layer--char  { mix-blend-mode: normal; }
 .print-art-layer--frame { mix-blend-mode: screen; }
 .print-art-layer--bg-inset {
-  transform: scale(0.85);
+  transform: scale(0.88);
   transform-origin: center;
 }
 
@@ -3004,7 +3004,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .print-only-card .print-art-layer--char  { mix-blend-mode: normal; }
   .print-only-card .print-art-layer--frame { mix-blend-mode: screen; }
   .print-only-card .print-art-layer--bg-inset {
-    transform: scale(0.85);
+    transform: scale(0.88);
     transform-origin: center;
   }
 

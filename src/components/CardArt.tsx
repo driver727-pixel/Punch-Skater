@@ -183,7 +183,25 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
   }
 
   if (rarity === "Punch Skater") {
-    // Blood-spatter dots constrained to left/right side edges using frameSeed.
+    const sideRails = [
+      { x: 1.5, y: 8, w: 7.5, h: h - 16 },
+      { x: w - 9, y: 8, w: 7.5, h: h - 16 },
+    ];
+    const perforationHoles = Array.from({ length: 18 }, (_, i) => {
+      const side = i % 2 === 0 ? "left" : "right";
+      const row = Math.floor(i / 2);
+      const cx = side === "left" ? 5.3 : w - 5.3;
+      const cy = 12 + row * ((h - 24) / 8) + (seededVal(frameSeed, 620 + i) - 0.5) * 2.2;
+      const r = 0.7 + seededVal(frameSeed, 640 + i) * 0.55;
+      return { cx, cy, r };
+    });
+    const cornerPads = [
+      { x: -1.5, y: 2.5, w: 27, h: 9.5, ang: -12, fill: "#e6d2aa", opacity: 0.9 },
+      { x: w - 24, y: 0.8, w: 25, h: 10, ang: 12, fill: "#dcbf97", opacity: 0.9 },
+      { x: -1.8, y: h - 14, w: 21, h: 10.5, ang: 7, fill: "#d8bc92", opacity: 0.86 },
+      { x: w - 28, y: h - 11.5, w: 28, h: 9.5, ang: -9, fill: "#dfc59a", opacity: 0.88 },
+    ];
+    // Blood-spatter dots constrained to the outer edges using frameSeed.
     const spatters = Array.from({ length: 24 }, (_, i) => {
       const side = seededVal(frameSeed, i * 6) > 0.5 ? 1 : 3;
       const pos  = seededVal(frameSeed, i * 6 + 1);
@@ -240,6 +258,20 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
       <>
         <rect x={0.6} y={0.6} width={w - 1.2} height={h - 1.2} rx={1.2}
           fill="none" stroke="#c8b89a" strokeWidth="1.1" strokeOpacity="0.78" />
+        {sideRails.map((rail, i) => (
+          <rect
+            key={`rail-${i}`}
+            x={rail.x}
+            y={rail.y}
+            width={rail.w}
+            height={rail.h}
+            rx={1}
+            fill="#e8d8b0"
+            fillOpacity="0.82"
+            stroke="#c8b89a"
+            strokeWidth="0.45"
+          />
+        ))}
         {edgeWraps.map((b, i) => (
           <rect key={i}
             x={-1.5} y={b.cy - b.thickness / 2}
@@ -259,6 +291,31 @@ function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
             strokeOpacity="0.45"
             strokeWidth="0.5"
             strokeLinecap="round"
+          />
+        ))}
+        {cornerPads.map((pad, i) => (
+          <rect
+            key={`pad-${i}`}
+            x={pad.x}
+            y={pad.y}
+            width={pad.w}
+            height={pad.h}
+            rx={1.6}
+            fill={pad.fill}
+            fillOpacity={pad.opacity}
+            stroke="#c8b89a"
+            strokeWidth="0.55"
+            transform={`rotate(${pad.ang},${pad.x + pad.w / 2},${pad.y + pad.h / 2})`}
+          />
+        ))}
+        {perforationHoles.map((hole, i) => (
+          <circle
+            key={`hole-${i}`}
+            cx={hole.cx}
+            cy={hole.cy}
+            r={hole.r}
+            fill="#8d5f52"
+            fillOpacity="0.7"
           />
         ))}
         {spatters.map((s, i) => (
