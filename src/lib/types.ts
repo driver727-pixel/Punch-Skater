@@ -85,6 +85,8 @@ export interface CardPayload {
     name: string;
     crew: Faction;
     serialNumber: string;
+    /** User-defined age displayed on the card beneath the character name. */
+    age?: string;
   };
   stats: {
     speed: number;

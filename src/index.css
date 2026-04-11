@@ -3228,6 +3228,47 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .stat-flavor-text--editable:hover { opacity: 0.8; }
 
+/* Age field */
+.card-age {
+  font-size: 5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+  display: block;
+}
+.card-age--editable {
+  cursor: pointer;
+}
+.card-age--editable:hover { opacity: 0.8; }
+.card-age-placeholder {
+  opacity: 0.35;
+  font-style: italic;
+}
+
+/* Age input inside the card (smaller than name input) */
+.card-age-input {
+  font-size: 5px !important;
+  font-weight: normal !important;
+}
+
+/* Bio field shown under name/age */
+.card-bio {
+  font-size: 5px;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 2px;
+  display: block;
+  line-height: 1.4;
+}
+.card-bio--editable {
+  cursor: pointer;
+}
+.card-bio--editable:hover { opacity: 0.8; }
+
+/* Bio textarea (same dimensions as existing card-edit-textarea) */
+.card-bio-textarea {
+  margin-top: 2px;
+}
+
 /* Pencil hint shown on editable fields */
 .card-edit-hint {
   font-size: 5px;
@@ -3237,6 +3278,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transition: opacity 0.15s;
 }
 .card-name--editable:hover .card-edit-hint,
+.card-age--editable:hover .card-edit-hint,
+.card-bio--editable:hover .card-edit-hint,
 .stat-flavor-text--editable:hover .card-edit-hint {
   opacity: 0.6;
 }
