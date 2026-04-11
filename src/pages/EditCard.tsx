@@ -74,10 +74,14 @@ export function EditCard() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const newCard = generateCard(prompts);
     const merged: CardPayload = {
-      ...original,
       ...newCard,
       id: original.id,
       createdAt: original.createdAt,
+      backgroundImageUrl: original.backgroundImageUrl,
+      characterImageUrl: original.characterImageUrl,
+      frameImageUrl: original.frameImageUrl,
+      imageUrl: original.imageUrl,
+      discovery: original.discovery,
       board: boardConfig,
       boardLoadout: calculateBoardStats(boardConfig),
     };

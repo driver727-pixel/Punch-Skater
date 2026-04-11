@@ -455,7 +455,7 @@ export function buildGlassCanopyMissionPreview(
 
   const playerDeck: MissionPlayerDeck = {
     board: runnerBoard,
-    boardLoadout: runnerLoadout ?? undefined,
+    boardLoadout: runnerLoadout || undefined,
     wheelType: runnerBoard?.wheels,
     stats: {
       speed: roundPreviewStat(averageSpeed * 0.6 + (runnerLoadout?.speed ?? 0) * 0.7 + averageRep * 0.15),
