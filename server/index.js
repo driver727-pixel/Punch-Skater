@@ -3,6 +3,13 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import Stripe from 'stripe';
 import 'dotenv/config';
+import { createRequire } from 'module';
+
+// Load the shared pricing config — the single source of truth for Stripe
+// price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
+// to change prices; this file derives ALLOWED_PRICE_IDS from it automatically.
+const _require = createRequire(import.meta.url);
+const tierPricing = _require('../src/lib/tierPricing.json');
 
 const app = express();
 
@@ -76,11 +83,13 @@ const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
 const FAL_URL = 'https://fal.run/fal-ai/flux/dev';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 
-// Allowed Stripe price IDs — only these may be used to create checkout sessions.
-const ALLOWED_PRICE_IDS = new Set([
-  'price_1TJOKHRCr5JxQN06wMYFHTm5', // tier2 Street Creator ($5)
-  'price_1TJOKrRCr5JxQN06RyDF02bi', // tier3 Deck Master ($10)
-]);
+// Allowed Stripe price IDs — derived from src/lib/tierPricing.json so that
+// updating prices only requires editing that one file.
+const ALLOWED_PRICE_IDS = new Set(
+  Object.values(tierPricing)
+    .map((t) => t.stripePriceId)
+    .filter(Boolean),
+);
 
 // Stripe client — instantiated once at startup so it is reused across requests.
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;

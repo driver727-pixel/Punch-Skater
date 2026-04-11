@@ -33,9 +33,9 @@ const ADMIN_API_URL = resolveApiUrl(
 );
 
 const TIER_LABELS: Record<string, string> = {
-  free: "Free Rider",
-  tier2: "Street Creator ($5)",
-  tier3: "Deck Master ($10)",
+  free: TIERS.free.name,
+  tier2: `${TIERS.tier2.name} (${TIERS.tier2.price})`,
+  tier3: `${TIERS.tier3.name} (${TIERS.tier3.price})`,
 };
 
 export function Admin() {

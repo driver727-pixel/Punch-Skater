@@ -1,3 +1,10 @@
+// ── Pricing config ────────────────────────────────────────────────────────────
+// To change prices: update src/lib/tierPricing.json (the single source of
+// truth for Stripe price IDs, buy URLs, and display price strings).
+// server/index.js derives its ALLOWED_PRICE_IDS from the same file, so only
+// one edit is required when the pricing structure changes.
+import tierPricing from "./tierPricing.json";
+
 export type TierLevel = "free" | "tier2" | "tier3";
 
 export interface Tier {
@@ -44,7 +51,7 @@ export const TIERS: Record<TierLevel, Tier> = {
   tier2: {
     level: "tier2",
     name: "Street Creator",
-    price: "$5 one-time",
+    price: tierPricing.tier2.price,
     cardLimit: 18,
     canSave: true,
     canEditDecks: false,
@@ -60,13 +67,13 @@ export const TIERS: Record<TierLevel, Tier> = {
       "Export your collection",
       "CraftLingua language profiles (Coming Soon)",
     ],
-    stripeUrl: "https://buy.stripe.com/4gW2bUeLCceFa3x8M2",
-    stripePriceId: "price_1TJOKHRCr5JxQN06wMYFHTm5",
+    stripeUrl: tierPricing.tier2.stripeUrl,
+    stripePriceId: tierPricing.tier2.stripePriceId,
   },
   tier3: {
     level: "tier3",
     name: "Deck Master",
-    price: "$10 one-time",
+    price: tierPricing.tier3.price,
     cardLimit: 100,
     canSave: true,
     canEditDecks: true,
@@ -81,8 +88,8 @@ export const TIERS: Record<TierLevel, Tier> = {
       "Edit & delete any card",
       "CraftLingua language profiles (Coming Soon)",
     ],
-    stripeUrl: "https://buy.stripe.com/cNi5kF3XOcFA4DH1w25ZC01",
-    stripePriceId: "price_1TJOKrRCr5JxQN06RyDF02bi",
+    stripeUrl: tierPricing.tier3.stripeUrl,
+    stripePriceId: tierPricing.tier3.stripePriceId,
   },
 };
 

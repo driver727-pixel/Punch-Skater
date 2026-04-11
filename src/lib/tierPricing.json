@@ -1,0 +1,12 @@
+{
+  "tier2": {
+    "price": "$5 one-time",
+    "stripePriceId": "price_1TJOKHRCr5JxQN06wMYFHTm5",
+    "stripeUrl": "https://buy.stripe.com/4gW2bUeLCceFa3x8M2"
+  },
+  "tier3": {
+    "price": "$10 one-time",
+    "stripePriceId": "price_1TJOKrRCr5JxQN06RyDF02bi",
+    "stripeUrl": "https://buy.stripe.com/cNi5kF3XOcFA4DH1w25ZC01"
+  }
+}
