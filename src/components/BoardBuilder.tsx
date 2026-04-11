@@ -17,9 +17,9 @@ import {
   WHEEL_OPTIONS,
   BATTERY_OPTIONS,
   DEFAULT_BOARD_CONFIG,
-  getBoardAssetUrls,
   calculateBoardStats,
 } from "../lib/boardBuilder";
+import { useBoardLayerUrls } from "../hooks/useBoardLayerUrls";
 import { BoardComposite } from "./BoardComposite";
 import { ConveyorCarousel } from "./ConveyorCarousel";
 import { PowerSwitchButton } from "./PowerSwitchButton";
@@ -104,7 +104,7 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
     onChange(next);
   }, [onChange]);
 
-  const assetUrls = getBoardAssetUrls(value);
+  const assetUrls = useBoardLayerUrls(value);
 
   return (
     <div className={`board-builder${shaking ? " board-builder--shake" : ""}`}>
