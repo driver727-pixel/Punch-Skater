@@ -76,21 +76,26 @@ const PERSONALITY_POOLS: Record<string, string[]> = {
   "The Team":               ["coordinated",  "athletic",    "competitive",   "disciplined", "cohesive"],
 };
 
-// ── Stat modifiers by archetype (added on top of a 1–7 base roll) ─────────────
+// ── Stat constants ─────────────────────────────────────────────────────────────
+
+/** Maximum value for a single stat.  5 stats × 200 = 1 000 max per card. */
+export const MAX_SINGLE_STAT = 200;
+
+// ── Stat modifiers by archetype (added on top of a 20–140 base roll) ──────────
 
 interface StatMods { speed: number; stealth: number; tech: number; grit: number; rep: number; }
 
 const ARCHETYPE_MODS: Record<string, StatMods> = {
-  "The Knights Technarchy":  { speed:  2, stealth:  3, tech:  1, grit:  0, rep: -1 },
-  "Qu111s":                  { speed:  1, stealth: -1, tech:  0, grit:  2, rep:  3 },
-  "Ne0n Legion":             { speed:  2, stealth:  2, tech:  1, grit:  0, rep: -1 },
-  "Iron Curtains":           { speed:  1, stealth:  0, tech:  1, grit:  3, rep:  0 },
-  "D4rk $pider":             { speed: -1, stealth:  2, tech:  3, grit:  0, rep:  0 },
-  "The Asclepians":          { speed:  0, stealth:  0, tech:  1, grit:  3, rep:  1 },
-  "The Mesopotamian Society":{ speed:  1, stealth:  1, tech:  2, grit: -1, rep:  2 },
-  "Hermes' Squirmies":       { speed:  1, stealth:  1, tech:  0, grit:  1, rep:  1 },
-  "UCPS":                    { speed:  1, stealth:  0, tech:  0, grit:  1, rep:  2 },
-  "The Team":                { speed:  2, stealth: -1, tech:  0, grit:  2, rep:  2 },
+  "The Knights Technarchy":  { speed:  40, stealth:  60, tech:  20, grit:   0, rep: -20 },
+  "Qu111s":                  { speed:  20, stealth: -20, tech:   0, grit:  40, rep:  60 },
+  "Ne0n Legion":             { speed:  40, stealth:  40, tech:  20, grit:   0, rep: -20 },
+  "Iron Curtains":           { speed:  20, stealth:   0, tech:  20, grit:  60, rep:   0 },
+  "D4rk $pider":             { speed: -20, stealth:  40, tech:  60, grit:   0, rep:   0 },
+  "The Asclepians":          { speed:   0, stealth:   0, tech:  20, grit:  60, rep:  20 },
+  "The Mesopotamian Society":{ speed:  20, stealth:  20, tech:  40, grit: -20, rep:  40 },
+  "Hermes' Squirmies":       { speed:  20, stealth:  20, tech:   0, grit:  20, rep:  20 },
+  "UCPS":                    { speed:  20, stealth:   0, tech:   0, grit:  20, rep:  40 },
+  "The Team":                { speed:  40, stealth: -20, tech:   0, grit:  40, rep:  40 },
 };
 
 const RARITY_MULTIPLIER: Record<Rarity, number> = {
@@ -116,10 +121,10 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
   const mult    = RARITY_MULTIPLIER[prompts.rarity];
   const mods    = ARCHETYPE_MODS[prompts.archetype] ?? { speed: 0, stealth: 0, tech: 0, grit: 0, rep: 0 };
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
-  const clamp = (n: number) => Math.max(1, Math.min(10, n));
+  // ── Stats (1–200 per stat; 5 stats × 200 = 1 000 max per card) ─────────────
+  const clamp = (n: number) => Math.max(1, Math.min(MAX_SINGLE_STAT, n));
   const rollStat = (mod: number): number =>
-    clamp(Math.round((charRng.range(1, 7) + mod) * mult));
+    clamp(Math.round((charRng.range(20, 140) + mod) * mult));
 
   const speed   = rollStat(mods.speed);
   const stealth = rollStat(mods.stealth);
