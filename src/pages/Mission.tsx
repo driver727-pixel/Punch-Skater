@@ -17,6 +17,8 @@ import {
   isDistrictAccessibleWithBoardType,
 } from "../lib/districtWeather";
 
+const MISSION_MARKER_OFFSET_Y = -76;
+
 export function Mission() {
   const navigate = useNavigate();
   const { decks } = useDecks();
@@ -79,7 +81,7 @@ export function Mission() {
         label: mission.pinLabel,
         title: `${mission.name} · ${mission.district}`,
         active: mission.id === activeMission.id,
-        offsetY: -76,
+        offsetY: MISSION_MARKER_OFFSET_Y,
         onClick: () => {
           setActiveMissionId(mission.id);
           setMissionResult(null);
