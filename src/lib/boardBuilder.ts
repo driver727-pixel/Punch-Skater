@@ -591,15 +591,15 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
   const battDesc  = batt?.description  ?? config.battery;
 
   return (
-    `Isometric view at a 45-degree angle, product photography of a fully assembled ` +
+    `Isometric 45-degree hero illustration of a fully assembled ` +
     `DIY electric skateboard on a clean white studio background. ` +
     `Deck: ${deckDesc} ` +
     `Drivetrain: ${driveDesc} ` +
     `Motor: ${motorDesc} ` +
     `Wheels: ${wheelDesc} ` +
     `Battery: ${battDesc} ` +
-    `Art style of gouache painting, dramatic studio lighting, sharp detail, ` +
-    `vibrant saturated colors, isolated on white background.`
+    `Bold non-photoreal 1990s X-Men-era superhero comic-book rendering with crisp inked outlines, halftone texture, painted highlights, graphic shadows, ` +
+    `vibrant saturated colors, sharp detail, clearly illustrated not photographed, not a product photo, not live-action, not a 3D render, isolated on white background.`
   );
 }
 

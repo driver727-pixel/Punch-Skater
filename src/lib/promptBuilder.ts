@@ -73,6 +73,10 @@ const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
 const AGE_RESTRICTION =
   "Clearly an adult subject aged 21 or older with fully grown body proportions and mature facial structure. Never a child or teenager. ";
 
+const COMIC_BOOK_STYLE =
+  "Bold non-photoreal 1990s X-Men-era superhero comic-book illustration, thick inked linework, hand-painted highlights, halftone texture, " +
+  "graphic shadows, punchy poster colors, exaggerated heroic silhouette, clearly illustrated not photographed, not live-action, not 3D render. ";
+
 // ── Appearance helpers ──────────────────────────────────────────────────────────
 
 function buildHairDescription(hairLength?: string, hairColor?: string): string {
@@ -186,8 +190,8 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     `Mood: ${mood}. ` +
     characterDesc +
     AGE_RESTRICTION +
-    `Trading card illustration with grounded stylized realism in the spirit of 1990s premium comic-card art, airbrushed gouache texture, ` +
-    `vibrant but believable color, crisp detail, dramatic rim lighting, no chibi or cartoon proportions. ` +
+    COMIC_BOOK_STYLE +
+    `Premium trading-card illustration energy, airbrushed comic color holds, crisp detail, dramatic rim lighting, no chibi or cartoon proportions. ` +
     `Isolated on a solid neutral medium-gray studio background, full figure visible from head to toe, centred. ` +
     `Safe-for-work, fully clothed adult character art, LGBTQIA+.`
   );
@@ -298,7 +302,8 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     `${hairDesc}${skinDesc}${faceDesc}` +
     `Mood: ${mood}. ` +
     AGE_RESTRICTION +
-    `Grounded stylized realism, premium 1990s trading-card illustration energy, cinematic lighting, crisp detail, no cartoon or childlike proportions, 4K. ` +
+    COMIC_BOOK_STYLE +
+    `Premium 1990s trading-card illustration energy, cinematic lighting, crisp detail, no cartoon or childlike proportions, 4K. ` +
     `Safe-for-work, fully clothed adult character art, LGBTQIA+.`
   );
 }

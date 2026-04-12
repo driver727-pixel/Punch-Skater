@@ -54,7 +54,9 @@ const NEGATIVE_PROMPT =
   "nudity, naked, exposed, gore, sexually explicit, porn, pornographic, rape, sexual assault, " +
   "death, killing, kill, murder, violence, decapitation, mutilation, kids, minors, " +
   "blurry, blur, fuzzy, soft focus, out of focus, low resolution, low quality, degraded, " +
-  "pixelated, jpeg artifacts, compression artifacts, watermark, signature";
+  "pixelated, jpeg artifacts, compression artifacts, watermark, signature, " +
+  "photograph, photography, photorealistic, photo-realistic, realistic skin pores, live action, live-action, " +
+  "cinema still, DSLR, studio photo, stock photo, hyperreal, hyper-real, 3d render, CGI, octane render";
 
 /**
  * MANDATORY positive suffix — automatically appended to every prompt inside
