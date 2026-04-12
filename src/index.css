@@ -527,6 +527,26 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 }
 
+@media (max-width: 960px) {
+  .forge-board-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .forge-board-map-shell {
+    display: none;
+  }
+
+  .forge-map-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 961px) {
+  .forge-map-drawer {
+    display: none;
+  }
+}
+
 .forge-form {
   background: var(--bg2);
   border: 2px solid var(--border);
@@ -545,6 +565,96 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 5px 5px 0 rgba(0,255,136,0.3), 0 0 30px rgba(0,255,136,0.12);
   position: sticky;
   top: 24px;
+}
+
+.forge-board-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.forge-board-map-shell,
+.forge-board-builder-shell {
+  min-width: 0;
+}
+
+.forge-map-toggle {
+  display: none;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.forge-map-drawer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 80;
+}
+
+.forge-map-drawer__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(2, 4, 10, 0.72);
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+
+.forge-map-drawer__panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(92vw, 430px);
+  height: 100%;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(7, 12, 22, 0.98), rgba(4, 8, 16, 0.98)),
+    var(--bg2);
+  border-right: 1px solid rgba(0, 204, 255, 0.28);
+  box-shadow: 14px 0 40px rgba(0, 0, 0, 0.48);
+  overflow-y: auto;
+  transform: translateX(-105%);
+  transition: transform 0.24s ease;
+}
+
+.forge-map-drawer--open {
+  pointer-events: auto;
+}
+
+.forge-map-drawer--open .forge-map-drawer__scrim {
+  opacity: 1;
+}
+
+.forge-map-drawer--open .forge-map-drawer__panel {
+  transform: translateX(0);
+}
+
+.forge-map-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.forge-map-drawer__eyebrow {
+  font-size: 10px;
+  color: var(--accent2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.forge-map-drawer__title {
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.forge-map-drawer__close {
+  min-width: 48px;
 }
 
 .forge-form .pill-group {
@@ -2257,6 +2367,313 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 @media (max-width: 600px) { .lore-world-cols { grid-template-columns: 1fr; } }
 
+.geo-atlas {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.geo-atlas__panel {
+  background: linear-gradient(180deg, rgba(8, 12, 24, 0.96), rgba(5, 9, 18, 0.98));
+  border: 1px solid rgba(0, 204, 255, 0.22);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 18px 40px rgba(0,0,0,0.34);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.geo-atlas__panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.geo-atlas__eyebrow {
+  font-size: 10px;
+  color: var(--accent2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.geo-atlas__title {
+  font-size: 18px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.geo-atlas__badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #dff9ff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 999px;
+  background: rgba(0, 255, 136, 0.08);
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.14);
+}
+
+.geo-atlas__body {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.geo-atlas__map {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 204, 255, 0.16);
+  background:
+    radial-gradient(circle at top, rgba(0, 204, 255, 0.16), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(255, 0, 122, 0.14), transparent 32%),
+    linear-gradient(180deg, rgba(10, 16, 30, 0.98), rgba(4, 8, 16, 0.98));
+}
+
+.geo-atlas__map::before,
+.geo-atlas__map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.geo-atlas__map::before {
+  background-image:
+    linear-gradient(rgba(0, 204, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 204, 255, 0.08) 1px, transparent 1px);
+  background-size: 36px 36px;
+  opacity: 0.5;
+}
+
+.geo-atlas__map::after {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04), transparent 20%, transparent 80%, rgba(255,255,255,0.03)),
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 4px);
+  opacity: 0.24;
+}
+
+.geo-atlas__map--australia { min-height: 460px; }
+.geo-atlas__map--world { min-height: 260px; }
+
+.geo-atlas__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.geo-atlas__continent-shape {
+  stroke-width: 0.75;
+  fill: rgba(0, 204, 255, 0.08);
+  stroke: rgba(0, 255, 136, 0.72);
+  filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.18));
+}
+
+.geo-atlas__continent-shape--tasmania {
+  fill: rgba(0, 204, 255, 0.04);
+  stroke: rgba(0, 204, 255, 0.58);
+}
+
+.geo-atlas__mesh-line {
+  fill: none;
+  stroke: rgba(0, 204, 255, 0.48);
+  stroke-width: 0.45;
+  stroke-dasharray: 1.4 1.2;
+  stroke-linecap: round;
+}
+
+.geo-atlas__route-line {
+  stroke: rgba(0, 204, 255, 0.82);
+  stroke-width: 0.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1.6 1.2;
+  filter: drop-shadow(0 0 8px rgba(0, 204, 255, 0.32));
+}
+
+.geo-atlas__route-label {
+  fill: rgba(211, 247, 255, 0.9);
+  font-size: 2.2px;
+  letter-spacing: 0.18px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(5, 10, 18, 0.96);
+  stroke-width: 0.9px;
+  stroke-linejoin: round;
+}
+
+.geo-atlas__district {
+  --map-node-glow: rgba(0,204,255,0.18);
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0,204,255,0.4);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(8,14,24,0.95), rgba(10,18,30,0.88));
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 10px 24px var(--map-node-glow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1;
+}
+
+.geo-atlas__district-name {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--accent);
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.geo-atlas__district-meta {
+  font-size: 9px;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+
+.geo-atlas__district--sky { --map-node-glow: rgba(0,204,255,0.22); }
+.geo-atlas__district--signal { --map-node-glow: rgba(255,204,0,0.2); }
+.geo-atlas__district--glass { --map-node-glow: rgba(255,0,122,0.24); }
+.geo-atlas__district--grid { --map-node-glow: rgba(127,255,212,0.2); }
+.geo-atlas__district--industrial { --map-node-glow: rgba(255,132,0,0.24); }
+.geo-atlas__district--roads { --map-node-glow: rgba(255,255,255,0.15); }
+.geo-atlas__district--underground { --map-node-glow: rgba(176,84,255,0.24); }
+.geo-atlas__district--wild { --map-node-glow: rgba(90,201,120,0.24); }
+
+.geo-atlas__legend {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  padding: 0;
+}
+
+.geo-atlas__legend-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.geo-atlas__legend-label {
+  font-size: 10px;
+  color: var(--accent2);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.geo-atlas__legend-path {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.geo-atlas__world-grid {
+  stroke: rgba(0, 204, 255, 0.18);
+  stroke-width: 0.25;
+}
+
+.geo-atlas__world-continent {
+  fill: rgba(8, 18, 28, 0.72);
+  stroke: rgba(0, 204, 255, 0.56);
+  stroke-width: 0.55;
+  filter: drop-shadow(0 0 8px rgba(0, 204, 255, 0.12));
+}
+
+.geo-atlas__world-continent--highlight {
+  fill: rgba(0, 255, 136, 0.14);
+  stroke: rgba(0, 255, 136, 0.92);
+  filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.26));
+}
+
+.geo-atlas__world-wire {
+  fill: none;
+  stroke: rgba(0, 204, 255, 0.34);
+  stroke-width: 0.35;
+}
+
+.geo-atlas__world-wire--highlight {
+  stroke: rgba(225, 255, 239, 0.8);
+}
+
+.geo-atlas__world-target {
+  fill: none;
+  stroke: rgba(0, 255, 136, 0.58);
+  stroke-width: 0.35;
+  transform-origin: center;
+}
+
+.geo-atlas__world-scan {
+  fill: none;
+  stroke: rgba(255, 0, 122, 0.32);
+  stroke-width: 0.3;
+  stroke-dasharray: 2 2;
+}
+
+.geo-atlas__world-callout {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 255, 136, 0.28);
+  border-radius: 10px;
+  background: rgba(7, 13, 22, 0.88);
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.geo-atlas__world-callout-label {
+  font-size: 9px;
+  color: var(--accent2);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.geo-atlas__world-callout-title {
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.geo-atlas--compact {
+  gap: 14px;
+}
+
+.geo-atlas--compact .geo-atlas__panel {
+  padding: 14px;
+}
+
+.geo-atlas--compact .geo-atlas__title {
+  font-size: 15px;
+}
+
+.geo-atlas--compact .geo-atlas__body,
+.geo-atlas--compact .geo-atlas__legend {
+  display: none;
+}
+
+.geo-atlas--compact .geo-atlas__map--australia {
+  min-height: 340px;
+}
+
+.geo-atlas--compact .geo-atlas__map--world {
+  min-height: 210px;
+}
+
 .lore-map {
   position: relative;
   min-height: 540px;
@@ -2536,6 +2953,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 @media (max-width: 720px) {
+  .geo-atlas__map--australia {
+    min-height: 400px;
+  }
+
+  .geo-atlas__district {
+    width: 98px;
+    padding: 8px 9px;
+  }
+
+  .geo-atlas__route-label {
+    display: none;
+  }
+
   .lore-map {
     min-height: 480px;
   }
@@ -2551,6 +2981,33 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 @media (max-width: 520px) {
+  .geo-atlas__panel-head {
+    flex-direction: column;
+  }
+
+  .geo-atlas__badge {
+    align-self: flex-start;
+  }
+
+  .geo-atlas__map--australia {
+    min-height: 360px;
+  }
+
+  .geo-atlas__world-callout {
+    right: 10px;
+    bottom: 10px;
+    padding: 8px 10px;
+  }
+
+  .geo-atlas__district-name {
+    font-size: 10px;
+    letter-spacing: 0.8px;
+  }
+
+  .geo-atlas__district-meta {
+    font-size: 8px;
+  }
+
   .lore-map {
     min-height: 460px;
   }

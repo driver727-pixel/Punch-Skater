@@ -20,6 +20,7 @@ import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats } from "../lib/boardBuilder";
 import { ACTIVE_STYLES } from "../lib/styles";
+import { GeoAtlas } from "../components/GeoAtlas";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ACTIVE_STYLES;
@@ -100,6 +101,7 @@ export function CardForge() {
   const [isFirstCard, setIsFirstCard] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
+  const [isMapDrawerOpen, setIsMapDrawerOpen] = useState(false);
 
   // Abort controller ref for cancelling in-flight image generation
   const abortRef = useRef<AbortController | null>(null);
@@ -120,6 +122,19 @@ export function CardForge() {
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
   }, []);
+
+  useEffect(() => {
+    if (!isMapDrawerOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMapDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMapDrawerOpen]);
 
   const set = <K extends keyof CardPrompts>(key: K, val: CardPrompts[K]) =>
     setPrompts((p) => ({ ...p, [key]: val }));
@@ -648,11 +663,27 @@ export function CardForge() {
             <p className="form-hint" style={{ marginBottom: 12 }}>
               Build your electric skateboard — your most important piece of gear.
             </p>
-            <BoardBuilder
-              value={boardConfig}
-              onChange={setBoardConfig}
-              onSave={(config) => { setBoardConfig(config); }}
-            />
+            <button
+              type="button"
+              className="btn-outline forge-map-toggle"
+              onClick={() => setIsMapDrawerOpen(true)}
+              aria-expanded={isMapDrawerOpen}
+              aria-controls="forge-map-drawer"
+            >
+              🗺 Open Australia map
+            </button>
+            <div className="forge-board-layout">
+              <aside className="forge-board-map-shell" aria-label="Punch Skater world map">
+                <GeoAtlas compact />
+              </aside>
+              <div className="forge-board-builder-shell">
+                <BoardBuilder
+                  value={boardConfig}
+                  onChange={setBoardConfig}
+                  onSave={(config) => { setBoardConfig(config); }}
+                />
+              </div>
+            </div>
           </div>
 
           <button
@@ -793,6 +824,35 @@ export function CardForge() {
             </div>
           )}
         </div>
+      </div>
+
+      <div
+        id="forge-map-drawer"
+        className={`forge-map-drawer${isMapDrawerOpen ? " forge-map-drawer--open" : ""}`}
+        aria-hidden={!isMapDrawerOpen}
+      >
+        <button
+          type="button"
+          className="forge-map-drawer__scrim"
+          aria-label="Close Australia map panel"
+          onClick={() => setIsMapDrawerOpen(false)}
+        />
+        <aside className="forge-map-drawer__panel" aria-label="Punch Skater Australia map panel">
+          <div className="forge-map-drawer__header">
+            <div>
+              <p className="forge-map-drawer__eyebrow">mobile atlas</p>
+              <h2 className="forge-map-drawer__title">Australia map</h2>
+            </div>
+            <button
+              type="button"
+              className="btn-outline forge-map-drawer__close"
+              onClick={() => setIsMapDrawerOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <GeoAtlas compact />
+        </aside>
       </div>
 
       {/* 3D viewer and print modals — rendered at page level since tool buttons are hidden on the card */}
