@@ -151,7 +151,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     prompts.ageGroup === "Young Adult" ? "young adult (20s), smooth skin, youthful energy" :
     prompts.ageGroup === "Adult"       ? "adult (30s), slight lines around eyes" :
     prompts.ageGroup === "Middle-aged" ? "middle-aged (late 40s-50s), prominent crow's feet, forehead wrinkles, visible laugh lines, slightly sagging jawline, greying at the temples" :
-    /* Senior */                         "elderly senior (late 60s-70s+), deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls, visibly old and aged";
+    /* Senior */                         "elderly senior (late 60s-70s+), deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls";
 
   const bodyDesc =
     prompts.bodyType === "Slim"            ? "slim narrow-shouldered build, thin arms and legs" :
@@ -279,7 +279,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     prompts.ageGroup === "Young Adult" ? "young adult (20s), smooth skin, youthful energy" :
     prompts.ageGroup === "Adult"       ? "adult (30s), slight lines around eyes" :
     prompts.ageGroup === "Middle-aged" ? "middle-aged (late 40s-50s), prominent crow's feet, forehead wrinkles, visible laugh lines, slightly sagging jawline, greying at the temples" :
-    /* Senior */                         "elderly senior (late 60s-70s+), deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls, visibly old and aged";
+    /* Senior */                         "elderly senior (late 60s-70s+), deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls";
 
   const bodyDesc =
     prompts.bodyType === "Slim"            ? "slim narrow-shouldered build, thin arms and legs" :
