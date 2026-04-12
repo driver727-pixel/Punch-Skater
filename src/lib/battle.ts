@@ -66,14 +66,23 @@ export function formatStatLabel(stat: StatKey): string {
 }
 
 export function buildArenaDeckSummary(cards: CardPayload[]): ArenaDeckSummary {
+  if (cards.length === 0) {
+    return {
+      deckPower: 0,
+      strongestStat: "speed",
+      strongestStatTotal: 0,
+      synergyBonusPct: 0,
+      archetypeHint: "Mixed crew",
+    };
+  }
+
   const statTotals = getDeckStatTotals(cards);
   const strongestStat = STAT_KEYS.reduce((best, key) => (
     statTotals[key] > statTotals[best] ? key : best
   ), STAT_KEYS[0]);
   const dominantArchetypeEntry = Array.from(getArchetypeCounts(cards).entries())
     .sort((a, b) => b[1] - a[1])[0];
-  const dominantArchetype = dominantArchetypeEntry?.[0];
-  const dominantArchetypeCount = dominantArchetypeEntry?.[1] ?? 0;
+  const [dominantArchetype, dominantArchetypeCount = 0] = dominantArchetypeEntry ?? [];
 
   return {
     deckPower: computeDeckScore(cards),

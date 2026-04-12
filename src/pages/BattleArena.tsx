@@ -260,7 +260,7 @@ interface ArenaBattleSummaryProps {
 
 function ArenaBattleSummary({ summary, label }: ArenaBattleSummaryProps) {
   if (!summary) {
-    return <span className="arena-opponent-stats-hidden">Scout data syncing…</span>;
+    return <span className="arena-opponent-stats-hidden">Scout data syncing...</span>;
   }
 
   return (
