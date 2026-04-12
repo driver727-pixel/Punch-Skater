@@ -102,6 +102,7 @@ export const TIERS: Record<TierLevel, Tier> = {
 
 const TIER_KEY = "skpd_tier";
 const EMAIL_KEY = "skpd_email";
+const CHECKOUT_SESSION_KEY = "skpd_checkout_session_id";
 
 export function loadTier(): TierLevel {
   const stored = localStorage.getItem(TIER_KEY);
@@ -121,7 +122,20 @@ export function saveEmail(email: string): void {
   localStorage.setItem(EMAIL_KEY, email);
 }
 
+export function loadCheckoutSessionId(): string {
+  return localStorage.getItem(CHECKOUT_SESSION_KEY) ?? "";
+}
+
+export function saveCheckoutSessionId(sessionId: string): void {
+  localStorage.setItem(CHECKOUT_SESSION_KEY, sessionId);
+}
+
+export function clearCheckoutSessionId(): void {
+  localStorage.removeItem(CHECKOUT_SESSION_KEY);
+}
+
 export function clearAccount(): void {
   localStorage.removeItem(TIER_KEY);
   localStorage.removeItem(EMAIL_KEY);
+  localStorage.removeItem(CHECKOUT_SESSION_KEY);
 }

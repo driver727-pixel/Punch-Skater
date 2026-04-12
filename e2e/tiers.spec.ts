@@ -182,3 +182,24 @@ test.describe('Referral link via URL param', () => {
     await expect(page).toHaveURL('/');
   });
 });
+
+test.describe('Stripe checkout session verification', () => {
+  test('verified checkout unlocks and persists the paid tier', async ({ page }) => {
+    await page.route('**/api/verify-checkout-session**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ tier: 'tier2', email: 'paid@example.com' }),
+      });
+    });
+
+    await page.goto('/?checkout_session_id=cs_test_paid_session');
+    await expect(page).toHaveURL('/');
+    await expect(page.getByTestId('forge-button')).toContainText(/forge courier card/i);
+    await expect.poll(async () => page.evaluate(() => localStorage.getItem('skpd_tier'))).toBe('tier2');
+    await expect.poll(async () => page.evaluate(() => localStorage.getItem('skpd_email'))).toBe('paid@example.com');
+
+    await page.reload();
+    await expect(page.getByTestId('forge-button')).toContainText(/forge courier card/i);
+  });
+});

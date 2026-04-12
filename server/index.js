@@ -91,6 +91,13 @@ const ALLOWED_PRICE_IDS = new Set(
     .filter(Boolean),
 );
 
+function resolveTierFromPriceId(priceId) {
+  for (const [tier, config] of Object.entries(tierPricing)) {
+    if (config.stripePriceId === priceId) return tier;
+  }
+  return null;
+}
+
 // Stripe client — instantiated once at startup so it is reused across requests.
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
@@ -259,7 +266,7 @@ app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => 
     return;
   }
 
-  const { priceId, successUrl, cancelUrl } = req.body ?? {};
+  const { priceId, successUrl, cancelUrl, email } = req.body ?? {};
 
   if (!priceId || typeof priceId !== 'string' || !ALLOWED_PRICE_IDS.has(priceId)) {
     res.status(400).json({ error: 'Invalid or unsupported price ID.' });
@@ -283,6 +290,9 @@ app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => 
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
+      ...(typeof email === 'string' && email.trim()
+        ? { customer_email: email.trim() }
+        : {}),
       success_url: successUrl,
       cancel_url: cancelUrl,
     });
@@ -290,6 +300,38 @@ app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => 
   } catch (err) {
     console.error('Stripe checkout error:', err);
     res.status(500).json({ error: 'Failed to create checkout session.' });
+  }
+});
+
+app.get('/api/verify-checkout-session', checkoutRateLimit, async (req, res) => {
+  if (!stripe) {
+    res.status(503).json({ error: 'Payment processing is not configured.' });
+    return;
+  }
+
+  const sessionId = typeof req.query.session_id === 'string' ? req.query.session_id.trim() : '';
+  if (!sessionId) {
+    res.status(400).json({ error: 'session_id is required.' });
+    return;
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
+    const paidTier = resolveTierFromPriceId(lineItems.data[0]?.price?.id ?? '');
+
+    if (session.payment_status !== 'paid' || !paidTier) {
+      res.status(409).json({ error: 'Checkout session has not completed successfully.' });
+      return;
+    }
+
+    res.json({
+      tier: paidTier,
+      email: session.customer_details?.email ?? session.customer_email ?? '',
+    });
+  } catch (err) {
+    console.error('Stripe checkout verification error:', err);
+    res.status(500).json({ error: 'Failed to verify checkout session.' });
   }
 });
 
