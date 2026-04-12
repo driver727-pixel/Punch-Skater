@@ -6,6 +6,7 @@ import { useBattle, MIN_BATTLE_CARDS } from "../hooks/useBattle";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { DeckStatsPanel } from "../components/DeckStatsPanel";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
+import { getDeckStatTotals } from "../lib/battle";
 import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
@@ -107,6 +108,7 @@ export function DeckBuilder() {
   );
 
   const slotsRemaining = activeDeck ? DECK_CARD_LIMIT - activeDeck.cards.length : 0;
+  const getDeckTotalPower = (deck: DeckPayload) => Object.values(getDeckStatTotals(deck.cards)).reduce((sum, value) => sum + value, 0);
 
   return (
     <div className="page">
@@ -150,7 +152,10 @@ export function DeckBuilder() {
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
-                    <span className="deck-name">{deck.name}</span>
+                    <div className="deck-item-info">
+                      <span className="deck-name">{deck.name}</span>
+                      <span className="deck-power">⚡ {getDeckTotalPower(deck)} Total Power</span>
+                    </div>
                   )}
                   <span className="deck-count">{deck.cards.length}/{DECK_CARD_LIMIT}</span>
                   <div className="deck-actions" onClick={(e) => e.stopPropagation()}>
