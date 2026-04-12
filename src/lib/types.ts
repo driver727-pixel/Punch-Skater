@@ -187,6 +187,22 @@ export interface BattleResult {
   createdAt: string;
 }
 
+// ── Leaderboard payload ───────────────────────────────────────────────────────
+
+/** A public leaderboard entry uploaded from a player's chosen deck. */
+export interface LeaderboardEntry {
+  uid: string;
+  displayName: string;
+  deckName: string;
+  cardCount: number;
+  deckPower: number;
+  strongestStat: StatKey;
+  strongestStatTotal: number;
+  synergyBonusPct: number;
+  archetypeHint: string;
+  updatedAt: string;
+}
+
 // ── Trade payload ─────────────────────────────────────────────────────────────
 
 export interface TradePayload {
