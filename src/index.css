@@ -6483,7 +6483,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-shadow:
     0 0 8px rgba(0,204,255,0.4),
     0 0 18px rgba(0,204,255,0.15);
-  color: var(--accent2);
 }
 
 /* ===== Trade Badge — neon pill glow ===== */
@@ -6568,7 +6567,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* ===== Trade Summary Card — subtle neon border ===== */
 .trade-summary-card {
   box-shadow: 0 0 8px rgba(0,204,255,0.05);
-  transition: box-shadow 0.2s;
 }
 .trade-summary-card:hover {
   box-shadow: 0 0 12px rgba(0,204,255,0.12), 0 0 24px rgba(0,204,255,0.04);
