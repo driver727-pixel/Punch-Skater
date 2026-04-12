@@ -2,7 +2,11 @@ import { useState } from "react";
 import { DISTRICT_LORE } from "../lib/lore";
 import type { District } from "../lib/types";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
-import { DISTRICT_WEATHER_LOCATIONS, getDistrictAccessSummary } from "../lib/districtWeather";
+import {
+  DISTRICT_WEATHER_LOCATIONS,
+  getDistrictAccessSummary,
+  hasDistrictAccessRestriction,
+} from "../lib/districtWeather";
 
 export interface GeoAtlasMarker {
   id: string;
@@ -186,10 +190,14 @@ export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasP
               <span className="geo-atlas__district-meta">
                 {district.crews[0]} · {district.location.city}
               </span>
-              <span className={`geo-atlas__district-weather${district.weather?.accessRule ? " geo-atlas__district-weather--restricted" : ""}`}>
+              <span
+                className={`geo-atlas__district-weather${
+                  hasDistrictAccessRestriction(district.name, district.weather) ? " geo-atlas__district-weather--restricted" : ""
+                }`}
+              >
                 {district.weather?.summary ?? (loading ? "Syncing weather" : "Open weather")}
                 {" · "}
-                {getDistrictAccessSummary(district.weather)}
+                {getDistrictAccessSummary(district.name, district.weather)}
               </span>
             </article>
           ))}

@@ -18,11 +18,18 @@ import type {
 } from "../lib/glassCanopyMission";
 import {
   DISTRICT_WEATHER_LOCATIONS,
+  getDistrictAccessBlockReason,
   getDistrictAccessSummary,
+  hasDistrictAccessRestriction,
   isDistrictAccessibleWithBoardType,
 } from "../lib/districtWeather";
 
 const MISSION_MARKER_OFFSET_Y = -76;
+const DISTRICT_MARKER_OFFSETS = [
+  { offsetX: -42, offsetY: MISSION_MARKER_OFFSET_Y - 4 },
+  { offsetX: 0, offsetY: MISSION_MARKER_OFFSET_Y - 30 },
+  { offsetX: 42, offsetY: MISSION_MARKER_OFFSET_Y - 4 },
+];
 
 export function Mission() {
   const navigate = useNavigate();
@@ -75,8 +82,16 @@ export function Mission() {
   const missionWeather = weatherByDistrict[activeMission.district] ?? null;
   const missionLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.district];
   const runnerBoardType = missionPreview.runnerCard?.board?.boardType;
+  const runnerWheelType = missionPreview.runnerCard?.board?.wheels;
   const hasRunner = Boolean(missionPreview.runnerCard);
-  const missionAccessBlocked = hasRunner && !isDistrictAccessibleWithBoardType(missionWeather, runnerBoardType);
+  const missionAccessBlocked =
+    hasRunner &&
+    !isDistrictAccessibleWithBoardType(activeMission.district, missionWeather, runnerBoardType, runnerWheelType);
+  const missionAccessSummary = getDistrictAccessSummary(activeMission.district, missionWeather);
+  const missionAccessReason = hasRunner
+    ? getDistrictAccessBlockReason(activeMission.district, missionWeather, runnerBoardType, runnerWheelType)
+    : null;
+  const missionAccessRestricted = hasDistrictAccessRestriction(activeMission.district, missionWeather);
   const missionWeatherSummary = missionWeather
     ? `${missionWeather.summary} over ${missionWeather.city}, ${missionWeather.state}.`
     : weatherLoading
@@ -85,21 +100,33 @@ export function Mission() {
         ? "District weather uplink is offline, so this district is running on open access."
         : `No live weather seed is active for ${activeMission.district}.`;
   const missionMarkers = useMemo(
-    () =>
-      DISTRICT_MISSIONS.map((mission) => ({
-        id: mission.id,
-        district: mission.district,
-        label: mission.pinLabel,
-        title: `${mission.name} · ${mission.district}`,
-        active: mission.id === activeMission.id,
-        offsetY: MISSION_MARKER_OFFSET_Y,
-        onClick: () => {
-          setActiveMissionId(mission.id);
-          setMissionResult(null);
-          setPendingFork(null);
-          setForkChoices({});
-        },
-      })),
+    () => {
+      const districtMarkerIndex = new Map<string, number>();
+      return DISTRICT_MISSIONS.map((mission) => {
+        const markerIndex = districtMarkerIndex.get(mission.district) ?? 0;
+        districtMarkerIndex.set(mission.district, markerIndex + 1);
+        const markerOffset = DISTRICT_MARKER_OFFSETS[markerIndex] ?? {
+          offsetX: markerIndex * 18,
+          offsetY: MISSION_MARKER_OFFSET_Y,
+        };
+
+        return {
+          id: mission.id,
+          district: mission.district,
+          label: mission.pinLabel,
+          title: `${mission.name} · ${mission.district}`,
+          active: mission.id === activeMission.id,
+          offsetX: markerOffset.offsetX,
+          offsetY: markerOffset.offsetY,
+          onClick: () => {
+            setActiveMissionId(mission.id);
+            setMissionResult(null);
+            setPendingFork(null);
+            setForkChoices({});
+          },
+        };
+      });
+    },
     [activeMission.id],
   );
 
@@ -148,7 +175,7 @@ export function Mission() {
           <div>
             <h2>District Operations Map</h2>
             <p className="page-sub">
-              Four starter missions are now staged across the city-state. Tap a pushpin to swap operations.
+              Three missions are now staged in every district. Tap a pushpin to swap operations.
             </p>
           </div>
         </div>
@@ -204,8 +231,8 @@ export function Mission() {
             </strong>
             <p className="mission-weather__body">{missionWeatherSummary}</p>
           </div>
-          <span className={`mission-weather__status${missionWeather?.accessRule ? " mission-weather__status--restricted" : ""}`}>
-            {getDistrictAccessSummary(missionWeather)}
+          <span className={`mission-weather__status${missionAccessRestricted ? " mission-weather__status--restricted" : ""}`}>
+            {missionAccessSummary}
           </span>
         </div>
         {!activeDeck && (
@@ -213,7 +240,7 @@ export function Mission() {
         )}
         {activeDeck && missionAccessBlocked && (
           <p className="mission-warning">
-            {missionWeather?.accessRule?.reason} Selected runner board: {runnerBoardType ?? "none locked in"}.
+            {missionAccessReason} Selected runner setup: {runnerBoardType ?? "no board"} / {runnerWheelType ?? "no wheels"}.
           </p>
         )}
       </section>
@@ -301,8 +328,8 @@ export function Mission() {
                       <span className="mission-stat-value">{activeMission.district}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">Weather Access</span>
-                      <span className="mission-stat-value">{getDistrictAccessSummary(missionWeather)}</span>
+                      <span className="mission-stat-label">District Access</span>
+                      <span className="mission-stat-value">{missionAccessSummary}</span>
                     </div>
                     <div className="mission-stat-row">
                       <span className="mission-stat-label">SPD</span>
