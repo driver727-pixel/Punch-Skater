@@ -1,5 +1,4 @@
 import { calculateBoardStats, getBoardStatBonuses } from "./boardBuilder";
-import { MAX_SINGLE_STAT, LEGACY_STAT_MAX } from "./generator";
 import type { CardPayload, District } from "./types";
 import type { BoardConfig, BoardLoadout, WheelType } from "./boardBuilder";
 
@@ -1939,14 +1938,11 @@ export function buildMissionPreview(
     { speed: 0, stealth: 0, tech: 0, grit: 0, rep: 0 },
   );
 
-  // Normalise card-stat averages from the 1–200 scale back to the legacy 1–10
-  // range so that downstream mission formulas and thresholds remain unchanged.
-  const norm = MAX_SINGLE_STAT / LEGACY_STAT_MAX;
-  const averageSpeed = totalStats.speed / deckSize / norm;
-  const averageStealth = totalStats.stealth / deckSize / norm;
-  const averageTech = totalStats.tech / deckSize / norm;
-  const averageGrit = totalStats.grit / deckSize / norm;
-  const averageRep = totalStats.rep / deckSize / norm;
+  const averageSpeed = totalStats.speed / deckSize;
+  const averageStealth = totalStats.stealth / deckSize;
+  const averageTech = totalStats.tech / deckSize;
+  const averageGrit = totalStats.grit / deckSize;
+  const averageRep = totalStats.rep / deckSize;
 
   const playerDeck: MissionPlayerDeck = {
     board: runnerBoard,

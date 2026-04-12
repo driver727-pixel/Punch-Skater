@@ -19,7 +19,7 @@ export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {
   const filledCards = cards.filter(Boolean);
   if (filledCards.length === 0) return null;
 
-  // Each stat is 1–200; with maxCardsInDeck cards the theoretical max is 200 × maxCardsInDeck
+  // Each stat is 1–10; with maxCardsInDeck cards the theoretical max is 10 × maxCardsInDeck
   const statMax = MAX_SINGLE_STAT * maxCardsInDeck;
 
   const totals = STAT_DEFS.map(({ key, label, color, glow }) => {

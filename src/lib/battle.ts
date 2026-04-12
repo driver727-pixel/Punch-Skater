@@ -1,15 +1,15 @@
 /**
  * battle.ts – Stat-crunching algorithm and wager logic for the Battle Arena.
  *
- * Each battle costs the challenger 10 random attribute points (the "wager").
- * The defender also stakes 10 random attribute points.
- * The winner receives both wagers (20 points) to distribute among their
+ * Each battle costs the challenger 6 random attribute points (the "wager").
+ * The defender also stakes 6 random attribute points.
+ * The winner receives both wagers (12 points) to distribute among their
  * battle-deck cards.
  */
 import type { ArenaDeckSummary, CardPayload, StatKey } from "./types";
 
 /** Number of attribute points each player wagers per battle. */
-export const WAGER_POINTS = 10;
+export const WAGER_POINTS = 6;
 
 /** Total bonus points the winner receives (both wagers combined). */
 export const WINNER_BONUS = WAGER_POINTS * 2;

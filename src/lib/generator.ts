@@ -78,36 +78,68 @@ const PERSONALITY_POOLS: Record<string, string[]> = {
 
 // ── Stat constants ─────────────────────────────────────────────────────────────
 
-/** Maximum value for a single stat.  5 stats × 200 = 1 000 max per card. */
-export const MAX_SINGLE_STAT = 200;
+/** Minimum value for a single card stat. */
+export const MIN_SINGLE_STAT = 1;
 
-/** Legacy single-stat ceiling used by the mission system. */
-export const LEGACY_STAT_MAX = 10;
+/** Maximum value for a single stat on the live card scale. */
+export const MAX_SINGLE_STAT = 10;
 
-// ── Stat modifiers by archetype (added on top of a 20–140 base roll) ──────────
+/** Historic single-stat ceiling used by older saved cards. */
+export const LEGACY_MAX_SINGLE_STAT = 200;
+
+const BASE_STAT_MIN = 2;
+const BASE_STAT_MAX = 7;
+
+// ── Stat modifiers by archetype (added on top of a 2–7 base roll) ─────────────
 
 interface StatMods { speed: number; stealth: number; tech: number; grit: number; rep: number; }
 
 const ARCHETYPE_MODS: Record<string, StatMods> = {
-  "The Knights Technarchy":  { speed:  40, stealth:  60, tech:  20, grit:   0, rep: -20 },
-  "Qu111s":                  { speed:  20, stealth: -20, tech:   0, grit:  40, rep:  60 },
-  "Ne0n Legion":             { speed:  40, stealth:  40, tech:  20, grit:   0, rep: -20 },
-  "Iron Curtains":           { speed:  20, stealth:   0, tech:  20, grit:  60, rep:   0 },
-  "D4rk $pider":             { speed: -20, stealth:  40, tech:  60, grit:   0, rep:   0 },
-  "The Asclepians":          { speed:   0, stealth:   0, tech:  20, grit:  60, rep:  20 },
-  "The Mesopotamian Society":{ speed:  20, stealth:  20, tech:  40, grit: -20, rep:  40 },
-  "Hermes' Squirmies":       { speed:  20, stealth:  20, tech:   0, grit:  20, rep:  20 },
-  "UCPS":                    { speed:  20, stealth:   0, tech:   0, grit:  20, rep:  40 },
-  "The Team":                { speed:  40, stealth: -20, tech:   0, grit:  40, rep:  40 },
+  "The Knights Technarchy":  { speed:  1, stealth:  2, tech:  1, grit:  0, rep: -1 },
+  "Qu111s":                  { speed:  1, stealth: -1, tech:  0, grit:  1, rep:  2 },
+  "Ne0n Legion":             { speed:  2, stealth:  1, tech:  1, grit:  0, rep: -1 },
+  "Iron Curtains":           { speed:  0, stealth:  0, tech:  1, grit:  2, rep:  0 },
+  "D4rk $pider":             { speed: -1, stealth:  1, tech:  2, grit:  0, rep:  0 },
+  "The Asclepians":          { speed:  0, stealth:  0, tech:  1, grit:  2, rep:  1 },
+  "The Mesopotamian Society":{ speed:  1, stealth:  1, tech:  2, grit: -1, rep:  1 },
+  "Hermes' Squirmies":       { speed:  1, stealth:  1, tech:  0, grit:  1, rep:  1 },
+  "UCPS":                    { speed:  1, stealth:  0, tech:  0, grit:  1, rep:  2 },
+  "The Team":                { speed:  2, stealth: -1, tech:  0, grit:  1, rep:  2 },
 };
 
-const RARITY_MULTIPLIER: Record<Rarity, number> = {
-  "Punch Skater": 0.55,
-  Apprentice:     0.70,
-  Master:         0.85,
-  Rare:           0.95,
-  Legendary:      1.00,
+const RARITY_BONUS: Record<Rarity, number> = {
+  "Punch Skater": -1,
+  Apprentice:      0,
+  Master:          1,
+  Rare:            2,
+  Legendary:       3,
 };
+
+export function clampCardStat(value: number): number {
+  return Math.max(MIN_SINGLE_STAT, Math.min(MAX_SINGLE_STAT, Math.round(value)));
+}
+
+export function normalizeLegacyCardStat(value: number): number {
+  if (!Number.isFinite(value)) {
+    return MIN_SINGLE_STAT;
+  }
+
+  if (value <= MAX_SINGLE_STAT) {
+    return clampCardStat(value);
+  }
+
+  const scaled = MIN_SINGLE_STAT
+    + ((value - MIN_SINGLE_STAT) * (MAX_SINGLE_STAT - MIN_SINGLE_STAT))
+      / (LEGACY_MAX_SINGLE_STAT - MIN_SINGLE_STAT);
+
+  return clampCardStat(scaled);
+}
+
+export function normalizeCardStats<T extends Record<string, number>>(stats: T): T {
+  return Object.fromEntries(
+    Object.entries(stats).map(([key, value]) => [key, normalizeLegacyCardStat(value)]),
+  ) as T;
+}
 
 // ── Main generator ─────────────────────────────────────────────────────────────
 
@@ -121,13 +153,12 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
   // charRng is seeded only on characterSeed so character attributes are stable
   // when district or rarity changes (only frameSeed / backgroundSeed differ).
   const charRng = createSeededRandom(characterSeed);
-  const mult    = RARITY_MULTIPLIER[prompts.rarity];
+  const rarityBonus = RARITY_BONUS[prompts.rarity];
   const mods    = ARCHETYPE_MODS[prompts.archetype] ?? { speed: 0, stealth: 0, tech: 0, grit: 0, rep: 0 };
 
-  // ── Stats (1–200 per stat; 5 stats × 200 = 1 000 max per card) ─────────────
-  const clamp = (n: number) => Math.max(1, Math.min(MAX_SINGLE_STAT, n));
+  // ── Stats (1–10 per stat; 5 stats × 10 = 50 max per card) ──────────────────
   const rollStat = (mod: number): number =>
-    clamp(Math.round((charRng.range(20, 140) + mod) * mult));
+    clampCardStat(charRng.range(BASE_STAT_MIN, BASE_STAT_MAX) + mod + rarityBonus);
 
   const speed   = rollStat(mods.speed);
   const stealth = rollStat(mods.stealth);

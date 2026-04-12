@@ -5,7 +5,7 @@ interface StatBarProps {
   color?: string;
 }
 
-export function StatBar({ label, value, max = 200, color = "#00ff88" }: StatBarProps) {
+export function StatBar({ label, value, max = 10, color = "#00ff88" }: StatBarProps) {
   const pct = (value / max) * 100;
   return (
     <div className="stat-bar">
