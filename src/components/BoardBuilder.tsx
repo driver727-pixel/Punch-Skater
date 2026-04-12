@@ -6,10 +6,12 @@
  *
  * The live BoardPreviewGrid shows real product photos for each selected
  * component from per-category folders under src/assets/boards/ (discovered
- * at build time via Vite import.meta.glob) with a fallback to named PNGs
- * under public/assets/boards/<category>/<value>.png.  Each time a carousel
- * selection changes a fresh random image is chosen for that category slot so
- * the composition box stays visually lively.
+ * at build time via Vite import.meta.glob).  Images are matched to the active
+ * selection by filename keyword — e.g. `carbon-fiber.png` maps to the Street
+ * deck because the filename contains "carbon", a known Street keyword.  Add
+ * images to `src/assets/boards/<category>/` with a keyword in the name and
+ * they will be picked up automatically on the next build.  A named PNG at
+ * `public/assets/boards/<category>/<value>.png` serves as a final fallback.
  *
  * A PowerSwitchButton at the bottom triggers a satisfying animation sequence
  * before firing the onSave callback to commit the board config and loadout
@@ -34,7 +36,7 @@ import {
   getAllowedComponents,
   validateBoardCompatibility,
 } from "../lib/boardBuilder";
-import { getRandomCategoryImage } from "../lib/boardCategoryImages";
+import { getMatchingCategoryImage } from "../lib/boardCategoryImages";
 import { BoardPreviewGrid } from "./BoardPreviewGrid";
 import { ConveyorCarousel } from "./ConveyorCarousel";
 import { PowerSwitchButton } from "./PowerSwitchButton";
@@ -133,23 +135,22 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
   /**
    * Builds the set of preview image URLs for the composition box.
    *
-   * For each component slot we try two sources in priority order:
-   *   1. A random PNG from `src/assets/boards/<category>/` (discovered at
-   *      build time via import.meta.glob — any file name works).
-   *   2. The named static URL `public/assets/boards/<category>/<value>.png`
-   *      (upload a file whose name matches the option value, e.g. `Standard.png`).
-   *
-   * A new random image is picked every time a carousel selection changes so the
-   * composition box stays visually lively (immersion effect).
+   * For each component slot we look for a PNG in `src/assets/boards/<category>/`
+   * (discovered at build time via import.meta.glob) whose filename contains a
+   * keyword matching the selected component value — e.g. `carbon-fiber.png`
+   * for the Street deck, `5055-motor.png` for the Micro motor.  If no keyword
+   * match is found inside the folder a random image from that folder is used as
+   * a fallback, and if the folder is empty we fall back to the named static URL
+   * `public/assets/boards/<category>/<value>.png`.
    */
   const buildPreviewUrls = useCallback((cfg: BoardConfig) => {
     const named = getBoardComponentImageUrls(cfg);
     return {
-      deckUrl:       getRandomCategoryImage("deck")       ?? named.deckUrl,
-      drivetrainUrl: getRandomCategoryImage("drivetrain") ?? named.drivetrainUrl,
-      motorUrl:      getRandomCategoryImage("motor")      ?? named.motorUrl,
-      wheelsUrl:     getRandomCategoryImage("wheels")     ?? named.wheelsUrl,
-      batteryUrl:    getRandomCategoryImage("battery")    ?? named.batteryUrl,
+      deckUrl:       getMatchingCategoryImage("deck",       cfg.boardType)  ?? named.deckUrl,
+      drivetrainUrl: getMatchingCategoryImage("drivetrain", cfg.drivetrain) ?? named.drivetrainUrl,
+      motorUrl:      getMatchingCategoryImage("motor",      cfg.motor)      ?? named.motorUrl,
+      wheelsUrl:     getMatchingCategoryImage("wheels",     cfg.wheels)     ?? named.wheelsUrl,
+      batteryUrl:    getMatchingCategoryImage("battery",    cfg.battery)    ?? named.batteryUrl,
     };
   }, []);
 

@@ -49,33 +49,85 @@ Until the PNGs are placed here the `BoardComposite` layers are simply invisible
 These are the **component grid preview** images shown in the composition box
 above the conveyor belts inside the board builder.
 
-### Motor images (new!)
+### How images are matched to components
 
-Upload any `.png` files into:
+When a rider selects a component on the conveyor belt the app looks through
+all PNGs in that category folder and finds the one whose **filename contains
+a keyword** associated with the selected component.  The keyword-to-component
+mapping is:
+
+#### Deck
+
+| Filename keyword | Board type  |
+|-----------------|-------------|
+| `street` or `carbon` | Street |
+| `at` or `bamboo` | All-Terrain |
+| `mountain` or `mt` | Mountain |
+| `surf` | Surf |
+
+| `slider` | Slider |
+
+#### Drivetrain
+
+| Filename keyword | Drivetrain |
+|-----------------|------------|
+| `belt` or `dual` | Belt Drive |
+| `hub` | Hub Motor |
+| `gear` | Gear Drive |
+| `awd` | AWD |
+
+#### Motor
+
+| Filename keyword | Motor |
+|-----------------|-------|
+| `micro` or `5055` | Micro 5055 |
+| `standard` or `6354` | Standard 6354 |
+| `torque` or `6374` | Torque 6374 |
+| `outrunner` or `6396` | Outrunner 6396 |
+
+#### Wheels
+
+| Filename keyword | Wheel type |
+|-----------------|-----------|
+| `urethane` or `poly` | Urethane |
+| `pneumatic` | Pneumatic |
+| `rubber` or `solid` | Solid Rubber |
+| `cloud` | Cloud Wheels |
+
+#### Battery
+
+| Filename keyword | Battery |
+|-----------------|---------|
+| `slim` or `stealth` | Slim Stealth Pack |
+| `double`, `stack`, or `brick` | Double-Stack Brick |
+| `peli` or `top` | Top-Mounted Peli Case |
+
+### Example filenames
 
 ```
-src/assets/boards/motor/
+src/assets/boards/deck/carbon-fiber.png      → Street deck
+src/assets/boards/deck/at-bamboo.png         → AT deck
+src/assets/boards/deck/mt-board.png          → Mountain deck
+src/assets/boards/deck/surf-skate.png        → Surf deck
+src/assets/boards/motor/5055-motor.png       → Micro motor
+src/assets/boards/wheels/poly-wheels.png     → Urethane wheels
+src/assets/boards/battery/slim-battery.png   → Slim Stealth battery
 ```
-
-File names do **not** need to follow a specific convention — use any descriptive
-name you like (e.g. `micro-motor.png`, `outrunner.png`).
-
-When a rider selects a motor on the belt, the composition box will **randomly
-pick one of the uploaded images** to display for visual immersion.
 
 ### All category folders
 
 | Folder                              | Shown when…             |
 |-------------------------------------|-------------------------|
-| `src/assets/boards/deck/`           | Any deck type is active |
-| `src/assets/boards/drivetrain/`     | Any drivetrain is active|
-| `src/assets/boards/motor/`          | Any motor is active     |
-| `src/assets/boards/wheels/`         | Any wheel type is active|
-| `src/assets/boards/battery/`        | Any battery is active   |
+| `src/assets/boards/deck/`           | A deck type is selected |
+| `src/assets/boards/drivetrain/`     | A drivetrain is selected|
+| `src/assets/boards/motor/`          | A motor is selected     |
+| `src/assets/boards/wheels/`         | A wheel type is selected|
+| `src/assets/boards/battery/`        | A battery is selected   |
 
 ### Rules
 
-* Any number of `.png` files is fine — one image per folder is enough.
+* Include a keyword from the table above in the filename.
+* Multiple keywords in one name are fine (e.g. `dual-belt-drive.png`).
 * After adding images, **commit and rebuild** the app; Vite picks them up at
   build time.
 * Each `.gitkeep` file in these folders exists only to keep the folder tracked
@@ -83,8 +135,9 @@ pick one of the uploaded images** to display for visual immersion.
 
 ### Fallback behaviour
 
-If a category folder is empty (no PNGs committed yet), the composition box
-falls back to checking `public/assets/boards/<category>/<OptionValue>.png`
-(e.g. `public/assets/boards/motor/Standard.png`).  If that file is also absent
-the tile shows an icon placeholder.
+If no keyword match is found inside a folder the app picks a random image
+from that folder.  If the folder is empty it falls back to
+`public/assets/boards/<category>/<OptionValue>.png`
+(e.g. `public/assets/boards/motor/Standard.png`).  If that file is also
+absent the tile shows an icon placeholder.
 
