@@ -6,7 +6,7 @@ import { useBattle, MIN_BATTLE_CARDS } from "../hooks/useBattle";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { DeckStatsPanel } from "../components/DeckStatsPanel";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
-import { getDeckStatTotals } from "../lib/battle";
+import { computeDeckTotalPower } from "../lib/battle";
 import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
@@ -44,7 +44,7 @@ export function DeckBuilder() {
   const deckTotalPowerById = useMemo(() => Object.fromEntries(
     decks.map((deck) => [
       deck.id,
-      Object.values(getDeckStatTotals(deck.cards)).reduce((sum, value) => sum + value, 0),
+      computeDeckTotalPower(deck.cards),
     ]),
   ), [decks]);
 
@@ -160,7 +160,9 @@ export function DeckBuilder() {
                   ) : (
                     <div className="deck-item-info">
                       <span className="deck-name">{deck.name}</span>
-                      <span className="deck-power">⚡ {deckTotalPowerById[deck.id] ?? 0} Power</span>
+                      <span className="deck-power" aria-label={`Power ${deckTotalPowerById[deck.id] ?? 0}`}>
+                        <span aria-hidden="true">⚡</span> {deckTotalPowerById[deck.id] ?? 0} Power
+                      </span>
                     </div>
                   )}
                   <span className="deck-count">{deck.cards.length}/{DECK_CARD_LIMIT}</span>

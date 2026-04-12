@@ -825,9 +825,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   white-space: nowrap;
 }
 .deck-power {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--accent2);
-  letter-spacing: 0.6px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 .deck-count { font-size: 11px; color: var(--text-dim); }

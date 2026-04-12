@@ -64,6 +64,11 @@ export function getDeckStatTotals(cards: CardPayload[]): Record<StatKey, number>
   return totals;
 }
 
+export function computeDeckTotalPower(cards: CardPayload[]): number {
+  const statTotals = getDeckStatTotals(cards);
+  return STAT_KEYS.reduce((sum, key) => sum + statTotals[key], 0);
+}
+
 export function formatStatLabel(stat: StatKey): string {
   return STAT_LABELS[stat];
 }
@@ -114,8 +119,7 @@ export function buildArenaDeckSummary(cards: CardPayload[]): ArenaDeckSummary {
 export function computeDeckScore(cards: CardPayload[]): number {
   if (cards.length === 0) return 0;
 
-  const statTotals = getDeckStatTotals(cards);
-  const raw = STAT_KEYS.reduce((sum, key) => sum + statTotals[key], 0);
+  const raw = computeDeckTotalPower(cards);
   const synergyMultiplier = getSynergyMultiplier(cards);
 
   return Math.round(raw * synergyMultiplier);

@@ -1,5 +1,6 @@
 import type { CardPayload } from "../lib/types";
 import { MAX_SINGLE_STAT } from "../lib/generator";
+import { computeDeckTotalPower } from "../lib/battle";
 
 interface DeckStatsPanelProps {
   cards: CardPayload[];
@@ -27,7 +28,7 @@ export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {
     return { key, label, color, glow, total, pct };
   });
 
-  const grandTotal = totals.reduce((s, t) => s + t.total, 0);
+  const grandTotal = computeDeckTotalPower(filledCards);
   const grandMax   = statMax * STAT_DEFS.length;
   const grandPct   = Math.min((grandTotal / grandMax) * 100, 100);
 
