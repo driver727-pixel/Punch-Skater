@@ -432,6 +432,64 @@ export function getBoardAssetUrls(config: BoardConfig): {
   };
 }
 
+// ── Component image folder URLs ────────────────────────────────────────────────
+
+/**
+ * Returns the image URL for each selected component from the per-category
+ * folders under `public/assets/boards/<category>/<Value>.png`.
+ *
+ * The user uploads real product photos into these folders:
+ *   deck/       — one PNG per BoardType   (e.g. Street.png, AT.png)
+ *   drivetrain/ — one PNG per Drivetrain  (e.g. Belt.png, Hub.png)
+ *   wheels/     — one PNG per WheelType   (e.g. Urethane.png, Pneumatic.png)
+ *   battery/    — one PNG per BatteryType (e.g. SlimStealth.png, DoubleStack.png)
+ */
+export interface BoardComponentImageUrls {
+  deckUrl: string;
+  drivetrainUrl: string;
+  wheelsUrl: string;
+  batteryUrl: string;
+}
+
+export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentImageUrls {
+  return {
+    deckUrl:       `/assets/boards/deck/${config.boardType}.png`,
+    drivetrainUrl: `/assets/boards/drivetrain/${config.drivetrain}.png`,
+    wheelsUrl:     `/assets/boards/wheels/${config.wheels}.png`,
+    batteryUrl:    `/assets/boards/battery/${config.battery}.png`,
+  };
+}
+
+// ── Board image prompt builder ─────────────────────────────────────────────────
+
+/**
+ * Builds a single AI-generation prompt describing the fully assembled electric
+ * skateboard from the four chosen components.  This prompt is used to generate
+ * the skateboard image that appears on the player card.
+ */
+export function buildBoardImagePrompt(config: BoardConfig): string {
+  const deck  = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
+  const drive = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
+  const wheel = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
+  const batt  = BATTERY_OPTIONS.find((o) => o.value === config.battery);
+
+  const deckDesc  = deck?.description  ?? config.boardType;
+  const driveDesc = drive?.description ?? config.drivetrain;
+  const wheelDesc = wheel?.description ?? config.wheels;
+  const battDesc  = batt?.description  ?? config.battery;
+
+  return (
+    `Isometric view, 45-degree angle, top-down product photography of a fully assembled ` +
+    `DIY electric skateboard on a clean white studio background. ` +
+    `Deck: ${deckDesc} ` +
+    `Drivetrain: ${driveDesc} ` +
+    `Wheels: ${wheelDesc} ` +
+    `Battery: ${battDesc} ` +
+    `Art style of gouache painting, dramatic studio lighting, sharp detail, ` +
+    `vibrant saturated colours, isolated on white background.`
+  );
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 /** Returns the total additive stat bonuses across all four board selections. */

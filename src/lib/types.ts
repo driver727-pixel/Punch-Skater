@@ -124,6 +124,8 @@ export interface CardPayload {
   board?: import("./boardBuilder").BoardConfig;
   /** Computed board stats derived from the four chosen components. */
   boardLoadout?: import("./boardBuilder").BoardLoadout;
+  /** AI-generated skateboard image URL built from the board config description. */
+  boardImageUrl?: string;
   createdAt: string;
   /** Legacy single-image URL (AI-generated illustration). */
   imageUrl?: string;
