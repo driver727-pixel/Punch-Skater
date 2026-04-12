@@ -20,15 +20,55 @@ html, body { height: 100%; }
 
 body {
   background-color: var(--bg);
-  /* 90s comic: halftone dot overlay + horizontal scan lines */
+  /* 90s comic: halftone dot overlay + horizontal scan lines + faint pixel grid */
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px),
-    radial-gradient(circle, rgba(0,255,136,0.045) 1.5px, transparent 1.5px);
-  background-size: 100% 4px, 22px 22px;
+    radial-gradient(circle, rgba(0,255,136,0.045) 1.5px, transparent 1.5px),
+    repeating-linear-gradient(90deg, rgba(0,255,136,0.012) 0px, rgba(0,255,136,0.012) 1px, transparent 1px, transparent 4px),
+    repeating-linear-gradient(0deg, rgba(0,204,255,0.008) 0px, rgba(0,204,255,0.008) 1px, transparent 1px, transparent 4px);
+  background-size: 100% 4px, 22px 22px, 4px 4px, 4px 4px;
   color: var(--text);
   font-family: var(--font);
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* ===== 90s Vending Machine CRT Overlay ===== */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.06) 0px,
+      rgba(0, 0, 0, 0.06) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mix-blend-mode: multiply;
+}
+
+/* VHS tracking line — a faint horizontal bar that scrolls down the viewport */
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  pointer-events: none;
+  z-index: 9998;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(0, 255, 136, 0.06) 30%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(0, 204, 255, 0.06) 70%,
+    transparent
+  );
+  animation: vhs-track 8s linear infinite;
 }
 
 #root { display: flex; flex-direction: column; min-height: 100vh; }
@@ -38,7 +78,26 @@ body {
   background: var(--bg2);
   border-bottom: 3px solid var(--border);
   flex-shrink: 0;
-  box-shadow: 0 3px 0 var(--accent), 0 4px 24px rgba(0,0,0,0.6), 0 0 40px rgba(0,255,136,0.08);
+  box-shadow:
+    0 3px 0 var(--accent),
+    0 4px 24px rgba(0,0,0,0.6),
+    0 0 40px rgba(0,255,136,0.08),
+    inset 0 -1px 0 rgba(0,255,136,0.12);
+  position: relative;
+}
+/* Neon tube underglow bar */
+.nav::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), var(--purple), var(--accent), transparent);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent), 0 0 18px rgba(0,255,136,0.4), 0 0 36px rgba(0,204,255,0.2);
+  animation: neon-tube-hum 3s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .nav-inner {
@@ -77,8 +136,9 @@ body {
     0 0 8px  rgba(0, 255, 136, 0.9),
     0 0 20px rgba(0, 255, 136, 0.6),
     0 0 40px rgba(0, 255, 136, 0.3),
+    0 0 60px rgba(0, 255, 136, 0.15),
     2px 2px 0 rgba(0, 0, 0, 0.8);
-  animation: glitch-text 8s infinite;
+  animation: glitch-text 8s infinite, neon-buzz 4s ease-in-out infinite;
 }
 .nav-subtitle {
   font-size: 10px;
@@ -213,10 +273,27 @@ body {
     0 0 10px rgba(0, 255, 136, 0.9),
     0 0 24px rgba(0, 255, 136, 0.55),
     0 0 48px rgba(0, 255, 136, 0.25),
-    3px 3px 0 rgba(0, 0, 0, 0.7);
+    0 0 72px rgba(0, 255, 136, 0.1),
+    3px 3px 0 rgba(0, 0, 0, 0.7),
+    -1px 0 rgba(255, 0, 204, 0.25),
+    1px 0 rgba(0, 204, 255, 0.25);
   -webkit-text-stroke: 0.5px rgba(0,255,136,0.4);
+  animation: page-title-flicker 6s ease-in-out infinite;
 }
-.page-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 12px; letter-spacing: 0.5px; }
+.page-sub {
+  color: var(--accent2);
+  font-size: 13px;
+  margin-bottom: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(0, 204, 255, 0.4);
+  background: linear-gradient(90deg, var(--accent2), var(--purple), var(--accent), var(--accent2));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: led-marquee 6s linear infinite;
+}
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
 
 /* ===== Buttons ===== */
@@ -426,7 +503,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   width: 100%;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.input:focus { border-color: var(--accent); box-shadow: 3px 3px 0 rgba(0,255,136,0.3), 0 0 12px rgba(0,255,136,0.15); }
+.input:focus {
+  border-color: var(--accent);
+  box-shadow:
+    3px 3px 0 rgba(0,255,136,0.3),
+    0 0 12px rgba(0,255,136,0.15),
+    0 0 24px rgba(0,255,136,0.06);
+}
 
 /* ===== Pills ===== */
 .form-group { margin-bottom: 12px; }
@@ -552,7 +635,32 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border: 2px solid var(--border);
   padding: 16px;
   border-radius: 4px;
-  box-shadow: 4px 4px 0 rgba(0,255,136,0.15), 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 4px 4px 0 rgba(0,255,136,0.15), 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(0,0,0,0.3);
+  position: relative;
+}
+/* Coin-slot machine texture overlay */
+.forge-form::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255,255,255,0.008) 2px,
+      rgba(255,255,255,0.008) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 4px,
+      rgba(0,255,136,0.006) 4px,
+      rgba(0,255,136,0.006) 5px
+    );
+  pointer-events: none;
+  z-index: 0;
 }
 .forge-preview {
   background: var(--bg2);
@@ -562,9 +670,41 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  box-shadow: 5px 5px 0 rgba(0,255,136,0.3), 0 0 30px rgba(0,255,136,0.12);
+  box-shadow:
+    5px 5px 0 rgba(0,255,136,0.3),
+    0 0 30px rgba(0,255,136,0.12),
+    inset 0 0 50px rgba(0,255,136,0.04),
+    inset 0 0 120px rgba(0,0,0,0.5);
   position: sticky;
   top: 24px;
+  overflow: hidden;
+}
+/* CRT screen edge vignette */
+.forge-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 60px rgba(0,0,0,0.6),
+    inset 0 0 120px rgba(0,0,0,0.3);
+  pointer-events: none;
+  z-index: 1;
+}
+/* Faint RGB sub-pixel rows */
+.forge-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.04) 0px,
+    rgba(0,0,0,0.04) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .forge-board-layout {
@@ -698,8 +838,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-radius: 8px;
   color: var(--text-dim);
   width: 100%;
+  background:
+    radial-gradient(ellipse at center, rgba(0,255,136,0.03), transparent 70%);
 }
-.empty-icon { font-size: 48px; }
+.empty-icon {
+  font-size: 48px;
+  filter: drop-shadow(0 0 8px rgba(0,255,136,0.3));
+}
 .empty-state { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 80px 24px; color: var(--text-dim); }
 
 /* ===== Card Full Display ===== */
@@ -716,6 +861,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   zoom: 3.5;
   display: flex;
   flex-direction: column;
+  box-shadow:
+    0 0 8px rgba(0,255,136,0.15),
+    0 0 24px rgba(0,0,0,0.4),
+    inset 0 0 12px rgba(0,0,0,0.3);
 }
 
 /* Equal-halves layout: top = character + name + bio, bottom = skateboard + stats */
@@ -852,7 +1001,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   cursor: pointer;
   transition: border-color 0.15s, transform 0.12s, box-shadow 0.12s;
 }
-.card-thumb:hover { border-color: var(--accent); transform: translate(-2px, -2px); box-shadow: 3px 3px 0 rgba(0,255,136,0.3); }
+.card-thumb:hover {
+  border-color: var(--accent);
+  transform: translate(-2px, -2px);
+  box-shadow:
+    3px 3px 0 rgba(0,255,136,0.3),
+    0 0 14px rgba(0,255,136,0.2),
+    0 0 28px rgba(0,204,255,0.1);
+}
 .card-thumb--active { border-color: var(--accent2); box-shadow: 3px 3px 0 rgba(0,204,255,0.3); }
 .card-thumb--add { cursor: default; }
 .card-thumb--add:hover { transform: none; border-color: var(--border); }
@@ -866,7 +1022,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border: 2px solid var(--border);
   border-radius: 4px;
   padding: 16px;
-  box-shadow: 3px 3px 0 rgba(0,255,136,0.1);
+  box-shadow: 3px 3px 0 rgba(0,255,136,0.1), inset 0 0 40px rgba(0,0,0,0.2);
 }
 .close-btn {
   position: absolute;
@@ -2248,6 +2404,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 11px;
   color: var(--text-dim);
   flex-shrink: 0;
+  position: relative;
+}
+/* Neon strip above footer */
+.site-footer::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,255,136,0.4), rgba(0,204,255,0.3), rgba(204,68,255,0.3), rgba(0,255,136,0.4), transparent);
+  box-shadow: 0 0 6px rgba(0,255,136,0.3), 0 0 12px rgba(0,204,255,0.15);
+  animation: neon-tube-hum 4s ease-in-out infinite;
+  pointer-events: none;
 }
 .site-footer__copy { letter-spacing: 0.5px; }
 .site-footer__nav {
@@ -5134,6 +5304,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   overflow: hidden;
   background: var(--bg2);
   border-top: 1px solid var(--border);
+  position: relative;
+}
+/* Neon accent line along conveyor top edge */
+.conveyor::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 5%, rgba(0,255,136,0.3) 20%, rgba(0,204,255,0.25) 50%, rgba(204,68,255,0.2) 80%, transparent 95%);
+  box-shadow: 0 0 4px rgba(0,255,136,0.2);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Label row above the belt */
@@ -5990,4 +6174,124 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   user-select: none;
   z-index: 9999;
   letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   90s VENDING MACHINE — NEON / NOISE / CRT ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* VHS tracking line drifts top → bottom */
+@keyframes vhs-track {
+  0%   { top: -6px;  }
+  100% { top: 100vh; }
+}
+
+/* Neon tube flicker — used on nav + footer accent strips */
+@keyframes neon-tube-hum {
+  0%, 18%, 22%, 100% { opacity: 1;   }
+  19%                { opacity: 0.6; }
+  21%                { opacity: 0.8; }
+  50%                { opacity: 0.92; }
+}
+
+/* Soft neon brightness pulse for the brand title */
+@keyframes neon-buzz {
+  0%, 100% { filter: brightness(1);    }
+  50%      { filter: brightness(1.15); }
+}
+
+/* Page-title neon sign flicker */
+@keyframes page-title-flicker {
+  0%, 17%, 19%, 23%, 100% {
+    opacity: 1;
+    text-shadow:
+      0 0 10px rgba(0,255,136,0.9),
+      0 0 24px rgba(0,255,136,0.55),
+      0 0 48px rgba(0,255,136,0.25),
+      0 0 72px rgba(0,255,136,0.1),
+      3px 3px 0 rgba(0,0,0,0.7),
+      -1px 0 rgba(255,0,204,0.25),
+      1px 0 rgba(0,204,255,0.25);
+  }
+  18% {
+    opacity: 0.82;
+    text-shadow:
+      0 0 4px rgba(0,255,136,0.5),
+      2px 2px 0 rgba(0,0,0,0.6);
+  }
+  22% {
+    opacity: 0.9;
+    text-shadow:
+      0 0 6px rgba(0,255,136,0.7),
+      0 0 14px rgba(0,255,136,0.3),
+      3px 3px 0 rgba(0,0,0,0.7),
+      -2px 0 rgba(255,0,204,0.3),
+      2px 0 rgba(0,204,255,0.3);
+  }
+}
+
+/* LED marquee gradient sweep for page subtitles */
+@keyframes led-marquee {
+  0%   { background-position: 0% 50%;   }
+  100% { background-position: 300% 50%; }
+}
+
+/* ===== Enhanced Neon Glow on Interactive Focus States ===== */
+.pill:hover,
+.nav-link:hover {
+  filter: brightness(1.08);
+}
+
+/* ===== Deck Header Neon Enhancement ===== */
+.deck-header h2 {
+  text-shadow:
+    0 0 12px rgba(0,255,136,0.5),
+    0 0 28px rgba(0,255,136,0.2),
+    2px 2px 0 rgba(0,0,0,0.5),
+    -1px 0 rgba(255,0,204,0.12),
+    1px 0 rgba(0,204,255,0.12);
+}
+
+/* ===== Save-Celebrate neon burst ===== */
+.save-celebrate-modal {
+  box-shadow:
+    8px 8px 0 rgba(0,255,136,0.3),
+    0 0 60px rgba(0,255,136,0.2),
+    0 0 100px rgba(0,204,255,0.08);
+}
+
+/* ===== Battle Arena neon enhancements ===== */
+.battle-anim-vs {
+  text-shadow:
+    0 0 16px rgba(255,68,68,0.6),
+    0 0 40px rgba(255,68,68,0.25),
+    -2px 0 rgba(0,204,255,0.3),
+    2px 0 rgba(255,0,204,0.3);
+}
+
+/* ===== Scrollbar — bolder neon ===== */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 8px rgba(0,255,136,0.5), 0 0 16px rgba(0,204,255,0.2);
+}
+
+/* ===== prefers-reduced-motion: turn off all new animations ===== */
+@media (prefers-reduced-motion: reduce) {
+  body::after,
+  .nav::after,
+  .site-footer::before,
+  .conveyor::before {
+    animation: none !important;
+  }
+  .nav-title {
+    animation: none !important;
+  }
+  .page-title {
+    animation: none !important;
+  }
+  .page-sub {
+    animation: none !important;
+    -webkit-text-fill-color: var(--accent2);
+    background: none;
+  }
 }
