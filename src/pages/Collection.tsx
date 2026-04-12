@@ -25,6 +25,7 @@ const RARITY_ORDER: Record<Rarity, number> = {
   "Apprentice": 3,
   "Punch Skater": 4,
 };
+const UNKNOWN_RARITY_ORDER = 5;
 
 export function Collection() {
   const { cards, removeCard, addCard, updateCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
@@ -123,7 +124,7 @@ export function Collection() {
         case "oldest":
           return a.createdAt.localeCompare(b.createdAt);
         case "rarity":
-          return (RARITY_ORDER[a.prompts.rarity] ?? 5) - (RARITY_ORDER[b.prompts.rarity] ?? 5);
+          return (RARITY_ORDER[a.prompts.rarity] ?? UNKNOWN_RARITY_ORDER) - (RARITY_ORDER[b.prompts.rarity] ?? UNKNOWN_RARITY_ORDER);
         case "newest":
         default:
           return b.createdAt.localeCompare(a.createdAt);
