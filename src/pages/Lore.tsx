@@ -54,6 +54,10 @@ export function Lore() {
               <p className="lore-tagline">"{d.tagline}"</p>
               <p className="lore-body">{d.description}</p>
               <div className="lore-card-meta">
+                <span className="lore-meta-label">Australian analogue</span>
+                <span className="lore-meta-value">{d.australianAnalogue}</span>
+              </div>
+              <div className="lore-card-meta">
                 <span className="lore-meta-label">Atmosphere</span>
                 <span className="lore-meta-value">{d.atmosphere}</span>
               </div>

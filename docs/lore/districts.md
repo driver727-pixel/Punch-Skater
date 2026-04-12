@@ -1,8 +1,9 @@
 # Districts
 
-The City is divided into five major districts, each with its own culture, terrain,
+The City is divided into major districts, each with its own culture, terrain,
 corporate overlords, and courier ecosystem. A courier's home district shapes their
-street reputation and the kinds of runs they're known for.
+street reputation and the kinds of runs they're known for. In the Australian theatre,
+each district locks onto a local analogue somewhere on the continent.
 
 ---
 
@@ -10,10 +11,12 @@ street reputation and the kinds of runs they're known for.
 
 > *"The higher you go, the colder the air. The colder the air, the cleaner the money."*
 
+**Australian Analogue:** The Blue Mountains above Greater Western Sydney
+
 **Atmosphere:** Polished steel, pressurized walkways, glass-and-chrome towers rising
-above the City's smog layer. Airaway is the corporate penthouse — the district where
-Axiom Dynamics and Prism Media Group maintain their administrative campuses, executive
-residences, and rooftop rail networks.
+above the City's smog layer. Airaway is the corporate penthouse — a literal sky-city
+anchored to the Blue Mountains so its towers can sit above the basin haze and catch
+the colder air.
 
 **Terrain:** Elevated plazas connected by mag-rail bridges and rooftop transit lines.
 The streets below are clean because the corps pay for automated maintenance drones. If
@@ -37,11 +40,13 @@ biometrics flagged city-wide.
 
 > *"Nobody owns Nightshade. Nightshade owns you."*
 
+**Australian Analogue:** Melbourne CBD laneways and Fitzroy basements
+
 **Atmosphere:** Perpetual neon twilight. Nightshade exists in the shadow of the
-elevated corp towers above — it never sees direct sunlight, only the glow of ten
-thousand sign-boards, heat-lamp markets, and the occasional arc-flash from someone
-jacking a power node. It is loud, dense, and alive in ways the upper districts can
-never replicate.
+elevated corp towers above — rendered locally as a maze of Melbourne laneways,
+basement bars, and mural-lined alleys. It never sees direct sunlight, only the glow
+of ten thousand sign-boards, heat-lamp markets, and the occasional arc-flash from
+someone jacking a power node.
 
 **Terrain:** Narrow alleys, switchback stairwells between sub-levels, open-air
 markets on pedestrian bridges, and below it all, the Undercity — a sub-basement
@@ -66,10 +71,12 @@ and deeply suspicious of anyone who smells like a corporate plant.
 
 > *"The City runs on our power. We run on spite."*
 
+**Australian Analogue:** Port Kembla steelworks fed by Pilbara ore lines
+
 **Atmosphere:** Industrial and raw. Batteryville is the City's engine room — massive
 power generation plants, refinery complexes, rail yards, and recycler facilities that
-process the City's waste back into raw materials. The air tastes like ozone and
-machine oil. The noise never stops.
+process the City's waste back into raw materials. The air tastes like ozone, machine
+oil, and red-dust freight.
 
 **Terrain:** Wide industrial boulevards built for cargo haulers, not pedestrians.
 Rail yard switchways cut across everything. Loading docks, elevated conveyors, and
@@ -92,6 +99,8 @@ materials. The terrain punishes speed and rewards endurance. Stamina is everythi
 ## The Grid
 
 > *"Information wants to be free. The Grid decides the price."*
+
+**Australian Analogue:** Canberra's planned core and federal server farms
 
 **Atmosphere:** Sterile precision. The Grid is the City's data district — server farm
 towers humming at sub-audible frequencies, fiber conduit running visible along every
@@ -120,6 +129,8 @@ awareness of sight lines, camera arcs, and sensor blind spots.
 ## Glass City
 
 > *"Everyone is watching. Make sure they like what they see."*
+
+**Australian Analogue:** Perth CBD and the Swan River foreshore
 
 **Atmosphere:** Glamour as infrastructure. Glass City is the City's cultural showcase —
 fashion house towers with mirrored facades, media studio complexes, influencer

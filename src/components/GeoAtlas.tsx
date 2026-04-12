@@ -7,14 +7,14 @@ interface GeoAtlasProps {
 }
 
 const AUSTRALIA_DISTRICT_LAYOUT: Record<District, { x: number; y: number; tone: string }> = {
-  Airaway: { x: 55, y: 22, tone: "sky" },
-  Electropolis: { x: 74, y: 36, tone: "signal" },
-  "Glass City": { x: 76, y: 69, tone: "glass" },
-  "The Grid": { x: 57, y: 46, tone: "grid" },
-  Batteryville: { x: 41, y: 72, tone: "industrial" },
-  "The Roads": { x: 30, y: 51, tone: "roads" },
-  Nightshade: { x: 26, y: 79, tone: "underground" },
-  "The Forest": { x: 20, y: 28, tone: "wild" },
+  Airaway: { x: 70, y: 58, tone: "sky" },
+  Electropolis: { x: 78, y: 41, tone: "signal" },
+  "Glass City": { x: 25, y: 67, tone: "glass" },
+  "The Grid": { x: 67, y: 64, tone: "grid" },
+  Batteryville: { x: 34, y: 36, tone: "industrial" },
+  "The Roads": { x: 45, y: 57, tone: "roads" },
+  Nightshade: { x: 67, y: 79, tone: "underground" },
+  "The Forest": { x: 76, y: 25, tone: "wild" },
 };
 
 const DISTRICT_ARTERIES: Array<{
@@ -92,8 +92,8 @@ export function GeoAtlas({ compact = false, className }: GeoAtlasProps) {
         </div>
         {!compact && (
           <p className="geo-atlas__body">
-            Punch Skater now anchors its city-state across Australia, with the district network
-            stretched over the continent from western scrublands to the neon eastern seaboard.
+            Punch Skater now anchors its city-state across Australia, mapping each district to
+            a local analogue from Perth glass towers to Melbourne laneways and the Nullarbor runs.
           </p>
         )}
         <div
@@ -143,7 +143,7 @@ export function GeoAtlas({ compact = false, className }: GeoAtlasProps) {
               data-testid={`district-node-${district.slug}`}
             >
               <span className="geo-atlas__district-name">{district.name}</span>
-              <span className="geo-atlas__district-meta">{district.crews[0]}</span>
+              <span className="geo-atlas__district-meta">{district.australianAnalogue}</span>
             </article>
           ))}
         </div>
