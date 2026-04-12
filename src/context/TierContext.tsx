@@ -122,7 +122,11 @@ export function TierProvider({ children }: { children: ReactNode }) {
     fetch(`${CHECKOUT_VERIFY_API_URL}?session_id=${encodeURIComponent(sessionId)}`)
       .then(async (resp) => {
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(data.error ?? "Failed to verify checkout session.");
+        if (!resp.ok) {
+          throw new Error(
+            `Failed to verify checkout session (HTTP ${resp.status}): ${data.error ?? "Unknown error"}`,
+          );
+        }
         if (data?.tier !== "tier2" && data?.tier !== "tier3") {
           throw new Error("Checkout verification returned an invalid tier.");
         }
@@ -142,7 +146,9 @@ export function TierProvider({ children }: { children: ReactNode }) {
           saveEmail(checkout.email);
         }
       })
-      .catch(() => {/* non-fatal */});
+      .catch((error) => {
+        console.warn("[Tier] Checkout verification failed:", error);
+      });
 
     return () => {
       cancelled = true;

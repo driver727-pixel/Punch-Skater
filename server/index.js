@@ -318,10 +318,20 @@ app.get('/api/verify-checkout-session', checkoutRateLimit, async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
-    const paidTier = resolveTierFromPriceId(lineItems.data[0]?.price?.id ?? '');
+    const priceId = lineItems.data[0]?.price?.id;
+    if (!priceId) {
+      res.status(409).json({ error: 'No valid line items found for this checkout session.' });
+      return;
+    }
+    const paidTier = resolveTierFromPriceId(priceId);
 
-    if (session.payment_status !== 'paid' || !paidTier) {
-      res.status(409).json({ error: 'Checkout session has not completed successfully.' });
+    if (!paidTier) {
+      res.status(409).json({ error: 'Checkout session contains an unsupported price ID.' });
+      return;
+    }
+
+    if (session.payment_status !== 'paid') {
+      res.status(409).json({ error: 'Checkout session has not been paid yet.' });
       return;
     }
 
