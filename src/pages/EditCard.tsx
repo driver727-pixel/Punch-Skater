@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { CardPayload, Rarity, Style, Vibe, District, CardPrompts, Gender, AgeGroup, BodyType } from "../lib/types";
+import type { CardPayload, Rarity, Style, District, CardPrompts, Gender, AgeGroup, BodyType, HairLength, HairColor, SkinTone, FaceCharacter } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
@@ -13,11 +13,14 @@ import { ACTIVE_STYLES } from "../lib/styles";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ACTIVE_STYLES;
-const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
 const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];
-const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Stocky", "Heavy"];
+const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Stocky", "Heavy", "Wiry", "Pear-shaped", "Lanky", "Barrel-chested"];
+const HAIR_LENGTHS: HairLength[] = ["Bald", "Buzzcut", "Short", "Medium", "Long", "Very Long"];
+const HAIR_COLORS: HairColor[] = ["Black", "Brown", "Blonde", "Red", "Gray", "White", "Auburn", "Dyed Bright"];
+const SKIN_TONES: SkinTone[] = ["Very Light", "Light", "Medium Light", "Medium", "Medium Dark", "Dark", "Very Dark"];
+const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Asymmetric", "Rugged", "Baby-faced", "Gaunt", "Round-faced"];
 const DEFAULT_AGE_GROUP: AgeGroup = "Adult";
 const DEFAULT_BODY_TYPE: BodyType = "Athletic";
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
@@ -44,12 +47,15 @@ export function EditCard() {
         archetype: original.prompts.archetype,
         rarity: original.prompts.rarity as Rarity,
         style: original.prompts.style as Style,
-        vibe: original.prompts.vibe as Vibe,
         district: original.prompts.district as District,
         accentColor: original.prompts.accentColor,
         gender: (original.prompts.gender as Gender) ?? "Non-binary",
         ageGroup: (original.prompts.ageGroup as AgeGroup) ?? DEFAULT_AGE_GROUP,
         bodyType: (original.prompts.bodyType as BodyType) ?? DEFAULT_BODY_TYPE,
+        hairLength: (original.prompts.hairLength as HairLength) ?? "Short",
+        hairColor: (original.prompts.hairColor as HairColor) ?? "Black",
+        skinTone: (original.prompts.skinTone as SkinTone) ?? "Medium",
+        faceCharacter: (original.prompts.faceCharacter as FaceCharacter) ?? "Conventional",
       });
       if (original.board) setBoardConfig(original.board);
       // Show the original card as starting preview
@@ -139,15 +145,6 @@ export function EditCard() {
           </div>
 
           <div className="form-group">
-            <label>Vibe</label>
-            <div className="pill-group">
-              {VIBES.map((v) => (
-                <button key={v} className={`pill ${prompts.vibe === v ? "selected" : ""}`} onClick={() => set("vibe", v)}>{v}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
             <label>District</label>
             <div className="pill-group">
               {DISTRICTS.map((d) => (
@@ -179,6 +176,42 @@ export function EditCard() {
             <div className="pill-group">
               {BODY_TYPES.map((bodyType) => (
                 <button key={bodyType} className={`pill${prompts.bodyType === bodyType ? " selected" : ""}`} onClick={() => set("bodyType", bodyType)}>{bodyType}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Hair Length</label>
+            <div className="pill-group">
+              {HAIR_LENGTHS.map((opt) => (
+                <button key={opt} className={`pill${prompts.hairLength === opt ? " selected" : ""}`} onClick={() => set("hairLength", opt)}>{opt}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Hair Color</label>
+            <div className="pill-group">
+              {HAIR_COLORS.map((opt) => (
+                <button key={opt} className={`pill${prompts.hairColor === opt ? " selected" : ""}`} onClick={() => set("hairColor", opt)}>{opt}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Skin Tone</label>
+            <div className="pill-group">
+              {SKIN_TONES.map((opt) => (
+                <button key={opt} className={`pill${prompts.skinTone === opt ? " selected" : ""}`} onClick={() => set("skinTone", opt)}>{opt}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Face Character</label>
+            <div className="pill-group">
+              {FACE_CHARACTERS.map((opt) => (
+                <button key={opt} className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`} onClick={() => set("faceCharacter", opt)}>{opt}</button>
               ))}
             </div>
           </div>

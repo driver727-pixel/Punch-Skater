@@ -445,8 +445,6 @@ export function CardDisplay({
             <span>{displayedArchetype}</span>
             <span className="sep">·</span>
             <span>{card.prompts.style}</span>
-            <span className="sep">·</span>
-            <span>{card.prompts.vibe}</span>
           </div>
           <div className="card-subline">
             <span style={{ opacity: 0.6 }}>{card.prompts.district}</span>

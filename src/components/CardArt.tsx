@@ -1251,7 +1251,7 @@ export function CardArt({ card, width = 200, height = 140 }: CardArtProps) {
         accentColor={accent}
         archetype={getDisplayedArchetype(card)}
         style={card.prompts.style}
-        vibe={card.prompts.vibe}
+        vibe={card.prompts.vibe ?? "Grunge"}
         storagePackStyle={card.visuals.storagePackStyle}
         characterSeed={card.characterSeed}
       />

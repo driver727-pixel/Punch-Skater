@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CardPrompts, CardPayload, Rarity, Style, Vibe, District, Gender, AgeGroup, BodyType, Faction } from "../lib/types";
+import type { CardPrompts, CardPayload, Rarity, Style, District, Gender, AgeGroup, BodyType, Faction, HairLength, HairColor, SkinTone, FaceCharacter } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
@@ -25,11 +25,14 @@ import { sfxForge, sfxSuccess, sfxError } from "../lib/sfx";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ACTIVE_STYLES;
-const VIBES: Vibe[] = ["Grunge", "Neon", "Chrome", "Plastic", "Recycled"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
 const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];
-const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Stocky", "Heavy"];
+const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Stocky", "Heavy", "Wiry", "Pear-shaped", "Lanky", "Barrel-chested"];
+const HAIR_LENGTHS: HairLength[] = ["Bald", "Buzzcut", "Short", "Medium", "Long", "Very Long"];
+const HAIR_COLORS: HairColor[] = ["Black", "Brown", "Blonde", "Red", "Gray", "White", "Auburn", "Dyed Bright"];
+const SKIN_TONES: SkinTone[] = ["Very Light", "Light", "Medium Light", "Medium", "Medium Dark", "Dark", "Very Dark"];
+const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Asymmetric", "Rugged", "Baby-faced", "Gaunt", "Round-faced"];
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
@@ -86,8 +89,9 @@ export function CardForge() {
   const { hasFaction, unlockFaction } = useFactionDiscovery();
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
-    vibe: "Grunge", district: "Nightshade", accentColor: "#00ff88",
+    district: "Nightshade", accentColor: "#00ff88",
     gender: "Non-binary", ageGroup: "Adult", bodyType: "Athletic",
+    hairLength: "Short", hairColor: "Black", skinTone: "Medium", faceCharacter: "Conventional",
   });
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [generated, setGenerated] = useState<CardPayload | null>(null);
@@ -566,21 +570,6 @@ export function CardForge() {
           </div>
 
           <div className="form-group">
-            <label>Vibe</label>
-            <div className="pill-group">
-              {VIBES.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.vibe === opt ? " selected" : ""}`}
-                  onClick={() => set("vibe", opt)}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
             <label>District</label>
             <div className="pill-group">
               {DISTRICTS.map((opt) => (
@@ -633,6 +622,66 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.bodyType === opt ? " selected" : ""}`}
                   onClick={() => set("bodyType", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Hair Length</label>
+            <div className="pill-group">
+              {HAIR_LENGTHS.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.hairLength === opt ? " selected" : ""}`}
+                  onClick={() => set("hairLength", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Hair Color</label>
+            <div className="pill-group">
+              {HAIR_COLORS.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.hairColor === opt ? " selected" : ""}`}
+                  onClick={() => set("hairColor", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Skin Tone</label>
+            <div className="pill-group">
+              {SKIN_TONES.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.skinTone === opt ? " selected" : ""}`}
+                  onClick={() => set("skinTone", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Face Character</label>
+            <div className="pill-group">
+              {FACE_CHARACTERS.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`}
+                  onClick={() => set("faceCharacter", opt)}
                 >
                   {opt}
                 </button>

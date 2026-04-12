@@ -181,7 +181,6 @@ export function CardViewer3D({
               {[
                 ["ARCHETYPE", getDisplayedArchetype(card)],
                 ["STYLE",     card.prompts.style],
-                ["VIBE",      card.prompts.vibe],
                 ["DISTRICT",  card.prompts.district],
                 ["CREW",      getDisplayedCrew(card)],
               ].map(([label, value]) => (
