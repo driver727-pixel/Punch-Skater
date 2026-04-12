@@ -11,6 +11,7 @@ import type { ArenaEntry, BattleResult, DeckPayload, CardPayload } from "../lib/
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 import {
+  buildArenaDeckSummary,
   resolveBattle,
   deductWager,
   WAGER_POINTS,
@@ -52,6 +53,7 @@ export function useBattle() {
         deckId: deck.id,
         deckName: deck.name,
         cardCount: deck.cards.length,
+        battleSummary: buildArenaDeckSummary(deck.cards),
         readiedAt: new Date().toISOString(),
       };
       await setDoc(doc(db, "arena", uid), entry);

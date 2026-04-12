@@ -1,9 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useBattle, MIN_BATTLE_CARDS } from "../hooks/useBattle";
 import { useDecks } from "../hooks/useDecks";
 import { useAuth } from "../context/AuthContext";
-import type { ArenaEntry, DeckPayload, BattleResult } from "../lib/types";
-import { WAGER_POINTS, WINNER_BONUS, computeDeckScore } from "../lib/battle";
+import type { ArenaDeckSummary, ArenaEntry, DeckPayload, BattleResult } from "../lib/types";
+import {
+  WAGER_POINTS,
+  WINNER_BONUS,
+  buildArenaDeckSummary,
+  computeDeckScore,
+  formatStatLabel,
+} from "../lib/battle";
 import { CardThumbnail } from "../components/CardThumbnail";
 
 // ── Tiny Web Audio SFX helpers ──────────────────────────────────────────────
@@ -247,6 +253,29 @@ function DeckSelector({ decks, selectedId, onSelect }: DeckSelectorProps) {
   );
 }
 
+interface ArenaBattleSummaryProps {
+  summary?: ArenaDeckSummary | null;
+  label?: string;
+}
+
+function ArenaBattleSummary({ summary, label }: ArenaBattleSummaryProps) {
+  if (!summary) {
+    return <span className="arena-opponent-stats-hidden">Scout data syncing...</span>;
+  }
+
+  return (
+    <div className="arena-battle-summary">
+      {label && <span className="arena-battle-summary-label">{label}</span>}
+      <span className="arena-battle-summary-line">
+        ⚡ Power {summary.deckPower} · 🎯 Best {formatStatLabel(summary.strongestStat)} {summary.strongestStatTotal}
+      </span>
+      <span className="arena-battle-summary-line">
+        🤝 Synergy +{summary.synergyBonusPct}% · {summary.archetypeHint}
+      </span>
+    </div>
+  );
+}
+
 // ── Main Arena page ─────────────────────────────────────────────────────────
 
 export function BattleArena() {
@@ -285,6 +314,10 @@ export function BattleArena() {
   }, [battleResult, showAnimation]);
 
   const selectedDeck = decks.find((d) => d.id === selectedDeckId) ?? null;
+  const selectedDeckSummary = useMemo(
+    () => (selectedDeck ? buildArenaDeckSummary(selectedDeck.cards) : null),
+    [selectedDeck],
+  );
 
   const handleReady = async () => {
     if (!selectedDeck) return;
@@ -359,6 +392,7 @@ export function BattleArena() {
                 <strong>{myArenaEntry.deckName}</strong> is ready for battle!
                 <br />
                 <span className="arena-ready-hint">Waiting for a challenger…</span>
+                <ArenaBattleSummary summary={myArenaEntry.battleSummary} label="Public arena summary" />
               </div>
               <button className="btn-outline btn-sm" onClick={handleUnready}>
                 Stand Down
@@ -371,6 +405,7 @@ export function BattleArena() {
                 <>
                   <div className="arena-deck-preview">
                     <h4>{selectedDeck.name}</h4>
+                    <ArenaBattleSummary summary={selectedDeckSummary} label="Public arena summary" />
                     <div className="arena-deck-preview-cards">
                       {selectedDeck.cards.map((card) => (
                         <CardThumbnail key={card.id} card={card} width={80} height={56} />
@@ -409,7 +444,7 @@ export function BattleArena() {
                     <span className="arena-opponent-deck">
                       {entry.deckName} · {entry.cardCount} cards
                     </span>
-                    <span className="arena-opponent-stats-hidden">Stats hidden 🔒</span>
+                    <ArenaBattleSummary summary={entry.battleSummary} label="Scouting report" />
                   </div>
                   <button
                     className="btn-primary btn-sm"
