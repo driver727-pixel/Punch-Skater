@@ -310,8 +310,13 @@ app.get('/api/verify-checkout-session', checkoutRateLimit, async (req, res) => {
   }
 
   const sessionId = typeof req.query.session_id === 'string' ? req.query.session_id.trim() : '';
+  const expectedEmail = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
   if (!sessionId) {
     res.status(400).json({ error: 'session_id is required.' });
+    return;
+  }
+  if (!expectedEmail) {
+    res.status(400).json({ error: 'email is required.' });
     return;
   }
 
@@ -320,10 +325,17 @@ app.get('/api/verify-checkout-session', checkoutRateLimit, async (req, res) => {
     const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
     const priceId = lineItems.data[0]?.price?.id;
     if (!priceId) {
+      console.error('Stripe checkout verification missing line items:', { sessionId, session });
       res.status(409).json({ error: 'No valid line items found for this checkout session.' });
       return;
     }
     const paidTier = resolveTierFromPriceId(priceId);
+    const sessionEmail = (session.customer_details?.email ?? session.customer_email ?? '').trim().toLowerCase();
+
+    if (!sessionEmail || sessionEmail !== expectedEmail) {
+      res.status(403).json({ error: 'Checkout session does not match the expected email.' });
+      return;
+    }
 
     if (!paidTier) {
       res.status(409).json({ error: 'Checkout session contains an unsupported price ID.' });
@@ -337,7 +349,7 @@ app.get('/api/verify-checkout-session', checkoutRateLimit, async (req, res) => {
 
     res.json({
       tier: paidTier,
-      email: session.customer_details?.email ?? session.customer_email ?? '',
+      email: sessionEmail,
     });
   } catch (err) {
     console.error('Stripe checkout verification error:', err);

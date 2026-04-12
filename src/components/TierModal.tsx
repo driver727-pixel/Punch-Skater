@@ -42,8 +42,8 @@ export function TierModal({ onClose }: TierModalProps) {
     // Store email so it's available after Stripe redirect
     saveEmail(emailVal);
 
-    // Build the success URL with the Checkout Session ID so the app can verify
-    // the completed purchase with Stripe before restoring tier access.
+    // Stripe replaces {CHECKOUT_SESSION_ID} after payment so the app can verify
+    // the completed purchase with the server before restoring tier access.
     const redirectBase = window.location.origin + window.location.pathname;
     const successUrl = `${redirectBase}?checkout_session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${redirectBase}`;

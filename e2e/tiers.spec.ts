@@ -193,6 +193,8 @@ test.describe('Stripe checkout session verification', () => {
       });
     });
 
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('skpd_email', 'paid@example.com'));
     await page.goto('/?checkout_session_id=cs_test_paid_session');
     await expect(page).toHaveURL('/');
     await expect(page.getByTestId('forge-button')).toContainText(/forge courier card/i);

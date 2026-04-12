@@ -117,9 +117,17 @@ export function TierProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const sessionId = loadCheckoutSessionId();
     if (!sessionId) return;
+    const storedEmail = loadEmail().trim();
+    if (!storedEmail) {
+      console.warn("[Tier] Checkout verification skipped because no purchase email is stored.");
+      return;
+    }
 
     let cancelled = false;
-    fetch(`${CHECKOUT_VERIFY_API_URL}?session_id=${encodeURIComponent(sessionId)}`)
+    const verifyUrl = new URL(CHECKOUT_VERIFY_API_URL, window.location.origin);
+    verifyUrl.searchParams.set("session_id", sessionId);
+    verifyUrl.searchParams.set("email", storedEmail);
+    fetch(verifyUrl.toString())
       .then(async (resp) => {
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
@@ -142,8 +150,11 @@ export function TierProvider({ children }: { children: ReactNode }) {
         // Preserve an existing tier3 grant (for example admin access or a higher
         // paid plan already stored on the device) rather than downgrading it
         // when a verified tier2 checkout is restored.
-        setTierState((prev) => (prev === "tier3" ? prev : checkout.tier));
-        saveTier(checkout.tier);
+        setTierState((prev) => {
+          const nextTier = prev === "tier3" ? prev : checkout.tier;
+          saveTier(nextTier);
+          return nextTier;
+        });
         if (checkout.email) {
           setEmailState(checkout.email);
           saveEmail(checkout.email);
@@ -179,6 +190,17 @@ export function TierProvider({ children }: { children: ReactNode }) {
         setTierState(data.tier);
         saveTier(data.tier);
         clearCheckoutSessionId();
+        return;
+      }
+
+      if (
+        verifiedCheckout &&
+        verifiedEmail &&
+        userEmail &&
+        verifiedEmail !== userEmail
+      ) {
+        setTierState("free");
+        saveTier("free");
         return;
       }
 
