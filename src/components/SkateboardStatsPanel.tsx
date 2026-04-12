@@ -1,4 +1,5 @@
 import type { BoardLoadout } from "../lib/boardBuilder";
+import { BOARD_STAT_LABELS } from "../lib/statLabels";
 
 interface SkateboardStatsPanelProps {
   loadout: BoardLoadout;
@@ -8,13 +9,15 @@ interface NeonBarProps {
   label: string;
   value: number;
   colorClass: string;
+  /** Tooltip shown on hover over the stat label */
+  tooltip?: string;
 }
 
-function NeonBar({ label, value, colorClass }: NeonBarProps) {
+function NeonBar({ label, value, colorClass, tooltip }: NeonBarProps) {
   const pct = (Math.min(Math.max(value, 0), 10) / 10) * 100;
   return (
     <div className="skate-stat-bar">
-      <span className="skate-stat-label">{label}</span>
+      <span className="skate-stat-label" title={tooltip}>{label}</span>
       <div className={`neon-tube ${colorClass}`}>
         <div
           className="neon-filament"
@@ -31,9 +34,9 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
     <div className="skate-stats-panel">
       <span className="skate-stats-title">BOARD STATS</span>
 
-      <NeonBar label="SPD" value={loadout.speed}        colorClass="neon-tube--cyan"    />
-      <NeonBar label="ACC" value={loadout.acceleration} colorClass="neon-tube--magenta" />
-      <NeonBar label="RNG" value={loadout.range}        colorClass="neon-tube--green"   />
+      <NeonBar label={BOARD_STAT_LABELS.speed.label}        value={loadout.speed}        colorClass="neon-tube--cyan"    tooltip={BOARD_STAT_LABELS.speed.tooltip} />
+      <NeonBar label={BOARD_STAT_LABELS.acceleration.label} value={loadout.acceleration} colorClass="neon-tube--magenta" tooltip={BOARD_STAT_LABELS.acceleration.tooltip} />
+      <NeonBar label={BOARD_STAT_LABELS.range.label}        value={loadout.range}        colorClass="neon-tube--green"   tooltip={BOARD_STAT_LABELS.range.tooltip} />
 
       <div className="skate-text-stats">
         <div className="skate-text-row">

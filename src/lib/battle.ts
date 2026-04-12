@@ -7,6 +7,7 @@
  * battle-deck cards.
  */
 import type { ArenaDeckSummary, CardPayload, StatKey } from "./types";
+import { CARD_STAT_LABELS } from "./statLabels";
 
 /** Number of attribute points each player wagers per battle. */
 export const WAGER_POINTS = 6;
@@ -17,13 +18,9 @@ export const WINNER_BONUS = WAGER_POINTS * 2;
 // ── Stat keys ────────────────────────────────────────────────────────────────
 
 const STAT_KEYS: StatKey[] = ["speed", "stealth", "tech", "grit", "rep"];
-const STAT_LABELS: Record<StatKey, string> = {
-  speed: "SPD",
-  stealth: "STLTH",
-  tech: "TCH",
-  grit: "GRT",
-  rep: "REP",
-};
+const STAT_LABELS: Record<StatKey, string> = Object.fromEntries(
+  STAT_KEYS.map((k) => [k, CARD_STAT_LABELS[k].label]),
+) as Record<StatKey, string>;
 
 /** Count how many cards in the deck share each archetype. */
 function getArchetypeCounts(cards: CardPayload[]): Map<string, number> {

@@ -23,6 +23,7 @@ import {
   hasDistrictAccessRestriction,
   isDistrictAccessibleWithBoardType,
 } from "../lib/districtWeather";
+import { MISSION_STAT_LABELS } from "../lib/statLabels";
 
 const MISSION_MARKER_OFFSET_Y = -76;
 const DISTRICT_MARKER_OFFSETS = [
@@ -335,19 +336,19 @@ export function Mission() {
                       <span className="mission-stat-value">{missionAccessSummary}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">SPD</span>
+                      <span className="mission-stat-label" title={MISSION_STAT_LABELS.speed.tooltip}>{MISSION_STAT_LABELS.speed.label}</span>
                       <span className="mission-stat-value">{missionPreview.stats.speed}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">ACC</span>
+                      <span className="mission-stat-label" title={MISSION_STAT_LABELS.acceleration.tooltip}>{MISSION_STAT_LABELS.acceleration.label}</span>
                       <span className="mission-stat-value">{missionPreview.stats.acceleration}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">STLTH</span>
+                      <span className="mission-stat-label" title={MISSION_STAT_LABELS.stealth.tooltip}>{MISSION_STAT_LABELS.stealth.label}</span>
                       <span className="mission-stat-value">{missionPreview.stats.stealth}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">RNG</span>
+                      <span className="mission-stat-label" title={MISSION_STAT_LABELS.batteryRemaining.tooltip}>{MISSION_STAT_LABELS.batteryRemaining.label}</span>
                       <span className="mission-stat-value">{missionPreview.stats.batteryRemaining}</span>
                     </div>
                   </div>
@@ -405,9 +406,9 @@ export function Mission() {
                     {missionResult.success ? "MISSION COMPLETE" : "MISSION FAILED"}
                   </span>
                   <div className="mission-checks">
-                    <span className="tag">HP {missionResult.playerStats.health}</span>
+                    <span className="tag" title={MISSION_STAT_LABELS.health.tooltip}>{MISSION_STAT_LABELS.health.label} {missionResult.playerStats.health}</span>
                     <span className="tag">Heat {missionResult.playerStats.heatLevel}</span>
-                    <span className="tag">RNG {missionResult.playerStats.batteryRemaining}</span>
+                    <span className="tag" title={MISSION_STAT_LABELS.batteryRemaining.tooltip}>{MISSION_STAT_LABELS.batteryRemaining.label} {missionResult.playerStats.batteryRemaining}</span>
                     <span className="tag">Inventory {missionResult.inventory.length}</span>
                     {missionResult.ozziesReward > 0 && (
                       <span className="tag tag--ozzies">💰 +{missionResult.ozziesReward} Ozzies</span>

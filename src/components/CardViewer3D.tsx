@@ -3,6 +3,7 @@ import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
+import { CARD_STAT_LABELS } from "../lib/statLabels";
 
 interface CardViewer3DProps {
   card: CardPayload;
@@ -193,11 +194,11 @@ export function CardViewer3D({
 
             {/* Stats */}
             <div className="viewer3d-back-stats">
-              <StatBar label="SPD" value={card.stats.speed}   color={accent} />
-              <StatBar label="STLTH" value={card.stats.stealth} color={accent} />
-              <StatBar label="TCH" value={card.stats.tech}    color={accent} />
-              <StatBar label="GRT" value={card.stats.grit}    color={accent} />
-              <StatBar label="REP" value={card.stats.rep}     color={accent} />
+              <StatBar label={CARD_STAT_LABELS.speed.label}   value={card.stats.speed}   color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.tech.label}    value={card.stats.tech}    color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
             </div>
 
             {/* Passive trait */}
