@@ -8,7 +8,7 @@ export function Lore() {
   return (
     <div className="page lore-page">
       <h1 className="page-title">CODEX</h1>
-      <p className="page-sub">The world of Punch Skater — districts, archetypes, crews, and the Australian theater that connects them.</p>
+      <p className="page-sub">The world of Punch Skater — districts, archetypes, crews, and the Australian setting that houses them.</p>
 
       {/* ── World Overview ──────────────────────────────────────────────── */}
       <section className="lore-section">
