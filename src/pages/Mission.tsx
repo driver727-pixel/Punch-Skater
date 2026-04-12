@@ -62,7 +62,8 @@ export function Mission() {
   const missionWeather = weatherByDistrict[activeMission.district] ?? null;
   const missionLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.district];
   const runnerBoardType = missionPreview.runnerCard?.board?.boardType;
-  const missionAccessBlocked = Boolean(missionPreview.runnerCard) && !isDistrictAccessibleWithBoardType(missionWeather, runnerBoardType);
+  const hasRunner = Boolean(missionPreview.runnerCard);
+  const missionAccessBlocked = hasRunner && !isDistrictAccessibleWithBoardType(missionWeather, runnerBoardType);
   const missionWeatherSummary = missionWeather
     ? `${missionWeather.summary} over ${missionWeather.city}, ${missionWeather.state}.`
     : weatherLoading
@@ -75,7 +76,7 @@ export function Mission() {
       DISTRICT_MISSIONS.map((mission) => ({
         id: mission.id,
         district: mission.district,
-        label: mission.name.replace("Operation: ", ""),
+        label: mission.pinLabel,
         title: `${mission.name} · ${mission.district}`,
         active: mission.id === activeMission.id,
         offsetY: -76,
@@ -141,7 +142,7 @@ export function Mission() {
           <button
             className="btn-primary"
             onClick={handleRunMission}
-            disabled={!activeDeck || !missionPreview.runnerCard || missionAccessBlocked}
+            disabled={!activeDeck || !hasRunner || missionAccessBlocked}
           >
             ▶ Run Mission
           </button>

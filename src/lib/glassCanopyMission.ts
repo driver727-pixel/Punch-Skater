@@ -122,6 +122,7 @@ interface MissionDefinition {
 
 export interface DistrictMissionDefinition extends MissionDefinition {
   district: District;
+  pinLabel: string;
   tagline: string;
   briefing: string;
   checkTags: string[];
@@ -134,7 +135,7 @@ export interface MissionResult {
   missionLog: string[];
 }
 
-export interface GlassCanopyMissionPreview {
+export interface MissionPreview {
   playerDeck: MissionPlayerDeck;
   runnerCard: CardPayload | null;
   runnerLoadout: BoardLoadout | null;
@@ -394,6 +395,7 @@ const GLASS_CANOPY_MISSION: DistrictMissionDefinition = {
   id: "operation-glass-canopy",
   name: "Operation: Glass Canopy",
   district: "Glass City",
+  pinLabel: "Glass Canopy",
   tagline: "Break into a silent glass tower, grab the payload, and outrun the response drones.",
   briefing:
     "Infiltrate the Glass City penthouse, grab the payload, and escape the Transitional Zone before the board dies.",
@@ -420,6 +422,7 @@ const STATIC_BLOOM_MISSION: DistrictMissionDefinition = {
   id: "operation-static-bloom",
   name: "Operation: Static Bloom",
   district: "The Grid",
+  pinLabel: "Static Bloom",
   tagline: "Lift a cooling-core cipher from Cascade storage and ghost the audit sweep.",
   briefing:
     "Thread The Grid's mirrored service lanes, steal the cooling-core cipher, and outrun the compliance sweep before the district locks down.",
@@ -537,6 +540,7 @@ const RAILSPIKE_MISSION: DistrictMissionDefinition = {
   id: "operation-railspike-run",
   name: "Operation: Railspike Run",
   district: "Batteryville",
+  pinLabel: "Railspike Run",
   tagline: "Hijack a superconductive cell from the yard and punch out through the freight maze.",
   briefing:
     "Slip into Batteryville's rail yard, steal a superconductive freight cell, and ride the switchback lanes before the clamps close.",
@@ -648,6 +652,7 @@ const MURKLINE_MISSION: DistrictMissionDefinition = {
   id: "operation-murkline",
   name: "Operation: Murkline",
   district: "Nightshade",
+  pinLabel: "Murkline",
   tagline: "Pull a ghost-ledger from the tunnels and escape before the undercity closes around you.",
   briefing:
     "Dive through Nightshade's tunnel web, recover the ghost-ledger, and climb out before the blackout shutters seal the route.",
@@ -782,7 +787,7 @@ function resolveRunnerCard(cards: CardPayload[], runnerCardId?: string): CardPay
 export function buildMissionPreview(
   cards: CardPayload[],
   runnerCardId?: string,
-): GlassCanopyMissionPreview {
+): MissionPreview {
   const runnerCard = resolveRunnerCard(cards, runnerCardId);
   const runnerBoard = runnerCard?.board;
   const runnerLoadout = runnerCard?.boardLoadout ?? (runnerBoard ? calculateBoardStats(runnerBoard) : null);
