@@ -1,4 +1,5 @@
 import type { CardPayload } from "../lib/types";
+import { MAX_SINGLE_STAT } from "../lib/generator";
 
 interface DeckStatsPanelProps {
   cards: CardPayload[];
@@ -17,8 +18,8 @@ export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {
   const filledCards = cards.filter(Boolean);
   if (filledCards.length === 0) return null;
 
-  // Each stat is 0–10; with maxCardsInDeck cards the theoretical max is 10 × maxCardsInDeck
-  const statMax = 10 * maxCardsInDeck;
+  // Each stat is 1–200; with maxCardsInDeck cards the theoretical max is 200 × maxCardsInDeck
+  const statMax = MAX_SINGLE_STAT * maxCardsInDeck;
 
   const totals = STAT_DEFS.map(({ key, label, color, glow }) => {
     const total = filledCards.reduce((sum, c) => sum + (c.stats[key as keyof typeof c.stats] ?? 0), 0);
