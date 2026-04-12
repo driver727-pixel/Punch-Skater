@@ -11,6 +11,11 @@ import {
   DISTRICT_MISSIONS,
   runDistrictMission,
 } from "../lib/glassCanopyMission";
+import type {
+  ForkChoice,
+  MissionForkPrompt,
+  MissionResult,
+} from "../lib/glassCanopyMission";
 import {
   DISTRICT_WEATHER_LOCATIONS,
   getDistrictAccessSummary,
@@ -26,7 +31,9 @@ export function Mission() {
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
   const [activeMissionId, setActiveMissionId] = useState<string>(DISTRICT_MISSIONS[0].id);
   const [runnerCardId, setRunnerCardId] = useState<string | null>(null);
-  const [missionResult, setMissionResult] = useState<ReturnType<typeof runDistrictMission> | null>(null);
+  const [missionResult, setMissionResult] = useState<MissionResult | null>(null);
+  const [pendingFork, setPendingFork] = useState<MissionForkPrompt | null>(null);
+  const [forkChoices, setForkChoices] = useState<Record<string, ForkChoice>>({});
 
   useEffect(() => {
     if (!activeDeckId && decks.length > 0) {
@@ -48,12 +55,16 @@ export function Mission() {
     if (!activeDeck) {
       setRunnerCardId(null);
       setMissionResult(null);
+      setPendingFork(null);
+      setForkChoices({});
       return;
     }
 
     if (!runnerCardId || !activeDeck.cards.some((card) => card.id === runnerCardId)) {
       setRunnerCardId(firstCardId);
       setMissionResult(null);
+      setPendingFork(null);
+      setForkChoices({});
     }
   }, [activeDeck, runnerCardId]);
 
@@ -85,6 +96,8 @@ export function Mission() {
         onClick: () => {
           setActiveMissionId(mission.id);
           setMissionResult(null);
+          setPendingFork(null);
+          setForkChoices({});
         },
       })),
     [activeMission.id],
@@ -92,7 +105,32 @@ export function Mission() {
 
   const handleRunMission = () => {
     if (!activeDeck || missionAccessBlocked || !missionPreview.runnerCard) return;
-    setMissionResult(runDistrictMission(activeMission.id, missionPreview.playerDeck));
+    const initialChoices: Record<string, ForkChoice> = {};
+    setForkChoices(initialChoices);
+    setPendingFork(null);
+    const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, initialChoices);
+    if (outcome.kind === "fork") {
+      setPendingFork(outcome);
+      setMissionResult(null);
+    } else {
+      setMissionResult(outcome.result);
+      setPendingFork(null);
+    }
+  };
+
+  const handleForkChoice = (choice: ForkChoice) => {
+    if (!activeDeck || !pendingFork) return;
+    const nextChoices = { ...forkChoices, [pendingFork.forkStepId]: choice };
+    setForkChoices(nextChoices);
+    setPendingFork(null);
+    const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, nextChoices);
+    if (outcome.kind === "fork") {
+      setPendingFork(outcome);
+      setMissionResult(null);
+    } else {
+      setMissionResult(outcome.result);
+      setPendingFork(null);
+    }
   };
 
   return (
@@ -125,6 +163,8 @@ export function Mission() {
               onClick={() => {
                 setActiveMissionId(mission.id);
                 setMissionResult(null);
+                setPendingFork(null);
+                setForkChoices({});
               }}
             >
               <span className="mission-selector-card__district">{mission.district}</span>
@@ -206,6 +246,8 @@ export function Mission() {
                   onClick={() => {
                     setActiveDeckId(deck.id);
                     setMissionResult(null);
+                    setPendingFork(null);
+                    setForkChoices({});
                   }}
                 >
                   <span className="deck-name">{deck.name}</span>
@@ -226,6 +268,8 @@ export function Mission() {
                     onClick={() => {
                       setRunnerCardId(card.id);
                       setMissionResult(null);
+                      setPendingFork(null);
+                      setForkChoices({});
                     }}
                   >
                     <CardThumbnail card={card} width={120} height={84} />
@@ -287,6 +331,40 @@ export function Mission() {
                   ) : (
                     <p className="page-sub">This runner has no saved board loadout, so the mission is using deck support only.</p>
                   )}
+                </div>
+              </section>
+            )}
+
+            {pendingFork && (
+              <section className="mission-panel mission-fork">
+                <div className="mission-fork__header">
+                  <span className="mission-fork__badge">FORK IN THE ROAD</span>
+                  <p className="mission-fork__prompt">{pendingFork.prompt}</p>
+                </div>
+                {pendingFork.logSoFar.length > 0 && (
+                  <ol className="mission-log mission-log--partial">
+                    {pendingFork.logSoFar.map((entry, index) => (
+                      <li key={`${index}-${entry}`}>{entry}</li>
+                    ))}
+                  </ol>
+                )}
+                <div className="mission-fork__options">
+                  <button
+                    type="button"
+                    className="mission-fork__option"
+                    onClick={() => handleForkChoice("A")}
+                  >
+                    <strong className="mission-fork__option-label">A — {pendingFork.optionA.label}</strong>
+                    <span className="mission-fork__option-desc">{pendingFork.optionA.description}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="mission-fork__option"
+                    onClick={() => handleForkChoice("B")}
+                  >
+                    <strong className="mission-fork__option-label">B — {pendingFork.optionB.label}</strong>
+                    <span className="mission-fork__option-desc">{pendingFork.optionB.description}</span>
+                  </button>
                 </div>
               </section>
             )}

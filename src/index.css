@@ -5589,6 +5589,70 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 8px;
   color: var(--text);
 }
+.mission-log--partial {
+  opacity: 0.7;
+  margin-bottom: 12px;
+}
+/* ── Fork in the road ─────────────────────────────────────────────── */
+.mission-fork {
+  border-color: rgba(255,200,50,0.28);
+  background: rgba(255,200,50,0.05);
+}
+.mission-fork__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mission-fork__badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: rgba(255,200,50,0.18);
+  color: #ffc832;
+}
+.mission-fork__prompt {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 14px;
+}
+.mission-fork__options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.mission-fork__option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(255,200,50,0.22);
+  border-radius: 14px;
+  background: rgba(255,200,50,0.06);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mission-fork__option:hover {
+  border-color: rgba(255,200,50,0.5);
+  background: rgba(255,200,50,0.12);
+}
+.mission-fork__option-label {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: #ffc832;
+}
+.mission-fork__option-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
 @media (max-width: 800px) {
   .mission-panel__header {
     flex-direction: column;
@@ -5600,6 +5664,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     flex-direction: column;
   }
   .mission-selector-grid {
+    grid-template-columns: 1fr;
+  }
+  .mission-fork__options {
     grid-template-columns: 1fr;
   }
 }

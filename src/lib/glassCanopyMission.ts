@@ -112,7 +112,23 @@ interface MissionItemStep extends MissionStepBase {
   onResolve?: MissionEffect[];
 }
 
-type MissionStep = MissionHazardStep | MissionItemStep;
+export interface MissionForkOption {
+  label: string;
+  description: string;
+  narrativeText: string | ((context: MissionNarrativeContext) => string);
+  effects?: MissionEffect[];
+}
+
+interface MissionForkStep extends MissionStepBase {
+  kind: "fork";
+  prompt: string;
+  optionA: MissionForkOption;
+  optionB: MissionForkOption;
+}
+
+export type ForkChoice = "A" | "B";
+
+type MissionStep = MissionHazardStep | MissionItemStep | MissionForkStep;
 
 interface MissionDefinition {
   id: string;
@@ -134,6 +150,23 @@ export interface MissionResult {
   inventory: MissionItem[];
   missionLog: string[];
 }
+
+export interface MissionForkPrompt {
+  kind: "fork";
+  forkStepId: string;
+  prompt: string;
+  optionA: { label: string; description: string };
+  optionB: { label: string; description: string };
+  /** Log entries accumulated before this fork. */
+  logSoFar: string[];
+}
+
+interface MissionComplete {
+  kind: "complete";
+  result: MissionResult;
+}
+
+export type MissionOutcome = MissionForkPrompt | MissionComplete;
 
 export interface MissionPreview {
   playerDeck: MissionPlayerDeck;
@@ -260,7 +293,11 @@ function formatNarrativeText(
   return typeof value === "function" ? value(buildNarrativeContext(state)) : value;
 }
 
-function runMission(mission: MissionDefinition, playerDeck: MissionPlayerDeck): MissionResult {
+function runMission(
+  mission: MissionDefinition,
+  playerDeck: MissionPlayerDeck,
+  forkChoices?: Record<string, ForkChoice>,
+): MissionOutcome {
   const state: MissionState = {
     playerStats: calculateStartingStats(playerDeck),
     wheelType: playerDeck.wheelType ?? playerDeck.board?.wheels,
@@ -273,6 +310,24 @@ function runMission(mission: MissionDefinition, playerDeck: MissionPlayerDeck): 
     if (step.kind === "item") {
       applyEffects(step.onResolve, state);
       state.missionLog.push(`Phase ${step.phase}: ${step.narrativeText}`);
+      continue;
+    }
+
+    if (step.kind === "fork") {
+      const choice = forkChoices?.[step.id];
+      if (!choice) {
+        return {
+          kind: "fork",
+          forkStepId: step.id,
+          prompt: step.prompt,
+          optionA: { label: step.optionA.label, description: step.optionA.description },
+          optionB: { label: step.optionB.label, description: step.optionB.description },
+          logSoFar: [...state.missionLog],
+        };
+      }
+      const picked = choice === "A" ? step.optionA : step.optionB;
+      applyEffects(picked.effects, state);
+      state.missionLog.push(`Phase ${step.phase}: ${formatNarrativeText(picked.narrativeText, state)}`);
       continue;
     }
 
@@ -294,10 +349,13 @@ function runMission(mission: MissionDefinition, playerDeck: MissionPlayerDeck): 
   }
 
   return {
-    success: state.success,
-    playerStats: { ...state.playerStats },
-    inventory: [...state.inventory],
-    missionLog: [...state.missionLog],
+    kind: "complete",
+    result: {
+      success: state.success,
+      playerStats: { ...state.playerStats },
+      inventory: [...state.inventory],
+      missionLog: [...state.missionLog],
+    },
   };
 }
 
@@ -412,6 +470,28 @@ const GLASS_CANOPY_MISSION: DistrictMissionDefinition = {
         "You lift the data chip from the penthouse vault. The Payload goes into your inventory and drags your active STEALTH down by 2 for the rest of the run.",
       onResolve: [{ type: "addItem", item: ThePayload }],
     },
+    {
+      id: "overheat-fork",
+      kind: "fork",
+      name: "Overheating Board",
+      phase: 2,
+      prompt:
+        "Your board's heat sink is redlining from the payload. The drivetrain is smoking — you can feel it through your shoes.",
+      optionA: {
+        label: "Push through on the board",
+        description: "Keep skating — faster, but the overheating board takes structural damage.",
+        narrativeText: ({ playerStats }) =>
+          `You grit your teeth and ride the heat. The board screams but holds — barely. Board integrity drops to ${playerStats.health}%.`,
+        effects: [{ type: "adjustPercent", stat: "health", percent: -10 }],
+      },
+      optionB: {
+        label: "Dismount and go on foot",
+        description: "Carry the board through the corridor — slower but the drivetrain can cool down.",
+        narrativeText: ({ playerStats }) =>
+          `You kick up the board and sprint the service corridor on foot. The detour costs speed but your board stays intact. SPD drops to ${playerStats.speed}.`,
+        effects: [{ type: "adjust", stat: "speed", amount: -1.5 }],
+      },
+    },
     BlastDoors,
     AeroFuzzDrone,
     TheEscape,
@@ -473,6 +553,28 @@ const STATIC_BLOOM_MISSION: DistrictMissionDefinition = {
           },
         },
       ],
+    },
+    {
+      id: "cipher-route-fork",
+      kind: "fork",
+      name: "Cipher Route",
+      phase: 2,
+      prompt:
+        "The cooling-core cipher is destabilizing your battery — frost is crawling up the pack. Two exits from the storage level.",
+      optionA: {
+        label: "Main corridor — fast but exposed",
+        description: "Ride the open corridor and risk a Cascade sensor ping. Faster, but draws heat.",
+        narrativeText: ({ playerStats }) =>
+          `You blast down the main corridor. A Cascade sensor catches a sliver of your signature and heat ticks up to ${playerStats.heatLevel}.`,
+        effects: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
+      },
+      optionB: {
+        label: "Maintenance tunnel — slow but hidden",
+        description: "Thread the narrow maintenance tunnel. The cipher drains extra charge in the cold, dark pipe.",
+        narrativeText: ({ playerStats }) =>
+          `You squeeze through the maintenance tunnel unseen, but the cipher leeches charge in the confined cold. Battery drops to ${playerStats.batteryRemaining} RNG.`,
+        effects: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -10 }],
+      },
     },
     {
       id: "coolant-gates",
@@ -587,6 +689,28 @@ const RAILSPIKE_MISSION: DistrictMissionDefinition = {
       ],
     },
     {
+      id: "yard-fork",
+      kind: "fork",
+      name: "Rail Yard Fork",
+      phase: 2,
+      prompt:
+        "The rail yard splits ahead. A narrow freight tunnel runs dark and tight on the left. The open switchyard on the right is faster but fully lit.",
+      optionA: {
+        label: "Open switchyard — fast but visible",
+        description: "Cut across the lit yard at speed, but the spotters will see everything.",
+        narrativeText: ({ playerStats }) =>
+          `You carve through the open switchyard under the floodlights. Fast, but exposed — STEALTH drops to ${playerStats.stealth}.`,
+        effects: [{ type: "adjust", stat: "stealth", amount: -2 }],
+      },
+      optionB: {
+        label: "Freight tunnel — hidden but slow",
+        description: "Thread the freight tunnel in near darkness. Safe from spotters, but the tight space costs speed.",
+        narrativeText: ({ playerStats }) =>
+          `You duck into the freight tunnel and grind through in the dark. Nobody sees you, but your line tightens — SPD falls to ${playerStats.speed}.`,
+        effects: [{ type: "adjust", stat: "speed", amount: -1.5 }],
+      },
+    },
+    {
       id: "switchback-gates",
       kind: "hazard",
       name: "Switchback Gates",
@@ -699,6 +823,28 @@ const MURKLINE_MISSION: DistrictMissionDefinition = {
       ],
     },
     {
+      id: "tunnel-split-fork",
+      kind: "fork",
+      name: "Tunnel Split",
+      phase: 2,
+      prompt:
+        "The tunnel splits. Left dives through a flooded underpass — dark, hidden, but ankle-deep in charged runoff. Right climbs a lit service road — fast and dry, but the overhead cameras will track you.",
+      optionA: {
+        label: "Lit service road — fast but tracked",
+        description: "Take the service road for speed. The cameras cost stealth but you keep your charge.",
+        narrativeText: ({ playerStats }) =>
+          `You power up the service road. Cameras paint your silhouette across every monitor in the district — STEALTH drops to ${playerStats.stealth}.`,
+        effects: [{ type: "adjust", stat: "stealth", amount: -2 }],
+      },
+      optionB: {
+        label: "Flooded underpass — hidden but draining",
+        description: "Wade through the charged water in total darkness. Nobody sees you, but the runoff eats battery.",
+        narrativeText: ({ playerStats }) =>
+          `You drop into the flooded underpass and ghost through the dark. The charged water leeches power — battery falls to ${playerStats.batteryRemaining} RNG.`,
+        effects: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -12 }],
+      },
+    },
+    {
       id: "floodgate-drop",
       kind: "hazard",
       name: "Floodgate Drop",
@@ -771,8 +917,12 @@ function getMissionDefinition(missionId: string): DistrictMissionDefinition {
   return DISTRICT_MISSIONS.find((mission) => mission.id === missionId) ?? GLASS_CANOPY_MISSION;
 }
 
-export function runDistrictMission(missionId: string, playerDeck: MissionPlayerDeck): MissionResult {
-  return runMission(getMissionDefinition(missionId), playerDeck);
+export function runDistrictMission(
+  missionId: string,
+  playerDeck: MissionPlayerDeck,
+  forkChoices?: Record<string, ForkChoice>,
+): MissionOutcome {
+  return runMission(getMissionDefinition(missionId), playerDeck, forkChoices);
 }
 
 function roundPreviewStat(value: number): number {
