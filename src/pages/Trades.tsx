@@ -17,13 +17,18 @@ import { CardArt } from "../components/CardArt";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { TradeModal } from "../components/TradeModal";
 import { useCollection } from "../hooks/useCollection";
+import { useDecks } from "../hooks/useDecks";
+import { useLeaderboard } from "../hooks/useLeaderboard";
+import { formatStatLabel } from "../lib/battle";
 import { sfxSuccess, sfxRemove, sfxClick } from "../lib/sfx";
 
-type Tab = "inbox" | "outbox" | "market";
+type Tab = "inbox" | "outbox" | "market" | "leaderboard";
 
 export function Trades() {
   const { user } = useAuth();
   const { cards } = useCollection();
+  const { decks } = useDecks();
+  const { entries: leaderboardEntries, uploadDeck, uploading, myEntry } = useLeaderboard();
   const uid = user?.uid ?? null;
   const [tab, setTab] = useState<Tab>("inbox");
   const [inbox, setInbox] = useState<TradePayload[]>([]);
@@ -33,6 +38,8 @@ export function Trades() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedLeaderboardDeckId, setSelectedLeaderboardDeckId] = useState<string | null>(null);
+  const [leaderboardSuccess, setLeaderboardSuccess] = useState(false);
   const pendingOutboxCount = outbox.filter((trade) => trade.status === "pending").length;
   const resolvedOutboxCount = outbox.length - pendingOutboxCount;
 
@@ -217,6 +224,12 @@ export function Trades() {
         >
           🌐 Market {market.length > 0 && <span className="trade-badge trade-badge--market">{market.length}</span>}
         </button>
+        <button
+          className={`login-tab ${tab === "leaderboard" ? "login-tab--active" : ""}`}
+          onClick={() => { sfxClick(); setTab("leaderboard"); }}
+        >
+          🏆 Leaderboard
+        </button>
       </div>
 
       {tab === "inbox" && (
@@ -342,6 +355,117 @@ export function Trades() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === "leaderboard" && (
+        <>
+          <div className="leaderboard-header">
+            <p className="market-desc">
+              Upload your best deck to the online leaderboard and find out who is <strong>The Best Sk8r Punk in the World!</strong>
+            </p>
+          </div>
+
+          {uid && (
+            <div className="leaderboard-upload-section">
+              <h3 className="leaderboard-upload-title">Submit Your Deck</h3>
+              {decks.filter((d) => d.cards.length > 0).length === 0 ? (
+                <p className="trade-helper-text">Build a deck with at least one card to participate.</p>
+              ) : (
+                <>
+                  <div className="leaderboard-deck-picker">
+                    {decks.filter((d) => d.cards.length > 0).map((deck) => (
+                      <button
+                        key={deck.id}
+                        type="button"
+                        className={`arena-deck-option ${selectedLeaderboardDeckId === deck.id ? "arena-deck-option--active" : ""}`}
+                        onClick={() => { setSelectedLeaderboardDeckId(deck.id); setLeaderboardSuccess(false); }}
+                      >
+                        <span className="arena-deck-option-name">{deck.name}</span>
+                        <span className="arena-deck-option-count">{deck.cards.length} cards</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    className="btn-primary leaderboard-upload-btn"
+                    disabled={uploading || !selectedLeaderboardDeckId}
+                    onClick={async () => {
+                      const deck = decks.find((d) => d.id === selectedLeaderboardDeckId);
+                      if (!deck) return;
+                      setLeaderboardSuccess(false);
+                      setError("");
+                      try {
+                        await uploadDeck(deck);
+                        sfxSuccess();
+                        setLeaderboardSuccess(true);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Failed to upload deck.");
+                      }
+                    }}
+                  >
+                    {uploading ? "⏳ Uploading…" : "🏆 Upload to Leaderboard"}
+                  </button>
+                  {leaderboardSuccess && (
+                    <p className="leaderboard-success">Your deck stats have been uploaded! 🎉</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {myEntry && (
+            <div className="leaderboard-my-entry">
+              <span className="leaderboard-my-entry-label">Your entry:</span>
+              <strong>{myEntry.deckName}</strong> · ⚡ {myEntry.deckPower} ·{" "}
+              🎯 {formatStatLabel(myEntry.strongestStat)} {myEntry.strongestStatTotal} ·{" "}
+              🤝 +{myEntry.synergyBonusPct}%
+            </div>
+          )}
+
+          {leaderboardEntries.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-icon">🏆</span>
+              <p>No leaderboard entries yet. Be the first to upload your deck!</p>
+            </div>
+          ) : (
+            <div className="leaderboard-table-wrap">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="leaderboard-th">#</th>
+                    <th className="leaderboard-th">Player</th>
+                    <th className="leaderboard-th">Deck</th>
+                    <th className="leaderboard-th">Cards</th>
+                    <th className="leaderboard-th">⚡ Power</th>
+                    <th className="leaderboard-th">Best Stat</th>
+                    <th className="leaderboard-th">Synergy</th>
+                    <th className="leaderboard-th">Archetype</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboardEntries.map((entry, index) => (
+                    <tr
+                      key={entry.uid}
+                      className={`leaderboard-row ${entry.uid === uid ? "leaderboard-row--me" : ""}`}
+                    >
+                      <td className="leaderboard-td leaderboard-rank">
+                        {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
+                      </td>
+                      <td className="leaderboard-td leaderboard-player">{entry.displayName}</td>
+                      <td className="leaderboard-td">{entry.deckName}</td>
+                      <td className="leaderboard-td leaderboard-center">{entry.cardCount}</td>
+                      <td className="leaderboard-td leaderboard-power">{entry.deckPower}</td>
+                      <td className="leaderboard-td">
+                        {formatStatLabel(entry.strongestStat)} {entry.strongestStatTotal}
+                      </td>
+                      <td className="leaderboard-td leaderboard-center">+{entry.synergyBonusPct}%</td>
+                      <td className="leaderboard-td leaderboard-archetype">{entry.archetypeHint}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </>
