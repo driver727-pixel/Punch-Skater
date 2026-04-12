@@ -1564,6 +1564,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   35% { opacity: 0.88; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .btn-danger,
+  .btn-forge,
+  .btn-forge:disabled,
+  .pill.selected {
+    animation: none;
+  }
+}
+
 /* ===== 90s Cyberpunk / Comic-Book Animations ===== */
 @keyframes glitch-text {
   0%, 80%, 100% {
