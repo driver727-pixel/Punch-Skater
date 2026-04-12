@@ -479,14 +479,14 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
   const battDesc  = batt?.description  ?? config.battery;
 
   return (
-    `Isometric view, 45-degree angle, top-down product photography of a fully assembled ` +
+    `Isometric view at a 45-degree angle, product photography of a fully assembled ` +
     `DIY electric skateboard on a clean white studio background. ` +
     `Deck: ${deckDesc} ` +
     `Drivetrain: ${driveDesc} ` +
     `Wheels: ${wheelDesc} ` +
     `Battery: ${battDesc} ` +
     `Art style of gouache painting, dramatic studio lighting, sharp detail, ` +
-    `vibrant saturated colours, isolated on white background.`
+    `vibrant saturated colors, isolated on white background.`
   );
 }
 
