@@ -211,7 +211,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     0.05em 0 rgba(152, 16, 16, 0.35),
     -0.05em 0 rgba(92, 162, 255, 0.18),
     0 1px 1px rgba(0, 0, 0, 0.86);
-  letter-spacing: 1.6px;
   transform: translateY(0);
 }
 
@@ -390,7 +389,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 12px;
   font-family: var(--font);
   letter-spacing: 0.5px;
-  text-transform: uppercase;
   transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
 }
 .pill:hover {
