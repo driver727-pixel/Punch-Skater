@@ -1843,10 +1843,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--bg2);
+  background: transparent;
   object-fit: unset;
 }
-/* Shimmer sweep rendered on top of the loading GIF */
+/* Shimmer sweep rendered on top of the loading APNG */
 .card-art-layer--loading::after {
   content: "";
   position: absolute;
@@ -1857,23 +1857,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
   z-index: 1;
 }
-/* GIF sits below the shimmer overlay */
+/* APNG sits below the shimmer overlay */
 .card-art-layer--loading .card-art-loading-gif {
   position: relative;
   z-index: 0;
 }
 
-/* ── Loading GIF sizing ──────────────────────────────────────────────────────
- * Applied to every <img src="/assets/loading.gif"> used inside loading
- * skeletons and layer-loading divs.  Fills the entire container so the GIF
- * covers / obscures any previous content behind it.
+/* ── Loading APNG sizing ─────────────────────────────────────────────────────
+ * Applied to every <img src="/assets/loading.apng"> used inside loading
+ * skeletons and layer-loading divs.  Scales to fit the 5/7 card aspect ratio
+ * without cropping so the full animation is always visible.
  */
 .card-art-loading-gif {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
-/* Inside the skeleton the GIF must sit below the ::after shimmer sweep */
+/* Inside the skeleton the APNG must sit below the ::after shimmer sweep */
 .card-art-skeleton .card-art-loading-gif {
   position: relative;
   z-index: 0;
@@ -5553,7 +5553,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* ===== Conveyor Carousel ===== */

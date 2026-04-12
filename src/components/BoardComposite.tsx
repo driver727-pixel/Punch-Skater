@@ -129,7 +129,7 @@ export function BoardComposite({
       {/* Loading overlay — visible until every provided layer has loaded */}
       {isLoading && (
         <div className="board-composite__loading-overlay">
-          <img src="/assets/loading.gif" alt="Loading…" className="card-art-loading-gif" />
+          <img src="/assets/loading.apng" alt="Loading…" className="card-art-loading-gif" />
         </div>
       )}
     </div>
