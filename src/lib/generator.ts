@@ -87,32 +87,32 @@ export const MAX_SINGLE_STAT = 10;
 /** Historic single-stat ceiling used by older saved cards. */
 export const LEGACY_MAX_SINGLE_STAT = 200;
 
-const BASE_STAT_MIN = 3;
-const BASE_STAT_MAX = 6;
+const BASE_STAT_MIN = 2;
+const BASE_STAT_MAX = 4;
 
-// ── Stat modifiers by archetype (added on top of a 3–6 base roll) ─────────────
+// ── Stat modifiers by archetype (added on top of a 2–4 base roll) ─────────────
 
 interface StatMods { speed: number; stealth: number; tech: number; grit: number; rep: number; }
 
 const ARCHETYPE_MODS: Record<string, StatMods> = {
-  "The Knights Technarchy":  { speed:  1, stealth:  2, tech:  1, grit:  0, rep: -1 },
-  "Qu111s":                  { speed:  1, stealth: -1, tech:  0, grit:  1, rep:  2 },
-  "Ne0n Legion":             { speed:  2, stealth:  1, tech:  1, grit:  0, rep: -1 },
+  "The Knights Technarchy":  { speed:  1, stealth:  2, tech:  1, grit:  0, rep:  0 },
+  "Qu111s":                  { speed:  1, stealth:  0, tech:  0, grit:  1, rep:  2 },
+  "Ne0n Legion":             { speed:  2, stealth:  1, tech:  1, grit:  0, rep:  0 },
   "Iron Curtains":           { speed:  0, stealth:  0, tech:  1, grit:  2, rep:  0 },
-  "D4rk $pider":             { speed: -1, stealth:  1, tech:  2, grit:  0, rep:  0 },
+  "D4rk $pider":             { speed:  0, stealth:  1, tech:  2, grit:  0, rep:  0 },
   "The Asclepians":          { speed:  0, stealth:  0, tech:  1, grit:  2, rep:  1 },
-  "The Mesopotamian Society":{ speed:  1, stealth:  1, tech:  2, grit: -1, rep:  1 },
+  "The Mesopotamian Society":{ speed:  1, stealth:  1, tech:  2, grit:  0, rep:  1 },
   "Hermes' Squirmies":       { speed:  1, stealth:  1, tech:  0, grit:  1, rep:  1 },
   "UCPS":                    { speed:  1, stealth:  0, tech:  0, grit:  1, rep:  2 },
-  "The Team":                { speed:  2, stealth: -1, tech:  0, grit:  1, rep:  2 },
+  "The Team":                { speed:  2, stealth:  0, tech:  0, grit:  1, rep:  2 },
 };
 
 const RARITY_BONUS: Record<Rarity, number> = {
-  "Punch Skater": -1,
-  Apprentice:      0,
-  Master:          1,
-  Rare:            2,
-  Legendary:       3,
+  "Punch Skater": 0,
+  Apprentice:     1,
+  Master:         2,
+  Rare:           3,
+  Legendary:      4,
 };
 
 export function clampCardStat(value: number): number {
