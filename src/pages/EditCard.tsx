@@ -57,7 +57,7 @@ export function EditCard() {
         skinTone: (original.prompts.skinTone as SkinTone) ?? "Medium",
         faceCharacter: (original.prompts.faceCharacter as FaceCharacter) ?? "Conventional",
       });
-      if (original.board) setBoardConfig(original.board);
+      if (original.board) setBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board });
       // Show the original card as starting preview
       setPreview(original);
     }

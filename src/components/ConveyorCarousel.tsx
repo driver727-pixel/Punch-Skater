@@ -17,6 +17,8 @@ export interface CarouselItem {
   label: string;
   icon: string;
   tagline: string;
+  /** When true the item is visually dimmed and cannot be selected. */
+  disabled?: boolean;
 }
 
 interface ConveyorCarouselProps {
@@ -113,17 +115,20 @@ export function ConveyorCarousel({
 
         {items.map((item) => {
           const isSelected = item.value === selected;
+          const isDisabled = !!item.disabled;
           return (
             <button
               key={item.value}
               type="button"
-              className={`conveyor__item${isSelected ? " conveyor__item--selected" : ""}`}
+              className={`conveyor__item${isSelected ? " conveyor__item--selected" : ""}${isDisabled ? " conveyor__item--disabled" : ""}`}
               onClick={() => {
+                if (isDisabled) return;
                 const idx = items.findIndex((it) => it.value === item.value);
                 scrollToIndex(idx);
                 onSelect(item.value);
               }}
               aria-pressed={isSelected}
+              aria-disabled={isDisabled}
             >
               <span className="conveyor__item-icon">{item.icon}</span>
               <span className="conveyor__item-name">{item.label}</span>
