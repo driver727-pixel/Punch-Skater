@@ -105,10 +105,9 @@ export function Mission() {
 
   const handleRunMission = () => {
     if (!activeDeck || missionAccessBlocked || !missionPreview.runnerCard) return;
-    const initialChoices: Record<string, ForkChoice> = {};
-    setForkChoices(initialChoices);
+    setForkChoices({});
     setPendingFork(null);
-    const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, initialChoices);
+    const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, {});
     if (outcome.kind === "fork") {
       setPendingFork(outcome);
       setMissionResult(null);
