@@ -918,7 +918,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* ===== Stat Bar ===== */
 .card-stats { margin: 4px 0; display: flex; flex-direction: column; gap: 2px; }
 .stat-bar { display: flex; align-items: center; gap: 3px; }
-.stat-label { font-size: 5px; color: var(--text-dim); width: 16px; letter-spacing: 0.5px; flex-shrink: 0; }
+.stat-label { font-size: 5px; color: var(--text-dim); width: 24px; letter-spacing: 0.5px; flex-shrink: 0; }
+.stat-label[title] { cursor: help; }
 .stat-track { flex: 1; height: 2px; background: var(--bg3); border-radius: 1px; overflow: hidden; }
 .stat-fill { height: 100%; border-radius: 1px; transition: width 0.3s; }
 .stat-value { font-size: 5px; color: var(--text); width: 8px; text-align: right; flex-shrink: 0; }
@@ -1218,9 +1219,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-family: var(--font-display);
   font-size: 13px;
   letter-spacing: 2px;
-  width: 36px;
+  width: 64px;
   flex-shrink: 0;
   text-shadow: 0 0 6px currentColor;
+  cursor: help;
 }
 .deck-stats-track {
   flex: 1;
@@ -3953,7 +3955,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 /* Scale down StatBar inside viewer */
 .viewer3d-back-stats .stat-bar { gap: 2px; }
-.viewer3d-back-stats .stat-label { font-size: 6px; width: 14px; }
+.viewer3d-back-stats .stat-label { font-size: 6px; width: 24px; }
 .viewer3d-back-stats .stat-value { font-size: 6px; width: 8px; }
 .viewer3d-back-stats .stat-track { height: 2px; }
 
@@ -4220,7 +4222,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-top: 1px solid #1e1e3a;
 }
 .print-back-stats .stat-bar  { gap: 2px; }
-.print-back-stats .stat-label { font-size: 5px; width: 12px; }
+.print-back-stats .stat-label { font-size: 5px; width: 22px; }
 .print-back-stats .stat-value { font-size: 5px; width: 8px; }
 .print-back-stats .stat-track { height: 2px; }
 
@@ -5265,10 +5267,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .skate-stat-label {
   font-size: 5px;
   color: var(--text-dim);
-  width: 14px;
+  width: 22px;
   letter-spacing: 0.5px;
   flex-shrink: 0;
   text-transform: uppercase;
+  cursor: help;
 }
 
 .skate-stat-value {
@@ -5831,6 +5834,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  cursor: help;
 }
 .mission-stat-value {
   color: var(--text);

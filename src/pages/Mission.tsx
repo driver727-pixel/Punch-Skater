@@ -332,19 +332,19 @@ export function Mission() {
                       <span className="mission-stat-value">{missionAccessSummary}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">SPD</span>
+                      <span className="mission-stat-label" title="Combined movement speed for this mission">Speed</span>
                       <span className="mission-stat-value">{missionPreview.stats.speed}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">ACC</span>
+                      <span className="mission-stat-label" title="How quickly the runner accelerates">Accel</span>
                       <span className="mission-stat-value">{missionPreview.stats.acceleration}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">STLTH</span>
+                      <span className="mission-stat-label" title="Ability to avoid detection during the mission">Stealth</span>
                       <span className="mission-stat-value">{missionPreview.stats.stealth}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">RNG</span>
+                      <span className="mission-stat-label" title="Remaining battery range">Range</span>
                       <span className="mission-stat-value">{missionPreview.stats.batteryRemaining}</span>
                     </div>
                   </div>
@@ -402,9 +402,9 @@ export function Mission() {
                     {missionResult.success ? "MISSION COMPLETE" : "MISSION FAILED"}
                   </span>
                   <div className="mission-checks">
-                    <span className="tag">HP {missionResult.playerStats.health}</span>
+                    <span className="tag" title="Hit points remaining">Health {missionResult.playerStats.health}</span>
                     <span className="tag">Heat {missionResult.playerStats.heatLevel}</span>
-                    <span className="tag">RNG {missionResult.playerStats.batteryRemaining}</span>
+                    <span className="tag" title="Remaining battery range">Range {missionResult.playerStats.batteryRemaining}</span>
                     <span className="tag">Inventory {missionResult.inventory.length}</span>
                   </div>
                 </div>

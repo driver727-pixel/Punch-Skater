@@ -18,11 +18,11 @@ export const WINNER_BONUS = WAGER_POINTS * 2;
 
 const STAT_KEYS: StatKey[] = ["speed", "stealth", "tech", "grit", "rep"];
 const STAT_LABELS: Record<StatKey, string> = {
-  speed: "SPD",
-  stealth: "STLTH",
-  tech: "TCH",
-  grit: "GRT",
-  rep: "REP",
+  speed: "Speed",
+  stealth: "Stealth",
+  tech: "Tech",
+  grit: "Grit",
+  rep: "Rep",
 };
 
 /** Count how many cards in the deck share each archetype. */

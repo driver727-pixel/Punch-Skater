@@ -193,11 +193,11 @@ export function CardViewer3D({
 
             {/* Stats */}
             <div className="viewer3d-back-stats">
-              <StatBar label="SPD" value={card.stats.speed}   color={accent} />
-              <StatBar label="STLTH" value={card.stats.stealth} color={accent} />
-              <StatBar label="TCH" value={card.stats.tech}    color={accent} />
-              <StatBar label="GRT" value={card.stats.grit}    color={accent} />
-              <StatBar label="REP" value={card.stats.rep}     color={accent} />
+              <StatBar label="Speed"   value={card.stats.speed}   color={accent} tooltip="Movement speed and evasion ability" />
+              <StatBar label="Stealth" value={card.stats.stealth} color={accent} tooltip="Ability to avoid detection and move unseen" />
+              <StatBar label="Tech"    value={card.stats.tech}    color={accent} tooltip="Technical skill, hacking, and gadget proficiency" />
+              <StatBar label="Grit"    value={card.stats.grit}    color={accent} tooltip="Toughness, resilience, and raw endurance" />
+              <StatBar label="Rep"     value={card.stats.rep}     color={accent} tooltip="Street reputation and social influence" />
             </div>
 
             {/* Passive trait */}
