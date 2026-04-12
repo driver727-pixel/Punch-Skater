@@ -121,11 +121,12 @@ export function getCategoryImages(category: BoardCategory): readonly string[] {
 }
 
 /**
- * Returns the URL of the image in the given category folder whose filename
- * best matches the selected component value.
+ * Returns the URL of a randomly selected image in the given category folder
+ * whose filename matches the selected component value.
  *
  * Matching works by splitting the filename on `-` / `_` / spaces and checking
  * whether any segment equals or contains a keyword from `COMPONENT_IMAGE_KEYWORDS`.
+ * When multiple files match, one of the matching files is picked at random.
  * Falls back to a random image in the category when no keyword match is found,
  * and returns `null` when the folder contains no images.
  */
@@ -141,13 +142,19 @@ export function getMatchingCategoryImage(
     COMPONENT_IMAGE_KEYWORDS[category]?.[value] ??
     [value.toLowerCase()];
 
+  const matches: string[] = [];
+
   for (const path of paths) {
     const filename =
       path.split("/").pop()?.replace(/\.png$/i, "").toLowerCase() ?? "";
     const parts = filename.split(/[-_\s]+/);
     if (keywords.some((kw) => parts.some((part) => part === kw))) {
-      return glob[path];
+      matches.push(glob[path]);
     }
+  }
+
+  if (matches.length > 0) {
+    return matches[Math.floor(Math.random() * matches.length)];
   }
 
   // No keyword match — return a random URL from the category as a fallback.

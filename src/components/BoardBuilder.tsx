@@ -138,30 +138,91 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
    * For each component slot we look for a PNG in `src/assets/boards/<category>/`
    * (discovered at build time via import.meta.glob) whose filename contains a
    * keyword matching the selected component value — e.g. `carbon-fiber.png`
-   * for the Street deck, `5055-motor.png` for the Micro motor.  If no keyword
+   * for the Street deck, `5055-motor.png` for the Micro motor.  If multiple
+   * matching PNGs exist we randomly pick one of those matches. If no keyword
    * match is found inside the folder a random image from that folder is used as
    * a fallback, and if the folder is empty we fall back to the named static URL
    * `public/assets/boards/<category>/<value>.png`.
    */
+  const resolvePreviewUrl = useCallback((
+    category: Parameters<typeof getMatchingCategoryImage>[0],
+    selectedValue: string,
+    namedUrl: string,
+  ) => getMatchingCategoryImage(category, selectedValue) ?? namedUrl, []);
+
   const buildPreviewUrls = useCallback((cfg: BoardConfig) => {
     const named = getBoardComponentImageUrls(cfg);
     return {
-      deckUrl:       getMatchingCategoryImage("deck",       cfg.boardType)  ?? named.deckUrl,
-      drivetrainUrl: getMatchingCategoryImage("drivetrain", cfg.drivetrain) ?? named.drivetrainUrl,
-      motorUrl:      getMatchingCategoryImage("motor",      cfg.motor)      ?? named.motorUrl,
-      wheelsUrl:     getMatchingCategoryImage("wheels",     cfg.wheels)     ?? named.wheelsUrl,
-      batteryUrl:    getMatchingCategoryImage("battery",    cfg.battery)    ?? named.batteryUrl,
+      deckUrl:       resolvePreviewUrl("deck",       cfg.boardType,  named.deckUrl),
+      drivetrainUrl: resolvePreviewUrl("drivetrain", cfg.drivetrain, named.drivetrainUrl),
+      motorUrl:      resolvePreviewUrl("motor",      cfg.motor,      named.motorUrl),
+      wheelsUrl:     resolvePreviewUrl("wheels",     cfg.wheels,     named.wheelsUrl),
+      batteryUrl:    resolvePreviewUrl("battery",    cfg.battery,    named.batteryUrl),
     };
-  }, []);
+  }, [resolvePreviewUrl]);
 
   const [previewUrls, setPreviewUrls] = useState(() => buildPreviewUrls(value));
 
-  // Re-pick a random image whenever a carousel selection changes.
-  // Destructure so each slot's primitive value is the dep, not the object reference.
+  // Only re-pick URLs for slots whose selected component actually changed so
+  // unrelated component changes do not reshuffle other preview layers.
   const { boardType, drivetrain, motor, wheels, battery } = value;
+  const previousSelectionsRef = useRef({
+    boardType,
+    drivetrain,
+    motor,
+    wheels,
+    battery,
+  });
+
   useEffect(() => {
-    setPreviewUrls(buildPreviewUrls({ boardType, drivetrain, motor, wheels, battery }));
-  }, [boardType, drivetrain, motor, wheels, battery, buildPreviewUrls]);
+    const previous = previousSelectionsRef.current;
+    const current = { boardType, drivetrain, motor, wheels, battery };
+
+    if (
+      previous.boardType === current.boardType &&
+      previous.drivetrain === current.drivetrain &&
+      previous.motor === current.motor &&
+      previous.wheels === current.wheels &&
+      previous.battery === current.battery
+    ) {
+      return;
+    }
+
+    const named = getBoardComponentImageUrls(current);
+
+    setPreviewUrls((prev) => {
+      let next = prev;
+
+      if (previous.boardType !== current.boardType) {
+        const deckUrl = resolvePreviewUrl("deck", current.boardType, named.deckUrl);
+        next = next.deckUrl === deckUrl ? next : { ...next, deckUrl };
+      }
+
+      if (previous.drivetrain !== current.drivetrain) {
+        const drivetrainUrl = resolvePreviewUrl("drivetrain", current.drivetrain, named.drivetrainUrl);
+        next = next.drivetrainUrl === drivetrainUrl ? next : { ...next, drivetrainUrl };
+      }
+
+      if (previous.motor !== current.motor) {
+        const motorUrl = resolvePreviewUrl("motor", current.motor, named.motorUrl);
+        next = next.motorUrl === motorUrl ? next : { ...next, motorUrl };
+      }
+
+      if (previous.wheels !== current.wheels) {
+        const wheelsUrl = resolvePreviewUrl("wheels", current.wheels, named.wheelsUrl);
+        next = next.wheelsUrl === wheelsUrl ? next : { ...next, wheelsUrl };
+      }
+
+      if (previous.battery !== current.battery) {
+        const batteryUrl = resolvePreviewUrl("battery", current.battery, named.batteryUrl);
+        next = next.batteryUrl === batteryUrl ? next : { ...next, batteryUrl };
+      }
+
+      return next;
+    });
+
+    previousSelectionsRef.current = current;
+  }, [boardType, drivetrain, motor, wheels, battery, resolvePreviewUrl]);
 
   const previewLabels = {
     deck:       BOARD_TYPE_OPTIONS.find((o) => o.value === value.boardType)?.label ?? value.boardType,
