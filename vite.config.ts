@@ -3,13 +3,21 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
+const _buildDate = new Date();
+const _buildNumber = [
+  _buildDate.getUTCFullYear(),
+  String(_buildDate.getUTCMonth() + 1).padStart(2, '0'),
+  String(_buildDate.getUTCDate()).padStart(2, '0'),
+].join('') + '.' + [
+  String(_buildDate.getUTCHours()).padStart(2, '0'),
+  String(_buildDate.getUTCMinutes()).padStart(2, '0'),
+].join('');
+
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/',
   define: {
-    __BUILD_NUMBER__: JSON.stringify(
-      new Date().toISOString().slice(0, 16).replace('T', '.').replace(':', '').replace('-', '').replace('-', '')
-    ),
+    __BUILD_NUMBER__: JSON.stringify(_buildNumber),
   },
   server: {
     proxy: {
