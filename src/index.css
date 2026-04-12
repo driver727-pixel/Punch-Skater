@@ -5134,3 +5134,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
   100% { transform: translate(var(--x, 0), var(--y, -100px)) rotate(var(--r, 180deg)); opacity: 0; }
 }
+
+/* ===== Build Number ===== */
+.build-number {
+  position: fixed;
+  top: 6px;
+  right: 8px;
+  font-size: 9px;
+  color: rgba(104, 88, 168, 0.5);
+  font-family: var(--font);
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  letter-spacing: 0.05em;
+}

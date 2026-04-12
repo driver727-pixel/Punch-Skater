@@ -6,6 +6,11 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/',
+  define: {
+    __BUILD_NUMBER__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace('T', '.').replace(':', '').replace('-', '').replace('-', '')
+    ),
+  },
   server: {
     proxy: {
       '/api': {
