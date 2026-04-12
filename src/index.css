@@ -167,27 +167,97 @@ body {
 /* ===== Buttons ===== */
 button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
+.btn-primary,
+.btn-outline,
+.btn-danger,
+.pill {
+  --soda-face: rgba(104, 84, 84, 0.88);
+  --soda-face-deep: rgba(58, 38, 38, 0.96);
+  --soda-ink: #f8f1c8;
+  --soda-hotspot: rgba(255, 244, 185, 0.55);
+  --soda-glow: rgba(255, 196, 76, 0.2);
+  --soda-dead-zone: rgba(18, 13, 8, 0.42);
+  --soda-bezel: rgba(8, 8, 10, 0.96);
+  --soda-bezel-highlight: rgba(210, 214, 224, 0.24);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid var(--soda-bezel);
+  color: var(--soda-ink);
+  background-color: var(--soda-face);
+  background-image:
+    radial-gradient(circle at 24% 28%, var(--soda-hotspot), rgba(255, 236, 170, 0.18) 16%, transparent 40%),
+    radial-gradient(circle at 78% 36%, rgba(255, 247, 214, 0.44), transparent 18%),
+    radial-gradient(circle at 68% 70%, var(--soda-dead-zone), transparent 26%),
+    linear-gradient(118deg, transparent 0 28%, rgba(255, 255, 255, 0.16) 29% 30%, transparent 31% 100%),
+    linear-gradient(63deg, transparent 0 44%, rgba(32, 21, 21, 0.34) 45% 46%, transparent 47% 100%),
+    linear-gradient(156deg, transparent 0 56%, rgba(255, 248, 214, 0.14) 57% 58%, transparent 59% 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, rgba(0, 0, 0, 0.04) 1px 3px, transparent 3px 6px),
+    linear-gradient(180deg, rgba(255, 239, 186, 0.44), rgba(255, 214, 120, 0.1) 24%, rgba(42, 22, 22, 0.12) 58%, rgba(16, 10, 8, 0.46)),
+    linear-gradient(135deg, var(--soda-face), var(--soda-face-deep));
+  box-shadow:
+    0 0 0 1px var(--soda-bezel-highlight),
+    0 4px 0 rgba(0, 0, 0, 0.82),
+    0 10px 20px rgba(0, 0, 0, 0.4),
+    0 0 16px var(--soda-glow),
+    inset 0 1px 0 rgba(255, 251, 234, 0.38),
+    inset 0 -10px 14px rgba(17, 10, 8, 0.36),
+    inset 12px 0 18px rgba(255, 236, 190, 0.08),
+    inset -10px 0 14px rgba(34, 17, 17, 0.18);
+  text-shadow:
+    0.05em 0 rgba(152, 16, 16, 0.35),
+    -0.05em 0 rgba(92, 162, 255, 0.18),
+    0 1px 1px rgba(0, 0, 0, 0.86);
+  letter-spacing: 1.6px;
+  transform: translateY(0);
+}
+
 .btn-primary {
-  background: transparent;
-  color: var(--accent);
-  border: 2px solid var(--accent);
+  --soda-face: rgba(96, 134, 60, 0.92);
+  --soda-face-deep: rgba(38, 64, 28, 0.98);
+  --soda-ink: #f4ffcb;
+  --soda-hotspot: rgba(235, 255, 188, 0.62);
+  --soda-glow: rgba(141, 255, 92, 0.26);
+  --soda-dead-zone: rgba(21, 31, 18, 0.48);
   padding: 8px 18px;
-  border-radius: 3px;
+  border-radius: 16px;
   font-size: 13px;
   letter-spacing: 2px;
   font-weight: bold;
   text-transform: uppercase;
-  box-shadow: 3px 3px 0 var(--accent), 0 0 8px rgba(0, 255, 136, 0.2);
-  transition: all 0.12s ease;
+  animation: soda-button-flicker 6.7s infinite steps(2, end);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent);
-  color: #000;
-  box-shadow: 5px 5px 0 rgba(0,255,136,0.5), 0 0 20px rgba(0, 255, 136, 0.5);
-  transform: translate(-2px, -2px);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(230, 236, 244, 0.3),
+    0 5px 0 rgba(0, 0, 0, 0.84),
+    0 16px 24px rgba(0, 0, 0, 0.46),
+    0 0 24px rgba(141, 255, 92, 0.34),
+    inset 0 1px 0 rgba(255, 255, 240, 0.52),
+    inset 0 -10px 14px rgba(10, 12, 7, 0.4);
 }
-.btn-primary:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--accent); }
-.btn-primary:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+.btn-primary:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 1px rgba(210, 218, 230, 0.18),
+    0 1px 0 rgba(0, 0, 0, 0.82),
+    0 4px 12px rgba(0, 0, 0, 0.32),
+    inset 0 2px 8px rgba(14, 12, 7, 0.46),
+    inset 0 -4px 6px rgba(255, 255, 230, 0.12);
+}
+.btn-primary:disabled {
+  opacity: 0.58;
+  cursor: default;
+  box-shadow:
+    0 0 0 1px rgba(187, 193, 203, 0.14),
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 251, 234, 0.2);
+  animation: none;
+}
 .btn-primary.btn-lg { padding: 12px 28px; font-size: 15px; width: 100%; margin-top: 16px; }
 
 /* Forge-specific primary CTA */
@@ -200,56 +270,74 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 4px;
-  border-width: 2px;
-  border-radius: 3px;
-  box-shadow: 5px 5px 0 rgba(0, 255, 136, 0.5), 0 0 24px rgba(0, 255, 136, 0.25), inset 0 0 0 1px rgba(0, 255, 136, 0.08);
-  transition: all 0.12s ease;
+  border-radius: 20px;
+  animation-duration: 4.2s;
 }
 .btn-forge:hover:not(:disabled) {
-  box-shadow: 7px 7px 0 rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 255, 136, 0.5), inset 0 0 0 1px rgba(0, 255, 136, 0.15);
-  transform: translate(-2px, -2px);
+  transform: translateY(-1px);
 }
-.btn-forge:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 2px 2px 0 rgba(0,255,136,0.4); }
+.btn-forge:active:not(:disabled) { transform: translateY(4px); }
 .btn-forge:disabled {
   animation: pulse 1.2s ease-in-out infinite;
 }
 
 .btn-outline {
-  background: transparent;
-  color: var(--text-dim);
-  border: 2px solid var(--border);
+  --soda-face: rgba(92, 74, 122, 0.88);
+  --soda-face-deep: rgba(49, 31, 70, 0.98);
+  --soda-ink: #f6ecff;
+  --soda-hotspot: rgba(241, 218, 255, 0.56);
+  --soda-glow: rgba(200, 143, 255, 0.18);
+  --soda-dead-zone: rgba(23, 13, 31, 0.48);
+  --soda-bezel: rgba(28, 28, 34, 0.98);
+  --soda-bezel-highlight: rgba(208, 212, 225, 0.32);
   padding: 8px 16px;
-  border-radius: 3px;
+  border-radius: 16px;
   font-size: 13px;
   letter-spacing: 1px;
-  box-shadow: 2px 2px 0 var(--border);
-  transition: all 0.12s ease;
 }
-.btn-outline:hover {
-  color: var(--text);
-  border-color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: 3px 3px 0 var(--text-dim);
-  transform: translate(-1px, -1px);
+.btn-outline:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(218, 221, 235, 0.34),
+    0 5px 0 rgba(0, 0, 0, 0.84),
+    0 16px 24px rgba(0, 0, 0, 0.42),
+    0 0 18px rgba(200, 143, 255, 0.22),
+    inset 0 1px 0 rgba(255, 249, 255, 0.46),
+    inset 0 -10px 14px rgba(18, 10, 20, 0.4);
 }
-.btn-outline:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--border); }
+.btn-outline:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 1px rgba(202, 206, 220, 0.2),
+    0 1px 0 rgba(0, 0, 0, 0.82),
+    0 4px 12px rgba(0, 0, 0, 0.28),
+    inset 0 2px 8px rgba(14, 9, 16, 0.48),
+    inset 0 -4px 6px rgba(255, 249, 255, 0.12);
+}
 
 .btn-3d {
-  color: var(--accent2);
-  border-color: var(--accent2);
-  box-shadow: 0 0 6px rgba(0, 204, 255, 0.35);
+  --soda-face: rgba(66, 92, 124, 0.92);
+  --soda-face-deep: rgba(26, 45, 74, 0.98);
+  --soda-ink: #dff7ff;
+  --soda-hotspot: rgba(214, 244, 255, 0.56);
+  --soda-glow: rgba(109, 212, 255, 0.22);
+  --soda-dead-zone: rgba(10, 19, 31, 0.48);
 }
-.btn-3d:hover { color: #fff; border-color: var(--accent2); background: rgba(0, 204, 255, 0.12); box-shadow: 0 0 10px rgba(0, 204, 255, 0.55); }
 
 .btn-danger {
-  background: transparent;
-  color: var(--danger);
-  border: 1px solid var(--danger);
+  --soda-face: rgba(126, 46, 52, 0.94);
+  --soda-face-deep: rgba(72, 18, 22, 0.99);
+  --soda-ink: #ffe3d7;
+  --soda-hotspot: rgba(255, 213, 180, 0.52);
+  --soda-glow: rgba(255, 109, 89, 0.2);
+  --soda-dead-zone: rgba(30, 8, 11, 0.52);
   padding: 6px 14px;
-  border-radius: 4px;
+  border-radius: 16px;
   font-size: 12px;
+  animation: soda-button-flicker 8.2s infinite steps(2, end);
 }
-.btn-danger:hover { background: var(--danger); color: #fff; }
+.btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-danger:active:not(:disabled) { transform: translateY(4px); }
 .btn-sm { padding: 4px 10px; font-size: 11px; margin-top: 4px; }
 
 .icon-btn {
@@ -291,30 +379,42 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .form-hint { font-size: 11px; color: var(--text-dim); margin: 6px 0 0; opacity: 0.75; }
 .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill {
-  background: var(--bg3);
-  color: var(--text-dim);
-  border: 2px solid var(--border);
+  --soda-face: rgba(103, 81, 123, 0.8);
+  --soda-face-deep: rgba(52, 34, 69, 0.94);
+  --soda-ink: rgba(246, 237, 255, 0.86);
+  --soda-hotspot: rgba(252, 240, 211, 0.32);
+  --soda-glow: rgba(172, 139, 215, 0.08);
+  --soda-dead-zone: rgba(18, 10, 22, 0.36);
   padding: 6px 14px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 12px;
   font-family: var(--font);
   letter-spacing: 0.5px;
-  transition: all 0.15s ease;
+  text-transform: uppercase;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
 }
 .pill:hover {
-  border-color: var(--accent);
-  color: var(--text);
-  background: rgba(0, 255, 136, 0.06);
-  box-shadow: 2px 2px 0 rgba(0,255,136,0.3);
-  transform: translate(-1px, -1px);
+  color: #fff8df;
+  transform: translateY(-1px);
 }
 .pill.selected {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(0, 255, 136, 0.12);
-  box-shadow: 3px 3px 0 rgba(0,255,136,0.4), 0 0 12px rgba(0, 255, 136, 0.3);
+  --soda-face: rgba(108, 138, 62, 0.92);
+  --soda-face-deep: rgba(44, 62, 28, 0.98);
+  --soda-ink: #f7ffd0;
+  --soda-hotspot: rgba(240, 255, 193, 0.58);
+  --soda-glow: rgba(141, 255, 92, 0.24);
+  --soda-dead-zone: rgba(17, 28, 14, 0.42);
+  color: #f7ffd0;
+  box-shadow:
+    0 0 0 1px rgba(210, 218, 230, 0.24),
+    0 4px 0 rgba(0, 0, 0, 0.82),
+    0 12px 20px rgba(0, 0, 0, 0.36),
+    0 0 18px rgba(141, 255, 92, 0.24),
+    inset 0 1px 0 rgba(255, 255, 236, 0.42),
+    inset 0 -10px 14px rgba(10, 12, 7, 0.3);
   font-weight: bold;
-  transform: translate(-1px, -1px);
+  transform: translateY(-1px);
+  animation: soda-button-flicker 7.8s infinite steps(2, end);
 }
 
 /* ===== Color Picker ===== */
@@ -1387,6 +1487,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.45; }
+}
+
+@keyframes soda-button-flicker {
+  0%, 11%, 17%, 33%, 36%, 100% { opacity: 1; }
+  12% { opacity: 0.97; }
+  18% { opacity: 0.92; }
+  34% { opacity: 0.98; }
+  35% { opacity: 0.88; }
 }
 
 /* ===== 90s Cyberpunk / Comic-Book Animations ===== */
