@@ -2585,6 +2585,49 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .geo-atlas__district--underground { --map-node-glow: rgba(176,84,255,0.24); }
 .geo-atlas__district--wild { --map-node-glow: rgba(90,201,120,0.24); }
 
+.geo-atlas__marker {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.geo-atlas__marker-pin {
+  font-size: 24px;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(255, 0, 122, 0.5));
+}
+
+.geo-atlas__marker-label {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 0, 122, 0.35);
+  background: rgba(9, 13, 22, 0.92);
+  color: #ffd6e5;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.geo-atlas__marker--active .geo-atlas__marker-pin {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 16px rgba(0, 255, 136, 0.65));
+}
+
+.geo-atlas__marker--active .geo-atlas__marker-label {
+  border-color: rgba(0, 255, 136, 0.45);
+  color: var(--accent);
+}
+
 .geo-atlas__legend {
   list-style: none;
   display: grid;
@@ -3000,6 +3043,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .geo-atlas__route-label {
     display: none;
+  }
+
+  .geo-atlas__marker-label {
+    max-width: 110px;
+    white-space: normal;
+    text-align: center;
   }
 
   .lore-map {
@@ -5345,6 +5394,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   padding: 16px;
   margin-bottom: 16px;
 }
+.mission-panel--atlas {
+  overflow: hidden;
+}
 .mission-panel__header {
   display: flex;
   justify-content: space-between;
@@ -5356,6 +5408,51 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+.mission-atlas .geo-atlas__panel + .geo-atlas__panel {
+  display: none;
+}
+.mission-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.mission-selector-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.18);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.mission-selector-card--active {
+  border-color: rgba(0,255,136,0.38);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.12);
+}
+.mission-selector-card__district {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent2);
+}
+.mission-selector-card__name {
+  font-size: 14px;
+}
+.mission-selector-card__tagline {
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mission-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .mission-runner-grid {
   display: grid;
@@ -5501,6 +5598,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
   .mission-weather {
     flex-direction: column;
+  }
+  .mission-selector-grid {
+    grid-template-columns: 1fr;
   }
 }
 
