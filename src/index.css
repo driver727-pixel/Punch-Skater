@@ -294,7 +294,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   letter-spacing: 2px;
   font-weight: bold;
   text-transform: uppercase;
-  animation: soda-button-flicker 12s infinite linear;
+  animation: soda-button-flicker 12s infinite ease-in-out;
 }
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -400,7 +400,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-corner-cut: 10px;
   padding: 6px 14px;
   font-size: 12px;
-  animation: soda-button-flicker 14s infinite linear;
+  animation: soda-button-flicker 14s infinite ease-in-out;
 }
 .btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
 .btn-danger:active:not(:disabled) { transform: translateY(4px); }
