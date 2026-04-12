@@ -1,5 +1,7 @@
 import { DISTRICT_LORE } from "../lib/lore";
 import type { District } from "../lib/types";
+import { useDistrictWeather } from "../hooks/useDistrictWeather";
+import { DISTRICT_WEATHER_LOCATIONS, getDistrictAccessSummary } from "../lib/districtWeather";
 
 interface GeoAtlasProps {
   compact?: boolean;
@@ -74,11 +76,15 @@ function getAtlasClassName(compact: boolean, className?: string) {
 }
 
 export function GeoAtlas({ compact = false, className }: GeoAtlasProps) {
+  const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const districtEntries = DISTRICT_LORE.map((district) => ({
     ...district,
     layout: AUSTRALIA_DISTRICT_LAYOUT[district.name],
     slug: district.name.toLowerCase().replace(/\s+/g, "-"),
+    weather: weatherByDistrict[district.name],
+    location: DISTRICT_WEATHER_LOCATIONS[district.name],
   }));
+  const weatherBadge = weather?.stale ? "weather cached" : "weather live";
 
   return (
     <div className={getAtlasClassName(compact, className)}>
@@ -88,12 +94,23 @@ export function GeoAtlas({ compact = false, className }: GeoAtlasProps) {
             <p className="geo-atlas__eyebrow">continental theater</p>
             <h3 className="geo-atlas__title">Australia overmap</h3>
           </div>
-          <span className="geo-atlas__badge">coast to coast</span>
+          <span className="geo-atlas__badge">{weather ? weatherBadge : "coast to coast"}</span>
         </div>
         {!compact && (
           <p className="geo-atlas__body">
             Punch Skater now anchors its city-state across Australia, with the district network
             stretched over the continent from western scrublands to the neon eastern seaboard.
+          </p>
+        )}
+        {!compact && (
+          <p className="geo-atlas__status">
+            {weather
+              ? "Delayed real-world weather is now seeding district access conditions across Australia."
+              : loading
+                ? "Syncing district weather uplink."
+                : error
+                  ? "Weather uplink offline. Districts are staying on open access."
+                  : "District weather telemetry is standing by."}
           </p>
         )}
         <div
@@ -143,7 +160,14 @@ export function GeoAtlas({ compact = false, className }: GeoAtlasProps) {
               data-testid={`district-node-${district.slug}`}
             >
               <span className="geo-atlas__district-name">{district.name}</span>
-              <span className="geo-atlas__district-meta">{district.crews[0]}</span>
+              <span className="geo-atlas__district-meta">
+                {district.crews[0]} · {district.location.city}
+              </span>
+              <span className={`geo-atlas__district-weather${district.weather?.accessRule ? " geo-atlas__district-weather--restricted" : ""}`}>
+                {district.weather?.summary ?? (loading ? "Syncing weather" : "Open weather")}
+                {" · "}
+                {getDistrictAccessSummary(district.weather)}
+              </span>
             </article>
           ))}
         </div>

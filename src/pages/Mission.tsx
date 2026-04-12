@@ -5,10 +5,18 @@ import { CardThumbnail } from "../components/CardThumbnail";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { buildGlassCanopyMissionPreview, runGlassCanopyMission } from "../lib/glassCanopyMission";
 import { SkateboardStatsPanel } from "../components/SkateboardStatsPanel";
+import { useDistrictWeather } from "../hooks/useDistrictWeather";
+import {
+  DISTRICT_WEATHER_LOCATIONS,
+  GLASS_CANOPY_DISTRICT,
+  getDistrictAccessSummary,
+  isDistrictAccessibleWithBoardType,
+} from "../lib/districtWeather";
 
 export function Mission() {
   const navigate = useNavigate();
   const { decks } = useDecks();
+  const { weatherByDistrict, loading: weatherLoading, error: weatherError } = useDistrictWeather();
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
   const [runnerCardId, setRunnerCardId] = useState<string | null>(null);
   const [missionResult, setMissionResult] = useState<ReturnType<typeof runGlassCanopyMission> | null>(null);
@@ -42,8 +50,20 @@ export function Mission() {
     () => buildGlassCanopyMissionPreview(activeDeck?.cards ?? [], runnerCardId ?? undefined),
     [activeDeck?.cards, runnerCardId],
   );
+  const missionWeather = weatherByDistrict[GLASS_CANOPY_DISTRICT] ?? null;
+  const missionLocation = DISTRICT_WEATHER_LOCATIONS[GLASS_CANOPY_DISTRICT];
+  const runnerBoardType = missionPreview.runnerCard?.board?.boardType;
+  const missionAccessBlocked = !isDistrictAccessibleWithBoardType(missionWeather, runnerBoardType);
+  const missionWeatherSummary = missionWeather
+    ? `${missionWeather.summary} over ${missionWeather.city}, ${missionWeather.state}.`
+    : weatherLoading
+      ? "District weather uplink is syncing."
+      : weatherError
+        ? "District weather uplink is offline, so Glass City is running on open access."
+        : "No live weather seed is active for Glass City.";
 
   const handleRunMission = () => {
+    if (missionAccessBlocked) return;
     setMissionResult(runGlassCanopyMission(missionPreview.playerDeck));
   };
 
@@ -117,10 +137,10 @@ export function Mission() {
               <div>
                 <h2>Operation: Glass Canopy</h2>
                 <p className="page-sub">
-                  Infiltrate the penthouse, grab the payload, and escape the Transitional Zone before the board dies.
+                  Infiltrate the Glass City penthouse, grab the payload, and escape the Transitional Zone before the board dies.
                 </p>
               </div>
-              <button className="btn-primary" onClick={handleRunMission} disabled={!missionPreview.runnerCard}>
+              <button className="btn-primary" onClick={handleRunMission} disabled={!missionPreview.runnerCard || missionAccessBlocked}>
                 ▶ Run Mission
               </button>
             </div>
@@ -131,6 +151,23 @@ export function Mission() {
               <span className="tag">P4 SPD 8 (+ Heat)</span>
               <span className="tag">P4 RNG 15 (+ Heat)</span>
             </div>
+            <div className={`mission-weather${missionAccessBlocked ? " mission-weather--blocked" : ""}`}>
+              <div className="mission-weather__copy">
+                <span className="mission-weather__eyebrow">District weather seed</span>
+                <strong className="mission-weather__title">
+                  {GLASS_CANOPY_DISTRICT} · {missionLocation.city}
+                </strong>
+                <p className="mission-weather__body">{missionWeatherSummary}</p>
+              </div>
+              <span className={`mission-weather__status${missionWeather?.accessRule ? " mission-weather__status--restricted" : ""}`}>
+                {getDistrictAccessSummary(missionWeather)}
+              </span>
+            </div>
+            {missionAccessBlocked && (
+              <p className="mission-warning">
+                {missionWeather?.accessRule?.reason} Selected runner board: {runnerBoardType ?? "none locked in"}.
+              </p>
+            )}
           </section>
 
           <section className="mission-panel">
@@ -162,14 +199,22 @@ export function Mission() {
                     <span className="mission-stat-label">Lead Runner</span>
                     <span className="mission-stat-value">{missionPreview.runnerCard.identity.name}</span>
                   </div>
-                  <div className="mission-stat-row">
-                    <span className="mission-stat-label">Deck Support</span>
-                    <span className="mission-stat-value">{activeDeck.cards.length} couriers</span>
-                  </div>
-                  <div className="mission-stat-row">
-                    <span className="mission-stat-label">SPD</span>
-                    <span className="mission-stat-value">{missionPreview.stats.speed}</span>
-                  </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Deck Support</span>
+                      <span className="mission-stat-value">{activeDeck.cards.length} couriers</span>
+                    </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">District</span>
+                      <span className="mission-stat-value">{GLASS_CANOPY_DISTRICT}</span>
+                    </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Weather Access</span>
+                      <span className="mission-stat-value">{getDistrictAccessSummary(missionWeather)}</span>
+                    </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">SPD</span>
+                      <span className="mission-stat-value">{missionPreview.stats.speed}</span>
+                    </div>
                   <div className="mission-stat-row">
                     <span className="mission-stat-label">ACC</span>
                     <span className="mission-stat-value">{missionPreview.stats.acceleration}</span>
