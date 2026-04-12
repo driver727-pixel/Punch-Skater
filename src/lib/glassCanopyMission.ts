@@ -1,6 +1,6 @@
 import { calculateBoardStats, getBoardStatBonuses } from "./boardBuilder";
 import { MAX_SINGLE_STAT, LEGACY_STAT_MAX } from "./generator";
-import type { CardPayload } from "./types";
+import type { CardPayload, District } from "./types";
 import type { BoardConfig, BoardLoadout, WheelType } from "./boardBuilder";
 
 type MissionCheckStat = "speed" | "acceleration" | "stealth" | "batteryRemaining";
@@ -118,6 +118,13 @@ interface MissionDefinition {
   id: string;
   name: string;
   steps: MissionStep[];
+}
+
+export interface DistrictMissionDefinition extends MissionDefinition {
+  district: District;
+  tagline: string;
+  briefing: string;
+  checkTags: string[];
 }
 
 export interface MissionResult {
@@ -383,9 +390,14 @@ export const TheEscape: MissionHazardStep = {
   endsMissionOnFailure: true,
 };
 
-const GLASS_CANOPY_MISSION: MissionDefinition = {
+const GLASS_CANOPY_MISSION: DistrictMissionDefinition = {
   id: "operation-glass-canopy",
   name: "Operation: Glass Canopy",
+  district: "Glass City",
+  tagline: "Break into a silent glass tower, grab the payload, and outrun the response drones.",
+  briefing:
+    "Infiltrate the Glass City penthouse, grab the payload, and escape the Transitional Zone before the board dies.",
+  checkTags: ["P1 STEALTH 7 + Urethane wheels", "P3 ACC 8 (+ Heat)", "P4 SPD 8 (+ Heat)", "P4 RNG 15 (+ Heat)"],
   steps: [
     LobbyDrone,
     {
@@ -404,8 +416,362 @@ const GLASS_CANOPY_MISSION: MissionDefinition = {
   ],
 };
 
+const STATIC_BLOOM_MISSION: DistrictMissionDefinition = {
+  id: "operation-static-bloom",
+  name: "Operation: Static Bloom",
+  district: "The Grid",
+  tagline: "Lift a cooling-core cipher from Cascade storage and ghost the audit sweep.",
+  briefing:
+    "Thread The Grid's mirrored service lanes, steal the cooling-core cipher, and outrun the compliance sweep before the district locks down.",
+  checkTags: ["P1 STEALTH 6 + Urethane wheels", "P3 ACC 7 (+ Heat)", "P4 SPD 7 (+ Heat)", "P4 RNG 13 (+ Heat)"],
+  steps: [
+    {
+      id: "grid-sentry-lattice",
+      kind: "hazard",
+      name: "Sentry Lattice",
+      phase: 1,
+      hazardType: "Passive Security",
+      requirement: {
+        kind: "all",
+        requirements: [
+          { kind: "stat", stat: "stealth", minimum: 6 },
+          { kind: "wheel", wheelType: "Urethane" },
+        ],
+      },
+      successText:
+        "You ghost under the Sentry Lattice and reach the maintenance elevator before Cascade can tag your board signature.",
+      failureText: ({ playerStats, wheelType }) =>
+        `The Sentry Lattice catches your approach${wheelType ? ` on ${wheelType} wheels` : ""}. Heat jumps by +2 to ${playerStats.heatLevel}, tightening every later checkpoint.`,
+      onFailure: [{ type: "adjust", stat: "heatLevel", amount: 2 }],
+    },
+    {
+      id: "cooling-core-cipher",
+      kind: "item",
+      name: "Cooling-Core Cipher",
+      phase: 2,
+      item: {
+        id: "cooling-core-cipher",
+        name: "Cooling-Core Cipher",
+        phase: 2,
+        description: "A chilled data prism that leaks visible vapor and makes clean movement harder.",
+        modifiers: [{ stat: "stealth", amount: -1, duration: "mission" }],
+      },
+      narrativeText:
+        "You pop the cooling-core cipher from the rack. The vapor trail clings to you, dropping active STEALTH by 1 for the rest of the run.",
+      onResolve: [
+        {
+          type: "addItem",
+          item: {
+            id: "cooling-core-cipher",
+            name: "Cooling-Core Cipher",
+            phase: 2,
+            description: "A chilled data prism that leaks visible vapor and makes clean movement harder.",
+            modifiers: [{ stat: "stealth", amount: -1, duration: "mission" }],
+          },
+        },
+      ],
+    },
+    {
+      id: "coolant-gates",
+      kind: "hazard",
+      name: "Coolant Gates",
+      phase: 3,
+      hazardType: "Environmental Hazard",
+      requirement: {
+        kind: "stat",
+        stat: "acceleration",
+        minimum: 7,
+        affectedByHeat: true,
+      },
+      successText:
+        "You burst through the coolant gates before they can freeze shut around your deck.",
+      failureText: ({ playerStats }) =>
+        `A blast of super-cold mist seizes the drivetrain. Health dips to ${playerStats.health}% and your line softens to ${playerStats.speed} SPD.`,
+      onFailure: [
+        { type: "adjustPercent", stat: "health", percent: -10 },
+        { type: "adjust", stat: "speed", amount: -1 },
+      ],
+    },
+    {
+      id: "audit-sweep",
+      kind: "hazard",
+      name: "Audit Sweep",
+      phase: 4,
+      hazardType: "Active Enemy",
+      requirement: {
+        kind: "stat",
+        stat: "speed",
+        minimum: 7,
+        affectedByHeat: true,
+      },
+      successText:
+        "You break line-of-sight with the audit sweep and leave a trail of false telemetry in your wake.",
+      failureText: ({ playerStats }) =>
+        `The audit sweep clips your battery pack with an EMP burst, leaving ${playerStats.batteryRemaining} RNG to finish the job.`,
+      onFailure: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -15 }],
+    },
+    {
+      id: "fiber-breach",
+      kind: "hazard",
+      name: "Fiber Breach",
+      phase: 4,
+      hazardType: "Endurance Check",
+      requirement: {
+        kind: "stat",
+        stat: "batteryRemaining",
+        minimum: 13,
+        affectedByHeat: true,
+      },
+      successText: ({ playerStats }) =>
+        `You clear the fiber breach and hit the static pack relay with ${playerStats.batteryRemaining} RNG left in reserve.`,
+      failureText: ({ playerStats }) =>
+        `Your board browns out in the fiber breach at ${playerStats.batteryRemaining} RNG and the cipher goes hot in your hands.`,
+      onSuccess: [{ type: "adjust", stat: "batteryRemaining", amount: -13 }],
+      onFailure: [{ type: "adjust", stat: "batteryRemaining", amount: -13 }],
+      endsMissionOnFailure: true,
+    },
+  ],
+};
+
+const RAILSPIKE_MISSION: DistrictMissionDefinition = {
+  id: "operation-railspike-run",
+  name: "Operation: Railspike Run",
+  district: "Batteryville",
+  tagline: "Hijack a superconductive cell from the yard and punch out through the freight maze.",
+  briefing:
+    "Slip into Batteryville's rail yard, steal a superconductive freight cell, and ride the switchback lanes before the clamps close.",
+  checkTags: ["P1 STEALTH 6", "P3 ACC 7 (+ Heat)", "P4 SPD 8 (+ Heat)", "P4 RNG 14 (+ Heat)"],
+  steps: [
+    {
+      id: "yard-spotters",
+      kind: "hazard",
+      name: "Yard Spotters",
+      phase: 1,
+      hazardType: "Passive Security",
+      requirement: { kind: "stat", stat: "stealth", minimum: 6 },
+      successText:
+        "You weave through the parked haulers and the yard spotters never get a clean look at you.",
+      failureText: ({ playerStats }) =>
+        `A spotter beacon paints your lane. Heat climbs by +2 to ${playerStats.heatLevel} and the whole yard starts to move against you.`,
+      onFailure: [{ type: "adjust", stat: "heatLevel", amount: 2 }],
+    },
+    {
+      id: "superconductive-cell",
+      kind: "item",
+      name: "Superconductive Cell",
+      phase: 2,
+      item: {
+        id: "superconductive-cell",
+        name: "Superconductive Cell",
+        phase: 2,
+        description: "A heavy battery brick that drags on every carve.",
+        modifiers: [{ stat: "speed", amount: -1, duration: "mission" }],
+      },
+      narrativeText:
+        "You rip the superconductive cell off a freight cradle. The weight knocks your active SPD down by 1 for the rest of the run.",
+      onResolve: [
+        {
+          type: "addItem",
+          item: {
+            id: "superconductive-cell",
+            name: "Superconductive Cell",
+            phase: 2,
+            description: "A heavy battery brick that drags on every carve.",
+            modifiers: [{ stat: "speed", amount: -1, duration: "mission" }],
+          },
+        },
+      ],
+    },
+    {
+      id: "switchback-gates",
+      kind: "hazard",
+      name: "Switchback Gates",
+      phase: 3,
+      hazardType: "Environmental Hazard",
+      requirement: {
+        kind: "stat",
+        stat: "acceleration",
+        minimum: 7,
+        affectedByHeat: true,
+      },
+      successText:
+        "You snap through the switchback gates before the magnetic clamps can seal the lane.",
+      failureText: ({ playerStats }) =>
+        `A clamp arm slams your tail. Health drops to ${playerStats.health}% and the hit leaves you at ${playerStats.speed} SPD.`,
+      onFailure: [
+        { type: "adjustPercent", stat: "health", percent: -12 },
+        { type: "adjust", stat: "speed", amount: -1 },
+      ],
+    },
+    {
+      id: "freight-stampede",
+      kind: "hazard",
+      name: "Freight Stampede",
+      phase: 4,
+      hazardType: "Active Enemy",
+      requirement: {
+        kind: "stat",
+        stat: "speed",
+        minimum: 8,
+        affectedByHeat: true,
+      },
+      successText:
+        "You outrun the freight stampede and throw the yard drones off your line.",
+      failureText: ({ playerStats }) =>
+        `A side-loader clips the pack and you burn charge stabilizing, leaving ${playerStats.batteryRemaining} RNG.`,
+      onFailure: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -18 }],
+    },
+    {
+      id: "smelter-bypass",
+      kind: "hazard",
+      name: "Smelter Bypass",
+      phase: 4,
+      hazardType: "Endurance Check",
+      requirement: {
+        kind: "stat",
+        stat: "batteryRemaining",
+        minimum: 14,
+        affectedByHeat: true,
+      },
+      successText: ({ playerStats }) =>
+        `You clear the smelter bypass with ${playerStats.batteryRemaining} RNG left and the cell still locked down.`,
+      failureText: ({ playerStats }) =>
+        `The board dies in the furnace haze at ${playerStats.batteryRemaining} RNG and the rail crews scatter before you can deliver.`,
+      onSuccess: [{ type: "adjust", stat: "batteryRemaining", amount: -14 }],
+      onFailure: [{ type: "adjust", stat: "batteryRemaining", amount: -14 }],
+      endsMissionOnFailure: true,
+    },
+  ],
+};
+
+const MURKLINE_MISSION: DistrictMissionDefinition = {
+  id: "operation-murkline",
+  name: "Operation: Murkline",
+  district: "Nightshade",
+  tagline: "Pull a ghost-ledger from the tunnels and escape before the undercity closes around you.",
+  briefing:
+    "Dive through Nightshade's tunnel web, recover the ghost-ledger, and climb out before the blackout shutters seal the route.",
+  checkTags: ["P1 STEALTH 8", "P3 ACC 7 (+ Heat)", "P4 SPD 7 (+ Heat)", "P4 RNG 12 (+ Heat)"],
+  steps: [
+    {
+      id: "tunnel-watch",
+      kind: "hazard",
+      name: "Tunnel Watch",
+      phase: 1,
+      hazardType: "Passive Security",
+      requirement: { kind: "stat", stat: "stealth", minimum: 8 },
+      successText:
+        "You pass under the tunnel watch unseen, moving through pure neon shadow.",
+      failureText: ({ playerStats }) =>
+        `A lookout whistles you into the open. Heat rises by +1 to ${playerStats.heatLevel} and every deep-tunnel turn tightens.`,
+      onFailure: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
+    },
+    {
+      id: "ghost-ledger",
+      kind: "item",
+      name: "Ghost-Ledger",
+      phase: 2,
+      item: {
+        id: "ghost-ledger",
+        name: "Ghost-Ledger",
+        phase: 2,
+        description: "A glass shard index that throws reflections where you do not want them.",
+        modifiers: [{ stat: "stealth", amount: -2, duration: "mission" }],
+      },
+      narrativeText:
+        "You pocket the ghost-ledger. Its mirrored casing drops active STEALTH by 2 every time the tunnel lights catch it.",
+      onResolve: [
+        {
+          type: "addItem",
+          item: {
+            id: "ghost-ledger",
+            name: "Ghost-Ledger",
+            phase: 2,
+            description: "A glass shard index that throws reflections where you do not want them.",
+            modifiers: [{ stat: "stealth", amount: -2, duration: "mission" }],
+          },
+        },
+      ],
+    },
+    {
+      id: "floodgate-drop",
+      kind: "hazard",
+      name: "Floodgate Drop",
+      phase: 3,
+      hazardType: "Environmental Hazard",
+      requirement: {
+        kind: "stat",
+        stat: "acceleration",
+        minimum: 7,
+        affectedByHeat: true,
+      },
+      successText:
+        "You punch up the floodgate ramp and clear the closing shutter with inches to spare.",
+      failureText: ({ playerStats }) =>
+        `The shutter grazes your deck, knocking health down to ${playerStats.health}% and shaving you to ${playerStats.speed} SPD.`,
+      onFailure: [
+        { type: "adjustPercent", stat: "health", percent: -10 },
+        { type: "adjust", stat: "speed", amount: -1 },
+      ],
+    },
+    {
+      id: "glowhound-pack",
+      kind: "hazard",
+      name: "Glowhound Pack",
+      phase: 4,
+      hazardType: "Active Enemy",
+      requirement: {
+        kind: "stat",
+        stat: "speed",
+        minimum: 7,
+        affectedByHeat: true,
+      },
+      successText:
+        "You leave the glowhound pack chewing sparks in a dead-end tunnel while you break for daylight.",
+      failureText: ({ playerStats }) =>
+        `The glowhounds force a hard brake. You dump power to recover, leaving ${playerStats.batteryRemaining} RNG.`,
+      onFailure: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -15 }],
+    },
+    {
+      id: "blackout-climb",
+      kind: "hazard",
+      name: "Blackout Climb",
+      phase: 4,
+      hazardType: "Endurance Check",
+      requirement: {
+        kind: "stat",
+        stat: "batteryRemaining",
+        minimum: 12,
+        affectedByHeat: true,
+      },
+      successText: ({ playerStats }) =>
+        `You crest the blackout climb with ${playerStats.batteryRemaining} RNG left and vanish into the crowd above.`,
+      failureText: ({ playerStats }) =>
+        `Your lights die on the blackout climb at ${playerStats.batteryRemaining} RNG and Nightshade swallows the mission whole.`,
+      onSuccess: [{ type: "adjust", stat: "batteryRemaining", amount: -12 }],
+      onFailure: [{ type: "adjust", stat: "batteryRemaining", amount: -12 }],
+      endsMissionOnFailure: true,
+    },
+  ],
+};
+
+export const DISTRICT_MISSIONS: DistrictMissionDefinition[] = [
+  GLASS_CANOPY_MISSION,
+  STATIC_BLOOM_MISSION,
+  RAILSPIKE_MISSION,
+  MURKLINE_MISSION,
+];
+
+function getMissionDefinition(missionId: string): DistrictMissionDefinition {
+  return DISTRICT_MISSIONS.find((mission) => mission.id === missionId) ?? GLASS_CANOPY_MISSION;
+}
+
+export function runDistrictMission(missionId: string, playerDeck: MissionPlayerDeck): MissionResult {
+  return runMission(getMissionDefinition(missionId), playerDeck);
+}
+
 export function runGlassCanopyMission(playerDeck: MissionPlayerDeck): MissionResult {
-  return runMission(GLASS_CANOPY_MISSION, playerDeck);
+  return runDistrictMission(GLASS_CANOPY_MISSION.id, playerDeck);
 }
 
 function roundPreviewStat(value: number): number {
@@ -417,7 +783,7 @@ function resolveRunnerCard(cards: CardPayload[], runnerCardId?: string): CardPay
   return cards.find((card) => card.id === runnerCardId) ?? cards[0];
 }
 
-export function buildGlassCanopyMissionPreview(
+export function buildMissionPreview(
   cards: CardPayload[],
   runnerCardId?: string,
 ): GlassCanopyMissionPreview {
@@ -477,4 +843,11 @@ export function buildGlassCanopyMissionPreview(
     runnerLoadout,
     stats: calculateStartingStats(playerDeck),
   };
+}
+
+export function buildGlassCanopyMissionPreview(
+  cards: CardPayload[],
+  runnerCardId?: string,
+): GlassCanopyMissionPreview {
+  return buildMissionPreview(cards, runnerCardId);
 }

@@ -3,9 +3,21 @@ import type { District } from "../lib/types";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import { DISTRICT_WEATHER_LOCATIONS, getDistrictAccessSummary } from "../lib/districtWeather";
 
+export interface GeoAtlasMarker {
+  id: string;
+  district: District;
+  label: string;
+  title?: string;
+  active?: boolean;
+  offsetX?: number;
+  offsetY?: number;
+  onClick?: () => void;
+}
+
 interface GeoAtlasProps {
   compact?: boolean;
   className?: string;
+  markers?: GeoAtlasMarker[];
 }
 
 const AUSTRALIA_DISTRICT_LAYOUT: Record<District, { x: number; y: number; tone: string }> = {
@@ -75,7 +87,7 @@ function getAtlasClassName(compact: boolean, className?: string) {
   return ["geo-atlas", compact ? "geo-atlas--compact" : "", className].filter(Boolean).join(" ");
 }
 
-export function GeoAtlas({ compact = false, className }: GeoAtlasProps) {
+export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasProps) {
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const districtEntries = DISTRICT_LORE.map((district) => ({
     ...district,
@@ -170,6 +182,29 @@ export function GeoAtlas({ compact = false, className }: GeoAtlasProps) {
               </span>
             </article>
           ))}
+          {markers.map((marker) => {
+            const layout = AUSTRALIA_DISTRICT_LAYOUT[marker.district];
+
+            return (
+              <button
+                key={marker.id}
+                type="button"
+                className={`geo-atlas__marker${marker.active ? " geo-atlas__marker--active" : ""}`}
+                style={{
+                  left: `calc(${layout.x}% + ${marker.offsetX ?? 0}px)`,
+                  top: `calc(${layout.y}% + ${marker.offsetY ?? 0}px)`,
+                }}
+                onClick={marker.onClick}
+                aria-pressed={marker.active}
+                title={marker.title ?? marker.label}
+              >
+                <span className="geo-atlas__marker-pin" aria-hidden="true">
+                  📍
+                </span>
+                <span className="geo-atlas__marker-label">{marker.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {!compact && (
