@@ -133,6 +133,8 @@ interface MissionDefinition {
   id: string;
   name: string;
   steps: MissionStep[];
+  /** Ozzycred reward granted on successful completion (0 or omitted = no reward). */
+  ozziesReward?: number;
 }
 
 export interface DistrictMissionDefinition extends MissionDefinition {
@@ -148,6 +150,8 @@ export interface MissionResult {
   playerStats: MissionPlayerStats;
   inventory: MissionItem[];
   missionLog: string[];
+  /** Ozzycred reward earned on successful completion (0 when the mission fails or has no reward). */
+  ozziesReward: number;
 }
 
 export interface MissionForkPrompt {
@@ -347,6 +351,8 @@ function runMission(
     }
   }
 
+  const ozziesReward = state.success ? (mission.ozziesReward ?? 0) : 0;
+
   return {
     kind: "complete",
     result: {
@@ -354,6 +360,7 @@ function runMission(
       playerStats: { ...state.playerStats },
       inventory: [...state.inventory],
       missionLog: [...state.missionLog],
+      ozziesReward,
     },
   };
 }
@@ -388,6 +395,8 @@ interface DistrictMissionBlueprint {
   tagline: string;
   briefing: string;
   thresholds: DistrictMissionThresholds;
+  /** Ozzycred reward on success (omit for missions that pay no Ozzies). */
+  ozziesReward?: number;
   phase1: {
     name: string;
     successText: string;
@@ -444,8 +453,9 @@ function createDistrictMission(blueprint: DistrictMissionBlueprint): DistrictMis
     pinLabel: blueprint.pinLabel,
     tagline: blueprint.tagline,
     briefing: blueprint.briefing,
+    ozziesReward: blueprint.ozziesReward,
     checkTags: [
-      `P1 STEALTH ${blueprint.thresholds.stealth}`,
+      `P1 Stealth ${blueprint.thresholds.stealth}`,
       `P3 Acceleration ${blueprint.thresholds.acceleration} (+ Heat)`,
       `P4 Speed ${blueprint.thresholds.speed} (+ Heat)`,
       `P4 Range ${blueprint.thresholds.battery} (+ Heat)`,
@@ -546,6 +556,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Deliver a chilled organ case to the Asclepians before the skybridge scanners close.",
     briefing: "Lift a viable organ through Airaway's contractor lanes and hand it to the rooftop surgeons before the donor clock runs out.",
     thresholds: { stealth: 7, acceleration: 8, speed: 8, battery: 14 },
+    ozziesReward: 50,
     phase1: {
       name: "Contractor Checkpoint",
       successText: "You drift through the contractor checkpoint with the cooler masked as routine med freight.",
@@ -658,6 +669,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Deliver contraband pizzas to exhausted troops holding the skybridge perimeter.",
     briefing: "A hungry troop detail on Airaway's edge paid in hard credit. Get their pizza stack through the tower cordon before command notices morale improving.",
     thresholds: { stealth: 6, acceleration: 7, speed: 8, battery: 13 },
+    ozziesReward: 25,
     phase1: {
       name: "Mess Hall Audit",
       successText: "You slide past the mess hall audit with the pizza stack listed as waste disposal.",
@@ -770,6 +782,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Hunt down industrial lubricant before the long-haul convoy seizes up in the desert.",
     briefing: "A relay convoy is out of chain lube and half its boards are screaming. Bring back enough lubricant from an abandoned depot to keep the line moving.",
     thresholds: { stealth: 6, acceleration: 7, speed: 7, battery: 14 },
+    ozziesReward: 30,
     phase1: {
       name: "Depot Smoke",
       successText: "You ghost through the depot smoke and pull the lube drums before anyone spots fresh tracks.",
@@ -882,6 +895,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Hunt fresh lithium batteries through the recycler belt before the clamps lock down.",
     briefing: "The recycler collectives located a crate of clean lithium cells in Batteryville's scrap belt. Pull it free and move it before HexChain repossesses the lot.",
     thresholds: { stealth: 6, acceleration: 7, speed: 8, battery: 14 },
+    ozziesReward: 40,
     phase1: {
       name: "Recycler Spotters",
       successText: "You move through the recycler belt with your lights off and the spotters never call it in.",
@@ -1050,6 +1064,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Steal a thumb drive full of Cascade black-badge credentials from the data district.",
     briefing: "Cascade moved its cleanest admin keys back onto an encrypted thumb drive. Slip into the access vault, steal it, and outrun the audit sweep.",
     thresholds: { stealth: 7, acceleration: 7, speed: 7, battery: 13 },
+    ozziesReward: 45,
     phase1: {
       name: "Sentry Lattice",
       successText: "You ghost under the sentry lattice and reach the access vault before Cascade tags your signature.",
@@ -1162,6 +1177,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Defend a static relay from a Punch Skater horde long enough to finish an upload.",
     briefing: "The Static Pack needs four more minutes to uplink stolen records. Hold the relay against a Punch Skater horde and keep the transmitters alive.",
     thresholds: { stealth: 6, acceleration: 7, speed: 7, battery: 13 },
+    ozziesReward: 35,
     phase1: {
       name: "Quiet Setup",
       successText: "You get the relay humming before the raiders realize anything valuable is online.",
@@ -1274,6 +1290,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Deliver pizzas to corridor troops before a morale crackdown shuts the order down.",
     briefing: "A troop detail on the transit strip pooled credits for hot food. Get the pizzas through Electropolis before the Fuzz decides hungry soldiers are safer soldiers.",
     thresholds: { stealth: 6, acceleration: 7, speed: 8, battery: 12 },
+    ozziesReward: 25,
     phase1: {
       name: "Curbside Sweep",
       successText: "You slip the curbside sweep with the pizza boxes tagged as maintenance foam.",
@@ -1386,6 +1403,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Deliver a black-bag organ through Nightshade's tunnels before the blackout shutters fall.",
     briefing: "A tunnel clinic needs a fresh organ now, not at dawn. Take the black-bag case through Nightshade and get it to the surgeons before the shutters trap you below.",
     thresholds: { stealth: 8, acceleration: 7, speed: 7, battery: 12 },
+    ozziesReward: 40,
     phase1: {
       name: "Tunnel Watch",
       successText: "You slide under the tunnel watch and keep the organ case out of every lantern beam.",
@@ -1498,6 +1516,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Battle a Punch Skater crew in the tunnels before they overrun the courier lanes.",
     briefing: "A Punch Skater crew has turned a tunnel junction into a toll gate. Break their hold, keep the lane open, and get your people out alive.",
     thresholds: { stealth: 7, acceleration: 7, speed: 7, battery: 12 },
+    ozziesReward: 35,
     phase1: {
       name: "Staging Shadows",
       successText: "You stage in pure shadow and the tunnel crew never sees the strike team form up.",
@@ -1610,6 +1629,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Defend the timber bridges against a Punch Skater horde before they burn the commune out.",
     briefing: "A Punch Skater horde is climbing the timber approaches. Hold the bridges, keep the Wooders alive, and push the horde back into the mud.",
     thresholds: { stealth: 6, acceleration: 8, speed: 7, battery: 14 },
+    ozziesReward: 30,
     phase1: {
       name: "Treewatch",
       successText: "You reach the forward bridge while the horde is still guessing which trail matters.",
@@ -1722,6 +1742,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Deliver a stolen organ case through Glass City before a private clinic loses its patient.",
     briefing: "A private clinic in Glass City needs a fresh organ that UCA procurement would rather deny. Steal the case, cross the towers, and get it there before the timer expires.",
     thresholds: { stealth: 7, acceleration: 8, speed: 8, battery: 15 },
+    ozziesReward: 50,
     phase1: {
       name: "Lobby Drone",
       successText: "You slip past the lobby drone with the organ case masked as luxury biotech.",
@@ -1834,6 +1855,7 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Shop the luxury board boutiques for elite parts before the towers lock their inventories.",
     briefing: "Glass City keeps absurdly good skateboard parts for the rich alone. Lift a boutique haul and get it back to the crews before the towers notice the shelves are light.",
     thresholds: { stealth: 7, acceleration: 8, speed: 8, battery: 14 },
+    ozziesReward: 45,
     phase1: {
       name: "Showroom Silence",
       successText: "You slip the boutique floor without disturbing a single sensor-polished display.",

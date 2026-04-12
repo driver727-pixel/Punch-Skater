@@ -924,6 +924,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .stat-fill { height: 100%; border-radius: 1px; transition: width 0.3s; }
 .stat-value { font-size: 5px; color: var(--text); width: 8px; text-align: right; flex-shrink: 0; }
 
+/* ===== Card Worth (Ozzycred) ===== */
+.card-worth {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+  margin-top: 1px;
+  border-top: 1px dashed var(--border);
+}
+.card-worth-label { font-size: 5px; color: #ffdd00; letter-spacing: 0.5px; }
+.card-worth-value { font-size: 6px; font-weight: 700; }
+
 /* ===== Inline Active Ability ===== */
 .stat-active {
   display: flex;
@@ -1303,6 +1315,29 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-shrink: 0;
 }
 .deck-stats-total-max { font-size: 10px; color: var(--text-dim); }
+
+/* ===== Ozzycred Deck Worth ===== */
+.deck-stats-ozzies {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 0;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.deck-stats-ozzies-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #ffdd00;
+  text-shadow: 0 0 6px rgba(255,221,0,0.5);
+}
+.deck-stats-ozzies-value {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: #ffdd00;
+  text-shadow: 0 0 8px rgba(255,221,0,0.7);
+}
 
 /* ===== Save-to-Deck Celebration Overlay ===== */
 .save-celebrate-overlay {
@@ -2503,6 +2538,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .leaderboard-power {
   color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+.leaderboard-ozzies {
+  color: #ffdd00;
   font-weight: 700;
   font-size: 14px;
 }
@@ -5860,6 +5900,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--text-dim);
   font-size: 12px;
   line-height: 1.5;
+}
+.mission-selector-card__reward {
+  font-size: 11px;
+  color: #ffdd00;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.tag--ozzies {
+  background: rgba(255,221,0,0.15);
+  border-color: #ffdd00;
+  color: #ffdd00;
+  font-weight: 700;
 }
 .mission-checks {
   display: flex;

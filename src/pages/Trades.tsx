@@ -419,6 +419,7 @@ export function Trades() {
             <div className="leaderboard-my-entry">
               <span className="leaderboard-my-entry-label">Your entry:</span>
               <strong>{myEntry.deckName}</strong> · ⚡ {myEntry.deckPower} ·{" "}
+              💰 {myEntry.ozzies} Ozzies ·{" "}
               🎯 {formatStatLabel(myEntry.strongestStat)} {myEntry.strongestStatTotal} ·{" "}
               🤝 +{myEntry.synergyBonusPct}%
             </div>
@@ -439,6 +440,7 @@ export function Trades() {
                     <th className="leaderboard-th">Deck</th>
                     <th className="leaderboard-th">Cards</th>
                     <th className="leaderboard-th">⚡ Power</th>
+                    <th className="leaderboard-th">💰 Ozzies</th>
                     <th className="leaderboard-th">Best Stat</th>
                     <th className="leaderboard-th">Synergy</th>
                     <th className="leaderboard-th">Archetype</th>
@@ -457,6 +459,7 @@ export function Trades() {
                       <td className="leaderboard-td">{entry.deckName}</td>
                       <td className="leaderboard-td leaderboard-center">{entry.cardCount}</td>
                       <td className="leaderboard-td leaderboard-power">{entry.deckPower}</td>
+                      <td className="leaderboard-td leaderboard-ozzies">{entry.ozzies ?? 0}</td>
                       <td className="leaderboard-td">
                         {formatStatLabel(entry.strongestStat)} {entry.strongestStatTotal}
                       </td>

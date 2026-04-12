@@ -9,6 +9,7 @@ import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
 import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
+import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
 
 interface LayerLoading {
@@ -521,6 +522,10 @@ export function CardDisplay({
           <StatBar label={CARD_STAT_LABELS.tech.label}    value={card.stats.tech}    color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
           <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
           <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
+          <div className="card-worth">
+            <span className="card-worth-label">Worth</span>
+            <span className="card-worth-value" style={{ color: accent }}>{computeCardWorth(card)} Ozzies</span>
+          </div>
           <div className="stat-active">
             <span className="stat-label" title="Active ability">Active</span>
             <div className="stat-active-body">

@@ -208,6 +208,8 @@ export interface LeaderboardEntry {
   deckName: string;
   cardCount: number;
   deckPower: number;
+  /** Total Ozzycred worth of the deck (sum of every card's stat total). */
+  ozzies: number;
   strongestStat: StatKey;
   strongestStatTotal: number;
   synergyBonusPct: number;

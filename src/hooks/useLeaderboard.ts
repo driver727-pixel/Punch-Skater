@@ -11,7 +11,7 @@ import {
 import type { DeckPayload, LeaderboardEntry } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import { buildArenaDeckSummary, computeDeckScore } from "../lib/battle";
+import { buildArenaDeckSummary, computeDeckScore, computeDeckWorth } from "../lib/battle";
 
 /** Maximum entries shown on the leaderboard. */
 const LEADERBOARD_LIMIT = 50;
@@ -29,6 +29,7 @@ export function useLeaderboard() {
     const q = query(
       collection(db, "leaderboard"),
       orderBy("deckPower", "desc"),
+      orderBy("ozzies", "desc"),
       limit(LEADERBOARD_LIMIT),
     );
     const unsub = onSnapshot(q, (snap) => {
@@ -51,6 +52,7 @@ export function useLeaderboard() {
           deckName: deck.name,
           cardCount: deck.cards.length,
           deckPower: computeDeckScore(deck.cards),
+          ozzies: computeDeckWorth(deck.cards),
           strongestStat: summary.strongestStat,
           strongestStatTotal: summary.strongestStatTotal,
           synergyBonusPct: summary.synergyBonusPct,
