@@ -145,7 +145,7 @@ export function getMatchingCategoryImage(
     const filename =
       path.split("/").pop()?.replace(/\.png$/i, "").toLowerCase() ?? "";
     const parts = filename.split(/[-_\s]+/);
-    if (keywords.some((kw) => parts.some((part) => part === kw || part.includes(kw)))) {
+    if (keywords.some((kw) => parts.some((part) => part === kw))) {
       return glob[path];
     }
   }

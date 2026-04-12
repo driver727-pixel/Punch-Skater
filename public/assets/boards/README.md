@@ -65,6 +65,8 @@ mapping is:
 | `mountain` or `mt` | Mountain |
 | `surf` | Surf |
 
+| `slider` | Slider |
+
 #### Drivetrain
 
 | Filename keyword | Drivetrain |
