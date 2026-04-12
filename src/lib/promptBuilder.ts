@@ -70,7 +70,8 @@ const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
 };
 
 /** Shared age-restriction phrase appended to all character prompts. */
-const AGE_RESTRICTION = "No kids. No teens. Adults aged 18-99 only. ";
+const AGE_RESTRICTION =
+  "Clearly an adult subject aged 21 or older with fully grown body proportions and mature facial structure. Never a child or teenager. ";
 
 // ── Appearance helpers ──────────────────────────────────────────────────────────
 
@@ -117,10 +118,29 @@ function buildFaceDescription(faceCharacter?: string): string {
     faceCharacter === "Scarred"     ? "Facial scars, healed cuts, a crooked nose from past breaks — battle-worn face, NOT conventionally attractive" :
     faceCharacter === "Asymmetric"  ? "Noticeably asymmetric face, one eye slightly smaller, crooked jaw, uneven features — distinctively unconventional" :
     faceCharacter === "Rugged"      ? "Extremely rugged face, heavy brow, thick nose, strong jaw, coarse skin — tough and imposing, NOT model-like" :
-    faceCharacter === "Baby-faced"  ? "Round baby-face with soft cheeks, small chin, wide-set eyes — youthful and disarming" :
+    faceCharacter === "Baby-faced"  ? "Baby-faced adult with soft rounded cheeks, a small chin, and wide-set eyes — fresh-faced but unmistakably grown" :
     faceCharacter === "Gaunt"       ? "Gaunt hollow-cheeked face, sharp cheekbones, sunken eyes, thin lips — emaciated and intense" :
     /* Round-faced */                 "Full round face, plump cheeks, double chin, small eyes — soft and wide features";
   return `${desc}. `;
+}
+
+function buildAgeDescription(ageGroup: string): string {
+  return ageGroup === "Young Adult" ? "adult in their mid-20s, fresh-faced but clearly mature" :
+    ageGroup === "Adult"            ? "adult in their 30s, mature features with slight lines around the eyes" :
+    ageGroup === "Middle-aged"      ? "middle-aged adult in their late 40s to 50s, prominent crow's feet, forehead wrinkles, visible laugh lines, slightly sagging jawline, greying at the temples" :
+    /* Senior */                      "senior adult in their late 60s or older, deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls";
+}
+
+function buildBodyDescription(bodyType: string): string {
+  return bodyType === "Slim"            ? "slim narrow-shouldered build, thin arms and legs" :
+    bodyType === "Athletic"             ? "athletic build" :
+    bodyType === "Average"              ? "average unremarkable build, soft midsection, not muscular" :
+    bodyType === "Stocky"               ? "stocky short-limbed build, thick neck, wide torso" :
+    bodyType === "Heavy"                ? "heavy overweight build, large belly, double chin, thick limbs" :
+    bodyType === "Wiry"                 ? "wiry sinewy build, lean muscles, prominent veins, no bulk" :
+    bodyType === "Pear-shaped"          ? "pear-shaped build, narrow shoulders, wide hips, heavier lower body" :
+    bodyType === "Lanky"                ? "lanky tall and gangly build, long limbs" :
+    /* Barrel-chested */                  "barrel-chested build, deep round ribcage, thick waist, powerful but not lean";
 }
 
 /**
@@ -147,22 +167,8 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     prompts.gender === "Man"   ? "a man" :
     /* Non-binary */             "a non-binary person";
 
-  const ageDesc =
-    prompts.ageGroup === "Young Adult" ? "young adult (20s), smooth skin, youthful energy" :
-    prompts.ageGroup === "Adult"       ? "adult (30s), slight lines around eyes" :
-    prompts.ageGroup === "Middle-aged" ? "middle-aged (late 40s-50s), prominent crow's feet, forehead wrinkles, visible laugh lines, slightly sagging jawline, greying at the temples" :
-    /* Senior */                         "elderly senior (late 60s-70s+), deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls";
-
-  const bodyDesc =
-    prompts.bodyType === "Slim"            ? "slim narrow-shouldered build, thin arms and legs" :
-    prompts.bodyType === "Athletic"        ? "athletic build" :
-    prompts.bodyType === "Average"         ? "average unremarkable build, soft midsection, not muscular" :
-    prompts.bodyType === "Stocky"          ? "stocky short-limbed build, thick neck, wide torso" :
-    prompts.bodyType === "Heavy"           ? "heavy overweight build, large belly, double chin, thick limbs" :
-    prompts.bodyType === "Wiry"            ? "wiry sinewy build, lean muscles, prominent veins, no bulk" :
-    prompts.bodyType === "Pear-shaped"     ? "pear-shaped build, narrow shoulders, wide hips, heavier lower body" :
-    prompts.bodyType === "Lanky"           ? "lanky tall and gangly build, long limbs, awkward proportions" :
-    /* Barrel-chested */                     "barrel-chested build, deep round ribcage, thick waist, powerful but not lean";
+  const ageDesc = buildAgeDescription(prompts.ageGroup);
+  const bodyDesc = buildBodyDescription(prompts.bodyType);
 
   const hairDesc = buildHairDescription(prompts.hairLength, prompts.hairColor);
   const skinDesc = buildSkinDescription(prompts.skinTone);
@@ -171,19 +177,19 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
   const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${skinDesc}${faceDesc}`;
 
   return (
-    `Full-body portrait of a ${prompts.archetype} skater courier, ` +
+    `Full-body portrait of a clearly adult ${prompts.archetype} skater courier, ` +
     `facing directly toward the viewer, front-facing, looking at the camera, ` +
     `wearing ${clothing}, ${pose}, ` +
     `carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     graffitiLine +
-    `Character is alert and ready to move. ` +
+    `Character is alert, street-tough, and ready to move. ` +
     `Mood: ${mood}. ` +
     characterDesc +
     AGE_RESTRICTION +
-    `Trading card art in the style of 1995 Fleer Ultra X-Men, fantastic realism, airbrushed gouache texture, ` +
-    `vibrant and saturated 90s digital colors, dramatic rim lighting. ` +
+    `Trading card illustration with grounded stylized realism in the spirit of 1990s premium comic-card art, airbrushed gouache texture, ` +
+    `vibrant but believable color, crisp detail, dramatic rim lighting, no chibi or cartoon proportions. ` +
     `Isolated on a solid neutral medium-gray studio background, full figure visible from head to toe, centred. ` +
-    `SFW, family friendly, PG rated, LGBTQIA+.`
+    `Safe-for-work, fully clothed adult character art, LGBTQIA+.`
   );
 }
 
@@ -275,29 +281,15 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     prompts.gender === "Man"   ? "a man" :
     /* Non-binary */             "a non-binary person";
 
-  const ageDesc =
-    prompts.ageGroup === "Young Adult" ? "young adult (20s), smooth skin, youthful energy" :
-    prompts.ageGroup === "Adult"       ? "adult (30s), slight lines around eyes" :
-    prompts.ageGroup === "Middle-aged" ? "middle-aged (late 40s-50s), prominent crow's feet, forehead wrinkles, visible laugh lines, slightly sagging jawline, greying at the temples" :
-    /* Senior */                         "elderly senior (late 60s-70s+), deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls";
-
-  const bodyDesc =
-    prompts.bodyType === "Slim"            ? "slim narrow-shouldered build, thin arms and legs" :
-    prompts.bodyType === "Athletic"        ? "athletic build" :
-    prompts.bodyType === "Average"         ? "average unremarkable build, soft midsection, not muscular" :
-    prompts.bodyType === "Stocky"          ? "stocky short-limbed build, thick neck, wide torso" :
-    prompts.bodyType === "Heavy"           ? "heavy overweight build, large belly, double chin, thick limbs" :
-    prompts.bodyType === "Wiry"            ? "wiry sinewy build, lean muscles, prominent veins, no bulk" :
-    prompts.bodyType === "Pear-shaped"     ? "pear-shaped build, narrow shoulders, wide hips, heavier lower body" :
-    prompts.bodyType === "Lanky"           ? "lanky tall and gangly build, long limbs, awkward proportions" :
-    /* Barrel-chested */                     "barrel-chested build, deep round ribcage, thick waist, powerful but not lean";
+  const ageDesc = buildAgeDescription(prompts.ageGroup);
+  const bodyDesc = buildBodyDescription(prompts.bodyType);
 
   const hairDesc = buildHairDescription(prompts.hairLength, prompts.hairColor);
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
 
   return (
-    `A hyper-realistic 3D cartoon-style portrait of a ${prompts.archetype} skater courier ` +
+    `A premium trading-card illustration of a clearly adult ${prompts.archetype} skater courier ` +
     `facing directly toward the viewer, front-facing, looking at the camera, ` +
     `wearing ${clothing}, ${pose}, ` +
     `carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
@@ -306,7 +298,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     `${hairDesc}${skinDesc}${faceDesc}` +
     `Mood: ${mood}. ` +
     AGE_RESTRICTION +
-    `Rendered in Unreal Engine, vibrant colours, octane render, cinematic lighting, 4K. ` +
-    `SFW, Family Friendly, PG rated, LGBTQIA+.`
+    `Grounded stylized realism, premium 1990s trading-card illustration energy, cinematic lighting, crisp detail, no cartoon or childlike proportions, 4K. ` +
+    `Safe-for-work, fully clothed adult character art, LGBTQIA+.`
   );
 }

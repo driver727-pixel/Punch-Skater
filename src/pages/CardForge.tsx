@@ -40,7 +40,7 @@ const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "
 
 /** Maximum number of automatic retries per layer when a cached URL fails to load. */
 const MAX_LAYER_RETRIES = 1;
-const CHARACTER_CACHE_VERSION = "v2-hq";
+const CHARACTER_CACHE_VERSION = "v3-adult-realism";
 const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
   imageSize: { width: 1024, height: 1536 },
   numInferenceSteps: 45,

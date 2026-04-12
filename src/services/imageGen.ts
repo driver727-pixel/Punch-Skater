@@ -61,7 +61,7 @@ const NEGATIVE_PROMPT =
  * generateImage(). These terms can never be removed by editing prompt builders.
  */
 const MANDATORY_POSITIVE_SUFFIX =
-  "SFW, family friendly, PG rated, LGBTQIA+.";
+  "safe-for-work, fully clothed, clearly adult subject, no childlike appearance, LGBTQIA+.";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
