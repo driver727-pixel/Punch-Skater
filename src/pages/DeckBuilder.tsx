@@ -160,7 +160,7 @@ export function DeckBuilder() {
                   ) : (
                     <div className="deck-item-info">
                       <span className="deck-name">{deck.name}</span>
-                      <span className="deck-power" aria-label={`Power ${deckTotalPowerById[deck.id] ?? 0}`}>
+                      <span className="deck-power">
                         <span aria-hidden="true">⚡</span> {deckTotalPowerById[deck.id] ?? 0} Power
                       </span>
                     </div>

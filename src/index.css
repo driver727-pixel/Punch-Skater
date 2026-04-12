@@ -831,7 +831,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
 }
 .deck-count { font-size: 11px; color: var(--text-dim); }
-.deck-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.deck-actions { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
 
 .deck-main { min-width: 0; }
 .deck-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
