@@ -183,6 +183,11 @@ export function TierProvider({ children }: { children: ReactNode }) {
         setTierState("tier3");
         saveTier("tier3");
         clearCheckoutSessionId();
+        // Persist tier to Firestore so the admin panel shows the correct value
+        if (data?.tier !== "tier3") {
+          setDoc(doc(db, "userProfiles", user.uid), { tier: "tier3" }, { merge: true })
+            .catch(() => {/* non-fatal */});
+        }
         return;
       }
 

@@ -7,8 +7,7 @@ import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
-import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS, getBoardAssetUrls } from "../lib/boardBuilder";
-import { BoardComposite } from "./BoardComposite";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
 
@@ -479,7 +478,15 @@ export function CardDisplay({
         {card.board && (
           <div className="card-board">
             <span className="card-board__label">BOARD</span>
-            <BoardComposite {...getBoardAssetUrls(card.board)} />
+            {card.boardImageUrl ? (
+              <img
+                src={card.boardImageUrl}
+                alt="Electric skateboard"
+                className="card-board__generated-img"
+              />
+            ) : (
+              <div className="card-board__placeholder">🛹</div>
+            )}
             <div className="card-board__rows">
               <BoardRow
                 icon={BOARD_TYPE_OPTIONS.find((o) => o.value === card.board!.boardType)?.icon ?? "🛹"}

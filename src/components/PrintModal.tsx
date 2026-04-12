@@ -149,7 +149,11 @@ export function PrintModal({
 
                   {card.board && (
                     <div className="print-back-board">
-                      <BoardComposite {...getBoardAssetUrls(card.board)} />
+                      {card.boardImageUrl ? (
+                        <img src={card.boardImageUrl} alt="Electric skateboard" className="card-board__generated-img" />
+                      ) : (
+                        <div className="card-board__placeholder">🛹</div>
+                      )}
                     </div>
                   )}
 
@@ -265,7 +269,11 @@ export function PrintModal({
 
               {card.board && (
                 <div className="print-back-board">
-                  <BoardComposite {...getBoardAssetUrls(card.board)} />
+                  {card.boardImageUrl ? (
+                    <img src={card.boardImageUrl} alt="Electric skateboard" className="card-board__generated-img" />
+                  ) : (
+                    <div className="card-board__placeholder">🛹</div>
+                  )}
                 </div>
               )}
 

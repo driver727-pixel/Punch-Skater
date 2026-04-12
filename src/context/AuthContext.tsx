@@ -58,7 +58,9 @@ function createAuthUnavailableError() {
 
 async function upsertUserProfile(user: User) {
   if (!db) return;
-  const adminFields = isAdminEmail(user.email ?? "") ? { isAdmin: true } : {};
+  const adminFields = isAdminEmail(user.email ?? "")
+    ? { isAdmin: true, tier: "tier3" as const }
+    : {};
   await setDoc(
     doc(db, "userProfiles", user.uid),
     {

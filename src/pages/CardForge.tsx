@@ -18,7 +18,7 @@ import { downloadCardAsJpg } from "../services/cardDownload";
 import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, resolveSecretFaction } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
-import { calculateBoardStats } from "../lib/boardBuilder";
+import { calculateBoardStats, buildBoardImagePrompt } from "../lib/boardBuilder";
 import { ACTIVE_STYLES } from "../lib/styles";
 import { GeoAtlas } from "../components/GeoAtlas";
 import { sfxForge, sfxSuccess, sfxError } from "../lib/sfx";
@@ -406,6 +406,32 @@ export function CardForge() {
 
     // Frame layer
     generateLayer("frame", frameKey, framePrompt, frameSeed, signal);
+
+    // Board image layer — generate a single skateboard image from the combined
+    // component descriptions.  The result is stored as boardImageUrl on the card.
+    const boardPrompt = buildBoardImagePrompt(boardConfig);
+    const boardCacheKey = `board-img::${boardConfig.boardType}::${boardConfig.drivetrain}::${boardConfig.wheels}::${boardConfig.battery}`;
+    const boardSeed = `${boardConfig.boardType}-${boardConfig.drivetrain}-${boardConfig.wheels}-${boardConfig.battery}`;
+
+    (async () => {
+      try {
+        // Check Firestore cache first
+        const cachedBoard = await getCachedImage(boardCacheKey);
+        if (signal.aborted) return;
+        if (cachedBoard) {
+          setGenerated((prev) => prev ? { ...prev, boardImageUrl: cachedBoard } : prev);
+          return;
+        }
+
+        const result = await generateImage(boardPrompt, boardSeed, { imageSize: "square_hd" });
+        if (signal.aborted) return;
+
+        await setCachedImage(boardCacheKey, result.imageUrl);
+        setGenerated((prev) => prev ? { ...prev, boardImageUrl: result.imageUrl } : prev);
+      } catch (err) {
+        console.warn("Board image generation failed:", err);
+      }
+    })();
 
     setForging(false);
   }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction]);
