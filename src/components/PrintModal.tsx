@@ -3,8 +3,6 @@ import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
-import { BoardComposite } from "./BoardComposite";
-import { getBoardAssetUrls } from "../lib/boardBuilder";
 
 interface PrintModalProps {
   card: CardPayload;
@@ -148,7 +146,11 @@ export function PrintModal({
 
                   {card.board && (
                     <div className="print-back-board">
-                      <BoardComposite {...getBoardAssetUrls(card.board)} />
+                      {card.boardImageUrl ? (
+                        <img src={card.boardImageUrl} alt="Electric skateboard" className="card-board__generated-img" />
+                      ) : (
+                        <div className="card-board__placeholder">🛹</div>
+                      )}
                     </div>
                   )}
 
@@ -264,7 +266,11 @@ export function PrintModal({
 
               {card.board && (
                 <div className="print-back-board">
-                  <BoardComposite {...getBoardAssetUrls(card.board)} />
+                  {card.boardImageUrl ? (
+                    <img src={card.boardImageUrl} alt="Electric skateboard" className="card-board__generated-img" />
+                  ) : (
+                    <div className="card-board__placeholder">🛹</div>
+                  )}
                 </div>
               )}
 

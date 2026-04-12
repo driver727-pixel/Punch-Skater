@@ -4,7 +4,8 @@
  * Assembly-line board loadout builder powered by four stacked ConveyorCarousel
  * belts:  Decks (top) → Drivetrains → Wheels → Batteries (bottom).
  *
- * The live BoardComposite preview updates instantly as the user scrolls each belt.
+ * The live BoardPreviewGrid shows real product photos for each selected
+ * component from per-category folders under public/assets/boards/.
  * A PowerSwitchButton at the bottom triggers a satisfying animation sequence before
  * firing the onSave callback to commit the board config and loadout stats to the
  * character state.
@@ -18,9 +19,9 @@ import {
   BATTERY_OPTIONS,
   DEFAULT_BOARD_CONFIG,
   calculateBoardStats,
+  getBoardComponentImageUrls,
 } from "../lib/boardBuilder";
-import { useBoardLayerUrls } from "../hooks/useBoardLayerUrls";
-import { BoardComposite } from "./BoardComposite";
+import { BoardPreviewGrid } from "./BoardPreviewGrid";
 import { ConveyorCarousel } from "./ConveyorCarousel";
 import { PowerSwitchButton } from "./PowerSwitchButton";
 import type { CarouselItem } from "./ConveyorCarousel";
@@ -104,14 +105,21 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
     onChange(next);
   }, [onChange]);
 
-  const assetUrls = useBoardLayerUrls(value);
+  const componentUrls = getBoardComponentImageUrls(value);
+  const previewLabels = {
+    deck:       BOARD_TYPE_OPTIONS.find((o) => o.value === value.boardType)?.label ?? value.boardType,
+    drivetrain: DRIVETRAIN_OPTIONS.find((o) => o.value === value.drivetrain)?.label ?? value.drivetrain,
+    wheels:     WHEEL_OPTIONS.find((o) => o.value === value.wheels)?.label ?? value.wheels,
+    battery:    BATTERY_OPTIONS.find((o) => o.value === value.battery)?.label ?? value.battery,
+  };
 
   return (
     <div className={`board-builder${shaking ? " board-builder--shake" : ""}`}>
-      {/* Live board composite preview — updates in real time */}
-      <BoardComposite
-        {...assetUrls}
-        className={`board-builder__preview${surging ? " board-composite--surge" : ""}`}
+      {/* Live board component preview — updates in real time */}
+      <BoardPreviewGrid
+        urls={componentUrls}
+        labels={previewLabels}
+        className={`board-builder__preview${surging ? " board-preview-grid--surge" : ""}`}
       />
 
       {/* Belt 1 — Decks */}
