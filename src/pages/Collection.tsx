@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CardPayload } from "../lib/types";
+import type { CardPayload, Rarity, Archetype, Faction, District } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
 import { CardDisplay } from "../components/CardDisplay";
@@ -15,6 +15,17 @@ import { exportJson } from "../lib/storage";
 import { downloadCardAsJpg } from "../services/cardDownload";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
+
+type SortOption = "name-asc" | "name-desc" | "newest" | "oldest" | "rarity";
+
+const RARITY_ORDER: Record<Rarity, number> = {
+  "Legendary": 0,
+  "Rare": 1,
+  "Master": 2,
+  "Apprentice": 3,
+  "Punch Skater": 4,
+};
+const UNKNOWN_RARITY_ORDER = 5;
 
 export function Collection() {
   const { cards, removeCard, addCard, updateCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
@@ -31,7 +42,97 @@ export function Collection() {
   const [printing, setPrinting] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
+  // ── Search, filter & sort state ──────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRarity, setFilterRarity] = useState<Rarity | "">("");
+  const [filterArchetype, setFilterArchetype] = useState<Archetype | "">("");
+  const [filterFaction, setFilterFaction] = useState<Faction | "">("");
+  const [filterDistrict, setFilterDistrict] = useState<District | "">("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [showFilters, setShowFilters] = useState(false);
+
   const existingIds = useMemo(() => new Set(cards.map((c) => c.id)), [cards]);
+
+  // Derive unique values from actual cards for filter dropdowns
+  const filterOptions = useMemo(() => {
+    const rarities = new Set<Rarity>();
+    const archetypes = new Set<Archetype>();
+    const factions = new Set<Faction>();
+    const districts = new Set<District>();
+    for (const c of cards) {
+      rarities.add(c.prompts.rarity);
+      archetypes.add(c.prompts.archetype);
+      factions.add(c.identity.crew);
+      districts.add(c.prompts.district);
+    }
+    return {
+      rarities: [...rarities].sort(),
+      archetypes: [...archetypes].sort(),
+      factions: [...factions].sort(),
+      districts: [...districts].sort(),
+    };
+  }, [cards]);
+
+  const activeFilterCount =
+    (searchQuery ? 1 : 0) +
+    (filterRarity ? 1 : 0) +
+    (filterArchetype ? 1 : 0) +
+    (filterFaction ? 1 : 0) +
+    (filterDistrict ? 1 : 0) +
+    (sortBy !== "newest" ? 1 : 0);
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterRarity("");
+    setFilterArchetype("");
+    setFilterFaction("");
+    setFilterDistrict("");
+    setSortBy("newest");
+  };
+
+  // ── Filtered & sorted cards ──────────────────────────────────────────────
+  const filteredCards = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    let result = cards.filter((c) => {
+      if (q) {
+        const haystack = [
+          c.identity.name,
+          getDisplayedArchetype(c),
+          c.identity.crew,
+          c.prompts.rarity,
+          c.prompts.district,
+          c.flavorText,
+          ...c.tags,
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (filterRarity && c.prompts.rarity !== filterRarity) return false;
+      if (filterArchetype && c.prompts.archetype !== filterArchetype) return false;
+      if (filterFaction && c.identity.crew !== filterFaction) return false;
+      if (filterDistrict && c.prompts.district !== filterDistrict) return false;
+      return true;
+    });
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc":
+          return a.identity.name.localeCompare(b.identity.name);
+        case "name-desc":
+          return b.identity.name.localeCompare(a.identity.name);
+        case "oldest":
+          return a.createdAt.localeCompare(b.createdAt);
+        case "rarity":
+          return (RARITY_ORDER[a.prompts.rarity] ?? UNKNOWN_RARITY_ORDER) - (RARITY_ORDER[b.prompts.rarity] ?? UNKNOWN_RARITY_ORDER);
+        case "newest":
+        default:
+          return b.createdAt.localeCompare(a.createdAt);
+      }
+    });
+
+    return result;
+  }, [cards, searchQuery, filterRarity, filterArchetype, filterFaction, filterDistrict, sortBy]);
 
   const handleExport = () => {
     exportJson({ version: "1.0.0", cards, exportedAt: new Date().toISOString() }, "skpd-collection.json");
@@ -129,9 +230,107 @@ export function Collection() {
           <p>No cards yet. Head to the Card Forge to create your first courier.</p>
         </div>
       ) : (
-        <div className="collection-layout">
+        <>
+          {/* ── Search / Filter / Sort toolbar ─────────────────────────── */}
+          <div className="collection-toolbar">
+            <div className="collection-search-row">
+              <input
+                className="input collection-search-input"
+                type="text"
+                placeholder="Search by name, archetype, faction, tags…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                className={`btn-outline btn-sm collection-filter-toggle ${showFilters ? "collection-filter-toggle--active" : ""}`}
+                onClick={() => setShowFilters((v) => !v)}
+              >
+                ⚙ Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              </button>
+              <select
+                className="input collection-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name-asc">Name A → Z</option>
+                <option value="name-desc">Name Z → A</option>
+                <option value="rarity">Rarity</option>
+              </select>
+            </div>
+
+            {showFilters && (
+              <div className="collection-filters">
+                <select
+                  className="input collection-filter-select"
+                  value={filterRarity}
+                  onChange={(e) => setFilterRarity(e.target.value as Rarity | "")}
+                >
+                  <option value="">All Rarities</option>
+                  {filterOptions.rarities.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+
+                <select
+                  className="input collection-filter-select"
+                  value={filterArchetype}
+                  onChange={(e) => setFilterArchetype(e.target.value as Archetype | "")}
+                >
+                  <option value="">All Archetypes</option>
+                  {filterOptions.archetypes.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+
+                <select
+                  className="input collection-filter-select"
+                  value={filterFaction}
+                  onChange={(e) => setFilterFaction(e.target.value as Faction | "")}
+                >
+                  <option value="">All Factions</option>
+                  {filterOptions.factions.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+
+                <select
+                  className="input collection-filter-select"
+                  value={filterDistrict}
+                  onChange={(e) => setFilterDistrict(e.target.value as District | "")}
+                >
+                  <option value="">All Districts</option>
+                  {filterOptions.districts.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+
+                {activeFilterCount > 0 && (
+                  <button className="btn-outline btn-sm" onClick={clearFilters}>
+                    ✕ Clear All
+                  </button>
+                )}
+              </div>
+            )}
+
+            {filteredCards.length !== cards.length && (
+              <p className="collection-result-count">
+                Showing {filteredCards.length} of {cards.length} card{cards.length !== 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
+
+          {filteredCards.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-icon">🔍</span>
+              <p>No cards match your search or filters.</p>
+              <button className="btn-outline btn-sm" onClick={clearFilters}>Clear Filters</button>
+            </div>
+          ) : (
+          <div className="collection-layout">
           <div className="card-grid">
-            {cards.map((card) => (
+            {filteredCards.map((card) => (
               <div
                 key={card.id}
                 className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""}`}
@@ -218,6 +417,8 @@ export function Collection() {
             </div>
           )}
         </div>
+          )}
+        </>
       )}
 
       {tradeTarget && (
