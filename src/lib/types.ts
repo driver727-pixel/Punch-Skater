@@ -147,19 +147,29 @@ export interface DeckPayload {
 
 // ── Battle payload ──────────────────────────────────────────────────────────
 
-/** A public arena listing – stats are hidden from other players. */
+/** Stat keys used for wager deduction and battle resolution. */
+export type StatKey = "speed" | "stealth" | "tech" | "grit" | "rep";
+
+/** Public scouting data shown for battle-ready decks in the arena. */
+export interface ArenaDeckSummary {
+  deckPower: number;
+  strongestStat: StatKey;
+  strongestStatTotal: number;
+  synergyBonusPct: number;
+  archetypeHint: string;
+}
+
+/** A public arena listing with limited scouting details for matchmaking. */
 export interface ArenaEntry {
   uid: string;
   displayName: string;
   deckId: string;
   deckName: string;
   cardCount: number;
+  battleSummary?: ArenaDeckSummary;
   /** Timestamp when the deck was readied. */
   readiedAt: string;
 }
-
-/** Stat keys used for wager deduction and battle resolution. */
-export type StatKey = "speed" | "stealth" | "tech" | "grit" | "rep";
 
 /** Outcome stored after a battle completes. */
 export interface BattleResult {
