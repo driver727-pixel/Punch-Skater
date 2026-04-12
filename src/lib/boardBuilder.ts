@@ -14,7 +14,7 @@
 export type BoardType = "Street" | "AT" | "Mountain" | "Surf" | "Slider";
 export type Drivetrain = "Belt" | "Hub" | "Gear" | "AWD";
 export type MotorType = "Micro" | "Standard" | "Torque" | "Outrunner";
-export type WheelType = "Urethane" | "Pneumatic" | "Rubber";
+export type WheelType = "Urethane" | "Pneumatic" | "Rubber" | "Cloud";
 export type BatteryType = "SlimStealth" | "DoubleStack" | "TopPeli";
 
 export interface BoardConfig {
@@ -193,6 +193,14 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
     tagline: "Puncture proof",
     description: "Solid rubber core never flats. Heavier ride, but ideal for debris-strewn industrial zones.",
     statBonuses: { grit: 2 },
+  },
+  {
+    value: "Cloud",
+    label: "Cloud Wheels",
+    icon: "⚪",
+    tagline: "Smooth and floaty",
+    description: "Semi-transparent foam-core wheels with a wide contact patch. Absorbs road buzz and flows through carves.",
+    statBonuses: { stealth: 1, rep: 1 },
   },
 ];
 
@@ -482,7 +490,8 @@ const DRIVETRAIN_SEED: Record<Drivetrain, string | null> = {
 const WHEEL_SEED: Record<WheelType, string | null> = {
   Urethane:  "wheel-100mm-urethane-street",
   Pneumatic: "wheel-175mm-pneumatic-at",
-  Rubber:    "wheel-120mm-cloud-sliders",
+  Rubber:    null,
+  Cloud:     "wheel-120mm-cloud-sliders",
 };
 
 /** Maps each BatteryType value to the seedKey of its representative asset. */
@@ -698,10 +707,10 @@ export function calculateBoardStats(config: BoardConfig): BoardLoadout {
 // ── Compatibility rules ──────────────────────────────────────────────────────
 //
 // Deck-specific restrictions on which components can be paired:
-//   Street  (Carbon Fiber) — any wheels, but NOT top mount battery (TopPeli)
-//   Mountain               — only Pneumatic wheels, MUST use top mount battery (TopPeli)
-//   Surf                   — no top mount battery, no Pneumatic wheels, no Belt drive
-//   AT (Bamboo)            — no top mount battery, no Belt drive
+//   Street  (Carbon Fiber) — any wheels, but NOT top-mount battery, NOT AWD drivetrain
+//   Mountain               — Pneumatic or Solid Rubber wheels; MUST use top-mount battery (TopPeli); MUST use AWD; no Micro motor
+//   Surf                   — no top-mount battery; no Double-Stack Brick battery; no Pneumatic or Solid Rubber wheels; no Belt drive; no Torque 6374 or Outrunner 6396 motors
+//   AT (Bamboo)            — no top-mount battery; no AWD; no Micro motor; Belt drive allowed
 //   Slider                 — no restrictions
 
 export interface CompatibilityError {
@@ -717,22 +726,33 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
 
   switch (config.boardType) {
     case "Street":
-      // Carbon Fiber deck can use any wheels, but NOT top mount battery
+      // Carbon Fiber deck can use any wheels, but NOT top mount battery or AWD
       if (isTopMount) {
         errors.push({ component: "battery", message: "Carbon Fiber deck cannot use a top-mounted battery." });
       }
+      if (config.drivetrain === "AWD") {
+        errors.push({ component: "drivetrain", message: "Street board cannot use AWD drivetrain." });
+      }
       break;
     case "Mountain":
-      // Mountain board cannot use Poly (Urethane) or Cloud (Rubber) wheels; must use Pneumatic
+      // Mountain board cannot use Urethane or Cloud wheels; must use Pneumatic or Solid Rubber
       if (config.wheels === "Urethane") {
         errors.push({ component: "wheels", message: "Mountain board cannot use Poly (Urethane) wheels." });
       }
-      if (config.wheels === "Rubber") {
-        errors.push({ component: "wheels", message: "Mountain board cannot use Cloud (Rubber) wheels." });
+      if (config.wheels === "Cloud") {
+        errors.push({ component: "wheels", message: "Mountain board cannot use Cloud wheels." });
       }
       // Mountain board MUST use top mount battery
       if (!isTopMount) {
         errors.push({ component: "battery", message: "Mountain board must use a top-mounted battery." });
+      }
+      // Mountain board MUST use AWD
+      if (config.drivetrain !== "AWD") {
+        errors.push({ component: "drivetrain", message: "Mountain board must use AWD drivetrain." });
+      }
+      // Mountain board cannot use Micro motor
+      if (config.motor === "Micro") {
+        errors.push({ component: "motor", message: "Mountain board cannot use the Micro 5055 motor." });
       }
       break;
     case "Surf":
@@ -740,13 +760,27 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       if (isTopMount) {
         errors.push({ component: "battery", message: "Surf skateboard cannot use a top-mounted battery." });
       }
-      // Surf cannot use Pneumatic wheels
+      // Surf cannot use Double-Stack Brick battery
+      if (config.battery === "DoubleStack") {
+        errors.push({ component: "battery", message: "Surf skateboard cannot use the Double-Stack Brick battery." });
+      }
+      // Surf cannot use Pneumatic or Solid Rubber wheels
       if (config.wheels === "Pneumatic") {
         errors.push({ component: "wheels", message: "Surf skateboard cannot use Pneumatic wheels." });
+      }
+      if (config.wheels === "Rubber") {
+        errors.push({ component: "wheels", message: "Surf skateboard cannot use Solid Rubber wheels." });
       }
       // Surf cannot use Belt drive
       if (config.drivetrain === "Belt") {
         errors.push({ component: "drivetrain", message: "Surf skateboard cannot use Belt drive." });
+      }
+      // Surf cannot use Torque 6374 or Outrunner 6396 motors
+      if (config.motor === "Torque") {
+        errors.push({ component: "motor", message: "Surf skateboard cannot use the Torque 6374 motor." });
+      }
+      if (config.motor === "Outrunner") {
+        errors.push({ component: "motor", message: "Surf skateboard cannot use the Outrunner 6396 motor." });
       }
       break;
     case "AT":
@@ -754,9 +788,13 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       if (isTopMount) {
         errors.push({ component: "battery", message: "Bamboo deck cannot use a top-mounted battery." });
       }
-      // Bamboo deck cannot use Belt drive
-      if (config.drivetrain === "Belt") {
-        errors.push({ component: "drivetrain", message: "Bamboo deck cannot use Belt drive." });
+      // AT cannot use AWD drivetrain
+      if (config.drivetrain === "AWD") {
+        errors.push({ component: "drivetrain", message: "All-Terrain board cannot use AWD drivetrain." });
+      }
+      // AT cannot use Micro motor
+      if (config.motor === "Micro") {
+        errors.push({ component: "motor", message: "All-Terrain board cannot use the Micro Motor." });
       }
       break;
     // Slider — no restrictions
@@ -778,17 +816,33 @@ export function getAllowedComponents(boardType: BoardType): {
   const allBatteries: BatteryType[]  = BATTERY_OPTIONS.map((o) => o.value);
   const nonTopMountBatteries         = BATTERY_OPTIONS.filter((o) => !o.isTopMounted).map((o) => o.value);
   const topMountBatteries            = BATTERY_OPTIONS.filter((o) => o.isTopMounted).map((o) => o.value);
+  const noAWD                        = allDrivetrains.filter((d) => d !== "AWD");
   const noBelt                       = allDrivetrains.filter((d) => d !== "Belt");
 
   switch (boardType) {
     case "Street":
-      return { drivetrains: allDrivetrains, motors: allMotors, wheels: allWheels, batteries: nonTopMountBatteries };
+      return { drivetrains: noAWD, motors: allMotors, wheels: allWheels, batteries: nonTopMountBatteries };
     case "Mountain":
-      return { drivetrains: allDrivetrains, motors: allMotors, wheels: ["Pneumatic"], batteries: topMountBatteries };
+      return {
+        drivetrains: ["AWD"],
+        motors: allMotors.filter((m) => m !== "Micro"),
+        wheels: ["Pneumatic", "Rubber"],
+        batteries: topMountBatteries,
+      };
     case "Surf":
-      return { drivetrains: noBelt, motors: allMotors, wheels: allWheels.filter((w) => w !== "Pneumatic"), batteries: nonTopMountBatteries };
+      return {
+        drivetrains: noBelt,
+        motors: allMotors.filter((m) => m !== "Torque" && m !== "Outrunner"),
+        wheels: allWheels.filter((w) => w !== "Pneumatic" && w !== "Rubber"),
+        batteries: nonTopMountBatteries.filter((b) => b !== "DoubleStack"),
+      };
     case "AT":
-      return { drivetrains: noBelt, motors: allMotors, wheels: allWheels, batteries: nonTopMountBatteries };
+      return {
+        drivetrains: noAWD,
+        motors: allMotors.filter((m) => m !== "Micro"),
+        wheels: allWheels,
+        batteries: nonTopMountBatteries,
+      };
     case "Slider":
     default:
       return { drivetrains: allDrivetrains, motors: allMotors, wheels: allWheels, batteries: allBatteries };
