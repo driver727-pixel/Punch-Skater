@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DISTRICT_LORE } from "../lib/lore";
 import type { District } from "../lib/types";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
@@ -88,6 +89,7 @@ function getAtlasClassName(compact: boolean, className?: string) {
 }
 
 export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasProps) {
+  const [hoveredDistrict, setHoveredDistrict] = useState<District | null>(null);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const districtEntries = DISTRICT_LORE.map((district) => ({
     ...district,
@@ -153,8 +155,15 @@ export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasP
               const labelX = (start.x + end.x) / 2 + (artery.labelOffsetX ?? 0);
               const labelY = (start.y + end.y) / 2 - 2 + (artery.labelOffsetY ?? 0);
 
+              const isConnected = hoveredDistrict === artery.from || hoveredDistrict === artery.to;
+              const routeClass = [
+                "geo-atlas__route",
+                hoveredDistrict && isConnected ? "geo-atlas__route--highlight" : "",
+                hoveredDistrict && !isConnected ? "geo-atlas__route--dim" : "",
+              ].filter(Boolean).join(" ");
+
               return (
-                <g key={`${artery.from}-${artery.to}`} className="geo-atlas__route">
+                <g key={`${artery.from}-${artery.to}`} className={routeClass}>
                   <line className="geo-atlas__route-line" x1={start.x} y1={start.y} x2={end.x} y2={end.y} />
                   <text className="geo-atlas__route-label" x={labelX} y={labelY}>
                     {artery.label}
@@ -170,6 +179,8 @@ export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasP
               className={`geo-atlas__district geo-atlas__district--${district.layout.tone}`}
               style={{ left: `${district.layout.x}%`, top: `${district.layout.y}%` }}
               data-testid={`district-node-${district.slug}`}
+              onMouseEnter={() => setHoveredDistrict(district.name)}
+              onMouseLeave={() => setHoveredDistrict(null)}
             >
               <span className="geo-atlas__district-name">{district.name}</span>
               <span className="geo-atlas__district-meta">

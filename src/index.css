@@ -2703,6 +2703,25 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   stroke-linejoin: round;
 }
 
+.geo-atlas__route {
+  transition: opacity 0.25s ease;
+}
+
+.geo-atlas__route--highlight .geo-atlas__route-line {
+  stroke: rgba(0, 255, 255, 1);
+  stroke-width: 0.9;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.7));
+}
+
+.geo-atlas__route--highlight .geo-atlas__route-label {
+  fill: #fff;
+}
+
+.geo-atlas__route--dim {
+  opacity: 0.15;
+}
+
 .geo-atlas__district {
   --map-node-glow: rgba(0,204,255,0.18);
   position: absolute;
