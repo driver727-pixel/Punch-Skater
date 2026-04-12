@@ -47,6 +47,7 @@ const ResetPassword   = lazy(() => import("./pages/ResetPassword").then(m => ({ 
 const AccountSettings = lazy(() => import("./pages/AccountSettings").then(m => ({ default: m.AccountSettings })));
 const Admin           = lazy(() => import("./pages/Admin").then(m => ({ default: m.Admin })));
 const AssetGenerator  = lazy(() => import("./pages/AssetGenerator").then(m => ({ default: m.AssetGenerator })));
+const BattleArena     = lazy(() => import("./pages/BattleArena").then(m => ({ default: m.BattleArena })));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -109,6 +110,9 @@ function App() {
                       } />
                       <Route path="/trades" element={
                         <ProtectedRoute><Trades /></ProtectedRoute>
+                      } />
+                      <Route path="/arena" element={
+                        <ProtectedRoute><BattleArena /></ProtectedRoute>
                       } />
                       <Route path="/admin" element={
                         <AdminRoute><Admin /></AdminRoute>

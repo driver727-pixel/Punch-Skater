@@ -141,6 +141,40 @@ export interface DeckPayload {
   cards: CardPayload[];
   createdAt: string;
   updatedAt: string;
+  /** Whether this deck is readied for battle in the multiplayer arena. */
+  battleReady?: boolean;
+}
+
+// ── Battle payload ──────────────────────────────────────────────────────────
+
+/** A public arena listing – stats are hidden from other players. */
+export interface ArenaEntry {
+  uid: string;
+  displayName: string;
+  deckId: string;
+  deckName: string;
+  cardCount: number;
+  /** Timestamp when the deck was readied. */
+  readiedAt: string;
+}
+
+/** Stat keys used for wager deduction and battle resolution. */
+export type StatKey = "speed" | "stealth" | "tech" | "grit" | "rep";
+
+/** Outcome stored after a battle completes. */
+export interface BattleResult {
+  id: string;
+  challengerUid: string;
+  challengerDeckName: string;
+  defenderUid: string;
+  defenderDeckName: string;
+  winnerUid: string;
+  challengerScore: number;
+  defenderScore: number;
+  wagerPoints: number;
+  /** Card IDs in the winning deck that can receive bonus points. */
+  winningDeckCardIds: string[];
+  createdAt: string;
 }
 
 // ── Trade payload ─────────────────────────────────────────────────────────────

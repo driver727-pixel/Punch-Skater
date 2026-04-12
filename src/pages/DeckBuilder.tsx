@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { DeckPayload, CardPayload } from "../lib/types";
 import { useDecks, DECK_CARD_LIMIT } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
+import { useBattle, MIN_BATTLE_CARDS } from "../hooks/useBattle";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { DeckStatsPanel } from "../components/DeckStatsPanel";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
@@ -13,6 +14,7 @@ export function DeckBuilder() {
   const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck } = useDecks();
   const { cards } = useCollection();
   const { tier, openUpgradeModal } = useTier();
+  const { readyDeck, unreadyDeck, myArenaEntry } = useBattle();
   const tierData = TIERS[tier];
 
   const [activeDeck, setActiveDeck] = useState<DeckPayload | null>(null);
@@ -181,6 +183,22 @@ export function DeckBuilder() {
                 <h2>{activeDeck.name}</h2>
                 <span className="deck-count">{activeDeck.cards.length}/{DECK_CARD_LIMIT} cards</span>
                 <button className="btn-outline" onClick={() => handleExportDeck(activeDeck)}>Export JSON</button>
+                {activeDeck.cards.length >= MIN_BATTLE_CARDS && (
+                  <label className="battle-ready-toggle" title="Toggle Battle Ready status for this deck">
+                    <input
+                      type="checkbox"
+                      checked={myArenaEntry?.deckId === activeDeck.id}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          readyDeck(activeDeck);
+                        } else {
+                          unreadyDeck();
+                        }
+                      }}
+                    />
+                    <span className="battle-ready-label">⚔️ Battle Ready</span>
+                  </label>
+                )}
               </div>
 
               {/* 6-slot card gallery with drag-to-reorder */}

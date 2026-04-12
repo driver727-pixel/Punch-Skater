@@ -92,6 +92,11 @@ export function Nav() {
       <NavLink to="/trades" className={({ isActive }) => `nav-link${isActive ? " active" : ""}${pendingTrades > 0 ? " nav-link--badge" : ""}`} onClick={onClick}>
         Trades{pendingTrades > 0 && <span className="nav-badge">{pendingTrades}</span>}
       </NavLink>
+      {user && (
+        <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={onClick}>
+          Arena
+        </NavLink>
+      )}
       <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={onClick}>
         Codex
       </NavLink>
