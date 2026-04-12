@@ -100,28 +100,83 @@ body {
 
 .nav-links { display: flex; gap: 4px; }
 .nav-link {
+  --nav-soda-face: rgba(91, 74, 118, 0.9);
+  --nav-soda-face-deep: rgba(45, 31, 62, 0.98);
+  --nav-soda-ink: #efe5ff;
+  --nav-soda-hotspot: rgba(245, 225, 255, 0.48);
+  --nav-soda-glow: rgba(185, 135, 255, 0.18);
+  --nav-soda-dead-zone: rgba(21, 12, 31, 0.5);
+  --nav-soda-bezel: rgba(10, 10, 14, 0.96);
+  --nav-soda-edge: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px 16px;
-  color: var(--text-dim);
+  min-height: 36px;
+  color: var(--nav-soda-ink);
   text-decoration: none;
   font-size: 12px;
   letter-spacing: 1px;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  border: 3px solid var(--nav-soda-bezel);
+  border-radius: 8px;
+  clip-path: polygon(
+    var(--nav-soda-edge) 0,
+    calc(100% - var(--nav-soda-edge)) 0,
+    100% var(--nav-soda-edge),
+    100% calc(100% - var(--nav-soda-edge)),
+    calc(100% - var(--nav-soda-edge)) 100%,
+    var(--nav-soda-edge) 100%,
+    0 calc(100% - var(--nav-soda-edge)),
+    0 var(--nav-soda-edge)
+  );
+  background:
+    radial-gradient(circle at 24% 28%, var(--nav-soda-hotspot), rgba(255, 238, 178, 0.14) 18%, transparent 42%),
+    radial-gradient(circle at 78% 35%, rgba(255, 249, 232, 0.26), transparent 18%),
+    radial-gradient(circle at 68% 72%, var(--nav-soda-dead-zone), transparent 28%),
+    linear-gradient(120deg, transparent 0 28%, rgba(255, 255, 255, 0.16) 29% 30%, transparent 31% 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, rgba(0, 0, 0, 0.04) 1px 3px, transparent 3px 6px),
+    linear-gradient(180deg, rgba(255, 239, 186, 0.28), rgba(255, 214, 120, 0.08) 22%, rgba(42, 22, 22, 0.12) 58%, rgba(16, 10, 8, 0.44)),
+    linear-gradient(135deg, var(--nav-soda-face), var(--nav-soda-face-deep));
+  box-shadow:
+    0 0 0 1px rgba(213, 217, 228, 0.2),
+    0 4px 0 rgba(0, 0, 0, 0.82),
+    0 10px 18px rgba(0, 0, 0, 0.34),
+    0 0 14px var(--nav-soda-glow),
+    inset 0 1px 0 rgba(255, 249, 240, 0.34),
+    inset 0 -8px 12px rgba(16, 10, 18, 0.34);
   transition: all 0.2s ease;
   font-weight: bold;
+  text-shadow:
+    0.05em 0 rgba(152, 16, 16, 0.26),
+    -0.05em 0 rgba(92, 162, 255, 0.12),
+    0 1px 1px rgba(0, 0, 0, 0.86);
 }
 .nav-link:hover {
-  color: var(--text);
-  border-color: var(--accent);
-  background: rgba(0, 255, 136, 0.06);
-  box-shadow: 2px 2px 0 var(--accent);
-  transform: translate(-1px, -1px);
+  color: #fff8ea;
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(230, 236, 244, 0.26),
+    0 5px 0 rgba(0, 0, 0, 0.84),
+    0 16px 24px rgba(0, 0, 0, 0.4),
+    0 0 22px rgba(185, 135, 255, 0.22),
+    inset 0 1px 0 rgba(255, 252, 245, 0.48),
+    inset 0 -10px 14px rgba(18, 10, 20, 0.38);
 }
 .nav-link.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 3px 3px 0 rgba(0,255,136,0.35), 0 0 10px rgba(0,255,136,0.2);
-  background: rgba(0,255,136,0.06);
+  --nav-soda-face: rgba(100, 132, 58, 0.92);
+  --nav-soda-face-deep: rgba(40, 61, 26, 0.98);
+  --nav-soda-ink: #f5ffd2;
+  --nav-soda-hotspot: rgba(237, 255, 187, 0.58);
+  --nav-soda-glow: rgba(141, 255, 92, 0.24);
+  --nav-soda-dead-zone: rgba(18, 28, 14, 0.46);
+  color: var(--nav-soda-ink);
+  box-shadow:
+    0 0 0 1px rgba(220, 228, 236, 0.26),
+    0 4px 0 rgba(0, 0, 0, 0.84),
+    0 12px 20px rgba(0, 0, 0, 0.36),
+    0 0 18px rgba(141, 255, 92, 0.24),
+    inset 0 1px 0 rgba(255, 255, 238, 0.46),
+    inset 0 -10px 14px rgba(10, 12, 7, 0.34);
 }
 
 /* ===== Layout ===== */
