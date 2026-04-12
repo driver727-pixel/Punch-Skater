@@ -83,7 +83,7 @@ export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {
       {/* Ozzycred deck worth */}
       <div className="deck-stats-ozzies">
         <span className="deck-stats-ozzies-label">DECK WORTH</span>
-        <span className="deck-stats-ozzies-value" aria-label={`Deck worth ${deckWorth} Ozzies`}>{deckWorth} Ozzies</span>
+        <span className="deck-stats-ozzies-value" aria-label={`Deck worth ${deckWorth.toFixed(2)} Ozzies`}>${deckWorth.toFixed(2)} Ozzies</span>
       </div>
     </div>
   );

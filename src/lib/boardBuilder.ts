@@ -5,7 +5,7 @@
  * The board acts as a "Weapon / Vehicle" loadout attached to the character.
  *
  * Categories:
- *   1. Board Type  — Street · AT · Mountain · Surf · Slider
+ *   1. Board Type  — Street · AT · Mountain · Surf
  *   2. Drivetrain  — Belt · Hub · Gear · AWD
  *   3. Wheels      — Urethane · Pneumatic · Rubber
  *   4. Battery     — SlimStealth · DoubleStack · TopPeli
@@ -13,12 +13,14 @@
 
 export type BoardType = "Street" | "AT" | "Mountain" | "Surf" | "Slider";
 export type Drivetrain = "Belt" | "Hub" | "Gear" | "AWD";
+export type MotorType = "Micro" | "Standard" | "Torque" | "Outrunner";
 export type WheelType = "Urethane" | "Pneumatic" | "Rubber";
 export type BatteryType = "SlimStealth" | "DoubleStack" | "TopPeli";
 
 export interface BoardConfig {
   boardType: BoardType;
   drivetrain: Drivetrain;
+  motor: MotorType;
   wheels: WheelType;
   battery: BatteryType;
 }
@@ -71,14 +73,8 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     description: "Spring-loaded trucks simulate the pump of a wave. Smooth roads become infinite barrels.",
     statBonuses: { stealth: 2, rep: 1 },
   },
-  {
-    value: "Slider",
-    label: "Slider",
-    icon: "🎯",
-    tagline: "Precision over power",
-    description: "Short stiff deck optimized for technical footwork, gaps, and micro-adjustments under pressure.",
-    statBonuses: { tech: 2, stealth: 1 },
-  },
+  // NOTE: Slider is not yet publicly available — omitted from this array intentionally.
+  // Add it back here when ready to reveal.
 ];
 
 // ── Drivetrain options ─────────────────────────────────────────────────────────
@@ -115,6 +111,59 @@ export const DRIVETRAIN_OPTIONS: BoardOption<Drivetrain>[] = [
     tagline: "All four pushing",
     description: "Four-wheel drive obliterates loose terrain and wet surfaces. Heavy, but nothing stops it.",
     statBonuses: { grit: 2, speed: 1 },
+  },
+];
+
+// ── Motor options ──────────────────────────────────────────────────────────────
+
+export interface MotorOption {
+  value: MotorType;
+  label: string;
+  icon: string;
+  tagline: string;
+  description: string;
+  /** Acceleration rating 1–10. */
+  acceleration: number;
+  /** Additive stat bonuses applied when this option is chosen. */
+  statBonuses: Partial<Record<BoardStatKey, number>>;
+}
+
+export const MOTOR_OPTIONS: MotorOption[] = [
+  {
+    value: "Micro",
+    label: "Micro 5055",
+    icon: "🔌",
+    tagline: "Lightweight starter",
+    description: "Small 5055-class motor. Quiet, efficient, and easy to replace. Best for lightweight commuter setups.",
+    acceleration: 3,
+    statBonuses: { stealth: 1, tech: 1 },
+  },
+  {
+    value: "Standard",
+    label: "Standard 6354",
+    icon: "⚡",
+    tagline: "Balanced power",
+    description: "Mid-range 6354-class motor delivers reliable acceleration for everyday runs and hill climbs.",
+    acceleration: 5,
+    statBonuses: { speed: 1, grit: 1 },
+  },
+  {
+    value: "Torque",
+    label: "Torque 6374",
+    icon: "💪",
+    tagline: "Maximum pull",
+    description: "Heavy 6374-class motor built for instant torque. Launches hard off the line and eats steep grades.",
+    acceleration: 8,
+    statBonuses: { grit: 2, rep: 1 },
+  },
+  {
+    value: "Outrunner",
+    label: "Outrunner 6396",
+    icon: "🚀",
+    tagline: "Race-grade power",
+    description: "Oversized 6396-class outrunner motor. Maximum acceleration for riders who need to disappear fast.",
+    acceleration: 10,
+    statBonuses: { speed: 2, rep: 1 },
   },
 ];
 
@@ -206,7 +255,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
  */
 export interface BoardComponentModel {
   /** Top-level category label shown in the Asset Generator UI. */
-  category: "Deck" | "Wheel" | "Drivetrain" | "Battery" | "Truck";
+  category: "Deck" | "Wheel" | "Drivetrain" | "Motor" | "Battery" | "Truck";
   /** Human-readable product name. */
   name: string;
   /** Detailed visual description fed to the fal.ai prompt. */
@@ -329,6 +378,44 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
     acceleration: 5,
   },
 
+  // ── Motors ──────────────────────────────────────────────────────────────────
+  {
+    category: "Motor",
+    name: "Micro 5055",
+    description:
+      "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. A small 5055-class brushless outrunner motor for electric skateboards, compact cylindrical form, exposed stator windings, 8mm shaft, lightweight anodized aluminum housing.",
+    seedKey: "motor-micro-5055",
+    icon: "🔌",
+    acceleration: 3,
+  },
+  {
+    category: "Motor",
+    name: "Standard 6354",
+    description:
+      "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. A mid-range 6354-class brushless motor for electric skateboards, black anodized cylindrical body, visible sensor wires, balanced size for commuter boards.",
+    seedKey: "motor-standard-6354",
+    icon: "⚡",
+    acceleration: 5,
+  },
+  {
+    category: "Motor",
+    name: "Torque 6374",
+    description:
+      "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. A large 6374-class high-torque brushless motor, chunky cylindrical housing, heavy gauge phase wires, brass bullet connectors, industrial finish.",
+    seedKey: "motor-torque-6374",
+    icon: "💪",
+    acceleration: 8,
+  },
+  {
+    category: "Motor",
+    name: "Outrunner 6396",
+    description:
+      "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. An oversized 6396-class outrunner brushless motor, massive cylindrical housing with cooling fins, thick phase wires, race-grade engineering.",
+    seedKey: "motor-outrunner-6396",
+    icon: "🚀",
+    acceleration: 10,
+  },
+
   // ── Trucks ─────────────────────────────────────────────────────────────────
   {
     category: "Truck",
@@ -405,6 +492,14 @@ const BATTERY_SEED: Record<BatteryType, string | null> = {
   TopPeli:     "battery-top-mounted-peli-case",
 };
 
+/** Maps each MotorType value to the seedKey of its representative asset. */
+const MOTOR_SEED: Record<MotorType, string | null> = {
+  Micro:     "motor-micro-5055",
+  Standard:  "motor-standard-6354",
+  Torque:    "motor-torque-6374",
+  Outrunner: "motor-outrunner-6396",
+};
+
 /**
  * Returns the public asset URLs for all four board layers based on the active
  * `BoardConfig`. Assets live at `public/assets/boards/<seedKey>.png`.
@@ -413,12 +508,14 @@ const BATTERY_SEED: Record<BatteryType, string | null> = {
 export function getBoardAssetUrls(config: BoardConfig): {
   deckUrl: string | null;
   drivetrainUrl: string | null;
+  motorUrl: string | null;
   wheelsUrl: string | null;
   batteryUrl: string | null;
   batteryIsTopMounted: boolean;
 } {
   const deckSeed    = BOARD_TYPE_DECK_SEED[config.boardType];
   const driveSeed   = DRIVETRAIN_SEED[config.drivetrain];
+  const motorSeed   = MOTOR_SEED[config.motor];
   const wheelSeed   = WHEEL_SEED[config.wheels];
   const batterySeed = BATTERY_SEED[config.battery];
   const batteryOpt  = BATTERY_OPTIONS.find((o) => o.value === config.battery);
@@ -426,6 +523,7 @@ export function getBoardAssetUrls(config: BoardConfig): {
   return {
     deckUrl:             deckSeed    ? `/assets/boards/${deckSeed}.png`    : null,
     drivetrainUrl:       driveSeed   ? `/assets/boards/${driveSeed}.png`   : null,
+    motorUrl:            motorSeed   ? `/assets/boards/${motorSeed}.png`   : null,
     wheelsUrl:           wheelSeed   ? `/assets/boards/${wheelSeed}.png`   : null,
     batteryUrl:          batterySeed ? `/assets/boards/${batterySeed}.png` : null,
     batteryIsTopMounted: batteryOpt?.isTopMounted ?? false,
@@ -441,12 +539,14 @@ export function getBoardAssetUrls(config: BoardConfig): {
  * The user uploads real product photos into these folders:
  *   deck/       — one PNG per BoardType   (e.g. Street.png, AT.png)
  *   drivetrain/ — one PNG per Drivetrain  (e.g. Belt.png, Hub.png)
+ *   motor/      — one PNG per MotorType   (e.g. Standard.png, Torque.png)
  *   wheels/     — one PNG per WheelType   (e.g. Urethane.png, Pneumatic.png)
  *   battery/    — one PNG per BatteryType (e.g. SlimStealth.png, DoubleStack.png)
  */
 export interface BoardComponentImageUrls {
   deckUrl: string;
   drivetrainUrl: string;
+  motorUrl: string;
   wheelsUrl: string;
   batteryUrl: string;
 }
@@ -455,6 +555,7 @@ export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentI
   return {
     deckUrl:       `/assets/boards/deck/${config.boardType}.png`,
     drivetrainUrl: `/assets/boards/drivetrain/${config.drivetrain}.png`,
+    motorUrl:      `/assets/boards/motor/${config.motor}.png`,
     wheelsUrl:     `/assets/boards/wheels/${config.wheels}.png`,
     batteryUrl:    `/assets/boards/battery/${config.battery}.png`,
   };
@@ -470,11 +571,13 @@ export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentI
 export function buildBoardImagePrompt(config: BoardConfig): string {
   const deck  = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
   const drive = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
+  const motor = MOTOR_OPTIONS.find((o) => o.value === config.motor);
   const wheel = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
   const batt  = BATTERY_OPTIONS.find((o) => o.value === config.battery);
 
   const deckDesc  = deck?.description  ?? config.boardType;
   const driveDesc = drive?.description ?? config.drivetrain;
+  const motorDesc = motor?.description ?? config.motor;
   const wheelDesc = wheel?.description ?? config.wheels;
   const battDesc  = batt?.description  ?? config.battery;
 
@@ -483,6 +586,7 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
     `DIY electric skateboard on a clean white studio background. ` +
     `Deck: ${deckDesc} ` +
     `Drivetrain: ${driveDesc} ` +
+    `Motor: ${motorDesc} ` +
     `Wheels: ${wheelDesc} ` +
     `Battery: ${battDesc} ` +
     `Art style of gouache painting, dramatic studio lighting, sharp detail, ` +
@@ -492,17 +596,18 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Returns the total additive stat bonuses across all four board selections. */
+/** Returns the total additive stat bonuses across all five board selections. */
 export function getBoardStatBonuses(
   config: BoardConfig,
 ): Partial<Record<BoardStatKey, number>> {
   const totals: Partial<Record<BoardStatKey, number>> = {};
   const type    = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
   const drive   = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
+  const motor   = MOTOR_OPTIONS.find((o) => o.value === config.motor);
   const wheel   = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
   const battery = BATTERY_OPTIONS.find((o) => o.value === config.battery);
 
-  for (const option of [type, drive, wheel, battery]) {
+  for (const option of [type, drive, motor, wheel, battery]) {
     if (!option) continue;
     for (const [stat, bonus] of Object.entries(option.statBonuses) as [BoardStatKey, number][]) {
       totals[stat] = (totals[stat] ?? 0) + bonus;
@@ -515,9 +620,10 @@ export function getBoardStatBonuses(
 export function getBoardSummary(config: BoardConfig): string {
   const type    = BOARD_TYPE_OPTIONS.find((o) => o.value === config.boardType);
   const drive   = DRIVETRAIN_OPTIONS.find((o) => o.value === config.drivetrain);
+  const motor   = MOTOR_OPTIONS.find((o) => o.value === config.motor);
   const wheel   = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
   const battery = BATTERY_OPTIONS.find((o) => o.value === config.battery);
-  return [type?.icon, config.boardType, "·", drive?.label, "·", wheel?.label, "Wheels", "·", battery?.label]
+  return [type?.icon, config.boardType, "·", drive?.label, "·", motor?.label, "·", wheel?.label, "Wheels", "·", battery?.label]
     .filter(Boolean)
     .join(" ");
 }
@@ -526,6 +632,7 @@ export function getBoardSummary(config: BoardConfig): string {
 export const DEFAULT_BOARD_CONFIG: BoardConfig = {
   boardType: "Street",
   drivetrain: "Belt",
+  motor: "Standard",
   wheels: "Urethane",
   battery: "SlimStealth",
 };
@@ -546,9 +653,9 @@ const DEFAULT_RANGE    = 5;
 export interface BoardLoadout {
   /** Visual style of the selected deck (e.g. 'Aggressive', 'Sleek', 'Retro'). */
   style: string;
-  /** Drivetrain top-speed rating (1–10). */
+  /** Top-speed rating determined by the drivetrain (1–10). */
   speed: number;
-  /** Drivetrain acceleration rating (1–10). */
+  /** Acceleration rating determined by the motor (1–10). */
   acceleration: number;
   /** Ideal terrain district from the selected wheel. */
   district: string;
@@ -557,26 +664,148 @@ export interface BoardLoadout {
 }
 
 /**
- * Derives the combined `BoardLoadout` stats from the four chosen components.
- * Values are sourced from the `BOARD_COMPONENT_CATALOG` entries that correspond
- * to the active `BoardConfig` selections.
+ * Derives the combined `BoardLoadout` stats from the five chosen components.
+ *
+ * Stat mapping:
+ *   Top Speed    ← Drivetrain
+ *   Acceleration ← Motor
+ *   Range        ← Battery
+ *   District     ← Wheels
+ *   Style        ← Deck
  */
 export function calculateBoardStats(config: BoardConfig): BoardLoadout {
   const deckSeed    = BOARD_TYPE_DECK_SEED[config.boardType];
   const driveSeed   = DRIVETRAIN_SEED[config.drivetrain];
+  const motorSeed   = MOTOR_SEED[config.motor];
   const wheelSeed   = WHEEL_SEED[config.wheels];
   const batterySeed = BATTERY_SEED[config.battery];
 
   const deckModel    = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === deckSeed);
   const driveModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === driveSeed);
+  const motorModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === motorSeed);
   const wheelModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === wheelSeed);
   const batteryModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === batterySeed);
 
   return {
     style:        deckModel?.style         ?? DEFAULT_STYLE,
     speed:        driveModel?.speed        ?? DEFAULT_SPEED,
-    acceleration: driveModel?.acceleration ?? DEFAULT_ACCEL,
+    acceleration: motorModel?.acceleration ?? DEFAULT_ACCEL,
     district:     wheelModel?.district     ?? DEFAULT_DISTRICT,
     range:        batteryModel?.range      ?? DEFAULT_RANGE,
+  };
+}
+
+// ── Compatibility rules ──────────────────────────────────────────────────────
+//
+// Deck-specific restrictions on which components can be paired:
+//   Street  (Carbon Fiber) — any wheels, but NOT top mount battery (TopPeli)
+//   Mountain               — only Pneumatic wheels, MUST use top mount battery (TopPeli)
+//   Surf                   — no top mount battery, no Pneumatic wheels, no Belt drive
+//   AT (Bamboo)            — no top mount battery, no Belt drive
+//   Slider                 — no restrictions
+
+export interface CompatibilityError {
+  component: "drivetrain" | "motor" | "wheels" | "battery";
+  message: string;
+}
+
+/** Returns a list of compatibility errors for the given board config. An empty array means the config is valid. */
+export function validateBoardCompatibility(config: BoardConfig): CompatibilityError[] {
+  const errors: CompatibilityError[] = [];
+  const batteryOpt = BATTERY_OPTIONS.find((o) => o.value === config.battery);
+  const isTopMount = batteryOpt?.isTopMounted ?? false;
+
+  switch (config.boardType) {
+    case "Street":
+      // Carbon Fiber deck can use any wheels, but NOT top mount battery
+      if (isTopMount) {
+        errors.push({ component: "battery", message: "Carbon Fiber deck cannot use a top-mounted battery." });
+      }
+      break;
+    case "Mountain":
+      // Mountain board cannot use Poly (Urethane) or Cloud (Rubber) wheels; must use Pneumatic
+      if (config.wheels === "Urethane") {
+        errors.push({ component: "wheels", message: "Mountain board cannot use Poly (Urethane) wheels." });
+      }
+      if (config.wheels === "Rubber") {
+        errors.push({ component: "wheels", message: "Mountain board cannot use Cloud (Rubber) wheels." });
+      }
+      // Mountain board MUST use top mount battery
+      if (!isTopMount) {
+        errors.push({ component: "battery", message: "Mountain board must use a top-mounted battery." });
+      }
+      break;
+    case "Surf":
+      // Surf cannot use top mount battery
+      if (isTopMount) {
+        errors.push({ component: "battery", message: "Surf skateboard cannot use a top-mounted battery." });
+      }
+      // Surf cannot use Pneumatic wheels
+      if (config.wheels === "Pneumatic") {
+        errors.push({ component: "wheels", message: "Surf skateboard cannot use Pneumatic wheels." });
+      }
+      // Surf cannot use Belt drive
+      if (config.drivetrain === "Belt") {
+        errors.push({ component: "drivetrain", message: "Surf skateboard cannot use Belt drive." });
+      }
+      break;
+    case "AT":
+      // Bamboo deck cannot use top mounted battery
+      if (isTopMount) {
+        errors.push({ component: "battery", message: "Bamboo deck cannot use a top-mounted battery." });
+      }
+      // Bamboo deck cannot use Belt drive
+      if (config.drivetrain === "Belt") {
+        errors.push({ component: "drivetrain", message: "Bamboo deck cannot use Belt drive." });
+      }
+      break;
+    // Slider — no restrictions
+  }
+
+  return errors;
+}
+
+/** Returns the set of allowed values for each component given the current board type. */
+export function getAllowedComponents(boardType: BoardType): {
+  drivetrains: Drivetrain[];
+  motors: MotorType[];
+  wheels: WheelType[];
+  batteries: BatteryType[];
+} {
+  const allDrivetrains: Drivetrain[] = DRIVETRAIN_OPTIONS.map((o) => o.value);
+  const allMotors: MotorType[]       = MOTOR_OPTIONS.map((o) => o.value);
+  const allWheels: WheelType[]       = WHEEL_OPTIONS.map((o) => o.value);
+  const allBatteries: BatteryType[]  = BATTERY_OPTIONS.map((o) => o.value);
+  const nonTopMountBatteries         = BATTERY_OPTIONS.filter((o) => !o.isTopMounted).map((o) => o.value);
+  const topMountBatteries            = BATTERY_OPTIONS.filter((o) => o.isTopMounted).map((o) => o.value);
+  const noBelt                       = allDrivetrains.filter((d) => d !== "Belt");
+
+  switch (boardType) {
+    case "Street":
+      return { drivetrains: allDrivetrains, motors: allMotors, wheels: allWheels, batteries: nonTopMountBatteries };
+    case "Mountain":
+      return { drivetrains: allDrivetrains, motors: allMotors, wheels: ["Pneumatic"], batteries: topMountBatteries };
+    case "Surf":
+      return { drivetrains: noBelt, motors: allMotors, wheels: allWheels.filter((w) => w !== "Pneumatic"), batteries: nonTopMountBatteries };
+    case "AT":
+      return { drivetrains: noBelt, motors: allMotors, wheels: allWheels, batteries: nonTopMountBatteries };
+    case "Slider":
+    default:
+      return { drivetrains: allDrivetrains, motors: allMotors, wheels: allWheels, batteries: allBatteries };
+  }
+}
+
+/**
+ * Auto-corrects a board config to be compatible with the selected deck type.
+ * When a component falls outside the allowed set, it snaps to the first allowed value.
+ */
+export function enforceCompatibility(config: BoardConfig): BoardConfig {
+  const allowed = getAllowedComponents(config.boardType);
+  return {
+    boardType:  config.boardType,
+    drivetrain: allowed.drivetrains.includes(config.drivetrain) ? config.drivetrain : allowed.drivetrains[0],
+    motor:      allowed.motors.includes(config.motor)           ? config.motor      : allowed.motors[0],
+    wheels:     allowed.wheels.includes(config.wheels)           ? config.wheels     : allowed.wheels[0],
+    battery:    allowed.batteries.includes(config.battery)       ? config.battery    : allowed.batteries[0],
   };
 }

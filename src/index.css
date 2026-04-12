@@ -5106,6 +5106,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   animation: locked-badge-in 0.3s ease-out both;
 }
 
+/* Compatibility warning messages */
+.board-builder__compat-errors {
+  padding: 8px 12px;
+  margin: 4px 0;
+}
+.board-builder__compat-error {
+  font-size: 11px;
+  color: #ff6644;
+  text-shadow: 0 0 6px rgba(255, 102, 68, 0.4);
+  margin: 2px 0;
+}
+
 @keyframes locked-badge-in {
   from { opacity: 0; transform: translateX(-6px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -5746,6 +5758,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .conveyor__item-icon   { font-size: 18px; line-height: 1; }
+
+/* Disabled (incompatible) item */
+.conveyor__item--disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
 .conveyor__item-name   { font-size: 11px; font-weight: bold; color: var(--text); letter-spacing: 0.5px; }
 .conveyor__item-tagline {
   font-size: 9px;

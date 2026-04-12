@@ -1,7 +1,7 @@
 /**
  * types.ts
  */
-export type { BoardType, Drivetrain, WheelType, BatteryType, BoardConfig, BoardLoadout } from "./boardBuilder";
+export type { BoardType, Drivetrain, MotorType, WheelType, BatteryType, BoardConfig, BoardLoadout } from "./boardBuilder";
 export type Faction =
   | "United Corporations of America (UCA)"
   | "Qu111s (Quills)"
@@ -120,6 +120,8 @@ export interface CardPayload {
   };
   flavorText: string;
   tags: string[];
+  /** Random Ozzycred value ($1.00–$100.00) assigned when the card is minted. */
+  ozzies?: number;
   /** Electric skateboard loadout attached to this character. */
   board?: import("./boardBuilder").BoardConfig;
   /** Computed board stats derived from the four chosen components. */

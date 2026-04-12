@@ -189,6 +189,9 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
   const serialSuffix = Math.abs(seedFromString(characterSeed)) % 10000;
   const serialNumber = `PS-${String(serialSuffix).padStart(4, "0")}`;
 
+  // ── Ozzycred (random currency value $1.00 – $100.00) ────────────────────────
+  const ozzies = Math.round((charRng.range(100, 10000)) ) / 100;
+
   // ── Card ID (deterministic per full prompt set) ────────────────────────────
   const idNum = Math.abs(seedFromString(masterSeed)) % 1_000_000;
   const id    = `forge-${String(idNum).padStart(6, "0")}`;
@@ -220,6 +223,7 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
       accentColor:      prompts.accentColor,
       storagePackStyle,
     },
+    ozzies,
     flavorText: `A ${prompts.rarity} ${prompts.archetype} running packages through ${prompts.district}.`,
     tags: [prompts.archetype, prompts.style, prompts.rarity, prompts.district],
     createdAt: new Date().toISOString(),

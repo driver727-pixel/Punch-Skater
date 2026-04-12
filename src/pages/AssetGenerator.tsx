@@ -49,6 +49,14 @@ const ASSET_COMPONENT_DESCRIPTIONS: Record<string, string> = {
     "A massive, thick, dual-layered (double-stack) block-style battery enclosure for high range. Rugged aluminum heat-sink fins visible on the surface.",
   "battery-top-mounted-peli-case":
     "A specific, yellow 'Pelican' case style (Peli-Case) top-mounted battery enclosure. Heavy-duty construction, rugged latches, and handle visible.",
+  "motor-micro-5055":
+    "A small 5055-class brushless outrunner motor for electric skateboards. Compact cylindrical form, exposed stator windings, 8mm shaft, lightweight anodized aluminum housing.",
+  "motor-standard-6354":
+    "A mid-range 6354-class brushless motor for electric skateboards. Black anodized cylindrical body, visible sensor wires, balanced size for commuter boards.",
+  "motor-torque-6374":
+    "A large 6374-class high-torque brushless motor. Chunky cylindrical housing, heavy gauge phase wires, brass bullet connectors, industrial finish.",
+  "motor-outrunner-6396":
+    "An oversized 6396-class outrunner brushless motor with cooling fins. Massive cylindrical housing, thick phase wires, race-grade engineering.",
 };
 
 function buildAssetPrompt(seedKey: string, fallbackDescription: string): string {

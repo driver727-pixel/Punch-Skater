@@ -7,7 +7,7 @@ import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
-import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
@@ -499,6 +499,13 @@ export function CardDisplay({
                 label="DRIVE"
                 value={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.label ?? card.board.drivetrain}
               />
+              {card.board.motor && (
+                <BoardRow
+                  icon={MOTOR_OPTIONS.find((o) => o.value === card.board!.motor)?.icon ?? "⚡"}
+                  label="MOTOR"
+                  value={MOTOR_OPTIONS.find((o) => o.value === card.board!.motor)?.label ?? card.board.motor}
+                />
+              )}
               <BoardRow
                 icon={WHEEL_OPTIONS.find((o) => o.value === card.board!.wheels)?.icon ?? "⚫"}
                 label="WHEELS"
@@ -524,7 +531,7 @@ export function CardDisplay({
           <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
           <div className="card-worth">
             <span className="card-worth-label">Worth</span>
-            <span className="card-worth-value" style={{ color: accent }}>{computeCardWorth(card)} Ozzies</span>
+            <span className="card-worth-value" style={{ color: accent }}>${computeCardWorth(card).toFixed(2)} Ozzies</span>
           </div>
           <div className="stat-active">
             <span className="stat-label" title="Active ability">Active</span>

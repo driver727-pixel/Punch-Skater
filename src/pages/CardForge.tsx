@@ -410,8 +410,8 @@ export function CardForge() {
     // Board image layer — generate a single skateboard image from the combined
     // component descriptions.  The result is stored as boardImageUrl on the card.
     const boardPrompt = buildBoardImagePrompt(boardConfig);
-    const boardCacheKey = `board-img::${boardConfig.boardType}::${boardConfig.drivetrain}::${boardConfig.wheels}::${boardConfig.battery}`;
-    const boardSeed = `${boardConfig.boardType}-${boardConfig.drivetrain}-${boardConfig.wheels}-${boardConfig.battery}`;
+    const boardCacheKey = `board-img::${boardConfig.boardType}::${boardConfig.drivetrain}::${boardConfig.motor}::${boardConfig.wheels}::${boardConfig.battery}`;
+    const boardSeed = `${boardConfig.boardType}-${boardConfig.drivetrain}-${boardConfig.motor}-${boardConfig.wheels}-${boardConfig.battery}`;
 
     (async () => {
       try {

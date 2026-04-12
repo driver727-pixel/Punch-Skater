@@ -1,12 +1,13 @@
 /**
  * BoardPreviewGrid.tsx
  *
- * Displays a 2×2 grid of real product photos for the four selected board
- * components (Deck, Drivetrain, Wheels, Battery).
+ * Displays a grid of real product photos for the five selected board
+ * components (Deck, Drivetrain, Motor, Wheels, Battery).
  *
  * Images are loaded from per-category folders:
  *   /assets/boards/deck/<BoardType>.png
  *   /assets/boards/drivetrain/<Drivetrain>.png
+ *   /assets/boards/motor/<MotorType>.png
  *   /assets/boards/wheels/<WheelType>.png
  *   /assets/boards/battery/<BatteryType>.png
  *
@@ -20,7 +21,7 @@ import type { BoardComponentImageUrls } from "../lib/boardBuilder";
 interface BoardPreviewGridProps {
   urls: BoardComponentImageUrls;
   /** Labels shown on placeholder tiles when an image is missing. */
-  labels?: { deck?: string; drivetrain?: string; wheels?: string; battery?: string };
+  labels?: { deck?: string; drivetrain?: string; motor?: string; wheels?: string; battery?: string };
   /** Extra CSS class applied to the outer container. */
   className?: string;
 }
@@ -73,6 +74,14 @@ export function BoardPreviewGrid({ urls, labels, className }: BoardPreviewGridPr
           alt={labels?.drivetrain ?? "Drivetrain"}
           label={labels?.drivetrain ?? "Drivetrain"}
           icon="⚙️"
+        />
+      </div>
+      <div className="board-preview-grid__cell">
+        <Tile
+          src={urls.motorUrl}
+          alt={labels?.motor ?? "Motor"}
+          label={labels?.motor ?? "Motor"}
+          icon="⚡"
         />
       </div>
       <div className="board-preview-grid__cell">

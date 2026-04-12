@@ -1,25 +1,33 @@
 /**
  * BoardBuilder.tsx
  *
- * Assembly-line board loadout builder powered by four stacked ConveyorCarousel
- * belts:  Decks (top) → Drivetrains → Wheels → Batteries (bottom).
+ * Assembly-line board loadout builder powered by five stacked ConveyorCarousel
+ * belts:  Decks (top) → Drivetrains → Motors → Wheels → Batteries (bottom).
  *
  * The live BoardPreviewGrid shows real product photos for each selected
  * component from per-category folders under public/assets/boards/.
  * A PowerSwitchButton at the bottom triggers a satisfying animation sequence before
  * firing the onSave callback to commit the board config and loadout stats to the
  * character state.
+ *
+ * Compatibility rules are enforced: when the deck type changes, incompatible
+ * selections are automatically snapped to the first allowed value, and
+ * disallowed carousel items are marked as disabled.
  */
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { BoardConfig, BoardLoadout } from "../lib/boardBuilder";
 import {
   BOARD_TYPE_OPTIONS,
   DRIVETRAIN_OPTIONS,
+  MOTOR_OPTIONS,
   WHEEL_OPTIONS,
   BATTERY_OPTIONS,
   DEFAULT_BOARD_CONFIG,
   calculateBoardStats,
   getBoardComponentImageUrls,
+  enforceCompatibility,
+  getAllowedComponents,
+  validateBoardCompatibility,
 } from "../lib/boardBuilder";
 import { BoardPreviewGrid } from "./BoardPreviewGrid";
 import { ConveyorCarousel } from "./ConveyorCarousel";
@@ -42,6 +50,13 @@ const DECK_ITEMS: CarouselItem[] = BOARD_TYPE_OPTIONS.map((o) => ({
 }));
 
 const DRIVETRAIN_ITEMS: CarouselItem[] = DRIVETRAIN_OPTIONS.map((o) => ({
+  value: o.value,
+  label: o.label,
+  icon: o.icon,
+  tagline: o.tagline,
+}));
+
+const MOTOR_ITEMS: CarouselItem[] = MOTOR_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
@@ -72,6 +87,10 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
   // Clear all pending timers on unmount to avoid setState on an unmounted component
   useEffect(() => () => { timerRefs.current.forEach(clearTimeout); }, []);
 
+  // Derive allowed component sets and compatibility errors from the current deck type
+  const allowed = useMemo(() => getAllowedComponents(value.boardType), [value.boardType]);
+  const compatErrors = useMemo(() => validateBoardCompatibility(value), [value]);
+
   /**
    * Full lock-in animation sequence:
    *   t=0    – PowerSwitchButton depresses (handled inside the component)
@@ -99,19 +118,31 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
     );
   }, [value, onSave]);
 
-  /** Reset the locked flag and propagate a carousel selection change. */
+  /** Reset the locked flag, enforce compatibility, and propagate a carousel selection change. */
   const handleCarouselChange = useCallback((next: BoardConfig) => {
     setLocked(false);
-    onChange(next);
+    onChange(enforceCompatibility(next));
   }, [onChange]);
 
   const componentUrls = getBoardComponentImageUrls(value);
   const previewLabels = {
     deck:       BOARD_TYPE_OPTIONS.find((o) => o.value === value.boardType)?.label ?? value.boardType,
     drivetrain: DRIVETRAIN_OPTIONS.find((o) => o.value === value.drivetrain)?.label ?? value.drivetrain,
+    motor:      MOTOR_OPTIONS.find((o) => o.value === value.motor)?.label ?? value.motor,
     wheels:     WHEEL_OPTIONS.find((o) => o.value === value.wheels)?.label ?? value.wheels,
     battery:    BATTERY_OPTIONS.find((o) => o.value === value.battery)?.label ?? value.battery,
   };
+
+  // Mark disallowed carousel items so the UI can render them as disabled
+  const drivetrainSet = new Set(allowed.drivetrains);
+  const motorSet      = new Set(allowed.motors);
+  const wheelSet      = new Set(allowed.wheels);
+  const batterySet    = new Set(allowed.batteries);
+
+  const filteredDrivetrainItems = DRIVETRAIN_ITEMS.map((i) => ({ ...i, disabled: !drivetrainSet.has(i.value as typeof value.drivetrain) }));
+  const filteredMotorItems      = MOTOR_ITEMS.map((i) => ({ ...i, disabled: !motorSet.has(i.value as typeof value.motor) }));
+  const filteredWheelItems      = WHEEL_ITEMS.map((i) => ({ ...i, disabled: !wheelSet.has(i.value as typeof value.wheels) }));
+  const filteredBatteryItems    = BATTERY_ITEMS.map((i) => ({ ...i, disabled: !batterySet.has(i.value as typeof value.battery) }));
 
   return (
     <div className={`board-builder${shaking ? " board-builder--shake" : ""}`}>
@@ -130,33 +161,50 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
         onSelect={(v) => handleCarouselChange({ ...value, boardType: v as typeof value.boardType })}
       />
 
-      {/* Belt 2 — Drivetrains */}
+      {/* Belt 2 — Drivetrains (determines Top Speed) */}
       <ConveyorCarousel
         label="Drivetrains"
-        items={DRIVETRAIN_ITEMS}
+        items={filteredDrivetrainItems}
         selected={value.drivetrain}
         onSelect={(v) => handleCarouselChange({ ...value, drivetrain: v as typeof value.drivetrain })}
       />
 
-      {/* Belt 3 — Wheels */}
+      {/* Belt 3 — Motors (determines Acceleration) */}
+      <ConveyorCarousel
+        label="Motors"
+        items={filteredMotorItems}
+        selected={value.motor}
+        onSelect={(v) => handleCarouselChange({ ...value, motor: v as typeof value.motor })}
+      />
+
+      {/* Belt 4 — Wheels (determines District access) */}
       <ConveyorCarousel
         label="Wheels"
-        items={WHEEL_ITEMS}
+        items={filteredWheelItems}
         selected={value.wheels}
         onSelect={(v) => handleCarouselChange({ ...value, wheels: v as typeof value.wheels })}
       />
 
-      {/* Belt 4 — Batteries */}
+      {/* Belt 5 — Batteries (determines Range) */}
       <ConveyorCarousel
         label="Batteries"
-        items={BATTERY_ITEMS}
+        items={filteredBatteryItems}
         selected={value.battery}
         onSelect={(v) => handleCarouselChange({ ...value, battery: v as typeof value.battery })}
       />
 
+      {/* Compatibility warnings */}
+      {compatErrors.length > 0 && (
+        <div className="board-builder__compat-errors" role="alert">
+          {compatErrors.map((err, i) => (
+            <p key={i} className="board-builder__compat-error">⚠️ {err.message}</p>
+          ))}
+        </div>
+      )}
+
       {/* Finalization — PowerSwitchButton */}
       <div className="board-builder__lock-row">
-        <PowerSwitchButton onAnimate={handleAnimate} disabled={locked} />
+        <PowerSwitchButton onAnimate={handleAnimate} disabled={locked || compatErrors.length > 0} />
         {locked && (
           <span className="board-builder__locked-badge" aria-live="polite">
             ✔ LOCKED IN

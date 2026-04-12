@@ -44,14 +44,23 @@ function getSynergyMultiplier(cards: CardPayload[]): number {
 
 // ── Ozzycred (card & deck worth) ─────────────────────────────────────────────
 
-/** Compute the Ozzycred worth of a single card (sum of all five stats). */
+/**
+ * Return the Ozzycred worth of a single card.
+ * New cards carry an explicit `ozzies` currency field.  Legacy cards that
+ * pre-date the field fall back to the old "sum of five stats" heuristic so
+ * existing collections aren't zeroed out.
+ */
 export function computeCardWorth(card: CardPayload): number {
+  if (typeof card.ozzies === "number" && card.ozzies > 0) {
+    return card.ozzies;
+  }
+  // Legacy fallback: sum of stats
   return STAT_KEYS.reduce((sum, key) => sum + (card.stats[key] ?? 0), 0);
 }
 
 /** Compute the total Ozzycred worth of a deck (sum of every card's worth). */
 export function computeDeckWorth(cards: CardPayload[]): number {
-  return cards.reduce((sum, card) => sum + computeCardWorth(card), 0);
+  return Math.round(cards.reduce((sum, card) => sum + computeCardWorth(card), 0) * 100) / 100;
 }
 
 /** Sum total speed, stealth, tech, grit, and rep across the whole deck. */

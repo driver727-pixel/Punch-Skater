@@ -93,6 +93,7 @@ async function resolveLayerUrl(
 export interface BoardLayerUrls {
   deckUrl: string | null;
   drivetrainUrl: string | null;
+  motorUrl: string | null;
   wheelsUrl: string | null;
   batteryUrl: string | null;
   batteryIsTopMounted: boolean;
@@ -114,9 +115,10 @@ export function useBoardLayerUrls(config: BoardConfig): BoardLayerUrls {
   const [urls, setUrls] = useState<{
     deck: string | null;
     drivetrain: string | null;
+    motor: string | null;
     wheels: string | null;
     battery: string | null;
-  }>({ deck: null, drivetrain: null, wheels: null, battery: null });
+  }>({ deck: null, drivetrain: null, motor: null, wheels: null, battery: null });
 
   const [loading, setLoading] = useState(true);
 
@@ -128,7 +130,7 @@ export function useBoardLayerUrls(config: BoardConfig): BoardLayerUrls {
     let cancelled = false;
 
     setLoading(true);
-    setUrls({ deck: null, drivetrain: null, wheels: null, battery: null });
+    setUrls({ deck: null, drivetrain: null, motor: null, wheels: null, battery: null });
 
     const layers: Array<{
       key: keyof typeof urls;
@@ -136,11 +138,12 @@ export function useBoardLayerUrls(config: BoardConfig): BoardLayerUrls {
     }> = [
       { key: "deck",        seedUrl: staticResult.deckUrl },
       { key: "drivetrain",  seedUrl: staticResult.drivetrainUrl },
+      { key: "motor",       seedUrl: staticResult.motorUrl },
       { key: "wheels",      seedUrl: staticResult.wheelsUrl },
       { key: "battery",     seedUrl: staticResult.batteryUrl },
     ];
 
-    // Resolve all four layers concurrently so the composite fills in as each
+    // Resolve all five layers concurrently so the composite fills in as each
     // layer becomes available rather than waiting for the slowest one.
     const promises = layers.map(async ({ key, seedUrl }) => {
       if (!seedUrl) return;
@@ -160,11 +163,12 @@ export function useBoardLayerUrls(config: BoardConfig): BoardLayerUrls {
     });
 
     return () => { cancelled = true; };
-    // Depend on the four individual seed URLs so we re-resolve when the user
+    // Depend on the five individual seed URLs so we re-resolve when the user
     // switches a component but not on every parent render.
   }, [
     staticResult.deckUrl,
     staticResult.drivetrainUrl,
+    staticResult.motorUrl,
     staticResult.wheelsUrl,
     staticResult.batteryUrl,
   ]);
@@ -172,6 +176,7 @@ export function useBoardLayerUrls(config: BoardConfig): BoardLayerUrls {
   return {
     deckUrl:             urls.deck,
     drivetrainUrl:       urls.drivetrain,
+    motorUrl:            urls.motor,
     wheelsUrl:           urls.wheels,
     batteryUrl:          urls.battery,
     batteryIsTopMounted,
