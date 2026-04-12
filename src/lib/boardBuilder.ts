@@ -794,7 +794,7 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       }
       // AT cannot use Micro motor
       if (config.motor === "Micro") {
-        errors.push({ component: "motor", message: "All-Terrain board cannot use the Micro Motor." });
+        errors.push({ component: "motor", message: "All-Terrain board cannot use the Micro 5055 motor." });
       }
       break;
     // Slider — no restrictions
