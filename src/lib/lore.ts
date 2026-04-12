@@ -109,6 +109,7 @@ export const WORLD_LORE = {
 export interface DistrictLoreEntry {
   name: District;
   controlledBy: string;
+  australianAnalogue: string;
   tagline: string;
   description: string;
   atmosphere: string;
@@ -120,15 +121,18 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Airaway",
     controlledBy: "United Corporations of America (UCA)",
+    australianAnalogue: "Blue Mountains sky-city above Greater Western Sydney",
     tagline: "The higher you go, the colder the air. The colder the air, the cleaner the money.",
     description:
-      "The gleaming corporate penthouse suspended above the city's smog layer. Airaway is " +
+      "The gleaming corporate penthouse suspended above the city's smog layer, localized as a " +
+      "sky-city chained to the Blue Mountains ridge above Greater Western Sydney. Airaway is " +
       "home to the UCA consortium — executives, oligarchs, and their families live in " +
-      "glass-and-chrome mansions connected by mag-rail bridges and pressurised walkways. " +
-      "Motorized vehicles are outlawed; the only ground transport is the electric skateboard. " +
-      "Access requires a verified corporate badge, a contractor pass, or the kind of nerve " +
-      "that makes other couriers nervous. Punch Skaters are explicitly outlawed here.",
-    atmosphere: "Polished steel, pressurised walkways, automated maintenance drones, rarefied air.",
+      "glass-and-chrome mansions connected by mag-rail bridges and pressurised walkways that " +
+      "catch the colder mountain air while the basin below chokes. Motorized vehicles are " +
+      "outlawed; the only ground transport is the electric skateboard. Access requires a " +
+      "verified corporate badge, a contractor pass, or the kind of nerve that makes other " +
+      "couriers nervous. Punch Skaters are explicitly outlawed here.",
+    atmosphere: "Blue Mountains cold air, polished steel, pressurised walkways, automated maintenance drones, basin smog below.",
     crews: ["Chrome Blades", "Phantom Riders"],
     flavorTexts: [
       "\"The checkpoints smell like cologne and contempt.\"",
@@ -139,13 +143,16 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "The Roads",
     controlledBy: "Uncontrolled — open courier territory",
+    australianAnalogue: "Nullarbor Plain / Stuart Highway",
     tagline: "The cars left. We moved in. Nobody asked for permission.",
     description:
       "When flying drone transport made ground vehicles obsolete, the UCA simply " +
-      "decommissioned the roads. The cracked asphalt and faded lane markings became the " +
-      "city's unofficial skating highways — wide, fast, and mostly ungoverned. Courier " +
-      "networks run their most visible operations here. Speed is everything on the Roads.",
-    atmosphere: "Cracked asphalt, faded lane markings, open sky, wind-blasted straightaways.",
+      "decommissioned the roads. In the Australian theatre that means the Nullarbor and the " +
+      "Stuart Highway: cracked asphalt, mirage heat, and straightaways that run for " +
+      "thousands of kilometres beyond reliable corporate reach. Courier networks run their " +
+      "most visible operations here. Speed is everything on the Roads, and the crews who " +
+      "survive them treat distance like a weapon.",
+    atmosphere: "Cracked asphalt, faded lane markings, open sky, Nullarbor wind, endless straightaways.",
     crews: ["Road Runners", "Asphalt Angels"],
     flavorTexts: [
       "\"Lane markings are suggestions. The fastest line is yours.\"",
@@ -155,15 +162,18 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Batteryville",
     controlledBy: "HexChain Logistics / Recycler Collectives",
+    australianAnalogue: "Port Kembla steelworks with Pilbara ore lines",
     tagline: "The City runs on our power. We run on spite.",
     description:
       "The city's engine room — power generation plants, refinery complexes, rail yards, " +
-      "and recycler facilities that process the city's waste back into raw materials. " +
-      "Skip 'Skids' Mayhew grew up here, watching his parents leave for The Grid every " +
-      "morning. The air tastes like ozone and machine oil. Rail yard switchways cut " +
-      "across everything. Couriers here specialize in bulk: heavy contraband, stockpiled " +
+      "and recycler facilities that process the city's waste back into raw materials. In " +
+      "Australia it lands between Port Kembla's steel coast and the Pilbara ore network: " +
+      "a logistics belt fed by mining giants and held together with union grit. Skip " +
+      "'Skids' Mayhew grew up here, watching his parents leave for The Grid every morning. " +
+      "The air tastes like ozone and machine oil. Rail yard switchways cut across " +
+      "everything. Couriers here specialize in bulk: heavy contraband, stockpiled " +
       "biologics, industrial quantities of restricted materials. Stamina is everything.",
-    atmosphere: "Industrial, loud, ozone-tinged air, permanent machinery noise, three-dimensional rail scaffolding.",
+    atmosphere: "Industrial, loud, ozone-tinged air, steelworks glare, Pilbara freight lines, three-dimensional rail scaffolding.",
     crews: ["Iron Circuit", "Voltage Saints", "Circuit Breakers"],
     flavorTexts: [
       "\"Grew up here. Still don't know how anyone breathes this air.\"",
@@ -174,16 +184,18 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "The Grid",
     controlledBy: "Cascade Technologies",
+    australianAnalogue: "Canberra surveillance precinct",
     tagline: "Information wants to be free. The Grid decides the price.",
     description:
       "The city's data district — server farm towers humming at sub-audible frequencies, " +
-      "fiber conduit running visible along every wall and ceiling. Skids' parents " +
-      "worked here until they disappeared. The Grid is the most surveilled district in " +
-      "the city; every step is logged by Cascade Technologies' AI monitoring network. " +
-      "Couriers here carry physical chips containing data so sensitive that no digital " +
-      "channel can be trusted. The Static Pack wages a constant war against Cascade's " +
-      "surveillance nodes.",
-    atmosphere: "Sterile, grid-pattern streets, omnipresent sensor arrays, scrolling diagnostic readouts.",
+      "fiber conduit running visible along every wall and ceiling. Localized, it reads as " +
+      "a cybernetic Canberra: sterile federal blocks, planned avenues, and server farms " +
+      "hidden behind policy language. Skids' parents worked here until they disappeared. " +
+      "The Grid is the most surveilled district in the city; every step is logged by " +
+      "Cascade Technologies' AI monitoring network. Couriers here carry physical chips " +
+      "containing data so sensitive that no digital channel can be trusted. The Static " +
+      "Pack wages a constant war against Cascade's surveillance nodes.",
+    atmosphere: "Sterile, grid-pattern streets, omnipresent sensor arrays, federal order, scrolling diagnostic readouts.",
     crews: ["The Static Pack", "Phantom Riders"],
     flavorTexts: [
       "\"His parents worked here until they didn't. Nobody explains what that means.\"",
@@ -194,14 +206,17 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Electropolis",
     controlledBy: "City Security — the Fuzz",
+    australianAnalogue: "Brisbane CBD / Gold Coast surveillance strip",
     tagline: "Move along. Designated transit corridors only.",
     description:
-      "The city's law-and-order showcase — wide boulevards lit by Prism Media Group " +
-      "holo-displays, patrolled by city security known as the Fuzz. Skaters are " +
-      "tolerated only in designated transit corridors; venture off-grid and you're " +
-      "dealing with checkpoint drones and biometric sweeps. Skids and his crew skate " +
-      "here occasionally until the Fuzz pushes them out. It looks clean. It isn't.",
-    atmosphere: "Bright holo-lit streets, heavy security presence, constant surveillance drones.",
+      "The city's law-and-order showcase — the polished corridor that plays like Brisbane " +
+      "CBD bleeding into the Gold Coast's holo-gloss strip. Wide boulevards glow under " +
+      "Prism Media Group displays while city security known as the Fuzz keeps the " +
+      "tourist-friendly frontage pristine. Skaters are tolerated only in designated " +
+      "transit corridors; venture off-grid and you're dealing with checkpoint drones and " +
+      "biometric sweeps. Skids and his crew skate here occasionally until the Fuzz " +
+      "pushes them out. It looks clean. It isn't.",
+    atmosphere: "Bright holo-lit streets, polished coastal high-rises, heavy security presence, constant surveillance drones.",
     crews: ["Chrome Blades", "Neon Ghosts"],
     flavorTexts: [
       "\"The corridors are fine. It's the alleys they don't want you in.\"",
@@ -211,15 +226,18 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Nightshade",
     controlledBy: "Courier crews — no single corp holds it",
+    australianAnalogue: "Melbourne laneways / Fitzroy basement scene",
     tagline: "Nobody owns Nightshade. Nightshade owns you.",
     description:
-      "Also known as the Murk — a specific area of perpetual neon twilight featuring " +
-      "tunnels utilized by tight-knit, territorial skate crews for rapid transit and " +
-      "private meetings. This is where the underground was born. Every courier network " +
-      "in the city traces its roots to a Nightshade back-alley deal. Skids' crew uses " +
-      "the Nightshade tunnels but never goes deep, avoiding the more established skate " +
-      "gangs. The Moonrisers held their rave here — where Skids first got noticed.",
-    atmosphere: "Perpetual neon twilight, narrow alleys, blacklight murals, underground raves, loyal crews.",
+      "Also known as the Murk — a specific area of perpetual neon twilight that lands in " +
+      "the Australian version like Melbourne CBD laneways spilling into Fitzroy basements " +
+      "and hidden bars. Tight-knit, territorial skate crews use its tunnels for rapid " +
+      "transit and private meetings. This is where the underground was born. Every " +
+      "courier network in the city traces its roots to a Nightshade back-alley deal. " +
+      "Skids' crew uses the Nightshade tunnels but never goes deep, avoiding the more " +
+      "established skate gangs. The Moonrisers held their rave here — where Skids first " +
+      "got noticed.",
+    atmosphere: "Perpetual neon twilight, Melbourne-style laneways, blacklight murals, underground raves, loyal crews.",
     crews: ["Nightshade Runners", "The Undercurrent", "Neon Ghosts", "The Dark Lanes", "Moonrisers"],
     flavorTexts: [
       "\"They held a rave down here. Skids thought it was just a party. It was an audition.\"",
@@ -230,16 +248,17 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "The Forest",
     controlledBy: "The Wooders — self-governed agrarian commune",
+    australianAnalogue: "Daintree canopy settlements / Nimbin communes",
     tagline: "Build with wood. Grind with wood. Live without the grid.",
     description:
-      "Outside the main city complex, a wood-based agrarian settlement of Luddites " +
-      "who refuse technology and build with natural materials. The settlement resembles " +
-      "an Ewok village — wooden boardwalks, carved tree trunks, elevated platforms " +
-      "connected by rope bridges. The Wooders are named for their insistence on using " +
-      "exclusively wooden skateboard decks. They love grinding on natural surfaces and " +
-      "are deeply suspicious of anything corp-made. Their boards outlast anything from " +
-      "a UCA factory.",
-    atmosphere: "Forest canopy, wooden structures, rope bridges, birdsong and wind, no holo-displays.",
+      "Outside the main city complex, a wood-based agrarian settlement of Luddites who " +
+      "refuse technology and build with natural materials. In Australian terms it sits " +
+      "between Daintree canopy boardwalks and Nimbin communal stubbornness — an elevated " +
+      "settlement of carved trunks, rope bridges, and hand-built decks cut from local " +
+      "hardwood. The Wooders are named for their insistence on using exclusively wooden " +
+      "skateboard decks. They love grinding on natural surfaces and are deeply suspicious " +
+      "of anything corp-made. Their boards outlast anything from a UCA factory.",
+    atmosphere: "Forest canopy, wooden structures, rope bridges, birdsong and wind, Daintree humidity, no holo-displays.",
     crews: ["The Wooders"],
     flavorTexts: [
       "\"No screens. No trackers. No corp logos. Just wood and speed.\"",
@@ -250,18 +269,21 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Glass City",
     controlledBy: "Prism Media Group / Autonomous Systems",
+    australianAnalogue: "Perth CBD on the Swan River",
     tagline: "A million screens. Zero witnesses.",
     description:
       "The most densely surveilled district in existence — and somehow the most deserted. " +
-      "Glass City is a cyberpunk megalopolis of towering glass skyscrapers packed floor-to-ceiling " +
-      "with holographic advertisements, but the streets below are hauntingly empty. No cars, no " +
-      "bicycles, no pedestrians. Autonomous delivery drones handle every last-metre run; human " +
-      "couriers were phased out years ago by Prism Media Group's AI logistics division. Skaters " +
-      "who work Glass City do so illegally, darting between sensor sweeps and drone corridors, " +
-      "carrying packages the AI systems are not authorised to touch. Neon reflections pulse on " +
-      "rain-soaked pavement. Every surface is a screen. Nobody is watching — and yet everything " +
-      "is recorded.",
-    atmosphere: "Rain-soaked neon reflections, towering glass towers, holographic ads, silent drone traffic, no humans in sight.",
+      "Glass City localizes cleanly to a Perth CBD nightscape: Swan River reflections, " +
+      "gleaming office towers, mining wealth, and a strange emptiness once business hours " +
+      "end. Towering glass skyscrapers are packed floor-to-ceiling with holographic " +
+      "advertisements, but the streets below are hauntingly empty. No cars, no bicycles, " +
+      "no pedestrians. Autonomous delivery drones handle every last-metre run; human " +
+      "couriers were phased out years ago by Prism Media Group's AI logistics division. " +
+      "Skaters who work Glass City do so illegally, darting between sensor sweeps and " +
+      "drone corridors, carrying packages the AI systems are not authorised to touch. " +
+      "Neon reflections pulse on rain-soaked pavement. Every surface is a screen. Nobody " +
+      "is watching — and yet everything is recorded.",
+    atmosphere: "Rain-soaked neon reflections, Swan River glass towers, holographic ads, silent drone traffic, no humans in sight.",
     crews: ["Neon Ghosts", "The Static Pack", "Phantom Riders"],
     flavorTexts: [
       "\"The city looks alive. It isn't. The screens just make you think something's home.\"",
