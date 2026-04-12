@@ -28,9 +28,12 @@ export function useBattle() {
   const [arenaEntries, setArenaEntries] = useState<ArenaEntry[]>([]);
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
   const [battling, setBattling] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Keep a ref for the latest result dismissal
   const resultRef = useRef<BattleResult | null>(null);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   // ── Subscribe to arena entries ────────────────────────────────────────────
   useEffect(() => {
@@ -41,7 +44,7 @@ export function useBattle() {
       setArenaEntries(entries);
     });
     return unsub;
-  }, []);
+  }, [refreshKey]);
 
   // ── Ready / Unready a deck ────────────────────────────────────────────────
   const readyDeck = useCallback(
@@ -139,6 +142,7 @@ export function useBattle() {
     battleResult,
     dismissResult,
     battling,
+    refresh,
     myArenaEntry: arenaEntries.find((e) => e.uid === uid) ?? null,
     WAGER_POINTS,
     WINNER_BONUS,

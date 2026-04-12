@@ -290,6 +290,7 @@ export function BattleArena() {
     battleResult,
     dismissResult,
     battling,
+    refresh,
     myArenaEntry,
   } = useBattle();
 
@@ -375,10 +376,17 @@ export function BattleArena() {
 
   return (
     <div className="page">
-      <h1 className="page-title">⚔️ Battle Arena</h1>
-      <p className="page-sub">
-        Ready your deck for battle. Each battle wagers {WAGER_POINTS} random attribute points — the winner takes {WINNER_BONUS}!
-      </p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">⚔️ Battle Arena</h1>
+          <p className="page-sub">
+            Ready your deck for battle. Each battle wagers {WAGER_POINTS} random attribute points — the winner takes {WINNER_BONUS}!
+          </p>
+        </div>
+        <button className="btn-outline" onClick={refresh}>
+          ↻ Refresh
+        </button>
+      </div>
 
       <div className="arena-layout">
         {/* Left: my deck / ready status */}

@@ -31,6 +31,7 @@ export function Trades() {
   const [showModal, setShowModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const pendingOutboxCount = outbox.filter((trade) => trade.status === "pending").length;
   const resolvedOutboxCount = outbox.length - pendingOutboxCount;
 
@@ -62,7 +63,7 @@ export function Trades() {
     );
 
     return () => { inboxUnsub(); outboxUnsub(); marketUnsub(); };
-  }, [uid]);
+  }, [uid, refreshKey]);
 
   const handleAccept = async (trade: TradePayload) => {
     if (!user) return;
@@ -164,9 +165,14 @@ export function Trades() {
           <h1 className="page-title">Trades</h1>
           <p className="page-sub">Send, receive, and manage direct card offers with other players.</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowModal(true)} disabled={cards.length === 0}>
-          + New Card Offer
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button className="btn-outline" onClick={() => setRefreshKey((k) => k + 1)}>
+            ↻ Refresh
+          </button>
+          <button className="btn-primary" onClick={() => setShowModal(true)} disabled={cards.length === 0}>
+            + New Card Offer
+          </button>
+        </div>
       </div>
 
       {error && <p className="forge-image-error" style={{ marginBottom: "16px" }}>{error}</p>}
