@@ -179,6 +179,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-dead-zone: rgba(18, 13, 8, 0.42);
   --soda-bezel: rgba(8, 8, 10, 0.96);
   --soda-bezel-highlight: rgba(210, 214, 224, 0.24);
+  --soda-corner-cut: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -186,6 +187,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: relative;
   overflow: hidden;
   border: 3px solid var(--soda-bezel);
+  border-radius: 8px;
+  clip-path: polygon(
+    var(--soda-corner-cut) 0,
+    calc(100% - var(--soda-corner-cut)) 0,
+    100% var(--soda-corner-cut),
+    100% calc(100% - var(--soda-corner-cut)),
+    calc(100% - var(--soda-corner-cut)) 100%,
+    var(--soda-corner-cut) 100%,
+    0 calc(100% - var(--soda-corner-cut)),
+    0 var(--soda-corner-cut)
+  );
   color: var(--soda-ink);
   background-color: var(--soda-face);
   background-image:
@@ -221,8 +233,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-hotspot: rgba(235, 255, 188, 0.62);
   --soda-glow: rgba(141, 255, 92, 0.26);
   --soda-dead-zone: rgba(21, 31, 18, 0.48);
+  --soda-corner-cut: 10px;
   padding: 8px 18px;
-  border-radius: 16px;
   font-size: 13px;
   letter-spacing: 2px;
   font-weight: bold;
@@ -269,7 +281,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 4px;
-  border-radius: 20px;
+  --soda-corner-cut: 14px;
   animation-duration: 4.2s;
 }
 .btn-forge:hover:not(:disabled) {
@@ -289,8 +301,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-dead-zone: rgba(23, 13, 31, 0.48);
   --soda-bezel: rgba(28, 28, 34, 0.98);
   --soda-bezel-highlight: rgba(208, 212, 225, 0.32);
+  --soda-corner-cut: 10px;
   padding: 8px 16px;
-  border-radius: 16px;
   font-size: 13px;
   letter-spacing: 1px;
 }
@@ -330,8 +342,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-hotspot: rgba(255, 213, 180, 0.52);
   --soda-glow: rgba(255, 109, 89, 0.2);
   --soda-dead-zone: rgba(30, 8, 11, 0.52);
+  --soda-corner-cut: 10px;
   padding: 6px 14px;
-  border-radius: 16px;
   font-size: 12px;
   animation: soda-button-flicker 8.2s infinite steps(2, end);
 }
@@ -384,8 +396,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-hotspot: rgba(252, 240, 211, 0.32);
   --soda-glow: rgba(172, 139, 215, 0.08);
   --soda-dead-zone: rgba(18, 10, 22, 0.36);
-  padding: 6px 14px;
-  border-radius: 999px;
+  --soda-corner-cut: 7px;
+  padding: 7px 14px;
+  min-height: 34px;
   font-size: 12px;
   font-family: var(--font);
   letter-spacing: 0.5px;
@@ -402,6 +415,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-hotspot: rgba(240, 255, 193, 0.58);
   --soda-glow: rgba(141, 255, 92, 0.24);
   --soda-dead-zone: rgba(17, 28, 14, 0.42);
+  --soda-corner-cut: 8px;
   color: #f7ffd0;
   box-shadow:
     0 0 0 1px rgba(210, 218, 230, 0.24),
