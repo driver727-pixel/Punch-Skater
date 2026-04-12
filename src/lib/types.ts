@@ -32,6 +32,7 @@ export type Archetype =
   | "The Team";
 export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legendary";
 export const PUNCH_SKATER_RARITY: Rarity = "Punch Skater";
+/** @deprecated Vibe was removed from the forge UI. Kept as a type alias for legacy card compatibility. */
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
 export type Style =
   | "Corporate"
@@ -54,7 +55,8 @@ export interface CardPrompts {
   archetype: Archetype;
   rarity: Rarity;
   style: Style;
-  vibe: Vibe;
+  /** @deprecated Kept for legacy card compatibility; no longer shown in the forge UI. */
+  vibe?: Vibe;
   district: District;
   accentColor: string;
   gender: Gender;

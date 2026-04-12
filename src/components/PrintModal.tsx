@@ -164,7 +164,6 @@ export function PrintModal({
                     {[
                       ["ARCHETYPE", getDisplayedArchetype(card)],
                       ["STYLE",     card.prompts.style],
-                      ["VIBE",      card.prompts.vibe],
                       ["DISTRICT",  card.prompts.district],
                       ["CREW",      getDisplayedCrew(card)],
                     ].map(([label, value]) => (
@@ -281,7 +280,6 @@ export function PrintModal({
                 {[
                   ["ARCHETYPE", getDisplayedArchetype(card)],
                   ["STYLE",     card.prompts.style],
-                  ["VIBE",      card.prompts.vibe],
                   ["DISTRICT",  card.prompts.district],
                   ["CREW",      getDisplayedCrew(card)],
                 ].map(([label, value]) => (

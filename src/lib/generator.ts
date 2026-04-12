@@ -30,13 +30,13 @@ const HELMET_STYLES: Record<string, string[]> = {
   Fascist:        ["explorer-hat", "safari-helm",     "utility-cap"],
 };
 
-const BOARD_STYLES: Record<string, string[]> = {
-  Grunge:   ["scratch-deck",  "taped-rail",    "worn-grip"],
-  Neon:     ["led-deck",      "glow-rail",     "chrome-grip"],
-  Chrome:   ["chrome-deck",   "mirror-rail",   "polished-grip"],
-  Plastic:  ["molded-deck",   "color-pop",     "flat-grip"],
-  Recycled: ["junk-deck",     "salvage-rail",  "reclaimed-grip"],
-};
+const BOARD_STYLES: string[] = [
+  "scratch-deck",  "taped-rail",    "worn-grip",
+  "led-deck",      "glow-rail",     "chrome-grip",
+  "chrome-deck",   "mirror-rail",   "polished-grip",
+  "molded-deck",   "color-pop",     "flat-grip",
+  "junk-deck",     "salvage-rail",  "reclaimed-grip",
+];
 
 const JACKET_STYLES: Record<string, string[]> = {
   Corporate:      ["trench-corp",  "suit-jacket",    "exec-coat"],
@@ -53,13 +53,13 @@ const JACKET_STYLES: Record<string, string[]> = {
   Fascist:        ["explorer-vest","utility-coat",   "survival-jacket"],
 };
 
-const COLOR_SCHEMES: Record<string, string[]> = {
-  Grunge:   ["muted-rust",    "faded-black",   "weathered-grey"],
-  Neon:     ["hot-pink",      "electric-blue", "acid-green"],
-  Chrome:   ["silver-white",  "mirror-blue",   "steel-grey"],
-  Plastic:  ["primary-red",   "plastic-yellow","toy-blue"],
-  Recycled: ["earthy-brown",  "salvage-green", "dull-orange"],
-};
+const COLOR_SCHEMES: string[] = [
+  "muted-rust",    "faded-black",   "weathered-grey",
+  "hot-pink",      "electric-blue", "acid-green",
+  "silver-white",  "mirror-blue",   "steel-grey",
+  "primary-red",   "plastic-yellow","toy-blue",
+  "earthy-brown",  "salvage-green", "dull-orange",
+];
 
 const STORAGE_PACK_STYLES = ["shopping-bag", "backpack", "cardboard-box", "duffel-bag"] as const;
 
@@ -147,7 +147,7 @@ export function normalizeCardStats<T extends Record<string, number>>(stats: T): 
 
 export const generateCard = (prompts: CardPrompts): CardPayload => {
   // ── Seeds ──────────────────────────────────────────────────────────────────
-  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.vibe}|${prompts.gender}|${prompts.ageGroup}|${prompts.bodyType}`;
+  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.gender}|${prompts.ageGroup}|${prompts.bodyType}|${prompts.hairLength ?? ""}|${prompts.hairColor ?? ""}|${prompts.skinTone ?? ""}|${prompts.faceCharacter ?? ""}`;
   const backgroundSeed = prompts.district;
   const frameSeed      = prompts.rarity;
   const masterSeed     = `${frameSeed}::${backgroundSeed}::${characterSeed}`;
@@ -172,9 +172,9 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
   const storagePackStyle = charRng.pick([...STORAGE_PACK_STYLES]);
 
   const helmetStyle  = charRng.pick(HELMET_STYLES[prompts.style]  ?? ["standard-helm"]);
-  const boardStyle   = charRng.pick(BOARD_STYLES[prompts.vibe]    ?? ["standard-deck"]);
+  const boardStyle   = charRng.pick(BOARD_STYLES);
   const jacketStyle  = charRng.pick(JACKET_STYLES[prompts.style]  ?? ["standard-jacket"]);
-  const colorScheme  = charRng.pick(COLOR_SCHEMES[prompts.vibe]   ?? ["neutral-grey"]);
+  const colorScheme  = charRng.pick(COLOR_SCHEMES);
 
   // ── Personality tags ───────────────────────────────────────────────────────
   const tagPool        = PERSONALITY_POOLS[prompts.archetype] ?? ["resourceful", "adaptable"];
@@ -221,7 +221,7 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
       storagePackStyle,
     },
     flavorText: `A ${prompts.rarity} ${prompts.archetype} running packages through ${prompts.district}.`,
-    tags: [prompts.archetype, prompts.style, prompts.vibe, prompts.rarity, prompts.district],
+    tags: [prompts.archetype, prompts.style, prompts.rarity, prompts.district],
     createdAt: new Date().toISOString(),
   };
 };

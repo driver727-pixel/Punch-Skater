@@ -41,14 +41,6 @@ const ARCHETYPE_POSES: Record<string, string> = {
   "The Team":               "in a triumphant victory pose with both fists pumped skyward, muscles tensed, fierce competitive grin, powerful athletic stance, in a matching sponsor-logo ensemble, coordinated team colours",
 };
 
-const VIBE_BOARD: Record<string, string> = {
-  Grunge:   "a worn, weathered",
-  Neon:     "a glowing neon",
-  Chrome:   "a sleek chrome",
-  Plastic:  "a bright colourful plastic",
-  Recycled: "a tattered DIY junk-built",
-};
-
 const RARITY_MOOD: Record<string, string> = {
   "Punch Skater": "gritty and low-budget",
   Apprentice:     "energetic and hopeful",
@@ -80,20 +72,71 @@ const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
 /** Shared age-restriction phrase appended to all character prompts. */
 const AGE_RESTRICTION = "No kids. No teens. Adults aged 18-99 only. ";
 
+// ── Appearance helpers ──────────────────────────────────────────────────────────
+
+function buildHairDescription(hairLength?: string, hairColor?: string): string {
+  if (!hairLength && !hairColor) return "";
+  if (hairLength === "Bald") return "Completely bald, clean-shaven head, no hair at all. ";
+  const length =
+    hairLength === "Buzzcut"   ? "very short buzzcut" :
+    hairLength === "Short"     ? "short-cropped hair" :
+    hairLength === "Medium"    ? "medium-length hair" :
+    hairLength === "Long"      ? "long hair past the shoulders" :
+    hairLength === "Very Long" ? "very long flowing hair reaching the waist" :
+    /* fallback */               "hair";
+  const color =
+    hairColor === "Black"       ? "jet-black" :
+    hairColor === "Brown"       ? "dark brown" :
+    hairColor === "Blonde"      ? "bright blonde" :
+    hairColor === "Red"         ? "natural red / ginger" :
+    hairColor === "Gray"        ? "salt-and-pepper gray" :
+    hairColor === "White"       ? "stark white" :
+    hairColor === "Auburn"      ? "deep auburn" :
+    hairColor === "Dyed Bright" ? "vividly dyed unnatural colour (pink, blue, green, or purple)" :
+    /* fallback */                "";
+  return color ? `${color} ${length}. ` : `${length}. `;
+}
+
+function buildSkinDescription(skinTone?: string): string {
+  if (!skinTone) return "";
+  const desc =
+    skinTone === "Very Light"   ? "very light / pale ivory skin" :
+    skinTone === "Light"        ? "light / fair skin" :
+    skinTone === "Medium Light" ? "medium-light / olive skin" :
+    skinTone === "Medium"       ? "medium / warm brown skin" :
+    skinTone === "Medium Dark"  ? "medium-dark / rich brown skin" :
+    skinTone === "Dark"         ? "dark / deep brown skin" :
+    /* Very Dark */               "very dark / deep ebony skin";
+  return `Skin tone: ${desc}. `;
+}
+
+function buildFaceDescription(faceCharacter?: string): string {
+  if (!faceCharacter || faceCharacter === "Conventional") return "";
+  const desc =
+    faceCharacter === "Weathered"   ? "Weathered, lived-in face with deep expression lines, sun damage, and rough uneven skin texture — NOT attractive, NOT pretty" :
+    faceCharacter === "Scarred"     ? "Facial scars, healed cuts, a crooked nose from past breaks — battle-worn face, NOT conventionally attractive" :
+    faceCharacter === "Asymmetric"  ? "Noticeably asymmetric face, one eye slightly smaller, crooked jaw, uneven features — distinctively unconventional" :
+    faceCharacter === "Rugged"      ? "Extremely rugged face, heavy brow, thick nose, strong jaw, coarse skin — tough and imposing, NOT model-like" :
+    faceCharacter === "Baby-faced"  ? "Round baby-face with soft cheeks, small chin, wide-set eyes — youthful and disarming" :
+    faceCharacter === "Gaunt"       ? "Gaunt hollow-cheeked face, sharp cheekbones, sunken eyes, thin lips — emaciated and intense" :
+    /* Round-faced */                 "Full round face, plump cheeks, double chin, small eyes — soft and wide features";
+  return `${desc}. `;
+}
+
 /**
  * Builds a prompt for the **character layer** of a card.
  *
  * The character is rendered against a plain white background, which is then
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
- * The character layer is only regenerated when archetype, style, vibe, gender,
- * ageGroup, or bodyType changes (matching the `characterSeed` cache key). Changing
- * district or rarity leaves this layer untouched.
+ * The character layer is only regenerated when archetype, style, gender,
+ * ageGroup, bodyType, hairLength, hairColor, skinTone, or faceCharacter changes
+ * (matching the `characterSeed` cache key). Changing district or rarity leaves
+ * this layer untouched.
  */
 export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
   const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
   const pose      = ARCHETYPE_POSES[prompts.archetype] ?? `striking a dramatic comic book action pose, dynamic and powerful`;
-  const board     = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const graffitiLine = graffitiWords?.length
     ? `The skateboard deck and wheels feature graffiti tags or brand logos reading '${graffitiWords.join("' and '")}'. `
@@ -131,7 +174,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     `Full-body portrait of a ${prompts.archetype} skater courier, ` +
     `facing directly toward the viewer, front-facing, looking at the camera, ` +
     `wearing ${clothing}, ${pose}, ` +
-    `carrying courier gear, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
+    `carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     graffitiLine +
     `Character is alert and ready to move. ` +
     `Mood: ${mood}. ` +
@@ -226,7 +269,6 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const clothing = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
   const pose     = ARCHETYPE_POSES[prompts.archetype] ?? `striking a dramatic comic book action pose, dynamic and powerful`;
   const district = DISTRICT_DESCRIPTIONS[prompts.district] ?? prompts.district;
-  const board    = VIBE_BOARD[prompts.vibe]          ?? prompts.vibe;
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const genderDesc =
     prompts.gender === "Woman" ? "a woman" :
@@ -234,25 +276,34 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     /* Non-binary */             "a non-binary person";
 
   const ageDesc =
-    prompts.ageGroup === "Young Adult" ? "young adult (20s)" :
-    prompts.ageGroup === "Adult"       ? "adult (30s)" :
-    prompts.ageGroup === "Middle-aged" ? "middle-aged (40s-50s)" :
-    /* Senior */                         "senior (60s+)";
+    prompts.ageGroup === "Young Adult" ? "young adult (20s), smooth skin, youthful energy" :
+    prompts.ageGroup === "Adult"       ? "adult (30s), slight lines around eyes" :
+    prompts.ageGroup === "Middle-aged" ? "middle-aged (late 40s-50s), prominent crow's feet, forehead wrinkles, visible laugh lines, slightly sagging jawline, greying at the temples" :
+    /* Senior */                         "elderly senior (late 60s-70s+), deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls, visibly old and aged";
 
   const bodyDesc =
-    prompts.bodyType === "Slim"     ? "slim build" :
-    prompts.bodyType === "Athletic" ? "athletic build" :
-    prompts.bodyType === "Average"  ? "average build" :
-    prompts.bodyType === "Stocky"   ? "stocky build" :
-    /* Heavy */                       "heavy build";
+    prompts.bodyType === "Slim"            ? "slim narrow-shouldered build, thin arms and legs" :
+    prompts.bodyType === "Athletic"        ? "athletic build" :
+    prompts.bodyType === "Average"         ? "average unremarkable build, soft midsection, not muscular" :
+    prompts.bodyType === "Stocky"          ? "stocky short-limbed build, thick neck, wide torso" :
+    prompts.bodyType === "Heavy"           ? "heavy overweight build, large belly, double chin, thick limbs" :
+    prompts.bodyType === "Wiry"            ? "wiry sinewy build, lean muscles, prominent veins, no bulk" :
+    prompts.bodyType === "Pear-shaped"     ? "pear-shaped build, narrow shoulders, wide hips, heavier lower body" :
+    prompts.bodyType === "Lanky"           ? "lanky tall and gangly build, long limbs, awkward proportions" :
+    /* Barrel-chested */                     "barrel-chested build, deep round ribcage, thick waist, powerful but not lean";
+
+  const hairDesc = buildHairDescription(prompts.hairLength, prompts.hairColor);
+  const skinDesc = buildSkinDescription(prompts.skinTone);
+  const faceDesc = buildFaceDescription(prompts.faceCharacter);
 
   return (
     `A hyper-realistic 3D cartoon-style portrait of a ${prompts.archetype} skater courier ` +
     `facing directly toward the viewer, front-facing, looking at the camera, ` +
     `wearing ${clothing}, ${pose}, ` +
-    `carrying courier gear, riding ${board} all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
+    `carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     `The background is ${district}. ` +
     `Character is alert and ready to move. Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ` +
+    `${hairDesc}${skinDesc}${faceDesc}` +
     `Mood: ${mood}. ` +
     AGE_RESTRICTION +
     `Rendered in Unreal Engine, vibrant colours, octane render, cinematic lighting, 4K. ` +

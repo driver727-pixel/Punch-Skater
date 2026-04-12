@@ -23,7 +23,6 @@ const ARCHETYPE_LABEL_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [opt
 // Legacy style cleanup keeps the Dark Spider reveal wired to the requested
 // successor styles after Ninja/Hacker were removed from the active style list.
 const DARK_SPIDER_STYLE_MATCHES: ReadonlySet<string> = new Set(["Corporate", "Ex Military"]);
-const DARK_SPIDER_VIBE_MATCHES = new Set(["Neon", "Plastic"]);
 const DARK_SPIDER_DISTRICT_MATCHES: ReadonlySet<District> = new Set([
   "Airaway",
   "Batteryville",
@@ -39,7 +38,6 @@ export function resolveSecretFaction(prompts: CardPrompts): Faction | null {
   const darkSpiderMatch =
     prompts.rarity === "Apprentice" &&
     (prompts.archetype === "D4rk $pider" || DARK_SPIDER_STYLE_MATCHES.has(remapStyleConnection(prompts.style))) &&
-    DARK_SPIDER_VIBE_MATCHES.has(prompts.vibe) &&
     DARK_SPIDER_DISTRICT_MATCHES.has(prompts.district);
 
   return darkSpiderMatch ? "D4rk $pider" : null;

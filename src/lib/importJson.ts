@@ -37,7 +37,7 @@ const REQUIRED_KEYS: (keyof CardPayload)[] = [
   "createdAt",
 ];
 
-const REQUIRED_PROMPTS = ["archetype", "rarity", "style", "vibe", "district", "accentColor"] as const;
+const REQUIRED_PROMPTS = ["archetype", "rarity", "style", "district", "accentColor"] as const;
 const REQUIRED_IDENTITY = ["name", "crew", "serialNumber"] as const;
 const REQUIRED_STATS = ["speed", "stealth", "tech", "grit", "rep"] as const;
 const REQUIRED_VISUALS = ["helmetStyle", "boardStyle", "jacketStyle", "colorScheme", "accentColor", "storagePackStyle"] as const;
