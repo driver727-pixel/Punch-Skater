@@ -1556,7 +1556,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 @keyframes soda-button-flicker {
-  0%, 10%, 100% { opacity: 1; }
+  0%, 9.5%, 100% { opacity: 1; }
   10.5% { opacity: 0.985; }
   11% { opacity: 0.955; }
   11.5% { opacity: 0.99; }
