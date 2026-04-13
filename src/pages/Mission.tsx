@@ -108,6 +108,7 @@ export function Mission() {
   const [forkChoices, setForkChoices] = useState<Record<string, ForkChoice>>({});
   const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
   const missionResultRef = useRef<HTMLElement | null>(null);
+  const missionHasRewards = Boolean(missionResult && (missionResult.ozziesReward > 0 || missionResult.partsReward));
 
   useEffect(() => {
     if (!activeDeckId && decks.length > 0) {
@@ -309,7 +310,7 @@ export function Mission() {
     sfxSuccess();
     const pingTimer = window.setTimeout(() => {
       sfxSuccessPing();
-      if (missionResult.ozziesReward > 0 || missionResult.partsReward) {
+      if (missionHasRewards) {
         sfxRewardShower();
       }
     }, 120);
@@ -336,7 +337,7 @@ export function Mission() {
       window.clearTimeout(pingTimer);
       burstTimers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [missionResult]);
+  }, [missionHasRewards, missionResult]);
 
   return (
     <div className="page">
@@ -653,17 +654,17 @@ export function Mission() {
                       <h3>{missionResult.success ? "Mission Complete" : "Mission Failed"}</h3>
                       <p className="page-sub">
                         {missionResult.success
-                          ? missionResult.ozziesReward > 0 || missionResult.partsReward
+                          ? missionHasRewards
                             ? "Runner touched down with fresh loot and a whole lot of swagger."
                             : "Runner made it back clean."
                           : "The route fought back harder than your crew could handle."}
                       </p>
                     </div>
-                    {missionResult.success && (missionResult.ozziesReward > 0 || missionResult.partsReward) && (
+                    {missionResult.success && missionHasRewards && (
                       <span className="mission-result__headline">JACKPOT</span>
                     )}
                   </div>
-                  {missionResult.success && (missionResult.ozziesReward > 0 || missionResult.partsReward) && (
+                  {missionResult.success && missionHasRewards && (
                     <div className="mission-result__rewards">
                       {missionResult.ozziesReward > 0 && (
                         <div className="mission-result__reward-card mission-result__reward-card--ozzies">

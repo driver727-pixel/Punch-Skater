@@ -25,6 +25,8 @@ export function spawnCelebrationBurst(
     spreadY = 280,
   }: CelebrationBurstOptions = {},
 ) {
+  const particlesToRemove: HTMLSpanElement[] = [];
+
   for (let i = 0; i < particles; i += 1) {
     const particle = document.createElement("span");
     particle.className = "confetti-particle";
@@ -37,6 +39,10 @@ export function spawnCelebrationBurst(
     particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
     particle.style.color = particle.style.backgroundColor;
     container.appendChild(particle);
-    window.setTimeout(() => particle.remove(), durationMs);
+    particlesToRemove.push(particle);
   }
+
+  window.setTimeout(() => {
+    particlesToRemove.forEach((particle) => particle.remove());
+  }, durationMs);
 }

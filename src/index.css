@@ -6084,6 +6084,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 12px;
 }
 .mission-result__reward-card {
+  --reward-sheen-rotate: 18deg;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -6100,7 +6101,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   inset: -30% auto -30% -45%;
   width: 42%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  transform: rotate(18deg);
+  transform: rotate(var(--reward-sheen-rotate));
   animation: reward-sheen 2.4s ease-in-out infinite;
 }
 .mission-result__reward-card--ozzies {
@@ -6695,6 +6696,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 16px;
 }
 .battle-outcome-reward-card {
+  --reward-sheen-rotate: 20deg;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -6711,7 +6713,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   inset: -25% auto -25% -40%;
   width: 40%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
-  transform: rotate(20deg);
+  transform: rotate(var(--reward-sheen-rotate));
   animation: reward-sheen 2.6s ease-in-out infinite;
 }
 .battle-outcome-reward-card--primary {
@@ -6760,9 +6762,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   100% { transform: translate(var(--x, 0), var(--y, -100px)) rotate(var(--r, 180deg)); opacity: 0; }
 }
 @keyframes reward-sheen {
-  0% { transform: translateX(0) rotate(20deg); opacity: 0; }
+  0% { transform: translateX(0) rotate(var(--reward-sheen-rotate, 20deg)); opacity: 0; }
   20%, 80% { opacity: 0.8; }
-  100% { transform: translateX(340%) rotate(20deg); opacity: 0; }
+  100% { transform: translateX(340%) rotate(var(--reward-sheen-rotate, 20deg)); opacity: 0; }
 }
 @keyframes reward-beam-pulse {
   0%, 100% { opacity: 0.2; transform: rotate(var(--beam-rotate, 0deg)) scaleY(0.82); }
