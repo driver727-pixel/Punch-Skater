@@ -8,7 +8,7 @@ import { useTier } from "../context/TierContext";
 import { FORGE_ARCHETYPE_OPTIONS } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
-import { calculateBoardStats } from "../lib/boardBuilder";
+import { calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
 import { ACTIVE_STYLES } from "../lib/styles";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
@@ -57,7 +57,7 @@ export function EditCard() {
         skinTone: (original.prompts.skinTone as SkinTone) ?? "Medium",
         faceCharacter: (original.prompts.faceCharacter as FaceCharacter) ?? "Conventional",
       });
-      if (original.board) setBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board });
+      if (original.board) setBoardConfig(normalizeBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board }));
       // Show the original card as starting preview
       setPreview(original);
     }

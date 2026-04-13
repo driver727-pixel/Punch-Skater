@@ -74,7 +74,7 @@ mapping is:
 | `belt` or `dual` | Belt Drive |
 | `hub` | Hub Motor |
 | `gear` | Gear Drive |
-| `awd` | AWD |
+| `4wd` | 4WD |
 
 #### Motor
 

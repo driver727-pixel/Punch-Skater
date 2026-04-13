@@ -89,7 +89,7 @@ const COMPONENT_IMAGE_KEYWORDS: Record<BoardCategory, Record<string, readonly st
     Belt: ["belt", "dual"],
     Hub:  ["hub"],
     Gear: ["gear"],
-    AWD:  ["awd"],
+    "4WD": ["4wd"],
   },
   motor: {
     Micro:     ["micro", "5055"],

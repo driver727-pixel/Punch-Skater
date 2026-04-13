@@ -7,7 +7,7 @@ import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
-import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS, normalizeBoardConfig } from "../lib/boardBuilder";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
@@ -200,6 +200,7 @@ export function CardDisplay({
   const [sharing, setSharing] = useState(false);
   const [viewing3D, setViewing3D] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const board = card.board ? normalizeBoardConfig(card.board) : null;
   // false = show conlang (default for high-rarity), true = show English translation
   const [showEnglish, setShowEnglish] = useState(false);
 
@@ -490,31 +491,31 @@ export function CardDisplay({
             )}
             <div className="card-board__rows">
               <BoardRow
-                icon={BOARD_TYPE_OPTIONS.find((o) => o.value === card.board!.boardType)?.icon ?? "🛹"}
+                icon={BOARD_TYPE_OPTIONS.find((o) => o.value === board!.boardType)?.icon ?? "🛹"}
                 label="TYPE"
-                value={card.board.boardType}
+                value={board!.boardType}
               />
               <BoardRow
-                icon={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.icon ?? "⚙️"}
+                icon={DRIVETRAIN_OPTIONS.find((o) => o.value === board!.drivetrain)?.icon ?? "⚙️"}
                 label="DRIVE"
-                value={DRIVETRAIN_OPTIONS.find((o) => o.value === card.board!.drivetrain)?.label ?? card.board.drivetrain}
+                value={DRIVETRAIN_OPTIONS.find((o) => o.value === board!.drivetrain)?.label ?? board!.drivetrain}
               />
-              {card.board.motor && (
+              {board?.motor && (
                 <BoardRow
-                  icon={MOTOR_OPTIONS.find((o) => o.value === card.board!.motor)?.icon ?? "⚡"}
+                  icon={MOTOR_OPTIONS.find((o) => o.value === board!.motor)?.icon ?? "⚡"}
                   label="MOTOR"
-                  value={MOTOR_OPTIONS.find((o) => o.value === card.board!.motor)?.label ?? card.board.motor}
+                  value={MOTOR_OPTIONS.find((o) => o.value === board!.motor)?.label ?? board!.motor}
                 />
               )}
               <BoardRow
-                icon={WHEEL_OPTIONS.find((o) => o.value === card.board!.wheels)?.icon ?? "⚫"}
+                icon={WHEEL_OPTIONS.find((o) => o.value === board!.wheels)?.icon ?? "⚫"}
                 label="WHEELS"
-                value={card.board.wheels}
+                value={board!.wheels}
               />
               <BoardRow
-                icon={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.icon ?? "🔋"}
+                icon={BATTERY_OPTIONS.find((o) => o.value === board!.battery)?.icon ?? "🔋"}
                 label="BATTERY"
-                value={BATTERY_OPTIONS.find((o) => o.value === card.board!.battery)?.label ?? card.board.battery}
+                value={BATTERY_OPTIONS.find((o) => o.value === board!.battery)?.label ?? board!.battery}
               />
             </div>
             {card.boardLoadout && (
