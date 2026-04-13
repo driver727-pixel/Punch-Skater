@@ -387,7 +387,7 @@ function scoreMissionRewardCandidate(
   candidateValue: RewardCandidateValue,
   focusGaps: Record<MissionPartsRewardFocus, number>,
 ): { score: number; focus: MissionPartsRewardFocus } {
-  const nextBoard = enforceCompatibility({ ...currentBoard, [component]: candidateValue } as BoardConfig);
+  const nextBoard = enforceCompatibility(buildBoardWithRewardValue(currentBoard, component, String(candidateValue)));
   const currentLoadout = calculateBoardStats(currentBoard);
   const nextLoadout = calculateBoardStats(nextBoard);
   const currentBonuses = getBoardStatBonuses(currentBoard);
@@ -446,6 +446,33 @@ function getMissionPartsRewardCandidates(
   }
 }
 
+function buildBoardWithRewardValue(
+  currentBoard: BoardConfig,
+  component: MissionPartsRewardComponent,
+  candidateValue: string,
+): BoardConfig {
+  switch (component) {
+    case "drivetrain": {
+      const nextValue = DRIVETRAIN_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, drivetrain: nextValue } : currentBoard;
+    }
+    case "motor": {
+      const nextValue = MOTOR_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, motor: nextValue } : currentBoard;
+    }
+    case "wheels": {
+      const nextValue = WHEEL_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, wheels: nextValue } : currentBoard;
+    }
+    case "battery": {
+      const nextValue = BATTERY_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, battery: nextValue } : currentBoard;
+    }
+    default:
+      return currentBoard;
+  }
+}
+
 function buildMissionPartsReward(
   mission: DistrictMissionDefinition,
   playerDeck: MissionPlayerDeck,
@@ -490,7 +517,7 @@ function buildMissionPartsReward(
     acceleration: "acceleration",
     stealth: "stealth",
     batteryRemaining: "range",
-  }[bestReward.focus];
+  }[bestReward.focus] ?? "performance";
 
   return {
     id: `${mission.id}:${bestReward.component}:${bestReward.candidateValue}`,
@@ -515,7 +542,7 @@ export function previewMissionPartsReward(
 
 export function applyMissionPartsReward(card: CardPayload, reward: MissionPartsUpgradeReward): CardPayload {
   if (!card.board) return card;
-  const nextBoard = enforceCompatibility({ ...card.board, [reward.component]: reward.rewardValue } as BoardConfig);
+  const nextBoard = enforceCompatibility(buildBoardWithRewardValue(card.board, reward.component, reward.rewardValue));
   return {
     ...card,
     board: nextBoard,
