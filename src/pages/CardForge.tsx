@@ -50,7 +50,7 @@ const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
 const NON_LORA_GENERATION_OPTIONS: ImageGenOptions = {
   loras: [],
 };
-const CHARACTER_MIN_DIMENSIONS = { width: 1024, height: 1400 };
+const CHARACTER_MIN_DIMENSIONS = { width: 1088, height: 1536 };
 const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
 
 /** Converts a display name to a kebab-case filename stem (e.g. "The Grid" → "the-grid"). */
