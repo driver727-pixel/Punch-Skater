@@ -1,7 +1,7 @@
 import { CardFrame, FRAME_RENDER_HEIGHT, FRAME_RENDER_WIDTH, FRAME_PREVIEW_RARITIES } from "../components/CardFrame";
 
-function FramePreviewTile({ rarity }: { rarity: typeof FRAME_PREVIEW_RARITIES[number] }) {
-  const uid = `preview_${rarity.toLowerCase().replace(/\s+/g, "_")}`;
+function FramePreviewTile({ rarity, tileIndex }: { rarity: typeof FRAME_PREVIEW_RARITIES[number]; tileIndex: number }) {
+  const uid = `preview_${tileIndex}_${rarity.toLowerCase().replace(/\s+/g, "_")}`;
 
   return (
     <article className="frame-preview-tile">
@@ -44,8 +44,8 @@ export function FramePreview() {
       </div>
 
       <section className="frame-preview-grid" aria-label="Card frame previews">
-        {FRAME_PREVIEW_RARITIES.map((rarity) => (
-          <FramePreviewTile key={rarity} rarity={rarity} />
+        {FRAME_PREVIEW_RARITIES.map((rarity, tileIndex) => (
+          <FramePreviewTile key={rarity} rarity={rarity} tileIndex={tileIndex} />
         ))}
       </section>
     </div>

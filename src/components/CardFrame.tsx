@@ -3,20 +3,17 @@ import type { Rarity } from "../lib/types";
 export const FRAME_RENDER_WIDTH = 750;
 export const FRAME_RENDER_HEIGHT = 1050;
 
-type StandardFrameRarity = Exclude<Rarity, "Punch Skater">;
-type PreviewFrameRarity = Rarity;
-
 export const STANDARD_FRAME_RARITIES = [
   "Apprentice",
   "Master",
   "Rare",
   "Legendary",
-] as const satisfies readonly StandardFrameRarity[];
+] as const satisfies readonly Exclude<Rarity, "Punch Skater">[];
 
 export const FRAME_PREVIEW_RARITIES = [
   "Punch Skater",
   ...STANDARD_FRAME_RARITIES,
-] as const satisfies readonly PreviewFrameRarity[];
+] as const satisfies readonly Rarity[];
 
 interface FrameProps {
   width: number;
