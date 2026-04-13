@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { GeoAtlas } from "../components/GeoAtlas";
 import { SkateboardStatsPanel } from "../components/SkateboardStatsPanel";
 import { useDecks } from "../hooks/useDecks";
+import { useCollection } from "../hooks/useCollection";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import {
+  applyMissionPartsReward,
   buildMissionPreview,
   DISTRICT_MISSIONS,
+  previewMissionPartsReward,
   runDistrictMission,
 } from "../lib/glassCanopyMission";
 import type {
   ForkChoice,
   MissionForkPrompt,
+  MissionPartsUpgradeReward,
   MissionResult,
 } from "../lib/glassCanopyMission";
 import {
@@ -91,7 +95,8 @@ function resolveMissionAccessReason(params: {
 
 export function Mission() {
   const navigate = useNavigate();
-  const { decks } = useDecks();
+  const { cards, updateCard } = useCollection();
+  const { decks, updateCardInDecks } = useDecks();
   const { weatherByDistrict, loading: weatherLoading, error: weatherError } = useDistrictWeather();
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
   const [activeMissionId, setActiveMissionId] = useState<string>(DISTRICT_MISSIONS[0].id);
@@ -99,6 +104,7 @@ export function Mission() {
   const [missionResult, setMissionResult] = useState<MissionResult | null>(null);
   const [pendingFork, setPendingFork] = useState<MissionForkPrompt | null>(null);
   const [forkChoices, setForkChoices] = useState<Record<string, ForkChoice>>({});
+  const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeDeckId && decks.length > 0) {
@@ -115,23 +121,26 @@ export function Mission() {
     [activeMissionId],
   );
 
+  const resetMissionSession = useCallback(() => {
+    setMissionResult(null);
+    setPendingFork(null);
+    setForkChoices({});
+    setClaimedPartsRewardId(null);
+  }, []);
+
   useEffect(() => {
     const firstCardId = activeDeck?.cards[0]?.id ?? null;
     if (!activeDeck) {
       setRunnerCardId(null);
-      setMissionResult(null);
-      setPendingFork(null);
-      setForkChoices({});
+      resetMissionSession();
       return;
     }
 
     if (!runnerCardId || !activeDeck.cards.some((card) => card.id === runnerCardId)) {
       setRunnerCardId(firstCardId);
-      setMissionResult(null);
-      setPendingFork(null);
-      setForkChoices({});
+      resetMissionSession();
     }
-  }, [activeDeck, runnerCardId]);
+  }, [activeDeck, runnerCardId, resetMissionSession]);
 
   const missionPreview = useMemo(
     () => buildMissionPreview(activeDeck?.cards ?? [], runnerCardId ?? undefined),
@@ -147,6 +156,10 @@ export function Mission() {
   const runnerBoardType = missionPreview.runnerCard?.board?.boardType;
   const runnerWheelType = missionPreview.runnerCard?.board?.wheels;
   const hasRunner = Boolean(missionPreview.runnerCard);
+  const partsRewardPreview = useMemo(
+    () => previewMissionPartsReward(activeMission.id, missionPreview.playerDeck),
+    [activeMission.id, missionPreview.playerDeck],
+  );
 
   const launchAccessBlocked =
     hasRunner &&
@@ -205,14 +218,12 @@ export function Mission() {
           offsetY: markerOffset.offsetY,
           onClick: () => {
             setActiveMissionId(mission.id);
-            setMissionResult(null);
-            setPendingFork(null);
-            setForkChoices({});
+            resetMissionSession();
           },
         };
       });
     },
-    [activeMission.id],
+    [activeMission.id, resetMissionSession],
   );
 
   const missionCorridors = useMemo(
@@ -237,18 +248,17 @@ export function Mission() {
           offsetY: markerOffset.offsetY,
           onClick: () => {
             setActiveMissionId(mission.id);
-            setMissionResult(null);
-            setPendingFork(null);
-            setForkChoices({});
+            resetMissionSession();
           },
         };
       });
     },
-    [activeMission.id],
+    [activeMission.id, resetMissionSession],
   );
 
   const handleRunMission = () => {
     if (!activeDeck || missionAccessBlocked || !missionPreview.runnerCard) return;
+    setClaimedPartsRewardId(null);
     setForkChoices({});
     setPendingFork(null);
     const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, {});
@@ -274,6 +284,15 @@ export function Mission() {
       setMissionResult(outcome.result);
       setPendingFork(null);
     }
+  };
+
+  const handleApplyPartsReward = (reward: MissionPartsUpgradeReward) => {
+    const sourceCard = cards.find((card) => card.id === missionPreview.runnerCard?.id) ?? missionPreview.runnerCard;
+    if (!sourceCard) return;
+    const upgradedCard = applyMissionPartsReward(sourceCard, reward);
+    updateCard(upgradedCard);
+    updateCardInDecks(upgradedCard);
+    setClaimedPartsRewardId(reward.id);
   };
 
   return (
@@ -305,9 +324,7 @@ export function Mission() {
               className={`mission-selector-card${mission.id === activeMission.id ? " mission-selector-card--active" : ""}`}
               onClick={() => {
                 setActiveMissionId(mission.id);
-                setMissionResult(null);
-                setPendingFork(null);
-                setForkChoices({});
+                resetMissionSession();
               }}
             >
               <span className="mission-selector-card__district">
@@ -321,6 +338,9 @@ export function Mission() {
               )}
               {mission.ozziesReward != null && mission.ozziesReward > 0 && (
                 <span className="mission-selector-card__reward">💰 {mission.ozziesReward} Ozzies</span>
+              )}
+              {mission.partsReward && (
+                <span className="mission-selector-card__reward">🧩 {mission.partsReward.label}</span>
               )}
             </button>
           ))}
@@ -349,6 +369,22 @@ export function Mission() {
             </span>
           ))}
         </div>
+        {activeMission.partsReward && (
+          <div className="mission-weather">
+            <div className="mission-weather__copy">
+              <span className="mission-weather__eyebrow">Parts payout</span>
+              <strong className="mission-weather__title">{activeMission.partsReward.label}</strong>
+              <p className="mission-weather__body">
+                {partsRewardPreview
+                  ? `${partsRewardPreview.componentLabel}: ${partsRewardPreview.rewardLabel}. ${partsRewardPreview.reason}`
+                  : "This mission adapts its skateboard component payout to the selected runner's saved board."}
+              </p>
+            </div>
+            <span className="mission-weather__status">
+              {partsRewardPreview ? `${partsRewardPreview.currentLabel} → ${partsRewardPreview.rewardLabel}` : "Adaptive reward"}
+            </span>
+          </div>
+        )}
         <div className={`mission-weather${missionAccessBlocked ? " mission-weather--blocked" : ""}`}>
           <div className="mission-weather__copy">
             <span className="mission-weather__eyebrow">Launch district seed</span>
@@ -411,9 +447,7 @@ export function Mission() {
                   className={`deck-item ${activeDeckId === deck.id ? "deck-item--active" : ""}`}
                   onClick={() => {
                     setActiveDeckId(deck.id);
-                    setMissionResult(null);
-                    setPendingFork(null);
-                    setForkChoices({});
+                    resetMissionSession();
                   }}
                 >
                   <span className="deck-name">{deck.name}</span>
@@ -433,9 +467,7 @@ export function Mission() {
                     className={`mission-runner-card${runnerCardId === card.id ? " mission-runner-card--active" : ""}`}
                     onClick={() => {
                       setRunnerCardId(card.id);
-                      setMissionResult(null);
-                      setPendingFork(null);
-                      setForkChoices({});
+                      resetMissionSession();
                     }}
                   >
                     <CardThumbnail card={card} width={120} height={84} />
@@ -463,6 +495,12 @@ export function Mission() {
                       <span className="mission-stat-label">Operation</span>
                       <span className="mission-stat-value">{activeMission.name}</span>
                     </div>
+                    {partsRewardPreview && (
+                      <div className="mission-stat-row">
+                        <span className="mission-stat-label">Reward Preview</span>
+                        <span className="mission-stat-value">{partsRewardPreview.rewardLabel}</span>
+                      </div>
+                    )}
                     <div className="mission-stat-row">
                       <span className="mission-stat-label">Origin</span>
                       <span className="mission-stat-value">{activeMission.originDistrict}</span>
@@ -571,6 +609,12 @@ export function Mission() {
                     <span className="mission-stat-label">Battery Left</span>
                     <span className="mission-stat-value">{missionResult.playerStats.batteryRemaining}</span>
                   </div>
+                  {missionResult.partsReward && (
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Parts Upgrade</span>
+                      <span className="mission-stat-value">🧩 {missionResult.partsReward.rewardLabel}</span>
+                    </div>
+                  )}
                   {missionResult.ozziesReward > 0 && (
                     <div className="mission-stat-row">
                       <span className="mission-stat-label">Ozzies Earned</span>
@@ -578,6 +622,22 @@ export function Mission() {
                     </div>
                   )}
                 </div>
+                {missionResult.partsReward && (
+                  <div className="mission-panel" style={{ marginTop: "1rem" }}>
+                    <h4>{missionResult.partsReward.label}</h4>
+                    <p className="page-sub">
+                      {missionResult.partsReward.componentLabel}: {missionResult.partsReward.currentLabel} → {missionResult.partsReward.rewardLabel}
+                    </p>
+                    <p className="page-sub">{missionResult.partsReward.reason}</p>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => handleApplyPartsReward(missionResult.partsReward)}
+                      disabled={!missionResult.success || claimedPartsRewardId === missionResult.partsReward.id}
+                    >
+                      {claimedPartsRewardId === missionResult.partsReward.id ? "Installed on Runner" : "Apply Upgrade to Runner"}
+                    </button>
+                  </div>
+                )}
                 {missionResult.inventory.length > 0 && (
                   <div className="mission-reward-list">
                     {missionResult.inventory.map((item) => (

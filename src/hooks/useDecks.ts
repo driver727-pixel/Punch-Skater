@@ -124,6 +124,18 @@ export function useDecks() {
     }
   }, [saveDeck]);
 
+  const updateCardInDecks = useCallback((card: CardPayload) => {
+    for (const deck of decksRef.current) {
+      if (deck.cards.some((existingCard) => existingCard.id === card.id)) {
+        saveDeck({
+          ...deck,
+          cards: deck.cards.map((existingCard) => (existingCard.id === card.id ? card : existingCard)),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }, [saveDeck]);
+
   const moveCardInDeck = useCallback((deckId: string, fromIndex: number, toIndex: number) => {
     const deck = decksRef.current.find((d) => d.id === deckId);
     if (!deck) return;
@@ -166,5 +178,16 @@ export function useDecks() {
     return { deckFull: false };
   }, [uid, addCardToDeck]);
 
-  return { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, removeCardFromAllDecks, renameDeck, moveCardInDeck, saveCardToFirstDeck };
+  return {
+    decks,
+    createDeck,
+    deleteDeck,
+    addCardToDeck,
+    removeCardFromDeck,
+    removeCardFromAllDecks,
+    updateCardInDecks,
+    renameDeck,
+    moveCardInDeck,
+    saveCardToFirstDeck,
+  };
 }
