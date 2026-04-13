@@ -128,6 +128,17 @@ function buildFaceDescription(faceCharacter?: string): string {
   return `${desc}. `;
 }
 
+function buildShoeDescription(shoeStyle?: string): string {
+  if (!shoeStyle) return "";
+  const desc =
+    shoeStyle === "Skate Shoes"    ? "worn-in skate shoes with flat grippy soles" :
+    shoeStyle === "High Tops"      ? "high-top skate sneakers with padded ankles" :
+    shoeStyle === "Chunky Sneakers"? "chunky retro sneakers with thick rubber soles" :
+    shoeStyle === "Work Boots"     ? "scuffed work boots with reinforced toes" :
+    /* Trail Runners */              "rugged trail runners with technical tread";
+  return `Footwear: ${desc}. `;
+}
+
 function buildAgeDescription(ageGroup: string): string {
   return ageGroup === "Young Adult" ? "adult in their mid-20s, fresh-faced but clearly mature" :
     ageGroup === "Adult"            ? "adult in their 30s, mature features with slight lines around the eyes" :
@@ -154,7 +165,7 @@ function buildBodyDescription(bodyType: string): string {
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
  * The character layer is only regenerated when archetype, style, gender,
- * ageGroup, bodyType, hairLength, hairColor, skinTone, or faceCharacter changes
+ * ageGroup, bodyType, hairLength, hairColor, skinTone, faceCharacter, or shoeStyle changes
  * (matching the `characterSeed` cache key). Changing district or rarity leaves
  * this layer untouched.
  */
@@ -177,8 +188,9 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
   const hairDesc = buildHairDescription(prompts.hairLength, prompts.hairColor);
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
+  const shoeDesc = buildShoeDescription(prompts.shoeStyle);
 
-  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${skinDesc}${faceDesc}`;
+  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${skinDesc}${faceDesc}${shoeDesc}`;
 
   return (
     `Full-body portrait of a clearly adult ${prompts.archetype} skater courier, ` +
@@ -291,6 +303,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const hairDesc = buildHairDescription(prompts.hairLength, prompts.hairColor);
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
+  const shoeDesc = buildShoeDescription(prompts.shoeStyle);
 
   return (
     `A premium trading-card illustration of a clearly adult ${prompts.archetype} skater courier ` +
@@ -299,7 +312,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     `carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear. ` +
     `The background is ${district}. ` +
     `Character is alert and ready to move. Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ` +
-    `${hairDesc}${skinDesc}${faceDesc}` +
+    `${hairDesc}${skinDesc}${faceDesc}${shoeDesc}` +
     `Mood: ${mood}. ` +
     AGE_RESTRICTION +
     COMIC_BOOK_STYLE +

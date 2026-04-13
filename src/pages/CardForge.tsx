@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CardPrompts, CardPayload, Rarity, Style, District, Gender, AgeGroup, BodyType, Faction, HairLength, HairColor, SkinTone, FaceCharacter } from "../lib/types";
+import type { CardPrompts, CardPayload, Rarity, Style, District, Gender, AgeGroup, BodyType, Faction, HairLength, HairColor, SkinTone, FaceCharacter, ShoeStyle } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
@@ -33,6 +33,7 @@ const HAIR_LENGTHS: HairLength[] = ["Bald", "Buzzcut", "Short", "Medium", "Long"
 const HAIR_COLORS: HairColor[] = ["Black", "Brown", "Blonde", "Red", "Gray", "White", "Auburn", "Dyed Bright"];
 const SKIN_TONES: SkinTone[] = ["Very Light", "Light", "Medium Light", "Medium", "Medium Dark", "Dark", "Very Dark"];
 const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Asymmetric", "Rugged", "Baby-faced", "Gaunt", "Round-faced"];
+const SHOE_STYLES: ShoeStyle[] = ["Skate Shoes", "High Tops", "Chunky Sneakers", "Work Boots", "Trail Runners"];
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
@@ -91,7 +92,7 @@ export function CardForge() {
     archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
     district: "Nightshade", accentColor: "#00ff88",
     gender: "Non-binary", ageGroup: "Adult", bodyType: "Athletic",
-    hairLength: "Short", hairColor: "Black", skinTone: "Medium", faceCharacter: "Conventional",
+    hairLength: "Short", hairColor: "Black", skinTone: "Medium", faceCharacter: "Conventional", shoeStyle: "Skate Shoes",
   });
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [generated, setGenerated] = useState<CardPayload | null>(null);
@@ -708,6 +709,21 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`}
                   onClick={() => set("faceCharacter", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Shoes</label>
+            <div className="pill-group">
+              {SHOE_STYLES.map((opt) => (
+                <button
+                  key={opt}
+                  className={`pill${prompts.shoeStyle === opt ? " selected" : ""}`}
+                  onClick={() => set("shoeStyle", opt)}
                 >
                   {opt}
                 </button>

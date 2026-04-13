@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { CardPayload, Rarity, Style, District, CardPrompts, Gender, AgeGroup, BodyType, HairLength, HairColor, SkinTone, FaceCharacter } from "../lib/types";
+import type { CardPayload, Rarity, Style, District, CardPrompts, Gender, AgeGroup, BodyType, HairLength, HairColor, SkinTone, FaceCharacter, ShoeStyle } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
@@ -21,8 +21,10 @@ const HAIR_LENGTHS: HairLength[] = ["Bald", "Buzzcut", "Short", "Medium", "Long"
 const HAIR_COLORS: HairColor[] = ["Black", "Brown", "Blonde", "Red", "Gray", "White", "Auburn", "Dyed Bright"];
 const SKIN_TONES: SkinTone[] = ["Very Light", "Light", "Medium Light", "Medium", "Medium Dark", "Dark", "Very Dark"];
 const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Asymmetric", "Rugged", "Baby-faced", "Gaunt", "Round-faced"];
+const SHOE_STYLES: ShoeStyle[] = ["Skate Shoes", "High Tops", "Chunky Sneakers", "Work Boots", "Trail Runners"];
 const DEFAULT_AGE_GROUP: AgeGroup = "Adult";
 const DEFAULT_BODY_TYPE: BodyType = "Athletic";
+const DEFAULT_SHOE_STYLE: ShoeStyle = "Skate Shoes";
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
 export function EditCard() {
@@ -56,6 +58,7 @@ export function EditCard() {
         hairColor: (original.prompts.hairColor as HairColor) ?? "Black",
         skinTone: (original.prompts.skinTone as SkinTone) ?? "Medium",
         faceCharacter: (original.prompts.faceCharacter as FaceCharacter) ?? "Conventional",
+        shoeStyle: (original.prompts.shoeStyle as ShoeStyle) ?? DEFAULT_SHOE_STYLE,
       });
       if (original.board) setBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board });
       // Show the original card as starting preview
@@ -212,6 +215,15 @@ export function EditCard() {
             <div className="pill-group">
               {FACE_CHARACTERS.map((opt) => (
                 <button key={opt} className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`} onClick={() => set("faceCharacter", opt)}>{opt}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Shoes</label>
+            <div className="pill-group">
+              {SHOE_STYLES.map((opt) => (
+                <button key={opt} className={`pill${prompts.shoeStyle === opt ? " selected" : ""}`} onClick={() => set("shoeStyle", opt)}>{opt}</button>
               ))}
             </div>
           </div>

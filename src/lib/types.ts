@@ -54,6 +54,7 @@ export type HairLength = "Bald" | "Buzzcut" | "Short" | "Medium" | "Long" | "Ver
 export type HairColor = "Black" | "Brown" | "Blonde" | "Red" | "Gray" | "White" | "Auburn" | "Dyed Bright";
 export type SkinTone = "Very Light" | "Light" | "Medium Light" | "Medium" | "Medium Dark" | "Dark" | "Very Dark";
 export type FaceCharacter = "Conventional" | "Weathered" | "Scarred" | "Asymmetric" | "Rugged" | "Baby-faced" | "Gaunt" | "Round-faced";
+export type ShoeStyle = "Skate Shoes" | "High Tops" | "Chunky Sneakers" | "Work Boots" | "Trail Runners";
 
 export interface CardPrompts {
   archetype: Archetype;
@@ -70,6 +71,7 @@ export interface CardPrompts {
   hairColor?: HairColor;
   skinTone?: SkinTone;
   faceCharacter?: FaceCharacter;
+  shoeStyle?: ShoeStyle;
 }
 
 // ── Conlang overlay (CraftLingua integration) ─────────────────────────────────
