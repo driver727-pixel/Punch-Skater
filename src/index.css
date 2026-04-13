@@ -4513,6 +4513,46 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --border: #32286a;
 }
 
+[data-theme="free"] .nav-link,
+[data-theme="free"] .tier-badge-btn,
+[data-theme="free"] .btn-primary,
+[data-theme="free"] .btn-outline,
+[data-theme="free"] .btn-danger,
+[data-theme="free"] .pill,
+[data-theme="free"] .board-builder__step-tab,
+[data-theme="free"] .conveyor__item,
+[data-theme="free"] .psb__label {
+  text-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.94),
+    0 0 6px rgba(255, 248, 225, 0.12);
+}
+
+[data-theme="free"] .nav-link:not(.active) {
+  --nav-soda-ink: #fff3e6;
+}
+
+[data-theme="free"] .btn-primary,
+[data-theme="free"] .btn-outline,
+[data-theme="free"] .btn-danger,
+[data-theme="free"] .pill:not(.selected) {
+  --soda-ink: #fff4ea;
+}
+
+[data-theme="free"] .tier-badge-btn--free {
+  border-color: rgba(216, 206, 248, 0.62);
+  color: #d8cef8;
+  background: rgba(216, 206, 248, 0.06);
+}
+
+[data-theme="free"] .board-builder__step-tab,
+[data-theme="free"] .conveyor__item:not(.conveyor__item--selected) {
+  color: #c4b7e6;
+}
+
+[data-theme="free"] .conveyor__item-name {
+  color: #f5eeff;
+}
+
 /* Street Creator / Apprentice ──────────────────────────────────────── */
 [data-theme="tier2"] {
   --bg:     #040f10;
