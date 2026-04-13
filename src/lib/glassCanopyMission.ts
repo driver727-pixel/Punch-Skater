@@ -616,7 +616,11 @@ export const ROAD_EVENTS: RoadEventDefinition[] = [
 ];
 
 function getRoadEventDefinition(roadEventId: string): RoadEventDefinition | null {
-  return ROAD_EVENTS.find((roadEvent) => roadEvent.id === roadEventId) ?? null;
+  const roadEvent = ROAD_EVENTS.find((entry) => entry.id === roadEventId) ?? null;
+  if (!roadEvent) {
+    console.warn(`[Mission] Unknown road event referenced: ${roadEventId}`);
+  }
+  return roadEvent;
 }
 
 function buildRoadEventStep(roadEvent: RoadEventDefinition, missionId: string, phase: number): MissionStep {

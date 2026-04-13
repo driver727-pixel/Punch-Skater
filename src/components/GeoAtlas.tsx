@@ -259,7 +259,10 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
 
           {corridors.map((marker) => {
             const artery = DISTRICT_ARTERIES.find((route) => route.label === marker.corridor);
-            if (!artery) return null;
+            if (!artery) {
+              console.warn(`[GeoAtlas] Unknown corridor marker route: ${marker.corridor}`);
+              return null;
+            }
             const start = AUSTRALIA_DISTRICT_LAYOUT[artery.from];
             const end = AUSTRALIA_DISTRICT_LAYOUT[artery.to];
             const left = (start.x + end.x) / 2;

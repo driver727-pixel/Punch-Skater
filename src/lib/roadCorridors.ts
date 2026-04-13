@@ -124,7 +124,11 @@ function getCorridorSummary(
 }
 
 export function getRoadCorridor(corridorId: RoadCorridor): CorridorProfile {
-  return ROAD_CORRIDORS.find((corridor) => corridor.id === corridorId) ?? ROAD_CORRIDORS[0];
+  const corridor = ROAD_CORRIDORS.find((entry) => entry.id === corridorId);
+  if (!corridor) {
+    throw new Error(`Unknown road corridor: ${corridorId}`);
+  }
+  return corridor;
 }
 
 export function getCorridorAccessSummary(corridorId: RoadCorridor): string {

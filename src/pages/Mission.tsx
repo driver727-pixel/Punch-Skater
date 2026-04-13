@@ -92,8 +92,18 @@ export function Mission() {
   );
   const originWeather = weatherByDistrict[activeMission.originDistrict] ?? null;
   const destinationWeather = weatherByDistrict[activeMission.destinationDistrict] ?? null;
-  const originLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.originDistrict];
-  const destinationLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.destinationDistrict];
+  const originLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.originDistrict] ?? {
+    city: activeMission.originDistrict,
+    state: "N/A",
+    latitude: 0,
+    longitude: 0,
+  };
+  const destinationLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.destinationDistrict] ?? {
+    city: activeMission.destinationDistrict,
+    state: "N/A",
+    latitude: 0,
+    longitude: 0,
+  };
   const corridorCondition = activeMission.corridor
     ? getCorridorCondition(activeMission.corridor, weatherByDistrict)
     : null;
