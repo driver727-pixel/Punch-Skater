@@ -1,6 +1,22 @@
-import { calculateBoardStats, getBoardStatBonuses } from "./boardBuilder";
+import {
+  BATTERY_OPTIONS,
+  DRIVETRAIN_OPTIONS,
+  MOTOR_OPTIONS,
+  WHEEL_OPTIONS,
+  calculateBoardStats,
+  enforceCompatibility,
+  getBoardStatBonuses,
+  getAllowedComponents,
+} from "./boardBuilder";
 import type { CardPayload, District, RoadCorridor } from "./types";
-import type { BoardConfig, BoardLoadout, WheelType } from "./boardBuilder";
+import type {
+  BatteryType,
+  BoardConfig,
+  BoardLoadout,
+  Drivetrain,
+  MotorType,
+  WheelType,
+} from "./boardBuilder";
 
 type MissionCheckStat = "speed" | "acceleration" | "stealth" | "batteryRemaining";
 type MissionEffectStat = MissionCheckStat | "health" | "heatLevel";
@@ -41,6 +57,27 @@ export interface MissionItem {
   phase: number;
   description: string;
   modifiers?: MissionItemModifier[];
+}
+
+export type MissionPartsRewardComponent = "drivetrain" | "motor" | "wheels" | "battery";
+export type MissionPartsRewardFocus = "speed" | "acceleration" | "stealth" | "batteryRemaining";
+
+interface MissionPartsRewardProfile {
+  label: string;
+  supportedComponents: MissionPartsRewardComponent[];
+}
+
+export interface MissionPartsUpgradeReward {
+  id: string;
+  label: string;
+  component: MissionPartsRewardComponent;
+  componentLabel: string;
+  focus: MissionPartsRewardFocus;
+  currentValue: string;
+  rewardValue: string;
+  currentLabel: string;
+  rewardLabel: string;
+  reason: string;
 }
 
 interface MissionRequirementAll {
@@ -135,9 +172,17 @@ interface MissionDefinition {
   steps: MissionStep[];
   /** Ozzycred reward granted on successful completion (0 or omitted = no reward). */
   ozziesReward?: number;
+  partsReward?: MissionPartsRewardProfile;
   originDistrict: District;
   destinationDistrict: District;
   corridor?: RoadCorridor;
+}
+
+export interface DistrictMissionThresholds {
+  stealth: number;
+  acceleration: number;
+  speed: number;
+  battery: number;
 }
 
 export interface DistrictMissionDefinition extends MissionDefinition {
@@ -145,6 +190,7 @@ export interface DistrictMissionDefinition extends MissionDefinition {
   tagline: string;
   briefing: string;
   checkTags: string[];
+  thresholds: DistrictMissionThresholds;
 }
 
 export interface MissionResult {
@@ -154,6 +200,7 @@ export interface MissionResult {
   missionLog: string[];
   /** Ozzycred reward earned on successful completion (0 when the mission fails or has no reward). */
   ozziesReward: number;
+  partsReward: MissionPartsUpgradeReward | null;
 }
 
 export interface MissionForkPrompt {
@@ -298,8 +345,218 @@ function formatNarrativeText(
   return typeof value === "function" ? value(buildNarrativeContext(state)) : value;
 }
 
+function capitalizeLabel(value: string): string {
+  if (value.length === 0) return value;
+  return `${value[0].toUpperCase()}${value.slice(1)}`;
+}
+
+const PARTS_REWARD_COMPONENT_LABELS: Record<MissionPartsRewardComponent, string> = {
+  drivetrain: "Drivetrain",
+  motor: "Motor",
+  wheels: "Wheels",
+  battery: "Battery",
+};
+
+type RewardCandidateValue = Drivetrain | MotorType | WheelType | BatteryType;
+
+function getComponentOptionLabel(component: MissionPartsRewardComponent, value: string): string {
+  switch (component) {
+    case "drivetrain":
+      return DRIVETRAIN_OPTIONS.find((option) => option.value === value)?.label ?? value;
+    case "motor":
+      return MOTOR_OPTIONS.find((option) => option.value === value)?.label ?? value;
+    case "wheels":
+      return WHEEL_OPTIONS.find((option) => option.value === value)?.label ?? value;
+    case "battery":
+      return BATTERY_OPTIONS.find((option) => option.value === value)?.label ?? value;
+    default:
+      return value;
+  }
+}
+
+function getMissionPartsFocusGaps(
+  mission: DistrictMissionDefinition,
+  currentStats: MissionPlayerStats,
+): Record<MissionPartsRewardFocus, number> {
+  return {
+    speed: Math.max(mission.thresholds.speed - currentStats.speed, 0),
+    acceleration: Math.max(mission.thresholds.acceleration - currentStats.acceleration, 0),
+    stealth: Math.max(mission.thresholds.stealth - currentStats.stealth, 0),
+    batteryRemaining: Math.max(mission.thresholds.battery - currentStats.batteryRemaining, 0),
+  };
+}
+
+function scoreMissionRewardCandidate(
+  component: MissionPartsRewardComponent,
+  currentBoard: BoardConfig,
+  candidateValue: RewardCandidateValue,
+  focusGaps: Record<MissionPartsRewardFocus, number>,
+): { score: number; focus: MissionPartsRewardFocus } {
+  const upgradedBoard = enforceCompatibility(buildBoardWithRewardValue(currentBoard, component, String(candidateValue)));
+  const currentLoadout = calculateBoardStats(currentBoard);
+  const nextLoadout = calculateBoardStats(upgradedBoard);
+  const currentBonuses = getBoardStatBonuses(currentBoard);
+  const nextBonuses = getBoardStatBonuses(upgradedBoard);
+
+  switch (component) {
+    case "drivetrain":
+      return {
+        score:
+          Math.max(nextLoadout.speed - currentLoadout.speed, 0) * (focusGaps.speed + 1) +
+          Math.max((nextBonuses.speed ?? 0) - (currentBonuses.speed ?? 0), 0) * 0.5,
+        focus: "speed",
+      };
+    case "motor":
+      return {
+        score:
+          Math.max(nextLoadout.acceleration - currentLoadout.acceleration, 0) * (focusGaps.acceleration + 1) +
+          Math.max((nextBonuses.speed ?? 0) - (currentBonuses.speed ?? 0), 0) * 0.25,
+        focus: "acceleration",
+      };
+    case "battery":
+      return {
+        score:
+          Math.max(nextLoadout.range - currentLoadout.range, 0) * (focusGaps.batteryRemaining + 1) +
+          Math.max((nextBonuses.stealth ?? 0) - (currentBonuses.stealth ?? 0), 0) * (focusGaps.stealth + 0.5),
+        focus: focusGaps.batteryRemaining >= focusGaps.stealth ? "batteryRemaining" : "stealth",
+      };
+    case "wheels":
+      return {
+        score:
+          Math.max((nextBonuses.stealth ?? 0) - (currentBonuses.stealth ?? 0), 0) * (focusGaps.stealth + 1) +
+          Math.max((nextBonuses.speed ?? 0) - (currentBonuses.speed ?? 0), 0) * (focusGaps.speed + 0.25),
+        focus: "stealth",
+      };
+    default:
+      return { score: 0, focus: "speed" };
+  }
+}
+
+function getMissionPartsRewardCandidates(
+  component: MissionPartsRewardComponent,
+  currentBoard: BoardConfig,
+): RewardCandidateValue[] {
+  const allowed = getAllowedComponents(currentBoard.boardType);
+  switch (component) {
+    case "drivetrain":
+      return allowed.drivetrains;
+    case "motor":
+      return allowed.motors;
+    case "wheels":
+      return allowed.wheels;
+    case "battery":
+      return allowed.batteries;
+    default:
+      return [];
+  }
+}
+
+function buildBoardWithRewardValue(
+  currentBoard: BoardConfig,
+  component: MissionPartsRewardComponent,
+  candidateValue: string,
+): BoardConfig {
+  switch (component) {
+    case "drivetrain": {
+      const nextValue = DRIVETRAIN_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, drivetrain: nextValue } : currentBoard;
+    }
+    case "motor": {
+      const nextValue = MOTOR_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, motor: nextValue } : currentBoard;
+    }
+    case "wheels": {
+      const nextValue = WHEEL_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, wheels: nextValue } : currentBoard;
+    }
+    case "battery": {
+      const nextValue = BATTERY_OPTIONS.find((option) => option.value === candidateValue)?.value;
+      return nextValue ? { ...currentBoard, battery: nextValue } : currentBoard;
+    }
+    default:
+      return currentBoard;
+  }
+}
+
+function buildMissionPartsReward(
+  mission: DistrictMissionDefinition,
+  playerDeck: MissionPlayerDeck,
+): MissionPartsUpgradeReward | null {
+  if (!mission.partsReward || !playerDeck.board) return null;
+
+  const currentBoard = playerDeck.board;
+  const currentStats = calculateStartingStats(playerDeck);
+  const focusGaps = getMissionPartsFocusGaps(mission, currentStats);
+
+  let bestReward:
+    | {
+        component: MissionPartsRewardComponent;
+        candidateValue: RewardCandidateValue;
+        focus: MissionPartsRewardFocus;
+        score: number;
+      }
+    | null = null;
+
+  for (const component of mission.partsReward.supportedComponents) {
+    const currentValue = currentBoard[component];
+    for (const candidateValue of getMissionPartsRewardCandidates(component, currentBoard)) {
+      if (candidateValue === currentValue) continue;
+      const scored = scoreMissionRewardCandidate(component, currentBoard, candidateValue, focusGaps);
+      if (
+        !bestReward ||
+        scored.score > bestReward.score ||
+        (scored.score === bestReward.score && focusGaps[scored.focus] > focusGaps[bestReward.focus])
+      ) {
+        bestReward = { component, candidateValue, focus: scored.focus, score: scored.score };
+      }
+    }
+  }
+
+  if (!bestReward || bestReward.score <= 0) return null;
+
+  const currentValue = currentBoard[bestReward.component];
+  const currentLabel = getComponentOptionLabel(bestReward.component, currentValue);
+  const rewardLabel = getComponentOptionLabel(bestReward.component, String(bestReward.candidateValue));
+  const focusLabel = {
+    speed: "top speed",
+    acceleration: "acceleration",
+    stealth: "stealth",
+    batteryRemaining: "range",
+  }[bestReward.focus] ?? "performance";
+
+  return {
+    id: `${mission.id}:${bestReward.component}:${bestReward.candidateValue}`,
+    label: mission.partsReward.label,
+    component: bestReward.component,
+    componentLabel: PARTS_REWARD_COMPONENT_LABELS[bestReward.component],
+    focus: bestReward.focus,
+    currentValue,
+    rewardValue: String(bestReward.candidateValue),
+    currentLabel,
+    rewardLabel,
+    reason: `${capitalizeLabel(focusLabel)} is the biggest gap on this run, so this payout upgrades your ${PARTS_REWARD_COMPONENT_LABELS[bestReward.component].toLowerCase()} from ${currentLabel} to ${rewardLabel}.`,
+  };
+}
+
+export function previewMissionPartsReward(
+  missionId: string,
+  playerDeck: MissionPlayerDeck,
+): MissionPartsUpgradeReward | null {
+  return buildMissionPartsReward(getMissionDefinition(missionId), playerDeck);
+}
+
+export function applyMissionPartsReward(card: CardPayload, reward: MissionPartsUpgradeReward): CardPayload {
+  if (!card.board) return card;
+  const upgradedBoard = enforceCompatibility(buildBoardWithRewardValue(card.board, reward.component, reward.rewardValue));
+  return {
+    ...card,
+    board: upgradedBoard,
+    boardLoadout: calculateBoardStats(upgradedBoard),
+  };
+}
+
 function runMission(
-  mission: MissionDefinition,
+  mission: DistrictMissionDefinition,
   playerDeck: MissionPlayerDeck,
   forkChoices?: Record<string, ForkChoice>,
 ): MissionOutcome {
@@ -354,6 +611,7 @@ function runMission(
   }
 
   const ozziesReward = state.success ? (mission.ozziesReward ?? 0) : 0;
+  const partsReward = state.success ? buildMissionPartsReward(mission, playerDeck) : null;
 
   return {
     kind: "complete",
@@ -363,6 +621,7 @@ function runMission(
       inventory: [...state.inventory],
       missionLog: [...state.missionLog],
       ozziesReward,
+      partsReward,
     },
   };
 }
@@ -382,13 +641,6 @@ interface MissionItemBlueprint {
   modifiers?: MissionItemModifier[];
 }
 
-interface DistrictMissionThresholds {
-  stealth: number;
-  acceleration: number;
-  speed: number;
-  battery: number;
-}
-
 interface DistrictMissionBlueprint {
   id: string;
   name: string;
@@ -402,6 +654,7 @@ interface DistrictMissionBlueprint {
   thresholds: DistrictMissionThresholds;
   /** Ozzycred reward on success (omit for missions that pay no Ozzies). */
   ozziesReward?: number;
+  partsReward?: MissionPartsRewardProfile;
   phase1: {
     name: string;
     successText: string;
@@ -681,6 +934,8 @@ function createDistrictMission(blueprint: DistrictMissionBlueprint): DistrictMis
     tagline: blueprint.tagline,
     briefing: blueprint.briefing,
     ozziesReward: blueprint.ozziesReward,
+    partsReward: blueprint.partsReward,
+    thresholds: blueprint.thresholds,
     checkTags: [
       `${blueprint.originDistrict} → ${blueprint.destinationDistrict}`,
       ...(blueprint.corridor ? [`Corridor · ${blueprint.corridor}`] : []),
@@ -846,6 +1101,11 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     tagline: "Shop the contractor market for premium board parts and slip them past corporate inventory control.",
     briefing: "Raid Airaway's licensed skate suppliers, grab the parts your crew actually needs, and get back below the smog before the receipts are audited.",
     thresholds: { stealth: 7, acceleration: 7, speed: 8, battery: 13 },
+    ozziesReward: 30,
+    partsReward: {
+      label: "Contractor Parts Upgrade",
+      supportedComponents: ["drivetrain", "motor", "wheels"],
+    },
     phase1: {
       name: "Receipt Scanner",
       successText: "You pass the receipt scanner with forged maintenance credentials and nobody asks who approved the order.",
@@ -1946,6 +2206,10 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
     briefing: "Glass City keeps absurdly good skateboard parts for the rich alone. Lift a boutique haul and get it back to the crews before the towers notice the shelves are light.",
     thresholds: { stealth: 7, acceleration: 8, speed: 8, battery: 14 },
     ozziesReward: 45,
+    partsReward: {
+      label: "Boutique Parts Upgrade",
+      supportedComponents: ["battery", "motor", "drivetrain"],
+    },
     phase1: {
       name: "Showroom Silence",
       successText: "You slip the boutique floor without disturbing a single sensor-polished display.",
