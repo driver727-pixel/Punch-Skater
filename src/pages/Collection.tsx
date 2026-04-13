@@ -432,7 +432,6 @@ export function Collection() {
                   <button
                     className="btn-outline btn-sm"
                     onClick={openUpgradeModal}
-                    disabled={!hasSelection}
                   >
                     🔒 Upgrade to Delete
                   </button>
