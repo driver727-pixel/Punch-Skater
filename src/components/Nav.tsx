@@ -130,7 +130,7 @@ export function Nav() {
           <div className="nav-brand">
             <span className="nav-title">Punch Skater</span>
             <span className="nav-subtitle">DECK BUILDER</span>
-            <span className="nav-game-badge">A Sk8r Punk Game</span>
+            <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk Game</a>
           </div>
 
           <div className="nav-links">
