@@ -43,14 +43,14 @@ const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "
 const MAX_LAYER_RETRIES = 1;
 const CHARACTER_CACHE_VERSION = "v3-adult-realism";
 const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
-  imageSize: { width: 1500, height: 2100 },
+  imageSize: { width: 1088, height: 1536 },
   numInferenceSteps: 45,
   guidanceScale: 4,
 };
 const NON_LORA_GENERATION_OPTIONS: ImageGenOptions = {
   loras: [],
 };
-const CHARACTER_MIN_DIMENSIONS = { width: 1200, height: 1680 };
+const CHARACTER_MIN_DIMENSIONS = { width: 1088, height: 1536 };
 const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
 
 /** Converts a display name to a kebab-case filename stem (e.g. "The Grid" → "the-grid"). */
