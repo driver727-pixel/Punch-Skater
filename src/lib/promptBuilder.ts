@@ -108,13 +108,13 @@ function describeAccentColor(accentColor?: string): string {
   hue = Math.round(hue * 60);
   if (hue < 0) hue += 360;
 
-  if (hue < 15 || hue >= 345) return "vivid red";
-  if (hue < 40) return "bright orange";
-  if (hue < 70) return "electric yellow";
-  if (hue < 160) return "neon green";
-  if (hue < 200) return "electric cyan";
-  if (hue < 255) return "electric blue";
-  if (hue < 290) return "electric violet";
+  if (hue < 15 || hue >= 345) return "vivid red";   // 345°–15°
+  if (hue < 40) return "bright orange";             // 15°–39°
+  if (hue < 70) return "electric yellow";           // 40°–69°
+  if (hue < 160) return "neon green";               // 70°–159°
+  if (hue < 200) return "electric cyan";            // 160°–199°
+  if (hue < 255) return "electric blue";            // 200°–254°
+  if (hue < 290) return "electric violet";          // 255°–289°
   return "hot pink";
 }
 
