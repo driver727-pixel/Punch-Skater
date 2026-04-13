@@ -203,7 +203,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Subject: full-body portrait of a clearly adult ${prompts.archetype} skater courier.`,
+    `Subject: full-body portrait of a clearly adult ${prompts.archetype} skateboarder courier.`,
     `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, ${pose}.`,
     `Props: carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear.`,
     graffitiLine,
@@ -336,7 +336,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Subject: clearly adult ${prompts.archetype} skater courier.`,
+    `Subject: clearly adult ${prompts.archetype} skateboarder courier.`,
     `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, ${pose}.`,
     `Props: carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear.`,
     `Performance note: character is alert and ready to move.`,
