@@ -278,8 +278,8 @@ export interface BoardComponentModel {
   speed?: number;
   /** Acceleration rating 1–10 (Drivetrains only). */
   acceleration?: number;
-  /** Ideal terrain district (Wheels only). */
-  district?: string;
+  /** Terrain / district access profile (Wheels only). */
+  accessProfile?: string;
   /** Range rating 1–10 (Batteries only). */
   range?: number;
   /** Whether the battery mounts on top of the deck (Batteries only). */
@@ -333,7 +333,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. A 100mm electric skateboard wheel, high-rebound translucent orange urethane, smooth surface, precision bearing seat, 80A durometer texture, realistic lighting.",
     seedKey: "wheel-100mm-urethane-street",
     icon: "🟡",
-    district: "Electropolis",
+    accessProfile: "Urban district access",
   },
   {
     category: "Wheel",
@@ -342,7 +342,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. A 7-inch pneumatic all-terrain rubber tire for a skateboard, deep knobby tread pattern, black nylon hub, 3-spoke design, industrial look.",
     seedKey: "wheel-175mm-pneumatic-at",
     icon: "🟢",
-    district: "The Forest",
+    accessProfile: "Off-grid forest access",
   },
   {
     category: "Wheel",
@@ -351,7 +351,7 @@ export const BOARD_COMPONENT_CATALOG: BoardComponentModel[] = [
       "Isometric view 45 degree angle top down. Product photography shot. Art style of gouache painting. 120mm semi-transparent foamies skateboard wheels, honeycomb core pattern, curved contact patch, rubberized texture, teal color.",
     seedKey: "wheel-120mm-cloud-sliders",
     icon: "⚪",
-    district: "The Roads",
+    accessProfile: "Broken-corridor access",
   },
 
   // ── Drivetrains ────────────────────────────────────────────────────────────
@@ -648,11 +648,17 @@ export const DEFAULT_BOARD_CONFIG: BoardConfig = {
 
 // ── Loadout stat defaults (used when a component has no catalog entry) ─────────
 
-const DEFAULT_STYLE    = "Custom";
-const DEFAULT_SPEED    = 5;
-const DEFAULT_ACCEL    = 5;
-const DEFAULT_DISTRICT = "The Roads";
-const DEFAULT_RANGE    = 5;
+const DEFAULT_STYLE = "Custom";
+const DEFAULT_SPEED = 5;
+const DEFAULT_ACCEL = 5;
+const DEFAULT_RANGE = 5;
+const WHEEL_ACCESS_PROFILES: Record<WheelType, string> = {
+  Urethane: "Urban district access",
+  Pneumatic: "Off-grid district access",
+  Rubber: "Heavy-duty district access",
+  Cloud: "Corridor glide access",
+};
+const DEFAULT_ACCESS_PROFILE = "General district access";
 
 
 /**
@@ -666,8 +672,8 @@ export interface BoardLoadout {
   speed: number;
   /** Acceleration rating determined by the motor (1–10). */
   acceleration: number;
-  /** Ideal terrain district from the selected wheel. */
-  district: string;
+  /** Wheel-driven district / corridor access profile. */
+  accessProfile: string;
   /** Battery range rating (1–10). */
   range: number;
 }
@@ -679,7 +685,7 @@ export interface BoardLoadout {
  *   Top Speed    ← Drivetrain
  *   Acceleration ← Motor
  *   Range        ← Battery
- *   District     ← Wheels
+ *   Access       ← Wheels
  *   Style        ← Deck
  */
 export function calculateBoardStats(config: BoardConfig): BoardLoadout {
@@ -699,7 +705,7 @@ export function calculateBoardStats(config: BoardConfig): BoardLoadout {
     style:        deckModel?.style         ?? DEFAULT_STYLE,
     speed:        driveModel?.speed        ?? DEFAULT_SPEED,
     acceleration: motorModel?.acceleration ?? DEFAULT_ACCEL,
-    district:     wheelModel?.district     ?? DEFAULT_DISTRICT,
+    accessProfile: wheelModel?.accessProfile ?? WHEEL_ACCESS_PROFILES[config.wheels] ?? DEFAULT_ACCESS_PROFILE,
     range:        batteryModel?.range      ?? DEFAULT_RANGE,
   };
 }

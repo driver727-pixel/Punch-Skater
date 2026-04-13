@@ -1,4 +1,4 @@
-import type { Faction, Archetype, District } from './types';
+import type { Faction, Archetype, WorldLocation } from './types';
 
 // ── Character names ────────────────────────────────────────────────────────────
 
@@ -107,7 +107,8 @@ export const WORLD_LORE = {
 // ── District lore ──────────────────────────────────────────────────────────────
 
 export interface DistrictLoreEntry {
-  name: District;
+  name: WorldLocation;
+  kind: "district" | "corridor" | "hidden";
   controlledBy: string;
   australianAnalogue: string;
   tagline: string;
@@ -120,6 +121,7 @@ export interface DistrictLoreEntry {
 export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Airaway",
+    kind: "district",
     controlledBy: "United Corporations of America (UCA)",
     australianAnalogue: "Blue Mountains sky-city above Greater Western Sydney",
     tagline: "The higher you go, the colder the air. The colder the air, the cleaner the money.",
@@ -142,6 +144,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "The Roads",
+    kind: "corridor",
     controlledBy: "Corridor layer — open courier territory",
     australianAnalogue: "Nullarbor Plain / Stuart Highway",
     tagline: "Transit is its own battlefield.",
@@ -160,6 +163,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Batteryville",
+    kind: "district",
     controlledBy: "HexChain Logistics / Recycler Collectives",
     australianAnalogue: "Port Kembla steelworks with Pilbara ore lines",
     tagline: "The City runs on our power. We run on spite.",
@@ -182,6 +186,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "The Grid",
+    kind: "district",
     controlledBy: "Cascade Technologies",
     australianAnalogue: "Canberra surveillance precinct",
     tagline: "Information wants to be free. The Grid decides the price.",
@@ -204,6 +209,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Electropolis",
+    kind: "hidden",
     controlledBy: "City Security — the Fuzz (future playable reveal)",
     australianAnalogue: "Brisbane CBD / Gold Coast surveillance strip",
     tagline: "Move along. Designated transit corridors only.",
@@ -224,6 +230,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Nightshade",
+    kind: "district",
     controlledBy: "Courier crews — no single corp holds it",
     australianAnalogue: "Melbourne laneways / Fitzroy basement scene",
     tagline: "Nobody owns Nightshade. Nightshade owns you.",
@@ -246,6 +253,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "The Forest",
+    kind: "district",
     controlledBy: "The Wooders — self-governed agrarian commune",
     australianAnalogue: "Daintree canopy settlements / Nimbin communes",
     tagline: "Build with wood. Grind with wood. Live without the grid.",
@@ -267,6 +275,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Glass City",
+    kind: "district",
     controlledBy: "Prism Media Group / Autonomous Systems",
     australianAnalogue: "Perth CBD on the Swan River",
     tagline: "A million screens. Zero witnesses.",

@@ -40,8 +40,8 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
 
       <div className="skate-text-stats">
         <div className="skate-text-row">
-          <span className="skate-text-key">DISTRICT</span>
-          <span className="skate-text-val neon-label--green">{loadout.district}</span>
+          <span className="skate-text-key">ACCESS</span>
+          <span className="skate-text-val neon-label--green">{loadout.accessProfile}</span>
         </div>
         <div className="skate-text-row">
           <span className="skate-text-key">STYLE</span>

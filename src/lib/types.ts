@@ -18,7 +18,11 @@ export type Faction =
   | "The Wooders"
   | "Punch Skaters";
 
-export type District = "Airaway" | "The Roads" | "Batteryville" | "The Grid" | "Electropolis" | "Nightshade" | "The Forest" | "Glass City";
+export type District = "Airaway" | "Batteryville" | "The Grid" | "Nightshade" | "The Forest" | "Glass City";
+export type HiddenDistrict = "Electropolis";
+export type CorridorHub = "The Roads";
+export type WorldLocation = District | HiddenDistrict | CorridorHub;
+export type RoadCorridor = "Surface Corridor" | "Freight Artery" | "Underpass Tunnel" | "Timber Route";
 export type Archetype =
   | "The Knights Technarchy"
   | "Qu111s"

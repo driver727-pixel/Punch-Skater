@@ -20,9 +20,14 @@ import {
   DISTRICT_WEATHER_LOCATIONS,
   getDistrictAccessBlockReason,
   getDistrictAccessSummary,
-  hasDistrictAccessRestriction,
   isDistrictAccessibleWithBoardType,
 } from "../lib/districtWeather";
+import {
+  getCorridorAccessBlockReason,
+  getCorridorAccessSummary,
+  getCorridorCondition,
+  isCorridorAccessible,
+} from "../lib/roadCorridors";
 import { MISSION_STAT_LABELS } from "../lib/statLabels";
 
 const MISSION_MARKER_OFFSET_Y = -76;
@@ -30,6 +35,11 @@ const DISTRICT_MARKER_OFFSETS = [
   { offsetX: -42, offsetY: MISSION_MARKER_OFFSET_Y - 4 },
   { offsetX: 0, offsetY: MISSION_MARKER_OFFSET_Y - 30 },
   { offsetX: 42, offsetY: MISSION_MARKER_OFFSET_Y - 4 },
+];
+const CORRIDOR_MARKER_OFFSETS = [
+  { offsetX: -40, offsetY: -22 },
+  { offsetX: 0, offsetY: -48 },
+  { offsetX: 40, offsetY: -22 },
 ];
 
 export function Mission() {
@@ -80,32 +90,57 @@ export function Mission() {
     () => buildMissionPreview(activeDeck?.cards ?? [], runnerCardId ?? undefined),
     [activeDeck?.cards, runnerCardId],
   );
-  const missionWeather = weatherByDistrict[activeMission.district] ?? null;
-  const missionLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.district];
+  const originWeather = weatherByDistrict[activeMission.originDistrict] ?? null;
+  const destinationWeather = weatherByDistrict[activeMission.destinationDistrict] ?? null;
+  const originLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.originDistrict];
+  const destinationLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.destinationDistrict];
+  const corridorCondition = activeMission.corridor
+    ? getCorridorCondition(activeMission.corridor, weatherByDistrict)
+    : null;
   const runnerBoardType = missionPreview.runnerCard?.board?.boardType;
   const runnerWheelType = missionPreview.runnerCard?.board?.wheels;
   const hasRunner = Boolean(missionPreview.runnerCard);
-  const missionAccessBlocked =
+
+  const launchAccessBlocked =
     hasRunner &&
-    !isDistrictAccessibleWithBoardType(activeMission.district, missionWeather, runnerBoardType, runnerWheelType);
-  const missionAccessSummary = getDistrictAccessSummary(activeMission.district, missionWeather);
+    !isDistrictAccessibleWithBoardType(activeMission.originDistrict, originWeather, runnerBoardType, runnerWheelType);
+  const destinationAccessBlocked =
+    hasRunner &&
+    !isDistrictAccessibleWithBoardType(activeMission.destinationDistrict, destinationWeather, runnerBoardType, runnerWheelType);
+  const corridorAccessBlocked =
+    hasRunner &&
+    Boolean(activeMission.corridor) &&
+    !isCorridorAccessible(activeMission.corridor, runnerWheelType);
+  const missionAccessBlocked = launchAccessBlocked || destinationAccessBlocked || corridorAccessBlocked;
+
   const missionAccessReason = hasRunner
-    ? getDistrictAccessBlockReason(activeMission.district, missionWeather, runnerBoardType, runnerWheelType)
+    ? (
+      launchAccessBlocked
+        ? getDistrictAccessBlockReason(activeMission.originDistrict, originWeather, runnerBoardType, runnerWheelType)
+        : destinationAccessBlocked
+          ? getDistrictAccessBlockReason(activeMission.destinationDistrict, destinationWeather, runnerBoardType, runnerWheelType)
+          : activeMission.corridor
+            ? getCorridorAccessBlockReason(activeMission.corridor, runnerWheelType)
+            : null
+    )
     : null;
-  const missionAccessRestricted = hasDistrictAccessRestriction(activeMission.district, missionWeather);
-  const missionWeatherSummary = missionWeather
-    ? `${missionWeather.summary} over ${missionWeather.city}, ${missionWeather.state}.`
+
+  const originAccessSummary = getDistrictAccessSummary(activeMission.originDistrict, originWeather);
+  const destinationAccessSummary = getDistrictAccessSummary(activeMission.destinationDistrict, destinationWeather);
+  const originWeatherSummary = originWeather
+    ? `${originWeather.summary} over ${originWeather.city}, ${originWeather.state}.`
     : weatherLoading
       ? "District weather uplink is syncing."
       : weatherError
         ? "District weather uplink is offline, so this district is running on open access."
-        : `No live weather seed is active for ${activeMission.district}.`;
+        : `No live weather seed is active for ${activeMission.originDistrict}.`;
+
   const missionMarkers = useMemo(
     () => {
       const districtMarkerIndex = new Map<string, number>();
-      return DISTRICT_MISSIONS.map((mission) => {
-        const markerIndex = districtMarkerIndex.get(mission.district) ?? 0;
-        districtMarkerIndex.set(mission.district, markerIndex + 1);
+      return DISTRICT_MISSIONS.filter((mission) => !mission.corridor).map((mission) => {
+        const markerIndex = districtMarkerIndex.get(mission.originDistrict) ?? 0;
+        districtMarkerIndex.set(mission.originDistrict, markerIndex + 1);
         const markerOffset = DISTRICT_MARKER_OFFSETS[markerIndex] ?? {
           offsetX: markerIndex * 18,
           offsetY: MISSION_MARKER_OFFSET_Y,
@@ -113,9 +148,41 @@ export function Mission() {
 
         return {
           id: mission.id,
-          district: mission.district,
+          district: mission.originDistrict,
           label: mission.pinLabel,
-          title: `${mission.name} · ${mission.district}`,
+          title: `${mission.name} · ${mission.originDistrict}`,
+          active: mission.id === activeMission.id,
+          offsetX: markerOffset.offsetX,
+          offsetY: markerOffset.offsetY,
+          onClick: () => {
+            setActiveMissionId(mission.id);
+            setMissionResult(null);
+            setPendingFork(null);
+            setForkChoices({});
+          },
+        };
+      });
+    },
+    [activeMission.id],
+  );
+
+  const missionCorridors = useMemo(
+    () => {
+      const corridorMarkerIndex = new Map<string, number>();
+      return DISTRICT_MISSIONS.filter((mission) => mission.corridor).map((mission) => {
+        const corridor = mission.corridor!;
+        const markerIndex = corridorMarkerIndex.get(corridor) ?? 0;
+        corridorMarkerIndex.set(corridor, markerIndex + 1);
+        const markerOffset = CORRIDOR_MARKER_OFFSETS[markerIndex] ?? {
+          offsetX: markerIndex * 18,
+          offsetY: -22,
+        };
+
+        return {
+          id: mission.id,
+          corridor,
+          label: mission.pinLabel,
+          title: `${mission.name} · ${corridor}`,
           active: mission.id === activeMission.id,
           offsetX: markerOffset.offsetX,
           offsetY: markerOffset.offsetY,
@@ -166,7 +233,7 @@ export function Mission() {
         <div>
           <h1 className="page-title">Missions</h1>
           <p className="page-sub">
-            Pick a district pushpin, choose your runner, and send one deck into the field.
+            Pick a district hub or corridor line, choose your runner, and send one deck into the field.
           </p>
         </div>
       </div>
@@ -174,13 +241,13 @@ export function Mission() {
       <section className="mission-panel mission-panel--atlas">
         <div className="mission-panel__header">
           <div>
-            <h2>District Operations Map</h2>
+            <h2>District &amp; Corridor Operations Map</h2>
             <p className="page-sub">
-              Three missions are now staged in every district. Tap a pushpin to swap operations.
+              Missions now stage from district hubs and travel lines instead of treating The Roads like a district.
             </p>
           </div>
         </div>
-        <GeoAtlas compact className="mission-atlas" markers={missionMarkers} />
+        <GeoAtlas compact className="mission-atlas" markers={missionMarkers} corridors={missionCorridors} />
         <div className="mission-selector-grid">
           {DISTRICT_MISSIONS.map((mission) => (
             <button
@@ -194,9 +261,15 @@ export function Mission() {
                 setForkChoices({});
               }}
             >
-              <span className="mission-selector-card__district">{mission.district}</span>
+              <span className="mission-selector-card__district">
+                {mission.originDistrict}
+                {mission.destinationDistrict !== mission.originDistrict ? ` → ${mission.destinationDistrict}` : ""}
+              </span>
               <strong className="mission-selector-card__name">{mission.name}</strong>
               <span className="mission-selector-card__tagline">{mission.tagline}</span>
+              {mission.corridor && (
+                <span className="mission-selector-card__reward">🛣️ {mission.corridor}</span>
+              )}
               {mission.ozziesReward != null && mission.ozziesReward > 0 && (
                 <span className="mission-selector-card__reward">💰 {mission.ozziesReward} Ozzies</span>
               )}
@@ -229,16 +302,30 @@ export function Mission() {
         </div>
         <div className={`mission-weather${missionAccessBlocked ? " mission-weather--blocked" : ""}`}>
           <div className="mission-weather__copy">
-            <span className="mission-weather__eyebrow">District weather seed</span>
+            <span className="mission-weather__eyebrow">Launch district seed</span>
             <strong className="mission-weather__title">
-              {activeMission.district} · {missionLocation.city}
+              {activeMission.originDistrict} · {originLocation.city}
             </strong>
-            <p className="mission-weather__body">{missionWeatherSummary}</p>
+            <p className="mission-weather__body">{originWeatherSummary}</p>
           </div>
-          <span className={`mission-weather__status${missionAccessRestricted ? " mission-weather__status--restricted" : ""}`}>
-            {missionAccessSummary}
+          <span className={`mission-weather__status${launchAccessBlocked ? " mission-weather__status--restricted" : ""}`}>
+            {originAccessSummary}
           </span>
         </div>
+        {corridorCondition && (
+          <div className={`mission-weather${corridorAccessBlocked ? " mission-weather--blocked" : ""}`}>
+            <div className="mission-weather__copy">
+              <span className="mission-weather__eyebrow">Corridor profile</span>
+              <strong className="mission-weather__title">
+                {corridorCondition.label} · {corridorCondition.from} ↔ {corridorCondition.to}
+              </strong>
+              <p className="mission-weather__body">{corridorCondition.status}</p>
+            </div>
+            <span className={`mission-weather__status${corridorAccessBlocked ? " mission-weather__status--restricted" : ""}`}>
+              {corridorCondition.accessSummary}
+            </span>
+          </div>
+        )}
         {!activeDeck && (
           <p className="mission-warning">Build a deck first to send a runner into this district.</p>
         )}
@@ -328,13 +415,35 @@ export function Mission() {
                       <span className="mission-stat-value">{activeMission.name}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">District</span>
-                      <span className="mission-stat-value">{activeMission.district}</span>
+                      <span className="mission-stat-label">Origin</span>
+                      <span className="mission-stat-value">{activeMission.originDistrict}</span>
                     </div>
                     <div className="mission-stat-row">
-                      <span className="mission-stat-label">District Access</span>
-                      <span className="mission-stat-value">{missionAccessSummary}</span>
+                      <span className="mission-stat-label">Destination</span>
+                      <span className="mission-stat-value">
+                        {activeMission.destinationDistrict} · {destinationLocation.city}
+                      </span>
                     </div>
+                    {activeMission.corridor && (
+                      <div className="mission-stat-row">
+                        <span className="mission-stat-label">Corridor</span>
+                        <span className="mission-stat-value">{activeMission.corridor}</span>
+                      </div>
+                    )}
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Launch Access</span>
+                      <span className="mission-stat-value">{originAccessSummary}</span>
+                    </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Destination Access</span>
+                      <span className="mission-stat-value">{destinationAccessSummary}</span>
+                    </div>
+                    {activeMission.corridor && (
+                      <div className="mission-stat-row">
+                        <span className="mission-stat-label">Corridor Access</span>
+                        <span className="mission-stat-value">{getCorridorAccessSummary(activeMission.corridor)}</span>
+                      </div>
+                    )}
                     <div className="mission-stat-row">
                       <span className="mission-stat-label" title={MISSION_STAT_LABELS.speed.tooltip}>{MISSION_STAT_LABELS.speed.label}</span>
                       <span className="mission-stat-value">{missionPreview.stats.speed}</span>
@@ -378,43 +487,57 @@ export function Mission() {
                     ))}
                   </ol>
                 )}
-                <div className="mission-fork__options">
-                  <button
-                    type="button"
-                    className="mission-fork__option"
-                    onClick={() => handleForkChoice("A")}
-                  >
-                    <strong className="mission-fork__option-label">A — {pendingFork.optionA.label}</strong>
-                    <span className="mission-fork__option-desc">{pendingFork.optionA.description}</span>
+                <div className="mission-fork__choices">
+                  <button className="btn-secondary" onClick={() => handleForkChoice("A")}>
+                    {pendingFork.optionA.label}
                   </button>
-                  <button
-                    type="button"
-                    className="mission-fork__option"
-                    onClick={() => handleForkChoice("B")}
-                  >
-                    <strong className="mission-fork__option-label">B — {pendingFork.optionB.label}</strong>
-                    <span className="mission-fork__option-desc">{pendingFork.optionB.description}</span>
+                  <button className="btn-secondary" onClick={() => handleForkChoice("B")}>
+                    {pendingFork.optionB.label}
                   </button>
+                </div>
+                <div className="mission-fork__summaries">
+                  <p>{pendingFork.optionA.description}</p>
+                  <p>{pendingFork.optionB.description}</p>
                 </div>
               </section>
             )}
 
             {missionResult && (
               <section className="mission-panel">
-                <div className="mission-result">
-                  <span className={`mission-result__badge ${missionResult.success ? "mission-result__badge--success" : "mission-result__badge--fail"}`}>
-                    {missionResult.success ? "MISSION COMPLETE" : "MISSION FAILED"}
-                  </span>
-                  <div className="mission-checks">
-                    <span className="tag" title={MISSION_STAT_LABELS.health.tooltip}>{MISSION_STAT_LABELS.health.label} {missionResult.playerStats.health}</span>
-                    <span className="tag">Heat {missionResult.playerStats.heatLevel}</span>
-                    <span className="tag" title={MISSION_STAT_LABELS.batteryRemaining.tooltip}>{MISSION_STAT_LABELS.batteryRemaining.label} {missionResult.playerStats.batteryRemaining}</span>
-                    <span className="tag">Inventory {missionResult.inventory.length}</span>
-                    {missionResult.ozziesReward > 0 && (
-                      <span className="tag tag--ozzies">💰 +{missionResult.ozziesReward} Ozzies</span>
-                    )}
+                <h3>{missionResult.success ? "Mission Complete" : "Mission Failed"}</h3>
+                <div className="mission-stats">
+                  <div className="mission-stat-row">
+                    <span className="mission-stat-label">Outcome</span>
+                    <span className="mission-stat-value">{missionResult.success ? "Success" : "Failure"}</span>
                   </div>
+                  <div className="mission-stat-row">
+                    <span className="mission-stat-label">Health</span>
+                    <span className="mission-stat-value">{missionResult.playerStats.health}</span>
+                  </div>
+                  <div className="mission-stat-row">
+                    <span className="mission-stat-label">Heat</span>
+                    <span className="mission-stat-value">{missionResult.playerStats.heatLevel}</span>
+                  </div>
+                  <div className="mission-stat-row">
+                    <span className="mission-stat-label">Battery Left</span>
+                    <span className="mission-stat-value">{missionResult.playerStats.batteryRemaining}</span>
+                  </div>
+                  {missionResult.ozziesReward > 0 && (
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Ozzies Earned</span>
+                      <span className="mission-stat-value">💰 {missionResult.ozziesReward}</span>
+                    </div>
+                  )}
                 </div>
+                {missionResult.inventory.length > 0 && (
+                  <div className="mission-reward-list">
+                    {missionResult.inventory.map((item) => (
+                      <span key={item.id} className="tag">
+                        {item.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <ol className="mission-log">
                   {missionResult.missionLog.map((entry, index) => (
                     <li key={`${index}-${entry}`}>{entry}</li>

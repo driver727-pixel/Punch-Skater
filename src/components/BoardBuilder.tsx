@@ -276,7 +276,7 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
         onSelect={(v) => handleCarouselChange({ ...value, motor: v as typeof value.motor })}
       />
 
-      {/* Belt 4 — Wheels (determines District access) */}
+      {/* Belt 4 — Wheels (determines access profile) */}
       <ConveyorCarousel
         label="Wheels"
         items={filteredWheelItems}
