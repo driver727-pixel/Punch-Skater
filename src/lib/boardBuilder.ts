@@ -836,12 +836,12 @@ export function getAllowedComponents(boardType: BoardType): {
   const allBatteries: BatteryType[]  = BATTERY_OPTIONS.map((o) => o.value);
   const nonTopMountBatteries         = BATTERY_OPTIONS.filter((o) => !o.isTopMounted).map((o) => o.value);
   const topMountBatteries            = BATTERY_OPTIONS.filter((o) => o.isTopMounted).map((o) => o.value);
-  const noFourWheelDrive             = allDrivetrains.filter((d) => d !== "4WD");
+  const no4WD                        = allDrivetrains.filter((d) => d !== "4WD");
   const noBelt                       = allDrivetrains.filter((d) => d !== "Belt");
 
   switch (boardType) {
     case "Street":
-      return { drivetrains: noFourWheelDrive, motors: allMotors, wheels: allWheels, batteries: nonTopMountBatteries };
+      return { drivetrains: no4WD, motors: allMotors, wheels: allWheels, batteries: nonTopMountBatteries };
     case "Mountain":
       return {
         drivetrains: ["4WD"],
@@ -858,7 +858,7 @@ export function getAllowedComponents(boardType: BoardType): {
       };
     case "AT":
       return {
-        drivetrains: noFourWheelDrive,
+        drivetrains: no4WD,
         motors: allMotors.filter((m) => m !== "Micro"),
         wheels: allWheels,
         batteries: nonTopMountBatteries,
