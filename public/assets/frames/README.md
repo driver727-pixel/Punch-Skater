@@ -27,7 +27,7 @@ This means:
 For best results the frame image should have:
 - A **flat black interior** (not grey or near-black — pure #000000).
 - Bright, high-contrast border artwork (gold, silver, jewel tones work well).
-- Recommended size: **768 × 1024 px** (portrait 3:4).
+- Recommended size: **750 × 1050 px** (portrait 5:7).
 
 ## How to Get Images
 

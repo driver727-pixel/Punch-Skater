@@ -13,6 +13,31 @@
 const CARD_WIDTH  = 750;
 const CARD_HEIGHT = 1050;
 
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource & { width: number; height: number },
+  targetWidth: number,
+  targetHeight: number,
+): void {
+  const sourceAspect = img.width / img.height;
+  const targetAspect = targetWidth / targetHeight;
+
+  let sourceWidth = img.width;
+  let sourceHeight = img.height;
+  let sourceX = 0;
+  let sourceY = 0;
+
+  if (sourceAspect > targetAspect) {
+    sourceWidth = img.height * targetAspect;
+    sourceX = (img.width - sourceWidth) / 2;
+  } else if (sourceAspect < targetAspect) {
+    sourceHeight = img.width / targetAspect;
+    sourceY = (img.height - sourceHeight) / 2;
+  }
+
+  ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+}
+
 function loadCrossOriginImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -52,7 +77,7 @@ export async function downloadCardAsJpg(
     const img = await loadCrossOriginImage(backgroundUrl);
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 1;
-    ctx.drawImage(img, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+    drawImageCover(ctx, img, CARD_WIDTH, CARD_HEIGHT);
   }
 
   // ── Layer 2: character (normal blend, user-controlled opacity) ─────────────
@@ -60,7 +85,7 @@ export async function downloadCardAsJpg(
     const img = await loadCrossOriginImage(characterUrl);
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = Math.max(0, Math.min(1, characterBlend));
-    ctx.drawImage(img, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+    drawImageCover(ctx, img, CARD_WIDTH, CARD_HEIGHT);
     ctx.globalAlpha = 1;
   }
 

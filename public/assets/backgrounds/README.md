@@ -6,8 +6,8 @@ Place district background images here to skip AI generation and save fal.ai cred
 
 | Size | Folder | Dimensions | Use |
 |------|--------|------------|-----|
-| **Print / full quality** | `public/assets/backgrounds/` | 1536 × 2048 px | Print modal, JPEG download |
-| **Screen / standard quality** | `public/assets/backgrounds/small/` | 768 × 1024 px | Live card preview, collection thumbnails |
+| **Print / full quality** | `public/assets/backgrounds/` | 1500 × 2100 px | Print modal, JPEG download |
+| **Screen / standard quality** | `public/assets/backgrounds/small/` | 750 × 1050 px | Live card preview, collection thumbnails |
 
 Upload **both** files with the same filename.  The app automatically serves the
 small version to the browser (fast load) and switches to the large version when
@@ -36,8 +36,8 @@ the user prints or downloads the card.
    `src/services/staticAssets.ts`.
 
 2. **Custom artwork:** Drop in your own JPG/PNG that matches the desired district mood.
-   - Print-quality (this folder): **1536 × 2048 px**
-   - Screen-quality (`small/` subfolder): **768 × 1024 px** at 72–96 DPI
+   - Print-quality (this folder): **1500 × 2100 px**
+   - Screen-quality (`small/` subfolder): **750 × 1050 px** at 72–96 DPI
 
 ## Activating Files
 

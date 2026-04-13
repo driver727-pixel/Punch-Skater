@@ -20,9 +20,9 @@ Use the **same filename** as the corresponding print-quality file:
 
 ## Recommended Dimensions
 
-**768 × 1024 px** at 72–96 DPI (portrait 3:4 aspect ratio).
+**750 × 1050 px** at 72–96 DPI (portrait 5:7 aspect ratio).
 
-The full-size equivalents in the parent folder should be **1536 × 2048 px** and are
+The full-size equivalents in the parent folder should be **1500 × 2100 px** and are
 only fetched during print / download.
 
 ## Activating Files

@@ -95,7 +95,7 @@ const FAL_LORA_SCALE = Number.isFinite(rawFalLoraScale) ? rawFalLoraScale : 1;
 const DEFAULT_FAL_LORAS = FAL_LORA_PATH
   ? [{ path: FAL_LORA_PATH, scale: FAL_LORA_SCALE }]
   : [];
-const DEFAULT_FAL_IMAGE_SIZE = { width: 768, height: 1024 };
+const DEFAULT_FAL_IMAGE_SIZE = { width: 750, height: 1050 };
 const DEFAULT_FAL_NUM_INFERENCE_STEPS = 28;
 const DEFAULT_FAL_GUIDANCE_SCALE = 3.5;
 const DEFAULT_FAL_NUM_IMAGES = 1;

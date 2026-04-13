@@ -31,7 +31,7 @@ export const isImageGenConfigured = Boolean(PROXY_API_URL);
 // ── Generation parameters ──────────────────────────────────────────────────────
 // Adjust these to trade off quality vs. generation speed.
 
-const IMAGE_SIZE         = { width: 768, height: 1024 };
+const IMAGE_SIZE         = { width: 750, height: 1050 };
 const INFERENCE_STEPS    = 28;
 const GUIDANCE_SCALE     = 3.5;
 const NUM_IMAGES         = 1;

@@ -9,11 +9,11 @@
  * ── Background sizes ─────────────────────────────────────────────────────────
  *  Two resolutions are tracked for each district:
  *
- *  • BACKGROUND_ASSETS_SMALL  — screen / standard quality (768 × 1024 px).
+ *  • BACKGROUND_ASSETS_SMALL  — screen / standard quality (750 × 1050 px).
  *    Place files in  public/assets/backgrounds/small/<slug>.jpg
  *    Used for the live card preview and collection thumbnails (fast load).
  *
- *  • BACKGROUND_ASSETS        — print quality (1536 × 2048 px).
+ *  • BACKGROUND_ASSETS        — print quality (1500 × 2100 px).
  *    Place files in  public/assets/backgrounds/<slug>.jpg
  *    Used only when the user prints or downloads the card (high fidelity).
  *
@@ -39,7 +39,7 @@ import type { District, Rarity } from "../lib/types";
 
 // ── Background registry — print / full quality ────────────────────────────────
 //
-// Files live in  public/assets/backgrounds/<slug>.jpg  (1536 × 2048 px).
+// Files live in  public/assets/backgrounds/<slug>.jpg  (1500 × 2100 px).
 // Used for print and JPEG download.  Uncomment an entry once you have placed
 // the corresponding file.
 
@@ -54,7 +54,7 @@ const BACKGROUND_ASSETS: Partial<Record<District, string>> = {
 
 // ── Background registry — screen / standard quality ───────────────────────────
 //
-// Files live in  public/assets/backgrounds/small/<slug>.jpg  (768 × 1024 px).
+// Files live in  public/assets/backgrounds/small/<slug>.jpg  (750 × 1050 px).
 // Used for the live card preview and collection thumbnails (faster load).
 // Uncomment an entry once you have placed the corresponding file.
 
@@ -87,7 +87,7 @@ const FRAME_ASSETS: Partial<Record<Rarity, string>> = {
 
 /**
  * Returns the public URL of the **print-quality** static background image for
- * the given district (1536 × 2048 px), or null if not registered.
+ * the given district (1500 × 2100 px), or null if not registered.
  *
  * Use this URL when printing or downloading — not for the on-screen preview.
  * When non-null the caller should use this URL instead of calling fal.ai.
@@ -98,7 +98,7 @@ export function getStaticBackgroundUrl(district: District): string | null {
 
 /**
  * Returns the public URL of the **screen-quality** static background image for
- * the given district (768 × 1024 px), or null if not registered.
+ * the given district (750 × 1050 px), or null if not registered.
  *
  * Use this URL for the live card preview and collection thumbnails.  Falls back
  * to null so the caller can fall back to getStaticBackgroundUrl if needed.
