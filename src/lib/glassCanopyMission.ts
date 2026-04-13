@@ -615,10 +615,12 @@ export const ROAD_EVENTS: RoadEventDefinition[] = [
   },
 ];
 
-function getRoadEventDefinition(roadEventId: string): RoadEventDefinition | null {
+function getRoadEventDefinition(roadEventId: string, missionId: string): RoadEventDefinition | null {
   const roadEvent = ROAD_EVENTS.find((entry) => entry.id === roadEventId) ?? null;
   if (!roadEvent) {
-    console.warn(`[Mission] Unknown road event referenced: ${roadEventId}`);
+    console.warn(
+      `[Mission] Unknown road event referenced: ${roadEventId} in mission ${missionId}. Check roadEventIds on that mission blueprint.`,
+    );
   }
   return roadEvent;
 }
@@ -664,7 +666,7 @@ function createMissionItem(blueprint: MissionItemBlueprint): MissionItem {
 function createDistrictMission(blueprint: DistrictMissionBlueprint): DistrictMissionDefinition {
   const missionItem = createMissionItem(blueprint.item);
   const roadEvents = (blueprint.roadEventIds ?? [])
-    .map(getRoadEventDefinition)
+    .map((roadEventId) => getRoadEventDefinition(roadEventId, blueprint.id))
     .filter((roadEvent): roadEvent is RoadEventDefinition => roadEvent != null);
   const roadEventSteps = roadEvents.map((roadEvent, index) => buildRoadEventStep(roadEvent, blueprint.id, index + 3));
   const phaseOffset = roadEventSteps.length;

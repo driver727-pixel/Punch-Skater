@@ -260,7 +260,9 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
           {corridors.map((marker) => {
             const artery = DISTRICT_ARTERIES.find((route) => route.label === marker.corridor);
             if (!artery) {
-              console.warn(`[GeoAtlas] Unknown corridor marker route: ${marker.corridor}`);
+              console.warn(
+                `[GeoAtlas] Unknown corridor marker route: ${marker.corridor}. Add it to DISTRICT_ARTERIES or check the corridor id for typos.`,
+              );
               return null;
             }
             const start = AUSTRALIA_DISTRICT_LAYOUT[artery.from];

@@ -145,7 +145,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "The Roads",
     kind: "corridor",
-    controlledBy: "Corridor layer — open courier territory",
+    controlledBy: "Open courier territory / relay camps",
     australianAnalogue: "Nullarbor Plain / Stuart Highway",
     tagline: "Transit is its own battlefield.",
     description:

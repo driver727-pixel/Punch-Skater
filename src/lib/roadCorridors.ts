@@ -2,6 +2,15 @@ import type { WheelType } from "./boardBuilder";
 import type { District, RoadCorridor, WorldLocation } from "./types";
 import type { DistrictWeatherSnapshot } from "./districtWeather";
 
+const PLAYABLE_DISTRICTS: District[] = [
+  "Airaway",
+  "Batteryville",
+  "The Grid",
+  "Nightshade",
+  "The Forest",
+  "Glass City",
+];
+
 export interface CorridorProfile {
   id: RoadCorridor;
   label: string;
@@ -94,7 +103,7 @@ function clampCorridorValue(value: number): number {
 }
 
 function isDistrict(location: WorldLocation): location is District {
-  return location !== "Electropolis" && location !== "The Roads";
+  return PLAYABLE_DISTRICTS.includes(location as District);
 }
 
 function getWeatherPressure(weather: DistrictWeatherSnapshot | null | undefined): number {

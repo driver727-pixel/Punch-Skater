@@ -21,6 +21,7 @@ import {
   getDistrictAccessBlockReason,
   getDistrictAccessSummary,
   isDistrictAccessibleWithBoardType,
+  type DistrictWeatherSnapshot,
 } from "../lib/districtWeather";
 import {
   getCorridorAccessBlockReason,
@@ -29,6 +30,7 @@ import {
   isCorridorAccessible,
 } from "../lib/roadCorridors";
 import { MISSION_STAT_LABELS } from "../lib/statLabels";
+import type { District, RoadCorridor } from "../lib/types";
 
 const MISSION_MARKER_OFFSET_Y = -76;
 const DISTRICT_MARKER_OFFSETS = [
@@ -41,6 +43,51 @@ const CORRIDOR_MARKER_OFFSETS = [
   { offsetX: 0, offsetY: -48 },
   { offsetX: 40, offsetY: -22 },
 ];
+
+function resolveMissionLocation(district: District) {
+  return DISTRICT_WEATHER_LOCATIONS[district] ?? {
+    city: district,
+    state: "N/A",
+    latitude: 0,
+    longitude: 0,
+  };
+}
+
+function resolveMissionAccessReason(params: {
+  hasRunner: boolean;
+  launchBlocked: boolean;
+  destinationBlocked: boolean;
+  corridorBlocked: boolean;
+  originDistrict: District;
+  destinationDistrict: District;
+  originWeather: DistrictWeatherSnapshot | null;
+  destinationWeather: DistrictWeatherSnapshot | null;
+  runnerBoardType: string | undefined;
+  runnerWheelType: string | undefined;
+  corridor?: RoadCorridor;
+}) {
+  if (!params.hasRunner) return null;
+  if (params.launchBlocked) {
+    return getDistrictAccessBlockReason(
+      params.originDistrict,
+      params.originWeather,
+      params.runnerBoardType,
+      params.runnerWheelType,
+    );
+  }
+  if (params.destinationBlocked) {
+    return getDistrictAccessBlockReason(
+      params.destinationDistrict,
+      params.destinationWeather,
+      params.runnerBoardType,
+      params.runnerWheelType,
+    );
+  }
+  if (params.corridorBlocked && params.corridor) {
+    return getCorridorAccessBlockReason(params.corridor, params.runnerWheelType);
+  }
+  return null;
+}
 
 export function Mission() {
   const navigate = useNavigate();
@@ -92,18 +139,8 @@ export function Mission() {
   );
   const originWeather = weatherByDistrict[activeMission.originDistrict] ?? null;
   const destinationWeather = weatherByDistrict[activeMission.destinationDistrict] ?? null;
-  const originLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.originDistrict] ?? {
-    city: activeMission.originDistrict,
-    state: "N/A",
-    latitude: 0,
-    longitude: 0,
-  };
-  const destinationLocation = DISTRICT_WEATHER_LOCATIONS[activeMission.destinationDistrict] ?? {
-    city: activeMission.destinationDistrict,
-    state: "N/A",
-    latitude: 0,
-    longitude: 0,
-  };
+  const originLocation = resolveMissionLocation(activeMission.originDistrict);
+  const destinationLocation = resolveMissionLocation(activeMission.destinationDistrict);
   const corridorCondition = activeMission.corridor
     ? getCorridorCondition(activeMission.corridor, weatherByDistrict)
     : null;
@@ -123,17 +160,19 @@ export function Mission() {
     !isCorridorAccessible(activeMission.corridor, runnerWheelType);
   const missionAccessBlocked = launchAccessBlocked || destinationAccessBlocked || corridorAccessBlocked;
 
-  const missionAccessReason = hasRunner
-    ? (
-      launchAccessBlocked
-        ? getDistrictAccessBlockReason(activeMission.originDistrict, originWeather, runnerBoardType, runnerWheelType)
-        : destinationAccessBlocked
-          ? getDistrictAccessBlockReason(activeMission.destinationDistrict, destinationWeather, runnerBoardType, runnerWheelType)
-          : activeMission.corridor
-            ? getCorridorAccessBlockReason(activeMission.corridor, runnerWheelType)
-            : null
-    )
-    : null;
+  const missionAccessReason = resolveMissionAccessReason({
+    hasRunner,
+    launchBlocked: launchAccessBlocked,
+    destinationBlocked: destinationAccessBlocked,
+    corridorBlocked: corridorAccessBlocked,
+    originDistrict: activeMission.originDistrict,
+    destinationDistrict: activeMission.destinationDistrict,
+    originWeather,
+    destinationWeather,
+    runnerBoardType,
+    runnerWheelType,
+    corridor: activeMission.corridor,
+  });
 
   const originAccessSummary = getDistrictAccessSummary(activeMission.originDistrict, originWeather);
   const destinationAccessSummary = getDistrictAccessSummary(activeMission.destinationDistrict, destinationWeather);
