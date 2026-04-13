@@ -47,6 +47,9 @@ const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
   numInferenceSteps: 45,
   guidanceScale: 4,
 };
+const NON_LORA_GENERATION_OPTIONS: ImageGenOptions = {
+  loras: [],
+};
 const CHARACTER_MIN_DIMENSIONS = { width: 900, height: 1300 };
 const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
 
@@ -386,7 +389,12 @@ export function CardForge() {
         validateResult: validateCharacterLayer,
         generationOptions: CHARACTER_GENERATION_OPTIONS,
       },
-      frame:      { key: frameKey, prompt: framePrompt, seed: frameSeed  },
+      frame:      {
+        key: frameKey,
+        prompt: framePrompt,
+        seed: frameSeed,
+        generationOptions: NON_LORA_GENERATION_OPTIONS,
+      },
     };
 
     // Background layer
@@ -424,7 +432,10 @@ export function CardForge() {
           return;
         }
 
-        const result = await generateImage(boardPrompt, boardSeed, { imageSize: "square_hd" });
+        const result = await generateImage(boardPrompt, boardSeed, {
+          imageSize: "square_hd",
+          ...NON_LORA_GENERATION_OPTIONS,
+        });
         if (signal.aborted) return;
 
         await setCachedImage(boardCacheKey, result.imageUrl);

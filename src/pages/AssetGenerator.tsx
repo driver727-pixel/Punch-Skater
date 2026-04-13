@@ -127,6 +127,7 @@ export function AssetGenerator() {
     try {
       const raw = await generateImage(item.prompt, item.seedKey, {
         imageSize: "square_hd",
+        loras: [],
       });
       setItemState(item.seedKey, { status: "removing-bg" });
       const transparent = await removeBackground(raw.imageUrl);

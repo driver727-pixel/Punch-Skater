@@ -31,16 +31,23 @@ export const isImageGenConfigured = Boolean(PROXY_API_URL);
 // ── Generation parameters ──────────────────────────────────────────────────────
 // Adjust these to trade off quality vs. generation speed.
 
-const IMAGE_SIZE         = "portrait_4_3";
-const INFERENCE_STEPS    = 35;   // 35 produces noticeably sharper detail than 28; FLUX.1 dev quality sweet-spot
+const IMAGE_SIZE         = { width: 768, height: 1024 };
+const INFERENCE_STEPS    = 28;
 const GUIDANCE_SCALE     = 3.5;
 const NUM_IMAGES         = 1;
 const SAFETY_CHECKER     = true;
+const OUTPUT_FORMAT      = "png";
+
+export interface FalLoraConfig {
+  path: string;
+  scale: number;
+}
 
 export interface ImageGenOptions {
   imageSize?: string | { width: number; height: number };
   numInferenceSteps?: number;
   guidanceScale?: number;
+  loras?: FalLoraConfig[];
 }
 
 /**
@@ -115,8 +122,10 @@ export async function generateImage(
     image_size: options.imageSize ?? IMAGE_SIZE,
     num_inference_steps: options.numInferenceSteps ?? INFERENCE_STEPS,
     guidance_scale: options.guidanceScale ?? GUIDANCE_SCALE,
+    loras: options.loras,
     num_images: NUM_IMAGES,
     enable_safety_checker: SAFETY_CHECKER,
+    output_format: OUTPUT_FORMAT,
   });
 
   const response = await fetch(PROXY_API_URL, { method: "POST", headers, body });

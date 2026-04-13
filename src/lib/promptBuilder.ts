@@ -77,10 +77,8 @@ const AGE_RESTRICTION =
   "Clearly an adult subject aged 21 or older with fully grown body proportions and mature facial structure. Never a child or teenager. ";
 
 const CORE_COMIC_BOOK_STYLE =
-  "Core art direction: high-detail 1990s X-Men-era superhero comic-book illustration. " +
-  "Style lock: bold inked linework, airbrushed comic color holds, halftone print texture, graphic shadows, dramatic rim lighting, punchy poster colors, " +
-  "heroic adult anatomy, expressive but grounded faces, crisp trading-card illustration finish. " +
-  "This style direction dominates all other prompt details. Keep the result clearly illustrated, never photographed, never live-action, never 3D rendered, never anime, never chibi, never painterly. ";
+  "Comic-book illustration styled for a premium trading card. " +
+  "Adult anatomy, crisp detail, grounded faces, and strong silhouette readability. ";
 
 function joinPromptBlocks(...blocks: Array<string | undefined>): string {
   return blocks
@@ -213,7 +211,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
     `Mood: ${mood}.`,
     characterDesc,
     AGE_RESTRICTION,
-    `Render goals: premium trading-card illustration energy, crisp detail, dramatic rim lighting, no childlike, mascot-like, or cartoonishly simplified proportions.`,
+    `Render goals: crisp trading-card finish, dramatic lighting, and realistic adult proportions.`,
     `Background: isolated on a solid neutral medium-gray studio background, full figure visible from head to toe, centred.`,
     `Safe-for-work, fully clothed adult character art, LGBTQIA+.`,
   );
@@ -304,7 +302,7 @@ export function buildBackgroundPrompt(district: string): string {
     `Scene: a wide establishing shot of ${desc}.`,
     `No people, no characters, no text, no logos.`,
     `Mood: atmospheric, immersive, cinematic depth of field.`,
-    `Render goals: premium 1990s comic-book environment splash page, rich detail, dramatic lighting, 4K.`,
+    `Render goals: rich environmental detail, dramatic lighting, and splash-page clarity.`,
     `SFW, family friendly, PG rated, LGBTQIA+.`,
   );
 }
@@ -338,7 +336,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Subject: premium trading-card illustration of a clearly adult ${prompts.archetype} skater courier.`,
+    `Subject: clearly adult ${prompts.archetype} skater courier.`,
     `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, ${pose}.`,
     `Props: carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear.`,
     `Performance note: character is alert and ready to move.`,
@@ -346,7 +344,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     `${hairDesc}${skinDesc}${faceDesc}${shoeDesc}`,
     `Mood: ${mood}.`,
     AGE_RESTRICTION,
-    `Render goals: premium 1990s trading-card illustration energy, cinematic lighting, crisp detail, no cartoon, childlike, or simplified mascot proportions, 4K.`,
+    `Render goals: cinematic lighting, crisp detail, and realistic adult proportions.`,
     `Safe-for-work, fully clothed adult character art, LGBTQIA+.`,
   );
 }

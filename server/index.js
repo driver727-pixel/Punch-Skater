@@ -88,7 +88,19 @@ const FAL_KEY = process.env.FAL_KEY || '';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || '';
 const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
-const FAL_URL = 'https://fal.run/fal-ai/flux/dev';
+const FAL_URL = process.env.FAL_IMAGE_MODEL_URL || 'https://fal.run/fal-ai/flux-lora';
+const FAL_LORA_PATH = process.env.FAL_LORA_PATH || 'https://v3b.fal.media/files/b/0a961b80/LZYfVjdfVXWWb7gMl4kL2_pytorch_lora_weights.safetensors';
+const parsedFalLoraScale = Number.parseFloat(process.env.FAL_LORA_SCALE || '1');
+const FAL_LORA_SCALE = Number.isFinite(parsedFalLoraScale) ? parsedFalLoraScale : 1;
+const DEFAULT_FAL_LORAS = FAL_LORA_PATH
+  ? [{ path: FAL_LORA_PATH, scale: FAL_LORA_SCALE }]
+  : [];
+const DEFAULT_FAL_IMAGE_SIZE = { width: 768, height: 1024 };
+const DEFAULT_FAL_NUM_INFERENCE_STEPS = 28;
+const DEFAULT_FAL_GUIDANCE_SCALE = 3.5;
+const DEFAULT_FAL_NUM_IMAGES = 1;
+const DEFAULT_FAL_ENABLE_SAFETY_CHECKER = true;
+const DEFAULT_FAL_OUTPUT_FORMAT = 'png';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -181,6 +193,20 @@ function buildFallbackDistrictWeatherPayload() {
       updatedAt: generatedAt,
       accessRule: null,
     })),
+  };
+}
+
+function buildFalImageRequest(body = {}) {
+  const hasOwnLoras = Object.prototype.hasOwnProperty.call(body, 'loras');
+  return {
+    ...body,
+    image_size: body.image_size ?? DEFAULT_FAL_IMAGE_SIZE,
+    num_inference_steps: body.num_inference_steps ?? DEFAULT_FAL_NUM_INFERENCE_STEPS,
+    guidance_scale: body.guidance_scale ?? DEFAULT_FAL_GUIDANCE_SCALE,
+    num_images: body.num_images ?? DEFAULT_FAL_NUM_IMAGES,
+    enable_safety_checker: body.enable_safety_checker ?? DEFAULT_FAL_ENABLE_SAFETY_CHECKER,
+    output_format: body.output_format ?? DEFAULT_FAL_OUTPUT_FORMAT,
+    loras: hasOwnLoras ? body.loras : DEFAULT_FAL_LORAS,
   };
 }
 
@@ -279,7 +305,7 @@ app.post('/api/generate-image', imageRateLimit, async (req, res) => {
         'Content-Type': 'application/json',
         Authorization: `Key ${FAL_KEY}`,
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(buildFalImageRequest(req.body)),
     });
 
     if (!upstream.ok) {
