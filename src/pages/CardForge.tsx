@@ -545,7 +545,7 @@ export function CardForge() {
     <div className="page">
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <h1 className="page-title">CARD FORGE</h1>
-      <p className="page-sub">Configure your courier and forge a unique card</p>
+      <p className="page-sub">Configure your Sk8r and forge a unique card</p>
 
       <div className="forge-layout">
         {/* ── Left column: form controls ── */}
