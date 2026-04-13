@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CardPayload, Rarity, Archetype, Faction, District } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
@@ -51,8 +51,26 @@ export function Collection() {
   const [filterDistrict, setFilterDistrict] = useState<District | "">("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   const existingIds = useMemo(() => new Set(cards.map((c) => c.id)), [cards]);
+
+  useEffect(() => {
+    const validIds = new Set(cards.map((card) => card.id));
+    setSelectedIds((prev) => {
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (validIds.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setSelected((prev) => (prev && !validIds.has(prev.id) ? null : prev));
+  }, [cards]);
 
   // Derive unique values from actual cards for filter dropdowns
   const filterOptions = useMemo(() => {
@@ -135,8 +153,47 @@ export function Collection() {
     return result;
   }, [cards, searchQuery, filterRarity, filterArchetype, filterFaction, filterDistrict, sortBy]);
 
-  const handleExport = () => {
-    exportJson({ version: "1.0.0", cards, exportedAt: new Date().toISOString() }, "skpd-collection.json");
+  const selectedCards = useMemo(
+    () => cards.filter((card) => selectedIds.has(card.id)),
+    [cards, selectedIds],
+  );
+  const visibleSelectedCount = useMemo(
+    () => filteredCards.reduce((count, card) => count + (selectedIds.has(card.id) ? 1 : 0), 0),
+    [filteredCards, selectedIds],
+  );
+  const hasSelection = selectedIds.size > 0;
+  const allFilteredSelected = filteredCards.length > 0 && visibleSelectedCount === filteredCards.length;
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const toggleCardSelection = (cardId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllFiltered = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filteredCards.forEach((card) => next.delete(card.id));
+      } else {
+        filteredCards.forEach((card) => next.add(card.id));
+      }
+      return next;
+    });
+  };
+
+  const handleExport = (targetCards: CardPayload[] = cards, filename = "skpd-collection.json") => {
+    exportJson({ version: "1.0.0", cards: targetCards, exportedAt: new Date().toISOString() }, filename);
   };
 
   const handleImportCards = (incoming: CardPayload[]) => {
@@ -172,6 +229,19 @@ export function Collection() {
     } finally {
       setDownloading(false);
     }
+  };
+
+  const handleBulkRemove = () => {
+    if (selectedCards.length === 0) return;
+    sfxRemove();
+    for (const card of selectedCards) {
+      removeCardFromAllDecks(card.id);
+      removeCard(card.id);
+    }
+    if (selected && selectedIds.has(selected.id)) {
+      setSelected(null);
+    }
+    clearSelection();
   };
 
   if (!tierData.canSave) {
@@ -221,8 +291,8 @@ export function Collection() {
               Import JSON
             </button>
             <button className="btn-outline" onClick={handleExport} disabled={cards.length === 0}>
-            Export JSON
-          </button>
+              Export All
+            </button>
         </div>
       </div>
 
@@ -321,6 +391,53 @@ export function Collection() {
                 Showing {filteredCards.length} of {cards.length} card{cards.length !== 1 ? "s" : ""}
               </p>
             )}
+
+            <div className="collection-bulk-bar">
+              <span className="collection-bulk-count">
+                {hasSelection
+                  ? `${selectedIds.size} selected`
+                  : `${filteredCards.length} visible`}
+              </span>
+              <div className="collection-bulk-actions">
+                <button
+                  className="btn-outline btn-sm"
+                  onClick={toggleSelectAllFiltered}
+                  disabled={filteredCards.length === 0}
+                >
+                  {allFilteredSelected ? "Clear Visible" : "Select All"}
+                </button>
+                <button
+                  className="btn-outline btn-sm"
+                  onClick={clearSelection}
+                  disabled={!hasSelection}
+                >
+                  Clear Selection
+                </button>
+                <button
+                  className="btn-outline btn-sm"
+                  onClick={() => handleExport(selectedCards, "skpd-selected-collection.json")}
+                  disabled={!hasSelection}
+                >
+                  Export Selected
+                </button>
+                {tierData.canEditDecks ? (
+                  <button
+                    className="btn-danger btn-sm"
+                    onClick={handleBulkRemove}
+                    disabled={!hasSelection}
+                  >
+                    Delete Selected
+                  </button>
+                ) : (
+                  <button
+                    className="btn-outline btn-sm"
+                    onClick={openUpgradeModal}
+                  >
+                    🔒 Upgrade to Delete
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {filteredCards.length === 0 ? (
@@ -332,23 +449,37 @@ export function Collection() {
           ) : (
           <div className="collection-layout">
           <div className="card-grid">
-            {filteredCards.map((card) => (
-              <div
-                key={card.id}
-                className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""}`}
-                onClick={() => {
-                  const next = selected?.id === card.id ? null : card;
-                  if (next) sfxClick();
-                  setSelected(next);
-                }}
-              >
-                <CardThumbnail card={card} width={160} height={224} />
-                <div className="card-thumb-info">
-                  <span className="card-name">{card.identity.name}</span>
-                  <span className="card-sub">{getDisplayedArchetype(card)} · {card.prompts.rarity}</span>
+            {filteredCards.map((card) => {
+              const isCardSelected = selectedIds.has(card.id);
+              return (
+                <div
+                  key={card.id}
+                  className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""} ${isCardSelected ? "card-thumb--selected" : ""}`}
+                 onClick={() => {
+                   const next = selected?.id === card.id ? null : card;
+                   if (next) sfxClick();
+                   setSelected(next);
+                 }}
+               >
+                 <button
+                   type="button"
+                   className={`card-thumb-select ${isCardSelected ? "card-thumb-select--active" : ""}`}
+                   aria-label={`${isCardSelected ? "Deselect" : "Select"} ${card.identity.name}`}
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     toggleCardSelection(card.id);
+                   }}
+                 >
+                   {isCardSelected ? "✓" : "+"}
+                 </button>
+                 <CardThumbnail card={card} width={160} height={224} />
+                  <div className="card-thumb-info">
+                    <span className="card-name">{card.identity.name}</span>
+                    <span className="card-sub">{getDisplayedArchetype(card)} · {card.prompts.rarity}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {selected && (
