@@ -290,7 +290,7 @@ export function Collection() {
             <button className="btn-outline btn-sm" onClick={() => setShowImport(true)}>
               Import JSON
             </button>
-            <button className="btn-outline" onClick={() => handleExport()} disabled={cards.length === 0}>
+            <button className="btn-outline" onClick={handleExport} disabled={cards.length === 0}>
               Export All
             </button>
         </div>
