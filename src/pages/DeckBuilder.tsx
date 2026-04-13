@@ -11,6 +11,12 @@ import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
 import { sfxSuccess, sfxRemove, sfxClick } from "../lib/sfx";
+import {
+  isFirstDeck,
+  canAddToFirstDeck,
+  getFirstDeckInitiationStatus,
+  FIRST_DECK_MIN_PUNCH_SKATERS,
+} from "../lib/deckValidation";
 
 export function DeckBuilder() {
   const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck } = useDecks();
@@ -25,6 +31,13 @@ export function DeckBuilder() {
   const [renameVal, setRenameVal] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const [blockedReason, setBlockedReason] = useState<string | null>(null);
+
+  // First-deck initiation status (only relevant when activeDeck is the first deck)
+  const firstDeckInitStatus = useMemo(() => {
+    if (!activeDeck || !isFirstDeck(activeDeck, decks)) return null;
+    return getFirstDeckInitiationStatus(activeDeck.cards);
+  }, [activeDeck, decks]);
 
   // Auto-select the first deck when decks load (and none is selected)
   useEffect(() => {
@@ -81,6 +94,17 @@ export function DeckBuilder() {
   const handleAddCard = (card: CardPayload) => {
     if (!activeDeck) return;
     if (activeDeck.cards.length >= DECK_CARD_LIMIT) return;
+
+    // Enforce first-deck initiation rules
+    if (isFirstDeck(activeDeck, decks)) {
+      const check = canAddToFirstDeck(activeDeck.cards, card);
+      if (!check.allowed) {
+        setBlockedReason(check.reason);
+        return;
+      }
+    }
+
+    setBlockedReason(null);
     sfxClick();
     addCardToDeck(activeDeck.id, card);
   };
@@ -118,6 +142,12 @@ export function DeckBuilder() {
     (c) => !activeDeck?.cards.some((dc) => dc.id === c.id)
   );
 
+  // Clear any blocked-card notice when switching decks
+  const handleSetActiveDeck = (deck: DeckPayload) => {
+    setBlockedReason(null);
+    setActiveDeck(deck);
+  };
+
   const slotsRemaining = activeDeck ? DECK_CARD_LIMIT - activeDeck.cards.length : 0;
 
   return (
@@ -149,7 +179,7 @@ export function DeckBuilder() {
                 <div
                   key={deck.id}
                   className={`deck-item ${activeDeck?.id === deck.id ? "deck-item--active" : ""}`}
-                  onClick={() => setActiveDeck(deck)}
+                  onClick={() => handleSetActiveDeck(deck)}
                 >
                   {renaming === deck.id ? (
                     <input
@@ -218,6 +248,39 @@ export function DeckBuilder() {
                 )}
               </div>
 
+              {/* First-deck initiation banner */}
+              {firstDeckInitStatus && !firstDeckInitStatus.initiated && (
+                <div className="deck-initiation-banner">
+                  <span className="deck-initiation-icon">🛹</span>
+                  <div className="deck-initiation-text">
+                    <strong>First Deck Initiation</strong>
+                    <span>
+                      Add {firstDeckInitStatus.punchSkatersNeeded} more Punch Skater card{firstDeckInitStatus.punchSkatersNeeded !== 1 ? "s" : ""} to unlock all card types.
+                      {" "}You currently have {firstDeckInitStatus.punchSkaterCount}/{FIRST_DECK_MIN_PUNCH_SKATERS} Punch Skaters
+                      {firstDeckInitStatus.legendaryCount > 0 && " · 1 Legendary slot used"}.
+                    </span>
+                  </div>
+                </div>
+              )}
+              {firstDeckInitStatus?.initiated && (
+                <div className="deck-initiation-banner deck-initiation-banner--complete">
+                  <span className="deck-initiation-icon">✅</span>
+                  <span>First deck initiated — all card types may be added freely.</span>
+                </div>
+              )}
+
+              {/* Blocked-add notice */}
+              {blockedReason && (
+                <div className="deck-blocked-notice" role="alert">
+                  <span>⚠️ {blockedReason}</span>
+                  <button
+                    className="icon-btn"
+                    aria-label="Dismiss"
+                    onClick={() => setBlockedReason(null)}
+                  >✕</button>
+                </div>
+              )}
+
               {/* 6-slot card gallery with drag-to-reorder */}
               <div className="deck-section">
                 <h3>Cards — drag to reorder</h3>
@@ -274,21 +337,28 @@ export function DeckBuilder() {
                 <div className="deck-section">
                   <h3>Add from Collection ({slotsRemaining} slot{slotsRemaining !== 1 ? "s" : ""} remaining)</h3>
                   <div className="card-grid card-grid--small">
-                    {availableCards.map((card) => (
-                      <div key={card.id} className="card-thumb card-thumb--add">
-                        <CardThumbnail card={card} width={120} height={84} />
-                        <div className="card-thumb-info">
-                          <span className="card-name">{card.identity.name}</span>
-                          <span className="card-sub">{getDisplayedArchetype(card)}</span>
-                          <button
-                            className="btn-primary btn-sm"
-                            onClick={() => handleAddCard(card)}
-                          >
-                            Add
-                          </button>
+                    {availableCards.map((card) => {
+                      const addCheck = isFirstDeck(activeDeck, decks)
+                        ? canAddToFirstDeck(activeDeck.cards, card)
+                        : { allowed: true as const };
+                      const blocked = !addCheck.allowed;
+                      return (
+                        <div key={card.id} className={`card-thumb card-thumb--add${blocked ? " card-thumb--blocked" : ""}`}>
+                          <CardThumbnail card={card} width={120} height={84} />
+                          <div className="card-thumb-info">
+                            <span className="card-name">{card.identity.name}</span>
+                            <span className="card-sub">{getDisplayedArchetype(card)}</span>
+                            <button
+                              className={blocked ? "btn-secondary btn-sm" : "btn-primary btn-sm"}
+                              title={blocked ? addCheck.reason : undefined}
+                              onClick={() => handleAddCard(card)}
+                            >
+                              {blocked ? "Locked 🔒" : "Add"}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

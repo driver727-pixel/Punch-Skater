@@ -115,6 +115,25 @@ const RARITY_BONUS: Record<Rarity, number> = {
   Legendary:      4,
 };
 
+/**
+ * Ozzycred value ranges (in cents) per rarity tier.
+ * Higher-rarity cards are worth more on average, but results are still
+ * randomised within the range so every card retains unpredictability.
+ *
+ *   Punch Skater  →  $1.00 – $15.00
+ *   Apprentice    →  $5.00 – $30.00
+ *   Master        →  $15.00 – $55.00
+ *   Rare          →  $35.00 – $75.00
+ *   Legendary     →  $60.00 – $100.00
+ */
+const RARITY_OZZIES_RANGE: Record<Rarity, [min: number, max: number]> = {
+  "Punch Skater": [100,   1500],
+  Apprentice:     [500,   3000],
+  Master:         [1500,  5500],
+  Rare:           [3500,  7500],
+  Legendary:      [6000, 10000],
+};
+
 export function clampCardStat(value: number): number {
   return Math.max(MIN_SINGLE_STAT, Math.min(MAX_SINGLE_STAT, Math.round(value)));
 }
@@ -189,8 +208,9 @@ export const generateCard = (prompts: CardPrompts): CardPayload => {
   const serialSuffix = Math.abs(seedFromString(characterSeed)) % 10000;
   const serialNumber = `PS-${String(serialSuffix).padStart(4, "0")}`;
 
-  // ── Ozzycred (random currency value $1.00 – $100.00) ────────────────────────
-  const ozzies = Math.round((charRng.range(100, 10000)) ) / 100;
+  // ── Ozzycred (rarity-weighted currency value) ────────────────────────────────
+  const [ozzMin, ozzMax] = RARITY_OZZIES_RANGE[prompts.rarity];
+  const ozzies = Math.round(charRng.range(ozzMin, ozzMax)) / 100;
 
   // ── Card ID (deterministic per full prompt set) ────────────────────────────
   const idNum = Math.abs(seedFromString(masterSeed)) % 1_000_000;
