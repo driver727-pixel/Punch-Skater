@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   collection,
   doc,
+  type DocumentData,
   setDoc,
   deleteDoc,
   onSnapshot,
+  type QuerySnapshot,
   serverTimestamp,
   getDocs,
   query,
@@ -52,10 +54,15 @@ function persistSeenBattleResults(uid: string, seenIds: Set<string>) {
   );
 }
 
+/** Returns true when a stored card's current stats differ from a battle resolution. */
 function hasStatChanges(card: CardPayload, resolution: BattleCardResolution): boolean {
   return Object.entries(resolution.stats).some(([key, value]) => card.stats[key as keyof CardPayload["stats"]] !== value);
 }
 
+/**
+ * Applies a resolved battle result to the current user's saved cards and decks,
+ * then clears the battleReady flag on the deck that entered the arena.
+ */
 async function applyBattleResultToUserCollections(uid: string, result: BattleResult): Promise<void> {
   if (!db) return;
 
@@ -179,8 +186,8 @@ export function useBattle() {
 
     seenBattleResultsRef.current = loadSeenBattleResults(uid);
     const battleResultsRef = collection(db, "battleResults");
-    const handleSnapshot = (snap: { docs: Array<{ data: () => unknown }> }) => {
-      for (const battleDoc of snap.docs) {
+    const handleSnapshot = (querySnapshot: QuerySnapshot<DocumentData>) => {
+      for (const battleDoc of querySnapshot.docs) {
         void handleResolvedBattle(battleDoc.data() as BattleResult);
       }
     };

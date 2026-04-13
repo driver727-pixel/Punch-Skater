@@ -205,7 +205,11 @@ export function resolveBattle(
   return { challengerScore, defenderScore, winnerSide };
 }
 
-function getMutableStatCells(cards: BattleCardSnapshot[], direction: -1 | 1): Array<[number, StatKey]> {
+/**
+ * Returns every card/stat position that can still be adjusted in the requested
+ * direction without violating the live stat bounds.
+ */
+function getEligibleStatPositions(cards: BattleCardSnapshot[], direction: -1 | 1): Array<[number, StatKey]> {
   const cells: Array<[number, StatKey]> = [];
   for (let cardIndex = 0; cardIndex < cards.length; cardIndex += 1) {
     for (const key of STAT_KEYS) {
@@ -221,6 +225,11 @@ function getMutableStatCells(cards: BattleCardSnapshot[], direction: -1 | 1): Ar
   return cells;
 }
 
+/**
+ * Applies a deterministic random stat shift across a battle deck.
+ * `direction = -1` spends wager points, while `direction = 1` distributes bonus
+ * points. Seeded randomness keeps the final resolution reproducible.
+ */
 function applyRandomStatShift(
   cards: BattleCardSnapshot[],
   totalPoints: number,
@@ -232,7 +241,7 @@ function applyRandomStatShift(
   let remaining = totalPoints;
 
   while (remaining > 0) {
-    const eligible = getMutableStatCells(nextCards, direction);
+    const eligible = getEligibleStatPositions(nextCards, direction);
     if (eligible.length === 0) break;
     const [cardIndex, statKey] = eligible[Math.floor(rng.next() * eligible.length)];
     nextCards[cardIndex].stats[statKey] += direction;
@@ -242,6 +251,7 @@ function applyRandomStatShift(
   return nextCards;
 }
 
+/** Converts resolved battle snapshots into compact card-resolution records. */
 function toCardResolutions(cards: BattleCardSnapshot[]): BattleCardResolution[] {
   return cards.map((card) => ({
     id: card.id,
