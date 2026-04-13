@@ -287,7 +287,7 @@ export function Mission() {
   };
 
   const handleApplyPartsReward = (reward: MissionPartsUpgradeReward) => {
-    const sourceCard = cards.find((card) => card.id === missionPreview.runnerCard?.id) ?? missionPreview.runnerCard;
+    const sourceCard = cards.find((card) => card.id === missionPreview.runnerCard?.id);
     if (!sourceCard) return;
     const upgradedCard = applyMissionPartsReward(sourceCard, reward);
     updateCard(upgradedCard);

@@ -392,11 +392,11 @@ function scoreMissionRewardCandidate(
   candidateValue: RewardCandidateValue,
   focusGaps: Record<MissionPartsRewardFocus, number>,
 ): { score: number; focus: MissionPartsRewardFocus } {
-  const nextBoard = enforceCompatibility(buildBoardWithRewardValue(currentBoard, component, String(candidateValue)));
+  const upgradedBoard = enforceCompatibility(buildBoardWithRewardValue(currentBoard, component, String(candidateValue)));
   const currentLoadout = calculateBoardStats(currentBoard);
-  const nextLoadout = calculateBoardStats(nextBoard);
+  const nextLoadout = calculateBoardStats(upgradedBoard);
   const currentBonuses = getBoardStatBonuses(currentBoard);
-  const nextBonuses = getBoardStatBonuses(nextBoard);
+  const nextBonuses = getBoardStatBonuses(upgradedBoard);
 
   switch (component) {
     case "drivetrain":
@@ -547,11 +547,11 @@ export function previewMissionPartsReward(
 
 export function applyMissionPartsReward(card: CardPayload, reward: MissionPartsUpgradeReward): CardPayload {
   if (!card.board) return card;
-  const nextBoard = enforceCompatibility(buildBoardWithRewardValue(card.board, reward.component, reward.rewardValue));
+  const upgradedBoard = enforceCompatibility(buildBoardWithRewardValue(card.board, reward.component, reward.rewardValue));
   return {
     ...card,
-    board: nextBoard,
-    boardLoadout: calculateBoardStats(nextBoard),
+    board: upgradedBoard,
+    boardLoadout: calculateBoardStats(upgradedBoard),
   };
 }
 
