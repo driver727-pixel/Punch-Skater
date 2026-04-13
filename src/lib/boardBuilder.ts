@@ -572,9 +572,16 @@ export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentI
 
 // ── Board image prompt builder ─────────────────────────────────────────────────
 
+function sanitizeBoardComponentPromptDescription(description: string): string {
+  return description
+    .replace(/^Isometric view 45 degree angle top down\.\s*/i, "")
+    .replace(/^Product photography shot\.\s*/i, "")
+    .replace(/^Art style of gouache painting\.\s*/i, "");
+}
+
 /**
  * Builds a single AI-generation prompt describing the fully assembled electric
- * skateboard from the four chosen components.  This prompt is used to generate
+ * skateboard from the five chosen components. This prompt is used to generate
  * the skateboard image that appears on the player card.
  */
 export function buildBoardImagePrompt(config: BoardConfig): string {
@@ -583,21 +590,65 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
   const motor = MOTOR_OPTIONS.find((o) => o.value === config.motor);
   const wheel = WHEEL_OPTIONS.find((o) => o.value === config.wheels);
   const batt  = BATTERY_OPTIONS.find((o) => o.value === config.battery);
+  const deckModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === BOARD_TYPE_DECK_SEED[config.boardType]);
+  const driveModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === DRIVETRAIN_SEED[config.drivetrain]);
+  const motorModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === MOTOR_SEED[config.motor]);
+  const wheelModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === WHEEL_SEED[config.wheels]);
+  const battModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === BATTERY_SEED[config.battery]);
 
   const deckDesc  = deck?.description  ?? config.boardType;
   const driveDesc = drive?.description ?? config.drivetrain;
   const motorDesc = motor?.description ?? config.motor;
   const wheelDesc = wheel?.description ?? config.wheels;
   const battDesc  = batt?.description  ?? config.battery;
+  const deckVisual = deckModel
+    ? sanitizeBoardComponentPromptDescription(deckModel.description)
+    : `${deckDesc} Deck shape and stance must clearly match a ${config.boardType} setup.`;
+  const driveVisual = driveModel
+    ? sanitizeBoardComponentPromptDescription(driveModel.description)
+    : (
+      config.drivetrain === "AWD"
+        ? "A four-wheel-drive electric skateboard drivetrain with powered front and rear trucks, dual motor hardware on both axles, heavy-duty mounts, and visible off-road engineering."
+        : driveDesc
+    );
+  const motorVisual = motorModel
+    ? sanitizeBoardComponentPromptDescription(motorModel.description)
+    : motorDesc;
+  const wheelVisual = wheelModel
+    ? sanitizeBoardComponentPromptDescription(wheelModel.description)
+    : (
+      config.wheels === "Rubber"
+        ? "A set of four solid rubber all-terrain skateboard wheels, matte black, thick sidewalls, heavy-duty cores, and puncture-proof construction."
+        : wheelDesc
+    );
+  const battVisual = battModel
+    ? sanitizeBoardComponentPromptDescription(battModel.description)
+    : battDesc;
+  const batteryPlacement = batt?.isTopMounted
+    ? "The battery must be visibly mounted on top of the deck."
+    : "The battery must be visibly mounted underneath the deck.";
+  const drivetrainConstraint =
+    config.drivetrain === "Hub"
+      ? "No exposed belts, pulleys, chains, or external gearboxes anywhere on the board."
+      : config.drivetrain === "Gear"
+        ? "Show enclosed gear-drive housings instead of belts."
+        : config.drivetrain === "Belt"
+          ? "Show exposed belts, pulleys, and rear motor mounts."
+          : "Show powered front and rear axles for a true AWD setup.";
 
   return (
     `Isometric 45-degree hero illustration of a fully assembled ` +
     `DIY electric skateboard on a clean white studio background. ` +
-    `Deck: ${deckDesc} ` +
-    `Drivetrain: ${driveDesc} ` +
-    `Motor: ${motorDesc} ` +
-    `Wheels: ${wheelDesc} ` +
-    `Battery: ${battDesc} ` +
+    `Build one coherent board using exactly these selected parts with no substitutions: ` +
+    `Deck — ${deckVisual} ` +
+    `Drivetrain — ${driveVisual} ` +
+    `Motor — ${motorVisual} ` +
+    `Wheels — ${wheelVisual} ` +
+    `Battery — ${battVisual} ` +
+    `The assembled board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type, and battery form factor. ` +
+    `${batteryPlacement} ` +
+    `${drivetrainConstraint} ` +
+    `Single complete skateboard only, no rider, no extra loose parts, no exploded diagram, no duplicate components. ` +
     `Bold non-photoreal 1990s X-Men-era superhero comic-book rendering with crisp inked outlines, halftone texture, painted highlights, graphic shadows, ` +
     `vibrant saturated colors, sharp detail, clearly illustrated not photographed, not a product photo, not live-action, not a 3D render, isolated on white background.`
   );
