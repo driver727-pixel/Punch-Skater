@@ -166,7 +166,7 @@ export function normalizeCardStats<T extends Record<string, number>>(stats: T): 
 
 export const generateCard = (prompts: CardPrompts): CardPayload => {
   // ── Seeds ──────────────────────────────────────────────────────────────────
-  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.gender}|${prompts.ageGroup}|${prompts.bodyType}|${prompts.hairLength ?? ""}|${prompts.hairColor ?? ""}|${prompts.skinTone ?? ""}|${prompts.faceCharacter ?? ""}`;
+  const characterSeed  = `${prompts.archetype}|${prompts.style}|${prompts.gender}|${prompts.ageGroup}|${prompts.bodyType}|${prompts.hairLength ?? ""}|${prompts.hairColor ?? ""}|${prompts.skinTone ?? ""}|${prompts.faceCharacter ?? ""}|${prompts.shoeStyle ?? ""}`;
   const backgroundSeed = prompts.district;
   const frameSeed      = prompts.rarity;
   const masterSeed     = `${frameSeed}::${backgroundSeed}::${characterSeed}`;
