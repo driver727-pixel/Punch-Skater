@@ -4,6 +4,7 @@ export const FRAME_RENDER_WIDTH = 750;
 export const FRAME_RENDER_HEIGHT = 1050;
 
 type StandardFrameRarity = Exclude<Rarity, "Punch Skater">;
+type PreviewFrameRarity = Rarity;
 
 export const STANDARD_FRAME_RARITIES = [
   "Apprentice",
@@ -11,6 +12,11 @@ export const STANDARD_FRAME_RARITIES = [
   "Rare",
   "Legendary",
 ] as const satisfies readonly StandardFrameRarity[];
+
+export const FRAME_PREVIEW_RARITIES = [
+  "Punch Skater",
+  ...STANDARD_FRAME_RARITIES,
+] as const satisfies readonly PreviewFrameRarity[];
 
 interface FrameProps {
   width: number;

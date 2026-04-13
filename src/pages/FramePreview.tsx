@@ -1,6 +1,6 @@
-import { CardFrame, FRAME_RENDER_HEIGHT, FRAME_RENDER_WIDTH, STANDARD_FRAME_RARITIES } from "../components/CardFrame";
+import { CardFrame, FRAME_RENDER_HEIGHT, FRAME_RENDER_WIDTH, FRAME_PREVIEW_RARITIES } from "../components/CardFrame";
 
-function FramePreviewTile({ rarity }: { rarity: typeof STANDARD_FRAME_RARITIES[number] }) {
+function FramePreviewTile({ rarity }: { rarity: typeof FRAME_PREVIEW_RARITIES[number] }) {
   const uid = `preview_${rarity.toLowerCase()}`;
 
   return (
@@ -38,13 +38,13 @@ export function FramePreview() {
         <div>
           <h1 className="page-title">🖼 Border Frame Preview</h1>
           <p className="page-sub">
-            Fixed 750 × 1050 previews for the four standard card borders.
+            Fixed 750 × 1050 previews for all five card borders, including Punch Skater.
           </p>
         </div>
       </div>
 
       <section className="frame-preview-grid" aria-label="Card frame previews">
-        {STANDARD_FRAME_RARITIES.map((rarity) => (
+        {FRAME_PREVIEW_RARITIES.map((rarity) => (
           <FramePreviewTile key={rarity} rarity={rarity} />
         ))}
       </section>
