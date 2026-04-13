@@ -4523,8 +4523,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 [data-theme="free"] .conveyor__item,
 [data-theme="free"] .psb__label {
   text-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.94),
-    0 0 6px rgba(255, 248, 225, 0.12);
+    0 1px 1px rgba(0, 0, 0, 0.98),
+    0 0 8px rgba(255, 248, 225, 0.18);
 }
 
 [data-theme="free"] .nav-link:not(.active) {
@@ -4535,13 +4535,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 [data-theme="free"] .btn-outline,
 [data-theme="free"] .btn-danger,
 [data-theme="free"] .pill:not(.selected) {
-  --soda-ink: #fff4ea;
+  --soda-ink: #fffaf4;
 }
 
 [data-theme="free"] .tier-badge-btn--free {
-  border-color: rgba(216, 206, 248, 0.62);
-  color: #d8cef8;
-  background: rgba(216, 206, 248, 0.06);
+  border-color: rgba(232, 224, 255, 0.78);
+  color: #f2ebff;
+  background: rgba(216, 206, 248, 0.12);
 }
 
 [data-theme="free"] .board-builder__step-tab,
