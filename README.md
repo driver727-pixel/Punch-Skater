@@ -23,7 +23,7 @@ A dense cyberpunk courier card game built with React, TypeScript, Vite, Firebase
 
 ## Environment
 
-Copy `/home/runner/work/Punch-Skater/Punch-Skater/.env.example` to `.env` for local client config.
+Copy `.env.example` to `.env` for local client config.
 
 ### Client variables
 
@@ -45,7 +45,7 @@ Do not commit server secrets.
 ## Local Development
 
 ```bash
-cd /home/runner/work/Punch-Skater/Punch-Skater
+cd /path/to/Punch-Skater
 npm install
 
 # terminal 1
@@ -58,7 +58,7 @@ npm run dev
 ## Validation
 
 ```bash
-cd /home/runner/work/Punch-Skater/Punch-Skater
+cd /path/to/Punch-Skater
 npm install
 npm run lint
 npm run build
