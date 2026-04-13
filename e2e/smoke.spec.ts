@@ -149,8 +149,8 @@ test.describe('Credits page', () => {
 test.describe('Lore page', () => {
   test('shows the district map and arterial routes', async ({ page }) => {
     await page.goto('/lore');
-    await expect(page.getByRole('heading', { name: /city map/i })).toBeVisible();
-    await expect(page.getByTestId('district-map')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /australia theater map/i })).toBeVisible();
+    await expect(page.getByTestId('australia-overmap')).toBeVisible();
     await expect(page.getByTestId('district-node-airaway')).toContainText(/airaway/i);
     await expect(page.getByTestId('district-node-nightshade')).toContainText(/nightshade/i);
     await expect(page.getByRole('list', { name: /arterial courier routes/i })).toContainText('Mag-Rail Spine');
@@ -173,6 +173,21 @@ test.describe('Navigation & routing', () => {
 
   test('trades redirect to login when unauthenticated', async ({ page }) => {
     await page.goto('/trades');
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('mission redirects to login when unauthenticated', async ({ page }) => {
+    await page.goto('/mission');
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('arena redirects to login when unauthenticated', async ({ page }) => {
+    await page.goto('/arena');
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('account redirects to login when unauthenticated', async ({ page }) => {
+    await page.goto('/account');
     await expect(page).toHaveURL(/\/login/);
   });
 

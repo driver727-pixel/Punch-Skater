@@ -1,5 +1,5 @@
 import { calculateBoardStats, getBoardStatBonuses } from "./boardBuilder";
-import type { CardPayload, District } from "./types";
+import type { CardPayload, District, RoadCorridor } from "./types";
 import type { BoardConfig, BoardLoadout, WheelType } from "./boardBuilder";
 
 type MissionCheckStat = "speed" | "acceleration" | "stealth" | "batteryRemaining";
@@ -135,10 +135,12 @@ interface MissionDefinition {
   steps: MissionStep[];
   /** Ozzycred reward granted on successful completion (0 or omitted = no reward). */
   ozziesReward?: number;
+  originDistrict: District;
+  destinationDistrict: District;
+  corridor?: RoadCorridor;
 }
 
 export interface DistrictMissionDefinition extends MissionDefinition {
-  district: District;
   pinLabel: string;
   tagline: string;
   briefing: string;
@@ -390,7 +392,10 @@ interface DistrictMissionThresholds {
 interface DistrictMissionBlueprint {
   id: string;
   name: string;
-  district: District;
+  originDistrict: District;
+  destinationDistrict: District;
+  corridor?: RoadCorridor;
+  roadEventIds?: string[];
   pinLabel: string;
   tagline: string;
   briefing: string;
@@ -433,6 +438,221 @@ interface DistrictMissionBlueprint {
   };
 }
 
+interface RoadEventDefinitionBase {
+  id: string;
+  corridor: RoadCorridor;
+  name: string;
+  tags: string[];
+  trigger: string;
+  reward: string;
+  penalty: string;
+  failureState: string;
+}
+
+interface RoadEventHazardDefinition extends RoadEventDefinitionBase {
+  kind: "hazard";
+  hazardType: MissionHazardStep["hazardType"];
+  requirement: MissionRequirement;
+  successText: string | ((context: MissionNarrativeContext) => string);
+  failureText: string | ((context: MissionNarrativeContext) => string);
+  onSuccess?: MissionEffect[];
+  onFailure?: MissionEffect[];
+  endsMissionOnFailure?: boolean;
+}
+
+interface RoadEventForkDefinition extends RoadEventDefinitionBase {
+  kind: "fork";
+  prompt: string;
+  optionA: MissionForkBlueprint;
+  optionB: MissionForkBlueprint;
+}
+
+type RoadEventDefinition = RoadEventHazardDefinition | RoadEventForkDefinition;
+
+export const ROAD_EVENTS: RoadEventDefinition[] = [
+  {
+    id: "freight-washout",
+    corridor: "Freight Artery",
+    name: "Freight Washout",
+    kind: "hazard",
+    tags: ["Battery Drain", "Debris", "Attrition"],
+    trigger: "High debris on long-haul freight pavement.",
+    reward: "Clearing it keeps your timetable stable.",
+    penalty: "Failures burn extra battery and spike heat.",
+    failureState: "The route stays open, but the run gets louder and shorter-ranged.",
+    hazardType: "Environmental Hazard",
+    requirement: { kind: "stat", stat: "speed", minimum: 7, affectedByHeat: true },
+    successText: ({ playerStats }) => `You read the washout early, skim the broken shoulder, and only spend a little reserve. Battery settles at ${playerStats.batteryRemaining} Range.`,
+    failureText: ({ playerStats }) => `The washout bucks your line and forces a dirty correction. Heat climbs to ${playerStats.heatLevel} while battery drops to ${playerStats.batteryRemaining} Range.`,
+    onSuccess: [{ type: "adjust", stat: "batteryRemaining", amount: -2 }],
+    onFailure: [
+      { type: "adjust", stat: "batteryRemaining", amount: -4 },
+      { type: "adjust", stat: "heatLevel", amount: 1 },
+    ],
+  },
+  {
+    id: "freight-relay-triage",
+    corridor: "Freight Artery",
+    name: "Relay Triage",
+    kind: "fork",
+    tags: ["Rescue Choice", "Delay Risk"],
+    trigger: "A roadside relay camp flags you for emergency help.",
+    reward: "Helping the camp cuts future heat and earns goodwill.",
+    penalty: "Staying on mission preserves charge but leaves the corridor colder.",
+    failureState: "Either way the route keeps moving, but the tone of the run changes.",
+    prompt: "A relay camp waves you down with a snapped truck and stranded couriers. You can burn time stabilizing them or stay on the schedule.",
+    optionA: {
+      label: "Stabilize the relay",
+      description: "Spend time and charge helping the camp hold together.",
+      narrativeText: ({ playerStats }) => `You stop long enough to get the relay rolling again. Battery drops to ${playerStats.batteryRemaining} Range, but the locals scrub your heat down to ${playerStats.heatLevel}.`,
+      effects: [
+        { type: "adjust", stat: "batteryRemaining", amount: -2 },
+        { type: "adjust", stat: "heatLevel", amount: -1 },
+      ],
+    },
+    optionB: {
+      label: "Keep the schedule",
+      description: "Stay on target and leave the camp to somebody else.",
+      narrativeText: ({ playerStats }) => `You keep the crate moving, but the abandoned relay pings your silhouette to everyone behind you. Heat rises to ${playerStats.heatLevel}.`,
+      effects: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
+    },
+  },
+  {
+    id: "underpass-sweep",
+    corridor: "Underpass Tunnel",
+    name: "Checkpoint Sweep",
+    kind: "hazard",
+    tags: ["Patrol Density", "Heat Spike"],
+    trigger: "Drone sweeps surge through the tunnel mouth.",
+    reward: "Slip it clean and you keep the underpass quiet.",
+    penalty: "If the sweep catches you, the tunnel turns hostile fast.",
+    failureState: "The mission continues under pressure unless you wipe out later.",
+    hazardType: "Passive Security",
+    requirement: { kind: "stat", stat: "stealth", minimum: 6, affectedByHeat: true },
+    successText: "You freeze under the service lip and let the sweep pass overhead without a clean read.",
+    failureText: ({ playerStats }) => `The sweep catches your wake. Heat jumps to ${playerStats.heatLevel} and your battery dips to ${playerStats.batteryRemaining} Range staying ahead of the net.`,
+    onFailure: [
+      { type: "adjust", stat: "heatLevel", amount: 2 },
+      { type: "adjust", stat: "batteryRemaining", amount: -2 },
+    ],
+  },
+  {
+    id: "underpass-diversion",
+    corridor: "Underpass Tunnel",
+    name: "Raid Diversion",
+    kind: "fork",
+    tags: ["Raid", "Diversion Choice"],
+    trigger: "A raid is chewing through the tunnel's next choke point.",
+    reward: "The smart call either trims heat or preserves speed.",
+    penalty: "The wrong call costs reserve or public exposure.",
+    failureState: "You always get through, just not cleanly.",
+    prompt: "Raiders lock down the next tunnel bend. You can fake a noisy decoy or drop into the flooded maintenance spine.",
+    optionA: {
+      label: "Throw a noisy decoy",
+      description: "Trade heat for a faster escape line.",
+      narrativeText: ({ playerStats }) => `You kick a decoy light rig down the wrong lane and burst through while everyone looks away. Heat climbs to ${playerStats.heatLevel}, but your line stays clean.`,
+      effects: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
+    },
+    optionB: {
+      label: "Dive the maintenance spine",
+      description: "Stay hidden in exchange for more battery drain.",
+      narrativeText: ({ playerStats }) => `You disappear into the flooded maintenance spine. The route stays quiet, but battery falls to ${playerStats.batteryRemaining} Range.`,
+      effects: [{ type: "adjust", stat: "batteryRemaining", amount: -3 }],
+    },
+  },
+  {
+    id: "timber-smoke-front",
+    corridor: "Timber Route",
+    name: "Smoke Front",
+    kind: "hazard",
+    tags: ["Visibility", "Wildfire Smoke"],
+    trigger: "Smoke rolls across the timber route and cuts the sightline to nothing.",
+    reward: "A steady push keeps the load upright through the blind stretch.",
+    penalty: "Failures cost health and range at the same time.",
+    failureState: "The route remains passable, but the runner gets chewed up.",
+    hazardType: "Environmental Hazard",
+    requirement: {
+      kind: "all",
+      requirements: [
+        { kind: "stat", stat: "batteryRemaining", minimum: 10, affectedByHeat: true },
+        { kind: "stat", stat: "speed", minimum: 6, affectedByHeat: true },
+      ],
+    },
+    successText: ({ playerStats }) => `You keep the board level through the smoke wall and only burn reserve. Battery drops to ${playerStats.batteryRemaining} Range.`,
+    failureText: ({ playerStats }) => `Smoke blinds the route and a root bridge clips your underside. Health falls to ${playerStats.health}% while battery slips to ${playerStats.batteryRemaining} Range.`,
+    onSuccess: [{ type: "adjust", stat: "batteryRemaining", amount: -2 }],
+    onFailure: [
+      { type: "adjustPercent", stat: "health", percent: -8 },
+      { type: "adjust", stat: "batteryRemaining", amount: -3 },
+    ],
+  },
+  {
+    id: "timber-relief-choice",
+    corridor: "Timber Route",
+    name: "Stranded Civilians",
+    kind: "fork",
+    tags: ["Rescue Choice", "Mutual Aid"],
+    trigger: "A family and two couriers are stranded where the timber path split collapsed.",
+    reward: "Stopping to help lowers heat and reinforces the Wooders' trust.",
+    penalty: "Passing them keeps battery but hardens the route.",
+    failureState: "The mission remains live, but the corridor remembers what you did.",
+    prompt: "A collapsed split leaves stranded civilians waving from a broken root bridge. You can stop to ferry them clear or keep your package moving.",
+    optionA: {
+      label: "Stop and ferry them",
+      description: "Spend time and battery to keep the route humane.",
+      narrativeText: ({ playerStats }) => `You burn precious charge ferrying everyone across, but the grateful couriers scrub your heat down to ${playerStats.heatLevel}. Battery settles at ${playerStats.batteryRemaining} Range.`,
+      effects: [
+        { type: "adjust", stat: "batteryRemaining", amount: -2 },
+        { type: "adjust", stat: "heatLevel", amount: -1 },
+      ],
+    },
+    optionB: {
+      label: "Keep the package moving",
+      description: "Protect the schedule and leave the rescue for later.",
+      narrativeText: ({ playerStats }) => `You keep the mission moving, but the route feels colder and the rumor trail gets louder. Heat rises to ${playerStats.heatLevel}.`,
+      effects: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
+    },
+  },
+];
+
+function getRoadEventDefinition(roadEventId: string, contextMissionId: string): RoadEventDefinition | null {
+  const roadEvent = ROAD_EVENTS.find((entry) => entry.id === roadEventId) ?? null;
+  if (!roadEvent) {
+    console.warn(
+      `[Mission] Unknown road event referenced: ${roadEventId} in mission ${contextMissionId}. Check roadEventIds on that mission blueprint.`,
+    );
+  }
+  return roadEvent;
+}
+
+function buildRoadEventStep(roadEvent: RoadEventDefinition, missionId: string, phase: number): MissionStep {
+  if (roadEvent.kind === "fork") {
+    return {
+      id: `${missionId}-${roadEvent.id}`,
+      kind: "fork",
+      name: roadEvent.name,
+      phase,
+      prompt: roadEvent.prompt,
+      optionA: roadEvent.optionA,
+      optionB: roadEvent.optionB,
+    };
+  }
+
+  return {
+    id: `${missionId}-${roadEvent.id}`,
+    kind: "hazard",
+    name: roadEvent.name,
+    phase,
+    hazardType: roadEvent.hazardType,
+    requirement: roadEvent.requirement,
+    successText: roadEvent.successText,
+    failureText: roadEvent.failureText,
+    onSuccess: roadEvent.onSuccess,
+    onFailure: roadEvent.onFailure,
+    endsMissionOnFailure: roadEvent.endsMissionOnFailure,
+  };
+}
+
 function createMissionItem(blueprint: MissionItemBlueprint): MissionItem {
   return {
     id: blueprint.id,
@@ -445,20 +665,30 @@ function createMissionItem(blueprint: MissionItemBlueprint): MissionItem {
 
 function createDistrictMission(blueprint: DistrictMissionBlueprint): DistrictMissionDefinition {
   const missionItem = createMissionItem(blueprint.item);
+  const roadEvents = (blueprint.roadEventIds ?? [])
+    .map((roadEventId) => getRoadEventDefinition(roadEventId, blueprint.id))
+    .filter((roadEvent): roadEvent is RoadEventDefinition => roadEvent != null);
+  const roadEventSteps = roadEvents.map((roadEvent, index) => buildRoadEventStep(roadEvent, blueprint.id, index + 3));
+  const phaseOffset = roadEventSteps.length;
 
   return {
     id: blueprint.id,
     name: blueprint.name,
-    district: blueprint.district,
+    originDistrict: blueprint.originDistrict,
+    destinationDistrict: blueprint.destinationDistrict,
+    corridor: blueprint.corridor,
     pinLabel: blueprint.pinLabel,
     tagline: blueprint.tagline,
     briefing: blueprint.briefing,
     ozziesReward: blueprint.ozziesReward,
     checkTags: [
+      `${blueprint.originDistrict} → ${blueprint.destinationDistrict}`,
+      ...(blueprint.corridor ? [`Corridor · ${blueprint.corridor}`] : []),
       `P1 Stealth ${blueprint.thresholds.stealth}`,
       `P3 Acceleration ${blueprint.thresholds.acceleration} (+ Heat)`,
       `P4 Speed ${blueprint.thresholds.speed} (+ Heat)`,
       `P4 Range ${blueprint.thresholds.battery} (+ Heat)`,
+      ...roadEvents.flatMap((roadEvent) => roadEvent.tags.slice(0, 1)),
     ],
     steps: [
       {
@@ -490,11 +720,12 @@ function createDistrictMission(blueprint: DistrictMissionBlueprint): DistrictMis
         optionA: blueprint.fork.optionA,
         optionB: blueprint.fork.optionB,
       },
+      ...roadEventSteps,
       {
         id: `${blueprint.id}-phase3`,
         kind: "hazard",
         name: blueprint.phase3.name,
-        phase: 3,
+        phase: 3 + phaseOffset,
         hazardType: blueprint.phase3.hazardType ?? "Environmental Hazard",
         requirement: {
           kind: "stat",
@@ -513,7 +744,7 @@ function createDistrictMission(blueprint: DistrictMissionBlueprint): DistrictMis
         id: `${blueprint.id}-phase4`,
         kind: "hazard",
         name: blueprint.phase4.name,
-        phase: 4,
+        phase: 4 + phaseOffset,
         hazardType: blueprint.phase4.hazardType ?? "Active Enemy",
         requirement: {
           kind: "stat",
@@ -529,7 +760,7 @@ function createDistrictMission(blueprint: DistrictMissionBlueprint): DistrictMis
         id: `${blueprint.id}-phase5`,
         kind: "hazard",
         name: blueprint.phase5.name,
-        phase: 4,
+        phase: 5 + phaseOffset,
         hazardType: "Endurance Check",
         requirement: {
           kind: "stat",
@@ -551,7 +782,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "airaway-sky-organ-run",
     name: "Operation: Sky Organ Run",
-    district: "Airaway",
+    originDistrict: "Airaway",
+    destinationDistrict: "Airaway",
     pinLabel: "Sky Organ",
     tagline: "Deliver a chilled organ case to the Asclepians before the skybridge scanners close.",
     briefing: "Lift a viable organ through Airaway's contractor lanes and hand it to the rooftop surgeons before the donor clock runs out.",
@@ -608,7 +840,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "airaway-contractor-parts-run",
     name: "Operation: Contractor Parts Run",
-    district: "Airaway",
+    originDistrict: "Airaway",
+    destinationDistrict: "Airaway",
     pinLabel: "Parts Lift",
     tagline: "Shop the contractor market for premium board parts and slip them past corporate inventory control.",
     briefing: "Raid Airaway's licensed skate suppliers, grab the parts your crew actually needs, and get back below the smog before the receipts are audited.",
@@ -664,7 +897,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "airaway-skybridge-pizza-lift",
     name: "Operation: Skybridge Pizza Lift",
-    district: "Airaway",
+    originDistrict: "Airaway",
+    destinationDistrict: "Airaway",
     pinLabel: "Pizza Lift",
     tagline: "Deliver contraband pizzas to exhausted troops holding the skybridge perimeter.",
     briefing: "A hungry troop detail on Airaway's edge paid in hard credit. Get their pizza stack through the tower cordon before command notices morale improving.",
@@ -721,7 +955,10 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "roads-dead-atlas",
     name: "Operation: Dead Atlas",
-    district: "The Roads",
+    originDistrict: "Batteryville",
+    destinationDistrict: "Batteryville",
+    corridor: "Freight Artery",
+    roadEventIds: ["freight-washout", "freight-relay-triage"],
     pinLabel: "Dead Atlas",
     tagline: "Recover a forgotten road map before a rival convoy burns the evidence.",
     briefing: "Somewhere on the Nullarbor ruins sits an old courier atlas showing safe bypasses. Find it, copy it, and get out before raiders torch the cache.",
@@ -777,7 +1014,10 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "roads-grease-mile",
     name: "Operation: Grease Mile",
-    district: "The Roads",
+    originDistrict: "Nightshade",
+    destinationDistrict: "Nightshade",
+    corridor: "Underpass Tunnel",
+    roadEventIds: ["underpass-sweep", "underpass-diversion"],
     pinLabel: "Grease Mile",
     tagline: "Hunt down industrial lubricant before the long-haul convoy seizes up in the desert.",
     briefing: "A relay convoy is out of chain lube and half its boards are screaming. Bring back enough lubricant from an abandoned depot to keep the line moving.",
@@ -834,7 +1074,10 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "roads-relief-kitchen",
     name: "Operation: Relief Kitchen",
-    district: "The Roads",
+    originDistrict: "The Forest",
+    destinationDistrict: "The Forest",
+    corridor: "Timber Route",
+    roadEventIds: ["timber-smoke-front", "timber-relief-choice"],
     pinLabel: "Relief Run",
     tagline: "Feed the roadside camps before Punch Skater raiders strip the supplies.",
     briefing: "A camp of stranded couriers is out of food. Move relief baskets across open road and get them there before the raiders roll in.",
@@ -890,7 +1133,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "batteryville-lithium-bleed",
     name: "Operation: Lithium Bleed",
-    district: "Batteryville",
+    originDistrict: "Batteryville",
+    destinationDistrict: "Batteryville",
     pinLabel: "Lithium",
     tagline: "Hunt fresh lithium batteries through the recycler belt before the clamps lock down.",
     briefing: "The recycler collectives located a crate of clean lithium cells in Batteryville's scrap belt. Pull it free and move it before HexChain repossesses the lot.",
@@ -947,7 +1191,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "batteryville-thumbburn-heist",
     name: "Operation: Thumbburn Heist",
-    district: "Batteryville",
+    originDistrict: "Batteryville",
+    destinationDistrict: "Batteryville",
     pinLabel: "Thumbburn",
     tagline: "Steal a thumb drive ledger from a HexChain foreman and escape the freight maze.",
     briefing: "A foreman is moving payout records on a physical thumb drive. Grab it out of the dispatch office and get it to the union before the shred order hits.",
@@ -1003,7 +1248,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "batteryville-mutual-spark",
     name: "Operation: Mutual Spark",
-    district: "Batteryville",
+    originDistrict: "Batteryville",
+    destinationDistrict: "Batteryville",
     pinLabel: "Spark Aid",
     tagline: "Help neighboring factions by escorting spare cells out of Batteryville.",
     briefing: "The Static Pack and Wooders both need backup power. Drag a mutual-aid sled of cells through the yards and get it onto the outbound line.",
@@ -1059,7 +1305,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "grid-black-badge",
     name: "Operation: Black Badge",
-    district: "The Grid",
+    originDistrict: "The Grid",
+    destinationDistrict: "The Grid",
     pinLabel: "Black Badge",
     tagline: "Steal a thumb drive full of Cascade black-badge credentials from the data district.",
     briefing: "Cascade moved its cleanest admin keys back onto an encrypted thumb drive. Slip into the access vault, steal it, and outrun the audit sweep.",
@@ -1116,7 +1363,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "grid-blindspot-atlas",
     name: "Operation: Blindspot Atlas",
-    district: "The Grid",
+    originDistrict: "The Grid",
+    destinationDistrict: "The Grid",
     pinLabel: "Blindspot",
     tagline: "Discover and extract a map of every surveillance blindspot in The Grid.",
     briefing: "The Static Pack uncovered a maintenance atlas showing where Cascade cannot see. Recover the map and get it out before the AI notices the gap.",
@@ -1172,7 +1420,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "grid-relay-stand",
     name: "Operation: Relay Stand",
-    district: "The Grid",
+    originDistrict: "The Grid",
+    destinationDistrict: "The Grid",
     pinLabel: "Relay Stand",
     tagline: "Defend a static relay from a Punch Skater horde long enough to finish an upload.",
     briefing: "The Static Pack needs four more minutes to uplink stolen records. Hold the relay against a Punch Skater horde and keep the transmitters alive.",
@@ -1226,179 +1475,12 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
       failureText: ({ playerStats }) => `Your board dies at ${playerStats.batteryRemaining} Range and the relay goes dark before the send finishes.`,
     },
   },
-  {
-    id: "electropolis-corridor-parts",
-    name: "Operation: Corridor Parts Run",
-    district: "Electropolis",
-    pinLabel: "Corridor",
-    tagline: "Shop the sanctioned transit strip for rare skateboard parts and get out before the Fuzz audits the lane.",
-    briefing: "Electropolis keeps its best legal parts behind corridor checkpoints. Buy or steal what you can, then leave before the biometric sweeps reconcile inventory.",
-    thresholds: { stealth: 7, acceleration: 7, speed: 8, battery: 13 },
-    phase1: {
-      name: "Transit Checkpoint",
-      successText: "You drift through the transit checkpoint with a clean contractor face and a dirtier intent.",
-      failureText: ({ playerStats }) => `The Fuzz tags your biometrics for review. Heat rises to ${playerStats.heatLevel}.`,
-      heatPenalty: 2,
-    },
-    item: {
-      id: "corridor-parts-haul",
-      name: "Corridor Parts Haul",
-      description: "Fresh bearings, urethane sleeves, and tuned trucks packed in a police-approved bag.",
-      narrativeText: "You sling the parts haul under your jacket. The rigid bag drags active Speed down by 1 until you're clear.",
-      modifiers: [{ stat: "speed", amount: -1, duration: "mission" }],
-    },
-    fork: {
-      name: "Tourist Strip Split",
-      prompt: "The bright tourist strip is fast and watched. A service arcade under the ads is quieter but drains charge over its ramps.",
-      optionA: {
-        label: "Tourist strip",
-        description: "Stay in the clean corridor and risk every lens.",
-        narrativeText: ({ playerStats }) => `You carve the tourist strip under holo-light and heat climbs to ${playerStats.heatLevel}.`,
-        effects: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
-      },
-      optionB: {
-        label: "Service arcade",
-        description: "Hide under the ads and spend battery fighting the ramps.",
-        narrativeText: ({ playerStats }) => `The service arcade keeps you hidden, but the ramps drain battery to ${playerStats.batteryRemaining} Range.`,
-        effects: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -10 }],
-      },
-    },
-    phase3: {
-      name: "Barrier Chicane",
-      successText: "You slip the barrier chicane before the corridor clamps can pin you.",
-      failureText: ({ playerStats }) => `A barrier edge hammers your truck. Health drops to ${playerStats.health}% and Speed falls to ${playerStats.speed}.`,
-      healthPenaltyPct: -9,
-      speedPenalty: -1,
-    },
-    phase4: {
-      name: "Fuzz Glide Team",
-      successText: "You lose the glide team in a pulse of transit glare and bad data.",
-      failureText: ({ playerStats }) => `A glide team shock net costs you battery, leaving ${playerStats.batteryRemaining} Range.`,
-      batteryPenaltyPct: -15,
-    },
-    phase5: {
-      name: "Clean Exit",
-      successText: ({ playerStats }) => `You leave Electropolis with ${playerStats.batteryRemaining} Range left and enough new parts to rebuild a squad.`,
-      failureText: ({ playerStats }) => `Your board dies at ${playerStats.batteryRemaining} Range and the Fuzz reclaims every part in the bag.`,
-    },
-  },
-  {
-    id: "electropolis-garrison-pizza",
-    name: "Operation: Garrison Pizza",
-    district: "Electropolis",
-    pinLabel: "Garrison",
-    tagline: "Deliver pizzas to corridor troops before a morale crackdown shuts the order down.",
-    briefing: "A troop detail on the transit strip pooled credits for hot food. Get the pizzas through Electropolis before the Fuzz decides hungry soldiers are safer soldiers.",
-    thresholds: { stealth: 6, acceleration: 7, speed: 8, battery: 12 },
-    ozziesReward: 25,
-    phase1: {
-      name: "Curbside Sweep",
-      successText: "You slip the curbside sweep with the pizza boxes tagged as maintenance foam.",
-      failureText: ({ playerStats }) => `The smell hits a patrol first. Heat rises to ${playerStats.heatLevel}.`,
-      heatPenalty: 1,
-    },
-    item: {
-      id: "garrison-pizza-boxes",
-      name: "Garrison Pizza Boxes",
-      description: "Hot pizza boxes stacked high enough to make every patrol hungry.",
-      narrativeText: "You strap the pizza stack tight. The smell trail drops active Stealth by 1 for the rest of the run.",
-      modifiers: [{ stat: "stealth", amount: -1, duration: "mission" }],
-    },
-    fork: {
-      name: "Mess Route",
-      prompt: "The direct plaza gets you there fast but keeps you under drone sight. A tram underpass stays hidden and costs more battery in the climb out.",
-      optionA: {
-        label: "Direct plaza",
-        description: "Trust speed and pray the drones are bored.",
-        narrativeText: ({ playerStats }) => `You blast the plaza and the patrol net wakes up. Heat climbs to ${playerStats.heatLevel}.`,
-        effects: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
-      },
-      optionB: {
-        label: "Tram underpass",
-        description: "Stay below the strip and spend charge getting the boxes back up.",
-        narrativeText: ({ playerStats }) => `The underpass hides the delivery, but the long climb drains battery to ${playerStats.batteryRemaining} Range.`,
-        effects: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -9 }],
-      },
-    },
-    phase3: {
-      name: "Security Divider",
-      successText: "You clear the security divider and keep every pizza box upright.",
-      failureText: ({ playerStats }) => `The divider slams your deck. Health drops to ${playerStats.health}% and Speed falls to ${playerStats.speed}.`,
-      healthPenaltyPct: -8,
-      speedPenalty: -1,
-    },
-    phase4: {
-      name: "Drone Marshal",
-      successText: "You lose the drone marshal in a knot of transit lights and crowd noise.",
-      failureText: ({ playerStats }) => `A drone marshal forces a hard brake and leaves ${playerStats.batteryRemaining} Range.`,
-      batteryPenaltyPct: -14,
-    },
-    phase5: {
-      name: "Barracks Drop",
-      successText: ({ playerStats }) => `You hand over the pizzas with ${playerStats.batteryRemaining} Range left and the corridor troops finally get a hot meal.`,
-      failureText: ({ playerStats }) => `The board dies at ${playerStats.batteryRemaining} Range and the troops smell dinner without ever seeing it.`,
-    },
-  },
-  {
-    id: "electropolis-neighbor-line",
-    name: "Operation: Neighbor Line",
-    district: "Electropolis",
-    pinLabel: "Neighbor",
-    tagline: "Help neighboring factions move supplies through Electropolis without the Fuzz shutting the route.",
-    briefing: "The Wooders and Static Pack need a clean corridor run through Electropolis. Escort their mutual-aid parcel out of the transit strip before it gets confiscated.",
-    thresholds: { stealth: 7, acceleration: 7, speed: 7, battery: 13 },
-    phase1: {
-      name: "Corridor Badge Scan",
-      successText: "You spoof the corridor badge scan and keep the aid parcel moving.",
-      failureText: ({ playerStats }) => `The scan lingers on your fake badge. Heat rises to ${playerStats.heatLevel}.`,
-      heatPenalty: 2,
-    },
-    item: {
-      id: "neighbor-aid-parcel",
-      name: "Neighbor Aid Parcel",
-      description: "Medical wraps, filters, and spare cells promised to allied crews.",
-      narrativeText: "You secure the aid parcel to your back. The rigid case drags active Speed down by 1 until hand-off.",
-      modifiers: [{ stat: "speed", amount: -1, duration: "mission" }],
-    },
-    fork: {
-      name: "Border Choice",
-      prompt: "A lit surface corridor gets you to the district edge fast. A drainage arcade below keeps you hidden but drains charge climbing back out.",
-      optionA: {
-        label: "Surface corridor",
-        description: "Go fast and risk being tagged by the Fuzz.",
-        narrativeText: ({ playerStats }) => `You run the surface corridor in full view and heat climbs to ${playerStats.heatLevel}.`,
-        effects: [{ type: "adjust", stat: "heatLevel", amount: 1 }],
-      },
-      optionB: {
-        label: "Drainage arcade",
-        description: "Hide the parcel underground and trade battery for cover.",
-        narrativeText: ({ playerStats }) => `The drainage arcade keeps the parcel safe, but the climb burns battery down to ${playerStats.batteryRemaining} Range.`,
-        effects: [{ type: "adjustPercent", stat: "batteryRemaining", percent: -10 }],
-      },
-    },
-    phase3: {
-      name: "Checkpoint Drop",
-      successText: "You clear the checkpoint drop before the barrier arms can lock.",
-      failureText: ({ playerStats }) => `A barrier arm catches your deck. Health falls to ${playerStats.health}% and Speed drops to ${playerStats.speed}.`,
-      healthPenaltyPct: -9,
-      speedPenalty: -1,
-    },
-    phase4: {
-      name: "Transit Suppressors",
-      successText: "You outfox the transit suppressors and keep the neighboring factions supplied.",
-      failureText: ({ playerStats }) => `A suppressor pulse clips the pack and leaves you at ${playerStats.batteryRemaining} Range.`,
-      batteryPenaltyPct: -15,
-    },
-    phase5: {
-      name: "Faction Hand-Off",
-      successText: ({ playerStats }) => `You finish the hand-off with ${playerStats.batteryRemaining} Range left and Electropolis none the wiser.`,
-      failureText: ({ playerStats }) => `The board dies at ${playerStats.batteryRemaining} Range and the neighboring factions lose the corridor window.`,
-    },
-  },
+
   {
     id: "nightshade-midnight-organ",
     name: "Operation: Midnight Organ",
-    district: "Nightshade",
+    originDistrict: "Nightshade",
+    destinationDistrict: "Nightshade",
     pinLabel: "Midnight",
     tagline: "Deliver a black-bag organ through Nightshade's tunnels before the blackout shutters fall.",
     briefing: "A tunnel clinic needs a fresh organ now, not at dawn. Take the black-bag case through Nightshade and get it to the surgeons before the shutters trap you below.",
@@ -1455,7 +1537,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "nightshade-shelter-line",
     name: "Operation: Shelter Line",
-    district: "Nightshade",
+    originDistrict: "Nightshade",
+    destinationDistrict: "Nightshade",
     pinLabel: "Shelter",
     tagline: "Feed the needy in blackout shelters before the tunnel gangs loot the stock.",
     briefing: "Nightshade's shelter kitchens are down to crumbs. Push meal packs through the blackout zone and get them there before the gangs strip the line.",
@@ -1511,7 +1594,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "nightshade-glowhound-breakers",
     name: "Operation: Glowhound Breakers",
-    district: "Nightshade",
+    originDistrict: "Nightshade",
+    destinationDistrict: "Nightshade",
     pinLabel: "Breakers",
     tagline: "Battle a Punch Skater crew in the tunnels before they overrun the courier lanes.",
     briefing: "A Punch Skater crew has turned a tunnel junction into a toll gate. Break their hold, keep the lane open, and get your people out alive.",
@@ -1568,7 +1652,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "forest-resin-hunt",
     name: "Operation: Resin Hunt",
-    district: "The Forest",
+    originDistrict: "The Forest",
+    destinationDistrict: "The Forest",
     pinLabel: "Resin",
     tagline: "Hunt for organic lubricant resin before the Wooders' mills seize in the wet season.",
     briefing: "The Wooders refine a tree resin into chain lubricant. Get a fresh haul from deep canopy taps and return before the rain and raiders spoil the harvest.",
@@ -1624,7 +1709,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "forest-canopy-stand",
     name: "Operation: Canopy Stand",
-    district: "The Forest",
+    originDistrict: "The Forest",
+    destinationDistrict: "The Forest",
     pinLabel: "Canopy",
     tagline: "Defend the timber bridges against a Punch Skater horde before they burn the commune out.",
     briefing: "A Punch Skater horde is climbing the timber approaches. Hold the bridges, keep the Wooders alive, and push the horde back into the mud.",
@@ -1681,7 +1767,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "forest-mutual-aid",
     name: "Operation: Mutual Aid Timber",
-    district: "The Forest",
+    originDistrict: "The Forest",
+    destinationDistrict: "The Forest",
     pinLabel: "Aid Timber",
     tagline: "Help neighboring factions by bringing timber medicine and food out of the canopy.",
     briefing: "The Wooders promised herbal meds and smoked rations to allies in the city. Carry the aid bundle down the timber route before raiders or weather take it.",
@@ -1737,7 +1824,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "glass-city-lifeline-case",
     name: "Operation: Lifeline Case",
-    district: "Glass City",
+    originDistrict: "Glass City",
+    destinationDistrict: "Glass City",
     pinLabel: "Lifeline",
     tagline: "Deliver a stolen organ case through Glass City before a private clinic loses its patient.",
     briefing: "A private clinic in Glass City needs a fresh organ that UCA procurement would rather deny. Steal the case, cross the towers, and get it there before the timer expires.",
@@ -1794,7 +1882,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "glass-city-thumb-drive",
     name: "Operation: Penthouse Thumb Drive",
-    district: "Glass City",
+    originDistrict: "Glass City",
+    destinationDistrict: "Glass City",
     pinLabel: "Penthouse",
     tagline: "Steal a thumb drive from a silent penthouse and outrun the response drones.",
     briefing: "A Glass City executive moved his leverage onto a physical thumb drive. Get into the penthouse, take it, and survive the drop back into the transitional zone.",
@@ -1850,7 +1939,8 @@ const DISTRICT_MISSION_BLUEPRINTS: DistrictMissionBlueprint[] = [
   {
     id: "glass-city-boutique-parts",
     name: "Operation: Boutique Parts",
-    district: "Glass City",
+    originDistrict: "Glass City",
+    destinationDistrict: "Glass City",
     pinLabel: "Boutique",
     tagline: "Shop the luxury board boutiques for elite parts before the towers lock their inventories.",
     briefing: "Glass City keeps absurdly good skateboard parts for the rich alone. Lift a boutique haul and get it back to the crews before the towers notice the shelves are light.",

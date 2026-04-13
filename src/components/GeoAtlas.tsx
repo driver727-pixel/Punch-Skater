@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DISTRICT_LORE } from "../lib/lore";
-import type { District } from "../lib/types";
+import type { District, RoadCorridor, WorldLocation } from "../lib/types";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import {
   DISTRICT_WEATHER_LOCATIONS,
@@ -19,13 +19,25 @@ export interface GeoAtlasMarker {
   onClick?: () => void;
 }
 
+export interface GeoAtlasCorridorMarker {
+  id: string;
+  corridor: RoadCorridor;
+  label: string;
+  title?: string;
+  active?: boolean;
+  offsetX?: number;
+  offsetY?: number;
+  onClick?: () => void;
+}
+
 interface GeoAtlasProps {
   compact?: boolean;
   className?: string;
   markers?: GeoAtlasMarker[];
+  corridors?: GeoAtlasCorridorMarker[];
 }
 
-const AUSTRALIA_DISTRICT_LAYOUT: Record<District, { x: number; y: number; tone: string }> = {
+const AUSTRALIA_DISTRICT_LAYOUT: Record<WorldLocation, { x: number; y: number; tone: string }> = {
   Airaway: { x: 70, y: 58, tone: "sky" },
   Electropolis: { x: 78, y: 41, tone: "signal" },
   "Glass City": { x: 25, y: 67, tone: "glass" },
@@ -37,8 +49,8 @@ const AUSTRALIA_DISTRICT_LAYOUT: Record<District, { x: number; y: number; tone: 
 };
 
 const DISTRICT_ARTERIES: Array<{
-  from: District;
-  to: District;
+  from: WorldLocation;
+  to: WorldLocation;
   label: string;
   labelOffsetX?: number;
   labelOffsetY?: number;
@@ -92,15 +104,29 @@ function getAtlasClassName(compact: boolean, className?: string) {
   return ["geo-atlas", compact ? "geo-atlas--compact" : "", className].filter(Boolean).join(" ");
 }
 
-export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasProps) {
-  const [hoveredDistrict, setHoveredDistrict] = useState<District | null>(null);
+function getAtlasNodeStatus(
+  location: (typeof DISTRICT_LORE)[number],
+  loading: boolean,
+  weatherSummary: string | null,
+): string {
+  if (location.kind === "corridor") {
+    return "Corridor event layer · route incidents resolve between hub missions.";
+  }
+  if (location.kind === "hidden") {
+    return "Future reveal · no public mission or forge access yet.";
+  }
+  return weatherSummary ?? (loading ? "Syncing weather" : "Open weather");
+}
+
+export function GeoAtlas({ compact = false, className, markers = [], corridors = [] }: GeoAtlasProps) {
+  const [hoveredDistrict, setHoveredDistrict] = useState<WorldLocation | null>(null);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const districtEntries = DISTRICT_LORE.map((district) => ({
     ...district,
     layout: AUSTRALIA_DISTRICT_LAYOUT[district.name],
     slug: district.name.toLowerCase().replace(/\s+/g, "-"),
-    weather: weatherByDistrict[district.name],
-    location: DISTRICT_WEATHER_LOCATIONS[district.name],
+    weather: district.kind === "district" ? weatherByDistrict[district.name] : null,
+    location: district.kind === "district" ? DISTRICT_WEATHER_LOCATIONS[district.name] : null,
   }));
   const weatherBadge = weather?.stale ? "weather cached" : "weather live";
 
@@ -116,14 +142,14 @@ export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasP
         </div>
         {!compact && (
           <p className="geo-atlas__body">
-            Punch Skater now anchors its city-state across Australia, mapping each district to
-            a local analogue from Perth glass towers to Melbourne laneways and the Nullarbor runs.
+            Punch Skater now anchors its city-state across Australia, with districts as playable hubs,
+            The Roads as corridor space, and Electropolis held back as a future reveal.
           </p>
         )}
         {!compact && (
           <p className="geo-atlas__status">
             {weather
-              ? "Delayed real-world weather is now seeding district access conditions across Australia."
+              ? "Delayed real-world weather is seeding playable district access while corridor lines track their own hazards."
               : loading
                 ? "Syncing district weather uplink."
                 : error
@@ -135,7 +161,7 @@ export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasP
           className="geo-atlas__map geo-atlas__map--australia"
           data-testid="australia-overmap"
           role="img"
-          aria-label="Australia map showing the Punch Skater districts stretched across the continent"
+          aria-label="Australia map showing Punch Skater district hubs and transit corridors"
         >
           <svg className="geo-atlas__svg" viewBox="0 0 100 100" aria-hidden="true">
             <path
@@ -177,30 +203,36 @@ export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasP
             })}
           </svg>
 
-          {districtEntries.map((district) => (
-            <article
-              key={district.name}
-              className={`geo-atlas__district geo-atlas__district--${district.layout.tone}`}
-              style={{ left: `${district.layout.x}%`, top: `${district.layout.y}%` }}
-              data-testid={`district-node-${district.slug}`}
-              onMouseEnter={() => setHoveredDistrict(district.name)}
-              onMouseLeave={() => setHoveredDistrict(null)}
-            >
-              <span className="geo-atlas__district-name">{district.name}</span>
-              <span className="geo-atlas__district-meta">
-                {district.crews[0]} · {district.location.city}
-              </span>
-              <span
-                className={`geo-atlas__district-weather${
-                  hasDistrictAccessRestriction(district.name, district.weather) ? " geo-atlas__district-weather--restricted" : ""
-                }`}
+          {districtEntries.map((district) => {
+            const accessRestricted =
+              district.kind === "district" && hasDistrictAccessRestriction(district.name, district.weather);
+            const status =
+              district.kind === "district"
+                ? `${getAtlasNodeStatus(district, loading, district.weather?.summary ?? null)} · ${getDistrictAccessSummary(district.name, district.weather)}`
+                : getAtlasNodeStatus(district, loading, null);
+
+            return (
+              <article
+                key={district.name}
+                className={`geo-atlas__district geo-atlas__district--${district.layout.tone}`}
+                style={{ left: `${district.layout.x}%`, top: `${district.layout.y}%` }}
+                data-testid={`district-node-${district.slug}`}
+                onMouseEnter={() => setHoveredDistrict(district.name)}
+                onMouseLeave={() => setHoveredDistrict(null)}
               >
-                {district.weather?.summary ?? (loading ? "Syncing weather" : "Open weather")}
-                {" · "}
-                {getDistrictAccessSummary(district.name, district.weather)}
-              </span>
-            </article>
-          ))}
+                <span className="geo-atlas__district-name">{district.name}</span>
+                <span className="geo-atlas__district-meta">
+                  {district.crews[0]}{district.location ? ` · ${district.location.city}` : ""}
+                </span>
+                <span
+                  className={`geo-atlas__district-weather${accessRestricted ? " geo-atlas__district-weather--restricted" : ""}`}
+                >
+                  {status}
+                </span>
+              </article>
+            );
+          })}
+
           {markers.map((marker) => {
             const layout = AUSTRALIA_DISTRICT_LAYOUT[marker.district];
 
@@ -219,6 +251,40 @@ export function GeoAtlas({ compact = false, className, markers = [] }: GeoAtlasP
               >
                 <span className="geo-atlas__marker-pin" aria-hidden="true">
                   📍
+                </span>
+                <span className="geo-atlas__marker-label">{marker.label}</span>
+              </button>
+            );
+          })}
+
+          {corridors.map((marker) => {
+            const artery = DISTRICT_ARTERIES.find((route) => route.label === marker.corridor);
+            if (!artery) {
+              console.warn(
+                `[GeoAtlas] Unknown corridor marker route: ${marker.corridor}. Add it to DISTRICT_ARTERIES or check the corridor ID for typos.`,
+              );
+              return null;
+            }
+            const start = AUSTRALIA_DISTRICT_LAYOUT[artery.from];
+            const end = AUSTRALIA_DISTRICT_LAYOUT[artery.to];
+            const left = (start.x + end.x) / 2;
+            const top = (start.y + end.y) / 2;
+
+            return (
+              <button
+                key={marker.id}
+                type="button"
+                className={`geo-atlas__marker${marker.active ? " geo-atlas__marker--active" : ""}`}
+                style={{
+                  left: `calc(${left}% + ${marker.offsetX ?? 0}px)`,
+                  top: `calc(${top}% + ${marker.offsetY ?? 0}px)`,
+                }}
+                onClick={marker.onClick}
+                aria-pressed={marker.active}
+                title={marker.title ?? marker.label}
+              >
+                <span className="geo-atlas__marker-pin" aria-hidden="true">
+                  🛣️
                 </span>
                 <span className="geo-atlas__marker-label">{marker.label}</span>
               </button>

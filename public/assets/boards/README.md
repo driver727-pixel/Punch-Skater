@@ -4,43 +4,13 @@ Static PNG images used by the board builder.
 
 ---
 
-## BoardComposite layers (`public/assets/boards/`)
+## Retired assembled-board overlays
 
-These are the **assembled-board overlay** images rendered by `BoardComposite`
-(visible on the character card).  Each file uses the `<seedKey>.png` naming
-convention defined in `BOARD_COMPONENT_CATALOG` inside
-`src/lib/boardBuilder.ts`.
+The legacy `BoardComposite` pipeline has been retired and the app no longer
+loads assembled overlay PNGs from `public/assets/boards/`.
 
-### Expected files
-
-| seedKey                           | Component            |
-|-----------------------------------|----------------------|
-| `deck-carbon-street-drop-through` | Street deck          |
-| `deck-bamboo-at-top-mount`        | AT deck              |
-| `deck-off-grid-mountain-board`    | Mountain deck        |
-| `deck-swallowtail-surf-skate`     | Surf deck            |
-| `wheel-100mm-urethane-street`     | Urethane wheels      |
-| `wheel-175mm-pneumatic-at`        | Pneumatic wheels     |
-| `wheel-120mm-cloud-sliders`       | Cloud / rubber wheels|
-| `drivetrain-dual-belt-drive`      | Belt drive trucks    |
-| `drivetrain-sealed-gear-drive`    | Gear drive trucks    |
-| `drivetrain-stealth-hub-motors`   | Hub motor trucks     |
-| `battery-slim-stealth-pack`       | Slim Stealth battery |
-| `battery-double-stack-brick`      | Double-Stack battery |
-| `battery-top-mounted-peli-case`   | Top-Mounted Peli Case|
-
-### Workflow
-
-1. Open **Card Forge → Asset Generator** (admin only, `/dev/asset-generator`).
-2. Click **⚡ Generate All** (or generate individual items).
-3. Once images appear, click **⬇ Download** on each card — the browser will
-   save the file with the correct `<seedKey>.png` filename automatically.
-   Alternatively click **⬇ Download All** at the top to save every completed
-   image in one pass.
-4. Move the downloaded files to this folder (`public/assets/boards/`).
-
-Until the PNGs are placed here the `BoardComposite` layers are simply invisible
-(the component renders `null` when all URLs are absent).
+Keep this directory only for historical reference or future redesign work.
+It is not part of the live card-rendering pipeline.
 
 ---
 
@@ -140,4 +110,3 @@ from that folder.  If the folder is empty it falls back to
 `public/assets/boards/<category>/<OptionValue>.png`
 (e.g. `public/assets/boards/motor/Standard.png`).  If that file is also
 absent the tile shows an icon placeholder.
-

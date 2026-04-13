@@ -1,82 +1,93 @@
-# Skater Punk Deck Builder
+# Punch Skater
 
-A cyberpunk-themed card deck builder game built with React, TypeScript, and Vite.
+A dense cyberpunk courier card game built with React, TypeScript, Vite, Firebase, and a small Express proxy for paid APIs.
 
-## Features
+## Current Stack
 
-- **Card Forge** — Generate unique courier cards by selecting archetype, rarity, style vibe, district, and accent color. Cards are deterministically generated using a seeded PRNG (Mulberry32), so the same prompt always produces the same card.
-- **Collection** — Browse your saved cards in a grid view, inspect individual card details, and export your entire collection as JSON.
-- **Deck Builder** — Create, rename, and delete decks. Add cards from your collection and export decks as JSON.
+- React 18
+- TypeScript 5
+- Vite 6
+- React Router 7
+- Firebase Auth + Firestore
+- Express proxy for Fal.ai, Stripe, admin, and weather endpoints
+- Playwright for end-to-end coverage
 
-## Card Attributes
+## Core Game Systems
 
-Each generated card includes:
-- **Identity**: Name, crew, serial number
-- **Stats**: Speed, Stealth, Tech, Grit, Rep (influenced by archetype and rarity)
-- **Traits**: Passive trait and active ability
-- **Visuals**: SVG card art with district-colored cityscape, skater courier figure, and rarity stars
-- **Flavor text** and personality tags
+- **Card Forge** — deterministic card generation, layered art, factions, referrals, and monetized forge access
+- **Collection** — saved cards in Firestore for signed-in users, local storage for guests
+- **Deck Builder** — up to 6 cards per deck with persistent deck sync
+- **Missions** — district map, mission branches, and live weather restrictions
+- **Trades + Leaderboard** — direct offers, market listings, and public deck rankings
+- **Battle Arena** — public scouting summaries, real opponent deck snapshots, persistent results, and stat resolution syncing for both players
 
-## Tech Stack
+## Environment
 
-- React 19 + TypeScript
-- Vite 8
-- React Router DOM v7
-- LocalStorage for persistence
-- No external UI libraries — pure CSS dark theme
+Copy `.env.example` to `.env` for local client config.
 
-## API Key Security — Server-Side Proxy
+### Client variables
 
-All AI image generation goes through a **server-side proxy** (`server/index.js`) so the
-Fal.ai API key (`FAL_KEY`) is **never exposed to the browser**.
+- `VITE_FIREBASE_*`
+- `VITE_IMAGE_API_URL`
+- `VITE_CHECKOUT_API_URL`
+- `VITE_ADMIN_API_URL`
+- `VITE_DISTRICT_WEATHER_API_URL`
 
-```
-Browser  →  POST /api/generate-image    →  proxy (adds Authorization: Key <FAL_KEY>)  →  fal.run
-Browser  →  POST /api/remove-background →  proxy (adds Authorization header)           →  fal.run
-```
+### Server-only variables
 
-The proxy also enforces:
-- **Rate limiting** — 20 image requests per IP per minute (prevents credit drain)
-- **CORS** — restricted to the production domain and localhost
+- `FAL_KEY`
+- `STRIPE_SECRET_KEY`
+- `FIREBASE_API_KEY`
+- `ADMIN_EMAILS`
 
-### Environment variables
+Do not commit server secrets.
 
-Copy `.env.example` to `.env` and fill in the non-secret `VITE_*` client variables:
-
-```bash
-cp .env.example .env
-```
-
-| Variable | Where set | Purpose |
-|---|---|---|
-| `VITE_FIREBASE_*` | `.env` (client) | Firebase project config (public) |
-| `VITE_IMAGE_API_URL` | `.env` (client) | URL of the `/api/generate-image` proxy endpoint |
-| `VITE_CHECKOUT_API_URL` | `.env` (client) | URL of the `/api/create-checkout-session` endpoint |
-| `VITE_ADMIN_API_URL` | `.env` (client) | URL of the `/api/admin/create-user` endpoint |
-| `FAL_KEY` | Server env only | Fal.ai secret key — **never in `.env`** |
-| `STRIPE_SECRET_KEY` | Server env only | Stripe secret key — **never in `.env`** |
-| `FIREBASE_API_KEY` | Server env only | Firebase API key for admin user creation (falls back to `VITE_FIREBASE_API_KEY`) |
-| `ADMIN_EMAILS` | Server env only | Comma-separated admin emails (falls back to `VITE_ADMIN_EMAILS`) |
-
-> **Important:** `.env` is safe for `VITE_*` prefixed variables (bundled into the client
-> build and therefore public). **Secret server-side keys** (`FAL_KEY`, `STRIPE_SECRET_KEY`)
-> must be set directly as environment variables on the server host (e.g. Render dashboard)
-> and must **never** appear in `.env` or any committed file.
-
-## Development
+## Local Development
 
 ```bash
+cd /path/to/Punch-Skater
 npm install
 
-# Terminal 1 — start the proxy (requires FAL_KEY in your shell env)
-FAL_KEY=your_fal_ai_key_here npm start
+# terminal 1
+FAL_KEY=your_key_here npm start
 
-# Terminal 2 — start the Vite dev server (proxies /api/* to localhost:3001)
+# terminal 2
 npm run dev
 ```
 
-## Build
+## Validation
 
 ```bash
+cd /path/to/Punch-Skater
+npm install
+npm run lint
 npm run build
+npx playwright install chromium
+npm run test:e2e
 ```
+
+## Launch Asset Checklist
+
+### Required before launch
+
+- [ ] Upload and register all rarity frame files in `/home/runner/work/Punch-Skater/Punch-Skater/public/assets/frames/`
+- [ ] Audit district backgrounds so each live forge district has both print and small variants
+- [ ] Review card/share/download flows and replace remaining generated stable layers with static assets where possible
+
+### Future content decisions already locked
+
+- [ ] Keep Electropolis as a lore/mission reveal only until its later playable rollout
+- [ ] Treat The Roads as a corridor gameplay layer where route events spawn, not as a forgeable district or standalone mission
+
+### Nice-to-have immersion uploads
+
+- [ ] District ambience loops
+- [ ] Mission success / failure / fork-choice audio
+- [ ] Battle queue / draw / result audio
+- [ ] Trade sent / accepted / declined audio
+- [ ] Launch promo / social share art
+
+## Known Follow-Ups
+
+- The retired BoardComposite pipeline should stay out of the live card flow unless it is deliberately rebuilt from scratch later.
+- Electropolis stays non-forgeable for now, while The Roads remain a separate route-event layer rather than a district selector.

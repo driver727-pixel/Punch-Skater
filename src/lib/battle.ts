@@ -6,8 +6,16 @@
  * The winner receives both wagers (12 points) to distribute among their
  * battle-deck cards.
  */
-import type { ArenaDeckSummary, CardPayload, StatKey } from "./types";
+import { createSeededRandom } from "./prng";
+import type {
+  ArenaDeckSummary,
+  BattleCardResolution,
+  BattleCardSnapshot,
+  CardPayload,
+  StatKey,
+} from "./types";
 import { CARD_STAT_LABELS } from "./statLabels";
+import { MAX_SINGLE_STAT, MIN_SINGLE_STAT } from "./generator";
 
 /** Number of attribute points each player wagers per battle. */
 export const WAGER_POINTS = 6;
@@ -22,18 +30,39 @@ const STAT_LABELS: Record<StatKey, string> = Object.fromEntries(
   STAT_KEYS.map((k) => [k, CARD_STAT_LABELS[k].label]),
 ) as Record<StatKey, string>;
 
+type BattleCardInput = CardPayload | BattleCardSnapshot;
+
+function getCardArchetype(card: BattleCardInput): string {
+  return "archetype" in card ? card.archetype : card.prompts.archetype;
+}
+
+function cloneBattleCard(card: BattleCardSnapshot): BattleCardSnapshot {
+  return {
+    ...card,
+    stats: { ...card.stats },
+  };
+}
+
+export function createBattleCardSnapshot(card: CardPayload): BattleCardSnapshot {
+  return {
+    id: card.id,
+    archetype: card.prompts.archetype,
+    stats: { ...card.stats },
+  };
+}
+
 /** Count how many cards in the deck share each archetype. */
-function getArchetypeCounts(cards: CardPayload[]): Map<string, number> {
+function getArchetypeCounts(cards: readonly BattleCardInput[]): Map<string, number> {
   const archetypeCounts = new Map<string, number>();
   for (const card of cards) {
-    const archetype = card.prompts.archetype;
+    const archetype = getCardArchetype(card);
     archetypeCounts.set(archetype, (archetypeCounts.get(archetype) ?? 0) + 1);
   }
   return archetypeCounts;
 }
 
 /** Apply a 3% bonus per repeated-archetype pair, capped at +15%. */
-function getSynergyMultiplier(cards: CardPayload[]): number {
+function getSynergyMultiplier(cards: readonly BattleCardInput[]): number {
   const archetypeCounts = getArchetypeCounts(cards);
   let pairs = 0;
   for (const count of archetypeCounts.values()) {
@@ -64,7 +93,7 @@ export function computeDeckWorth(cards: CardPayload[]): number {
 }
 
 /** Sum total speed, stealth, tech, grit, and rep across the whole deck. */
-export function getDeckStatTotals(cards: CardPayload[]): Record<StatKey, number> {
+export function getDeckStatTotals(cards: readonly BattleCardInput[]): Record<StatKey, number> {
   const totals: Record<StatKey, number> = {
     speed: 0,
     stealth: 0,
@@ -82,7 +111,7 @@ export function getDeckStatTotals(cards: CardPayload[]): Record<StatKey, number>
   return totals;
 }
 
-export function computeDeckTotalPower(cards: CardPayload[]): number {
+export function computeDeckTotalPower(cards: readonly BattleCardInput[]): number {
   const statTotals = getDeckStatTotals(cards);
   return STAT_KEYS.reduce((sum, key) => sum + statTotals[key], 0);
 }
@@ -91,7 +120,7 @@ export function formatStatLabel(stat: StatKey): string {
   return STAT_LABELS[stat];
 }
 
-export function buildArenaDeckSummary(cards: CardPayload[]): ArenaDeckSummary {
+export function buildArenaDeckSummary(cards: readonly BattleCardInput[]): ArenaDeckSummary {
   if (cards.length === 0) {
     return {
       deckPower: 0,
@@ -134,7 +163,7 @@ export function buildArenaDeckSummary(cards: CardPayload[]): ArenaDeckSummary {
  *  This keeps results fully reproducible (no RNG during resolution) while
  *  still rewarding thoughtful deck building over raw stat-stacking.
  */
-export function computeDeckScore(cards: CardPayload[]): number {
+export function computeDeckScore(cards: readonly BattleCardInput[]): number {
   if (cards.length === 0) return 0;
 
   const raw = computeDeckTotalPower(cards);
@@ -151,12 +180,19 @@ export interface BattleOutcome {
   winnerSide: "challenger" | "defender" | "draw";
 }
 
+export interface BattleResolutionDetails extends BattleOutcome {
+  wagerPoints: number;
+  winningDeckCardIds: string[];
+  challengerCardResolutions: BattleCardResolution[];
+  defenderCardResolutions: BattleCardResolution[];
+}
+
 /**
  * Resolve a battle between two decks.  Pure function – no side-effects.
  */
 export function resolveBattle(
-  challengerCards: CardPayload[],
-  defenderCards: CardPayload[],
+  challengerCards: readonly BattleCardInput[],
+  defenderCards: readonly BattleCardInput[],
 ): BattleOutcome {
   const challengerScore = computeDeckScore(challengerCards);
   const defenderScore = computeDeckScore(defenderCards);
@@ -167,6 +203,111 @@ export function resolveBattle(
   else winnerSide = "draw";
 
   return { challengerScore, defenderScore, winnerSide };
+}
+
+/**
+ * Returns every card/stat position that can still be adjusted in the requested
+ * direction without violating the live stat bounds.
+ */
+function getEligibleStatPositions(cards: BattleCardSnapshot[], direction: -1 | 1): Array<[number, StatKey]> {
+  const cells: Array<[number, StatKey]> = [];
+  for (let cardIndex = 0; cardIndex < cards.length; cardIndex += 1) {
+    for (const key of STAT_KEYS) {
+      const value = cards[cardIndex].stats[key];
+      if (direction < 0 && value > MIN_SINGLE_STAT) {
+        cells.push([cardIndex, key]);
+      }
+      if (direction > 0 && value < MAX_SINGLE_STAT) {
+        cells.push([cardIndex, key]);
+      }
+    }
+  }
+  return cells;
+}
+
+/**
+ * Applies a deterministic random stat shift across a battle deck.
+ * `direction = -1` spends wager points, while `direction = 1` distributes bonus
+ * points. Seeded randomness keeps the final resolution reproducible.
+ */
+function applyRandomStatShift(
+  cards: BattleCardSnapshot[],
+  totalPoints: number,
+  direction: -1 | 1,
+  seed: string,
+): BattleCardSnapshot[] {
+  const rng = createSeededRandom(seed);
+  const nextCards = cards.map(cloneBattleCard);
+  let remaining = totalPoints;
+
+  while (remaining > 0) {
+    const eligible = getEligibleStatPositions(nextCards, direction);
+    if (eligible.length === 0) break;
+    const [cardIndex, statKey] = eligible[Math.floor(rng.next() * eligible.length)];
+    nextCards[cardIndex].stats[statKey] += direction;
+    remaining -= 1;
+  }
+
+  return nextCards;
+}
+
+/** Converts resolved battle snapshots into compact card-resolution records. */
+function toCardResolutions(cards: BattleCardSnapshot[]): BattleCardResolution[] {
+  return cards.map((card) => ({
+    id: card.id,
+    stats: { ...card.stats },
+  }));
+}
+
+export function resolveBattleWithEffects(
+  challengerCards: BattleCardSnapshot[],
+  defenderCards: BattleCardSnapshot[],
+  battleSeed: string,
+): BattleResolutionDetails {
+  const outcome = resolveBattle(challengerCards, defenderCards);
+
+  if (outcome.winnerSide === "draw") {
+    return {
+      ...outcome,
+      wagerPoints: 0,
+      winningDeckCardIds: [],
+      challengerCardResolutions: toCardResolutions(challengerCards),
+      defenderCardResolutions: toCardResolutions(defenderCards),
+    };
+  }
+
+  const wageredChallenger = applyRandomStatShift(
+    challengerCards,
+    WAGER_POINTS,
+    -1,
+    `${battleSeed}:challenger:wager`,
+  );
+  const wageredDefender = applyRandomStatShift(
+    defenderCards,
+    WAGER_POINTS,
+    -1,
+    `${battleSeed}:defender:wager`,
+  );
+
+  const challengerResolvedCards =
+    outcome.winnerSide === "challenger"
+      ? applyRandomStatShift(wageredChallenger, WINNER_BONUS, 1, `${battleSeed}:challenger:bonus`)
+      : wageredChallenger;
+  const defenderResolvedCards =
+    outcome.winnerSide === "defender"
+      ? applyRandomStatShift(wageredDefender, WINNER_BONUS, 1, `${battleSeed}:defender:bonus`)
+      : wageredDefender;
+
+  return {
+    ...outcome,
+    wagerPoints: WINNER_BONUS,
+    winningDeckCardIds:
+      outcome.winnerSide === "challenger"
+        ? challengerCards.map((card) => card.id)
+        : defenderCards.map((card) => card.id),
+    challengerCardResolutions: toCardResolutions(challengerResolvedCards),
+    defenderCardResolutions: toCardResolutions(defenderResolvedCards),
+  };
 }
 
 // ── Wager deduction ──────────────────────────────────────────────────────────

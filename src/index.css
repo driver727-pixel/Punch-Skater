@@ -5305,7 +5305,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     2px 2px 0 rgba(0, 0, 0, 0.7);
 }
 
-/* ===== BoardComposite surge animation ===== */
+/* ===== Board Builder surge animation ===== */
 
 /*
  * Keyframe: neon drop-shadow pulse that simulates a battery being connected.
@@ -5335,7 +5335,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 }
 
-.board-composite--surge {
+.board-builder--surge {
   animation: composite-surge 0.55s ease-out both;
 }
 
@@ -5526,75 +5526,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .neon-label--cyan {
   color: #00ccff;
   text-shadow: 0 0 4px rgba(0,204,255,0.8);
-}
-
-/* ===== Board Composite ===== */
-
-/*
- * Container maintains a landscape 3:2 aspect ratio so all board layers
- * scale together without distortion.  position: relative is required so
- * the absolutely-positioned layer images are clipped to this box.
- */
-/*
- * Default portrait orientation (5 : 7) matching the character image box so
- * the skateboard preview and the character image have the same proportions.
- */
-.board-composite {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 5 / 7;
-  overflow: hidden;
-}
-
-/* Each layer fills the entire container and uses object-fit: contain so
- * wide wheels and narrow decks all fit without cropping or stretching. */
-.board-composite__layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  /* Smooth fade-in when a new component is selected */
-  transition: opacity 0.3s ease-in-out;
-}
-
-/* Visual stacking order: wheels at the back, deck at the front */
-.board-composite__layer--wheels     { z-index: 10; }
-.board-composite__layer--drivetrain { z-index: 20; }
-.board-composite__layer--deck       { z-index: 30; }
-
-/*
- * Loading overlay shown over the skateboard composite while any provided
- * layer image is still loading.  Sits above all layer PNGs (z-index 50).
- * The ::after pseudo-element adds a shimmer sweep on top of the loading GIF.
- */
-.board-composite__loading-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 50;
-  overflow: hidden;
-  background: var(--bg2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.board-composite__loading-overlay::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 50%, transparent 100%);
-  background-size: 600px 100%;
-  animation: shimmer 1.6s infinite linear;
-  pointer-events: none;
-  z-index: 1;
-}
-.board-composite__loading-overlay .card-art-loading-gif {
-  position: relative;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 
 /* ===== Conveyor Carousel ===== */

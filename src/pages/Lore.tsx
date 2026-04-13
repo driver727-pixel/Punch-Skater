@@ -41,9 +41,13 @@ export function Lore() {
         <GeoAtlas />
       </section>
 
-      {/* ── Districts ───────────────────────────────────────────────────── */}
+      {/* ── Districts / corridors ───────────────────────────────────────── */}
       <section className="lore-section">
-        <h2 className="lore-heading">Districts</h2>
+        <h2 className="lore-heading">Districts, Corridors &amp; Reveals</h2>
+        <p className="lore-body">
+          The Roads operate as a separate corridor gameplay layer, while Electropolis stays a future
+          playable reveal even though it already exists in the world fiction.
+        </p>
         <div className="lore-grid">
           {DISTRICT_LORE.map((d) => (
             <div key={d.name} className="lore-card">

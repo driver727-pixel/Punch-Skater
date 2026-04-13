@@ -4,8 +4,8 @@
  * The "Lock It In" button for the Board Builder.  Styled with an industrial,
  * heavy-duty aesthetic — dark metals, neon accents, and hazard stripes.
  *
- * The component handles its own deep-depress animation.  The parent is
- * responsible for orchestrating the broader sequence (BoardComposite surge +
+ * The component handles its own deep-depress animation. The parent is
+ * responsible for orchestrating the broader sequence (builder surge +
  * builder shake) via the `onAnimate` callback.
  */
 import { useState, useCallback } from "react";

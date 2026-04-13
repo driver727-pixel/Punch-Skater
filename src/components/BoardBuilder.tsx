@@ -102,7 +102,7 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
   /**
    * Full lock-in animation sequence:
    *   t=0    – PowerSwitchButton depresses (handled inside the component)
-   *   t=100  – BoardComposite neon drop-shadow surge
+   *   t=100  – Builder neon drop-shadow surge
    *   t=400  – Builder container heavy screen-shake
    *   t=1000 – Animations clear; onSave callback fires
    */
@@ -276,7 +276,7 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
         onSelect={(v) => handleCarouselChange({ ...value, motor: v as typeof value.motor })}
       />
 
-      {/* Belt 4 — Wheels (determines District access) */}
+      {/* Belt 4 — Wheels (determines access profile) */}
       <ConveyorCarousel
         label="Wheels"
         items={filteredWheelItems}

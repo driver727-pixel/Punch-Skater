@@ -279,19 +279,13 @@ export function BattleArena() {
 
   const handleChallenge = async (entry: ArenaEntry) => {
     if (!selectedDeck || !uid) return;
-    // In a real implementation, we'd fetch the opponent's cards from Firestore.
-    // For the client-side demo, we simulate opponent cards by using a score based on card count.
-    // The actual battle resolution happens via the challenge() hook which requires opponent cards.
-    // Here we create placeholder cards for the opponent to resolve against.
-    // In production, this would be a Cloud Function that reads both decks server-side.
+    if (!entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS) return;
 
     // Start the animation
     setShowAnimation(true);
     setPendingResult(null);
 
-    // Use the selected deck's cards as opponent stand-in (in production this is server-side)
-    // For demo purposes, the hook resolves client-side
-    await challenge(entry, selectedDeck, selectedDeck.cards);
+    await challenge(entry, selectedDeck);
   };
 
   const handleDismissOutcome = () => {
@@ -397,8 +391,14 @@ export function BattleArena() {
                   <button
                     className="btn-primary btn-sm"
                     onClick={() => handleChallenge(entry)}
-                    disabled={battling || !myArenaEntry}
-                    title={!myArenaEntry ? "Ready your deck first!" : "Challenge this player"}
+                    disabled={battling || !myArenaEntry || !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS}
+                    title={
+                      !myArenaEntry
+                        ? "Ready your deck first!"
+                        : !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS
+                          ? "Opponent deck sync in progress"
+                          : "Challenge this player"
+                    }
                   >
                     ⚔️ Challenge
                   </button>

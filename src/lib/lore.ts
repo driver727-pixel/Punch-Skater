@@ -1,4 +1,4 @@
-import type { Faction, Archetype, District } from './types';
+import type { Faction, Archetype, WorldLocation } from './types';
 
 // ── Character names ────────────────────────────────────────────────────────────
 
@@ -107,7 +107,8 @@ export const WORLD_LORE = {
 // ── District lore ──────────────────────────────────────────────────────────────
 
 export interface DistrictLoreEntry {
-  name: District;
+  name: WorldLocation;
+  kind: "district" | "corridor" | "hidden";
   controlledBy: string;
   australianAnalogue: string;
   tagline: string;
@@ -120,6 +121,7 @@ export interface DistrictLoreEntry {
 export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Airaway",
+    kind: "district",
     controlledBy: "United Corporations of America (UCA)",
     australianAnalogue: "Blue Mountains sky-city above Greater Western Sydney",
     tagline: "The higher you go, the colder the air. The colder the air, the cleaner the money.",
@@ -142,16 +144,16 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "The Roads",
-    controlledBy: "Uncontrolled — open courier territory",
+    kind: "corridor",
+    controlledBy: "Open courier territory / relay camps",
     australianAnalogue: "Nullarbor Plain / Stuart Highway",
-    tagline: "The cars left. We moved in. Nobody asked for permission.",
+    tagline: "Transit is its own battlefield.",
     description:
-      "When flying drone transport made ground vehicles obsolete, the UCA simply " +
-      "decommissioned the roads. In the Australian theatre that means the Nullarbor and the " +
-      "Stuart Highway: cracked asphalt, mirage heat, and straightaways that run for " +
-      "thousands of kilometres beyond reliable corporate reach. Courier networks run their " +
-      "most visible operations here. Speed is everything on the Roads, and the crews who " +
-      "survive them treat distance like a weapon.",
+      "The Roads are not a district or a mission hub. They are a separate gameplay layer: " +
+      "the cracked transit corridors between destinations where hijackings, raids, weather " +
+      "disasters, and other route events erupt mid-run. In the Australian theatre that means " +
+      "the Nullarbor and Stuart Highway: mirage heat, broken asphalt, and straightaways " +
+      "that run for thousands of kilometres beyond reliable corporate reach.",
     atmosphere: "Cracked asphalt, faded lane markings, open sky, Nullarbor wind, endless straightaways.",
     crews: ["Road Runners", "Asphalt Angels"],
     flavorTexts: [
@@ -161,6 +163,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Batteryville",
+    kind: "district",
     controlledBy: "HexChain Logistics / Recycler Collectives",
     australianAnalogue: "Port Kembla steelworks with Pilbara ore lines",
     tagline: "The City runs on our power. We run on spite.",
@@ -183,6 +186,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "The Grid",
+    kind: "district",
     controlledBy: "Cascade Technologies",
     australianAnalogue: "Canberra surveillance precinct",
     tagline: "Information wants to be free. The Grid decides the price.",
@@ -205,11 +209,12 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Electropolis",
-    controlledBy: "City Security — the Fuzz",
+    kind: "hidden",
+    controlledBy: "City Security — the Fuzz (future playable reveal)",
     australianAnalogue: "Brisbane CBD / Gold Coast surveillance strip",
     tagline: "Move along. Designated transit corridors only.",
     description:
-      "The city's law-and-order showcase — the polished corridor that plays like Brisbane " +
+      "The city's law-and-order showcase — a future playable corridor district that reads like Brisbane " +
       "CBD bleeding into the Gold Coast's holo-gloss strip. Wide boulevards glow under " +
       "Prism Media Group displays while city security known as the Fuzz keeps the " +
       "tourist-friendly frontage pristine. Skaters are tolerated only in designated " +
@@ -225,6 +230,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Nightshade",
+    kind: "district",
     controlledBy: "Courier crews — no single corp holds it",
     australianAnalogue: "Melbourne laneways / Fitzroy basement scene",
     tagline: "Nobody owns Nightshade. Nightshade owns you.",
@@ -247,6 +253,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "The Forest",
+    kind: "district",
     controlledBy: "The Wooders — self-governed agrarian commune",
     australianAnalogue: "Daintree canopy settlements / Nimbin communes",
     tagline: "Build with wood. Grind with wood. Live without the grid.",
@@ -268,6 +275,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   },
   {
     name: "Glass City",
+    kind: "district",
     controlledBy: "Prism Media Group / Autonomous Systems",
     australianAnalogue: "Perth CBD on the Swan River",
     tagline: "A million screens. Zero witnesses.",

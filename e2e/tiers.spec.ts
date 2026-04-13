@@ -127,7 +127,7 @@ test.describe('Forge gating — paid tier (tier2 via localStorage)', () => {
     const forgeBtn = page.getByTestId('forge-button');
     await expect(forgeBtn).toBeVisible();
     await expect(forgeBtn).not.toContainText(/upgrade to unlock/i);
-    await expect(forgeBtn).toContainText(/forge courier card/i);
+    await expect(forgeBtn).toContainText(/forge your card/i);
   });
 
   test('forge button is unlocked for tier3', async ({ page }) => {
@@ -197,11 +197,11 @@ test.describe('Stripe checkout session verification', () => {
     await page.evaluate(() => localStorage.setItem('skpd_email', 'paid@example.com'));
     await page.goto('/?checkout_session_id=cs_test_paid_session');
     await expect(page).toHaveURL('/');
-    await expect(page.getByTestId('forge-button')).toContainText(/forge courier card/i);
+    await expect(page.getByTestId('forge-button')).toContainText(/forge your card/i);
     await expect.poll(async () => page.evaluate(() => localStorage.getItem('skpd_tier'))).toBe('tier2');
     await expect.poll(async () => page.evaluate(() => localStorage.getItem('skpd_email'))).toBe('paid@example.com');
 
     await page.reload();
-    await expect(page.getByTestId('forge-button')).toContainText(/forge courier card/i);
+    await expect(page.getByTestId('forge-button')).toContainText(/forge your card/i);
   });
 });
