@@ -1018,11 +1018,35 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-top: 8px;
   letter-spacing: 0.5px;
 }
+.collection-bulk-bar {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(8, 8, 24, 0.85);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.collection-bulk-count {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+.collection-bulk-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 @media (max-width: 600px) {
   .collection-search-row { flex-direction: column; }
   .collection-search-input,
   .collection-sort-select { width: 100%; min-width: 0; }
   .collection-filter-select { width: 100%; min-width: 0; }
+  .collection-bulk-actions { width: 100%; }
+  .collection-bulk-actions > * { flex: 1 1 160px; }
 }
 
 .collection-layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
@@ -1038,12 +1062,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .card-thumb {
+  position: relative;
   background: var(--bg2);
   border: 2px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.15s, transform 0.12s, box-shadow 0.12s;
+}
+.card-thumb--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(0,255,136,0.25);
 }
 .card-thumb:hover {
   border-color: var(--accent);
@@ -1054,8 +1083,33 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     0 0 28px rgba(0,204,255,0.1);
 }
 .card-thumb--active { border-color: var(--accent2); box-shadow: 3px 3px 0 rgba(0,204,255,0.3); }
+.card-thumb--active.card-thumb--selected { box-shadow: 3px 3px 0 rgba(0,204,255,0.3), 0 0 0 1px rgba(0,255,136,0.25); }
 .card-thumb--add { cursor: default; }
 .card-thumb--add:hover { transform: none; border-color: var(--border); }
+.card-thumb-select {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: rgba(5, 5, 14, 0.92);
+  color: var(--text);
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(0,0,0,0.35);
+}
+.card-thumb-select--active {
+  border-color: var(--accent);
+  background: rgba(0, 255, 136, 0.18);
+  color: var(--accent);
+}
 
 .card-thumb-info { padding: 8px; }
 .card-sub { display: block; font-size: 11px; color: var(--text-dim); }
