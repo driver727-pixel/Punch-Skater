@@ -13,7 +13,6 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "../lib/firebase";
 import { TIERS, type TierLevel } from "../lib/tiers";
-import { isAdminEmail } from "../lib/adminUtils";
 import { resolveApiUrl } from "../lib/apiUrls";
 import { listCachedImages, deleteCachedImage, type CacheEntry } from "../services/imageCache";
 
@@ -363,9 +362,6 @@ export function Admin() {
                         {u.email}
                         {u.isAdmin && (
                           <span className="admin-badge admin-badge--admin">ADMIN</span>
-                        )}
-                        {isAdminEmail(u.email) && !u.isAdmin && (
-                          <span className="admin-badge admin-badge--pending">pending admin</span>
                         )}
                       </div>
                       <div className="admin-user-name">{u.displayName}</div>

@@ -11,18 +11,17 @@ import { useAuth } from "../context/AuthContext";
 import { TIERS } from "../lib/tiers";
 import { db } from "../lib/firebase";
 import { TierModal } from "./TierModal";
-import { isAdminEmail } from "../lib/adminUtils";
 import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { sfxNavigate } from "../lib/sfx";
 import { GeoAtlas } from "./GeoAtlas";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, userProfile, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const tierData = TIERS[tier];
   const uid = user?.uid ?? null;
-  const isAdmin = isAdminEmail(user?.email ?? "");
+  const isAdmin = userProfile?.isAdmin === true;
   const { discoveredFactions } = useFactionDiscovery();
 
   const [menuOpen, setMenuOpen] = useState(false);

@@ -1,10 +1,7 @@
-/** Fallback admin email when VITE_ADMIN_EMAILS is not configured. */
-const DEFAULT_ADMIN_EMAILS = ["driver727@gmail.com"];
-
 /** Returns the list of admin email addresses from the environment variable. */
 export function getAdminEmails(): string[] {
   const env = (import.meta.env.VITE_ADMIN_EMAILS ?? "").trim();
-  if (!env) return DEFAULT_ADMIN_EMAILS;
+  if (!env) return [];
   return env
     .split(",")
     .map((e: string) => e.trim().toLowerCase())

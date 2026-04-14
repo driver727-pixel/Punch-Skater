@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import {
-  loadTier,
   saveTier,
   loadEmail,
   saveEmail,
@@ -57,17 +56,7 @@ interface TierContextValue {
 const TierContext = createContext<TierContextValue | null>(null);
 
 function resolveInitialTier(): TierLevel {
-  const params = new URLSearchParams(window.location.search);
-  const tierParam = params.get("tier");
-  if (tierParam === "tier2" || tierParam === "tier3") {
-    saveTier(tierParam);
-    const emailParam = params.get("email");
-    if (emailParam) saveEmail(emailParam);
-    const clean = window.location.pathname;
-    window.history.replaceState({}, "", clean);
-    return tierParam;
-  }
-  return loadTier();
+  return "free";
 }
 
 function resolveInitialEmail(): string {
