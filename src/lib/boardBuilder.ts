@@ -785,7 +785,7 @@ export function calculateBoardStats(config: BoardConfig): BoardLoadout {
 // Deck-specific restrictions on which components can be paired:
 //   Street  (Carbon Fiber) — any wheels, but NOT top-mount battery, NOT 4WD drivetrain
 //   Mountain               — Pneumatic or Solid Rubber wheels; MUST use top-mount battery (TopPeli); MUST use 4WD; no Micro motor
-//   Surf                   — no top-mount battery; no Double-Stack Brick battery; no Pneumatic or Solid Rubber wheels; no Belt drive; no Torque 6374 or Outrunner 6396 motors
+//   Surf                   — no top-mount battery; no Double-Stack Brick battery; no Pneumatic or Solid Rubber wheels; no Belt drive; no 4WD drivetrain; no Torque 6374 or Outrunner 6396 motors
 //   AT (Bamboo)            — no top-mount battery; no 4WD; no Micro motor; Belt drive allowed
 //   Slider                 — no restrictions
 
@@ -852,6 +852,10 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       if (normalizedConfig.drivetrain === "Belt") {
         errors.push({ component: "drivetrain", message: "Surf skateboard cannot use Belt drive." });
       }
+      // Surf cannot use 4WD drivetrain
+      if (normalizedConfig.drivetrain === "4WD") {
+        errors.push({ component: "drivetrain", message: "Surf skateboard cannot use 4WD drivetrain." });
+      }
       // Surf cannot use Torque 6374 or Outrunner 6396 motors
       if (normalizedConfig.motor === "Torque") {
         errors.push({ component: "motor", message: "Surf skateboard cannot use the Torque 6374 motor." });
@@ -894,7 +898,6 @@ export function getAllowedComponents(boardType: BoardType): {
   const nonTopMountBatteries         = BATTERY_OPTIONS.filter((o) => !o.isTopMounted).map((o) => o.value);
   const topMountBatteries            = BATTERY_OPTIONS.filter((o) => o.isTopMounted).map((o) => o.value);
   const no4WD                        = allDrivetrains.filter((d) => d !== "4WD");
-  const noBelt                       = allDrivetrains.filter((d) => d !== "Belt");
 
   switch (boardType) {
     case "Street":
@@ -908,7 +911,7 @@ export function getAllowedComponents(boardType: BoardType): {
       };
     case "Surf":
       return {
-        drivetrains: noBelt,
+        drivetrains: allDrivetrains.filter((d) => d !== "Belt" && d !== "4WD"),
         motors: allMotors.filter((m) => m !== "Torque" && m !== "Outrunner"),
         wheels: allWheels.filter((w) => w !== "Pneumatic" && w !== "Rubber"),
         batteries: nonTopMountBatteries.filter((b) => b !== "DoubleStack"),
