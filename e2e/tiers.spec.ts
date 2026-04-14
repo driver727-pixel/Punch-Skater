@@ -116,27 +116,27 @@ test.describe('Forge gating — free tier', () => {
   });
 });
 
-// ── Forge gating — paid tier ──────────────────────────────────────────────────
+// ── Forge gating — tampered localStorage tiers ────────────────────────────────
 
-test.describe('Forge gating — paid tier (tier2 via localStorage)', () => {
-  test('forge button is unlocked for tier2', async ({ page }) => {
+test.describe('Forge gating — tampered localStorage tiers', () => {
+  test('forge button stays locked when localStorage is forced to tier2', async ({ page }) => {
     await page.goto('/');
-    // Simulate a paid tier already stored in localStorage
+    // Simulate a tampered client-side tier value.
     await page.evaluate(() => localStorage.setItem('skpd_tier', 'tier2'));
     await page.reload();
     const forgeBtn = page.getByTestId('forge-button');
     await expect(forgeBtn).toBeVisible();
-    await expect(forgeBtn).not.toContainText(/upgrade to unlock/i);
+    await expect(forgeBtn).toContainText(/upgrade to unlock/i);
     await expect(forgeBtn).toContainText(/forge your card/i);
   });
 
-  test('forge button is unlocked for tier3', async ({ page }) => {
+  test('forge button stays locked when localStorage is forced to tier3', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.setItem('skpd_tier', 'tier3'));
     await page.reload();
     const forgeBtn = page.getByTestId('forge-button');
     await expect(forgeBtn).toBeVisible();
-    await expect(forgeBtn).not.toContainText(/upgrade to unlock/i);
+    await expect(forgeBtn).toContainText(/upgrade to unlock/i);
   });
 });
 
