@@ -269,7 +269,7 @@ export function CardForge() {
 
         // Cache the result in Firestore (write-once; a concurrent write for the same
         // key is harmless — the second write is silently rejected by the security rule)
-        await setCachedImage(cacheKey, finalUrl);
+        await setCachedImage(cacheKey, finalUrl, { prompt, layer, seed });
 
         const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
         setLayers((s) => ({
@@ -439,7 +439,7 @@ export function CardForge() {
         });
         if (signal.aborted) return;
 
-        await setCachedImage(boardCacheKey, result.imageUrl);
+        await setCachedImage(boardCacheKey, result.imageUrl, { prompt: boardPrompt, layer: "board-img", seed: boardSeed });
         setGenerated((prev) => prev ? { ...prev, boardImageUrl: result.imageUrl } : prev);
       } catch (err) {
         console.warn("Board image generation failed:", err);
