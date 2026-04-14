@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import { expect, test } from '@playwright/test';
 import {
   createDeckFromCard,
@@ -16,7 +15,11 @@ function getUidFromBearerToken(authorizationHeader: string | undefined) {
   const token = authorizationHeader?.replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('Missing Firebase bearer token.');
   const [, payload] = token.split('.');
-  const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { user_id?: string };
+  const normalizedPayload = payload
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .padEnd(Math.ceil(payload.length / 4) * 4, '=');
+  const decoded = JSON.parse(atob(normalizedPayload)) as { user_id?: string };
   if (!decoded.user_id) throw new Error('Firebase token did not include user_id.');
   return decoded.user_id;
 }
