@@ -323,7 +323,7 @@ async function getRemoteFalRequestConfig() {
   try {
     const upstream = await fetch(FAL_CONFIG_URL);
     if (!upstream.ok) {
-      throw new Error(`Remote config fetch failed with ${upstream.status}.`);
+      throw new Error(`Remote Fal config fetch from ${FAL_CONFIG_URL} failed with ${upstream.status}.`);
     }
 
     const payload = await upstream.json();
@@ -340,7 +340,7 @@ async function getRemoteFalRequestConfig() {
 
     return config;
   } catch (err) {
-    console.error('Fal config refresh failed:', err);
+    console.error(`Fal config refresh failed for ${FAL_CONFIG_URL}:`, err);
 
     if (falRequestConfigCache.payload) {
       return falRequestConfigCache.payload;
