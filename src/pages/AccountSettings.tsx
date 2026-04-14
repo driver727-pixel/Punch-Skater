@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { sfxClick } from "../lib/sfx";
 
 export function AccountSettings() {
   const { user, changePassword, changeDisplayName, deleteAccount, signOut } = useAuth();
@@ -157,7 +158,7 @@ export function AccountSettings() {
                   <button
                     type="button"
                     className="password-toggle"
-                    onClick={() => setShowCurrent(v => !v)}
+                    onClick={() => { sfxClick(); setShowCurrent(v => !v); }}
                     aria-label={showCurrent ? "Hide password" : "Show password"}
                   >
                     <span aria-hidden="true">{showCurrent ? "🙈" : "👁"}</span>
@@ -179,7 +180,7 @@ export function AccountSettings() {
                   <button
                     type="button"
                     className="password-toggle"
-                    onClick={() => setShowNew(v => !v)}
+                    onClick={() => { sfxClick(); setShowNew(v => !v); }}
                     aria-label={showNew ? "Hide password" : "Show password"}
                   >
                     <span aria-hidden="true">{showNew ? "🙈" : "👁"}</span>
@@ -201,7 +202,7 @@ export function AccountSettings() {
                   <button
                     type="button"
                     className="password-toggle"
-                    onClick={() => setShowConfirm(v => !v)}
+                    onClick={() => { sfxClick(); setShowConfirm(v => !v); }}
                     aria-label={showConfirm ? "Hide password" : "Show password"}
                   >
                     <span aria-hidden="true">{showConfirm ? "🙈" : "👁"}</span>
@@ -223,7 +224,7 @@ export function AccountSettings() {
           {!showDeleteConfirm ? (
             <button
               className="btn-danger"
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={() => { sfxClick(); setShowDeleteConfirm(true); }}
             >
               🗑 Delete Account
             </button>
@@ -253,7 +254,7 @@ export function AccountSettings() {
                 <button
                   type="button"
                   className="btn-outline"
-                  onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); }}
+                  onClick={() => { sfxClick(); setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); }}
                 >
                   Cancel
                 </button>

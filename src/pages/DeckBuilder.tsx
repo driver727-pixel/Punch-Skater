@@ -167,7 +167,7 @@ export function DeckBuilder() {
                   placeholder="New deck name..."
                   onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                 />
-                <button className="btn-primary" onClick={handleCreate}>+ New Deck</button>
+          <button className="btn-primary" onClick={() => { sfxClick(); handleCreate(); }}>+ New Deck</button>
               </div>
             )}
 
@@ -201,8 +201,8 @@ export function DeckBuilder() {
                   )}
                   <span className="deck-count">{deck.cards.length}/{DECK_CARD_LIMIT}</span>
                   <div className="deck-actions" onClick={(e) => e.stopPropagation()}>
-                    <button className="icon-btn" title="Rename" onClick={() => handleStartRename(deck)}>✎</button>
-                    <button className="icon-btn" title="Export" onClick={() => handleExportDeck(deck)}>⬇</button>
+                    <button className="icon-btn" title="Rename" onClick={() => { sfxClick(); handleStartRename(deck); }}>✎</button>
+                    <button className="icon-btn" title="Export" onClick={() => { sfxClick(); handleExportDeck(deck); }}>⬇</button>
                     <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => {
                       deleteDeck(deck.id);
                       if (activeDeck?.id === deck.id) setActiveDeck(null);
@@ -229,7 +229,7 @@ export function DeckBuilder() {
               <div className="deck-header">
                 <h2>{activeDeck.name}</h2>
                 <span className="deck-count">{activeDeck.cards.length}/{DECK_CARD_LIMIT} cards</span>
-                <button className="btn-outline" onClick={() => handleExportDeck(activeDeck)}>Export JSON</button>
+                <button className="btn-outline" onClick={() => { sfxClick(); handleExportDeck(activeDeck); }}>Export JSON</button>
                 {activeDeck.cards.length >= MIN_BATTLE_CARDS && (
                   <label className="battle-ready-toggle" title="Toggle Battle Ready status for this deck">
                     <input
@@ -276,7 +276,7 @@ export function DeckBuilder() {
                   <button
                     className="icon-btn"
                     aria-label="Dismiss"
-                    onClick={() => setBlockedReason(null)}
+                    onClick={() => { sfxClick(); setBlockedReason(null); }}
                   >✕</button>
                 </div>
               )}
@@ -369,7 +369,7 @@ export function DeckBuilder() {
                   {canCreateDeck ? (
                     <span> Create a new deck to save more cards.</span>
                   ) : (
-                    <span> <button className="btn-outline btn-sm" onClick={openUpgradeModal}>Upgrade for more decks</button></span>
+                    <span> <button className="btn-outline btn-sm" onClick={() => { sfxClick(); openUpgradeModal(); }}>Upgrade for more decks</button></span>
                   )}
                 </div>
               )}

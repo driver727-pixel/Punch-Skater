@@ -17,6 +17,7 @@ import {
   sfxBattleLose,
   sfxBattleReady,
   sfxRewardShower,
+  sfxClick,
 } from "../lib/sfx";
 import { spawnCelebrationBurst } from "../lib/celebration";
 
@@ -184,7 +185,7 @@ function OutcomePopup({ result, myUid, onDismiss }: OutcomePopupProps) {
           </p>
         )}
 
-        <button className="btn-primary" onClick={onDismiss}>
+        <button className="btn-primary" onClick={() => { sfxClick(); onDismiss(); }}>
           Continue
         </button>
       </div>
@@ -220,7 +221,7 @@ function DeckSelector({ decks, selectedId, onSelect }: DeckSelectorProps) {
           <button
             key={deck.id}
             className={`arena-deck-option ${selectedId === deck.id ? "arena-deck-option--active" : ""}`}
-            onClick={() => onSelect(deck.id)}
+            onClick={() => { sfxClick(); onSelect(deck.id); }}
           >
             <span className="arena-deck-option-name">{deck.name}</span>
             <span className="arena-deck-option-count">{deck.cards.length} cards</span>
@@ -356,7 +357,7 @@ export function BattleArena() {
             Ready your deck for battle. Each battle wagers {WAGER_POINTS} random attribute points — the winner takes {WINNER_BONUS}!
           </p>
         </div>
-        <button className="btn-outline" onClick={refresh} aria-label="Refresh arena entries">
+        <button className="btn-outline" onClick={() => { sfxClick(); refresh(); }} aria-label="Refresh arena entries">
           ↻ Refresh
         </button>
       </div>
@@ -375,7 +376,7 @@ export function BattleArena() {
                 <span className="arena-ready-hint">Waiting for a challenger…</span>
                 <ArenaBattleSummary summary={myArenaEntry.battleSummary} label="Public arena summary" />
               </div>
-              <button className="btn-outline btn-sm" onClick={handleUnready}>
+              <button className="btn-outline btn-sm" onClick={() => { sfxClick(); handleUnready(); }}>
                 Stand Down
               </button>
             </div>
@@ -395,7 +396,7 @@ export function BattleArena() {
                   </div>
                   <button
                     className="btn-primary arena-ready-btn"
-                    onClick={handleReady}
+                    onClick={() => { sfxClick(); handleReady(); }}
                     disabled={battling}
                   >
                     ⚔️ Ready for Battle
@@ -429,7 +430,7 @@ export function BattleArena() {
                   </div>
                   <button
                     className="btn-primary btn-sm"
-                    onClick={() => handleChallenge(entry)}
+                    onClick={() => { sfxClick(); handleChallenge(entry); }}
                     disabled={battling || !myArenaEntry || !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS}
                     title={
                       !myArenaEntry

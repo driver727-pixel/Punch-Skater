@@ -36,7 +36,7 @@ import {
 import { MISSION_STAT_LABELS } from "../lib/statLabels";
 import type { District, RoadCorridor } from "../lib/types";
 import { spawnCelebrationBurst } from "../lib/celebration";
-import { sfxError, sfxRewardShower, sfxSuccess, sfxSuccessPing } from "../lib/sfx";
+import { sfxError, sfxRewardShower, sfxSuccess, sfxSuccessPing, sfxClick, sfxNavigate } from "../lib/sfx";
 
 const MISSION_MARKER_OFFSET_Y = -76;
 const DISTRICT_MARKER_OFFSETS = [
@@ -369,6 +369,7 @@ export function Mission() {
               type="button"
               className={`mission-selector-card${mission.id === activeMission.id ? " mission-selector-card--active" : ""}`}
               onClick={() => {
+                sfxClick();
                 setActiveMissionId(mission.id);
                 resetMissionSession();
               }}
@@ -401,7 +402,7 @@ export function Mission() {
           </div>
           <button
             className="btn-primary"
-            onClick={handleRunMission}
+            onClick={() => { sfxClick(); handleRunMission(); }}
             disabled={!activeDeck || !hasRunner || missionAccessBlocked}
           >
             ▶ Run Mission
@@ -471,7 +472,7 @@ export function Mission() {
         <div className="empty-state">
           <span className="empty-icon">🎯</span>
           <p>No decks ready for field work yet.</p>
-          <button className="btn-primary" onClick={() => navigate("/decks")}>
+          <button className="btn-primary" onClick={() => { sfxNavigate(); navigate("/decks"); }}>
             Build a Deck First
           </button>
         </div>
@@ -479,7 +480,7 @@ export function Mission() {
         <div className="empty-state">
           <span className="empty-icon">🛹</span>
           <p>Select or fill a deck before launching the mission.</p>
-          <button className="btn-primary" onClick={() => navigate("/decks")}>
+          <button className="btn-primary" onClick={() => { sfxNavigate(); navigate("/decks"); }}>
             Open My Decks
           </button>
         </div>
@@ -492,6 +493,7 @@ export function Mission() {
                   key={deck.id}
                   className={`deck-item ${activeDeckId === deck.id ? "deck-item--active" : ""}`}
                   onClick={() => {
+                    sfxClick();
                     setActiveDeckId(deck.id);
                     resetMissionSession();
                   }}
@@ -512,6 +514,7 @@ export function Mission() {
                     key={card.id}
                     className={`mission-runner-card${runnerCardId === card.id ? " mission-runner-card--active" : ""}`}
                     onClick={() => {
+                      sfxClick();
                       setRunnerCardId(card.id);
                       resetMissionSession();
                     }}
@@ -621,10 +624,10 @@ export function Mission() {
                   </ol>
                 )}
                 <div className="mission-fork__choices">
-                  <button className="btn-secondary" onClick={() => handleForkChoice("A")}>
+                  <button className="btn-secondary" onClick={() => { sfxClick(); handleForkChoice("A"); }}>
                     {pendingFork.optionA.label}
                   </button>
-                  <button className="btn-secondary" onClick={() => handleForkChoice("B")}>
+                  <button className="btn-secondary" onClick={() => { sfxClick(); handleForkChoice("B"); }}>
                     {pendingFork.optionB.label}
                   </button>
                 </div>
@@ -722,7 +725,7 @@ export function Mission() {
                     <p className="page-sub">{missionResult.partsReward.reason}</p>
                     <button
                       className="btn-secondary"
-                      onClick={() => handleApplyPartsReward(missionResult.partsReward)}
+                      onClick={() => { sfxClick(); handleApplyPartsReward(missionResult.partsReward); }}
                       disabled={!missionResult.success || claimedPartsRewardId === missionResult.partsReward.id}
                     >
                       {claimedPartsRewardId === missionResult.partsReward.id ? "Installed on Runner" : "Apply Upgrade to Runner"}

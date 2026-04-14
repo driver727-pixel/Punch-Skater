@@ -10,6 +10,7 @@ import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
 import { ACTIVE_STYLES } from "../lib/styles";
+import { sfxClick } from "../lib/sfx";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ACTIVE_STYLES;
@@ -134,7 +135,7 @@ export function EditCard() {
           <h1 className="page-title">Edit Card</h1>
           <p className="page-sub">Tweak your card's attributes and re-forge it.</p>
         </div>
-        <button className="btn-outline" onClick={() => navigate("/collection")}>← Back</button>
+        <button className="btn-outline" onClick={() => { sfxClick(); navigate("/collection"); }}>← Back</button>
       </div>
 
       <div className="forge-layout">
@@ -143,7 +144,7 @@ export function EditCard() {
             <label>Cover Identity</label>
             <div className="pill-group">
               {FORGE_ARCHETYPE_OPTIONS.map((opt) => (
-                <button key={opt.value} className={`pill ${prompts.archetype === opt.value ? "selected" : ""}`} onClick={() => set("archetype", opt.value)}>{opt.label}</button>
+                <button key={opt.value} className={`pill ${prompts.archetype === opt.value ? "selected" : ""}`} onClick={() => { sfxClick(); set("archetype", opt.value); }}>{opt.label}</button>
               ))}
             </div>
             <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
@@ -153,7 +154,7 @@ export function EditCard() {
             <label>Class</label>
             <div className="pill-group">
               {RARITIES.map((r) => (
-                <button key={r} className={`pill ${prompts.rarity === r ? "selected" : ""}`} onClick={() => set("rarity", r)}>{r}</button>
+                <button key={r} className={`pill ${prompts.rarity === r ? "selected" : ""}`} onClick={() => { sfxClick(); set("rarity", r); }}>{r}</button>
               ))}
             </div>
           </div>
@@ -162,7 +163,7 @@ export function EditCard() {
             <label>Style</label>
             <div className="pill-group">
               {STYLES.map((s) => (
-                <button key={s} className={`pill ${prompts.style === s ? "selected" : ""}`} onClick={() => set("style", s)}>{s}</button>
+                <button key={s} className={`pill ${prompts.style === s ? "selected" : ""}`} onClick={() => { sfxClick(); set("style", s); }}>{s}</button>
               ))}
             </div>
           </div>
@@ -171,7 +172,7 @@ export function EditCard() {
             <label>District</label>
             <div className="pill-group">
               {DISTRICTS.map((d) => (
-                <button key={d} className={`pill ${prompts.district === d ? "selected" : ""}`} onClick={() => set("district", d)}>{d}</button>
+                <button key={d} className={`pill ${prompts.district === d ? "selected" : ""}`} onClick={() => { sfxClick(); set("district", d); }}>{d}</button>
               ))}
             </div>
           </div>
@@ -180,7 +181,7 @@ export function EditCard() {
             <label>Gender</label>
             <div className="pill-group">
               {GENDERS.map((g) => (
-                <button key={g} className={`pill${prompts.gender === g ? " selected" : ""}`} onClick={() => set("gender", g)}>{g}</button>
+                <button key={g} className={`pill${prompts.gender === g ? " selected" : ""}`} onClick={() => { sfxClick(); set("gender", g); }}>{g}</button>
               ))}
             </div>
           </div>
@@ -189,7 +190,7 @@ export function EditCard() {
             <label>Age Group</label>
             <div className="pill-group">
               {AGE_GROUPS.map((ageGroup) => (
-                <button key={ageGroup} className={`pill${prompts.ageGroup === ageGroup ? " selected" : ""}`} onClick={() => set("ageGroup", ageGroup)}>{ageGroup}</button>
+                <button key={ageGroup} className={`pill${prompts.ageGroup === ageGroup ? " selected" : ""}`} onClick={() => { sfxClick(); set("ageGroup", ageGroup); }}>{ageGroup}</button>
               ))}
             </div>
           </div>
@@ -198,7 +199,7 @@ export function EditCard() {
             <label>Body Type</label>
             <div className="pill-group">
               {BODY_TYPES.map((bodyType) => (
-                <button key={bodyType} className={`pill${prompts.bodyType === bodyType ? " selected" : ""}`} onClick={() => set("bodyType", bodyType)}>{bodyType}</button>
+                <button key={bodyType} className={`pill${prompts.bodyType === bodyType ? " selected" : ""}`} onClick={() => { sfxClick(); set("bodyType", bodyType); }}>{bodyType}</button>
               ))}
             </div>
           </div>
@@ -207,7 +208,7 @@ export function EditCard() {
             <label>Hair Length</label>
             <div className="pill-group">
               {HAIR_LENGTHS.map((opt) => (
-                <button key={opt} className={`pill${prompts.hairLength === opt ? " selected" : ""}`} onClick={() => set("hairLength", opt)}>{opt}</button>
+                <button key={opt} className={`pill${prompts.hairLength === opt ? " selected" : ""}`} onClick={() => { sfxClick(); set("hairLength", opt); }}>{opt}</button>
               ))}
             </div>
           </div>
@@ -216,7 +217,7 @@ export function EditCard() {
             <label>Hair Color</label>
             <div className="pill-group">
               {HAIR_COLORS.map((opt) => (
-                <button key={opt} className={`pill${prompts.hairColor === opt ? " selected" : ""}`} onClick={() => set("hairColor", opt)}>{opt}</button>
+                <button key={opt} className={`pill${prompts.hairColor === opt ? " selected" : ""}`} onClick={() => { sfxClick(); set("hairColor", opt); }}>{opt}</button>
               ))}
             </div>
           </div>
@@ -225,7 +226,7 @@ export function EditCard() {
             <label>Skin Tone</label>
             <div className="pill-group">
               {SKIN_TONES.map((opt) => (
-                <button key={opt} className={`pill${prompts.skinTone === opt ? " selected" : ""}`} onClick={() => set("skinTone", opt)}>{opt}</button>
+                <button key={opt} className={`pill${prompts.skinTone === opt ? " selected" : ""}`} onClick={() => { sfxClick(); set("skinTone", opt); }}>{opt}</button>
               ))}
             </div>
           </div>
@@ -234,7 +235,7 @@ export function EditCard() {
             <label>Face Character</label>
             <div className="pill-group">
               {FACE_CHARACTERS.map((opt) => (
-                <button key={opt} className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`} onClick={() => set("faceCharacter", opt)}>{opt}</button>
+                <button key={opt} className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`} onClick={() => { sfxClick(); set("faceCharacter", opt); }}>{opt}</button>
               ))}
             </div>
           </div>
@@ -243,7 +244,7 @@ export function EditCard() {
             <label>Shoes</label>
             <div className="pill-group">
               {SHOE_STYLES.map((opt) => (
-                <button key={opt} className={`pill${prompts.shoeStyle === opt ? " selected" : ""}`} onClick={() => set("shoeStyle", opt)}>{opt}</button>
+                <button key={opt} className={`pill${prompts.shoeStyle === opt ? " selected" : ""}`} onClick={() => { sfxClick(); set("shoeStyle", opt); }}>{opt}</button>
               ))}
             </div>
           </div>
@@ -268,7 +269,7 @@ export function EditCard() {
                   key={c}
                   className={`color-swatch ${prompts.accentColor === c ? "selected" : ""}`}
                   style={{ background: c }}
-                  onClick={() => set("accentColor", c)}
+                  onClick={() => { sfxClick(); set("accentColor", c); }}
                   title={c}
                 />
               ))}
@@ -280,7 +281,7 @@ export function EditCard() {
             </div>
           </div>
 
-          <button className="btn-primary btn-lg" onClick={handlePreview}>
+          <button className="btn-primary btn-lg" onClick={() => { sfxClick(); handlePreview(); }}>
             ⚡ Preview Changes
           </button>
 
@@ -288,13 +289,13 @@ export function EditCard() {
             <button
               className="btn-primary btn-lg"
               style={{ marginTop: "8px", borderColor: "var(--accent2)", color: "var(--accent2)" }}
-              onClick={handleSaveEdit}
+              onClick={() => { sfxClick(); handleSaveEdit(); }}
               disabled={saved}
             >
               {saved ? "✓ Saved!" : "💾 Save Edit"}
             </button>
           )}
-          <button className="btn-outline" style={{ width: "100%", marginTop: "8px" }} onClick={openUpgradeModal}>
+          <button className="btn-outline" style={{ width: "100%", marginTop: "8px" }} onClick={() => { sfxClick(); openUpgradeModal(); }}>
             Manage Tier
           </button>
         </div>

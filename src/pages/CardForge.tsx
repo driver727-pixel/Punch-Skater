@@ -21,7 +21,7 @@ import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats, buildBoardImagePrompt } from "../lib/boardBuilder";
 import { ACTIVE_STYLES } from "../lib/styles";
 import { GeoAtlas } from "../components/GeoAtlas";
-import { sfxSuccessPing, sfxSuccess, sfxError } from "../lib/sfx";
+import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const STYLES: Style[] = ACTIVE_STYLES;
@@ -568,7 +568,7 @@ export function CardForge() {
                 <button
                   key={opt.value}
                   className={`pill${prompts.archetype === opt.value ? " selected" : ""}`}
-                  onClick={() => set("archetype", opt.value)}
+                  onClick={() => { sfxClick(); set("archetype", opt.value); }}
                 >
                   {opt.label}
                 </button>
@@ -584,7 +584,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.rarity === opt ? " selected" : ""}`}
-                  onClick={() => set("rarity", opt)}
+                  onClick={() => { sfxClick(); set("rarity", opt); }}
                 >
                   {opt}
                 </button>
@@ -599,7 +599,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.style === opt ? " selected" : ""}`}
-                  onClick={() => set("style", opt)}
+                  onClick={() => { sfxClick(); set("style", opt); }}
                 >
                   {opt}
                 </button>
@@ -614,7 +614,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.district === opt ? " selected" : ""}`}
-                  onClick={() => set("district", opt)}
+                  onClick={() => { sfxClick(); set("district", opt); }}
                 >
                   {opt}
                 </button>
@@ -629,7 +629,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.gender === opt ? " selected" : ""}`}
-                  onClick={() => set("gender", opt)}
+                  onClick={() => { sfxClick(); set("gender", opt); }}
                 >
                   {opt}
                 </button>
@@ -644,7 +644,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.ageGroup === opt ? " selected" : ""}`}
-                  onClick={() => set("ageGroup", opt)}
+                  onClick={() => { sfxClick(); set("ageGroup", opt); }}
                 >
                   {opt}
                 </button>
@@ -659,7 +659,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.bodyType === opt ? " selected" : ""}`}
-                  onClick={() => set("bodyType", opt)}
+                  onClick={() => { sfxClick(); set("bodyType", opt); }}
                 >
                   {opt}
                 </button>
@@ -674,7 +674,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.hairLength === opt ? " selected" : ""}`}
-                  onClick={() => set("hairLength", opt)}
+                  onClick={() => { sfxClick(); set("hairLength", opt); }}
                 >
                   {opt}
                 </button>
@@ -689,7 +689,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.hairColor === opt ? " selected" : ""}`}
-                  onClick={() => set("hairColor", opt)}
+                  onClick={() => { sfxClick(); set("hairColor", opt); }}
                 >
                   {opt}
                 </button>
@@ -704,7 +704,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.skinTone === opt ? " selected" : ""}`}
-                  onClick={() => set("skinTone", opt)}
+                  onClick={() => { sfxClick(); set("skinTone", opt); }}
                 >
                   {opt}
                 </button>
@@ -719,7 +719,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`}
-                  onClick={() => set("faceCharacter", opt)}
+                  onClick={() => { sfxClick(); set("faceCharacter", opt); }}
                 >
                   {opt}
                 </button>
@@ -734,7 +734,7 @@ export function CardForge() {
                 <button
                   key={opt}
                   className={`pill${prompts.shoeStyle === opt ? " selected" : ""}`}
-                  onClick={() => set("shoeStyle", opt)}
+                  onClick={() => { sfxClick(); set("shoeStyle", opt); }}
                 >
                   {opt}
                 </button>
@@ -750,7 +750,7 @@ export function CardForge() {
                   key={c}
                   className={`color-swatch${prompts.accentColor === c ? " selected" : ""}`}
                   style={{ background: c }}
-                  onClick={() => set("accentColor", c)}
+                  onClick={() => { sfxClick(); set("accentColor", c); }}
                   title={c}
                 />
               ))}
@@ -771,7 +771,7 @@ export function CardForge() {
             <button
               type="button"
               className="btn-outline forge-map-toggle"
-              onClick={() => setIsMapDrawerOpen(true)}
+              onClick={() => { sfxClick(); setIsMapDrawerOpen(true); }}
               aria-expanded={isMapDrawerOpen}
               aria-controls="forge-map-drawer"
             >
@@ -831,10 +831,10 @@ export function CardForge() {
                 </div>
               )}
               <div className="forge-generated-buttons">
-                <button className="btn-outline btn-3d" onClick={() => setViewing3D(true)} title="View card in 3D">
+                <button className="btn-outline btn-3d" onClick={() => { sfxClick(); setViewing3D(true); }} title="View card in 3D">
                   ◈ 3D
                 </button>
-                <button className="btn-outline" onClick={() => setPrinting(true)} title="Print this card">
+                <button className="btn-outline" onClick={() => { sfxClick(); setPrinting(true); }} title="Print this card">
                   🖨 Print
                 </button>
                 {tierData.canSave ? (
@@ -940,7 +940,7 @@ export function CardForge() {
           type="button"
           className="forge-map-drawer__scrim"
           aria-label="Close Australia map panel"
-          onClick={() => setIsMapDrawerOpen(false)}
+          onClick={() => { sfxClick(); setIsMapDrawerOpen(false); }}
         />
         <aside className="forge-map-drawer__panel" aria-label="Punch Skater Australia map panel">
           <div className="forge-map-drawer__header">
@@ -951,7 +951,7 @@ export function CardForge() {
             <button
               type="button"
               className="btn-outline forge-map-drawer__close"
-              onClick={() => setIsMapDrawerOpen(false)}
+              onClick={() => { sfxClick(); setIsMapDrawerOpen(false); }}
             >
               ✕
             </button>
@@ -996,7 +996,7 @@ export function CardForge() {
             <p className="save-celebrate-seed">SEED · {savedCard.seed}</p>
             <button
               className="btn-primary"
-              onClick={() => { setSavedCard(null); navigate("/collection"); }}
+              onClick={() => { sfxClick(); setSavedCard(null); navigate("/collection"); }}
             >
               Go to My Collection →
             </button>
