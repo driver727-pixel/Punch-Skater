@@ -9,3 +9,7 @@ services:
         sync: false   # REQUIRED: set this secret in the Render dashboard
       - key: STRIPE_SECRET_KEY
         sync: false   # REQUIRED: set this secret in the Render dashboard
+      - key: FIREBASE_API_KEY
+        sync: false   # REQUIRED: set this secret in the Render dashboard
+      - key: ADMIN_EMAILS
+        sync: false   # REQUIRED: set this secret in the Render dashboard

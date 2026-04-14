@@ -14,7 +14,6 @@ listed here.
 | [TypeScript](https://www.typescriptlang.org) | Typed JavaScript | Apache-2.0 |
 | [Vite](https://vitejs.dev) | Build tool & dev server | MIT |
 | [vite-plugin-pwa](https://vite-pwa-org.netlify.app) | Progressive Web App support | MIT |
-| [vite-plugin-node-polyfills](https://github.com/davidmyersdev/vite-plugin-node-polyfills) | Node.js polyfills for browser | MIT |
 
 ## Routing & UI
 
@@ -31,6 +30,7 @@ listed here.
 | [Express](https://expressjs.com) | Node.js server for the image-generation proxy |
 | [CORS](https://github.com/expressjs/cors) | Cross-Origin Resource Sharing middleware |
 | [express-rate-limit](https://github.com/express-rate-limit/express-rate-limit) | API rate-limiting middleware |
+| [Helmet](https://helmetjs.github.io) | HTTP security headers middleware |
 | [dotenv](https://github.com/motdotla/dotenv) | Environment variable management |
 | [Render](https://render.com) | Cloud hosting for the proxy server |
 | [GitHub Pages](https://pages.github.com) | Static hosting for the front-end |

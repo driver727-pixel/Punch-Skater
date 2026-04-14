@@ -10,10 +10,29 @@ const DISTRICT_WEATHER_API_URL = resolveApiUrl(
   (import.meta.env.VITE_DISTRICT_WEATHER_API_URL as string | undefined)?.trim(),
   "/api/district-weather",
 );
+const DISTRICT_WEATHER_DEBOUNCE_MS = 250;
 
 let cachedWeatherResponse: DistrictWeatherResponse | null = null;
 let cachedWeatherFetchedAt = 0;
 let inFlightWeatherRequest: Promise<DistrictWeatherResponse> | null = null;
+let queuedWeatherRequest: Promise<DistrictWeatherResponse> | null = null;
+
+function fetchDistrictWeather(): Promise<DistrictWeatherResponse> {
+  inFlightWeatherRequest = fetch(DISTRICT_WEATHER_API_URL).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`District weather request failed with ${response.status}.`);
+    }
+
+    const payload = (await response.json()) as DistrictWeatherResponse;
+    cachedWeatherResponse = payload;
+    cachedWeatherFetchedAt = Date.now();
+    return payload;
+  });
+
+  return inFlightWeatherRequest.finally(() => {
+    inFlightWeatherRequest = null;
+  });
+}
 
 async function requestDistrictWeather(forceRefresh = false): Promise<DistrictWeatherResponse> {
   const now = Date.now();
@@ -26,26 +45,21 @@ async function requestDistrictWeather(forceRefresh = false): Promise<DistrictWea
     return cachedWeatherResponse;
   }
 
-  if (!forceRefresh && inFlightWeatherRequest) {
+  if (inFlightWeatherRequest) {
     return inFlightWeatherRequest;
   }
 
-  inFlightWeatherRequest = fetch(DISTRICT_WEATHER_API_URL).then(async (response) => {
-    if (!response.ok) {
-      throw new Error(`District weather request failed with ${response.status}.`);
-    }
-
-    const payload = (await response.json()) as DistrictWeatherResponse;
-    cachedWeatherResponse = payload;
-    cachedWeatherFetchedAt = Date.now();
-    return payload;
-  });
-
-  try {
-    return await inFlightWeatherRequest;
-  } finally {
-    inFlightWeatherRequest = null;
+  if (!queuedWeatherRequest) {
+    queuedWeatherRequest = new Promise((resolve, reject) => {
+      window.setTimeout(() => {
+        fetchDistrictWeather().then(resolve, reject);
+      }, DISTRICT_WEATHER_DEBOUNCE_MS);
+    }).finally(() => {
+      queuedWeatherRequest = null;
+    });
   }
+
+  return queuedWeatherRequest;
 }
 
 function getErrorMessage(error: unknown): string {

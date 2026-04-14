@@ -1,10 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import Stripe from 'stripe';
 import 'dotenv/config';
 import { createRequire } from 'module';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { cert, getApps, initializeApp as initializeAdminApp } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
@@ -18,12 +19,35 @@ const tierPricing = nodeRequire('../src/lib/tierPricing.json');
 
 const app = express();
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Render (and most PaaS reverse-proxies) add X-Forwarded-For so Express can
 // determine the real client IP.  Without trust proxy = 1, express-rate-limit
 // throws a ValidationError and rate-limiting cannot identify callers correctly.
 app.set('trust proxy', 1);
 
 // ── Security headers ─────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      imgSrc: ["'self'", 'data:', 'https://*.fal.media', 'https://*.firebaseapp.com'],
+      manifestSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      workerSrc: ["'self'", 'blob:'],
+      ...(isProduction ? { upgradeInsecureRequests: [] } : {}),
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -83,7 +107,7 @@ const adminUserRateLimit = rateLimit({
 
 const weatherRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 120,
+  max: 30,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: { error: 'Too many weather requests — please wait a moment and try again.' },
@@ -177,6 +201,21 @@ function resolveTierFromPriceId(priceId) {
 
 // Stripe client — instantiated once at startup so it is reused across requests.
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
+
+function createComparableDigest(value) {
+  return createHash('sha256').update(value).digest();
+}
+
+function timingSafeEmailMatches(left, right) {
+  return timingSafeEqual(
+    createComparableDigest(left.trim().toLowerCase()),
+    createComparableDigest(right.trim().toLowerCase()),
+  );
+}
+
+function sendCheckoutVerificationFailure(res) {
+  res.status(409).json({ error: 'Checkout session could not be verified.' });
+}
 
 if (!FAL_KEY) {
   console.warn('⚠️  FAL_KEY environment variable is not set — requests will be rejected by Fal.ai.');
@@ -915,26 +954,24 @@ app.get('/api/verify-checkout-session', checkoutRateLimit, async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
     const priceId = lineItems.data[0]?.price?.id;
-    if (!priceId) {
-      console.error('Stripe checkout verification missing line items:', { sessionId, session });
-      res.status(409).json({ error: 'No valid line items found for this checkout session.' });
-      return;
-    }
     const paidTier = resolveTierFromPriceId(priceId);
     const sessionEmail = (session.customer_details?.email ?? session.customer_email ?? '').trim().toLowerCase();
 
-    if (!sessionEmail || sessionEmail !== expectedEmail) {
-      res.status(403).json({ error: 'Checkout session does not match the expected email.' });
-      return;
-    }
-
-    if (!paidTier) {
-      res.status(409).json({ error: 'Checkout session contains an unsupported price ID.' });
-      return;
-    }
-
-    if (session.payment_status !== 'paid') {
-      res.status(409).json({ error: 'Checkout session has not been paid yet.' });
+    if (
+      !priceId ||
+      !paidTier ||
+      session.payment_status !== 'paid' ||
+      !sessionEmail ||
+      !timingSafeEmailMatches(sessionEmail, expectedEmail)
+    ) {
+      console.warn('Stripe checkout verification rejected.', {
+        sessionId,
+        hasPriceId: Boolean(priceId),
+        hasPaidTier: Boolean(paidTier),
+        paymentStatus: session.payment_status,
+        hasSessionEmail: Boolean(sessionEmail),
+      });
+      sendCheckoutVerificationFailure(res);
       return;
     }
 
@@ -1010,8 +1047,8 @@ app.post('/api/admin/create-user', adminUserRateLimit, async (req, res) => {
     res.status(400).json({ error: 'email is required.' });
     return;
   }
-  if (!password || typeof password !== 'string' || password.length < 6) {
-    res.status(400).json({ error: 'password must be at least 6 characters.' });
+  if (!password || typeof password !== 'string' || password.length < 10) {
+    res.status(400).json({ error: 'password must be at least 10 characters.' });
     return;
   }
 

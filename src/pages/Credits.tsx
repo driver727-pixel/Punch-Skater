@@ -34,10 +34,6 @@ export function Credits() {
             <a href="https://vite-pwa-org.netlify.app" target="_blank" rel="noopener noreferrer" className="credits-name">vite-plugin-pwa</a>
             <span className="credits-desc">Progressive Web App support (MIT)</span>
           </li>
-          <li className="credits-item">
-            <a href="https://github.com/davidmyersdev/vite-plugin-node-polyfills" target="_blank" rel="noopener noreferrer" className="credits-name">vite-plugin-node-polyfills</a>
-            <span className="credits-desc">Node.js API polyfills for browser builds (MIT)</span>
-          </li>
         </ul>
       </section>
 
@@ -73,6 +69,10 @@ export function Credits() {
           <li className="credits-item">
             <a href="https://github.com/express-rate-limit/express-rate-limit" target="_blank" rel="noopener noreferrer" className="credits-name">express-rate-limit</a>
             <span className="credits-desc">API rate-limiting middleware (MIT)</span>
+          </li>
+          <li className="credits-item">
+            <a href="https://helmetjs.github.io" target="_blank" rel="noopener noreferrer" className="credits-name">Helmet</a>
+            <span className="credits-desc">HTTP security headers middleware (MIT)</span>
           </li>
           <li className="credits-item">
             <a href="https://github.com/motdotla/dotenv" target="_blank" rel="noopener noreferrer" className="credits-name">dotenv</a>

@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 const _buildDate = new Date();
 const _buildNumber = [
@@ -48,7 +47,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    nodePolyfills(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
