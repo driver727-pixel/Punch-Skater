@@ -37,6 +37,19 @@ export const LORE_CHARACTER_NAMES = [
   "Mercer Varial",
   'Franky "Pops" Shuvit',
   "Arlo Grind",
+  "Kenji O'Connor",
+  "Isabella Nguyen",
+  "Kwame Schmidt",
+  "Sofia Al-Fayed",
+  "Wei Kowalski",
+  "Arjun Hernandez",
+  "Sven Dubois",
+  "Aaliyah Hansen",
+  "Kaito Moretti",
+  "Zahra Schmidt",
+  "Aleksei Silva",
+  "Liam Tanaka",
+  "Amara Jensen",
 ];
 
 // ── Archetype → Faction mapping ────────────────────────────────────────────────
