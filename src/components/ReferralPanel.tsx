@@ -44,12 +44,14 @@ export function ReferralPanel() {
     navigator.clipboard.writeText(referralLink).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      /* clipboard access denied — silently ignore */
     });
   }, [referralLink]);
 
   if (!user) return null;
 
-  const displayCredits = firestoreCredits ?? generateCredits;
+  const displayCredits = firestoreCredits ?? generateCredits ?? 0;
 
   return (
     <div className="referral-panel" data-testid="referral-panel">

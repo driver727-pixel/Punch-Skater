@@ -138,12 +138,12 @@ export function LanguageProfilePanel() {
 
   return (
     <div className="lang-panel">
-      <div className="lang-panel-header" onClick={() => setExpanded((v) => !v)}>
+      <button type="button" className="lang-panel-header" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
         <span className="lang-panel-title">
           🌐 CraftLingua Profile {profile ? `— ${profile.language.name}` : "(none)"}
         </span>
         <span className="lang-panel-chevron">{expanded ? "▲" : "▼"}</span>
-      </div>
+      </button>
 
       {expanded && (
         <div className="lang-panel-body">
@@ -162,10 +162,14 @@ export function LanguageProfilePanel() {
           {/* Drop zone */}
           <div
             className={`lang-dropzone${dragging ? " lang-dropzone--active" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-label="Drop a JSON file or click to browse"
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) void handleFile(f); }}
             onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileRef.current?.click(); } }}
           >
             <span>{dragging ? "Drop to load" : "📂 Drop file or click to browse"}</span>
             <input
@@ -179,7 +183,9 @@ export function LanguageProfilePanel() {
 
           <div className="lang-divider"><span>or paste JSON</span></div>
 
+          <label htmlFor="lang-paste" className="visually-hidden">Paste JSON</label>
           <textarea
+            id="lang-paste"
             className="lang-textarea"
             rows={5}
             placeholder={'{ "source": "craftlingua", "language": { "name": "...", "code": "..." }, "vocabulary": [...] }'}
