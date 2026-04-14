@@ -98,10 +98,14 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
             {/* Drop zone */}
             <div
               className={`import-dropzone${dragging ? " import-dropzone--active" : ""}`}
+              role="button"
+              tabIndex={0}
+              aria-label="Drop a JSON file or click to browse"
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
               onClick={() => fileRef.current?.click()}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileRef.current?.click(); } }}
             >
               <span className="import-dropzone-icon">📂</span>
               <span className="import-dropzone-label">
@@ -121,7 +125,9 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
 
             <div className="import-divider"><span>or paste JSON</span></div>
 
+            <label htmlFor="import-paste" className="visually-hidden">Paste JSON</label>
             <textarea
+              id="import-paste"
               className="import-textarea"
               placeholder={`{\n  "source": "craftlingua",\n  "language": { "name": "...", "code": "..." },\n  "cards": [...]\n}`}
               value={pasteText}

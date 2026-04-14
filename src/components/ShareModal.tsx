@@ -22,6 +22,8 @@ export function ShareModal({ card, onClose }: ShareModalProps) {
     navigator.clipboard.writeText(shareText).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      /* clipboard access denied — silently ignore */
     });
   };
 
@@ -41,6 +43,8 @@ export function ShareModal({ card, onClose }: ShareModalProps) {
     navigator.clipboard.writeText(shareUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      /* clipboard access denied — silently ignore */
     });
   };
 

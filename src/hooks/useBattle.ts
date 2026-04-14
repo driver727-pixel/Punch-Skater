@@ -310,18 +310,23 @@ export function useBattle() {
         readiedAt: new Date().toISOString(),
       };
 
-      await Promise.all([
-        setDoc(doc(db, "arena", uid), entry),
-        setDoc(
-          doc(db, "users", uid, "decks", deck.id),
-          {
-            ...deck,
-            battleReady: true,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
-        ),
-      ]);
+      try {
+        await Promise.all([
+          setDoc(doc(db, "arena", uid), entry),
+          setDoc(
+            doc(db, "users", uid, "decks", deck.id),
+            {
+              ...deck,
+              battleReady: true,
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true },
+          ),
+        ]);
+      } catch (err) {
+        console.error("Failed to ready deck:", err);
+        throw err;
+      }
     },
     [uid, user],
   );

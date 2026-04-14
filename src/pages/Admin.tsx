@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -61,6 +61,13 @@ export function Admin() {
   const [hasMore, setHasMore] = useState(false);
   const [savingUid, setSavingUid] = useState<string | null>(null);
   const [successUid, setSuccessUid] = useState<string | null>(null);
+  const successTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current !== null) clearTimeout(successTimerRef.current);
+    };
+  }, []);
 
   // ── Create user ────────────────────────────────────────────────────────────
   const [newEmail, setNewEmail] = useState("");
@@ -173,7 +180,7 @@ export function Admin() {
         prev.map((u) => (u.uid === uid ? { ...u, tier: newTier } : u))
       );
       setSuccessUid(uid);
-      setTimeout(() => setSuccessUid(null), 2000);
+      successTimerRef.current = window.setTimeout(() => setSuccessUid(null), 2000);
     } catch (err) {
       console.error("Failed to set tier:", err);
       setError(`Failed to update tier for ${uid}.`);

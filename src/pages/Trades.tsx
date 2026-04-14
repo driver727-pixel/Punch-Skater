@@ -45,14 +45,21 @@ export function Trades() {
   useEffect(() => {
     if (!uid) return;
 
+    const handleSnapshotError = (err: Error) => {
+      console.error("Trades snapshot error:", err);
+      setError("Failed to load trades. Please try refreshing.");
+    };
+
     const inboxUnsub = onSnapshot(
       query(collection(db, "trades"), where("toUid", "==", uid), where("status", "==", "pending")),
-      (snap) => setInbox(snap.docs.map((d) => d.data() as TradePayload))
+      (snap) => setInbox(snap.docs.map((d) => d.data() as TradePayload)),
+      handleSnapshotError,
     );
 
     const outboxUnsub = onSnapshot(
       query(collection(db, "trades"), where("fromUid", "==", uid)),
-      (snap) => setOutbox(snap.docs.map((d) => d.data() as TradePayload))
+      (snap) => setOutbox(snap.docs.map((d) => d.data() as TradePayload)),
+      handleSnapshotError,
     );
 
     const marketUnsub = onSnapshot(
@@ -66,7 +73,8 @@ export function Trades() {
         const all = snap.docs.map((d) => d.data() as TradePayload);
         // Exclude the current user's own listings (already in Inbox / Sent)
         setMarket(all.filter((t) => t.fromUid !== uid && t.toUid !== uid));
-      }
+      },
+      handleSnapshotError,
     );
 
     return () => { inboxUnsub(); outboxUnsub(); marketUnsub(); };
