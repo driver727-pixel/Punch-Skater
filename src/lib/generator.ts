@@ -220,7 +220,7 @@ export const generateCard = (prompts: CardPrompts, options: GenerateCardOptions 
   const idNonce = options.idNonce ?? crypto.randomUUID();
   const idSeed = `${masterSeed}::${idNonce}`;
   const idHash = Math.abs(seedFromString(idSeed)).toString(36).padStart(7, "0");
-  const nonceSuffix = idNonce.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const nonceSuffix = idNonce.replace(/[^a-zA-Z0-9]/g, "").toLowerCase().slice(-24);
   const id = `forge-${idHash}-${nonceSuffix}`;
 
   return {

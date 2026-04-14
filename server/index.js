@@ -237,7 +237,9 @@ function createFirebaseAdminServices() {
 const { adminAuth, adminDb } = createFirebaseAdminServices();
 
 if (!adminAuth || !adminDb) {
-  console.warn('⚠️  Firebase Admin credentials are not set — secure battle resolution will be unavailable.');
+  console.warn(
+    '⚠️  Firebase Admin credentials are not set — set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY to enable secure battle resolution.',
+  );
 }
 
 async function authenticateFirebaseUser(req) {
