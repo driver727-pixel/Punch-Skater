@@ -246,14 +246,6 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
   return (
     <div className={`board-builder${shaking ? " board-builder--shake" : ""}`}>
       <div className="board-builder__columns">
-        <div className="board-builder__preview-col">
-          {/* Live board component preview — updates in real time */}
-          <BoardPreviewGrid
-            urls={previewUrls}
-            labels={previewLabels}
-            className={`board-builder__preview${surging ? " board-preview-grid--surge" : ""}`}
-          />
-        </div>
         <div className="board-builder__belt-col">
       {/* Belt 1 — Decks */}
       <ConveyorCarousel
@@ -313,6 +305,14 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
           </span>
         )}
       </div>
+        </div>
+        <div className="board-builder__preview-col">
+          {/* Live board component preview — updates in real time */}
+          <BoardPreviewGrid
+            urls={previewUrls}
+            labels={previewLabels}
+            className={`board-builder__preview${surging ? " board-preview-grid--surge" : ""}`}
+          />
         </div>
       </div>
     </div>

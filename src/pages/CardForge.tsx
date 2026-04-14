@@ -766,7 +766,7 @@ export function CardForge() {
 
           <div className="form-group">
             <label>Board Loadout</label>
-            <p className="form-hint" style={{ marginBottom: 12 }}>
+            <p className="form-hint" style={{ marginBottom: 6 }}>
               Build your electric skateboard — your most important piece of gear.
             </p>
             <button

@@ -5202,7 +5202,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-builder__preview-col {
   flex-shrink: 0;
   width: 180px;
-  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
 }
@@ -5214,7 +5214,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* Neon world map placed above the board builder in the right forge column */
 .forge-board-neon-map {
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 /* Step tabs row */
@@ -5851,7 +5851,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
  */
 @keyframes conveyor-belt-move {
   from { background-position: 0 0; }
-  to   { background-position: -40px 0; }
+  to   { background-position: 40px 0; }
 }
 
 /* Keyframe: neon clamp pulse for the selected item */
