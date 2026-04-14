@@ -40,7 +40,7 @@ export function ConveyorCarousel({
 }: ConveyorCarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   // Track which item is visually centered (may differ from `selected` mid-scroll).
-  const snapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectionFrameRef = useRef<number | null>(null);
 
   /** Derive which item index is closest to the center of the scroll container. */
   const getCenteredIndex = useCallback(() => {
@@ -66,14 +66,18 @@ export function ConveyorCarousel({
 
   /** When the container scrolls, debounce and fire onSelect for the centered item. */
   const handleScroll = useCallback(() => {
-    if (snapTimerRef.current) clearTimeout(snapTimerRef.current);
-    snapTimerRef.current = setTimeout(() => {
+    if (selectionFrameRef.current !== null) cancelAnimationFrame(selectionFrameRef.current);
+    selectionFrameRef.current = requestAnimationFrame(() => {
+      selectionFrameRef.current = null;
       const idx = getCenteredIndex();
       if (idx >= 0 && idx < items.length) {
-        onSelect(items[idx].value);
+        const centeredItem = items[idx];
+        if (!centeredItem.disabled && centeredItem.value !== selected) {
+          onSelect(centeredItem.value);
+        }
       }
-    }, 80);
-  }, [getCenteredIndex, items, onSelect]);
+    });
+  }, [getCenteredIndex, items, onSelect, selected]);
 
   /** Scroll a specific item into the snap position (center). */
   const scrollToIndex = useCallback((idx: number) => {
@@ -93,6 +97,10 @@ export function ConveyorCarousel({
     const idx = items.findIndex((it) => it.value === selected);
     if (idx >= 0) scrollToIndex(idx);
   }, [selected, items, scrollToIndex]);
+
+  useEffect(() => () => {
+    if (selectionFrameRef.current !== null) cancelAnimationFrame(selectionFrameRef.current);
+  }, []);
 
   return (
     <div className="conveyor">

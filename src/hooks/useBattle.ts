@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   type DocumentData,
+  type QueryDocumentSnapshot,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -11,6 +12,9 @@ import {
   query,
   where,
   writeBatch,
+  orderBy,
+  limit,
+  startAfter,
 } from "firebase/firestore";
 import type {
   ArenaEntry,
@@ -32,12 +36,32 @@ import { resolveApiUrl } from "../lib/apiUrls";
 
 /** Minimum cards required in a deck to ready for battle. */
 export const MIN_BATTLE_CARDS = 1;
+const ARENA_PAGE_SIZE = 50;
 
 const SEEN_BATTLE_RESULTS_KEY_PREFIX = "skpd_seen_battle_results_";
 const BATTLE_API_URL = resolveApiUrl(
   (import.meta.env.VITE_BATTLE_API_URL as string | undefined)?.trim(),
   "/api/resolve-battle",
 );
+
+function mergeArenaEntries(primaryEntries: ArenaEntry[], secondaryEntries: ArenaEntry[]): ArenaEntry[] {
+  const seenUids = new Set<string>();
+  const mergedEntries: ArenaEntry[] = [];
+
+  for (const entry of primaryEntries) {
+    if (seenUids.has(entry.uid)) continue;
+    seenUids.add(entry.uid);
+    mergedEntries.push(entry);
+  }
+
+  for (const entry of secondaryEntries) {
+    if (seenUids.has(entry.uid)) continue;
+    seenUids.add(entry.uid);
+    mergedEntries.push(entry);
+  }
+
+  return mergedEntries;
+}
 
 function loadSeenBattleResults(uid: string): Set<string> {
   try {
@@ -148,9 +172,15 @@ export function useBattle() {
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
   const [battling, setBattling] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [myArenaEntry, setMyArenaEntry] = useState<ArenaEntry | null>(null);
+  const [hasMoreArenaEntries, setHasMoreArenaEntries] = useState(false);
+  const [loadingMoreArenaEntries, setLoadingMoreArenaEntries] = useState(false);
 
   const resultRef = useRef<BattleResult | null>(null);
   const seenBattleResultsRef = useRef<Set<string>>(new Set());
+  const arenaLiveEntriesRef = useRef<ArenaEntry[]>([]);
+  const arenaLoadedEntriesRef = useRef<ArenaEntry[]>([]);
+  const arenaLastDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -174,14 +204,69 @@ export function useBattle() {
 
   // ── Subscribe to arena entries ────────────────────────────────────────────
   useEffect(() => {
-    if (!db) return;
+    if (!db) {
+      arenaLiveEntriesRef.current = [];
+      arenaLoadedEntriesRef.current = [];
+      arenaLastDocRef.current = null;
+      setArenaEntries([]);
+      setHasMoreArenaEntries(false);
+      return;
+    }
+
+    arenaLiveEntriesRef.current = [];
+    arenaLoadedEntriesRef.current = [];
+    arenaLastDocRef.current = null;
+    setArenaEntries([]);
+    setHasMoreArenaEntries(false);
+    setLoadingMoreArenaEntries(false);
+
     const colRef = collection(db, "arena");
-    const unsub = onSnapshot(colRef, (snap) => {
+    const arenaQuery = query(colRef, orderBy("readiedAt", "desc"), limit(ARENA_PAGE_SIZE));
+    const unsub = onSnapshot(arenaQuery, (snap) => {
       const entries = snap.docs.map((snapshot) => snapshot.data() as ArenaEntry);
-      setArenaEntries(entries);
+      arenaLiveEntriesRef.current = entries;
+      arenaLastDocRef.current = snap.docs.at(-1) ?? null;
+      setHasMoreArenaEntries(snap.docs.length === ARENA_PAGE_SIZE);
+      setArenaEntries(mergeArenaEntries(entries, arenaLoadedEntriesRef.current));
     });
     return unsub;
   }, [refreshKey]);
+
+  useEffect(() => {
+    if (!uid || !db) {
+      setMyArenaEntry(null);
+      return;
+    }
+
+    return onSnapshot(doc(db, "arena", uid), (snap) => {
+      setMyArenaEntry(snap.exists() ? (snap.data() as ArenaEntry) : null);
+    });
+  }, [uid]);
+
+  const loadMoreArenaEntries = useCallback(async () => {
+    if (!db || loadingMoreArenaEntries || !arenaLastDocRef.current) return;
+
+    setLoadingMoreArenaEntries(true);
+
+    try {
+      const nextPage = await getDocs(
+        query(
+          collection(db, "arena"),
+          orderBy("readiedAt", "desc"),
+          startAfter(arenaLastDocRef.current),
+          limit(ARENA_PAGE_SIZE),
+        ),
+      );
+      const nextEntries = nextPage.docs.map((snapshot) => snapshot.data() as ArenaEntry);
+
+      arenaLoadedEntriesRef.current = mergeArenaEntries(arenaLoadedEntriesRef.current, nextEntries);
+      arenaLastDocRef.current = nextPage.docs.at(-1) ?? arenaLastDocRef.current;
+      setHasMoreArenaEntries(nextPage.docs.length === ARENA_PAGE_SIZE);
+      setArenaEntries(mergeArenaEntries(arenaLiveEntriesRef.current, arenaLoadedEntriesRef.current));
+    } finally {
+      setLoadingMoreArenaEntries(false);
+    }
+  }, [loadingMoreArenaEntries]);
 
   // ── Subscribe to battle results for both challenger and defender ──────────
   useEffect(() => {
@@ -319,7 +404,10 @@ export function useBattle() {
     dismissResult,
     battling,
     refresh,
-    myArenaEntry: arenaEntries.find((entry) => entry.uid === uid) ?? null,
+    myArenaEntry,
+    hasMoreArenaEntries,
+    loadingMoreArenaEntries,
+    loadMoreArenaEntries,
     WAGER_POINTS,
     WINNER_BONUS,
     deductWager,

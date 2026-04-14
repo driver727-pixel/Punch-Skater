@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { CardPayload } from "../lib/types";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { CardFrame } from "./CardFrame";
@@ -968,7 +969,7 @@ const RARITY_STAR_COLOR: Record<string, string> = {
   Legendary:      "#ffaa00",
 };
 
-export function CardArt({ card, width = 200, height = 140 }: CardArtProps) {
+function CardArtComponent({ card, width = 200, height = 140 }: CardArtProps) {
   const accent    = card.visuals.accentColor || "#00ff88";
   const stars     = RARITY_STARS[card.prompts.rarity] || 1;
   const starColor = RARITY_STAR_COLOR[card.prompts.rarity] || accent;
@@ -1027,3 +1028,26 @@ export function CardArt({ card, width = 200, height = 140 }: CardArtProps) {
     </svg>
   );
 }
+
+function areCardArtPropsEqual(previous: CardArtProps, next: CardArtProps): boolean {
+  return (
+    previous.width === next.width &&
+    previous.height === next.height &&
+    previous.card.id === next.card.id &&
+    previous.card.frameSeed === next.card.frameSeed &&
+    previous.card.backgroundSeed === next.card.backgroundSeed &&
+    previous.card.characterSeed === next.card.characterSeed &&
+    previous.card.identity.name === next.card.identity.name &&
+    previous.card.prompts.archetype === next.card.prompts.archetype &&
+    previous.card.prompts.rarity === next.card.prompts.rarity &&
+    previous.card.prompts.district === next.card.prompts.district &&
+    previous.card.prompts.style === next.card.prompts.style &&
+    previous.card.prompts.vibe === next.card.prompts.vibe &&
+    previous.card.visuals.accentColor === next.card.visuals.accentColor &&
+    previous.card.visuals.storagePackStyle === next.card.visuals.storagePackStyle &&
+    previous.card.discovery?.displayArchetype === next.card.discovery?.displayArchetype
+  );
+}
+
+export const CardArt = memo(CardArtComponent, areCardArtPropsEqual);
+CardArt.displayName = "CardArt";

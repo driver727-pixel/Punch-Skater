@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Rarity } from "../lib/types";
 
 export const FRAME_RENDER_WIDTH = 750;
@@ -416,7 +417,7 @@ function PunchSkaterFrame({ frameSeed }: { frameSeed: string }) {
   );
 }
 
-export function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps) {
+function CardFrameComponent({ width, height, rarity, frameSeed, uid }: FrameProps) {
   const scaleX = width / FRAME_RENDER_WIDTH;
   const scaleY = height / FRAME_RENDER_HEIGHT;
 
@@ -430,3 +431,16 @@ export function CardFrame({ width, height, rarity, frameSeed, uid }: FrameProps)
     </g>
   );
 }
+
+function areCardFramePropsEqual(previous: FrameProps, next: FrameProps): boolean {
+  return (
+    previous.width === next.width &&
+    previous.height === next.height &&
+    previous.rarity === next.rarity &&
+    previous.frameSeed === next.frameSeed &&
+    previous.uid === next.uid
+  );
+}
+
+export const CardFrame = memo(CardFrameComponent, areCardFramePropsEqual);
+CardFrame.displayName = "CardFrame";

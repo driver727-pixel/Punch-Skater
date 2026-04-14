@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   collection,
   doc,
@@ -15,20 +15,37 @@ import { normalizeCardPayload } from "../lib/styles";
 
 const MIGRATION_KEY_PREFIX = "skpd_migration_done_";
 
+function shallowEqualCardArrays(previous: CardPayload[], next: CardPayload[]): boolean {
+  if (previous === next) return true;
+  if (previous.length !== next.length) return false;
+  return previous.every((card, index) => card === next[index]);
+}
+
 export function useCollection() {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
 
-  const [cards, setCards] = useState<CardPayload[]>([]);
+  const [cards, setCards] = useState<CardPayload[]>(() => loadCollection());
   const [migrationPending, setMigrationPending] = useState(false);
+  const lastSavedCardsRef = useRef<CardPayload[]>(cards);
+  const initialGuestCardsRef = useRef<CardPayload[] | null>(null);
+  const guestHydratingRef = useRef(!uid);
 
   // ── Subscribe to Firestore (authenticated) or localStorage (guest) ────────
   useEffect(() => {
     if (!uid) {
-      setCards(loadCollection());
+      const localCards = loadCollection();
+      guestHydratingRef.current = true;
+      initialGuestCardsRef.current = localCards;
+      lastSavedCardsRef.current = localCards;
+      setCards(localCards);
       setMigrationPending(false);
       return;
     }
+
+    guestHydratingRef.current = false;
+    initialGuestCardsRef.current = null;
+    lastSavedCardsRef.current = [];
 
     // Check if there are local cards to migrate (and we haven't already done so)
     const migrationDone = localStorage.getItem(MIGRATION_KEY_PREFIX + uid) === "1";
@@ -46,7 +63,17 @@ export function useCollection() {
 
   // ── Persist to localStorage for guests ────────────────────────────────────
   useEffect(() => {
-    if (!uid) saveCollection(cards);
+    if (uid) return;
+
+    if (guestHydratingRef.current) {
+      if (initialGuestCardsRef.current !== cards) return;
+      guestHydratingRef.current = false;
+    }
+
+    if (shallowEqualCardArrays(lastSavedCardsRef.current, cards)) return;
+
+    saveCollection(cards);
+    lastSavedCardsRef.current = cards;
   }, [cards, uid]);
 
   // ── Card mutations ────────────────────────────────────────────────────────

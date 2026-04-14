@@ -264,6 +264,9 @@ export function BattleArena() {
   const { decks } = useDecks();
   const {
     arenaEntries,
+    hasMoreArenaEntries,
+    loadingMoreArenaEntries,
+    loadMoreArenaEntries,
     readyDeck,
     unreadyDeck,
     challenge,
@@ -411,40 +414,51 @@ export function BattleArena() {
         <div className="arena-opponents">
           <h2 className="arena-section-title">Arena Challengers</h2>
 
-          {opponents.length === 0 ? (
+          {opponents.length === 0 && !hasMoreArenaEntries ? (
             <div className="arena-empty-state">
               <span className="empty-icon">🏟️</span>
               <p>No opponents in the arena yet.</p>
               <p className="page-sub">Ready your deck and wait for challengers to appear!</p>
             </div>
           ) : (
-            <div className="arena-opponent-list">
-              {opponents.map((entry) => (
-                <div key={entry.uid} className="arena-opponent-card">
-                  <div className="arena-opponent-info">
-                    <span className="arena-opponent-name">{entry.displayName}</span>
-                    <span className="arena-opponent-deck">
-                      {entry.deckName} · {entry.cardCount} cards
-                    </span>
-                    <ArenaBattleSummary summary={entry.battleSummary} label="Scouting report" />
+            <>
+              <div className="arena-opponent-list">
+                {opponents.map((entry) => (
+                  <div key={entry.uid} className="arena-opponent-card">
+                    <div className="arena-opponent-info">
+                      <span className="arena-opponent-name">{entry.displayName}</span>
+                      <span className="arena-opponent-deck">
+                        {entry.deckName} · {entry.cardCount} cards
+                      </span>
+                      <ArenaBattleSummary summary={entry.battleSummary} label="Scouting report" />
+                    </div>
+                    <button
+                      className="btn-primary btn-sm"
+                      onClick={() => { sfxClick(); handleChallenge(entry); }}
+                      disabled={battling || !myArenaEntry || !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS}
+                      title={
+                        !myArenaEntry
+                          ? "Ready your deck first!"
+                          : !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS
+                            ? "Opponent deck sync in progress"
+                            : "Challenge this player"
+                      }
+                    >
+                      ⚔️ Challenge
+                    </button>
                   </div>
-                  <button
-                    className="btn-primary btn-sm"
-                    onClick={() => { sfxClick(); handleChallenge(entry); }}
-                    disabled={battling || !myArenaEntry || !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS}
-                    title={
-                      !myArenaEntry
-                        ? "Ready your deck first!"
-                        : !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS
-                          ? "Opponent deck sync in progress"
-                          : "Challenge this player"
-                    }
-                  >
-                    ⚔️ Challenge
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              {hasMoreArenaEntries && (
+                <button
+                  className="btn-outline"
+                  onClick={() => { sfxClick(); void loadMoreArenaEntries(); }}
+                  disabled={loadingMoreArenaEntries}
+                >
+                  {loadingMoreArenaEntries ? "Loading…" : "Load More Challengers"}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { memo, useState, useEffect } from "react";
 import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { CardFrame, STANDARD_FRAME_RARITIES, FRAME_RENDER_WIDTH, FRAME_RENDER_HEIGHT } from "./CardFrame";
@@ -52,6 +52,76 @@ interface CardDisplayProps {
   onUpdate?: (updates: { name?: string; age?: string; flavorText?: string }) => void;
   /** Called when a composite image layer fails to load (e.g. expired fal.ai URL). */
   onLayerError?: (layer: "background" | "character" | "frame") => void;
+}
+
+function shallowEqualArray<T>(previous: readonly T[] | undefined, next: readonly T[] | undefined): boolean {
+  if (previous === next) return true;
+  if (!previous || !next || previous.length !== next.length) return false;
+  return previous.every((value, index) => value === next[index]);
+}
+
+function shallowEqualObject(
+  previous: Record<string, unknown> | null | undefined,
+  next: Record<string, unknown> | null | undefined,
+): boolean {
+  if (previous === next) return true;
+  if (!previous || !next) return false;
+
+  const previousKeys = Object.keys(previous);
+  const nextKeys = Object.keys(next);
+  if (previousKeys.length !== nextKeys.length) return false;
+  const nextKeySet = new Set(nextKeys);
+
+  return previousKeys.every((key) => nextKeySet.has(key) && previous[key] === next[key]);
+}
+
+function areCardTraitsEqual(previous: CardPayload["traits"], next: CardPayload["traits"]): boolean {
+  return (
+    shallowEqualArray(previous.personalityTags, next.personalityTags) &&
+    shallowEqualObject(previous.passiveTrait, next.passiveTrait) &&
+    shallowEqualObject(previous.activeAbility, next.activeAbility)
+  );
+}
+
+function areCardsEqual(previous: CardPayload, next: CardPayload): boolean {
+  if (previous === next) return true;
+
+  return (
+    previous.id === next.id &&
+    previous.version === next.version &&
+    previous.seed === next.seed &&
+    previous.frameSeed === next.frameSeed &&
+    previous.backgroundSeed === next.backgroundSeed &&
+    previous.characterSeed === next.characterSeed &&
+    previous.flavorText === next.flavorText &&
+    previous.createdAt === next.createdAt &&
+    previous.imageUrl === next.imageUrl &&
+    previous.backgroundImageUrl === next.backgroundImageUrl &&
+    previous.characterImageUrl === next.characterImageUrl &&
+    previous.frameImageUrl === next.frameImageUrl &&
+    previous.boardImageUrl === next.boardImageUrl &&
+    previous.ozzies === next.ozzies &&
+    shallowEqualObject(previous.prompts, next.prompts) &&
+    shallowEqualObject(previous.identity, next.identity) &&
+    shallowEqualObject(previous.stats, next.stats) &&
+    shallowEqualObject(previous.visuals, next.visuals) &&
+    areCardTraitsEqual(previous.traits, next.traits) &&
+    shallowEqualArray(previous.tags, next.tags) &&
+    shallowEqualObject(previous.conlang, next.conlang) &&
+    shallowEqualObject(previous.discovery, next.discovery) &&
+    shallowEqualObject(previous.board, next.board) &&
+    shallowEqualObject(previous.boardLoadout, next.boardLoadout)
+  );
+}
+
+function areLayerLoadingEqual(previous?: LayerLoading, next?: LayerLoading): boolean {
+  if (previous === next) return true;
+  if (!previous || !next) return false;
+  return (
+    previous.background === next.background &&
+    previous.character === next.character &&
+    previous.frame === next.frame
+  );
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -195,7 +265,7 @@ function CompositeArt({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function CardDisplay({
+function CardDisplayComponent({
   card,
   compact = false,
   onSave,
@@ -655,6 +725,33 @@ export function CardDisplay({
     </div>
   );
 }
+
+function areCardDisplayPropsEqual(previous: CardDisplayProps, next: CardDisplayProps): boolean {
+  return (
+    areCardsEqual(previous.card, next.card) &&
+    previous.compact === next.compact &&
+    previous.onSave === next.onSave &&
+    previous.onRemove === next.onRemove &&
+    previous.onEdit === next.onEdit &&
+    previous.isSaved === next.isSaved &&
+    previous.showShare === next.showShare &&
+    previous.saveLabel === next.saveLabel &&
+    previous.imageUrl === next.imageUrl &&
+    previous.imageLoading === next.imageLoading &&
+    previous.backgroundImageUrl === next.backgroundImageUrl &&
+    previous.characterImageUrl === next.characterImageUrl &&
+    previous.frameImageUrl === next.frameImageUrl &&
+    areLayerLoadingEqual(previous.layerLoading, next.layerLoading) &&
+    previous.characterBlend === next.characterBlend &&
+    previous.hideToolButtons === next.hideToolButtons &&
+    previous.hideAllActions === next.hideAllActions &&
+    previous.onUpdate === next.onUpdate &&
+    previous.onLayerError === next.onLayerError
+  );
+}
+
+export const CardDisplay = memo(CardDisplayComponent, areCardDisplayPropsEqual);
+CardDisplay.displayName = "CardDisplay";
 
 // ── Board row helper (used inside card-board section) ─────────────────────────
 
