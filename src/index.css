@@ -3114,7 +3114,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .geo-atlas__route--dim {
-  opacity: 0.12;
+  opacity: 0.28;
 }
 
 .geo-atlas__district {
@@ -3169,7 +3169,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .geo-atlas__district--underground { --map-node-glow: rgba(176,84,255,0.24); }
 .geo-atlas__district--wild { --map-node-glow: rgba(90,201,120,0.24); }
 .geo-atlas__district--dim {
-  opacity: 0.35;
+  opacity: 0.48;
 }
 
 .geo-atlas__marker {

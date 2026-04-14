@@ -296,6 +296,7 @@ export function GeoAtlas({
                 }}
                 onClick={marker.onClick}
                 aria-pressed={marker.active}
+                aria-label={marker.title ?? marker.label}
                 title={marker.title ?? marker.label}
               >
                 <span className="geo-atlas__marker-pin" aria-hidden="true">
@@ -337,6 +338,7 @@ export function GeoAtlas({
                 }}
                 onClick={marker.onClick}
                 aria-pressed={marker.active}
+                aria-label={marker.title ?? marker.label}
                 title={marker.title ?? marker.label}
               >
                 <span className="geo-atlas__marker-pin" aria-hidden="true">

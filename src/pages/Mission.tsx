@@ -64,6 +64,7 @@ const WHEEL_BADGES: Record<WheelType, { icon: string; label: string; shortLabel:
   Rubber: { icon: "🧱", label: "Solid rubber wheels", shortLabel: "Rubber" },
   Cloud: { icon: "☁️", label: "Cloud wheels", shortLabel: "Cloud" },
 };
+const DEFAULT_ATLAS_FILTER = ATLAS_FILTERS[0].id;
 
 type AtlasFilter = (typeof ATLAS_FILTERS)[number]["id"];
 
@@ -118,6 +119,17 @@ function getMissionWheelTypes(originDistrict: District, corridor?: RoadCorridor)
     : getDistrictWheelAccessRule(originDistrict).allowedWheelTypes;
 }
 
+function getMissionStateLabel(
+  accessible: boolean,
+  hasRunner: boolean,
+  corridorBlocked: boolean,
+): string {
+  if (accessible) return "Rideable";
+  if (!hasRunner) return "Needs runner";
+  if (corridorBlocked) return "Wheel lock";
+  return "Restricted";
+}
+
 export function Mission() {
   const navigate = useNavigate();
   const { cards, updateCard } = useCollection();
@@ -130,7 +142,7 @@ export function Mission() {
   const [pendingFork, setPendingFork] = useState<MissionForkPrompt | null>(null);
   const [forkChoices, setForkChoices] = useState<Record<string, ForkChoice>>({});
   const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
-  const [atlasFilter, setAtlasFilter] = useState<AtlasFilter>("all");
+  const [atlasFilter, setAtlasFilter] = useState<AtlasFilter>(DEFAULT_ATLAS_FILTER);
   const [hoveredMissionId, setHoveredMissionId] = useState<string | null>(null);
   const missionResultRef = useRef<HTMLElement | null>(null);
   const missionHasRewardsToDisplay = Boolean(
@@ -230,7 +242,7 @@ export function Mission() {
 
   useEffect(() => {
     if (!hasRunner && atlasFilter === "rideable") {
-      setAtlasFilter("all");
+      setAtlasFilter(DEFAULT_ATLAS_FILTER);
     }
   }, [atlasFilter, hasRunner]);
 
@@ -289,7 +301,8 @@ export function Mission() {
   );
 
   useEffect(() => {
-    if (visibleMissionCatalog.length === 0 || visibleMissionCatalog.some(({ mission }) => mission.id === activeMissionId)) {
+    const isActiveMissionVisible = visibleMissionCatalog.some(({ mission }) => mission.id === activeMissionId);
+    if (visibleMissionCatalog.length === 0 || isActiveMissionVisible) {
       return;
     }
     setActiveMissionId(visibleMissionCatalog[0].mission.id);
@@ -523,7 +536,7 @@ export function Mission() {
                     {mission.destinationDistrict !== mission.originDistrict ? ` → ${mission.destinationDistrict}` : ""}
                   </span>
                   <span className={`mission-selector-card__state${accessible ? " mission-selector-card__state--available" : ""}`}>
-                    {accessible ? "Rideable" : !hasRunner ? "Needs runner" : missionCorridorBlocked ? "Wheel lock" : "Restricted"}
+                    {getMissionStateLabel(accessible, hasRunner, missionCorridorBlocked)}
                   </span>
                 </div>
                 <strong className="mission-selector-card__name">{mission.name}</strong>
