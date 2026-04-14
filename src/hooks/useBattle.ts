@@ -43,11 +43,21 @@ const SEEN_BATTLE_RESULTS_KEY_PREFIX = "skpd_seen_battle_results_";
 
 function mergeArenaEntries(primaryEntries: ArenaEntry[], secondaryEntries: ArenaEntry[]): ArenaEntry[] {
   const seenUids = new Set<string>();
-  return [...primaryEntries, ...secondaryEntries].filter((entry) => {
-    if (seenUids.has(entry.uid)) return false;
+  const mergedEntries: ArenaEntry[] = [];
+
+  for (const entry of primaryEntries) {
+    if (seenUids.has(entry.uid)) continue;
     seenUids.add(entry.uid);
-    return true;
-  });
+    mergedEntries.push(entry);
+  }
+
+  for (const entry of secondaryEntries) {
+    if (seenUids.has(entry.uid)) continue;
+    seenUids.add(entry.uid);
+    mergedEntries.push(entry);
+  }
+
+  return mergedEntries;
 }
 
 function loadSeenBattleResults(uid: string): Set<string> {

@@ -28,7 +28,7 @@ export function useCollection() {
   const [cards, setCards] = useState<CardPayload[]>(() => loadCollection());
   const [migrationPending, setMigrationPending] = useState(false);
   const lastSavedCardsRef = useRef<CardPayload[]>(cards);
-  const pendingGuestCardsRef = useRef<CardPayload[] | null>(cards);
+  const initialGuestCardsRef = useRef<CardPayload[] | null>(cards);
   const guestHydratingRef = useRef(!uid);
 
   // ── Subscribe to Firestore (authenticated) or localStorage (guest) ────────
@@ -36,7 +36,7 @@ export function useCollection() {
     if (!uid) {
       const localCards = loadCollection();
       guestHydratingRef.current = true;
-      pendingGuestCardsRef.current = localCards;
+      initialGuestCardsRef.current = localCards;
       lastSavedCardsRef.current = localCards;
       setCards(localCards);
       setMigrationPending(false);
@@ -44,7 +44,7 @@ export function useCollection() {
     }
 
     guestHydratingRef.current = false;
-    pendingGuestCardsRef.current = null;
+    initialGuestCardsRef.current = null;
     lastSavedCardsRef.current = [];
 
     // Check if there are local cards to migrate (and we haven't already done so)
@@ -66,7 +66,7 @@ export function useCollection() {
     if (uid) return;
 
     if (guestHydratingRef.current) {
-      if (pendingGuestCardsRef.current !== cards) return;
+      if (initialGuestCardsRef.current !== cards) return;
       guestHydratingRef.current = false;
     }
 

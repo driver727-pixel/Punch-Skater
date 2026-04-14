@@ -70,8 +70,9 @@ function shallowEqualObject(
   const previousKeys = Object.keys(previous);
   const nextKeys = Object.keys(next);
   if (previousKeys.length !== nextKeys.length) return false;
+  const nextKeySet = new Set(nextKeys);
 
-  return previousKeys.every((key) => previous[key] === next[key]);
+  return previousKeys.every((key) => nextKeySet.has(key) && previous[key] === next[key]);
 }
 
 function areCardTraitsEqual(previous: CardPayload["traits"], next: CardPayload["traits"]): boolean {
