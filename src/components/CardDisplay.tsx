@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
+import { CardFrame, STANDARD_FRAME_RARITIES, FRAME_RENDER_WIDTH, FRAME_RENDER_HEIGHT } from "./CardFrame";
 import { StatBar } from "./StatBar";
 import { ShareModal } from "./ShareModal";
 import { CardViewer3D } from "./CardViewer3D";
@@ -157,7 +158,7 @@ function CompositeArt({
         </div>
       ) : null}
 
-      {/* Layer 3 – Frame (ornate rarity border, multiply-blended) */}
+      {/* Layer 3 – Frame (ornate rarity border, screen-blended AI image — used for Punch Skater) */}
       {frameImageUrl ? (
         <img
           src={frameImageUrl}
@@ -170,6 +171,24 @@ function CompositeArt({
           <img src="/assets/loading.apng" alt="Loading…" className="card-art-loading-gif" />
         </div>
       ) : null}
+
+      {/* Layer 4 – SVG neon border overlay for the four redesigned rarity frames */}
+      {(STANDARD_FRAME_RARITIES as readonly string[]).includes(card.prompts.rarity) && (
+        <svg
+          className="card-art-layer card-art-layer--svg-frame"
+          viewBox={`0 0 ${FRAME_RENDER_WIDTH} ${FRAME_RENDER_HEIGHT}`}
+          preserveAspectRatio="xMidYMid meet"
+          aria-hidden="true"
+        >
+          <CardFrame
+            width={FRAME_RENDER_WIDTH}
+            height={FRAME_RENDER_HEIGHT}
+            rarity={card.prompts.rarity}
+            frameSeed={card.frameSeed}
+            uid={`cd_${(card.id || card.frameSeed || "frame").replace(/[^a-z0-9]/gi, "").slice(0, 16)}`}
+          />
+        </svg>
+      )}
     </div>
   );
 }

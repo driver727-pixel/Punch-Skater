@@ -1998,6 +1998,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   mix-blend-mode: screen;
   object-fit: fill;
 }
+.card-art-layer--svg-frame {
+  /* SVG neon border overlay for the four redesigned rarity frames (Apprentice, Master,
+     Rare, Legendary).  Sits above the AI frame image layer so the deterministic neon
+     borders are always visible regardless of whether AI generation has completed. */
+  z-index: 4;
+  mix-blend-mode: normal;
+  pointer-events: none;
+}
 .card-art-layer--loading {
   display: flex;
   align-items: center;
