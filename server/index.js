@@ -89,6 +89,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || '';
 const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
 const FAL_URL = process.env.FAL_IMAGE_MODEL_URL || 'https://fal.run/fal-ai/flux-lora';
+const FAL_CONFIG_URL = process.env.FAL_CONFIG_URL || process.env.FAL_LORA_CONFIG_URL || '';
 const FAL_LORA_PATH = process.env.FAL_LORA_PATH || 'https://v3b.fal.media/files/b/0a961b80/LZYfVjdfVXWWb7gMl4kL2_pytorch_lora_weights.safetensors';
 const rawFalLoraScale = Number.parseFloat(process.env.FAL_LORA_SCALE || '1');
 const FAL_LORA_SCALE = Number.isFinite(rawFalLoraScale) ? rawFalLoraScale : 1;
@@ -104,6 +105,7 @@ const DEFAULT_FAL_GUIDANCE_SCALE = 3.5;
 const DEFAULT_FAL_NUM_IMAGES = 1;
 const DEFAULT_FAL_ENABLE_SAFETY_CHECKER = true;
 const DEFAULT_FAL_OUTPUT_FORMAT = 'png';
+const FAL_CONFIG_CACHE_TTL_MS = 5 * 60 * 1000;
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -124,6 +126,11 @@ const DISTRICT_WEATHER_LOCATIONS = {
 };
 
 let districtWeatherCache = {
+  payload: null,
+  fetchedAt: 0,
+};
+
+let falRequestConfigCache = {
   payload: null,
   fetchedAt: 0,
 };
@@ -199,17 +206,169 @@ function buildFallbackDistrictWeatherPayload() {
   };
 }
 
-function buildFalImageRequest(body = {}) {
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeFalLoraEntry(entry) {
+  if (!isPlainObject(entry)) return null;
+
+  const path = typeof entry.path === 'string' ? entry.path.trim() : '';
+  if (!path) return null;
+
+  const rawScale = parseFalScale(entry.scale, 1);
+
+  return {
+    path,
+    scale: Number.isFinite(rawScale) ? rawScale : 1,
+  };
+}
+
+function parseFalScale(value, fallback = 1) {
+  const parsed =
+    value == null
+      ? fallback
+      : typeof value === 'number'
+        ? value
+        : Number.parseFloat(String(value));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeFalLoras(value, fallbackScale = 1) {
+  if (Array.isArray(value)) {
+    const loras = value
+      .map((entry) => normalizeFalLoraEntry(entry))
+      .filter(Boolean);
+    return loras.length ? loras : undefined;
+  }
+
+  if (isPlainObject(value)) {
+    const lora = normalizeFalLoraEntry(value);
+    return lora ? [lora] : undefined;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    return [{ path: value.trim(), scale: fallbackScale }];
+  }
+
+  return undefined;
+}
+
+function extractFalRequestConfigCandidate(payload) {
+  if (!isPlainObject(payload)) return null;
+
+  const candidates = [
+    payload.input,
+    payload.config,
+    payload.settings,
+    payload.parameters,
+    payload.defaults,
+    payload.fal,
+    payload.fal_config,
+    payload.falConfig,
+    payload.request,
+    payload.request_body,
+    payload,
+  ];
+
+  return candidates.find((candidate) => {
+    if (!isPlainObject(candidate)) return false;
+
+    return [
+      'image_size',
+      'num_inference_steps',
+      'guidance_scale',
+      'num_images',
+      'enable_safety_checker',
+      'output_format',
+      'loras',
+      'lora',
+      'lora_path',
+      'path',
+    ].some((key) => candidate[key] !== undefined);
+  }) ?? null;
+}
+
+function sanitizeFalRequestConfig(candidate) {
+  if (!isPlainObject(candidate)) return null;
+
+  const config = {};
+  const loraScale = parseFalScale(candidate.lora_scale, 1);
+  const scale = parseFalScale(candidate.scale, 1);
+
+  const maybeLoras =
+    normalizeFalLoras(candidate.loras) ??
+    normalizeFalLoras(candidate.lora) ??
+    normalizeFalLoras(candidate.lora_path, loraScale) ??
+    normalizeFalLoras(candidate.path, scale);
+
+  if (candidate.image_size !== undefined) config.image_size = candidate.image_size;
+  if (candidate.num_inference_steps !== undefined) config.num_inference_steps = candidate.num_inference_steps;
+  if (candidate.guidance_scale !== undefined) config.guidance_scale = candidate.guidance_scale;
+  if (candidate.num_images !== undefined) config.num_images = candidate.num_images;
+  if (candidate.enable_safety_checker !== undefined) config.enable_safety_checker = candidate.enable_safety_checker;
+  if (candidate.output_format !== undefined) config.output_format = candidate.output_format;
+  if (maybeLoras !== undefined) config.loras = maybeLoras;
+
+  return Object.keys(config).length ? config : null;
+}
+
+async function getRemoteFalRequestConfig() {
+  if (!FAL_CONFIG_URL) return null;
+
+  const now = Date.now();
+  const hasFreshCache =
+    falRequestConfigCache.payload &&
+    now - falRequestConfigCache.fetchedAt < FAL_CONFIG_CACHE_TTL_MS;
+
+  if (hasFreshCache) {
+    return falRequestConfigCache.payload;
+  }
+
+  try {
+    const upstream = await fetch(FAL_CONFIG_URL);
+    if (!upstream.ok) {
+      throw new Error(`Remote Fal config fetch from ${FAL_CONFIG_URL} failed with ${upstream.status} ${upstream.statusText}.`);
+    }
+
+    const payload = await upstream.json();
+    const config = sanitizeFalRequestConfig(extractFalRequestConfigCandidate(payload));
+
+    if (!config) {
+      throw new Error('Remote config JSON did not contain supported Fal request fields.');
+    }
+
+    falRequestConfigCache = {
+      payload: config,
+      fetchedAt: now,
+    };
+
+    return config;
+  } catch (err) {
+    console.error(`Fal config refresh failed for ${FAL_CONFIG_URL}:`, err);
+
+    if (falRequestConfigCache.payload) {
+      return falRequestConfigCache.payload;
+    }
+
+    return null;
+  }
+}
+
+async function buildFalImageRequest(body = {}) {
+  const remoteConfig = await getRemoteFalRequestConfig();
   const requestedLoras = Array.isArray(body.loras) ? body.loras : undefined;
+  const remoteDefaults = remoteConfig ?? {};
+
   return {
     ...body,
-    image_size: body.image_size ?? DEFAULT_FAL_IMAGE_SIZE,
-    num_inference_steps: body.num_inference_steps ?? DEFAULT_FAL_NUM_INFERENCE_STEPS,
-    guidance_scale: body.guidance_scale ?? DEFAULT_FAL_GUIDANCE_SCALE,
-    num_images: body.num_images ?? DEFAULT_FAL_NUM_IMAGES,
-    enable_safety_checker: body.enable_safety_checker ?? DEFAULT_FAL_ENABLE_SAFETY_CHECKER,
-    output_format: body.output_format ?? DEFAULT_FAL_OUTPUT_FORMAT,
-    loras: requestedLoras ?? DEFAULT_FAL_LORAS,
+    image_size: body.image_size ?? remoteDefaults.image_size ?? DEFAULT_FAL_IMAGE_SIZE,
+    num_inference_steps: body.num_inference_steps ?? remoteDefaults.num_inference_steps ?? DEFAULT_FAL_NUM_INFERENCE_STEPS,
+    guidance_scale: body.guidance_scale ?? remoteDefaults.guidance_scale ?? DEFAULT_FAL_GUIDANCE_SCALE,
+    num_images: body.num_images ?? remoteDefaults.num_images ?? DEFAULT_FAL_NUM_IMAGES,
+    enable_safety_checker: body.enable_safety_checker ?? remoteDefaults.enable_safety_checker ?? DEFAULT_FAL_ENABLE_SAFETY_CHECKER,
+    output_format: body.output_format ?? remoteDefaults.output_format ?? DEFAULT_FAL_OUTPUT_FORMAT,
+    loras: requestedLoras ?? remoteDefaults.loras ?? DEFAULT_FAL_LORAS,
   };
 }
 
@@ -308,7 +467,7 @@ app.post('/api/generate-image', imageRateLimit, async (req, res) => {
         'Content-Type': 'application/json',
         Authorization: `Key ${FAL_KEY}`,
       },
-      body: JSON.stringify(buildFalImageRequest(req.body)),
+      body: JSON.stringify(await buildFalImageRequest(req.body)),
     });
 
     if (!upstream.ok) {
