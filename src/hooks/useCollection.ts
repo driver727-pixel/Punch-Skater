@@ -28,7 +28,7 @@ export function useCollection() {
   const [cards, setCards] = useState<CardPayload[]>(() => loadCollection());
   const [migrationPending, setMigrationPending] = useState(false);
   const lastSavedCardsRef = useRef<CardPayload[]>(cards);
-  const initialGuestCardsRef = useRef<CardPayload[] | null>(cards);
+  const initialGuestCardsRef = useRef<CardPayload[] | null>(null);
   const guestHydratingRef = useRef(!uid);
 
   // ── Subscribe to Firestore (authenticated) or localStorage (guest) ────────

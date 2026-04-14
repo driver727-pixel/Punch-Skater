@@ -77,9 +77,9 @@ function shallowEqualObject(
 
 function areCardTraitsEqual(previous: CardPayload["traits"], next: CardPayload["traits"]): boolean {
   return (
+    shallowEqualArray(previous.personalityTags, next.personalityTags) &&
     shallowEqualObject(previous.passiveTrait, next.passiveTrait) &&
-    shallowEqualObject(previous.activeAbility, next.activeAbility) &&
-    shallowEqualArray(previous.personalityTags, next.personalityTags)
+    shallowEqualObject(previous.activeAbility, next.activeAbility)
   );
 }
 
@@ -116,7 +116,7 @@ function areCardsEqual(previous: CardPayload, next: CardPayload): boolean {
 
 function areLayerLoadingEqual(previous?: LayerLoading, next?: LayerLoading): boolean {
   if (previous === next) return true;
-  if (!previous || !next) return previous === next;
+  if (!previous || !next) return false;
   return (
     previous.background === next.background &&
     previous.character === next.character &&
