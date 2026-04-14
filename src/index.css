@@ -2856,6 +2856,31 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 12px;
 }
 
+.geo-atlas__panel-head-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.geo-atlas__collapse-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  padding: 3px 7px;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: var(--font);
+}
+
+.geo-atlas__collapse-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .geo-atlas__eyebrow {
   font-size: 10px;
   color: var(--accent2);
@@ -5005,6 +5030,31 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   width: 100%;
 }
 
+/* Two-column layout: composition preview on the left, conveyor belts on the right */
+.board-builder__columns {
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.board-builder__preview-col {
+  flex-shrink: 0;
+  width: 180px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.board-builder__belt-col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Neon world map placed above the board builder in the right forge column */
+.forge-board-neon-map {
+  margin-bottom: 12px;
+}
+
 /* Step tabs row */
 .board-builder__steps {
   display: flex;
@@ -5151,16 +5201,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-summary__chip:hover { border-color: var(--accent); color: var(--accent); }
 .board-summary__sep { color: var(--border); font-size: 12px; }
 
-/* BoardPreviewGrid inside the Board Builder wizard — 2×2 grid of component photos,
-   sized to match the player-card skateboard image box (5 : 7 ratio). */
+/* BoardPreviewGrid inside the Board Builder wizard — composition block in the
+   left column, sized proportionally to fill the preview column. */
 .board-preview-grid.board-builder__preview {
-  border-top: 1px solid var(--border);
+  border-right: none;
   background: rgba(0, 0, 0, 0.2);
-  width: min(294px, 100%);
+  width: 100%;
   aspect-ratio: 5 / 7;
-  margin: 8px auto;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 0;
+  flex: 1;
 }
 
 .board-preview-grid {

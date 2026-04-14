@@ -35,6 +35,8 @@ interface GeoAtlasProps {
   className?: string;
   markers?: GeoAtlasMarker[];
   corridors?: GeoAtlasCorridorMarker[];
+  /** Render only one section instead of both. Omit for the full two-section atlas. */
+  section?: "australia" | "neon";
 }
 
 const AUSTRALIA_DISTRICT_LAYOUT: Record<WorldLocation, { x: number; y: number; tone: string }> = {
@@ -118,8 +120,10 @@ function getAtlasNodeStatus(
   return weatherSummary ?? (loading ? "Syncing weather" : "Open weather");
 }
 
-export function GeoAtlas({ compact = false, className, markers = [], corridors = [] }: GeoAtlasProps) {
+export function GeoAtlas({ compact = false, className, markers = [], corridors = [], section }: GeoAtlasProps) {
   const [hoveredDistrict, setHoveredDistrict] = useState<WorldLocation | null>(null);
+  const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(false);
+  const [isNeonCollapsed, setIsNeonCollapsed] = useState(false);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const districtEntries = DISTRICT_LORE.map((district) => ({
     ...district,
@@ -130,16 +134,33 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
   }));
   const weatherBadge = weather?.stale ? "weather cached" : "weather live";
 
+  const showAustralia = !section || section === "australia";
+  const showNeon = !section || section === "neon";
+
   return (
     <div className={getAtlasClassName(compact, className)}>
+      {showAustralia && (
       <section className="geo-atlas__panel">
         <div className="geo-atlas__panel-head">
           <div>
             <p className="geo-atlas__eyebrow">continental theater</p>
             <h3 className="geo-atlas__title">Australia overmap</h3>
           </div>
-          <span className="geo-atlas__badge">{weather ? weatherBadge : "coast to coast"}</span>
+          <div className="geo-atlas__panel-head-end">
+            <span className="geo-atlas__badge">{weather ? weatherBadge : "coast to coast"}</span>
+            <button
+              type="button"
+              className="geo-atlas__collapse-btn"
+              onClick={() => setIsAustraliaCollapsed((v) => !v)}
+              aria-expanded={!isAustraliaCollapsed}
+              aria-label={isAustraliaCollapsed ? "Expand Australia overmap" : "Collapse Australia overmap"}
+            >
+              {isAustraliaCollapsed ? "▼" : "▲"}
+            </button>
+          </div>
         </div>
+        {!isAustraliaCollapsed && (
+          <>
         {!compact && (
           <p className="geo-atlas__body">
             Punch Skater now anchors its city-state across Australia, with districts as playable hubs,
@@ -302,16 +323,33 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
             ))}
           </ul>
         )}
+          </>
+        )}
       </section>
+      )}
 
+      {showNeon && (
       <section className="geo-atlas__panel">
         <div className="geo-atlas__panel-head">
           <div>
             <p className="geo-atlas__eyebrow">global frame</p>
             <h3 className="geo-atlas__title">Neon world map</h3>
           </div>
-          <span className="geo-atlas__badge">Australia highlighted</span>
+          <div className="geo-atlas__panel-head-end">
+            <span className="geo-atlas__badge">Australia highlighted</span>
+            <button
+              type="button"
+              className="geo-atlas__collapse-btn"
+              onClick={() => setIsNeonCollapsed((v) => !v)}
+              aria-expanded={!isNeonCollapsed}
+              aria-label={isNeonCollapsed ? "Expand Neon world map" : "Collapse Neon world map"}
+            >
+              {isNeonCollapsed ? "▼" : "▲"}
+            </button>
+          </div>
         </div>
+        {!isNeonCollapsed && (
+          <>
         {!compact && (
           <p className="geo-atlas__body">
             A wireframe world scan establishes the larger planet while locking focus onto the
@@ -355,7 +393,10 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
             <strong className="geo-atlas__world-callout-title">Australia</strong>
           </div>
         </div>
+          </>
+        )}
       </section>
+      )}
     </div>
   );
 }

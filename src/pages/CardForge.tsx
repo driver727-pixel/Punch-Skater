@@ -779,10 +779,11 @@ export function CardForge() {
               🗺 Open Australia map
             </button>
             <div className="forge-board-layout">
-              <aside className="forge-board-map-shell" aria-label="Punch Skater world map">
-                <GeoAtlas compact />
+              <aside className="forge-board-map-shell" aria-label="Punch Skater Australia map">
+                <GeoAtlas compact section="australia" />
               </aside>
               <div className="forge-board-builder-shell">
+                <GeoAtlas compact section="neon" className="forge-board-neon-map" />
                 <BoardBuilder
                   value={boardConfig}
                   onChange={setBoardConfig}
