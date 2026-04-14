@@ -170,7 +170,7 @@ export function Login() {
 
         <div className="login-tabs">
           <button
-            className={`login-tab ${mode === "signin" ? "login-tab--active" : ""}`}
+            className={`login-tab login-tab--signin ${mode === "signin" ? "login-tab--active" : ""}`}
             onClick={() => switchMode("signin")}
           >
             Sign In
@@ -344,7 +344,7 @@ export function Login() {
               </button>
             )}
             {error && <p className="login-error">{error}</p>}
-            <button className="btn-primary btn-lg" type="submit" disabled={loading}>
+            <button className={`btn-primary btn-lg${mode === "signin" ? " btn-signin" : ""}`} type="submit" disabled={loading}>
               {loading ? "⏳ Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
             </button>
           </form>
