@@ -782,9 +782,6 @@ export function CardForge() {
               <aside className="forge-board-map-shell" aria-label="Punch Skater Australia map">
                 <GeoAtlas compact section="australia" />
               </aside>
-              <div className="forge-board-neon-shell">
-                <GeoAtlas compact section="neon" className="forge-board-neon-map" />
-              </div>
               <div className="forge-board-builder-shell">
                 <BoardBuilder
                   value={boardConfig}

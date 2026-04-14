@@ -14,6 +14,7 @@ import { TierModal } from "./TierModal";
 import { isAdminEmail } from "../lib/adminUtils";
 import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { sfxNavigate } from "../lib/sfx";
+import { GeoAtlas } from "./GeoAtlas";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
@@ -132,6 +133,8 @@ export function Nav() {
             <span className="nav-subtitle">DECK BUILDER</span>
             <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk Game</a>
           </div>
+
+          <GeoAtlas compact section="neon" className="nav-neon-map" />
 
           <div className="nav-links">
             {renderNavLinks()}

@@ -158,6 +158,36 @@ body::after {
   box-shadow: 0 0 8px rgba(0, 255, 136, 0.4), 0 0 14px rgba(139, 92, 246, 0.3);
 }
 
+/* Compact neon world map displayed in the nav header between the brand and nav links */
+.nav-neon-map {
+  flex: 0 0 auto;
+  width: 110px;
+  height: 46px;
+  overflow: hidden;
+  align-self: center;
+}
+
+.nav-neon-map .geo-atlas__panel {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  gap: 0;
+}
+
+.nav-neon-map .geo-atlas__panel-head { display: none; }
+
+.nav-neon-map .geo-atlas__map {
+  min-height: unset;
+  height: 46px;
+  border-radius: 5px;
+}
+
+@media (max-width: 900px) {
+  .nav-neon-map { display: none; }
+}
+
 .nav-links { display: flex; gap: 4px; }
 .nav-link {
   --nav-soda-face: rgba(91, 74, 118, 0.9);
@@ -715,7 +745,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .forge-board-map-shell,
-.forge-board-neon-shell,
 .forge-board-builder-shell {
   min-width: 0;
   width: 100%;
@@ -3272,6 +3301,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   min-height: 460px;
 }
 
+/* Larger Australia overmap in the forge Board Loadout section */
+.forge-board-map-shell .geo-atlas--compact .geo-atlas__map--australia {
+  min-height: 540px;
+}
+
 .geo-atlas--compact .geo-atlas__map--world {
   min-height: 210px;
 }
@@ -5224,21 +5258,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   width: 100%;
 }
 
-/* Two-column layout: composition preview on the left, conveyor belts on the right */
+/* Full-width stacked layout: preview on top, conveyor belts below */
 .board-builder__columns {
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
   min-height: 0;
 }
 
 .board-builder__preview-col {
-  flex: 0 0 clamp(220px, 34%, 320px);
+  width: 100%;
   min-width: 0;
-  border-left: 1px solid var(--border);
+  border-left: none;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
+  padding: 16px;
+  order: -1;
   background:
     linear-gradient(180deg, rgba(3, 10, 22, 0.92), rgba(7, 15, 28, 0.84)),
     rgba(0, 0, 0, 0.2);
@@ -5247,11 +5283,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-builder__belt-col {
   flex: 1;
   min-width: 0;
-}
-
-/* Neon world map placed above the board builder in the right forge column */
-.forge-board-neon-map {
-  margin-bottom: 6px;
 }
 
 /* Step tabs row */
@@ -5400,12 +5431,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .board-summary__chip:hover { border-color: var(--accent); color: var(--accent); }
 .board-summary__sep { color: var(--border); font-size: 12px; }
 
-/* BoardPreviewGrid inside the Board Builder wizard — composition block in the
-   left column, sized proportionally to fill the preview column. */
+/* BoardPreviewGrid inside the Board Builder wizard — full-width composition block. */
 .board-preview-grid.board-builder__preview {
-  width: 100%;
+  width: min(100%, 480px);
   aspect-ratio: 5 / 7;
-  max-width: 320px;
+  max-width: 480px;
+  margin: 0 auto;
   overflow: hidden;
   border-radius: 14px;
   border: 1px solid rgba(0, 204, 255, 0.28);
@@ -5554,33 +5585,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 @media (min-width: 1280px) {
   .forge-board-layout {
-    grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 18px;
-  }
-
-  .forge-board-builder-shell {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 1279px) {
-  .board-builder__columns {
-    flex-direction: column;
-  }
-
-  .board-builder__preview-col {
-    width: 100%;
-    border-left: 0;
-    border-bottom: 1px solid var(--border);
-    order: -1;
-    padding: 16px;
-  }
-
-  .board-preview-grid.board-builder__preview {
-    width: min(100%, 360px);
-    max-width: 360px;
-    margin: 0 auto;
-    aspect-ratio: 5 / 7;
   }
 }
 
