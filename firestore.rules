@@ -26,15 +26,17 @@ service cloud.firestore {
     // ── Image cache ──────────────────────────────────────────────────────────
     // Stores fal.ai-generated image URLs keyed by layer seed so repeated
     // requests for the same parameters never hit fal.ai again.
-    // Anyone may read or create a cache entry; updates and deletes are blocked
-    // so entries are effectively immutable once written.
+    // Anyone may read or create a cache entry; updates are always blocked.
+    // Admins (isAdmin: true in their userProfile) may delete entries.
     // The create rule validates document shape to prevent cache poisoning.
     match /imageCache/{cacheKey} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['imageUrl', 'createdAt'])
+      allow create: if request.resource.data.keys().hasOnly(['imageUrl', 'createdAt', 'prompt', 'layer', 'seed'])
         && request.resource.data.imageUrl is string
         && request.resource.data.imageUrl.matches('https://.+');
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if request.auth != null
+        && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true;
     }
 
     // ── Trades ───────────────────────────────────────────────────────────────
