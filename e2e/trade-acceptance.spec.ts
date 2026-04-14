@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import {
   createSampleCard,
   createUniqueEmail,
-  getPassword,
   importCardsIfPrompt,
   liveFirebaseEnabled,
   seedGuestCards,
