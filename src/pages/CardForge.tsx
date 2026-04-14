@@ -450,7 +450,7 @@ export function CardForge() {
     })();
 
     setForging(false);
-  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction]);
+  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction, user?.uid]);
 
   // ── Expired-URL retry handler ────────────────────────────────────────────
   // Called when a composite img element fires onError (e.g. fal.ai CDN URL has
