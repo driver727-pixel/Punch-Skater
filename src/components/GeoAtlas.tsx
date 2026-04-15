@@ -200,19 +200,20 @@ function getAtlasClassName(compact: boolean, className?: string) {
   return ["geo-atlas", compact ? "geo-atlas--compact" : "", className].filter(Boolean).join(" ");
 }
 
-function getBoardStatusLabel(boardConfig: BoardConfig | null | undefined) {
+function getBoardConfigLabel(boardConfig: BoardConfig | null | undefined) {
   if (!boardConfig) return null;
   return [boardConfig.boardType, boardConfig.drivetrain, boardConfig.wheels, boardConfig.battery].join(" · ");
 }
 
-function getDistrictWeatherSummary(
-  district: District,
-  weatherSummary: string | null,
-  city: string | undefined,
-  state: string | undefined,
-  loading: boolean,
-  error: string | null,
-) {
+function getDistrictWeatherSummary(params: {
+  district: District;
+  weatherSummary: string | null;
+  city?: string;
+  state?: string;
+  loading: boolean;
+  error: string | null;
+}) {
+  const { district, weatherSummary, city, state, loading, error } = params;
   if (weatherSummary && city && state) {
     return `${weatherSummary} over ${city}, ${state}.`;
   }
@@ -267,13 +268,18 @@ export function GeoAtlas({
       })),
     [weatherByDistrict],
   );
-  const hoveredDistrictEntry = districtEntries.find((entry) => entry.name === hoveredDistrict) ?? null;
-  const selectedDistrictEntry =
-    districtEntries.find((entry) => entry.kind === "district" && entry.name === selectedDistrict) ?? null;
-  const defaultDistrictEntry =
-    districtEntries.find((entry) => entry.kind === "district" && entry.name === "Glass City") ?? null;
-  const activeDistrictEntry = hoveredDistrictEntry ?? selectedDistrictEntry ?? defaultDistrictEntry;
-  const boardStatusLabel = getBoardStatusLabel(boardConfig);
+  const { activeDistrictEntry } = useMemo(() => {
+    const hoveredDistrictEntry = districtEntries.find((entry) => entry.name === hoveredDistrict) ?? null;
+    const selectedDistrictEntry =
+      districtEntries.find((entry) => entry.kind === "district" && entry.name === selectedDistrict) ?? null;
+    const defaultDistrictEntry =
+      districtEntries.find((entry) => entry.kind === "district" && entry.name === "Glass City") ?? null;
+
+    return {
+      activeDistrictEntry: hoveredDistrictEntry ?? selectedDistrictEntry ?? defaultDistrictEntry,
+    };
+  }, [districtEntries, hoveredDistrict, selectedDistrict]);
+  const boardStatusLabel = getBoardConfigLabel(boardConfig);
   const rideableDistrictCount = boardConfig
     ? PLAYABLE_DISTRICTS.filter((district) =>
         isDistrictAccessibleWithBoardType(
@@ -288,14 +294,14 @@ export function GeoAtlas({
     activeDistrictEntry?.kind === "district"
       ? {
           name: activeDistrictEntry.name,
-          weatherSummary: getDistrictWeatherSummary(
-            activeDistrictEntry.name,
-            activeDistrictEntry.weather?.summary ?? null,
-            activeDistrictEntry.location?.city,
-            activeDistrictEntry.location?.state,
+          weatherSummary: getDistrictWeatherSummary({
+            district: activeDistrictEntry.name,
+            weatherSummary: activeDistrictEntry.weather?.summary ?? null,
+            city: activeDistrictEntry.location?.city,
+            state: activeDistrictEntry.location?.state,
             loading,
             error,
-          ),
+          }),
           accessSummary: getDistrictAccessSummary(activeDistrictEntry.name, activeDistrictEntry.weather),
           accessBlocked: boardConfig
             ? !isDistrictAccessibleWithBoardType(
@@ -439,14 +445,14 @@ export function GeoAtlas({
                       : null;
                   const detailText =
                     district.kind === "district"
-                      ? `${district.name}. ${getDistrictWeatherSummary(
-                          district.name,
-                          district.weather?.summary ?? null,
-                          district.location?.city,
-                          district.location?.state,
+                      ? `${district.name}. ${getDistrictWeatherSummary({
+                          district: district.name,
+                          weatherSummary: district.weather?.summary ?? null,
+                          city: district.location?.city,
+                          state: district.location?.state,
                           loading,
                           error,
-                        )} Access now: ${getDistrictAccessSummary(district.name, district.weather)}.`
+                        })} Access now: ${getDistrictAccessSummary(district.name, district.weather)}.`
                       : district.kind === "hidden"
                         ? `${district.name}. Future reveal hub.`
                         : `${district.name}. Corridor exchange hub.`;
