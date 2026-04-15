@@ -14,7 +14,7 @@ It is not part of the live card-rendering pipeline.
 
 ---
 
-## BoardPreviewGrid images (`src/assets/boards/<category>/`)
+## BoardPreviewGrid images (`public/assets/boards/<category>/`)
 
 These are the **component grid preview** images shown in the composition box
 above the conveyor belts inside the board builder.
@@ -75,38 +75,37 @@ mapping is:
 ### Example filenames
 
 ```
-src/assets/boards/deck/carbon-fiber.png      → Street deck
-src/assets/boards/deck/at-bamboo.png         → AT deck
-src/assets/boards/deck/mt-board.png          → Mountain deck
-src/assets/boards/deck/surf-skate.png        → Surf deck
-src/assets/boards/motor/5055-motor.png       → Micro motor
-src/assets/boards/wheels/poly-wheels.png     → Urethane wheels
-src/assets/boards/battery/slim-battery.png   → Slim Stealth battery
+public/assets/boards/deck/street-carbon.png              → Street deck
+public/assets/boards/deck/at-bamboo.png                  → AT deck
+public/assets/boards/deck/mt-board.png                   → Mountain deck
+public/assets/boards/deck/surf-skate.png                 → Surf deck
+public/assets/boards/motor/5055-motor.png                → Micro motor
+public/assets/boards/wheels/poly-urethane-wheels.png     → Urethane wheels
+public/assets/boards/battery/battery-slim-stealth-pack.png → Slim Stealth battery
 ```
 
 ### All category folders
 
 | Folder                              | Shown when…             |
 |-------------------------------------|-------------------------|
-| `src/assets/boards/deck/`           | A deck type is selected |
-| `src/assets/boards/drivetrain/`     | A drivetrain is selected|
-| `src/assets/boards/motor/`          | A motor is selected     |
-| `src/assets/boards/wheels/`         | A wheel type is selected|
-| `src/assets/boards/battery/`        | A battery is selected   |
+| `public/assets/boards/deck/`        | A deck type is selected |
+| `public/assets/boards/drivetrain/`  | A drivetrain is selected|
+| `public/assets/boards/motor/`       | A motor is selected     |
+| `public/assets/boards/wheels/`      | A wheel type is selected|
+| `public/assets/boards/battery/`     | A battery is selected   |
 
 ### Rules
 
 * Include a keyword from the table above in the filename.
 * Multiple keywords in one name are fine (e.g. `dual-belt-drive.png`).
-* After adding images, **commit and rebuild** the app; Vite picks them up at
-  build time.
+* After updating images, redeploy the app so browsers can request the refreshed
+  public assets.
 * Each `.gitkeep` file in these folders exists only to keep the folder tracked
   by Git — you can leave it in place alongside your images.
 
 ### Fallback behaviour
 
 If no keyword match is found inside a folder the app picks a random image
-from that folder.  If the folder is empty it falls back to
-`public/assets/boards/<category>/<OptionValue>.png`
-(e.g. `public/assets/boards/motor/Standard.png`).  If that file is also
-absent the tile shows an icon placeholder.
+from that folder. The resolved public asset URLs also include a version query
+string so updated PNGs bypass stale browser caches. If no usable image exists,
+the tile shows an icon placeholder.

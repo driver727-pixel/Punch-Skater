@@ -5,13 +5,11 @@
  * belts:  Decks (top) → Drivetrains → Motors → Wheels → Batteries (bottom).
  *
  * The live BoardPreviewGrid shows real product photos for each selected
- * component from per-category folders under src/assets/boards/ (discovered
- * at build time via Vite import.meta.glob).  Images are matched to the active
- * selection by filename keyword — e.g. `carbon-fiber.png` maps to the Street
- * deck because the filename contains "carbon", a known Street keyword.  Add
- * images to `src/assets/boards/<category>/` with a keyword in the name and
- * they will be picked up automatically on the next build.  A named PNG at
- * `public/assets/boards/<category>/<value>.png` serves as a final fallback.
+ * component from per-category folders under `public/assets/boards/`. Images
+ * are matched to the active selection by filename keyword — e.g.
+ * `street-carbon.png` maps to the Street deck because the filename contains
+ * "street"/"carbon", known Street keywords. Public asset URLs are versioned
+ * so browsers fetch refreshed transparent PNG uploads instead of stale cache.
  *
  * A PowerSwitchButton at the bottom triggers a satisfying animation sequence
  * before firing the onSave callback to commit the board config and loadout
@@ -137,14 +135,13 @@ export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuil
   /**
    * Builds the set of preview image URLs for the composition box.
    *
-   * For each component slot we look for a PNG in `src/assets/boards/<category>/`
-   * (discovered at build time via import.meta.glob) whose filename contains a
-   * keyword matching the selected component value — e.g. `carbon-fiber.png`
-   * for the Street deck, `5055-motor.png` for the Micro motor.  If multiple
-   * matching PNGs exist we randomly pick one of those matches. If no keyword
-   * match is found inside the folder a random image from that folder is used as
-   * a fallback, and if the folder is empty we fall back to the named static URL
-   * `public/assets/boards/<category>/<value>.png`.
+   * For each component slot we look for a PNG in `public/assets/boards/<category>/`
+   * whose filename contains a keyword matching the selected component value —
+   * e.g. `street-carbon.png` for the Street deck, `5055-motor.png` for the
+   * Micro motor. If multiple matching PNGs exist we randomly pick one of those
+   * matches. If no keyword match is found inside the folder a random image from
+   * that folder is used as a fallback, and if the folder is empty we fall back
+   * to the named static URL `public/assets/boards/<category>/<value>.png`.
    */
   const resolvePreviewUrl = useCallback((
     category: Parameters<typeof getMatchingCategoryImage>[0],

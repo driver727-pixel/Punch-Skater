@@ -561,14 +561,20 @@ export interface BoardComponentImageUrls {
   batteryUrl: string;
 }
 
+const BOARD_COMPONENT_ASSET_VERSION = "2026-04-15";
+
+function withBoardComponentAssetVersion(url: string): string {
+  return `${url}?v=${BOARD_COMPONENT_ASSET_VERSION}`;
+}
+
 export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentImageUrls {
   const normalizedConfig = normalizeBoardConfig(config);
   return {
-    deckUrl:       `/assets/boards/deck/${normalizedConfig.boardType}.png`,
-    drivetrainUrl: `/assets/boards/drivetrain/${normalizedConfig.drivetrain}.png`,
-    motorUrl:      `/assets/boards/motor/${normalizedConfig.motor}.png`,
-    wheelsUrl:     `/assets/boards/wheels/${normalizedConfig.wheels}.png`,
-    batteryUrl:    `/assets/boards/battery/${normalizedConfig.battery}.png`,
+    deckUrl:       withBoardComponentAssetVersion(`/assets/boards/deck/${normalizedConfig.boardType}.png`),
+    drivetrainUrl: withBoardComponentAssetVersion(`/assets/boards/drivetrain/${normalizedConfig.drivetrain}.png`),
+    motorUrl:      withBoardComponentAssetVersion(`/assets/boards/motor/${normalizedConfig.motor}.png`),
+    wheelsUrl:     withBoardComponentAssetVersion(`/assets/boards/wheels/${normalizedConfig.wheels}.png`),
+    batteryUrl:    withBoardComponentAssetVersion(`/assets/boards/battery/${normalizedConfig.battery}.png`),
   };
 }
 
