@@ -200,7 +200,7 @@ function getAtlasClassName(compact: boolean, className?: string) {
   return ["geo-atlas", compact ? "geo-atlas--compact" : "", className].filter(Boolean).join(" ");
 }
 
-function getBoardConfigLabel(boardConfig: BoardConfig | null | undefined) {
+function formatBoardConfigLabel(boardConfig: BoardConfig | null | undefined) {
   if (!boardConfig) return null;
   return [boardConfig.boardType, boardConfig.drivetrain, boardConfig.wheels, boardConfig.battery].join(" · ");
 }
@@ -279,7 +279,7 @@ export function GeoAtlas({
       activeDistrictEntry: hoveredDistrictEntry ?? selectedDistrictEntry ?? defaultDistrictEntry,
     };
   }, [districtEntries, hoveredDistrict, selectedDistrict]);
-  const boardStatusLabel = getBoardConfigLabel(boardConfig);
+  const boardStatusLabel = formatBoardConfigLabel(boardConfig);
   const rideableDistrictCount = boardConfig
     ? PLAYABLE_DISTRICTS.filter((district) =>
         isDistrictAccessibleWithBoardType(
@@ -641,11 +641,11 @@ export function GeoAtlas({
                 aria-label="Wireframe neon world map with Australia highlighted"
               >
                 <svg className="geo-atlas__svg" viewBox="0 0 100 60" aria-hidden="true">
-                  {[12, 24, 36, 48].map((value) => (
-                    <line key={`lat-${value}`} className="geo-atlas__world-grid" x1="2" y1={value} x2="98" y2={value} />
+                  {[12, 24, 36, 48].map((yCoord) => (
+                    <line key={`lat-${yCoord}`} className="geo-atlas__world-grid" x1="2" y1={yCoord} x2="98" y2={yCoord} />
                   ))}
-                  {[16, 32, 48, 64, 80].map((value) => (
-                    <line key={`lng-${value}`} className="geo-atlas__world-grid" x1={value} y1="4" x2={value} y2="56" />
+                  {[16, 32, 48, 64, 80].map((xCoord) => (
+                    <line key={`lng-${xCoord}`} className="geo-atlas__world-grid" x1={xCoord} y1="4" x2={xCoord} y2="56" />
                   ))}
                   {WORLD_CONTINENTS.map((continent) => (
                     <g key={continent.name}>
