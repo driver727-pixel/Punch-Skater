@@ -47,6 +47,18 @@ test.describe('Home page (Card Forge)', () => {
     await expect(page.locator('.site-footer__copy')).toContainText('SP Digital LLC');
     await expect(page.getByRole('link', { name: /^credits$/i })).toBeVisible();
   });
+
+  test('keeps the configured board part selected and allows changing it', async ({ page }) => {
+    await page.goto('/');
+
+    const standardMotor = page.getByRole('button', { name: /standard 6354 balanced power/i });
+    const torqueMotor = page.getByRole('button', { name: /torque 6374 maximum pull/i });
+
+    await expect(standardMotor).toHaveAttribute('aria-pressed', 'true');
+    await torqueMotor.click();
+    await expect(torqueMotor).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('img', { name: /torque 6374/i })).toBeVisible();
+  });
 });
 
 // ── Login page ────────────────────────────────────────────────────────────────
