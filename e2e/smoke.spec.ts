@@ -65,14 +65,16 @@ test.describe('Home page (Card Forge)', () => {
 
     const randomButton = page.getByTestId('random-punch-skater-button');
     await expect(randomButton).toHaveAttribute('title', /character loadout, the board loadout, or both/i);
-    const getSelectionSnapshot = () => page.evaluate(() => ({
-      character: Array.from(document.querySelectorAll('.forge-form .pill.selected'))
-        .map((node) => node.textContent?.trim())
-        .filter(Boolean),
-      board: Array.from(document.querySelectorAll('.conveyor__selected-name'))
-        .map((node) => node.textContent?.trim())
-        .filter(Boolean),
-    }));
+    const getSelectionSnapshot = () => page.evaluate(() => (
+      Array.from(document.querySelectorAll('button[aria-pressed="true"]'))
+        .map((node) => {
+          const visibleText = node.textContent?.trim();
+          return visibleText && visibleText.length > 0
+            ? visibleText
+            : node.getAttribute('aria-label') ?? node.getAttribute('title');
+        })
+        .filter(Boolean)
+    ));
     const before = JSON.stringify(await getSelectionSnapshot());
 
     await randomButton.click();

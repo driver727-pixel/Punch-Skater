@@ -35,12 +35,29 @@ const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred"
 const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
 const BOARD_TYPES = BOARD_TYPE_OPTIONS.map((option) => option.value);
 const RANDOM_LOADOUT_SCOPES = ["character", "board", "both"] as const;
-const RANDOM_PUNCH_SKATER_TOOLTIP = "Randomizes the Character loadout, the Board loadout, or both with one click.";
+const RANDOM_SKATER_TOOLTIP = "Randomizes the Character loadout, the Board loadout, or both with one click.";
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#3366ff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
+function getRandomIndex(length: number): number {
+  if (length === 0) {
+    throw new Error("Cannot choose a random item from an empty collection.");
+  }
+  if (length <= 1) return 0;
+  const randomBuffer = new Uint32Array(1);
+  const unbiasedUpperBound = Math.floor(0x1_0000_0000 / length) * length;
+  let randomValue = 0;
+
+  do {
+    crypto.getRandomValues(randomBuffer);
+    randomValue = randomBuffer[0];
+  } while (randomValue >= unbiasedUpperBound);
+
+  return randomValue % length;
+}
+
 function getRandomItem<T>(items: readonly T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
+  return items[getRandomIndex(items.length)];
 }
 
 function getRandomItemExcluding<T>(items: readonly T[], current: T): T {
@@ -626,8 +643,8 @@ export function CardForge() {
           className="btn-outline btn-sm forge-randomize-button"
           onClick={handleRandomPunchSkater}
           disabled={forging || isAnyLayerLoading}
-          title={RANDOM_PUNCH_SKATER_TOOLTIP}
-          aria-label={`Random Punch Skater. ${RANDOM_PUNCH_SKATER_TOOLTIP}`}
+          title={RANDOM_SKATER_TOOLTIP}
+          aria-label={`Random Punch Skater. ${RANDOM_SKATER_TOOLTIP}`}
           data-testid="random-punch-skater-button"
         >
           Random Punch Skater
@@ -645,6 +662,7 @@ export function CardForge() {
                   key={opt.value}
                   className={`pill${prompts.archetype === opt.value ? " selected" : ""}`}
                   onClick={() => { sfxClick(); setArchetype(opt.value); }}
+                  aria-pressed={prompts.archetype === opt.value}
                 >
                   {opt.label}
                 </button>
@@ -661,6 +679,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.rarity === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("rarity", opt); }}
+                  aria-pressed={prompts.rarity === opt}
                 >
                   {opt}
                 </button>
@@ -676,6 +695,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.district === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("district", opt); }}
+                  aria-pressed={prompts.district === opt}
                 >
                   {opt}
                 </button>
@@ -691,6 +711,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.gender === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("gender", opt); }}
+                  aria-pressed={prompts.gender === opt}
                 >
                   {opt}
                 </button>
@@ -706,6 +727,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.ageGroup === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("ageGroup", opt); }}
+                  aria-pressed={prompts.ageGroup === opt}
                 >
                   {opt}
                 </button>
@@ -721,6 +743,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.bodyType === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("bodyType", opt); }}
+                  aria-pressed={prompts.bodyType === opt}
                 >
                   {opt}
                 </button>
@@ -736,6 +759,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.hairLength === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("hairLength", opt); }}
+                  aria-pressed={prompts.hairLength === opt}
                 >
                   {opt}
                 </button>
@@ -751,6 +775,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.skinTone === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("skinTone", opt); }}
+                  aria-pressed={prompts.skinTone === opt}
                 >
                   {opt}
                 </button>
@@ -766,6 +791,7 @@ export function CardForge() {
                   key={opt}
                   className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("faceCharacter", opt); }}
+                  aria-pressed={prompts.faceCharacter === opt}
                 >
                   {opt}
                 </button>
@@ -783,6 +809,8 @@ export function CardForge() {
                   className={`color-swatch${prompts.accentColor === c ? " selected" : ""}`}
                   style={{ background: c }}
                   onClick={() => { sfxClick(); set("accentColor", c); }}
+                  aria-pressed={prompts.accentColor === c}
+                  aria-label={`Accent color ${c}`}
                   title={c}
                 />
               ))}
