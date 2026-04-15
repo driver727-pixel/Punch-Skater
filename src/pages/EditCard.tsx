@@ -263,6 +263,7 @@ export function EditCard() {
             <BoardBuilder
               value={boardConfig}
               onChange={setBoardConfig}
+              accentColor={prompts.accentColor}
               onSave={(config) => { setBoardConfig(config); }}
             />
           </div>

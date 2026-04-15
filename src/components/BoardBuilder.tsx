@@ -47,6 +47,8 @@ interface BoardBuilderProps {
   onChange: (config: BoardConfig) => void;
   /** Called after the lock-in animation finishes (~1 s) to persist the board config and loadout. */
   onSave?: (config: BoardConfig, loadout: BoardLoadout) => void;
+  /** Accent background color used in the live board preview. */
+  accentColor?: string;
 }
 
 // Map each option array into the slim shape ConveyorCarousel expects.
@@ -85,7 +87,7 @@ const BATTERY_ITEMS: CarouselItem[] = BATTERY_OPTIONS.map((o) => ({
   tagline: o.tagline,
 }));
 
-export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
+export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuilderProps) {
   // Animation phase flags — toggled in sequence on lock-in
   const [surging, setSurging]   = useState(false);
   const [shaking, setShaking]   = useState(false);
@@ -311,6 +313,7 @@ export function BoardBuilder({ value, onChange, onSave }: BoardBuilderProps) {
           <BoardPreviewGrid
             urls={previewUrls}
             labels={previewLabels}
+            accentColor={accentColor}
             className={`board-builder__preview${surging ? " board-preview-grid--surge" : ""}`}
           />
         </div>

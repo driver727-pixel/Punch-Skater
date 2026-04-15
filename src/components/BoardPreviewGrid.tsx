@@ -15,7 +15,7 @@
  * icon and label is shown instead.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { BoardComponentImageUrls } from "../lib/boardBuilder";
 
 interface BoardPreviewGridProps {
@@ -24,6 +24,8 @@ interface BoardPreviewGridProps {
   labels?: { deck?: string; drivetrain?: string; motor?: string; wheels?: string; battery?: string };
   /** Extra CSS class applied to the outer container. */
   className?: string;
+  /** Solid accent background shown behind transparent board component PNGs. */
+  accentColor?: string;
 }
 
 interface TileProps {
@@ -38,6 +40,7 @@ function Tile({ src, alt, label, icon, slot }: TileProps) {
   const [failed, setFailed] = useState(false);
 
   const handleError = useCallback(() => setFailed(true), []);
+  useEffect(() => setFailed(false), [src]);
 
   return (
     <div className="board-preview-grid__tile">
@@ -64,9 +67,12 @@ function Tile({ src, alt, label, icon, slot }: TileProps) {
   );
 }
 
-export function BoardPreviewGrid({ urls, labels, className }: BoardPreviewGridProps) {
+export function BoardPreviewGrid({ urls, labels, className, accentColor = "#00ff88" }: BoardPreviewGridProps) {
   return (
-    <div className={`board-preview-grid${className ? ` ${className}` : ""}`}>
+    <div
+      className={`board-preview-grid${className ? ` ${className}` : ""}`}
+      style={{ "--board-preview-accent-bg": accentColor } as React.CSSProperties}
+    >
       <div className="board-preview-grid__cell board-preview-grid__cell--deck">
         <Tile
           src={urls.deckUrl}
