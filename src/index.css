@@ -3162,13 +3162,21 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   stroke-linecap: round;
 }
 
-.geo-atlas__route-line {
+.geo-atlas__route-casing {
   fill: none;
-  stroke: var(--route-color, rgba(0, 204, 255, 0.82));
-  stroke-width: 1.5;
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 5;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 12px var(--route-shadow-color, rgba(0, 204, 255, 0.32)));
+}
+
+.geo-atlas__route-line {
+  fill: none;
+  stroke: var(--route-color, rgba(0, 204, 255, 0.9));
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px var(--route-shadow-color, rgba(0, 204, 255, 0.5)));
 }
 
 .geo-atlas__route {
@@ -3176,19 +3184,37 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .geo-atlas__route--highlight .geo-atlas__route-line {
-  stroke-width: 1.95;
-  filter: drop-shadow(0 0 16px var(--route-shadow-color, rgba(0, 255, 255, 0.7)));
+  stroke-width: 4;
+  filter: drop-shadow(0 0 14px var(--route-shadow-color, rgba(0, 255, 255, 0.8)));
+}
+
+.geo-atlas__route--highlight .geo-atlas__route-casing {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 6.5;
 }
 
 .geo-atlas__route--focus .geo-atlas__route-line {
   stroke: #fff;
-  stroke-width: 1.8;
-  filter: drop-shadow(0 0 12px rgba(255, 0, 122, 0.48));
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 12px rgba(255, 0, 122, 0.6));
 }
 
 .geo-atlas__route--dim {
-  opacity: 0.22;
+  opacity: 0.18;
 }
+
+.geo-atlas__station {
+  fill: #0d1117;
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1;
+}
+.geo-atlas__station--sky { stroke: rgba(0, 204, 255, 0.9); }
+.geo-atlas__station--glass { stroke: rgba(255, 0, 122, 0.9); }
+.geo-atlas__station--grid { stroke: rgba(127, 255, 212, 0.9); }
+.geo-atlas__station--industrial { stroke: rgba(255, 132, 0, 0.9); }
+.geo-atlas__station--roads { stroke: rgba(255, 255, 255, 0.8); }
+.geo-atlas__station--underground { stroke: rgba(176, 84, 255, 0.9); }
+.geo-atlas__station--wild { stroke: rgba(90, 201, 120, 0.9); }
 
 .geo-atlas__district {
   --map-node-glow: rgba(0,204,255,0.18);

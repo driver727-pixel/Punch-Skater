@@ -76,44 +76,17 @@ const DISTRICT_ARTERIES: Array<{
   label: string;
   color: string;
   shadowColor: string;
-  curveX?: number;
-  curveY?: number;
+  /** Optional via waypoint for subway-style orthogonal routing. When set the
+   *  path goes: start → via (with a rounded elbow) → end. */
+  via?: { x: number; y: number };
 }> = [
-  {
-    from: "Airaway",
-    to: "Electropolis",
-    label: "Skybridge Run",
-    color: "#4ef7ff",
-    shadowColor: "rgba(78, 247, 255, 0.68)",
-    curveX: 1,
-    curveY: -7,
-  },
   {
     from: "Airaway",
     to: "The Grid",
     label: "Mag-Rail Spine",
     color: "#00ffb4",
     shadowColor: "rgba(0, 255, 180, 0.72)",
-    curveX: 5,
-    curveY: -8,
-  },
-  {
-    from: "Electropolis",
-    to: "Glass City",
-    label: "Transit Loop",
-    color: "#ff4fc3",
-    shadowColor: "rgba(255, 79, 195, 0.72)",
-    curveX: -16,
-    curveY: 4,
-  },
-  {
-    from: "Electropolis",
-    to: "The Roads",
-    label: "Surface Corridor",
-    color: "#ffd166",
-    shadowColor: "rgba(255, 209, 102, 0.68)",
-    curveX: -7,
-    curveY: 4,
+    via: { x: 70, y: 64 },
   },
   {
     from: "The Grid",
@@ -121,8 +94,7 @@ const DISTRICT_ARTERIES: Array<{
     label: "Data Artery",
     color: "#9a7dff",
     shadowColor: "rgba(154, 125, 255, 0.7)",
-    curveX: -10,
-    curveY: -5,
+    via: { x: 25, y: 64 },
   },
   {
     from: "The Grid",
@@ -130,8 +102,7 @@ const DISTRICT_ARTERIES: Array<{
     label: "Power Conduit",
     color: "#ff8b3d",
     shadowColor: "rgba(255, 139, 61, 0.72)",
-    curveX: -4,
-    curveY: -12,
+    via: { x: 67, y: 36 },
   },
   {
     from: "Batteryville",
@@ -139,8 +110,7 @@ const DISTRICT_ARTERIES: Array<{
     label: "Freight Artery",
     color: "#7cf57d",
     shadowColor: "rgba(124, 245, 125, 0.68)",
-    curveX: 0,
-    curveY: 7,
+    via: { x: 45, y: 36 },
   },
   {
     from: "The Roads",
@@ -148,8 +118,6 @@ const DISTRICT_ARTERIES: Array<{
     label: "Underpass Tunnel",
     color: "#c86bff",
     shadowColor: "rgba(200, 107, 255, 0.68)",
-    curveX: 8,
-    curveY: 8,
   },
   {
     from: "The Roads",
@@ -157,8 +125,7 @@ const DISTRICT_ARTERIES: Array<{
     label: "Timber Route",
     color: "#8bffce",
     shadowColor: "rgba(139, 255, 206, 0.68)",
-    curveX: 10,
-    curveY: -16,
+    via: { x: 45, y: 25 },
   },
 ];
 
@@ -226,15 +193,29 @@ function getDistrictWeatherSummary(params: {
   return `No live weather seed is active for ${district}.`;
 }
 
+/**
+ * Generates a subway-style SVG path between two points. When a `via` waypoint
+ * is provided, the line travels in two straight legs (horizontal/vertical or
+ * diagonal) with a smooth quadratic-bezier elbow at the turn. Without a `via`
+ * point the path is a direct straight line — suitable for near-45° diagonals
+ * that already read as clean subway segments.
+ */
 function getRoutePath(
   start: { x: number; y: number },
   end: { x: number; y: number },
-  curveX = 0,
-  curveY = 0,
-) {
-  const controlX = (start.x + end.x) / 2 + curveX;
-  const controlY = (start.y + end.y) / 2 + curveY;
-  return `M ${start.x} ${start.y} Q ${controlX} ${controlY} ${end.x} ${end.y}`;
+  via?: { x: number; y: number },
+): string {
+  if (!via) {
+    return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+  }
+  // Place the bezier split points 30 % of the way from the elbow toward each
+  // terminal so the corner is sharp but not a hard kink.
+  const t = 0.3;
+  const p1x = (via.x + (start.x - via.x) * t).toFixed(2);
+  const p1y = (via.y + (start.y - via.y) * t).toFixed(2);
+  const p2x = (via.x + (end.x - via.x) * t).toFixed(2);
+  const p2y = (via.y + (end.y - via.y) * t).toFixed(2);
+  return `M ${start.x} ${start.y} L ${p1x} ${p1y} Q ${via.x} ${via.y} ${p2x} ${p2y} L ${end.x} ${end.y}`;
 }
 
 export function GeoAtlas({
@@ -333,7 +314,7 @@ export function GeoAtlas({
           <div className="geo-atlas__panel-head">
             <div>
               <p className="geo-atlas__eyebrow">continental theater</p>
-              <h3 className="geo-atlas__title">Australia overmap</h3>
+              <h3 className="geo-atlas__title">The Continental Australian overmap</h3>
             </div>
             <div className="geo-atlas__panel-head-end">
               <span className="geo-atlas__badge">{weather ? weatherBadge : "coast to coast"}</span>
@@ -386,7 +367,7 @@ export function GeoAtlas({
                 className="geo-atlas__map geo-atlas__map--australia"
                 data-testid="australia-overmap"
                 role="img"
-                aria-label="Australia overmap showing Punch Skater district hubs and neon corridors"
+                aria-label="The Continental Australian overmap showing Punch Skater district hubs and subway corridors"
               >
                 <svg className="geo-atlas__svg" viewBox="0 0 100 100" aria-hidden="true">
                   <path
@@ -423,15 +404,31 @@ export function GeoAtlas({
                         }
                       >
                         <path
+                          className="geo-atlas__route-casing"
+                          d={getRoutePath(start, end, artery.via)}
+                        />
+                        <path
                           className="geo-atlas__route-line"
-                          d={getRoutePath(start, end, artery.curveX, artery.curveY)}
+                          d={getRoutePath(start, end, artery.via)}
                         />
                       </g>
                     );
                   })}
+                  {districtEntries
+                    .filter((d) => d.kind !== "hidden")
+                    .map((district) => (
+                      <circle
+                        key={`station-${district.name}`}
+                        className={`geo-atlas__station geo-atlas__station--${district.layout.tone}`}
+                        cx={district.layout.x}
+                        cy={district.layout.y}
+                        r="2"
+                        aria-hidden="true"
+                      />
+                    ))}
                 </svg>
 
-                {districtEntries.map((district) => {
+                {districtEntries.filter((district) => district.kind !== "hidden").map((district) => {
                   const accessRestricted =
                     district.kind === "district" && hasDistrictAccessRestriction(district.name, district.weather);
                   const boardAccessible =
@@ -453,9 +450,7 @@ export function GeoAtlas({
                           loading,
                           error,
                         })} Access now: ${getDistrictAccessSummary(district.name, district.weather)}.`
-                      : district.kind === "hidden"
-                        ? `${district.name}. Future reveal hub.`
-                        : `${district.name}. Corridor exchange hub.`;
+                      : `${district.name}. Corridor exchange hub.`;
                   const nodeClassName = [
                     "geo-atlas__district",
                     `geo-atlas__district--${district.layout.tone}`,
