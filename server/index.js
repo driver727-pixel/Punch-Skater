@@ -300,6 +300,48 @@ async function authenticateFirebaseUser(req) {
   }
 }
 
+function getConfiguredAdminEmails() {
+  return (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+async function authenticateAdminRequest(req) {
+  const decodedToken = await authenticateFirebaseUser(req);
+  const adminEmails = getConfiguredAdminEmails();
+  if (adminEmails.length === 0) {
+    throw Object.assign(new Error('Admin email list is not configured on this server.'), { statusCode: 503 });
+  }
+  const callerEmail = (decodedToken.email ?? '').trim().toLowerCase();
+  if (!callerEmail || !adminEmails.includes(callerEmail)) {
+    throw Object.assign(new Error('Forbidden: admin access required.'), { statusCode: 403 });
+  }
+  return decodedToken;
+}
+
+async function deleteCollectionDocs(collectionRef, pageSize = 200) {
+  while (true) {
+    const snap = await collectionRef.limit(pageSize).get();
+    if (snap.empty) return;
+    const batch = adminDb.batch();
+    snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
+    await batch.commit();
+    if (snap.size < pageSize) return;
+  }
+}
+
+async function deleteQueryDocs(queryRef, pageSize = 200) {
+  while (true) {
+    const snap = await queryRef.limit(pageSize).get();
+    if (snap.empty) return;
+    const batch = adminDb.batch();
+    snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
+    await batch.commit();
+    if (snap.size < pageSize) return;
+  }
+}
+
 function roundWeatherMetric(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) return null;
   return Number(value.toFixed(1));
@@ -1072,6 +1114,71 @@ app.post('/api/admin/create-user', adminUserRateLimit, async (req, res) => {
   } catch (err) {
     console.error('Create user error:', err);
     res.status(500).json({ error: 'Failed to create user.' });
+  }
+});
+
+app.post('/api/admin/delete-user', adminUserRateLimit, async (req, res) => {
+  if (!adminAuth || !adminDb) {
+    res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+    return;
+  }
+
+  let caller;
+  try {
+    caller = await authenticateAdminRequest(req);
+  } catch (error) {
+    const statusCode = error?.statusCode ?? 500;
+    res.status(statusCode).json({ error: error.message ?? 'Could not verify admin access.' });
+    return;
+  }
+
+  const uid = typeof req.body?.uid === 'string' ? req.body.uid.trim() : '';
+  if (!uid) {
+    res.status(400).json({ error: 'uid is required.' });
+    return;
+  }
+  if (uid === caller.uid) {
+    res.status(400).json({ error: 'You cannot delete the account you are currently using.' });
+    return;
+  }
+
+  let userRecord;
+  try {
+    userRecord = await adminAuth.getUser(uid);
+  } catch (error) {
+    if (error?.code === 'auth/user-not-found') {
+      res.status(404).json({ error: 'User not found.' });
+      return;
+    }
+    console.error('Admin delete-user lookup failed:', error);
+    res.status(500).json({ error: 'Failed to load user.' });
+    return;
+  }
+
+  try {
+    const userDocRef = adminDb.collection('users').doc(uid);
+    await Promise.all([
+      deleteCollectionDocs(userDocRef.collection('cards')),
+      deleteCollectionDocs(userDocRef.collection('decks')),
+      deleteQueryDocs(adminDb.collection('trades').where('fromUid', '==', uid)),
+      deleteQueryDocs(adminDb.collection('trades').where('toUid', '==', uid)),
+      deleteQueryDocs(adminDb.collection('battleResults').where('challengerUid', '==', uid)),
+      deleteQueryDocs(adminDb.collection('battleResults').where('defenderUid', '==', uid)),
+      deleteQueryDocs(adminDb.collection('referralClaims').where('referrerUid', '==', uid)),
+    ]);
+
+    await Promise.all([
+      userDocRef.delete(),
+      adminDb.collection('userProfiles').doc(uid).delete(),
+      adminDb.collection('arena').doc(uid).delete(),
+      adminDb.collection('leaderboard').doc(uid).delete(),
+    ]);
+
+    await adminAuth.deleteUser(uid);
+    res.json({ uid, email: userRecord.email ?? '' });
+  } catch (error) {
+    console.error('Admin delete-user failed:', error);
+    res.status(500).json({ error: 'Failed to delete user.' });
   }
 });
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import {
   saveTier,
   loadEmail,
@@ -159,8 +159,9 @@ export function TierProvider({ children }: { children: ReactNode }) {
     if (!user || !db) return;
     const verifiedEmail = verifiedCheckout?.email.trim().toLowerCase();
     const userEmail = user.email?.trim().toLowerCase() ?? "";
+    const profileRef = doc(db, "userProfiles", user.uid);
 
-    getDoc(doc(db, "userProfiles", user.uid)).then((snap) => {
+    return onSnapshot(profileRef, (snap) => {
       const data = snap.exists() ? snap.data() : null;
 
       // Admin users always get tier3
@@ -170,7 +171,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
         clearCheckoutSessionId();
         // Persist tier to Firestore so the admin panel shows the correct value
         if (data?.tier !== "tier3") {
-          setDoc(doc(db, "userProfiles", user.uid), { tier: "tier3" }, { merge: true })
+          setDoc(profileRef, { tier: "tier3" }, { merge: true })
             .catch(() => {/* non-fatal */});
         }
         return;
@@ -203,14 +204,18 @@ export function TierProvider({ children }: { children: ReactNode }) {
         setTierState(verifiedCheckout.tier);
         saveTier(verifiedCheckout.tier);
         setDoc(
-          doc(db, "userProfiles", user.uid),
+          profileRef,
           { tier: verifiedCheckout.tier },
           { merge: true },
         )
           .then(() => clearCheckoutSessionId())
           .catch(() => {/* non-fatal */});
+        return;
       }
-    }).catch(() => {/* non-fatal */});
+
+      setTierState("free");
+      saveTier("free");
+    }, () => {/* non-fatal */});
   }, [user, verifiedCheckout]);
 
   // ── Handle referral link on first mount ───────────────────────────────────

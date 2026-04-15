@@ -29,6 +29,7 @@ import {
 } from "firebase/auth";
 import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, firebaseUnavailableMessage } from "../lib/firebase";
+import { isAdminEmail } from "../lib/adminUtils";
 import { syncReferralCredits } from "../services/referrals";
 
 interface UserProfile {
@@ -69,12 +70,15 @@ function getProfileString(value: unknown): string | undefined {
 
 async function upsertUserProfile(user: User) {
   if (!db) return;
+  const email = user.email ?? "";
+  const admin = isAdminEmail(email);
   await setDoc(
     doc(db, "userProfiles", user.uid),
     {
       uid: user.uid,
-      email: user.email ?? "",
+      email,
       displayName: user.displayName ?? user.email?.split("@")[0] ?? "Skater",
+      ...(admin ? { isAdmin: true, tier: "tier3" } : {}),
       updatedAt: serverTimestamp(),
     },
     { merge: true }
@@ -130,15 +134,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       doc(db, "userProfiles", user.uid),
       (snap) => {
         const data = snap.exists() ? (snap.data() as Partial<UserProfile>) : {};
+        const email = getProfileString(data.email) ?? user.email ?? "";
+        const admin = data.isAdmin === true || isAdminEmail(email);
         setUserProfile({
           uid: user.uid,
-          email: getProfileString(data.email) ?? user.email ?? "",
+          email,
           displayName:
             getProfileString(data.displayName)
             ?? user.displayName
             ?? user.email?.split("@")[0]
             ?? "Skater",
-          isAdmin: data.isAdmin === true,
+          isAdmin: admin,
         });
       },
       () => {

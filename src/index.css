@@ -5120,6 +5120,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .admin-tier-select:disabled { opacity: 0.5; cursor: default; }
 .admin-saving { font-size: 13px; }
 .admin-saved { font-size: 12px; color: #00ff88; font-weight: 600; }
+.admin-delete-user-btn {
+  font-size: 11px;
+  padding: 6px 10px;
+  border-color: rgba(255, 68, 68, 0.4);
+  color: #ff6666;
+  white-space: nowrap;
+}
+.admin-delete-user-btn:hover:not(:disabled) {
+  background: rgba(255, 68, 68, 0.12);
+  border-color: rgba(255, 68, 68, 0.7);
+  color: #ff4444;
+}
 
 .admin-empty { text-align: center; color: var(--text-dim); padding: 32px; font-size: 13px; }
 .admin-loading { text-align: center; color: var(--text-dim); padding: 20px; font-size: 13px; }
@@ -6313,6 +6325,21 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* ===== Asset Generator (/dev/asset-generator) ===== */
 .asset-gen-page { padding-bottom: 48px; }
 
+.asset-gen-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.asset-gen-toolbar-copy {
+  margin: 0;
+  max-width: 720px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
 .asset-gen-counter {
   font-size: 12px;
   color: var(--text-dim);
@@ -6336,6 +6363,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .asset-gen-toolbar {
+    flex-direction: column;
+  }
 }
 
 /* ===== Frame Preview (/dev/frame-preview) ===== */

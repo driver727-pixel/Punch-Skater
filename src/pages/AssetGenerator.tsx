@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { generateImage, removeBackground } from "../services/imageGen";
 import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
+import { AdminImageCachePanel } from "../components/AdminImageCachePanel";
 
 // ── Download helper ────────────────────────────────────────────────────────────
 
@@ -109,6 +110,7 @@ interface ItemState {
 }
 
 export function AssetGenerator() {
+  const [activeTab, setActiveTab] = useState<"generator" | "cache">("generator");
   const [states, setStates] = useState<Record<string, ItemState>>(
     Object.fromEntries(ALL_ITEMS.map((i) => [i.seedKey, { status: "idle" }]))
   );
@@ -177,109 +179,136 @@ export function AssetGenerator() {
     <div className="page asset-gen-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">🎨 Asset Generator</h1>
+          <h1 className="page-title">🎨 Assets</h1>
           <p className="page-sub">
-            Dev tool — generates green-screen board component images via fal.ai.
-            Click <strong>⬇ Download</strong> on any image to save it to{" "}
-            <code>public/assets/boards/</code> with the correct filename.
+            Admin tools for board asset generation and cached forge image cleanup.
           </p>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span className="asset-gen-counter">
-            {doneCount} / {ALL_ITEMS.length} done
-          </span>
-          {doneCount > 0 && (
-            <button
-              className="btn-outline"
-              onClick={downloadAll}
-              disabled={runningAll || loadingCount > 0}
-            >
-              ⬇ Download All
-            </button>
-          )}
-          <button
-            className="btn-primary"
-            onClick={generateAll}
-            disabled={runningAll || loadingCount > 0}
-          >
-            {runningAll ? "⏳ Generating…" : "⚡ Generate All"}
-          </button>
         </div>
       </div>
 
-      {categories.map((cat) => {
-        const catItems = ALL_ITEMS.filter((i) => i.category === cat);
-        return (
-          <section key={cat} className="asset-gen-section">
-            <h2 className="asset-gen-section-title">{pluralizeCategory(cat)}</h2>
-            <div className="asset-gen-grid">
-              {catItems.map((item) => {
-                const state = states[item.seedKey];
-                return (
-                  <div key={item.seedKey} className="asset-gen-card">
-                    <div className="asset-gen-card-label">{item.label}</div>
+      <div className="admin-tabs">
+        <button
+          className={`admin-tab${activeTab === "generator" ? " admin-tab--active" : ""}`}
+          onClick={() => setActiveTab("generator")}
+        >
+          🎨 Asset Generator
+        </button>
+        <button
+          className={`admin-tab${activeTab === "cache" ? " admin-tab--active" : ""}`}
+          onClick={() => setActiveTab("cache")}
+        >
+          🖼 Image Cache
+        </button>
+      </div>
 
-                    <div className="asset-gen-preview">
-                      {state.status === "idle" && (
-                        <span className="asset-gen-placeholder">No image yet</span>
-                      )}
-                      {state.status === "generating" && (
-                        <span className="asset-gen-spinner">⏳ Generating…</span>
-                      )}
-                      {state.status === "removing-bg" && (
-                        <span className="asset-gen-spinner">✂️ Removing background…</span>
-                      )}
-                      {state.status === "done" && state.imageUrl && (
-                        <img
-                          src={state.imageUrl}
-                          alt={item.label}
-                          className="asset-gen-img"
-                          title={`${item.seedKey}.png`}
-                        />
-                      )}
-                      {state.status === "error" && (
-                        <span className="asset-gen-error" title={state.error}>
-                          ✗ Error
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="asset-gen-card-actions">
-                      <button
-                        className="btn-outline"
-                        onClick={() => generateOne(item)}
-                        disabled={state.status === "generating" || state.status === "removing-bg" || runningAll}
-                        title={item.prompt}
-                      >
-                        {state.status === "generating"
-                          ? "⏳ Generating…"
-                          : state.status === "removing-bg"
-                          ? "✂️ Removing BG…"
-                          : state.status === "done"
-                          ? "↺ Regenerate"
-                          : "▶ Generate"}
-                      </button>
-                      {state.status === "done" && state.imageUrl && (
-                        <button
-                          className="btn-primary"
-                          onClick={() => downloadOne(item)}
-                          disabled={!!downloading[item.seedKey]}
-                          title={`Save as ${item.seedKey}.png`}
-                        >
-                          {downloading[item.seedKey] ? "⏳ Saving…" : "⬇ Download"}
-                        </button>
-                      )}
-                      {state.status === "error" && (
-                        <span className="asset-gen-error-msg">{state.error}</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+      {activeTab === "generator" ? (
+        <>
+          <div className="asset-gen-toolbar">
+            <p className="asset-gen-toolbar-copy">
+              Dev tool — generates green-screen board component images via fal.ai.
+              Click <strong>⬇ Download</strong> on any image to save it to{" "}
+              <code>public/assets/boards/</code> with the correct filename.
+            </p>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span className="asset-gen-counter">
+                {doneCount} / {ALL_ITEMS.length} done
+              </span>
+              {doneCount > 0 && (
+                <button
+                  className="btn-outline"
+                  onClick={downloadAll}
+                  disabled={runningAll || loadingCount > 0}
+                >
+                  ⬇ Download All
+                </button>
+              )}
+              <button
+                className="btn-primary"
+                onClick={generateAll}
+                disabled={runningAll || loadingCount > 0}
+              >
+                {runningAll ? "⏳ Generating…" : "⚡ Generate All"}
+              </button>
             </div>
-          </section>
-        );
-      })}
+          </div>
+
+          {categories.map((cat) => {
+            const catItems = ALL_ITEMS.filter((i) => i.category === cat);
+            return (
+              <section key={cat} className="asset-gen-section">
+                <h2 className="asset-gen-section-title">{pluralizeCategory(cat)}</h2>
+                <div className="asset-gen-grid">
+                  {catItems.map((item) => {
+                    const state = states[item.seedKey];
+                    return (
+                      <div key={item.seedKey} className="asset-gen-card">
+                        <div className="asset-gen-card-label">{item.label}</div>
+
+                        <div className="asset-gen-preview">
+                          {state.status === "idle" && (
+                            <span className="asset-gen-placeholder">No image yet</span>
+                          )}
+                          {state.status === "generating" && (
+                            <span className="asset-gen-spinner">⏳ Generating…</span>
+                          )}
+                          {state.status === "removing-bg" && (
+                            <span className="asset-gen-spinner">✂️ Removing background…</span>
+                          )}
+                          {state.status === "done" && state.imageUrl && (
+                            <img
+                              src={state.imageUrl}
+                              alt={item.label}
+                              className="asset-gen-img"
+                              title={`${item.seedKey}.png`}
+                            />
+                          )}
+                          {state.status === "error" && (
+                            <span className="asset-gen-error" title={state.error}>
+                              ✗ Error
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="asset-gen-card-actions">
+                          <button
+                            className="btn-outline"
+                            onClick={() => generateOne(item)}
+                            disabled={state.status === "generating" || state.status === "removing-bg" || runningAll}
+                            title={item.prompt}
+                          >
+                            {state.status === "generating"
+                              ? "⏳ Generating…"
+                              : state.status === "removing-bg"
+                                ? "✂️ Removing BG…"
+                                : state.status === "done"
+                                  ? "↺ Regenerate"
+                                  : "▶ Generate"}
+                          </button>
+                          {state.status === "done" && state.imageUrl && (
+                            <button
+                              className="btn-primary"
+                              onClick={() => downloadOne(item)}
+                              disabled={!!downloading[item.seedKey]}
+                              title={`Save as ${item.seedKey}.png`}
+                            >
+                              {downloading[item.seedKey] ? "⏳ Saving…" : "⬇ Download"}
+                            </button>
+                          )}
+                          {state.status === "error" && (
+                            <span className="asset-gen-error-msg">{state.error}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </>
+      ) : (
+        <AdminImageCachePanel />
+      )}
     </div>
   );
 }
