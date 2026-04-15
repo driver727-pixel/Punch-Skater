@@ -193,6 +193,11 @@ function getDistrictWeatherSummary(params: {
   return `No live weather seed is active for ${district}.`;
 }
 
+/** Lerps a single coordinate from `from` toward `to` by factor `t` (0–1). */
+function interp(from: number, to: number, t: number): string {
+  return (from + (to - from) * t).toFixed(2);
+}
+
 /**
  * Generates a subway-style SVG path between two points. When a `via` waypoint
  * is provided, the line travels in two straight legs (horizontal/vertical or
@@ -208,13 +213,13 @@ function getRoutePath(
   if (!via) {
     return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
   }
-  // Place the bezier split points 30 % of the way from the elbow toward each
+  // Place the bezier split points 30% of the way from the elbow toward each
   // terminal so the corner is sharp but not a hard kink.
   const t = 0.3;
-  const p1x = (via.x + (start.x - via.x) * t).toFixed(2);
-  const p1y = (via.y + (start.y - via.y) * t).toFixed(2);
-  const p2x = (via.x + (end.x - via.x) * t).toFixed(2);
-  const p2y = (via.y + (end.y - via.y) * t).toFixed(2);
+  const p1x = interp(via.x, start.x, t);
+  const p1y = interp(via.y, start.y, t);
+  const p2x = interp(via.x, end.x, t);
+  const p2y = interp(via.y, end.y, t);
   return `M ${start.x} ${start.y} L ${p1x} ${p1y} Q ${via.x} ${via.y} ${p2x} ${p2y} L ${end.x} ${end.y}`;
 }
 
