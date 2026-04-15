@@ -4255,15 +4255,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   height: 100%;
   object-fit: cover;
 }
+.viewer3d-layer--bg {
+  z-index: 1;
+  mix-blend-mode: normal;
+}
 .viewer3d-layer--char {
+  z-index: 2;
   mix-blend-mode: normal; /* transparent PNG composites cleanly over background */
   object-fit: contain;    /* match card-art-layer--character; avoids cropping the portrait */
+  transform: scale(0.85);
+  transform-origin: bottom center;
 }
 .viewer3d-layer--bg-inset {
   transform: scale(0.88);
   transform-origin: center;
 }
 .viewer3d-layer--frame {
+  z-index: 3;
   mix-blend-mode: screen; /* black background of frame image becomes transparent; colored border stays visible */
   object-fit: fill;       /* stretch to exactly match the card surface so the border aligns with the edges */
 }
@@ -4505,8 +4513,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   height: 100%;
   object-fit: cover;
 }
-.print-art-layer--char  { mix-blend-mode: normal; }
-.print-art-layer--frame { mix-blend-mode: screen; }
+.print-art-layer--bg {
+  z-index: 1;
+  mix-blend-mode: normal;
+}
+.print-art-layer--char  {
+  z-index: 2;
+  mix-blend-mode: normal;
+  object-fit: contain;
+  transform: scale(0.85);
+  transform-origin: bottom center;
+}
+.print-art-layer--frame {
+  z-index: 3;
+  mix-blend-mode: screen;
+  object-fit: fill;
+}
 .print-art-layer--bg-inset {
   transform: scale(0.88);
   transform-origin: center;
@@ -4775,8 +4797,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     height: 100%;
     object-fit: cover;
   }
-  .print-only-card .print-art-layer--char  { mix-blend-mode: normal; }
-  .print-only-card .print-art-layer--frame { mix-blend-mode: screen; }
+  .print-only-card .print-art-layer--bg {
+    z-index: 1;
+    mix-blend-mode: normal;
+  }
+  .print-only-card .print-art-layer--char  {
+    z-index: 2;
+    mix-blend-mode: normal;
+    object-fit: contain;
+    transform: scale(0.85);
+    transform-origin: bottom center;
+  }
+  .print-only-card .print-art-layer--frame {
+    z-index: 3;
+    mix-blend-mode: screen;
+    object-fit: fill;
+  }
   .print-only-card .print-art-layer--bg-inset {
     transform: scale(0.88);
     transform-origin: center;
