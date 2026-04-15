@@ -222,6 +222,7 @@ export function Collection() {
     try {
       await downloadCardAsJpg(
         selected.identity.name,
+        selected.prompts.rarity,
         selected.backgroundImageUrl,
         selected.characterImageUrl,
         selected.frameImageUrl,

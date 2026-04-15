@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
+import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
 
 interface CardViewer3DProps {
   card: CardPayload;
@@ -42,10 +43,12 @@ export function CardViewer3D({
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
 
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
-  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
-  const backgroundLayerClassName = isPunchSkaterFrame
+  const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "viewer3d-layer viewer3d-layer--bg viewer3d-layer--bg-inset"
     : "viewer3d-layer viewer3d-layer--bg";
+  const frameLayerStyle = frameImageUrl
+    ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
+    : undefined;
 
   // ── Close on Escape ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -149,7 +152,7 @@ export function CardViewer3D({
                   />
                 )}
                 {frameImageUrl && (
-                  <img src={frameImageUrl} alt="frame" className="viewer3d-layer viewer3d-layer--frame" />
+                  <img src={frameImageUrl} alt="frame" className="viewer3d-layer viewer3d-layer--frame" style={frameLayerStyle} />
                 )}
               </div>
             ) : (

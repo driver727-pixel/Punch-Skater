@@ -551,6 +551,7 @@ export function CardForge() {
     try {
       await downloadCardAsJpg(
         generated.identity.name,
+        generated.prompts.rarity,
         layers.backgroundPrintUrl ?? layers.backgroundUrl,
         layers.characterUrl,
         layers.frameUrl,

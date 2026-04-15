@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
+import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
 
 interface PrintModalProps {
   card: CardPayload;
@@ -53,10 +54,12 @@ export function PrintModal({
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
-  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
-  const backgroundLayerClassName = isPunchSkaterFrame
+  const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "print-art-layer print-art-layer--bg print-art-layer--bg-inset"
     : "print-art-layer print-art-layer--bg";
+  const frameLayerStyle = frameImageUrl
+    ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
+    : undefined;
   // Use the full print-quality background in the hidden printable area when available.
   const printBackgroundUrl = backgroundPrintUrl ?? backgroundImageUrl;
 
@@ -117,7 +120,7 @@ export function PrintModal({
                         />
                       )}
                       {frameImageUrl && (
-                        <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" />
+                        <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" style={frameLayerStyle} />
                       )}
                     </div>
                   ) : (
@@ -236,7 +239,7 @@ export function PrintModal({
                     />
                   )}
                   {frameImageUrl && (
-                    <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" />
+                    <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" style={frameLayerStyle} />
                   )}
                 </div>
               ) : (

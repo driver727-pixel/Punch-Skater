@@ -1,3 +1,6 @@
+import type { Rarity } from "../lib/types";
+import { getFrameBlendMode } from "./staticAssets";
+
 /**
  * Card download service — composites all three AI art layers onto a canvas
  * and triggers a JPEG download.
@@ -60,6 +63,7 @@ function loadCrossOriginImage(url: string): Promise<HTMLImageElement> {
  */
 export async function downloadCardAsJpg(
   cardName: string,
+  rarity: Rarity,
   backgroundUrl: string | undefined,
   characterUrl: string | undefined,
   frameUrl: string | undefined,
@@ -92,7 +96,7 @@ export async function downloadCardAsJpg(
   // ── Layer 3: frame (screen blend — black frame interior becomes transparent) ─
   if (frameUrl) {
     const img = await loadCrossOriginImage(frameUrl);
-    ctx.globalCompositeOperation = "screen";
+    ctx.globalCompositeOperation = getFrameBlendMode(rarity, frameUrl) === "screen" ? "screen" : "source-over";
     ctx.globalAlpha = 1;
     ctx.drawImage(img, 0, 0, CARD_WIDTH, CARD_HEIGHT);
   }

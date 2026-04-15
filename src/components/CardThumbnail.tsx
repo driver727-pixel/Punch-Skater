@@ -1,5 +1,6 @@
-import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
+import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
 
 interface CardThumbnailProps {
   card: CardPayload;
@@ -14,10 +15,12 @@ interface CardThumbnailProps {
 export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnailProps) {
   const { backgroundImageUrl, characterImageUrl, frameImageUrl } = card;
   const hasLayers = backgroundImageUrl || characterImageUrl || frameImageUrl;
-  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
-  const backgroundLayerClassName = isPunchSkaterFrame
+  const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
     : "card-art-layer card-art-layer--background";
+  const frameLayerStyle = frameImageUrl
+    ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
+    : undefined;
 
   if (!hasLayers) {
     return <CardArt card={card} width={width} height={height} />;
@@ -44,6 +47,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           src={frameImageUrl}
           alt="frame"
           className="card-art-layer card-art-layer--frame"
+          style={frameLayerStyle}
         />
       )}
     </div>

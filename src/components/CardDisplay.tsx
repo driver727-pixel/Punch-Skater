@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from "react";
-import { PUNCH_SKATER_RARITY, type CardPayload } from "../lib/types";
+import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { CardFrame, STANDARD_FRAME_RARITIES, FRAME_RENDER_WIDTH, FRAME_RENDER_HEIGHT } from "./CardFrame";
 import { StatBar } from "./StatBar";
@@ -12,6 +12,7 @@ import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, B
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
 
 interface LayerLoading {
   background: boolean;
@@ -187,10 +188,12 @@ function CompositeArt({
   const hasAnyLayer =
     backgroundImageUrl || characterImageUrl || frameImageUrl ||
     layerLoading?.background || layerLoading?.character || layerLoading?.frame;
-  const isPunchSkaterFrame = card.prompts.rarity === PUNCH_SKATER_RARITY && !!frameImageUrl;
-  const backgroundLayerClassName = isPunchSkaterFrame
+  const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
     : "card-art-layer card-art-layer--background";
+  const frameLayerStyle = frameImageUrl
+    ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
+    : undefined;
 
   // No AI layer data at all — render SVG fallback
   if (!hasAnyLayer) {
@@ -234,6 +237,7 @@ function CompositeArt({
           src={frameImageUrl}
           alt="frame"
           className="card-art-layer card-art-layer--frame"
+          style={frameLayerStyle}
           onError={() => onLayerError?.("frame")}
         />
       ) : layerLoading?.frame ? (
@@ -243,7 +247,7 @@ function CompositeArt({
       ) : null}
 
       {/* Layer 4 – SVG neon border overlay for the four redesigned rarity frames */}
-      {(STANDARD_FRAME_RARITIES as readonly string[]).includes(card.prompts.rarity) && (
+      {!frameImageUrl && (STANDARD_FRAME_RARITIES as readonly string[]).includes(card.prompts.rarity) && (
         <svg
           className="card-art-layer card-art-layer--svg-frame"
           viewBox={`0 0 ${FRAME_RENDER_WIDTH} ${FRAME_RENDER_HEIGHT}`}

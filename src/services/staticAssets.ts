@@ -24,7 +24,7 @@
  *     and register it in BACKGROUND_ASSETS_SMALL below.
  *
  * ── How to add a frame ───────────────────────────────────────────────────────
- *  1. Place the image in   public/assets/frames/<slug>.jpg        (see README there).
+ *  1. Place the image in   public/assets/frames/<slug>.png        (see README there).
  *  2. Add (or uncomment) the rarity key below in FRAME_ASSETS.
  *
  * ── Getting the first-run URLs ───────────────────────────────────────────────
@@ -36,6 +36,14 @@
  */
 
 import type { District, Rarity } from "../lib/types";
+
+export type FrameBlendMode = "normal" | "screen";
+
+interface FrameAssetConfig {
+  url: string;
+  blendMode?: FrameBlendMode;
+  insetBackground?: boolean;
+}
 
 // ── Background registry — print / full quality ────────────────────────────────
 //
@@ -73,14 +81,14 @@ const BACKGROUND_ASSETS_SMALL: Partial<Record<District, string>> = {
 // public/assets/frames/.
 //
 // Example:
-//   Legendary: "/assets/frames/legendary.jpg",
+//   Legendary: { url: "/assets/frames/legendary.png" },
 
-const FRAME_ASSETS: Partial<Record<Rarity, string>> = {
-  // "Punch Skater": "/assets/frames/punch-skater.jpg",
-  // Apprentice:     "/assets/frames/apprentice.jpg",
-  // Master:         "/assets/frames/master.jpg",
-  // Rare:           "/assets/frames/rare.jpg",
-  // Legendary:      "/assets/frames/legendary.jpg",
+const FRAME_ASSETS: Partial<Record<Rarity, FrameAssetConfig>> = {
+  // "Punch Skater": { url: "/assets/frames/punch-skater.png" },
+  // Apprentice:     { url: "/assets/frames/apprentice.png" },
+  // Master:         { url: "/assets/frames/master.png" },
+  // Rare:           { url: "/assets/frames/rare.png" },
+  // Legendary:      { url: "/assets/frames/legendary.png" },
 };
 
 // ── Public API ─────────────────────────────────────────────────────────────────
@@ -115,5 +123,23 @@ export function getStaticBackgroundSmallUrl(district: District): string | null {
  * Firestore cache and the fal.ai generation step.
  */
 export function getStaticFrameUrl(rarity: Rarity): string | null {
-  return FRAME_ASSETS[rarity] ?? null;
+  return FRAME_ASSETS[rarity]?.url ?? null;
+}
+
+export function getFrameBlendMode(rarity: Rarity, frameUrl?: string): FrameBlendMode {
+  if (!frameUrl) return "screen";
+  const asset = FRAME_ASSETS[rarity];
+  if (asset && asset.url === frameUrl) {
+    return asset.blendMode ?? "normal";
+  }
+  return "screen";
+}
+
+export function shouldInsetBackgroundForFrame(rarity: Rarity, frameUrl?: string): boolean {
+  if (!frameUrl) return false;
+  const asset = FRAME_ASSETS[rarity];
+  if (asset && asset.url === frameUrl) {
+    return asset.insetBackground ?? false;
+  }
+  return rarity === "Punch Skater";
 }
