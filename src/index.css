@@ -176,7 +176,6 @@ body::after {
   --nav-neon-map-width: clamp(200px, 20vw, 300px);
   flex: 0 0 var(--nav-neon-map-width);
   width: var(--nav-neon-map-width);
-  min-width: 200px;
   overflow: hidden;
   align-self: center;
 }
@@ -3388,7 +3387,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 @media (max-width: 1200px) {
   .nav-neon-map {
     --nav-neon-map-width: clamp(180px, 18vw, 240px);
-    min-width: 180px;
   }
 
   .geo-atlas__map--world {
