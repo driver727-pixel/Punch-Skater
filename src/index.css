@@ -3059,6 +3059,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .geo-atlas__map--australia { min-height: 620px; }
+.geo-atlas--compact .geo-atlas__map--australia {
+  min-height: clamp(300px, 48vw, 520px);
+}
 .geo-atlas__map--world {
   min-height: clamp(280px, 34vw, 500px);
   aspect-ratio: 5 / 3;
@@ -3403,6 +3406,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     min-height: clamp(190px, 46vw, 260px);
   }
 
+  .geo-atlas--compact .geo-atlas__map--australia {
+    min-height: clamp(260px, 72vw, 420px);
+  }
+
   .geo-atlas__world-callout {
     right: 12px;
     bottom: 12px;
@@ -3430,6 +3437,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .geo-atlas--compact .geo-atlas__map--world {
     min-height: clamp(170px, 52vw, 220px);
+  }
+
+  .geo-atlas--compact .geo-atlas__map--australia {
+    min-height: clamp(220px, 84vw, 340px);
   }
 
   .geo-atlas__world-callout {
@@ -6588,6 +6599,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 12px;
 }
 .mission-selector-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -6606,6 +6618,28 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-selector-card--active {
   border-color: rgba(0,255,136,0.38);
   box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.12);
+}
+.mission-selector-card--completed {
+  border-color: rgba(0,255,136,0.28);
+  background: rgba(0,255,136,0.04);
+}
+.mission-selector-card__check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0,255,136,0.18);
+  border: 1.5px solid rgba(0,255,136,0.6);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
 }
 .mission-selector-card__topline {
   width: 100%;

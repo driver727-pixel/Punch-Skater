@@ -40,6 +40,7 @@ import { MISSION_STAT_LABELS } from "../lib/statLabels";
 import type { District, RoadCorridor } from "../lib/types";
 import { spawnCelebrationBurst } from "../lib/celebration";
 import { sfxError, sfxRewardShower, sfxSuccess, sfxSuccessPing, sfxClick, sfxNavigate } from "../lib/sfx";
+import { loadCompletedMissions, saveCompletedMissions } from "../lib/storage";
 
 const MISSION_MARKER_OFFSET_Y = -76;
 const DISTRICT_MARKER_OFFSETS = [
@@ -157,6 +158,9 @@ export function Mission() {
   const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
   const [atlasFilter, setAtlasFilter] = useState<AtlasFilter>(DEFAULT_ATLAS_FILTER);
   const [hoveredMissionId, setHoveredMissionId] = useState<string | null>(null);
+  const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(
+    () => new Set(loadCompletedMissions()),
+  );
   const missionResultRef = useRef<HTMLElement | null>(null);
   const missionHasRewardsToDisplay = Boolean(
     missionResult?.success && (missionResult.ozziesReward > 0 || missionResult.partsReward),
@@ -389,6 +393,16 @@ export function Mission() {
     [activeMission.id, resetMissionSession, visibleMissionCatalog],
   );
 
+  const markMissionComplete = useCallback((missionId: string) => {
+    setCompletedMissionIds((prev) => {
+      if (prev.has(missionId)) return prev;
+      const next = new Set(prev);
+      next.add(missionId);
+      saveCompletedMissions(Array.from(next));
+      return next;
+    });
+  }, []);
+
   const handleRunMission = () => {
     if (!activeDeck || missionAccessBlocked || !missionPreview.runnerCard) return;
     setClaimedPartsRewardId(null);
@@ -399,6 +413,7 @@ export function Mission() {
       setPendingFork(outcome);
       setMissionResult(null);
     } else {
+      if (outcome.result.success) markMissionComplete(activeMission.id);
       setMissionResult(outcome.result);
       setPendingFork(null);
     }
@@ -414,6 +429,7 @@ export function Mission() {
       setPendingFork(outcome);
       setMissionResult(null);
     } else {
+      if (outcome.result.success) markMissionComplete(activeMission.id);
       setMissionResult(outcome.result);
       setPendingFork(null);
     }
@@ -526,56 +542,63 @@ export function Mission() {
                 No missions match this filter right now. Change the view or switch runners to open more routes.
               </div>
             )}
-            {visibleMissionCatalog.map(({ mission, accessible, blocked, wheelTypes, corridorBlocked: missionCorridorBlocked }) => (
-              <button
-                key={mission.id}
-                type="button"
-                className={[
-                  "mission-selector-card",
-                  mission.id === activeMission.id ? "mission-selector-card--active" : "",
-                  blocked ? "mission-selector-card--blocked" : "",
-                ].filter(Boolean).join(" ")}
-                onClick={() => {
-                  sfxClick();
-                  setActiveMissionId(mission.id);
-                  resetMissionSession();
-                }}
-                onMouseEnter={() => setHoveredMissionId(mission.id)}
-                onMouseLeave={() => setHoveredMissionId(null)}
-              >
-                <div className="mission-selector-card__topline">
-                  <span className="mission-selector-card__district">
-                    {mission.originDistrict}
-                    {mission.destinationDistrict !== mission.originDistrict ? ` → ${mission.destinationDistrict}` : ""}
-                  </span>
-                  <span className={`mission-selector-card__state${accessible ? " mission-selector-card__state--available" : ""}`}>
-                    {getMissionStateLabel(accessible, hasRunner, missionCorridorBlocked)}
-                  </span>
-                </div>
-                <strong className="mission-selector-card__name">{mission.name}</strong>
-                <span className="mission-selector-card__tagline">{mission.tagline}</span>
-                <div className="mission-selector-card__badges">
-                  <span className="mission-selector-card__badge">
-                    {mission.corridor ? "🛣️ Corridor" : "🏙️ District"}
-                  </span>
-                  {wheelTypes.map((wheelType) => (
-                    <span
-                      key={`${mission.id}-${wheelType}`}
-                      className="mission-selector-card__badge mission-selector-card__badge--wheel"
-                      title={WHEEL_BADGES[wheelType].label}
-                    >
-                      {WHEEL_BADGES[wheelType].icon} {WHEEL_BADGES[wheelType].shortLabel}
+            {visibleMissionCatalog.map(({ mission, accessible, blocked, wheelTypes, corridorBlocked: missionCorridorBlocked }) => {
+              const isCompleted = completedMissionIds.has(mission.id);
+              return (
+                <button
+                  key={mission.id}
+                  type="button"
+                  className={[
+                    "mission-selector-card",
+                    mission.id === activeMission.id ? "mission-selector-card--active" : "",
+                    blocked ? "mission-selector-card--blocked" : "",
+                    isCompleted ? "mission-selector-card--completed" : "",
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => {
+                    sfxClick();
+                    setActiveMissionId(mission.id);
+                    resetMissionSession();
+                  }}
+                  onMouseEnter={() => setHoveredMissionId(mission.id)}
+                  onMouseLeave={() => setHoveredMissionId(null)}
+                >
+                  {isCompleted && (
+                    <span className="mission-selector-card__check" aria-label="Completed">✓</span>
+                  )}
+                  <div className="mission-selector-card__topline">
+                    <span className="mission-selector-card__district">
+                      {mission.originDistrict}
+                      {mission.destinationDistrict !== mission.originDistrict ? ` → ${mission.destinationDistrict}` : ""}
                     </span>
-                  ))}
-                  {mission.ozziesReward != null && mission.ozziesReward > 0 && (
-                    <span className="mission-selector-card__badge mission-selector-card__badge--reward">💰 {mission.ozziesReward}</span>
-                  )}
-                  {mission.partsReward && (
-                    <span className="mission-selector-card__badge mission-selector-card__badge--reward">🧩 {mission.partsReward.label}</span>
-                  )}
-                </div>
-              </button>
-            ))}
+                    <span className={`mission-selector-card__state${accessible ? " mission-selector-card__state--available" : ""}`}>
+                      {getMissionStateLabel(accessible, hasRunner, missionCorridorBlocked)}
+                    </span>
+                  </div>
+                  <strong className="mission-selector-card__name">{mission.name}</strong>
+                  <span className="mission-selector-card__tagline">{mission.tagline}</span>
+                  <div className="mission-selector-card__badges">
+                    <span className="mission-selector-card__badge">
+                      {mission.corridor ? "🛣️ Corridor" : "🏙️ District"}
+                    </span>
+                    {wheelTypes.map((wheelType) => (
+                      <span
+                        key={`${mission.id}-${wheelType}`}
+                        className="mission-selector-card__badge mission-selector-card__badge--wheel"
+                        title={WHEEL_BADGES[wheelType].label}
+                      >
+                        {WHEEL_BADGES[wheelType].icon} {WHEEL_BADGES[wheelType].shortLabel}
+                      </span>
+                    ))}
+                    {mission.ozziesReward != null && mission.ozziesReward > 0 && (
+                      <span className="mission-selector-card__badge mission-selector-card__badge--reward">💰 {mission.ozziesReward}</span>
+                    )}
+                    {mission.partsReward && (
+                      <span className="mission-selector-card__badge mission-selector-card__badge--reward">🧩 {mission.partsReward.label}</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>

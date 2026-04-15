@@ -4,6 +4,7 @@ import { normalizeCardPayload } from "./styles";
 const COLLECTION_KEY = "skpd_collection";
 const DECKS_KEY = "skpd_decks";
 const FACTION_DISCOVERIES_KEY = "skpd_faction_discoveries";
+const COMPLETED_MISSIONS_KEY = "skpd_completed_missions";
 
 export function loadCollection(): CardPayload[] {
   try {
@@ -42,6 +43,19 @@ export function loadFactionDiscoveries(): string[] {
 
 export function saveFactionDiscoveries(factions: string[]): void {
   localStorage.setItem(FACTION_DISCOVERIES_KEY, JSON.stringify(Array.from(new Set(factions)).sort()));
+}
+
+export function loadCompletedMissions(): string[] {
+  try {
+    const raw = localStorage.getItem(COMPLETED_MISSIONS_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCompletedMissions(missionIds: string[]): void {
+  localStorage.setItem(COMPLETED_MISSIONS_KEY, JSON.stringify(Array.from(new Set(missionIds)).sort()));
 }
 
 export function exportJson(data: unknown, filename: string): void {
