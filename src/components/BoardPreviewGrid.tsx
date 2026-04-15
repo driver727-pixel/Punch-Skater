@@ -47,7 +47,7 @@ function Layer({ src, alt, icon, slot, layerClassName }: LayerProps) {
         <img
           src={src}
           alt={alt}
-          className={`board-preview-grid__img ${layerClassName}`}
+          className={layerClassName}
           onError={handleError}
         />
       )}
