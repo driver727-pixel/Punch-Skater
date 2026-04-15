@@ -393,6 +393,16 @@ export function Mission() {
     [activeMission.id, resetMissionSession, visibleMissionCatalog],
   );
 
+  const markMissionComplete = useCallback((missionId: string) => {
+    setCompletedMissionIds((prev) => {
+      if (prev.has(missionId)) return prev;
+      const next = new Set(prev);
+      next.add(missionId);
+      saveCompletedMissions(Array.from(next));
+      return next;
+    });
+  }, []);
+
   const handleRunMission = () => {
     if (!activeDeck || missionAccessBlocked || !missionPreview.runnerCard) return;
     setClaimedPartsRewardId(null);
@@ -403,6 +413,7 @@ export function Mission() {
       setPendingFork(outcome);
       setMissionResult(null);
     } else {
+      if (outcome.result.success) markMissionComplete(activeMission.id);
       setMissionResult(outcome.result);
       setPendingFork(null);
     }
@@ -418,6 +429,7 @@ export function Mission() {
       setPendingFork(outcome);
       setMissionResult(null);
     } else {
+      if (outcome.result.success) markMissionComplete(activeMission.id);
       setMissionResult(outcome.result);
       setPendingFork(null);
     }
@@ -441,14 +453,6 @@ export function Mission() {
       sfxError();
       return;
     }
-
-    setCompletedMissionIds((prev) => {
-      if (prev.has(activeMission.id)) return prev;
-      const next = new Set(prev);
-      next.add(activeMission.id);
-      saveCompletedMissions(Array.from(next));
-      return next;
-    });
 
     sfxSuccess();
     const pingTimer = window.setTimeout(() => {
@@ -478,7 +482,7 @@ export function Mission() {
       window.clearTimeout(pingTimer);
       burstTimers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [activeMission.id, missionHasRewardsToDisplay, missionResult]);
+  }, [missionHasRewardsToDisplay, missionResult]);
 
   return (
     <div className="page">

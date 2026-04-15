@@ -3741,10 +3741,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     min-height: 540px;
   }
 
-  .geo-atlas--compact .geo-atlas__map--australia {
-    min-height: clamp(260px, 68vw, 420px);
-  }
-
   .geo-atlas__district {
     width: 120px;
     padding: 10px 12px;
