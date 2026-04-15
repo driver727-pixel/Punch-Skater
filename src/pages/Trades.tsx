@@ -45,6 +45,8 @@ export function Trades() {
   useEffect(() => {
     if (!uid) return;
 
+    setError("");
+
     const handleSnapshotError = (err: Error) => {
       console.error("Trades snapshot error:", err);
       setError("Failed to load trades. Please try refreshing.");
