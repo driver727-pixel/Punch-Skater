@@ -6,6 +6,7 @@ import { SkateboardStatsPanel } from "../components/SkateboardStatsPanel";
 import { useDecks } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
+import type { WheelType } from "../lib/boardBuilder";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import {
   applyMissionPartsReward,
@@ -24,6 +25,7 @@ import {
   DISTRICT_WEATHER_LOCATIONS,
   getDistrictAccessBlockReason,
   getDistrictAccessSummary,
+  getDistrictWheelAccessRule,
   isDistrictAccessibleWithBoardType,
   type DistrictWeatherSnapshot,
 } from "../lib/districtWeather";
@@ -31,6 +33,7 @@ import {
   getCorridorAccessBlockReason,
   getCorridorAccessSummary,
   getCorridorCondition,
+  getRoadCorridor,
   isCorridorAccessible,
 } from "../lib/roadCorridors";
 import { MISSION_STAT_LABELS } from "../lib/statLabels";
@@ -49,6 +52,21 @@ const CORRIDOR_MARKER_OFFSETS = [
   { offsetX: 0, offsetY: -48 },
   { offsetX: 40, offsetY: -22 },
 ];
+const ATLAS_FILTERS = [
+  { id: "all", label: "All operations" },
+  { id: "districts", label: "District hubs" },
+  { id: "corridors", label: "Corridor lines" },
+  { id: "rideable", label: "Rideable now" },
+] as const;
+const WHEEL_BADGES: Record<WheelType, { icon: string; label: string; shortLabel: string }> = {
+  Urethane: { icon: "🛹", label: "Street wheels", shortLabel: "Street" },
+  Pneumatic: { icon: "🛞", label: "Pneumatic wheels", shortLabel: "Pneumatic" },
+  Rubber: { icon: "🧱", label: "Solid rubber wheels", shortLabel: "Rubber" },
+  Cloud: { icon: "☁️", label: "Cloud wheels", shortLabel: "Cloud" },
+};
+const DEFAULT_ATLAS_FILTER: AtlasFilter = "all";
+
+type AtlasFilter = (typeof ATLAS_FILTERS)[number]["id"];
 
 function resolveMissionLocation(district: District) {
   return DISTRICT_WEATHER_LOCATIONS[district] ?? {
@@ -95,6 +113,36 @@ function resolveMissionAccessReason(params: {
   return null;
 }
 
+function intersectWheelTypes(primary: WheelType[], secondary: WheelType[]): WheelType[] {
+  return primary.filter((wheelType) => secondary.includes(wheelType));
+}
+
+function getMissionWheelTypes(
+  originDistrict: District,
+  destinationDistrict: District,
+  corridor?: RoadCorridor,
+): WheelType[] {
+  const districtWheelTypes = intersectWheelTypes(
+    getDistrictWheelAccessRule(originDistrict).allowedWheelTypes,
+    getDistrictWheelAccessRule(destinationDistrict).allowedWheelTypes,
+  );
+  if (!corridor) {
+    return districtWheelTypes;
+  }
+  return intersectWheelTypes(districtWheelTypes, getRoadCorridor(corridor).allowedWheelTypes);
+}
+
+function getMissionStateLabel(
+  accessible: boolean,
+  hasRunner: boolean,
+  corridorBlocked: boolean,
+): string {
+  if (accessible) return "Rideable";
+  if (!hasRunner) return "Needs runner";
+  if (corridorBlocked) return "Wheel restricted";
+  return "Restricted";
+}
+
 export function Mission() {
   const navigate = useNavigate();
   const { cards, updateCard } = useCollection();
@@ -107,6 +155,8 @@ export function Mission() {
   const [pendingFork, setPendingFork] = useState<MissionForkPrompt | null>(null);
   const [forkChoices, setForkChoices] = useState<Record<string, ForkChoice>>({});
   const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
+  const [atlasFilter, setAtlasFilter] = useState<AtlasFilter>(DEFAULT_ATLAS_FILTER);
+  const [hoveredMissionId, setHoveredMissionId] = useState<string | null>(null);
   const missionResultRef = useRef<HTMLElement | null>(null);
   const missionHasRewardsToDisplay = Boolean(
     missionResult?.success && (missionResult.ozziesReward > 0 || missionResult.partsReward),
@@ -203,10 +253,85 @@ export function Mission() {
         ? "District weather uplink is offline, so this district is running on open access."
         : `No live weather seed is active for ${activeMission.originDistrict}.`;
 
+  useEffect(() => {
+    if (!hasRunner && atlasFilter === "rideable") {
+      setAtlasFilter(DEFAULT_ATLAS_FILTER);
+    }
+  }, [atlasFilter, hasRunner]);
+
+  const missionCatalog = useMemo(
+    () => DISTRICT_MISSIONS.map((mission) => {
+      const missionOriginWeather = weatherByDistrict[mission.originDistrict] ?? null;
+      const missionDestinationWeather = weatherByDistrict[mission.destinationDistrict] ?? null;
+      const launchBlockedForMission =
+        hasRunner &&
+        !isDistrictAccessibleWithBoardType(
+          mission.originDistrict,
+          missionOriginWeather,
+          runnerBoardType,
+          runnerWheelType,
+        );
+      const destinationBlockedForMission =
+        hasRunner &&
+        !isDistrictAccessibleWithBoardType(
+          mission.destinationDistrict,
+          missionDestinationWeather,
+          runnerBoardType,
+          runnerWheelType,
+        );
+      const corridorBlockedForMission =
+        hasRunner &&
+        Boolean(mission.corridor) &&
+        !isCorridorAccessible(mission.corridor, runnerWheelType);
+      const accessible = hasRunner && !launchBlockedForMission && !destinationBlockedForMission && !corridorBlockedForMission;
+      const blocked = hasRunner && !accessible;
+
+      return {
+        mission,
+        accessible,
+        blocked,
+        corridorBlocked: corridorBlockedForMission,
+        wheelTypes: getMissionWheelTypes(mission.originDistrict, mission.destinationDistrict, mission.corridor),
+      };
+    }),
+    [hasRunner, runnerBoardType, runnerWheelType, weatherByDistrict],
+  );
+
+  const visibleMissionCatalog = useMemo(
+    () => missionCatalog.filter(({ mission, accessible }) => {
+      switch (atlasFilter) {
+        case "districts":
+          return !mission.corridor;
+        case "corridors":
+          return Boolean(mission.corridor);
+        case "rideable":
+          return accessible;
+        default:
+          return true;
+      }
+    }),
+    [atlasFilter, missionCatalog],
+  );
+
+  useEffect(() => {
+    const isActiveMissionVisible = visibleMissionCatalog.some(({ mission }) => mission.id === activeMissionId);
+    if (visibleMissionCatalog.length === 0 || isActiveMissionVisible) {
+      return;
+    }
+    setActiveMissionId(visibleMissionCatalog[0].mission.id);
+    resetMissionSession();
+  }, [activeMissionId, resetMissionSession, visibleMissionCatalog]);
+
+  const focusedMission =
+    visibleMissionCatalog.find(({ mission }) => mission.id === hoveredMissionId)?.mission ??
+    activeMission;
+  const focusDistricts = Array.from(new Set([focusedMission.originDistrict, focusedMission.destinationDistrict]));
+  const focusCorridors = focusedMission.corridor ? [focusedMission.corridor] : [];
+
   const missionMarkers = useMemo(
     () => {
       const districtMarkerIndex = new Map<string, number>();
-      return DISTRICT_MISSIONS.filter((mission) => !mission.corridor).map((mission) => {
+      return visibleMissionCatalog.filter(({ mission }) => !mission.corridor).map(({ mission, accessible, blocked }) => {
         const markerIndex = districtMarkerIndex.get(mission.originDistrict) ?? 0;
         districtMarkerIndex.set(mission.originDistrict, markerIndex + 1);
         const markerOffset = DISTRICT_MARKER_OFFSETS[markerIndex] ?? {
@@ -222,6 +347,7 @@ export function Mission() {
           active: mission.id === activeMission.id,
           offsetX: markerOffset.offsetX,
           offsetY: markerOffset.offsetY,
+          tone: accessible ? "available" : blocked ? "blocked" : undefined,
           onClick: () => {
             setActiveMissionId(mission.id);
             resetMissionSession();
@@ -229,13 +355,13 @@ export function Mission() {
         };
       });
     },
-    [activeMission.id, resetMissionSession],
+    [activeMission.id, resetMissionSession, visibleMissionCatalog],
   );
 
   const missionCorridors = useMemo(
     () => {
       const corridorMarkerIndex = new Map<string, number>();
-      return DISTRICT_MISSIONS.filter((mission) => mission.corridor).map((mission) => {
+      return visibleMissionCatalog.filter(({ mission }) => mission.corridor).map(({ mission, accessible, blocked }) => {
         const corridor = mission.corridor!;
         const markerIndex = corridorMarkerIndex.get(corridor) ?? 0;
         corridorMarkerIndex.set(corridor, markerIndex + 1);
@@ -252,6 +378,7 @@ export function Mission() {
           active: mission.id === activeMission.id,
           offsetX: markerOffset.offsetX,
           offsetY: markerOffset.offsetY,
+          tone: accessible ? "available" : blocked ? "blocked" : undefined,
           onClick: () => {
             setActiveMissionId(mission.id);
             resetMissionSession();
@@ -259,7 +386,7 @@ export function Mission() {
         };
       });
     },
-    [activeMission.id, resetMissionSession],
+    [activeMission.id, resetMissionSession, visibleMissionCatalog],
   );
 
   const handleRunMission = () => {
@@ -361,36 +488,95 @@ export function Mission() {
             </p>
           </div>
         </div>
-        <GeoAtlas compact className="mission-atlas" markers={missionMarkers} corridors={missionCorridors} />
-        <div className="mission-selector-grid">
-          {DISTRICT_MISSIONS.map((mission) => (
-            <button
-              key={mission.id}
-              type="button"
-              className={`mission-selector-card${mission.id === activeMission.id ? " mission-selector-card--active" : ""}`}
-              onClick={() => {
-                sfxClick();
-                setActiveMissionId(mission.id);
-                resetMissionSession();
-              }}
-            >
-              <span className="mission-selector-card__district">
-                {mission.originDistrict}
-                {mission.destinationDistrict !== mission.originDistrict ? ` → ${mission.destinationDistrict}` : ""}
-              </span>
-              <strong className="mission-selector-card__name">{mission.name}</strong>
-              <span className="mission-selector-card__tagline">{mission.tagline}</span>
-              {mission.corridor && (
-                <span className="mission-selector-card__reward">🛣️ {mission.corridor}</span>
-              )}
-              {mission.ozziesReward != null && mission.ozziesReward > 0 && (
-                <span className="mission-selector-card__reward">💰 {mission.ozziesReward} Ozzies</span>
-              )}
-              {mission.partsReward && (
-                <span className="mission-selector-card__reward">🧩 {mission.partsReward.label}</span>
-              )}
-            </button>
-          ))}
+        <div className="mission-atlas-toolbar" aria-label="Mission atlas filters">
+          <div className="mission-atlas-toolbar__filters" role="tablist" aria-label="Mission atlas views">
+            {ATLAS_FILTERS.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                role="tab"
+                aria-selected={atlasFilter === filter.id}
+                className={`mission-atlas-filter${atlasFilter === filter.id ? " mission-atlas-filter--active" : ""}`}
+                onClick={() => setAtlasFilter(filter.id)}
+                disabled={filter.id === "rideable" && !hasRunner}
+                title={filter.id === "rideable" && !hasRunner ? "Select a runner to filter rideable operations." : undefined}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+          <p className="mission-atlas-toolbar__summary">
+            Showing {visibleMissionCatalog.length} of {DISTRICT_MISSIONS.length} operations
+            {atlasFilter === "rideable" && hasRunner ? ` for ${missionPreview.runnerCard?.name}` : ""}.
+          </p>
+        </div>
+        <div className="mission-atlas-layout">
+          <GeoAtlas
+            compact
+            className="mission-atlas"
+            markers={missionMarkers}
+            corridors={missionCorridors}
+            showMarkerLabels="active"
+            focusDistricts={focusDistricts}
+            focusCorridors={focusCorridors}
+          />
+          <div className="mission-selector-grid">
+            {visibleMissionCatalog.length === 0 && (
+              <div className="mission-selector-empty">
+                No missions match this filter right now. Change the view or switch runners to open more routes.
+              </div>
+            )}
+            {visibleMissionCatalog.map(({ mission, accessible, blocked, wheelTypes, corridorBlocked: missionCorridorBlocked }) => (
+              <button
+                key={mission.id}
+                type="button"
+                className={[
+                  "mission-selector-card",
+                  mission.id === activeMission.id ? "mission-selector-card--active" : "",
+                  blocked ? "mission-selector-card--blocked" : "",
+                ].filter(Boolean).join(" ")}
+                onClick={() => {
+                  sfxClick();
+                  setActiveMissionId(mission.id);
+                  resetMissionSession();
+                }}
+                onMouseEnter={() => setHoveredMissionId(mission.id)}
+                onMouseLeave={() => setHoveredMissionId(null)}
+              >
+                <div className="mission-selector-card__topline">
+                  <span className="mission-selector-card__district">
+                    {mission.originDistrict}
+                    {mission.destinationDistrict !== mission.originDistrict ? ` → ${mission.destinationDistrict}` : ""}
+                  </span>
+                  <span className={`mission-selector-card__state${accessible ? " mission-selector-card__state--available" : ""}`}>
+                    {getMissionStateLabel(accessible, hasRunner, missionCorridorBlocked)}
+                  </span>
+                </div>
+                <strong className="mission-selector-card__name">{mission.name}</strong>
+                <span className="mission-selector-card__tagline">{mission.tagline}</span>
+                <div className="mission-selector-card__badges">
+                  <span className="mission-selector-card__badge">
+                    {mission.corridor ? "🛣️ Corridor" : "🏙️ District"}
+                  </span>
+                  {wheelTypes.map((wheelType) => (
+                    <span
+                      key={`${mission.id}-${wheelType}`}
+                      className="mission-selector-card__badge mission-selector-card__badge--wheel"
+                      title={WHEEL_BADGES[wheelType].label}
+                    >
+                      {WHEEL_BADGES[wheelType].icon} {WHEEL_BADGES[wheelType].shortLabel}
+                    </span>
+                  ))}
+                  {mission.ozziesReward != null && mission.ozziesReward > 0 && (
+                    <span className="mission-selector-card__badge mission-selector-card__badge--reward">💰 {mission.ozziesReward}</span>
+                  )}
+                  {mission.partsReward && (
+                    <span className="mission-selector-card__badge mission-selector-card__badge--reward">🧩 {mission.partsReward.label}</span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

@@ -14,6 +14,7 @@ export interface GeoAtlasMarker {
   label: string;
   title?: string;
   active?: boolean;
+  tone?: "available" | "blocked";
   offsetX?: number;
   offsetY?: number;
   onClick?: () => void;
@@ -25,6 +26,7 @@ export interface GeoAtlasCorridorMarker {
   label: string;
   title?: string;
   active?: boolean;
+  tone?: "available" | "blocked";
   offsetX?: number;
   offsetY?: number;
   onClick?: () => void;
@@ -37,6 +39,9 @@ interface GeoAtlasProps {
   corridors?: GeoAtlasCorridorMarker[];
   /** Render only one section instead of both. Omit for the full two-section atlas. */
   section?: "australia" | "neon";
+  showMarkerLabels?: "all" | "active";
+  focusDistricts?: WorldLocation[];
+  focusCorridors?: RoadCorridor[];
 }
 
 const AUSTRALIA_DISTRICT_LAYOUT: Record<WorldLocation, { x: number; y: number; tone: string }> = {
@@ -120,11 +125,23 @@ function getAtlasNodeStatus(
   return weatherSummary ?? (loading ? "Syncing weather" : "Open weather");
 }
 
-export function GeoAtlas({ compact = false, className, markers = [], corridors = [], section }: GeoAtlasProps) {
+export function GeoAtlas({
+  compact = false,
+  className,
+  markers = [],
+  corridors = [],
+  section,
+  showMarkerLabels = "all",
+  focusDistricts = [],
+  focusCorridors = [],
+}: GeoAtlasProps) {
   const [hoveredDistrict, setHoveredDistrict] = useState<WorldLocation | null>(null);
   const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(false);
   const [isNeonCollapsed, setIsNeonCollapsed] = useState(false);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
+  const focusDistrictSet = new Set(focusDistricts);
+  const focusCorridorSet = new Set(focusCorridors);
+  const hasFocus = focusDistrictSet.size > 0 || focusCorridorSet.size > 0;
   const districtEntries = DISTRICT_LORE.map((district) => ({
     ...district,
     layout: AUSTRALIA_DISTRICT_LAYOUT[district.name],
@@ -207,10 +224,12 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
               const labelY = (start.y + end.y) / 2 - 2 + (artery.labelOffsetY ?? 0);
 
               const isConnected = hoveredDistrict === artery.from || hoveredDistrict === artery.to;
+              const isFocused = focusCorridorSet.has(artery.label as RoadCorridor);
               const routeClass = [
                 "geo-atlas__route",
+                hasFocus && isFocused ? "geo-atlas__route--focus" : "",
                 hoveredDistrict && isConnected ? "geo-atlas__route--highlight" : "",
-                hoveredDistrict && !isConnected ? "geo-atlas__route--dim" : "",
+                (hasFocus && !isFocused) || (hoveredDistrict && !isConnected) ? "geo-atlas__route--dim" : "",
               ].filter(Boolean).join(" ");
 
               return (
@@ -235,7 +254,11 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
             return (
               <article
                 key={district.name}
-                className={`geo-atlas__district geo-atlas__district--${district.layout.tone}`}
+                className={[
+                  "geo-atlas__district",
+                  `geo-atlas__district--${district.layout.tone}`,
+                  hasFocus && !focusDistrictSet.has(district.name) ? "geo-atlas__district--dim" : "",
+                ].filter(Boolean).join(" ")}
                 style={{ left: `${district.layout.x}%`, top: `${district.layout.y}%` }}
                 data-testid={`district-node-${district.slug}`}
                 onMouseEnter={() => setHoveredDistrict(district.name)}
@@ -261,19 +284,27 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
               <button
                 key={marker.id}
                 type="button"
-                className={`geo-atlas__marker${marker.active ? " geo-atlas__marker--active" : ""}`}
+                className={[
+                  "geo-atlas__marker",
+                  marker.active ? "geo-atlas__marker--active" : "",
+                  marker.tone ? `geo-atlas__marker--${marker.tone}` : "",
+                  hasFocus && !marker.active && !focusDistrictSet.has(marker.district) ? "geo-atlas__marker--dim" : "",
+                ].filter(Boolean).join(" ")}
                 style={{
                   left: `calc(${layout.x}% + ${marker.offsetX ?? 0}px)`,
                   top: `calc(${layout.y}% + ${marker.offsetY ?? 0}px)`,
                 }}
                 onClick={marker.onClick}
                 aria-pressed={marker.active}
+                aria-label={marker.title ?? marker.label}
                 title={marker.title ?? marker.label}
               >
                 <span className="geo-atlas__marker-pin" aria-hidden="true">
                   📍
                 </span>
-                <span className="geo-atlas__marker-label">{marker.label}</span>
+                {(showMarkerLabels === "all" || marker.active) && (
+                  <span className="geo-atlas__marker-label">{marker.label}</span>
+                )}
               </button>
             );
           })}
@@ -295,19 +326,27 @@ export function GeoAtlas({ compact = false, className, markers = [], corridors =
               <button
                 key={marker.id}
                 type="button"
-                className={`geo-atlas__marker${marker.active ? " geo-atlas__marker--active" : ""}`}
+                className={[
+                  "geo-atlas__marker",
+                  marker.active ? "geo-atlas__marker--active" : "",
+                  marker.tone ? `geo-atlas__marker--${marker.tone}` : "",
+                  hasFocus && !marker.active && !focusCorridorSet.has(marker.corridor) ? "geo-atlas__marker--dim" : "",
+                ].filter(Boolean).join(" ")}
                 style={{
                   left: `calc(${left}% + ${marker.offsetX ?? 0}px)`,
                   top: `calc(${top}% + ${marker.offsetY ?? 0}px)`,
                 }}
                 onClick={marker.onClick}
                 aria-pressed={marker.active}
+                aria-label={marker.title ?? marker.label}
                 title={marker.title ?? marker.label}
               >
                 <span className="geo-atlas__marker-pin" aria-hidden="true">
                   🛣️
                 </span>
-                <span className="geo-atlas__marker-label">{marker.label}</span>
+                {(showMarkerLabels === "all" || marker.active) && (
+                  <span className="geo-atlas__marker-label">{marker.label}</span>
+                )}
               </button>
             );
           })}
