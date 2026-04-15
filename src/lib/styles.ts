@@ -11,6 +11,7 @@ const LEGACY_STYLE_REMAP: Record<string, string> = {
 };
 
 const COMBINED_ARCHETYPE_STYLES: Partial<Record<Archetype, Style>> = {
+  "The Knights Technarchy": "Ex Military",
   Qu111s: "Corporate",
   "D4rk $pider": "Punk Rocker",
   "The Asclepians": "Ex Military",
