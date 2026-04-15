@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { CardPayload, Rarity, Style, District, CardPrompts, Gender, AgeGroup, BodyType, HairLength, HairColor, SkinTone, FaceCharacter, ShoeStyle } from "../lib/types";
+import type { Archetype, CardPayload, Rarity, Style, District, CardPrompts, Gender, AgeGroup, BodyType, HairLength, HairColor, SkinTone, FaceCharacter, ShoeStyle } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
@@ -9,7 +9,7 @@ import { FORGE_ARCHETYPE_OPTIONS } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
-import { ACTIVE_STYLES } from "../lib/styles";
+import { ACTIVE_STYLES, getCombinedStyleForArchetype, resolveArchetypeStyle } from "../lib/styles";
 import { sfxClick } from "../lib/sfx";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
@@ -69,7 +69,7 @@ export function EditCard() {
       setPrompts({
         archetype: original.prompts.archetype,
         rarity: original.prompts.rarity as Rarity,
-        style: original.prompts.style as Style,
+        style: resolveArchetypeStyle(original.prompts.archetype, original.prompts.style),
         district: original.prompts.district as District,
         accentColor: original.prompts.accentColor,
         gender: (original.prompts.gender as Gender) ?? "Non-binary",
@@ -101,10 +101,19 @@ export function EditCard() {
     setPrompts((p) => p ? { ...p, [key]: val } : p);
     setSaved(false);
   };
+  const setArchetype = (archetype: Archetype) => {
+    setPrompts((current) => current ? {
+      ...current,
+      archetype,
+      style: resolveArchetypeStyle(archetype, current.style),
+    } : current);
+    setSaved(false);
+  };
 
   const handlePreview = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const newCard = generateCard(prompts);
+    const previewPrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
+    const newCard = generateCard(previewPrompts);
     const merged: CardPayload = {
       ...newCard,
       id: original.id,
@@ -140,11 +149,15 @@ export function EditCard() {
 
       <div className="forge-layout">
         <div className="forge-form">
+          {(() => {
+            const combinedStyle = getCombinedStyleForArchetype(prompts.archetype);
+            return (
+              <>
           <div className="form-group">
             <label>Cover Identity</label>
             <div className="pill-group">
               {FORGE_ARCHETYPE_OPTIONS.map((opt) => (
-                <button key={opt.value} className={`pill ${prompts.archetype === opt.value ? "selected" : ""}`} onClick={() => { sfxClick(); set("archetype", opt.value); }}>{opt.label}</button>
+                <button key={opt.value} className={`pill ${prompts.archetype === opt.value ? "selected" : ""}`} onClick={() => { sfxClick(); setArchetype(opt.value); }}>{opt.label}</button>
               ))}
             </div>
             <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
@@ -160,13 +173,21 @@ export function EditCard() {
           </div>
 
           <div className="form-group">
-            <label>Style</label>
+            <label>{combinedStyle ? "Style (combined with cover identity)" : "Style"}</label>
             <div className="pill-group">
-              {STYLES.map((s) => (
-                <button key={s} className={`pill ${prompts.style === s ? "selected" : ""}`} onClick={() => { sfxClick(); set("style", s); }}>{s}</button>
-              ))}
+              {combinedStyle ? (
+                <button type="button" className="pill selected">{combinedStyle}</button>
+              ) : (
+                STYLES.map((s) => (
+                  <button key={s} className={`pill ${prompts.style === s ? "selected" : ""}`} onClick={() => { sfxClick(); set("style", s); }}>{s}</button>
+                ))
+              )}
             </div>
+            {combinedStyle && <p className="form-hint">This cover identity now carries the {combinedStyle} style automatically.</p>}
           </div>
+              </>
+            );
+          })()}
 
           <div className="form-group">
             <label>District</label>

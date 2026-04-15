@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CardPrompts, CardPayload, Rarity, Style, District, Gender, AgeGroup, BodyType, Faction, HairLength, HairColor, SkinTone, FaceCharacter, ShoeStyle } from "../lib/types";
+import type { Archetype, CardPrompts, CardPayload, Rarity, Style, District, Gender, AgeGroup, BodyType, Faction, HairLength, HairColor, SkinTone, FaceCharacter, ShoeStyle } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
@@ -20,7 +20,7 @@ import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, 
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats, buildBoardImagePrompt } from "../lib/boardBuilder";
-import { ACTIVE_STYLES } from "../lib/styles";
+import { ACTIVE_STYLES, getCombinedStyleForArchetype, resolveArchetypeStyle } from "../lib/styles";
 import { GeoAtlas } from "../components/GeoAtlas";
 import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
 
@@ -150,6 +150,12 @@ export function CardForge() {
 
   const set = <K extends keyof CardPrompts>(key: K, val: CardPrompts[K]) =>
     setPrompts((p) => ({ ...p, [key]: val }));
+  const setArchetype = (archetype: Archetype) =>
+    setPrompts((current) => ({
+      ...current,
+      archetype,
+      style: resolveArchetypeStyle(archetype, current.style),
+    }));
 
   // ── Generate a single layer (background, character, or frame) ────────────
   const generateLayer = useCallback(
@@ -308,12 +314,13 @@ export function CardForge() {
     abortRef.current = controller;
     const { signal } = controller;
 
-    const displayArchetype = getForgeArchetypeLabel(prompts.archetype);
-    const secretFaction = resolveSecretFaction(prompts);
+    const forgePrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
+    const displayArchetype = getForgeArchetypeLabel(forgePrompts.archetype);
+    const secretFaction = resolveSecretFaction(forgePrompts);
     const generationPrompts =
       secretFaction === "D4rk $pider"
-        ? { ...prompts, archetype: "D4rk $pider" as const }
-        : prompts;
+        ? { ...forgePrompts, archetype: "D4rk $pider" as const }
+        : forgePrompts;
     const idNonce = `${user?.uid ?? "guest"}:${Date.now()}:${crypto.randomUUID()}`;
 
     // Generate card payload
@@ -352,7 +359,7 @@ export function CardForge() {
     }
 
     // Kick off all three layers in parallel
-    const bgPrompt    = buildBackgroundPrompt(prompts.district);
+    const bgPrompt    = buildBackgroundPrompt(forgePrompts.district);
     const charPrompt  = buildCharacterPrompt(generationPrompts);
     const framePrompt = buildFramePrompt(prompts.rarity);
 
@@ -565,6 +572,10 @@ export function CardForge() {
       <div className="forge-layout">
         {/* ── Left column: form controls ── */}
         <div className="forge-form">
+          {(() => {
+            const combinedStyle = getCombinedStyleForArchetype(prompts.archetype);
+            return (
+              <>
           <div className="form-group">
             <label>Cover Identity</label>
             <div className="pill-group">
@@ -572,7 +583,7 @@ export function CardForge() {
                 <button
                   key={opt.value}
                   className={`pill${prompts.archetype === opt.value ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("archetype", opt.value); }}
+                  onClick={() => { sfxClick(); setArchetype(opt.value); }}
                 >
                   {opt.label}
                 </button>
@@ -597,18 +608,27 @@ export function CardForge() {
           </div>
 
           <div className="form-group">
-            <label>Style</label>
+            <label>{combinedStyle ? "Style (combined with cover identity)" : "Style"}</label>
             <div className="pill-group">
-              {STYLES.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.style === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("style", opt); }}
-                >
-                  {opt}
+              {combinedStyle ? (
+                <button type="button" className="pill selected">
+                  {combinedStyle}
                 </button>
-              ))}
+              ) : (
+                STYLES.map((opt) => (
+                  <button
+                    key={opt}
+                    className={`pill${prompts.style === opt ? " selected" : ""}`}
+                    onClick={() => { sfxClick(); set("style", opt); }}
+                  >
+                    {opt}
+                  </button>
+                ))
+              )}
             </div>
+            {combinedStyle && (
+              <p className="form-hint">This cover identity now carries the {combinedStyle} style automatically.</p>
+            )}
           </div>
 
           <div className="form-group">
@@ -625,6 +645,9 @@ export function CardForge() {
               ))}
             </div>
           </div>
+              </>
+            );
+          })()}
 
           <div className="form-group">
             <label>Gender</label>

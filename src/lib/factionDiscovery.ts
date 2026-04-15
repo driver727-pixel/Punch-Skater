@@ -15,7 +15,6 @@ export const FORGE_ARCHETYPE_OPTIONS: ForgeArchetypeOption[] = [
   { value: "Hermes' Squirmies", label: "Blue collar worker" },
   { value: "UCPS", label: "Postal worker" },
   { value: "Iron Curtains", label: "Chef" },
-  { value: "Ne0n Legion", label: "Thief" },
 ];
 
 const ARCHETYPE_LABEL_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [option.value, option.label]));

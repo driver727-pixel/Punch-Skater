@@ -2,7 +2,7 @@ import type { Archetype, CardPayload, Style } from "./types";
 import { normalizeCardStats } from "./generator";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
-  Chef: "Union",
+  Chef: "Street",
   Ninja: "Ex Military",
   Hacker: "Punk Rocker",
   Military: "Ex Military",
@@ -11,6 +11,11 @@ const LEGACY_STYLE_REMAP: Record<string, string> = {
 const COMBINED_ARCHETYPE_STYLES: Partial<Record<Archetype, Style>> = {
   Qu111s: "Corporate",
   "D4rk $pider": "Punk Rocker",
+  "The Asclepians": "Ex Military",
+  "The Mesopotamian Society": "Off-grid",
+  "Hermes' Squirmies": "Union",
+  UCPS: "Olympic",
+  "Iron Curtains": "Street",
 };
 
 export const ACTIVE_STYLES: Style[] = [
