@@ -5729,6 +5729,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-radius: 18px;
   border: 1px solid rgba(0, 204, 255, 0.28);
   background:
+    radial-gradient(circle at top, rgba(0, 204, 255, 0.12), transparent 45%),
     linear-gradient(180deg, rgba(4, 10, 20, 0.98), rgba(9, 18, 34, 0.96));
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
@@ -5752,7 +5753,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-radius: 16px;
   border: 1px solid rgba(0, 204, 255, 0.18);
   background:
-    radial-gradient(circle at top, color-mix(in srgb, var(--board-preview-accent-bg, #00ff88) 26%, transparent), transparent 48%),
+    radial-gradient(circle at top, rgba(0, 255, 136, 0.18), transparent 48%),
     linear-gradient(180deg, rgba(4, 12, 24, 0.98), rgba(8, 20, 36, 0.98));
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
@@ -5786,9 +5787,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   inset: 8% 10%;
   border-radius: 50%;
   background:
-    radial-gradient(circle, color-mix(in srgb, var(--board-preview-accent-bg, #00ff88) 18%, transparent) 0%, transparent 70%);
+    radial-gradient(circle, rgba(0, 255, 136, 0.18) 0%, transparent 70%);
   filter: blur(28px);
   pointer-events: none;
+}
+
+@supports (background: radial-gradient(circle, color-mix(in srgb, white 50%, transparent), transparent)) {
+  .board-preview-grid__canvas {
+    background:
+      radial-gradient(circle at top, color-mix(in srgb, var(--board-preview-accent-bg, #00ff88) 26%, transparent), transparent 48%),
+      linear-gradient(180deg, rgba(4, 12, 24, 0.98), rgba(8, 20, 36, 0.98));
+  }
+
+  .board-preview-grid__canvas-glow {
+    background:
+      radial-gradient(circle, color-mix(in srgb, var(--board-preview-accent-bg, #00ff88) 18%, transparent) 0%, transparent 70%);
+  }
 }
 
 .board-preview-grid__layer {

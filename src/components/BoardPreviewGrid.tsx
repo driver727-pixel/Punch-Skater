@@ -62,7 +62,7 @@ export function BoardPreviewGrid({ urls, labels, className, accentColor = "#00ff
       src: urls.wheelsUrl,
       alt: labels?.wheels ?? "Wheels",
       label: labels?.wheels ?? "Wheels",
-      icon: "🟡",
+      icon: "🛞",
       slot: "Wheels",
       layerClassName: "board-preview-grid__layer board-preview-grid__layer--wheels",
     },
