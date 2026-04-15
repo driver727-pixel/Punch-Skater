@@ -158,6 +158,8 @@ export function Mission() {
   const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
   const [atlasFilter, setAtlasFilter] = useState<AtlasFilter>(DEFAULT_ATLAS_FILTER);
   const [hoveredMissionId, setHoveredMissionId] = useState<string | null>(null);
+  const [atlasCollapsed, setAtlasCollapsed] = useState(false);
+  const [selectorCollapsed, setSelectorCollapsed] = useState(false);
   const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(
     () => new Set(loadCompletedMissions()),
   );
@@ -496,54 +498,75 @@ export function Mission() {
       </div>
 
       <section className="mission-panel mission-panel--atlas">
-        <div className="mission-panel__header">
+        <button
+          type="button"
+          className="mission-panel__collapse-header"
+          aria-expanded={!atlasCollapsed}
+          onClick={() => { sfxClick(); setAtlasCollapsed((v) => !v); }}
+        >
           <div>
             <h2>District &amp; Corridor Operations Map</h2>
             <p className="page-sub">
               Missions now stage from district hubs and travel lines instead of treating The Roads like a district.
             </p>
           </div>
-        </div>
-        <div className="mission-atlas-toolbar" aria-label="Mission atlas filters">
-          <div className="mission-atlas-toolbar__filters" role="tablist" aria-label="Mission atlas views">
-            {ATLAS_FILTERS.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                role="tab"
-                aria-selected={atlasFilter === filter.id}
-                className={`mission-atlas-filter${atlasFilter === filter.id ? " mission-atlas-filter--active" : ""}`}
-                onClick={() => setAtlasFilter(filter.id)}
-                disabled={filter.id === "rideable" && !hasRunner}
-                title={filter.id === "rideable" && !hasRunner ? "Select a runner to filter rideable operations." : undefined}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-          <p className="mission-atlas-toolbar__summary">
-            Showing {visibleMissionCatalog.length} of {DISTRICT_MISSIONS.length} operations
-            {atlasFilter === "rideable" && hasRunner ? ` for ${missionPreview.runnerCard?.name}` : ""}.
-          </p>
-        </div>
-        <div className="mission-atlas-layout">
-          <GeoAtlas
-            compact
-            section="australia"
-            className="mission-atlas"
-            boardConfig={missionPreview.runnerCard?.board ?? null}
-            markers={missionMarkers}
-            corridors={missionCorridors}
-            showMarkerLabels="active"
-            focusDistricts={focusDistricts}
-            focusCorridors={focusCorridors}
-          />
-          <div className="mission-selector-grid">
-            {visibleMissionCatalog.length === 0 && (
-              <div className="mission-selector-empty">
-                No missions match this filter right now. Change the view or switch runners to open more routes.
+          <span className="mission-panel__collapse-icon" aria-hidden="true">{atlasCollapsed ? "▼" : "▲"}</span>
+        </button>
+        {!atlasCollapsed && (
+          <>
+            <div className="mission-atlas-toolbar" aria-label="Mission atlas filters">
+              <div className="mission-atlas-toolbar__filters" role="tablist" aria-label="Mission atlas views">
+                {ATLAS_FILTERS.map((filter) => (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={atlasFilter === filter.id}
+                    className={`mission-atlas-filter${atlasFilter === filter.id ? " mission-atlas-filter--active" : ""}`}
+                    onClick={() => setAtlasFilter(filter.id)}
+                    disabled={filter.id === "rideable" && !hasRunner}
+                    title={filter.id === "rideable" && !hasRunner ? "Select a runner to filter rideable operations." : undefined}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
               </div>
-            )}
+              <p className="mission-atlas-toolbar__summary">
+                Showing {visibleMissionCatalog.length} of {DISTRICT_MISSIONS.length} operations
+                {atlasFilter === "rideable" && hasRunner ? ` for ${missionPreview.runnerCard?.name}` : ""}.
+              </p>
+            </div>
+            <div className="mission-atlas-layout">
+              <GeoAtlas
+                compact
+                section="australia"
+                className="mission-atlas"
+                boardConfig={missionPreview.runnerCard?.board ?? null}
+                markers={missionMarkers}
+                corridors={missionCorridors}
+                showMarkerLabels="active"
+                focusDistricts={focusDistricts}
+                focusCorridors={focusCorridors}
+              />
+              <div className="mission-selector-panel">
+                <button
+                  type="button"
+                  className="mission-selector-panel__header"
+                  aria-expanded={!selectorCollapsed}
+                  onClick={() => { sfxClick(); setSelectorCollapsed((v) => !v); }}
+                >
+                  <span className="mission-selector-panel__title">
+                    Operations ({visibleMissionCatalog.length})
+                  </span>
+                  <span className="mission-panel__collapse-icon" aria-hidden="true">{selectorCollapsed ? "▼" : "▲"}</span>
+                </button>
+                {!selectorCollapsed && (
+                  <div className="mission-selector-grid">
+                    {visibleMissionCatalog.length === 0 && (
+                      <div className="mission-selector-empty">
+                        No missions match this filter right now. Change the view or switch runners to open more routes.
+                      </div>
+                    )}
             {visibleMissionCatalog.map(({ mission, accessible, blocked, wheelTypes, corridorBlocked: missionCorridorBlocked }) => {
               const isCompleted = completedMissionIds.has(mission.id);
               return (
@@ -601,8 +624,12 @@ export function Mission() {
                 </button>
               );
             })}
-          </div>
-        </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="mission-panel">
