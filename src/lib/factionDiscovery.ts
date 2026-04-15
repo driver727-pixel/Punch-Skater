@@ -11,7 +11,6 @@ export const FORGE_ARCHETYPE_OPTIONS: ForgeArchetypeOption[] = [
   { value: "D4rk $pider", label: "Hacker" },
   { value: "The Asclepians", label: "Humanitarian" },
   { value: "The Mesopotamian Society", label: "Archeologist" },
-  { value: "The Knights Technarchy", label: "Ninja" },
   { value: "Hermes' Squirmies", label: "Blue collar worker" },
   { value: "UCPS", label: "Postal worker" },
   { value: "Iron Curtains", label: "Chef" },

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Archetype, CardPrompts, CardPayload, Rarity, District, Gender, AgeGroup, BodyType, Faction, HairLength, HairColor, SkinTone, FaceCharacter, ShoeStyle } from "../lib/types";
+import type { Archetype, CardPrompts, CardPayload, Rarity, District, Gender, AgeGroup, BodyType, Faction, HairLength, SkinTone, FaceCharacter } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
@@ -27,15 +27,13 @@ import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
-const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];
-const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Stocky", "Heavy"];
+const AGE_GROUPS: AgeGroup[] = ["Adult", "Middle-aged", "Senior"];
+const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Heavy"];
 const HAIR_LENGTHS: HairLength[] = ["Bald", "Short", "Medium", "Long"];
-const HAIR_COLORS: HairColor[] = ["Black", "Brown", "Blonde", "Red", "Gray", "White", "Auburn", "Dyed Bright"];
-const SKIN_TONES: SkinTone[] = ["Very Light", "Light", "Medium Light", "Medium", "Medium Dark", "Dark", "Very Dark"];
-const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Asymmetric", "Rugged", "Baby-faced", "Gaunt", "Round-faced"];
-const SHOE_STYLES: ShoeStyle[] = ["Skate Shoes", "High Tops", "Chunky Sneakers", "Work Boots", "Trail Runners"];
+const SKIN_TONES: SkinTone[] = ["Light", "Medium", "Dark", "Very Dark"];
+const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Rugged"];
 
-const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
+const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#3366ff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
 // ── Image generation layer helpers ─────────────────────────────────────────────
 
@@ -94,10 +92,10 @@ export function CardForge() {
   const { addCard, cards } = useCollection();
   const { hasFaction, unlockFaction } = useFactionDiscovery();
   const [prompts, setPrompts] = useState<CardPrompts>({
-    archetype: "The Knights Technarchy", rarity: "Punch Skater", style: "Street",
+    archetype: "Qu111s", rarity: "Punch Skater", style: "Corporate",
     district: "Nightshade", accentColor: "#00ff88",
     gender: "Non-binary", ageGroup: "Adult", bodyType: "Athletic",
-    hairLength: "Short", hairColor: "Black", skinTone: "Medium", faceCharacter: "Conventional", shoeStyle: "Skate Shoes",
+    hairLength: "Short", skinTone: "Medium", faceCharacter: "Conventional",
   });
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [generated, setGenerated] = useState<CardPayload | null>(null);
@@ -679,21 +677,6 @@ export function CardForge() {
           </div>
 
           <div className="form-group">
-            <label>Hair Color</label>
-            <div className="pill-group">
-              {HAIR_COLORS.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.hairColor === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("hairColor", opt); }}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
             <label>Skin Tone</label>
             <div className="pill-group">
               {SKIN_TONES.map((opt) => (
@@ -724,22 +707,8 @@ export function CardForge() {
           </div>
 
           <div className="form-group">
-            <label>Shoes</label>
-            <div className="pill-group">
-              {SHOE_STYLES.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.shoeStyle === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("shoeStyle", opt); }}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
             <label>Accent Color</label>
+            <p className="form-hint">Accent color also drives hair color.</p>
             <div className="color-group">
               {ACCENT_PRESETS.map((c) => (
                 <button
@@ -750,12 +719,6 @@ export function CardForge() {
                   title={c}
                 />
               ))}
-              <input
-                type="color"
-                className="color-picker"
-                value={prompts.accentColor}
-                onChange={(e) => set("accentColor", e.target.value)}
-              />
             </div>
           </div>
 

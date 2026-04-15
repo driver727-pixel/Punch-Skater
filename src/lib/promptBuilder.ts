@@ -118,8 +118,8 @@ function describeAccentColor(accentColor?: string): string {
   return "hot pink";
 }
 
-function buildHairDescription(hairLength?: string, hairColor?: string, accentColor?: string): string {
-  if (!hairLength && !hairColor) return "";
+function buildHairDescription(hairLength?: string, accentColor?: string): string {
+  if (!hairLength) return "";
   if (hairLength === "Bald") return "Completely bald, clean-shaven head, no hair at all. ";
   const length =
     hairLength === "Buzzcut"   ? "very short buzzcut" :
@@ -128,19 +128,7 @@ function buildHairDescription(hairLength?: string, hairColor?: string, accentCol
     hairLength === "Long"      ? "long hair past the shoulders" :
     hairLength === "Very Long" ? "very long flowing hair reaching the waist" :
     /* fallback */               "hair";
-  const color =
-    hairColor === "Black"       ? "jet-black" :
-    hairColor === "Brown"       ? "dark brown" :
-    hairColor === "Blonde"      ? "bright blonde" :
-    hairColor === "Red"         ? "natural red / ginger" :
-    hairColor === "Gray"        ? "salt-and-pepper gray" :
-    hairColor === "White"       ? "stark white" :
-    hairColor === "Auburn"      ? "deep auburn" :
-    /* fallback */                "";
-  if (hairColor === "Dyed Bright") {
-    return `${length} dyed in a ${describeAccentColor(accentColor)} tone matching the selected accent color. `;
-  }
-  return color ? `${color} ${length}. ` : `${length}. `;
+  return `${length} dyed in a ${describeAccentColor(accentColor)} tone matching the selected accent color. `;
 }
 
 function buildSkinDescription(skinTone?: string): string {
@@ -169,17 +157,6 @@ function buildFaceDescription(faceCharacter?: string): string {
   return `${desc}. `;
 }
 
-function buildShoeDescription(shoeStyle?: string): string {
-  if (!shoeStyle) return "";
-  const desc =
-    shoeStyle === "Skate Shoes"    ? "worn-in skate shoes with flat grippy soles" :
-    shoeStyle === "High Tops"      ? "high-top skate sneakers with padded ankles" :
-    shoeStyle === "Chunky Sneakers"? "chunky retro sneakers with thick rubber soles" :
-    shoeStyle === "Work Boots"     ? "scuffed work boots with reinforced toes" :
-    /* Trail Runners */              "rugged trail runners with technical tread";
-  return `Footwear: ${desc}. `;
-}
-
 function buildAgeDescription(ageGroup: string): string {
   return ageGroup === "Young Adult" ? "adult in their mid-20s, fresh-faced but clearly mature" :
     ageGroup === "Adult"            ? "adult in their 30s, mature features with slight lines around the eyes" :
@@ -206,7 +183,7 @@ function buildBodyDescription(bodyType: string): string {
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
  * The character layer is only regenerated when archetype, style, gender,
- * ageGroup, bodyType, hairLength, hairColor, skinTone, faceCharacter, or shoeStyle changes
+ * ageGroup, bodyType, hairLength, accentColor, skinTone, or faceCharacter changes
  * (matching the `characterSeed` cache key). Changing district or rarity leaves
  * this layer untouched.
  */
@@ -226,12 +203,11 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
   const ageDesc = buildAgeDescription(prompts.ageGroup);
   const bodyDesc = buildBodyDescription(prompts.bodyType);
 
-  const hairDesc = buildHairDescription(prompts.hairLength, prompts.hairColor, prompts.accentColor);
+  const hairDesc = buildHairDescription(prompts.hairLength, prompts.accentColor);
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
-  const shoeDesc = buildShoeDescription(prompts.shoeStyle);
 
-  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${skinDesc}${faceDesc}${shoeDesc}`;
+  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${skinDesc}${faceDesc}`;
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
@@ -361,10 +337,9 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const ageDesc = buildAgeDescription(prompts.ageGroup);
   const bodyDesc = buildBodyDescription(prompts.bodyType);
 
-  const hairDesc = buildHairDescription(prompts.hairLength, prompts.hairColor, prompts.accentColor);
+  const hairDesc = buildHairDescription(prompts.hairLength, prompts.accentColor);
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
-  const shoeDesc = buildShoeDescription(prompts.shoeStyle);
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
@@ -373,7 +348,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     `Props: carrying courier gear, riding an all-terrain electric skateboard with big off-road wheels, lights and gear.`,
     `Performance note: character is alert and ready to move.`,
     `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}.`,
-    `${hairDesc}${skinDesc}${faceDesc}${shoeDesc}`,
+    `${hairDesc}${skinDesc}${faceDesc}`,
     `Mood: ${mood}.`,
     AGE_RESTRICTION,
     `Render goals: cinematic lighting, crisp detail, and realistic adult proportions.`,
