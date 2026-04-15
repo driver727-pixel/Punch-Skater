@@ -16,8 +16,9 @@ It is not part of the live card-rendering pipeline.
 
 ## BoardPreviewGrid images (`public/assets/boards/<category>/`)
 
-These are the **component grid preview** images shown in the composition box
-above the conveyor belts inside the board builder.
+These are the transparent component PNGs shown on the **assembly canvas**
+above the conveyor belts inside the board builder. The app layers the selected
+deck, drivetrain, motor, wheels, and battery together on one shared backdrop.
 
 ### How images are matched to components
 
@@ -108,4 +109,4 @@ public/assets/boards/battery/battery-slim-stealth-pack.png → Slim Stealth batt
 If no keyword match is found inside a folder the app picks a random image
 from that folder. The resolved public asset URLs also include a version query
 string so updated PNGs bypass stale browser caches. If no usable image exists,
-the tile shows an icon placeholder.
+the canvas shows a floating placeholder for the missing layer.
