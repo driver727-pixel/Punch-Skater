@@ -82,6 +82,7 @@ function buildRandomBoardConfig(currentConfig: BoardConfig): BoardConfig {
 /** Maximum number of automatic retries per layer when a cached URL fails to load. */
 const MAX_LAYER_RETRIES = 1;
 const CHARACTER_CACHE_VERSION = "v3-adult-realism";
+const BOARD_IMAGE_CACHE_VERSION = "v2-component-composite";
 const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
   imageSize: { width: 1088, height: 1536 },
   numInferenceSteps: 45,
@@ -469,7 +470,7 @@ export function CardForge() {
     // Board image layer — generate a single skateboard image from the combined
     // component descriptions.  The result is stored as boardImageUrl on the card.
     const boardPrompt = buildBoardImagePrompt(boardConfig);
-    const boardCacheKey = `board-img::${boardConfig.boardType}::${boardConfig.drivetrain}::${boardConfig.motor}::${boardConfig.wheels}::${boardConfig.battery}`;
+    const boardCacheKey = `board-img::${BOARD_IMAGE_CACHE_VERSION}::${boardConfig.boardType}::${boardConfig.drivetrain}::${boardConfig.motor}::${boardConfig.wheels}::${boardConfig.battery}`;
     const boardSeed = `${boardConfig.boardType}-${boardConfig.drivetrain}-${boardConfig.motor}-${boardConfig.wheels}-${boardConfig.battery}`;
 
     (async () => {
