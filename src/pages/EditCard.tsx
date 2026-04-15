@@ -136,6 +136,7 @@ export function EditCard() {
     setSaved(true);
     setTimeout(() => navigate("/collection"), 800);
   };
+  const combinedStyle = getCombinedStyleForArchetype(prompts.archetype);
 
   return (
     <div className="page">
@@ -149,10 +150,6 @@ export function EditCard() {
 
       <div className="forge-layout">
         <div className="forge-form">
-          {(() => {
-            const combinedStyle = getCombinedStyleForArchetype(prompts.archetype);
-            return (
-              <>
           <div className="form-group">
             <label>Cover Identity</label>
             <div className="pill-group">
@@ -185,9 +182,6 @@ export function EditCard() {
             </div>
             {combinedStyle && <p className="form-hint">This cover identity now carries the {combinedStyle} style automatically.</p>}
           </div>
-              </>
-            );
-          })()}
 
           <div className="form-group">
             <label>District</label>

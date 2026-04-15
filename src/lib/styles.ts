@@ -2,6 +2,8 @@ import type { Archetype, CardPayload, Style } from "./types";
 import { normalizeCardStats } from "./generator";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
+  // Legacy removed styles now inherit the active style bundled into the
+  // matching cover identity so old saved/imported cards follow the new wiring.
   Chef: "Street",
   Ninja: "Ex Military",
   Hacker: "Punk Rocker",

@@ -562,6 +562,7 @@ export function CardForge() {
       setDownloading(false);
     }
   }, [generated, layers, characterBlend]);
+  const combinedStyle = getCombinedStyleForArchetype(prompts.archetype);
 
   return (
     <div className="page">
@@ -572,10 +573,6 @@ export function CardForge() {
       <div className="forge-layout">
         {/* ── Left column: form controls ── */}
         <div className="forge-form">
-          {(() => {
-            const combinedStyle = getCombinedStyleForArchetype(prompts.archetype);
-            return (
-              <>
           <div className="form-group">
             <label>Cover Identity</label>
             <div className="pill-group">
@@ -645,9 +642,6 @@ export function CardForge() {
               ))}
             </div>
           </div>
-              </>
-            );
-          })()}
 
           <div className="form-group">
             <label>Gender</label>
