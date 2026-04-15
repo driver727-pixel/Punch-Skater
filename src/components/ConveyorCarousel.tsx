@@ -12,6 +12,8 @@
 
 import { useEffect, useRef, useCallback } from "react";
 
+const SCROLL_SYNC_DEBOUNCE_MS = 120;
+
 export interface CarouselItem {
   value: string;
   label: string;
@@ -41,6 +43,17 @@ export function ConveyorCarousel({
   const trackRef = useRef<HTMLDivElement>(null);
   // Track which item is visually centered (may differ from `selected` mid-scroll).
   const selectionFrameRef = useRef<number | null>(null);
+  const initialSyncDoneRef = useRef(false);
+  const syncingScrollRef = useRef(false);
+  const scrollSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const releaseScrollSync = useCallback(() => {
+    if (scrollSyncTimeoutRef.current !== null) clearTimeout(scrollSyncTimeoutRef.current);
+    scrollSyncTimeoutRef.current = setTimeout(() => {
+      syncingScrollRef.current = false;
+      scrollSyncTimeoutRef.current = null;
+    }, SCROLL_SYNC_DEBOUNCE_MS);
+  }, []);
 
   /** Derive which item index is closest to the center of the scroll container. */
   const getCenteredIndex = useCallback(() => {
@@ -66,6 +79,11 @@ export function ConveyorCarousel({
 
   /** When the container scrolls, debounce and fire onSelect for the centered item. */
   const handleScroll = useCallback(() => {
+    if (syncingScrollRef.current) {
+      releaseScrollSync();
+      return;
+    }
+
     if (selectionFrameRef.current !== null) cancelAnimationFrame(selectionFrameRef.current);
     selectionFrameRef.current = requestAnimationFrame(() => {
       selectionFrameRef.current = null;
@@ -77,10 +95,10 @@ export function ConveyorCarousel({
         }
       }
     });
-  }, [getCenteredIndex, items, onSelect, selected]);
+  }, [getCenteredIndex, items, onSelect, releaseScrollSync, selected]);
 
   /** Scroll a specific item into the snap position (center). */
-  const scrollToIndex = useCallback((idx: number) => {
+  const scrollToIndex = useCallback((idx: number, behavior: ScrollBehavior = "smooth") => {
     const track = trackRef.current;
     if (!track) return;
     // Children layout: [spacer, item0, item1, ..., itemN, spacer]
@@ -89,17 +107,24 @@ export function ConveyorCarousel({
     if (!child) return;
     const targetScrollLeft =
       child.offsetLeft - track.clientWidth / 2 + child.offsetWidth / 2;
-    track.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
-  }, []);
+    if (Math.abs(track.scrollLeft - targetScrollLeft) < 1) return;
+    syncingScrollRef.current = true;
+    releaseScrollSync();
+    track.scrollTo({ left: targetScrollLeft, behavior });
+  }, [releaseScrollSync]);
 
   /** On mount / whenever `selected` changes externally, scroll to match. */
   useEffect(() => {
     const idx = items.findIndex((it) => it.value === selected);
-    if (idx >= 0) scrollToIndex(idx);
+    if (idx >= 0) {
+      scrollToIndex(idx, initialSyncDoneRef.current ? "smooth" : "auto");
+      initialSyncDoneRef.current = true;
+    }
   }, [selected, items, scrollToIndex]);
 
   useEffect(() => () => {
     if (selectionFrameRef.current !== null) cancelAnimationFrame(selectionFrameRef.current);
+    if (scrollSyncTimeoutRef.current !== null) clearTimeout(scrollSyncTimeoutRef.current);
   }, []);
 
   return (
