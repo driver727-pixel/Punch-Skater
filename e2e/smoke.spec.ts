@@ -60,6 +60,26 @@ test.describe('Home page (Card Forge)', () => {
     await expect(page.getByRole('img', { name: /torque 6374/i })).toBeVisible();
   });
 
+  test('syncs the forge overmap with district selection', async ({ page }) => {
+    await page.goto('/');
+
+    const districtGroup = page
+      .locator('.form-group')
+      .filter({ has: page.locator('label', { hasText: 'District' }) });
+    const rideableBadge = page.locator('.geo-atlas__callout-pill').filter({ hasText: /districts rideable now/i }).first();
+
+    await expect(rideableBadge).toHaveText(/3\/6 districts rideable now/i);
+
+    await page.getByRole('button', { name: /solid rubber puncture proof/i }).click();
+    await expect(rideableBadge).toHaveText(/5\/6 districts rideable now/i);
+
+    await districtGroup.getByRole('button', { name: /^Glass City$/ }).click();
+
+    await expect(districtGroup.getByRole('button', { name: /^Glass City$/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.geo-atlas__inspection-title').first()).toHaveText('Glass City');
+    await expect(page.locator('.geo-atlas__callout-pill').first()).toContainText('Selected setup');
+  });
+
   test('random punch skater button randomizes character and board selections', async ({ page }) => {
     await page.goto('/');
 

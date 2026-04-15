@@ -529,7 +529,9 @@ export function Mission() {
         <div className="mission-atlas-layout">
           <GeoAtlas
             compact
+            section="australia"
             className="mission-atlas"
+            boardConfig={missionPreview.runnerCard?.board ?? null}
             markers={missionMarkers}
             corridors={missionCorridors}
             showMarkerLabels="active"

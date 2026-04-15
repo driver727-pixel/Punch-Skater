@@ -832,9 +832,18 @@ export function CardForge() {
               🗺 Open Australia map
             </button>
              <div className="forge-board-layout">
-              <aside className="forge-board-map-shell" aria-label="Punch Skater Australia map">
-                <GeoAtlas compact section="australia" />
-              </aside>
+               <aside className="forge-board-map-shell" aria-label="Punch Skater Australia map">
+                 <GeoAtlas
+                   compact
+                   section="australia"
+                   boardConfig={boardConfig}
+                   selectedDistrict={prompts.district}
+                   onDistrictSelect={(district) => {
+                     sfxClick();
+                     set("district", district);
+                   }}
+                 />
+               </aside>
               <div className="forge-board-builder-shell">
                 <BoardBuilder
                   value={boardConfig}
@@ -1011,7 +1020,16 @@ export function CardForge() {
               ✕
             </button>
           </div>
-          <GeoAtlas compact />
+          <GeoAtlas
+            compact
+            section="australia"
+            boardConfig={boardConfig}
+            selectedDistrict={prompts.district}
+            onDistrictSelect={(district) => {
+              sfxClick();
+              set("district", district);
+            }}
+          />
         </aside>
       </div>
 
