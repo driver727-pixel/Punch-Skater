@@ -59,6 +59,53 @@ test.describe('Home page (Card Forge)', () => {
     await expect(torqueMotor).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('img', { name: /torque 6374/i })).toBeVisible();
   });
+
+  test('random punch skater button randomizes character and board selections', async ({ page }) => {
+    await page.addInitScript(() => {
+      const sequence = [
+        0.99, // both
+        0.5,  // archetype -> Archeologist
+        0.9,  // rarity -> Legendary
+        0.4,  // district -> Batteryville
+        0.1,  // gender -> Woman
+        0.9,  // age -> Senior
+        0.9,  // body -> Heavy
+        0.9,  // hair -> Long
+        0.9,  // skin -> Very Dark
+        0.6,  // face -> Scarred
+        0.6,  // accent -> #ffaa00
+        0.6,  // board type -> Mountain
+        0.4,  // drivetrain -> 4WD (only option)
+        0.9,  // motor -> Outrunner
+        0.9,  // wheels -> Rubber
+        0.2,  // battery -> TopPeli (only option)
+      ];
+      const originalRandom = Math.random;
+      Math.random = () => sequence.shift() ?? originalRandom();
+    });
+
+    await page.goto('/');
+
+    const randomButton = page.getByTestId('random-punch-skater-button');
+    await expect(randomButton).toHaveAttribute('title', /character loadout, the board loadout, or both/i);
+
+    await randomButton.click();
+
+    await expect(page.getByRole('button', { name: /^Archeologist$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Legendary$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Batteryville$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Woman$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Senior$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Heavy$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Long$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Very Dark$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /^Scarred$/i })).toHaveClass(/selected/);
+    await expect(page.getByRole('button', { name: /mountain downhill specialist/i })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: /4wd all four pushing/i })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: /outrunner 6396 race-grade power/i })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: /solid rubber puncture proof/i })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: /top-mounted peli case rugged and waterproof/i })).toHaveAttribute('aria-pressed', 'true');
+  });
 });
 
 // ── Login page ────────────────────────────────────────────────────────────────

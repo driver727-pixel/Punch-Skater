@@ -665,6 +665,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 20px;
   align-items: start;
 }
+
+.forge-quick-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+
+.forge-randomize-button {
+  width: auto;
+  max-width: 100%;
+}
+
 @media (max-width: 1180px) {
   .forge-layout {
     grid-template-columns: 1fr;

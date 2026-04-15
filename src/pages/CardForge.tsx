@@ -19,7 +19,7 @@ import { downloadCardAsJpg } from "../services/cardDownload";
 import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, resolveSecretFaction } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
-import { calculateBoardStats, buildBoardImagePrompt } from "../lib/boardBuilder";
+import { BOARD_TYPE_OPTIONS, calculateBoardStats, buildBoardImagePrompt, getAllowedComponents } from "../lib/boardBuilder";
 import { resolveArchetypeStyle } from "../lib/styles";
 import { GeoAtlas } from "../components/GeoAtlas";
 import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
@@ -32,8 +32,27 @@ const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Heavy"];
 const HAIR_LENGTHS: HairLength[] = ["Bald", "Short", "Medium", "Long"];
 const SKIN_TONES: SkinTone[] = ["Light", "Medium", "Dark", "Very Dark"];
 const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Rugged"];
+const BOARD_TYPES = BOARD_TYPE_OPTIONS.map((option) => option.value);
+const RANDOM_LOADOUT_SCOPES = ["character", "board", "both"] as const;
+const RANDOM_PUNCH_SKATER_TOOLTIP = "Randomizes the Character loadout, the Board loadout, or both with one click.";
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#3366ff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
+
+function getRandomItem<T>(items: readonly T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function buildRandomBoardConfig(): BoardConfig {
+  const boardType = getRandomItem(BOARD_TYPES);
+  const allowed = getAllowedComponents(boardType);
+  return {
+    boardType,
+    drivetrain: getRandomItem(allowed.drivetrains),
+    motor: getRandomItem(allowed.motors),
+    wheels: getRandomItem(allowed.wheels),
+    battery: getRandomItem(allowed.batteries),
+  };
+}
 
 // ── Image generation layer helpers ─────────────────────────────────────────────
 
@@ -561,11 +580,53 @@ export function CardForge() {
     }
   }, [generated, layers, characterBlend]);
 
+  const handleRandomPunchSkater = useCallback(() => {
+    sfxClick();
+    const scope = getRandomItem(RANDOM_LOADOUT_SCOPES);
+
+    if (scope === "character" || scope === "both") {
+      setPrompts((current) => {
+        const archetype = getRandomItem(FORGE_ARCHETYPE_OPTIONS).value;
+        return {
+          ...current,
+          archetype,
+          style: resolveArchetypeStyle(archetype, current.style),
+          rarity: getRandomItem(RARITIES),
+          district: getRandomItem(DISTRICTS),
+          accentColor: getRandomItem(ACCENT_PRESETS),
+          gender: getRandomItem(GENDERS),
+          ageGroup: getRandomItem(AGE_GROUPS),
+          bodyType: getRandomItem(BODY_TYPES),
+          hairLength: getRandomItem(HAIR_LENGTHS),
+          skinTone: getRandomItem(SKIN_TONES),
+          faceCharacter: getRandomItem(FACE_CHARACTERS),
+        };
+      });
+    }
+
+    if (scope === "board" || scope === "both") {
+      setBoardConfig(buildRandomBoardConfig());
+    }
+  }, []);
+
   return (
     <div className="page">
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <h1 className="page-title">CARD FORGE</h1>
       <p className="page-sub">Configure your Sk8r and forge a unique card</p>
+      <div className="forge-quick-actions">
+        <button
+          type="button"
+          className="btn-outline btn-sm forge-randomize-button"
+          onClick={handleRandomPunchSkater}
+          disabled={forging || isAnyLayerLoading}
+          title={RANDOM_PUNCH_SKATER_TOOLTIP}
+          aria-label={`Random Punch Skater. ${RANDOM_PUNCH_SKATER_TOOLTIP}`}
+          data-testid="random-punch-skater-button"
+        >
+          Random Punch Skater
+        </button>
+      </div>
 
       <div className="forge-layout">
         {/* ── Left column: form controls ── */}
