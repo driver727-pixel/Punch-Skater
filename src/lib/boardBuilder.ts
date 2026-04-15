@@ -11,6 +11,8 @@
  *   4. Battery     — SlimStealth · DoubleStack · TopPeli
  */
 
+import { withBoardComponentAssetVersion } from "./boardAssetVersion";
+
 export type BoardType = "Street" | "AT" | "Mountain" | "Surf" | "Slider";
 export type Drivetrain = "Belt" | "Hub" | "Gear" | "4WD";
 export type MotorType = "Micro" | "Standard" | "Torque" | "Outrunner";
@@ -564,11 +566,11 @@ export interface BoardComponentImageUrls {
 export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentImageUrls {
   const normalizedConfig = normalizeBoardConfig(config);
   return {
-    deckUrl:       `/assets/boards/deck/${normalizedConfig.boardType}.png`,
-    drivetrainUrl: `/assets/boards/drivetrain/${normalizedConfig.drivetrain}.png`,
-    motorUrl:      `/assets/boards/motor/${normalizedConfig.motor}.png`,
-    wheelsUrl:     `/assets/boards/wheels/${normalizedConfig.wheels}.png`,
-    batteryUrl:    `/assets/boards/battery/${normalizedConfig.battery}.png`,
+    deckUrl:       withBoardComponentAssetVersion(`/assets/boards/deck/${normalizedConfig.boardType}.png`),
+    drivetrainUrl: withBoardComponentAssetVersion(`/assets/boards/drivetrain/${normalizedConfig.drivetrain}.png`),
+    motorUrl:      withBoardComponentAssetVersion(`/assets/boards/motor/${normalizedConfig.motor}.png`),
+    wheelsUrl:     withBoardComponentAssetVersion(`/assets/boards/wheels/${normalizedConfig.wheels}.png`),
+    batteryUrl:    withBoardComponentAssetVersion(`/assets/boards/battery/${normalizedConfig.battery}.png`),
   };
 }
 

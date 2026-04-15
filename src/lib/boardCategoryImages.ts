@@ -1,17 +1,17 @@
 /**
  * boardCategoryImages.ts
  *
- * Discovers all PNG images committed to the per-category board asset folders
- * under `src/assets/boards/` at build time via Vite's `import.meta.glob`.
+ * Uses the curated PNG images in `public/assets/boards/<category>/` for the
+ * board preview grid.
  *
  * How to add images:
  *   1. Drop any `.png` file into the matching category folder:
- *        src/assets/boards/motor/        ← motor photos
- *        src/assets/boards/deck/         ← deck photos
- *        src/assets/boards/drivetrain/   ← drivetrain photos
- *        src/assets/boards/wheels/       ← wheel photos
- *        src/assets/boards/battery/      ← battery photos
- *   2. Commit the file and rebuild — Vite will automatically pick it up.
+ *        public/assets/boards/motor/        ← motor photos
+ *        public/assets/boards/deck/         ← deck photos
+ *        public/assets/boards/drivetrain/   ← drivetrain photos
+ *        public/assets/boards/wheels/       ← wheel photos
+ *        public/assets/boards/battery/      ← battery photos
+ *   2. Commit the file and redeploy so browsers can fetch the refreshed PNGs.
  *
  * File names should contain a keyword that identifies the component they
  * represent (e.g. `carbon-fiber.png` for the Street deck, `5055-motor.png`
@@ -22,51 +22,61 @@
  * `getRandomCategoryImage` is kept for backward compatibility and will pick
  * any image from the folder at random.
  *
- * Note: Files placed in `public/assets/boards/<category>/` with names that
- * exactly match the option value (e.g. `Standard.png`) are served directly
- * by the browser and will be shown by the Tile component as a first-choice
- * URL.  The glob-based selection from `src/assets/boards/` takes priority
- * and acts as the discovery layer for files with keyword-based names.
+ * The preview grid now resolves directly from `public/assets/boards/` so the
+ * latest uploaded transparent PNGs are always preferred over older bundled
+ * source assets.
  */
 
-// ── Build-time image discovery (Vite import.meta.glob) ────────────────────────
-// Each glob returns Record<filePath, defaultExport> where the default export
-// for a PNG is the hashed public URL produced by Vite.
-// The file path key is used for keyword matching; the value is the URL.
+import { withBoardComponentAssetVersion } from "./boardAssetVersion";
 
-const deckGlob = import.meta.glob<string>(
-  "../assets/boards/deck/*.png",
-  { eager: true, import: "default" },
-);
+function createCategoryImageMap(
+  category: string,
+  filenames: readonly string[],
+): Record<string, string> {
+  return Object.fromEntries(
+    filenames.map((filename) => {
+      const path = `/assets/boards/${category}/${filename}`;
+      return [path, withBoardComponentAssetVersion(path)];
+    }),
+  );
+}
 
-const drivetrainGlob = import.meta.glob<string>(
-  "../assets/boards/drivetrain/*.png",
-  { eager: true, import: "default" },
-);
-
-const motorGlob = import.meta.glob<string>(
-  "../assets/boards/motor/*.png",
-  { eager: true, import: "default" },
-);
-
-const wheelsGlob = import.meta.glob<string>(
-  "../assets/boards/wheels/*.png",
-  { eager: true, import: "default" },
-);
-
-const batteryGlob = import.meta.glob<string>(
-  "../assets/boards/battery/*.png",
-  { eager: true, import: "default" },
-);
-
-// ── Category glob maps (path → url) ───────────────────────────────────────────
+// ── Category image maps (path → url) ──────────────────────────────────────────
 
 const CATEGORY_GLOBS = {
-  deck:       deckGlob,
-  drivetrain: drivetrainGlob,
-  motor:      motorGlob,
-  wheels:     wheelsGlob,
-  battery:    batteryGlob,
+  deck: createCategoryImageMap("deck", [
+    "street.png",
+    "street-carbon.png",
+    "mt-board.png",
+    "at-bamboo.png",
+    "surf-skate.png",
+  ]),
+  drivetrain: createCategoryImageMap("drivetrain", [
+    "gear-drive.png",
+    "4wd-drive.png",
+    "hub-drive.png",
+    "drivetrain-dual-belt-drive.png",
+  ]),
+  motor: createCategoryImageMap("motor", [
+    "6354-motor.png",
+    "6374-motor.png",
+    "5055-motor.png",
+    "6396-motor.png",
+  ]),
+  wheels: createCategoryImageMap("wheels", [
+    "pneumatic-wheels.png",
+    "cloud-wheels.png",
+    "poly-wheels.png",
+    "poly-urethane-wheels.png",
+    "solid-rubber.png",
+  ]),
+  battery: createCategoryImageMap("battery", [
+    "peli.png",
+    "battery-slim-stealth-pack.png",
+    "top-mount-battery.png",
+    "double-battery.png",
+    "slim-battery.png",
+  ]),
 } satisfies Record<string, Record<string, string>>;
 
 export type BoardCategory = keyof typeof CATEGORY_GLOBS;
