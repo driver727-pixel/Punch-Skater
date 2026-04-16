@@ -38,7 +38,7 @@ export function Lore() {
 
       <section className="lore-section">
         <h2 className="lore-heading">Australia Theater Map</h2>
-        <GeoAtlas />
+        <GeoAtlas districtInteractionMode="press" />
       </section>
 
       {/* ── Districts / corridors ───────────────────────────────────────── */}
