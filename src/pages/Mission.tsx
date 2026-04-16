@@ -757,7 +757,7 @@ export function Mission() {
                       resetMissionSession();
                     }}
                   >
-                    <CardThumbnail card={card} width={120} height={84} />
+                    <CardThumbnail card={card} width={120} height={168} />
                     <span className="card-name">{card.identity.name}</span>
                     <span className="card-sub">{getDisplayedArchetype(card)}</span>
                   </button>

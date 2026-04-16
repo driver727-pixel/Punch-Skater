@@ -290,7 +290,7 @@ export function Trades() {
             <div className="trades-list">
               {inbox.map((trade) => (
                 <div key={trade.id} className="trade-item">
-                  <CardArt card={trade.offeredCard} width={80} height={56} />
+                  <CardArt card={trade.offeredCard} width={80} height={112} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
@@ -330,7 +330,7 @@ export function Trades() {
             <div className="trades-list">
               {outbox.map((trade) => (
                 <div key={trade.id} className="trade-item">
-                  <CardArt card={trade.offeredCard} width={80} height={56} />
+                  <CardArt card={trade.offeredCard} width={80} height={112} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
@@ -378,7 +378,7 @@ export function Trades() {
               {market.map((trade) => (
                 <div key={trade.id} className="market-card">
                   <div className="market-card-art">
-                    <CardArt card={trade.offeredCard} width={100} height={70} />
+                    <CardArt card={trade.offeredCard} width={100} height={140} />
                   </div>
                   <div className="market-card-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
