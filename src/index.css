@@ -3849,7 +3849,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 @media (max-width: 720px) {
   .geo-atlas__map--australia {
-    min-height: 540px;
+    min-height: 400px;
+  }
+
+  .geo-atlas--compact .geo-atlas__map--australia {
+    min-height: clamp(220px, 55vw, 380px);
   }
 
   .geo-atlas__district {
@@ -3895,7 +3899,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 
   .geo-atlas__map--australia {
-    min-height: 480px;
+    min-height: 300px;
+  }
+
+  .geo-atlas--compact .geo-atlas__map--australia {
+    min-height: clamp(180px, 48vw, 300px);
   }
 
   .geo-atlas__world-callout {
@@ -6782,6 +6790,60 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 16px;
   margin-bottom: 12px;
 }
+.mission-panel__collapse-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.mission-panel__collapse-header:hover .mission-panel__collapse-icon {
+  color: var(--accent);
+}
+.mission-panel__collapse-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  transition: color 0.15s;
+}
+.mission-selector-panel {
+  display: flex;
+  flex-direction: column;
+}
+.mission-selector-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  color: inherit;
+  width: 100%;
+  text-align: left;
+}
+.mission-selector-panel__header:hover {
+  border-color: rgba(0,204,255,0.25);
+  background: rgba(0,204,255,0.05);
+}
+.mission-selector-panel__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
 .mission-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7266,6 +7328,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .mission-panel__header {
     flex-direction: column;
   }
+  .mission-panel__collapse-header {
+    align-items: flex-start;
+  }
   .mission-grid {
     grid-template-columns: 1fr;
   }
@@ -7283,6 +7348,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
   .battle-outcome-rewards {
     grid-template-columns: 1fr;
+  }
+  .mission-selector-card {
+    padding: 12px;
+    gap: 6px;
+  }
+  .mission-selector-card__name {
+    font-size: 13px;
+  }
+  .mission-selector-card__tagline {
+    font-size: 11px;
+  }
+  .mission-selector-panel__header {
+    padding: 10px 12px;
   }
 }
 
