@@ -6712,6 +6712,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .conveyor__item-icon   { font-size: 18px; line-height: 1; }
+.conveyor__item-img    { width: 36px; height: 36px; object-fit: contain; object-position: center; }
 
 /* Disabled (incompatible) item */
 .conveyor__item--disabled {

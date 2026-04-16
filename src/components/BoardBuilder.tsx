@@ -4,12 +4,8 @@
  * Assembly-line board loadout builder powered by five stacked ConveyorCarousel
  * belts:  Decks (top) → Drivetrains → Motors → Wheels → Batteries (bottom).
  *
- * The live BoardPreviewGrid shows real product photos for each selected
- * component from per-category folders under `public/assets/boards/`. Images
- * are matched to the active selection by filename keyword — e.g.
- * `street-carbon.png` maps to the Street deck because the filename contains
- * "street"/"carbon", known Street keywords. Public asset URLs are versioned
- * so browsers fetch refreshed transparent PNG uploads instead of stale cache.
+ * Each conveyor belt item displays the real product PNG directly on the button,
+ * replacing the old emoji icon and the separate composite preview grid.
  *
  * A PowerSwitchButton at the bottom triggers a satisfying animation sequence
  * before firing the onSave callback to commit the board config and loadout
@@ -19,7 +15,7 @@
  * selections are automatically snapped to the first allowed value, and
  * disallowed carousel items are marked as disabled.
  */
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { BoardConfig, BoardLoadout } from "../lib/boardBuilder";
 import {
   BOARD_TYPE_OPTIONS,
@@ -29,16 +25,39 @@ import {
   BATTERY_OPTIONS,
   DEFAULT_BOARD_CONFIG,
   calculateBoardStats,
-  getBoardComponentImageUrls,
   enforceCompatibility,
   getAllowedComponents,
   validateBoardCompatibility,
 } from "../lib/boardBuilder";
-import { getMatchingCategoryImage } from "../lib/boardCategoryImages";
-import { BoardPreviewGrid } from "./BoardPreviewGrid";
 import { ConveyorCarousel } from "./ConveyorCarousel";
 import { PowerSwitchButton } from "./PowerSwitchButton";
 import type { CarouselItem } from "./ConveyorCarousel";
+
+// ── Board part PNG imports ─────────────────────────────────────────────────────
+// Deck
+import imgStreetCarbon    from "../assets/boards/deck/street-carbon.png";
+import imgAtBamboo        from "../assets/boards/deck/at-bamboo.png";
+import imgMtBoard         from "../assets/boards/deck/mt-board.png";
+import imgSurfSkate       from "../assets/boards/deck/surf-skate.png";
+// Drivetrain
+import imgBeltDrive       from "../assets/boards/drivetrain/drivetrain-dual-belt-drive.png";
+import imgHubDrive        from "../assets/boards/drivetrain/hub-drive.png";
+import imgGearDrive       from "../assets/boards/drivetrain/gear-drive.png";
+import img4wdDrive        from "../assets/boards/drivetrain/4wd-drive.png";
+// Motor
+import imgMotor5055       from "../assets/boards/motor/5055-motor.png";
+import imgMotor6354       from "../assets/boards/motor/6354-motor.png";
+import imgMotor6374       from "../assets/boards/motor/6374-motor.png";
+import imgMotor6396       from "../assets/boards/motor/6396-motor.png";
+// Wheels
+import imgPolyWheels      from "../assets/boards/wheels/poly-wheels.png";
+import imgPneumaticWheels from "../assets/boards/wheels/pneumatic-wheels.png";
+import imgSolidRubber     from "../assets/boards/wheels/solid-rubber.png";
+import imgCloudWheels     from "../assets/boards/wheels/cloud-wheels.png";
+// Battery
+import imgSlimStealth     from "../assets/boards/battery/battery-slim-stealth-pack.png";
+import imgDoubleStack     from "../assets/boards/battery/double-battery.png";
+import imgTopMountPeli    from "../assets/boards/battery/top-mount-battery.png";
 
 interface BoardBuilderProps {
   value: BoardConfig;
@@ -50,10 +69,45 @@ interface BoardBuilderProps {
 }
 
 // Map each option array into the slim shape ConveyorCarousel expects.
+const DECK_IMAGES: Record<string, string> = {
+  Street:   imgStreetCarbon,
+  AT:       imgAtBamboo,
+  Mountain: imgMtBoard,
+  Surf:     imgSurfSkate,
+};
+
+const DRIVETRAIN_IMAGES: Record<string, string> = {
+  Belt: imgBeltDrive,
+  Hub:  imgHubDrive,
+  Gear: imgGearDrive,
+  "4WD": img4wdDrive,
+};
+
+const MOTOR_IMAGES: Record<string, string> = {
+  Micro:     imgMotor5055,
+  Standard:  imgMotor6354,
+  Torque:    imgMotor6374,
+  Outrunner: imgMotor6396,
+};
+
+const WHEEL_IMAGES: Record<string, string> = {
+  Urethane:  imgPolyWheels,
+  Pneumatic: imgPneumaticWheels,
+  Rubber:    imgSolidRubber,
+  Cloud:     imgCloudWheels,
+};
+
+const BATTERY_IMAGES: Record<string, string> = {
+  SlimStealth: imgSlimStealth,
+  DoubleStack: imgDoubleStack,
+  TopPeli:     imgTopMountPeli,
+};
+
 const DECK_ITEMS: CarouselItem[] = BOARD_TYPE_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
+  imageSrc: DECK_IMAGES[o.value],
   tagline: o.tagline,
 }));
 
@@ -61,6 +115,7 @@ const DRIVETRAIN_ITEMS: CarouselItem[] = DRIVETRAIN_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
+  imageSrc: DRIVETRAIN_IMAGES[o.value],
   tagline: o.tagline,
 }));
 
@@ -68,6 +123,7 @@ const MOTOR_ITEMS: CarouselItem[] = MOTOR_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
+  imageSrc: MOTOR_IMAGES[o.value],
   tagline: o.tagline,
 }));
 
@@ -75,6 +131,7 @@ const WHEEL_ITEMS: CarouselItem[] = WHEEL_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
+  imageSrc: WHEEL_IMAGES[o.value],
   tagline: o.tagline,
 }));
 
@@ -82,12 +139,13 @@ const BATTERY_ITEMS: CarouselItem[] = BATTERY_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
+  imageSrc: BATTERY_IMAGES[o.value],
   tagline: o.tagline,
-}));
+}))
 
-export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuilderProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColor }: BoardBuilderProps) {
   // Animation phase flags — toggled in sequence on lock-in
-  const [surging, setSurging]   = useState(false);
   const [shaking, setShaking]   = useState(false);
   const [locked,  setLocked]    = useState(false);
   const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -96,8 +154,8 @@ export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuil
   useEffect(() => () => { timerRefs.current.forEach(clearTimeout); }, []);
 
   // Derive allowed component sets and compatibility errors from the current deck type
-  const allowed = useMemo(() => getAllowedComponents(value.boardType), [value.boardType]);
-  const compatErrors = useMemo(() => validateBoardCompatibility(value), [value]);
+  const allowed      = getAllowedComponents(value.boardType);
+  const compatErrors = validateBoardCompatibility(value);
 
   /**
    * Full lock-in animation sequence:
@@ -111,12 +169,9 @@ export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuil
     timerRefs.current.forEach(clearTimeout);
     timerRefs.current = [];
 
-    setSurging(false);
     setShaking(false);
 
     timerRefs.current.push(
-      setTimeout(() => setSurging(true),  100),
-      setTimeout(() => setSurging(false), 650),
       setTimeout(() => setShaking(true),  400),
       setTimeout(() => setShaking(false), 750),
       setTimeout(() => {
@@ -132,105 +187,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuil
     onChange(enforceCompatibility(next));
   }, [onChange]);
 
-  /**
-   * Builds the set of preview image URLs for the composition box.
-   *
-   * For each component slot we look for a PNG in `public/assets/boards/<category>/`
-   * whose filename contains a keyword matching the selected component value —
-   * e.g. `street-carbon.png` for the Street deck, `5055-motor.png` for the
-   * Micro motor. If multiple matching PNGs exist we randomly pick one of those
-   * matches. If no keyword match is found inside the folder a random image from
-   * that folder is used as a fallback, and if the folder is empty we fall back
-   * to the named static URL `public/assets/boards/<category>/<value>.png`.
-   */
-  const resolvePreviewUrl = useCallback((
-    category: Parameters<typeof getMatchingCategoryImage>[0],
-    selectedValue: string,
-    namedUrl: string,
-  ) => getMatchingCategoryImage(category, selectedValue) ?? namedUrl, []);
-
-  const buildPreviewUrls = useCallback((cfg: BoardConfig) => {
-    const named = getBoardComponentImageUrls(cfg);
-    return {
-      deckUrl:       resolvePreviewUrl("deck",       cfg.boardType,  named.deckUrl),
-      drivetrainUrl: resolvePreviewUrl("drivetrain", cfg.drivetrain, named.drivetrainUrl),
-      motorUrl:      resolvePreviewUrl("motor",      cfg.motor,      named.motorUrl),
-      wheelsUrl:     resolvePreviewUrl("wheels",     cfg.wheels,     named.wheelsUrl),
-      batteryUrl:    resolvePreviewUrl("battery",    cfg.battery,    named.batteryUrl),
-    };
-  }, [resolvePreviewUrl]);
-
-  const [previewUrls, setPreviewUrls] = useState(() => buildPreviewUrls(value));
-
-  // Only re-pick URLs for slots whose selected component actually changed so
-  // unrelated component changes do not reshuffle other preview layers.
-  const { boardType, drivetrain, motor, wheels, battery } = value;
-  const previousSelectionsRef = useRef({
-    boardType,
-    drivetrain,
-    motor,
-    wheels,
-    battery,
-  });
-
-  useEffect(() => {
-    const previous = previousSelectionsRef.current;
-    const current = { boardType, drivetrain, motor, wheels, battery };
-
-    if (
-      previous.boardType === current.boardType &&
-      previous.drivetrain === current.drivetrain &&
-      previous.motor === current.motor &&
-      previous.wheels === current.wheels &&
-      previous.battery === current.battery
-    ) {
-      return;
-    }
-
-    const named = getBoardComponentImageUrls(current);
-
-    setPreviewUrls((prev) => {
-      let next = prev;
-
-      if (previous.boardType !== current.boardType) {
-        const deckUrl = resolvePreviewUrl("deck", current.boardType, named.deckUrl);
-        next = next.deckUrl === deckUrl ? next : { ...next, deckUrl };
-      }
-
-      if (previous.drivetrain !== current.drivetrain) {
-        const drivetrainUrl = resolvePreviewUrl("drivetrain", current.drivetrain, named.drivetrainUrl);
-        next = next.drivetrainUrl === drivetrainUrl ? next : { ...next, drivetrainUrl };
-      }
-
-      if (previous.motor !== current.motor) {
-        const motorUrl = resolvePreviewUrl("motor", current.motor, named.motorUrl);
-        next = next.motorUrl === motorUrl ? next : { ...next, motorUrl };
-      }
-
-      if (previous.wheels !== current.wheels) {
-        const wheelsUrl = resolvePreviewUrl("wheels", current.wheels, named.wheelsUrl);
-        next = next.wheelsUrl === wheelsUrl ? next : { ...next, wheelsUrl };
-      }
-
-      if (previous.battery !== current.battery) {
-        const batteryUrl = resolvePreviewUrl("battery", current.battery, named.batteryUrl);
-        next = next.batteryUrl === batteryUrl ? next : { ...next, batteryUrl };
-      }
-
-      return next;
-    });
-
-    previousSelectionsRef.current = current;
-  }, [boardType, drivetrain, motor, wheels, battery, resolvePreviewUrl]);
-
-  const previewLabels = {
-    deck:       BOARD_TYPE_OPTIONS.find((o) => o.value === value.boardType)?.label ?? value.boardType,
-    drivetrain: DRIVETRAIN_OPTIONS.find((o) => o.value === value.drivetrain)?.label ?? value.drivetrain,
-    motor:      MOTOR_OPTIONS.find((o) => o.value === value.motor)?.label ?? value.motor,
-    wheels:     WHEEL_OPTIONS.find((o) => o.value === value.wheels)?.label ?? value.wheels,
-    battery:    BATTERY_OPTIONS.find((o) => o.value === value.battery)?.label ?? value.battery,
-  };
-
   // Mark disallowed carousel items so the UI can render them as disabled
   const drivetrainSet = new Set(allowed.drivetrains);
   const motorSet      = new Set(allowed.motors);
@@ -244,8 +200,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuil
 
   return (
     <div className={`board-builder${shaking ? " board-builder--shake" : ""}`}>
-      <div className="board-builder__columns">
-        <div className="board-builder__belt-col">
       {/* Belt 1 — Decks */}
       <ConveyorCarousel
         label="Decks"
@@ -303,17 +257,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor }: BoardBuil
             ✔ LOCKED IN
           </span>
         )}
-      </div>
-        </div>
-        <div className="board-builder__preview-col">
-          {/* Live board component preview — updates in real time */}
-          <BoardPreviewGrid
-            urls={previewUrls}
-            labels={previewLabels}
-            accentColor={accentColor}
-            className={`board-builder__preview${surging ? " board-preview-grid--surge" : ""}`}
-          />
-        </div>
       </div>
     </div>
   );

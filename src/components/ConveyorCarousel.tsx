@@ -18,6 +18,8 @@ export interface CarouselItem {
   value: string;
   label: string;
   icon: string;
+  /** Optional PNG image that replaces the emoji icon on the button. */
+  imageSrc?: string;
   tagline: string;
   /** When true the item is visually dimmed and cannot be selected. */
   disabled?: boolean;
@@ -163,7 +165,15 @@ export function ConveyorCarousel({
               aria-pressed={isSelected}
               aria-disabled={isDisabled}
             >
-              <span className="conveyor__item-icon">{item.icon}</span>
+              {item.imageSrc ? (
+                <img
+                  src={item.imageSrc}
+                  alt={item.label}
+                  className="conveyor__item-img"
+                />
+              ) : (
+                <span className="conveyor__item-icon">{item.icon}</span>
+              )}
               <span className="conveyor__item-name">{item.label}</span>
               <span className="conveyor__item-tagline">{item.tagline}</span>
             </button>
