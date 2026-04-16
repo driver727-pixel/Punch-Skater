@@ -25,7 +25,8 @@ const DECK_SLOT_CARD_WIDTH = 110;
 const DECK_SLOT_CARD_HEIGHT = 154;
 const DECK_PREVIEW_CARD_WIDTH = 80;
 const DECK_PREVIEW_CARD_HEIGHT = 112;
-const MOBILE_DECK_REORDER_DELAY_MS = 280;
+const MOBILE_LONG_PRESS_DELAY_MS = 280;
+const TOUCH_MOVEMENT_THRESHOLD_PX = 10;
 
 export function DeckBuilder() {
   const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck, moveDeck } = useDecks();
@@ -177,7 +178,7 @@ export function DeckBuilder() {
   const resolveDeckDropIndex = (clientX: number, clientY: number) => {
     const target = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-deck-index]");
     if (!target) return null;
-    const value = Number(target.dataset.deckIndex);
+    const value = Number.parseInt(target.dataset.deckIndex ?? "", 10);
     return Number.isNaN(value) ? null : value;
   };
 
@@ -227,14 +228,14 @@ export function DeckBuilder() {
       setDeckDragIdx(index);
       setDeckDragOver(index);
       setTouchDraggingDeckId(decks[index]?.id ?? null);
-    }, MOBILE_DECK_REORDER_DELAY_MS);
+    }, MOBILE_LONG_PRESS_DELAY_MS);
   };
 
   const handleDeckPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const state = deckTouchStateRef.current;
     if (!state || state.pointerId !== event.pointerId) return;
     if (!state.dragging) {
-      if (Math.hypot(event.clientX - state.startX, event.clientY - state.startY) > 10) {
+      if (Math.hypot(event.clientX - state.startX, event.clientY - state.startY) > TOUCH_MOVEMENT_THRESHOLD_PX) {
         clearDeckLongPressTimer();
         deckTouchStateRef.current = null;
       }
@@ -302,12 +303,12 @@ export function DeckBuilder() {
               </div>
             )}
 
-             <div className="deck-list">
+             <div className="deck-list" aria-describedby={decks.length > 0 ? "deck-reorder-hint" : undefined}>
                {decks.length === 0 && (
                  <p className="empty-text">No decks yet.</p>
                )}
                {decks.length > 0 && (
-                 <p className="deck-reorder-hint">Drag decks to reorder them. On mobile, long-press and drag.</p>
+                 <p id="deck-reorder-hint" className="deck-reorder-hint">Drag decks to reorder them. On mobile, long-press and drag.</p>
                )}
                {decks.map((deck, deckIndex) => (
                  <div

@@ -25,9 +25,19 @@ function sortDecks(decks: DeckPayload[]): DeckPayload[] {
     if (typeof aOrder === "number") return -1;
     if (typeof bOrder === "number") return 1;
 
-    const createdDiff = Date.parse(a.createdAt) - Date.parse(b.createdAt);
-    if (!Number.isNaN(createdDiff) && createdDiff !== 0) return createdDiff;
+    const aCreatedAt = Date.parse(a.createdAt);
+    const bCreatedAt = Date.parse(b.createdAt);
 
+    if (Number.isNaN(aCreatedAt) || Number.isNaN(bCreatedAt)) {
+      console.warn("Encountered deck with invalid createdAt while sorting deck order", {
+        aDeckId: a.id,
+        aCreatedAt: a.createdAt,
+        bDeckId: b.id,
+        bCreatedAt: b.createdAt,
+      });
+    } else if (aCreatedAt !== bCreatedAt) {
+      return aCreatedAt - bCreatedAt;
+    }
     return a.name.localeCompare(b.name);
   });
 }
@@ -56,7 +66,8 @@ export function useDecks() {
       const normalized = normalizeDeckOrder(incoming);
       setDecks(normalized);
 
-      if (incoming.some((deck) => deck.sortOrder !== normalized.find((candidate) => candidate.id === deck.id)?.sortOrder)) {
+      const sortOrderById = new Map(normalized.map((deck) => [deck.id, deck.sortOrder]));
+      if (incoming.some((deck) => deck.sortOrder !== sortOrderById.get(deck.id))) {
         void Promise.all(normalized.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch(console.error);
       }
     });
