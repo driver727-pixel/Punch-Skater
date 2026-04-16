@@ -86,7 +86,6 @@ npm run test:e2e
 
 ### Future content decisions already locked
 
-- [ ] Keep Electropolis as a lore/mission reveal only until its later playable rollout
 - [ ] Treat The Roads as a corridor gameplay layer where route events spawn, not as a forgeable district or standalone mission
 
 ### Nice-to-have immersion uploads
@@ -100,4 +99,4 @@ npm run test:e2e
 ## Known Follow-Ups
 
 - The retired BoardComposite pipeline should stay out of the live card flow unless it is deliberately rebuilt from scratch later.
-- Electropolis stays non-forgeable for now, while The Roads remain a separate route-event layer rather than a district selector.
+- The Roads remain a separate route-event layer rather than a district selector.

@@ -45,11 +45,11 @@ export function Lore() {
       <section className="lore-section">
         <h2 className="lore-heading">Districts, Corridors &amp; Reveals</h2>
         <p className="lore-body">
-          The Roads operate as a separate corridor gameplay layer, while Electropolis stays a future
-          playable reveal even though it already exists in the world fiction.
+          The Roads operate as a separate corridor gameplay layer where route-specific threats and
+          travel events erupt between district runs.
         </p>
         <div className="lore-grid">
-          {DISTRICT_LORE.map((d) => (
+          {DISTRICT_LORE.filter((district) => district.kind !== "hidden").map((d) => (
             <div key={d.name} className="lore-card">
               <div className="lore-card-header">
                 <span className="lore-card-name">{d.name}</span>

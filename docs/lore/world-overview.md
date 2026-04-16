@@ -7,7 +7,7 @@ Below Airaway, the ground-level infrastructure has been naturally repurposed:
 
 * **The Roads** are a dedicated courier corridor layer where route-specific events erupt: hijackings, raids, weather disasters, and other threats that only happen in transit.
 * **Underground tunnels** now serve as a vast network of shaded, intimate transit lanes, where a vibrant, close-knit community has established unique subterranean homes and hangouts.
-* **Key lower-city areas** include **Batteryville** (where protagonist Skids grew up), **The Grid** (where his parents worked), and **Electropolis** (a future playable reveal where city security, known as the "Fuzz," pushes skaters to designated transit corridors to maintain order).
+* **Key lower-city areas** include **Batteryville** (where protagonist Skids grew up) and **The Grid** (where his parents worked).
 * **The Nightshade (aka the Murk)** is a specific area featuring tunnels utilized by tight-knit, territorial skate crews for rapid transit and private meetings.
 * **Outside the main city complex** is a wood-based, agrarian forest settlement of **Ludites** who try to build without technology. The settlement resembles an Ewok village, featuring wooden boardwalks and tree trunks that the “Wooders” love for grinding. (They’re named that because of their insistence on exclusively using wood for their skateboard decks.)
 

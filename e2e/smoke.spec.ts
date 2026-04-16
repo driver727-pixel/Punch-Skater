@@ -206,6 +206,7 @@ test.describe('Lore page', () => {
     await expect(page.getByTestId('australia-overmap')).toBeVisible();
     await expect(page.getByTestId('district-node-airaway')).toContainText(/airaway/i);
     await expect(page.getByTestId('district-node-nightshade')).toContainText(/nightshade/i);
+    await expect(page.locator('.lore-grid')).not.toContainText(/electropolis/i);
     await expect(page.getByRole('list', { name: /arterial courier routes/i })).toContainText('Mag-Rail Spine');
     await expect(page.getByRole('list', { name: /arterial courier routes/i })).toContainText('The Roads → Nightshade');
   });

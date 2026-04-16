@@ -398,7 +398,7 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
       "the Nightshade and into contact with secret religious cults who try to steal the items " +
       "back. They are connected to the sacred artifact that the Knights Technarchy wants — " +
       "the object that puts Skids in the crosshairs of multiple factions.",
-    strengths: "Maximum Rep, high Tech. Unmatched Electropolis access. Penalty: limited Stealth.",
+    strengths: "Maximum Rep, high Tech. Elite access to high-security archives. Penalty: limited Stealth.",
   },
   {
     name: "Hermes' Squirmies",
@@ -417,7 +417,7 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
       "The postal service officially sanctioned by the Airaway governing body. The UCPS uses " +
       "board-riding workers and is known to hire from Punch Skater crowds because of their " +
       "knowledge of the 'ropes'. Working for the UCPS is a common cover identity for couriers " +
-      "who need to move through Electropolis checkpoints without Fuzz attention.",
+      "who need to move through high-security checkpoints without drawing scrutiny.",
     strengths: "Good Speed, solid Rep. Moves through corp-controlled districts with reduced scrutiny.",
   },
   {
@@ -445,7 +445,7 @@ export interface FactionLoreEntry {
 export const FACTION_LORE: FactionLoreEntry[] = [
   {
     name: "United Corporations of America (UCA)",
-    districts: ["Airaway", "Electropolis"],
+    districts: ["Airaway"],
     tagline: "Infrastructure, security, compliance. In that order.",
     description:
       "The dominant governing body — a consortium of leading corporations managing global " +
@@ -543,13 +543,13 @@ export const FACTION_LORE: FactionLoreEntry[] = [
   },
   {
     name: "UCPS Workers",
-    districts: ["Airaway", "Electropolis", "The Roads"],
+    districts: ["Airaway", "The Roads"],
     tagline: "Sanctioned delivery. Corporate rates. No questions.",
     description:
       "The postal service officially sanctioned by the Airaway governing body. The UCPS uses " +
       "board-riding workers and is known to hire from Punch Skater crowds because of their " +
       "street knowledge. Working for the UCPS is a common cover identity for couriers who " +
-      "need to move through Electropolis checkpoints without Fuzz attention.",
+      "need to move through high-security checkpoints without drawing scrutiny.",
   },
   {
     name: "Moonrisers",
