@@ -29,35 +29,10 @@ import {
   getAllowedComponents,
   validateBoardCompatibility,
 } from "../lib/boardBuilder";
+import { withBoardComponentAssetVersion } from "../lib/boardAssetVersion";
 import { ConveyorCarousel } from "./ConveyorCarousel";
 import { PowerSwitchButton } from "./PowerSwitchButton";
 import type { CarouselItem } from "./ConveyorCarousel";
-
-// ── Board part PNG imports ─────────────────────────────────────────────────────
-// Deck
-import imgStreetCarbon    from "../assets/boards/deck/street-carbon.png";
-import imgAtBamboo        from "../assets/boards/deck/at-bamboo.png";
-import imgMtBoard         from "../assets/boards/deck/mt-board.png";
-import imgSurfSkate       from "../assets/boards/deck/surf-skate.png";
-// Drivetrain
-import imgBeltDrive       from "../assets/boards/drivetrain/drivetrain-dual-belt-drive.png";
-import imgHubDrive        from "../assets/boards/drivetrain/hub-drive.png";
-import imgGearDrive       from "../assets/boards/drivetrain/gear-drive.png";
-import img4wdDrive        from "../assets/boards/drivetrain/4wd-drive.png";
-// Motor
-import imgMotor5055       from "../assets/boards/motor/5055-motor.png";
-import imgMotor6354       from "../assets/boards/motor/6354-motor.png";
-import imgMotor6374       from "../assets/boards/motor/6374-motor.png";
-import imgMotor6396       from "../assets/boards/motor/6396-motor.png";
-// Wheels
-import imgPolyWheels      from "../assets/boards/wheels/poly-wheels.png";
-import imgPneumaticWheels from "../assets/boards/wheels/pneumatic-wheels.png";
-import imgSolidRubber     from "../assets/boards/wheels/solid-rubber.png";
-import imgCloudWheels     from "../assets/boards/wheels/cloud-wheels.png";
-// Battery
-import imgSlimStealth     from "../assets/boards/battery/battery-slim-stealth-pack.png";
-import imgDoubleStack     from "../assets/boards/battery/double-battery.png";
-import imgTopMountPeli    from "../assets/boards/battery/top-mount-battery.png";
 
 interface BoardBuilderProps {
   value: BoardConfig;
@@ -69,45 +44,33 @@ interface BoardBuilderProps {
 }
 
 // Map each option array into the slim shape ConveyorCarousel expects.
-const DECK_IMAGES: Record<string, string> = {
-  Street:   imgStreetCarbon,
-  AT:       imgAtBamboo,
-  Mountain: imgMtBoard,
-  Surf:     imgSurfSkate,
-};
-
-const DRIVETRAIN_IMAGES: Record<string, string> = {
-  Belt: imgBeltDrive,
-  Hub:  imgHubDrive,
-  Gear: imgGearDrive,
-  "4WD": img4wdDrive,
-};
-
-const MOTOR_IMAGES: Record<string, string> = {
-  Micro:     imgMotor5055,
-  Standard:  imgMotor6354,
-  Torque:    imgMotor6374,
-  Outrunner: imgMotor6396,
-};
-
-const WHEEL_IMAGES: Record<string, string> = {
-  Urethane:  imgPolyWheels,
-  Pneumatic: imgPneumaticWheels,
-  Rubber:    imgSolidRubber,
-  Cloud:     imgCloudWheels,
-};
-
-const BATTERY_IMAGES: Record<string, string> = {
-  SlimStealth: imgSlimStealth,
-  DoubleStack: imgDoubleStack,
-  TopPeli:     imgTopMountPeli,
-};
+const COMPONENT_IMAGE_URLS = {
+  Street: withBoardComponentAssetVersion("/assets/boards/deck/street-carbon.png"),
+  AT: withBoardComponentAssetVersion("/assets/boards/deck/at-bamboo.png"),
+  Mountain: withBoardComponentAssetVersion("/assets/boards/deck/mt-board.png"),
+  Surf: withBoardComponentAssetVersion("/assets/boards/deck/surf-skate.png"),
+  Belt: withBoardComponentAssetVersion("/assets/boards/drivetrain/drivetrain-dual-belt-drive.png"),
+  Hub: withBoardComponentAssetVersion("/assets/boards/drivetrain/hub-drive.png"),
+  Gear: withBoardComponentAssetVersion("/assets/boards/drivetrain/gear-drive.png"),
+  "4WD": withBoardComponentAssetVersion("/assets/boards/drivetrain/4wd-drive.png"),
+  Micro: withBoardComponentAssetVersion("/assets/boards/motor/5055-motor.png"),
+  Standard: withBoardComponentAssetVersion("/assets/boards/motor/6354-motor.png"),
+  Torque: withBoardComponentAssetVersion("/assets/boards/motor/6374-motor.png"),
+  Outrunner: withBoardComponentAssetVersion("/assets/boards/motor/6396-motor.png"),
+  Urethane: withBoardComponentAssetVersion("/assets/boards/wheels/poly-wheels.png"),
+  Pneumatic: withBoardComponentAssetVersion("/assets/boards/wheels/pneumatic-wheels.png"),
+  Rubber: withBoardComponentAssetVersion("/assets/boards/wheels/solid-rubber.png"),
+  Cloud: withBoardComponentAssetVersion("/assets/boards/wheels/cloud-wheels.png"),
+  SlimStealth: withBoardComponentAssetVersion("/assets/boards/battery/battery-slim-stealth-pack.png"),
+  DoubleStack: withBoardComponentAssetVersion("/assets/boards/battery/double-battery.png"),
+  TopPeli: withBoardComponentAssetVersion("/assets/boards/battery/top-mount-battery.png"),
+} as const;
 
 const DECK_ITEMS: CarouselItem[] = BOARD_TYPE_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
-  imageSrc: DECK_IMAGES[o.value],
+  imageSrc: COMPONENT_IMAGE_URLS[o.value as keyof typeof COMPONENT_IMAGE_URLS],
   tagline: o.tagline,
 }));
 
@@ -115,7 +78,7 @@ const DRIVETRAIN_ITEMS: CarouselItem[] = DRIVETRAIN_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
-  imageSrc: DRIVETRAIN_IMAGES[o.value],
+  imageSrc: COMPONENT_IMAGE_URLS[o.value as keyof typeof COMPONENT_IMAGE_URLS],
   tagline: o.tagline,
 }));
 
@@ -123,7 +86,7 @@ const MOTOR_ITEMS: CarouselItem[] = MOTOR_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
-  imageSrc: MOTOR_IMAGES[o.value],
+  imageSrc: COMPONENT_IMAGE_URLS[o.value as keyof typeof COMPONENT_IMAGE_URLS],
   tagline: o.tagline,
 }));
 
@@ -131,7 +94,7 @@ const WHEEL_ITEMS: CarouselItem[] = WHEEL_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
-  imageSrc: WHEEL_IMAGES[o.value],
+  imageSrc: COMPONENT_IMAGE_URLS[o.value as keyof typeof COMPONENT_IMAGE_URLS],
   tagline: o.tagline,
 }));
 
@@ -139,7 +102,7 @@ const BATTERY_ITEMS: CarouselItem[] = BATTERY_OPTIONS.map((o) => ({
   value: o.value,
   label: o.label,
   icon: o.icon,
-  imageSrc: BATTERY_IMAGES[o.value],
+  imageSrc: COMPONENT_IMAGE_URLS[o.value as keyof typeof COMPONENT_IMAGE_URLS],
   tagline: o.tagline,
 }))
 
