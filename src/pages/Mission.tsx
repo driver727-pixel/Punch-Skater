@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { GeoAtlas } from "../components/GeoAtlas";
@@ -6,7 +6,6 @@ import { SkateboardStatsPanel } from "../components/SkateboardStatsPanel";
 import { useDecks } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
-import type { WheelType } from "../lib/boardBuilder";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import {
   applyMissionPartsReward,
@@ -25,7 +24,6 @@ import {
   DISTRICT_WEATHER_LOCATIONS,
   getDistrictAccessBlockReason,
   getDistrictAccessSummary,
-  getDistrictWheelAccessRule,
   isDistrictAccessibleWithBoardType,
   type DistrictWeatherSnapshot,
 } from "../lib/districtWeather";
@@ -33,7 +31,6 @@ import {
   getCorridorAccessBlockReason,
   getCorridorAccessSummary,
   getCorridorCondition,
-  getRoadCorridor,
   isCorridorAccessible,
 } from "../lib/roadCorridors";
 import { MISSION_STAT_LABELS } from "../lib/statLabels";
@@ -59,12 +56,6 @@ const ATLAS_FILTERS = [
   { id: "corridors", label: "Corridor lines" },
   { id: "rideable", label: "Rideable now" },
 ] as const;
-const WHEEL_BADGES: Record<WheelType, { icon: string; label: string; shortLabel: string }> = {
-  Urethane: { icon: "🛹", label: "Street wheels", shortLabel: "Street" },
-  Pneumatic: { icon: "🛞", label: "Pneumatic wheels", shortLabel: "Pneumatic" },
-  Rubber: { icon: "🧱", label: "Solid rubber wheels", shortLabel: "Rubber" },
-  Cloud: { icon: "☁️", label: "Cloud wheels", shortLabel: "Cloud" },
-};
 const DEFAULT_ATLAS_FILTER: AtlasFilter = "all";
 
 type AtlasFilter = (typeof ATLAS_FILTERS)[number]["id"];
@@ -114,25 +105,6 @@ function resolveMissionAccessReason(params: {
   return null;
 }
 
-function intersectWheelTypes(primary: WheelType[], secondary: WheelType[]): WheelType[] {
-  return primary.filter((wheelType) => secondary.includes(wheelType));
-}
-
-function getMissionWheelTypes(
-  originDistrict: District,
-  destinationDistrict: District,
-  corridor?: RoadCorridor,
-): WheelType[] {
-  const districtWheelTypes = intersectWheelTypes(
-    getDistrictWheelAccessRule(originDistrict).allowedWheelTypes,
-    getDistrictWheelAccessRule(destinationDistrict).allowedWheelTypes,
-  );
-  if (!corridor) {
-    return districtWheelTypes;
-  }
-  return intersectWheelTypes(districtWheelTypes, getRoadCorridor(corridor).allowedWheelTypes);
-}
-
 function getMissionStateLabel(
   accessible: boolean,
   hasRunner: boolean,
@@ -157,12 +129,13 @@ export function Mission() {
   const [forkChoices, setForkChoices] = useState<Record<string, ForkChoice>>({});
   const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
   const [atlasFilter, setAtlasFilter] = useState<AtlasFilter>(DEFAULT_ATLAS_FILTER);
-  const [hoveredMissionId, setHoveredMissionId] = useState<string | null>(null);
   const [atlasCollapsed, setAtlasCollapsed] = useState(false);
   const [selectorCollapsed, setSelectorCollapsed] = useState(false);
   const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(
     () => new Set(loadCompletedMissions()),
   );
+  const missionControlRef = useRef<HTMLElement | null>(null);
+  const deckSelectionRef = useRef<HTMLDivElement | null>(null);
   const missionResultRef = useRef<HTMLElement | null>(null);
   const missionHasRewardsToDisplay = Boolean(
     missionResult?.success && (missionResult.ozziesReward > 0 || missionResult.partsReward),
@@ -297,7 +270,6 @@ export function Mission() {
         accessible,
         blocked,
         corridorBlocked: corridorBlockedForMission,
-        wheelTypes: getMissionWheelTypes(mission.originDistrict, mission.destinationDistrict, mission.corridor),
       };
     }),
     [hasRunner, runnerBoardType, runnerWheelType, weatherByDistrict],
@@ -328,11 +300,28 @@ export function Mission() {
     resetMissionSession();
   }, [activeMissionId, resetMissionSession, visibleMissionCatalog]);
 
-  const focusedMission =
-    visibleMissionCatalog.find(({ mission }) => mission.id === hoveredMissionId)?.mission ??
-    activeMission;
-  const focusDistricts = Array.from(new Set([focusedMission.originDistrict, focusedMission.destinationDistrict]));
-  const focusCorridors = focusedMission.corridor ? [focusedMission.corridor] : [];
+  const focusDistricts = Array.from(new Set([activeMission.originDistrict, activeMission.destinationDistrict]));
+  const focusCorridors = activeMission.corridor ? [activeMission.corridor] : [];
+
+  const scrollToMissionControls = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      missionControlRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const scrollToDeckSelection = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      deckSelectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const handleSelectMission = useCallback((missionId: string, scrollToControls = false) => {
+    setActiveMissionId(missionId);
+    resetMissionSession();
+    if (scrollToControls) {
+      scrollToMissionControls();
+    }
+  }, [resetMissionSession, scrollToMissionControls]);
 
   const missionMarkers = useMemo(
     () => {
@@ -354,14 +343,11 @@ export function Mission() {
           offsetX: markerOffset.offsetX,
           offsetY: markerOffset.offsetY,
           tone: accessible ? "available" : blocked ? "blocked" : undefined,
-          onClick: () => {
-            setActiveMissionId(mission.id);
-            resetMissionSession();
-          },
+          onClick: () => handleSelectMission(mission.id, true),
         };
       });
     },
-    [activeMission.id, resetMissionSession, visibleMissionCatalog],
+    [activeMission.id, handleSelectMission, visibleMissionCatalog],
   );
 
   const missionCorridors = useMemo(
@@ -385,14 +371,11 @@ export function Mission() {
           offsetX: markerOffset.offsetX,
           offsetY: markerOffset.offsetY,
           tone: accessible ? "available" : blocked ? "blocked" : undefined,
-          onClick: () => {
-            setActiveMissionId(mission.id);
-            resetMissionSession();
-          },
+          onClick: () => handleSelectMission(mission.id, true),
         };
       });
     },
-    [activeMission.id, resetMissionSession, visibleMissionCatalog],
+    [activeMission.id, handleSelectMission, visibleMissionCatalog],
   );
 
   const markMissionComplete = useCallback((missionId: string) => {
@@ -445,6 +428,14 @@ export function Mission() {
     updateCardInDecks(upgradedCard);
     setClaimedPartsRewardId(reward.id);
   };
+
+  const handleDismissMissionResult = useCallback(() => {
+    setMissionResult(null);
+  }, []);
+
+  const stopMissionResultClose = useCallback((event: MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+  }, []);
 
   useEffect(() => {
     if (!missionResult) return;
@@ -547,6 +538,7 @@ export function Mission() {
                 showMarkerLabels="active"
                 focusDistricts={focusDistricts}
                 focusCorridors={focusCorridors}
+                districtInteractionMode="press"
               />
               <div className="mission-selector-panel">
                 <button
@@ -561,70 +553,42 @@ export function Mission() {
                   <span className="mission-panel__collapse-icon" aria-hidden="true">{selectorCollapsed ? "▼" : "▲"}</span>
                 </button>
                 {!selectorCollapsed && (
-                  <div className="mission-selector-grid">
-                    {visibleMissionCatalog.length === 0 && (
-                      <div className="mission-selector-empty">
-                        No missions match this filter right now. Change the view or switch runners to open more routes.
-                      </div>
-                    )}
-            {visibleMissionCatalog.map(({ mission, accessible, blocked, wheelTypes, corridorBlocked: missionCorridorBlocked }) => {
-              const isCompleted = completedMissionIds.has(mission.id);
-              return (
-                <button
-                  key={mission.id}
-                  type="button"
-                  className={[
-                    "mission-selector-card",
-                    mission.id === activeMission.id ? "mission-selector-card--active" : "",
-                    blocked ? "mission-selector-card--blocked" : "",
-                    isCompleted ? "mission-selector-card--completed" : "",
-                  ].filter(Boolean).join(" ")}
-                  onClick={() => {
-                    sfxClick();
-                    setActiveMissionId(mission.id);
-                    resetMissionSession();
-                  }}
-                  onMouseEnter={() => setHoveredMissionId(mission.id)}
-                  onMouseLeave={() => setHoveredMissionId(null)}
-                >
-                  {isCompleted && (
-                    <span className="mission-selector-card__check" aria-label="Completed">✓</span>
-                  )}
-                  <div className="mission-selector-card__topline">
-                    <span className="mission-selector-card__district">
-                      {mission.originDistrict}
-                      {mission.destinationDistrict !== mission.originDistrict ? ` → ${mission.destinationDistrict}` : ""}
-                    </span>
-                    <span className={`mission-selector-card__state${accessible ? " mission-selector-card__state--available" : ""}`}>
-                      {getMissionStateLabel(accessible, hasRunner, missionCorridorBlocked)}
-                    </span>
-                  </div>
-                  <strong className="mission-selector-card__name">{mission.name}</strong>
-                  <span className="mission-selector-card__tagline">{mission.tagline}</span>
-                  <div className="mission-selector-card__badges">
-                    <span className="mission-selector-card__badge">
-                      {mission.corridor ? "🛣️ Corridor" : "🏙️ District"}
-                    </span>
-                    {wheelTypes.map((wheelType) => (
-                      <span
-                        key={`${mission.id}-${wheelType}`}
-                        className="mission-selector-card__badge mission-selector-card__badge--wheel"
-                        title={WHEEL_BADGES[wheelType].label}
-                      >
-                        {WHEEL_BADGES[wheelType].icon} {WHEEL_BADGES[wheelType].shortLabel}
-                      </span>
-                    ))}
-                    {mission.ozziesReward != null && mission.ozziesReward > 0 && (
-                      <span className="mission-selector-card__badge mission-selector-card__badge--reward">💰 {mission.ozziesReward}</span>
-                    )}
-                    {mission.partsReward && (
-                      <span className="mission-selector-card__badge mission-selector-card__badge--reward">🧩 {mission.partsReward.label}</span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-                  </div>
+                  <>
+                    <p className="mission-selector-panel__summary">
+                      Tap a map pin or operation button to load the full mission briefing and controls below.
+                    </p>
+                    <div className="mission-operation-grid">
+                     {visibleMissionCatalog.length === 0 && (
+                       <div className="mission-selector-empty">
+                         No missions match this filter right now. Change the view or switch runners to open more routes.
+                       </div>
+                     )}
+             {visibleMissionCatalog.map(({ mission, accessible, blocked, corridorBlocked: missionCorridorBlocked }) => {
+               const isCompleted = completedMissionIds.has(mission.id);
+               return (
+                 <button
+                   key={mission.id}
+                   type="button"
+                   className={[
+                     "mission-operation-button",
+                     mission.id === activeMission.id ? "mission-operation-button--active" : "",
+                     blocked ? "mission-operation-button--blocked" : "",
+                     isCompleted ? "mission-operation-button--completed" : "",
+                   ].filter(Boolean).join(" ")}
+                   onClick={() => {
+                     sfxClick();
+                     handleSelectMission(mission.id, true);
+                    }}
+                   aria-pressed={mission.id === activeMission.id}
+                   title={`${mission.name} — ${getMissionStateLabel(accessible, hasRunner, missionCorridorBlocked)}`}
+                 >
+                   <span className="mission-operation-button__label">{mission.name}</span>
+                   {isCompleted && <span className="mission-operation-button__status" aria-label="Completed">✓</span>}
+                 </button>
+               );
+             })}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -632,19 +596,28 @@ export function Mission() {
         )}
       </section>
 
-      <section className="mission-panel">
+      <section ref={missionControlRef} className="mission-panel mission-panel--detail">
         <div className="mission-panel__header">
           <div>
             <h2>{activeMission.name}</h2>
             <p className="page-sub">{activeMission.briefing}</p>
           </div>
-          <button
-            className="btn-primary"
-            onClick={() => { sfxClick(); handleRunMission(); }}
-            disabled={!activeDeck || !hasRunner || missionAccessBlocked}
-          >
-            ▶ Run Mission
-          </button>
+          <div className="mission-panel__actions">
+            <button
+              className="btn-secondary"
+              onClick={() => { sfxClick(); scrollToDeckSelection(); }}
+              disabled={decks.length === 0}
+            >
+              Deck Select
+            </button>
+            <button
+              className="btn-primary"
+              onClick={() => { sfxClick(); handleRunMission(); }}
+              disabled={!activeDeck || !hasRunner || missionAccessBlocked}
+            >
+              ▶ Run Mission
+            </button>
+          </div>
         </div>
 
         <div className="mission-checks">
@@ -723,7 +696,7 @@ export function Mission() {
           </button>
         </div>
       ) : (
-        <div className="deck-layout">
+        <div ref={deckSelectionRef} className="deck-layout">
           <div className="deck-sidebar">
             <div className="deck-list">
               {decks.map((deck) => (
@@ -876,117 +849,132 @@ export function Mission() {
               </section>
             )}
 
-            {missionResult && (
-              <section
-                ref={missionResultRef}
-                className={`mission-panel mission-result-panel${missionResult.success ? " mission-result-panel--success" : " mission-result-panel--fail"}`}
-              >
-                {missionResult.success && (
-                  <div className="mission-result-panel__beams" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                )}
-                <div className="mission-result">
-                  <span className={`mission-result__badge ${missionResult.success ? "mission-result__badge--success" : "mission-result__badge--fail"}`}>
-                    {missionResult.success ? "MISSION CLEARED" : "MISSION FAILED"}
-                  </span>
-                  <div className="mission-result__hero">
-                    <div>
-                      <h3>{missionResult.success ? "Mission Complete" : "Mission Failed"}</h3>
-                      <p className="page-sub">
-                        {missionResult.success
-                          ? missionHasRewardsToDisplay
-                            ? "Runner touched down with fresh loot and a whole lot of swagger."
-                            : "Runner made it back clean."
-                          : "The route fought back harder than your crew could handle."}
-                      </p>
-                    </div>
-                    {missionResult.success && missionHasRewardsToDisplay && (
-                      <span className="mission-result__headline">JACKPOT</span>
-                    )}
-                  </div>
-                  {missionResult.success && missionHasRewardsToDisplay && (
-                    <div className="mission-result__rewards">
-                      {missionResult.ozziesReward > 0 && (
-                        <div className="mission-result__reward-card mission-result__reward-card--ozzies">
-                          <span className="mission-result__reward-label">Ozzies haul</span>
-                          <strong className="mission-result__reward-value">💰 {missionResult.ozziesReward}</strong>
-                        </div>
-                      )}
-                      {missionResult.partsReward && (
-                        <div className="mission-result__reward-card mission-result__reward-card--parts">
-                          <span className="mission-result__reward-label">Parts upgrade</span>
-                          <strong className="mission-result__reward-value">🧩 {missionResult.partsReward.rewardLabel}</strong>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="mission-stats">
-                  <div className="mission-stat-row">
-                    <span className="mission-stat-label">Outcome</span>
-                    <span className="mission-stat-value">{missionResult.success ? "Success" : "Failure"}</span>
-                  </div>
-                  <div className="mission-stat-row">
-                    <span className="mission-stat-label">Health</span>
-                    <span className="mission-stat-value">{missionResult.playerStats.health}</span>
-                  </div>
-                  <div className="mission-stat-row">
-                    <span className="mission-stat-label">Heat</span>
-                    <span className="mission-stat-value">{missionResult.playerStats.heatLevel}</span>
-                  </div>
-                  <div className="mission-stat-row">
-                    <span className="mission-stat-label">Battery Left</span>
-                    <span className="mission-stat-value">{missionResult.playerStats.batteryRemaining}</span>
-                  </div>
-                  {missionResult.partsReward && (
-                    <div className="mission-stat-row">
-                      <span className="mission-stat-label">Parts Upgrade</span>
-                      <span className="mission-stat-value">🧩 {missionResult.partsReward.rewardLabel}</span>
-                    </div>
-                  )}
-                  {missionResult.ozziesReward > 0 && (
-                    <div className="mission-stat-row">
-                      <span className="mission-stat-label">Ozzies Earned</span>
-                      <span className="mission-stat-value">💰 {missionResult.ozziesReward}</span>
-                    </div>
-                  )}
-                </div>
-                {missionResult.partsReward && (
-                  <div className="mission-panel" style={{ marginTop: "1rem" }}>
-                    <h4>{missionResult.partsReward.label}</h4>
-                    <p className="page-sub">
-                      {missionResult.partsReward.componentLabel}: {missionResult.partsReward.currentLabel} → {missionResult.partsReward.rewardLabel}
-                    </p>
-                    <p className="page-sub">{missionResult.partsReward.reason}</p>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => { sfxClick(); handleApplyPartsReward(missionResult.partsReward); }}
-                      disabled={!missionResult.success || claimedPartsRewardId === missionResult.partsReward.id}
-                    >
-                      {claimedPartsRewardId === missionResult.partsReward.id ? "Installed on Runner" : "Apply Upgrade to Runner"}
-                    </button>
-                  </div>
-                )}
-                {missionResult.inventory.length > 0 && (
-                  <div className="mission-reward-list">
-                    {missionResult.inventory.map((item) => (
-                      <span key={item.id} className="tag">
-                        {item.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <ol className="mission-log">
-                  {missionResult.missionLog.map((entry, index) => (
-                    <li key={`${index}-${entry}`}>{entry}</li>
-                  ))}
-                </ol>
-              </section>
-            )}
           </div>
+        </div>
+      )}
+
+      {missionResult && (
+        <div className="mission-result-overlay" onClick={handleDismissMissionResult} role="presentation">
+          <section
+            ref={missionResultRef}
+            className={`mission-panel mission-result-panel mission-result-popup${missionResult.success ? " mission-result-panel--success" : " mission-result-panel--fail"}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mission-result-title"
+            onClick={stopMissionResultClose}
+          >
+            <button
+              type="button"
+              className="mission-result-popup__close"
+              onClick={handleDismissMissionResult}
+              aria-label="Close mission result"
+            >
+              ×
+            </button>
+            {missionResult.success && (
+              <div className="mission-result-panel__beams" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+            )}
+            <div className="mission-result">
+              <span className={`mission-result__badge ${missionResult.success ? "mission-result__badge--success" : "mission-result__badge--fail"}`}>
+                {missionResult.success ? "MISSION CLEARED" : "MISSION FAILED"}
+              </span>
+              <div className="mission-result__hero">
+                <div>
+                  <h3 id="mission-result-title">{missionResult.success ? "Mission Complete" : "Mission Failed"}</h3>
+                  <p className="page-sub">
+                    {missionResult.success
+                      ? missionHasRewardsToDisplay
+                        ? "Runner touched down with fresh loot and a whole lot of swagger."
+                        : "Runner made it back clean."
+                      : "The route fought back harder than your crew could handle."}
+                  </p>
+                </div>
+                {missionResult.success && missionHasRewardsToDisplay && (
+                  <span className="mission-result__headline">JACKPOT</span>
+                )}
+              </div>
+              {missionResult.success && missionHasRewardsToDisplay && (
+                <div className="mission-result__rewards">
+                  {missionResult.ozziesReward > 0 && (
+                    <div className="mission-result__reward-card mission-result__reward-card--ozzies">
+                      <span className="mission-result__reward-label">Ozzies haul</span>
+                      <strong className="mission-result__reward-value">💰 {missionResult.ozziesReward}</strong>
+                    </div>
+                  )}
+                  {missionResult.partsReward && (
+                    <div className="mission-result__reward-card mission-result__reward-card--parts">
+                      <span className="mission-result__reward-label">Parts upgrade</span>
+                      <strong className="mission-result__reward-value">🧩 {missionResult.partsReward.rewardLabel}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="mission-stats">
+              <div className="mission-stat-row">
+                <span className="mission-stat-label">Outcome</span>
+                <span className="mission-stat-value">{missionResult.success ? "Success" : "Failure"}</span>
+              </div>
+              <div className="mission-stat-row">
+                <span className="mission-stat-label">Health</span>
+                <span className="mission-stat-value">{missionResult.playerStats.health}</span>
+              </div>
+              <div className="mission-stat-row">
+                <span className="mission-stat-label">Heat</span>
+                <span className="mission-stat-value">{missionResult.playerStats.heatLevel}</span>
+              </div>
+              <div className="mission-stat-row">
+                <span className="mission-stat-label">Battery Left</span>
+                <span className="mission-stat-value">{missionResult.playerStats.batteryRemaining}</span>
+              </div>
+              {missionResult.partsReward && (
+                <div className="mission-stat-row">
+                  <span className="mission-stat-label">Parts Upgrade</span>
+                  <span className="mission-stat-value">🧩 {missionResult.partsReward.rewardLabel}</span>
+                </div>
+              )}
+              {missionResult.ozziesReward > 0 && (
+                <div className="mission-stat-row">
+                  <span className="mission-stat-label">Ozzies Earned</span>
+                  <span className="mission-stat-value">💰 {missionResult.ozziesReward}</span>
+                </div>
+              )}
+            </div>
+            {missionResult.partsReward && (
+              <div className="mission-result-popup__upgrade">
+                <h4>{missionResult.partsReward.label}</h4>
+                <p className="page-sub">
+                  {missionResult.partsReward.componentLabel}: {missionResult.partsReward.currentLabel} → {missionResult.partsReward.rewardLabel}
+                </p>
+                <p className="page-sub">{missionResult.partsReward.reason}</p>
+                <button
+                  className="btn-secondary"
+                  onClick={() => { sfxClick(); handleApplyPartsReward(missionResult.partsReward); }}
+                  disabled={!missionResult.success || claimedPartsRewardId === missionResult.partsReward.id}
+                >
+                  {claimedPartsRewardId === missionResult.partsReward.id ? "Installed on Runner" : "Apply Upgrade to Runner"}
+                </button>
+              </div>
+            )}
+            {missionResult.inventory.length > 0 && (
+              <div className="mission-reward-list">
+                {missionResult.inventory.map((item) => (
+                  <span key={item.id} className="tag">
+                    {item.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            <ol className="mission-log">
+              {missionResult.missionLog.map((entry, index) => (
+                <li key={`${index}-${entry}`}>{entry}</li>
+              ))}
+            </ol>
+          </section>
         </div>
       )}
     </div>

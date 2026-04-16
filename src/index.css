@@ -3241,9 +3241,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   cursor: pointer;
 }
 
+.geo-atlas__district--inspectable {
+  cursor: pointer;
+}
+
 .geo-atlas__district--selectable:hover,
 .geo-atlas__district--selectable:focus-visible {
   transform: translate(-50%, -50%) scale(1.03);
+  border-color: rgba(255,255,255,0.4);
+  outline: none;
+}
+
+.geo-atlas__district--inspectable:focus-visible {
   border-color: rgba(255,255,255,0.4);
   outline: none;
 }
@@ -6844,6 +6853,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
   color: var(--text-dim);
 }
+.mission-selector-panel__summary {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
 .mission-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6854,9 +6869,21 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-atlas-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+}
+.mission-atlas .geo-atlas__panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.mission-atlas .geo-atlas__panel-head {
+  display: none;
+}
+.mission-atlas .geo-atlas__map--australia {
+  min-height: clamp(420px, 56vw, 760px);
 }
 .mission-atlas-toolbar {
   display: flex;
@@ -6895,6 +6922,51 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin: 0;
   color: var(--text-dim);
   font-size: 12px;
+}
+.mission-operation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.mission-operation-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.mission-operation-button:hover,
+.mission-operation-button:focus-visible {
+  border-color: rgba(0,204,255,0.28);
+  background: rgba(0,204,255,0.05);
+  outline: none;
+}
+.mission-operation-button--active {
+  border-color: rgba(0,255,136,0.38);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.12);
+}
+.mission-operation-button--blocked {
+  border-color: rgba(255,68,102,0.24);
+}
+.mission-operation-button--completed {
+  background: rgba(0,255,136,0.04);
+}
+.mission-operation-button__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.mission-operation-button__status {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 900;
 }
 .mission-selector-grid {
   display: flex;
@@ -7037,6 +7109,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-runner-card--active {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.12);
+}
+.mission-panel--detail {
+  scroll-margin-top: 88px;
+}
+.mission-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 .mission-stats {
   display: flex;
@@ -7213,6 +7295,54 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: relative;
   overflow: hidden;
 }
+.mission-result-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 5, 14, 0.9);
+}
+.mission-result-popup {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+.mission-result-popup__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(8,14,24,0.88);
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 1;
+}
+.mission-result-popup__close:hover,
+.mission-result-popup__close:focus-visible {
+  border-color: rgba(0,255,136,0.35);
+  color: var(--accent);
+  outline: none;
+}
+.mission-result-popup__upgrade {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.18);
+}
+.mission-result-popup .mission-log {
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
 .mission-result-panel--success {
   border-color: rgba(255,221,0,0.3);
   background:
@@ -7328,6 +7458,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .mission-panel__header {
     flex-direction: column;
   }
+  .mission-panel__actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .mission-panel__actions > * {
+    flex: 1 1 180px;
+  }
   .mission-panel__collapse-header {
     align-items: flex-start;
   }
@@ -7338,6 +7475,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     flex-direction: column;
   }
   .mission-selector-grid {
+    grid-template-columns: 1fr;
+  }
+  .mission-operation-grid {
     grid-template-columns: 1fr;
   }
   .mission-fork__options {
@@ -7361,6 +7501,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
   .mission-selector-panel__header {
     padding: 10px 12px;
+  }
+  .mission-atlas .geo-atlas__map--australia {
+    min-height: clamp(360px, 90vw, 560px);
+  }
+  .mission-result-overlay {
+    align-items: flex-end;
+    padding: 12px;
+  }
+  .mission-result-popup {
+    max-height: calc(100vh - 24px);
   }
 }
 

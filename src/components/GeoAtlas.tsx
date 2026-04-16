@@ -48,6 +48,7 @@ interface GeoAtlasProps {
   showMarkerLabels?: "all" | "active";
   focusDistricts?: WorldLocation[];
   focusCorridors?: RoadCorridor[];
+  districtInteractionMode?: "hover" | "press";
 }
 
 const PLAYABLE_DISTRICTS: District[] = [
@@ -235,11 +236,17 @@ export function GeoAtlas({
   showMarkerLabels = "all",
   focusDistricts = [],
   focusCorridors = [],
+  districtInteractionMode = "hover",
 }: GeoAtlasProps) {
   const [hoveredDistrict, setHoveredDistrict] = useState<WorldLocation | null>(null);
+  const [inspectedDistrict, setInspectedDistrict] = useState<WorldLocation | null>(null);
   const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(false);
   const [isNeonCollapsed, setIsNeonCollapsed] = useState(false);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
+  const activeInteractionDistrict =
+    districtInteractionMode === "hover"
+      ? hoveredDistrict ?? inspectedDistrict
+      : inspectedDistrict;
   const focusDistrictSet = new Set(focusDistricts);
   const focusCorridorSet = new Set(focusCorridors);
   const hasFocus = focusDistrictSet.size > 0 || focusCorridorSet.size > 0;
@@ -255,7 +262,7 @@ export function GeoAtlas({
     [weatherByDistrict],
   );
   const { activeDistrictEntry } = useMemo(() => {
-    const hoveredDistrictEntry = districtEntries.find((entry) => entry.name === hoveredDistrict) ?? null;
+    const hoveredDistrictEntry = districtEntries.find((entry) => entry.name === activeInteractionDistrict) ?? null;
     const selectedDistrictEntry =
       districtEntries.find((entry) => entry.kind === "district" && entry.name === selectedDistrict) ?? null;
     const defaultDistrictEntry =
@@ -264,7 +271,7 @@ export function GeoAtlas({
     return {
       activeDistrictEntry: hoveredDistrictEntry ?? selectedDistrictEntry ?? defaultDistrictEntry,
     };
-  }, [districtEntries, hoveredDistrict, selectedDistrict]);
+  }, [activeInteractionDistrict, districtEntries, selectedDistrict]);
   const boardStatusLabel = formatBoardConfigLabel(boardConfig);
   const rideableDistrictCount = boardConfig
     ? PLAYABLE_DISTRICTS.filter((district) =>
@@ -350,7 +357,11 @@ export function GeoAtlas({
                 </p>
                 <div className="geo-atlas__callout-meta">
                   <span className="geo-atlas__callout-pill">
-                    {boardStatusLabel ? `Selected setup · ${boardStatusLabel}` : "Hover a district to inspect access"}
+                    {boardStatusLabel
+                      ? `Selected setup · ${boardStatusLabel}`
+                      : districtInteractionMode === "press"
+                        ? "Tap or click a district to inspect access"
+                        : "Hover a district to inspect access"}
                   </span>
                   {rideableDistrictCount !== null && (
                     <span className="geo-atlas__callout-pill">
@@ -394,13 +405,14 @@ export function GeoAtlas({
                   {DISTRICT_ARTERIES.map((artery) => {
                     const start = AUSTRALIA_DISTRICT_LAYOUT[artery.from];
                     const end = AUSTRALIA_DISTRICT_LAYOUT[artery.to];
-                    const isConnected = hoveredDistrict === artery.from || hoveredDistrict === artery.to;
+                    const isConnected =
+                      activeInteractionDistrict === artery.from || activeInteractionDistrict === artery.to;
                     const isFocused = focusCorridorSet.has(artery.label as RoadCorridor);
                     const routeClass = [
                       "geo-atlas__route",
                       hasFocus && isFocused ? "geo-atlas__route--focus" : "",
-                      hoveredDistrict && isConnected ? "geo-atlas__route--highlight" : "",
-                      (hasFocus && !isFocused) || (hoveredDistrict && !isConnected) ? "geo-atlas__route--dim" : "",
+                      activeInteractionDistrict && isConnected ? "geo-atlas__route--highlight" : "",
+                      (hasFocus && !isFocused) || (activeInteractionDistrict && !isConnected) ? "geo-atlas__route--dim" : "",
                     ]
                       .filter(Boolean)
                       .join(" ");
@@ -464,35 +476,47 @@ export function GeoAtlas({
                           error,
                         })} Access now: ${getDistrictAccessSummary(district.name, district.weather)}.`
                       : `${district.name}. Corridor exchange hub.`;
+                  const isInspectable =
+                    districtInteractionMode === "press" || (district.kind === "district" && Boolean(onDistrictSelect));
                   const nodeClassName = [
-                    "geo-atlas__district",
-                    `geo-atlas__district--${district.layout.tone}`,
-                    district.kind === "district" && selectedDistrict === district.name ? "geo-atlas__district--selected" : "",
-                    boardAccessible === true ? "geo-atlas__district--available" : "",
-                    boardAccessible === false ? "geo-atlas__district--blocked" : "",
-                    accessRestricted ? "geo-atlas__district--restricted" : "",
-                    district.kind === "district" && onDistrictSelect ? "geo-atlas__district--selectable" : "",
-                    hasFocus && !focusDistrictSet.has(district.name) ? "geo-atlas__district--dim" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
+                     "geo-atlas__district",
+                     `geo-atlas__district--${district.layout.tone}`,
+                     district.kind === "district" && selectedDistrict === district.name ? "geo-atlas__district--selected" : "",
+                     boardAccessible === true ? "geo-atlas__district--available" : "",
+                     boardAccessible === false ? "geo-atlas__district--blocked" : "",
+                     accessRestricted ? "geo-atlas__district--restricted" : "",
+                     isInspectable ? "geo-atlas__district--inspectable" : "",
+                     district.kind === "district" && onDistrictSelect ? "geo-atlas__district--selectable" : "",
+                     hasFocus && !focusDistrictSet.has(district.name) ? "geo-atlas__district--dim" : "",
+                   ]
+                     .filter(Boolean)
+                     .join(" ");
+                  const inspectDistrict = () => setInspectedDistrict(district.name);
                   const commonProps = {
-                    className: nodeClassName,
-                    style: { left: `${district.layout.x}%`, top: `${district.layout.y}%` },
-                    "data-testid": `district-node-${district.slug}`,
-                    onMouseEnter: () => setHoveredDistrict(district.name),
-                    onMouseLeave: () => setHoveredDistrict(null),
-                    title: detailText,
-                  };
+                     className: nodeClassName,
+                     style: { left: `${district.layout.x}%`, top: `${district.layout.y}%` },
+                     "data-testid": `district-node-${district.slug}`,
+                     onMouseEnter:
+                       districtInteractionMode === "hover" ? () => setHoveredDistrict(district.name) : undefined,
+                     onMouseLeave:
+                       districtInteractionMode === "hover" ? () => setHoveredDistrict(null) : undefined,
+                     onFocus: inspectDistrict,
+                     title: detailText,
+                   };
 
-                  if (district.kind === "district" && onDistrictSelect) {
+                  if (isInspectable) {
                     return (
                       <button
                         key={district.name}
                         type="button"
                         {...commonProps}
-                        onClick={() => onDistrictSelect(district.name)}
-                        aria-pressed={selectedDistrict === district.name}
+                        onClick={() => {
+                          inspectDistrict();
+                          if (district.kind === "district" && onDistrictSelect) {
+                            onDistrictSelect(district.name);
+                          }
+                        }}
+                        aria-pressed={selectedDistrict === district.name || activeInteractionDistrict === district.name}
                         aria-label={detailText}
                       >
                         <span className="geo-atlas__district-dot" aria-hidden="true" />
