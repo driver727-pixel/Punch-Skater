@@ -14,6 +14,30 @@ import { useAuth } from "../context/AuthContext";
 /** Maximum number of cards allowed in a single deck. */
 export const DECK_CARD_LIMIT = 6;
 
+function sortDecks(decks: DeckPayload[]): DeckPayload[] {
+  return [...decks].sort((a, b) => {
+    const aOrder = a.sortOrder;
+    const bOrder = b.sortOrder;
+
+    if (typeof aOrder === "number" && typeof bOrder === "number" && aOrder !== bOrder) {
+      return aOrder - bOrder;
+    }
+    if (typeof aOrder === "number") return -1;
+    if (typeof bOrder === "number") return 1;
+
+    const createdDiff = Date.parse(a.createdAt) - Date.parse(b.createdAt);
+    if (!Number.isNaN(createdDiff) && createdDiff !== 0) return createdDiff;
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function normalizeDeckOrder(decks: DeckPayload[]): DeckPayload[] {
+  return sortDecks(decks).map((deck, index) => (
+    deck.sortOrder === index ? deck : { ...deck, sortOrder: index }
+  ));
+}
+
 export function useDecks() {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
@@ -23,12 +47,18 @@ export function useDecks() {
   // ── Subscribe to Firestore or localStorage ────────────────────────────────
   useEffect(() => {
     if (!uid) {
-      setDecks(loadDecks());
+      setDecks(normalizeDeckOrder(loadDecks()));
       return;
     }
     const colRef = collection(db, "users", uid, "decks");
     const unsub = onSnapshot(colRef, (snap) => {
-      setDecks(snap.docs.map((d) => d.data() as DeckPayload));
+      const incoming = snap.docs.map((d) => d.data() as DeckPayload);
+      const normalized = normalizeDeckOrder(incoming);
+      setDecks(normalized);
+
+      if (incoming.some((deck) => deck.sortOrder !== normalized.find((candidate) => candidate.id === deck.id)?.sortOrder)) {
+        void Promise.all(normalized.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch(console.error);
+      }
     });
     return unsub;
   }, [uid]);
@@ -53,6 +83,7 @@ export function useDecks() {
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const createDeck = useCallback((name: string): DeckPayload => {
+    const nextSortOrder = decksRef.current.length;
     const deck: DeckPayload = {
       id: `deck-${Date.now()}`,
       version: "1.0.0",
@@ -60,11 +91,12 @@ export function useDecks() {
       cards: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      sortOrder: nextSortOrder,
     };
     if (uid) {
       setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch(console.error);
     } else {
-      setDecks((prev) => [...prev, deck]);
+      setDecks((prev) => normalizeDeckOrder([...prev, deck]));
     }
     return deck;
   }, [uid]);
@@ -145,6 +177,30 @@ export function useDecks() {
     saveDeck({ ...deck, cards, updatedAt: new Date().toISOString() });
   }, [saveDeck]);
 
+  const moveDeck = useCallback((fromIndex: number, toIndex: number) => {
+    const orderedDecks = normalizeDeckOrder(decksRef.current);
+    if (
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= orderedDecks.length ||
+      toIndex >= orderedDecks.length ||
+      fromIndex === toIndex
+    ) {
+      return;
+    }
+
+    const reordered = [...orderedDecks];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    const normalized = reordered.map((deck, index) => ({ ...deck, sortOrder: index, updatedAt: new Date().toISOString() }));
+
+    setDecks(normalized);
+
+    if (uid) {
+      void Promise.all(normalized.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch(console.error);
+    }
+  }, [uid]);
+
   /**
    * Save a card to the user's first deck, creating "My Deck" if none exists.
    * Respects DECK_CARD_LIMIT.  Returns whether the target deck was already full.
@@ -188,6 +244,7 @@ export function useDecks() {
     updateCardInDecks,
     renameDeck,
     moveCardInDeck,
+    moveDeck,
     saveCardToFirstDeck,
   };
 }

@@ -1232,7 +1232,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .card-archetype { font-size: 11px; color: var(--text-dim); }
 
 /* ===== Deck Builder ===== */
-.deck-layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
+.deck-layout { display: grid; grid-template-columns: minmax(280px, 320px) 1fr; gap: 24px; align-items: start; }
 @media (max-width: 800px) { .deck-layout { grid-template-columns: 1fr; } }
 
 .deck-sidebar {
@@ -1244,27 +1244,91 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 3px 3px 0 rgba(0,255,136,0.1);
 }
 .deck-create { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-.deck-list { display: flex; flex-direction: column; gap: 6px; }
+.deck-list { display: flex; flex-direction: column; gap: 12px; }
+.deck-reorder-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+}
 
 .deck-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding: 10px 12px;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  user-select: none;
+  touch-action: manipulation;
 }
-.deck-item:hover { border-color: var(--accent); }
-.deck-item--active { border-color: var(--accent); }
+.deck-item:hover {
+  border-color: var(--accent);
+  transform: translate(-2px, -2px);
+  box-shadow:
+    4px 4px 0 rgba(0,255,136,0.2),
+    0 0 14px rgba(0,255,136,0.16);
+}
+.deck-item--active {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px rgba(0,255,136,0.22),
+    0 0 18px rgba(0,255,136,0.12);
+}
+.deck-item--drag-over {
+  border-color: var(--accent2);
+  box-shadow:
+    0 0 0 1px rgba(0,204,255,0.3),
+    0 0 18px rgba(0,204,255,0.16);
+}
+.deck-item--dragging {
+  opacity: 0.7;
+}
+.deck-item--touch-dragging {
+  cursor: grabbing;
+}
+.deck-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
 .deck-item-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+.deck-item-preview {
+  position: relative;
+  min-height: 144px;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at top, rgba(0,255,136,0.08), transparent 58%),
+    linear-gradient(180deg, rgba(7,9,24,0.9), rgba(18,22,41,0.9));
+  overflow: hidden;
+}
+.deck-preview-card {
+  --deck-preview-offset: 0px;
+  --deck-preview-rotate: 0deg;
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(calc(-50% + var(--deck-preview-offset))) rotate(var(--deck-preview-rotate));
+  transform-origin: bottom center;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 18px rgba(0,0,0,0.28);
+}
+.deck-preview-card--placeholder {
+  width: 80px;
+  height: 112px;
+  background: linear-gradient(180deg, rgba(0,204,255,0.2), rgba(0,255,136,0.12));
+  border: 1px dashed rgba(255,255,255,0.12);
 }
 .deck-name {
   font-size: 13px;
@@ -1279,7 +1343,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
 }
 .deck-count { font-size: 11px; color: var(--text-dim); }
-.deck-actions { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
+.deck-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
 
 .deck-main { min-width: 0; }
 .deck-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -1305,7 +1375,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-radius: 8px;
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
-  min-height: 140px;
+  min-height: 250px;
 }
 .deck-slot--filled { background: var(--bg2); cursor: grab; }
 .deck-slot--filled:active { cursor: grabbing; }
@@ -1319,7 +1389,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .deck-slot--drag-over { border-color: var(--accent2); box-shadow: 0 0 10px rgba(0, 204, 255, 0.3); }
 
 .deck-slot-card { display: flex; flex-direction: column; height: 100%; }
-.deck-slot-art { display: flex; justify-content: center; overflow: hidden; }
+.deck-slot-art {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
+  padding: 12px 12px 0;
+}
 .deck-slot-info { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
 
 .deck-slot-placeholder {
