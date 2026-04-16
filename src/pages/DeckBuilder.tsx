@@ -18,7 +18,7 @@ import {
   FIRST_DECK_MIN_PUNCH_SKATERS,
 } from "../lib/deckValidation";
 
-export function DeckBuilder() {
+export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
   const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck } = useDecks();
   const { cards } = useCollection();
   const { tier, openUpgradeModal } = useTier();
@@ -64,17 +64,18 @@ export function DeckBuilder() {
 
   // Free-tier users: see an empty gallery page with upgrade prompt
   if (!tierData.canSave) {
-    return (
-      <div className="page">
-        <h1 className="page-title">My Decks</h1>
+    const inner = (
+      <>
+        {!embedded && <h1 className="page-title">My Decks</h1>}
         <div className="empty-state">
           <span className="empty-icon">🗂️</span>
           <p>Your deck gallery is empty.</p>
           <p className="page-sub">Upgrade to start forging and saving cards to your decks.</p>
           <button className="btn-primary" onClick={openUpgradeModal}>Upgrade to Save Cards</button>
         </div>
-      </div>
+      </>
     );
+    return embedded ? inner : <div className="page">{inner}</div>;
   }
 
   const canCreateDeck = tierData.maxDecks === null || decks.length < tierData.maxDecks;
@@ -151,8 +152,8 @@ export function DeckBuilder() {
   const slotsRemaining = activeDeck ? DECK_CARD_LIMIT - activeDeck.cards.length : 0;
 
   return (
-    <div className="page">
-      <h1 className="page-title">My Decks</h1>
+    <div className={embedded ? undefined : "page"}>
+      {!embedded && <h1 className="page-title">My Decks</h1>}
 
       <div className={tierData.canEditDecks ? "deck-layout" : ""}>
         {/* Sidebar: deck list — only shown for Deck Master (tier3) */}

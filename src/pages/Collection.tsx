@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { CardPayload, Rarity, Archetype, Faction, District } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
@@ -16,6 +16,7 @@ import { downloadCardAsJpg } from "../services/cardDownload";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
 import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
+import { DeckBuilder } from "./DeckBuilder";
 
 type SortOption = "name-asc" | "name-desc" | "newest" | "oldest" | "rarity";
 
@@ -34,6 +35,16 @@ export function Collection() {
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState<"collection" | "decks">(
+    () => (searchParams.get("tab") === "decks" ? "decks" : "collection")
+  );
+
+  const handleTabChange = (tab: "collection" | "decks") => {
+    setActiveTab(tab);
+    setSearchParams(tab === "decks" ? { tab: "decks" } : {}, { replace: true });
+  };
 
   const [selected, setSelected] = useState<CardPayload | null>(null);
   const [tradeTarget, setTradeTarget] = useState<CardPayload | null>(null);
@@ -248,12 +259,32 @@ export function Collection() {
   if (!tierData.canSave) {
     return (
       <div className="page">
-        <h1 className="page-title">Collection</h1>
-        <div className="empty-state">
-          <span className="empty-icon">🔒</span>
-          <p>Account saving requires a paid tier.</p>
-          <button className="btn-primary" onClick={openUpgradeModal}>Upgrade to Save Cards</button>
+        <div className="collection-tabs">
+          <button
+            className={`collection-tab${activeTab === "collection" ? " collection-tab--active" : ""}`}
+            onClick={() => handleTabChange("collection")}
+          >
+            Collection
+          </button>
+          <button
+            className={`collection-tab${activeTab === "decks" ? " collection-tab--active" : ""}`}
+            onClick={() => handleTabChange("decks")}
+          >
+            My Decks
+          </button>
         </div>
+        {activeTab === "decks" ? (
+          <DeckBuilder embedded />
+        ) : (
+          <>
+            <h1 className="page-title">Collection</h1>
+            <div className="empty-state">
+              <span className="empty-icon">🔒</span>
+              <p>Account saving requires a paid tier.</p>
+              <button className="btn-primary" onClick={openUpgradeModal}>Upgrade to Save Cards</button>
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -273,6 +304,25 @@ export function Collection() {
         </div>
       )}
 
+      <div className="collection-tabs">
+        <button
+          className={`collection-tab${activeTab === "collection" ? " collection-tab--active" : ""}`}
+          onClick={() => handleTabChange("collection")}
+        >
+          Collection
+        </button>
+        <button
+          className={`collection-tab${activeTab === "decks" ? " collection-tab--active" : ""}`}
+          onClick={() => handleTabChange("decks")}
+        >
+          My Decks
+        </button>
+      </div>
+
+      {activeTab === "decks" ? (
+        <DeckBuilder embedded />
+      ) : (
+      <>
       <div className="page-header">
         <div>
           <h1 className="page-title">Collection</h1>
@@ -598,6 +648,8 @@ export function Collection() {
           frameImageUrl={selected.frameImageUrl}
           onClose={() => setPrinting(false)}
         />
+      )}
+      </>
       )}
     </div>
   );

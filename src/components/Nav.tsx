@@ -84,9 +84,6 @@ export function Nav() {
       <NavLink to="/collection" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Collection
       </NavLink>
-      <NavLink to="/decks" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-        My Decks
-      </NavLink>
       {user && (
         <NavLink to="/mission" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
           Mission

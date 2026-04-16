@@ -1,5 +1,5 @@
 import { Component, ReactNode, lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -33,7 +33,6 @@ function ThemeApplier() {
 
 const CardForge  = lazy(() => import("./pages/CardForge").then(m => ({ default: m.CardForge })));
 const Collection = lazy(() => import("./pages/Collection").then(m => ({ default: m.Collection })));
-const DeckBuilder = lazy(() => import("./pages/DeckBuilder").then(m => ({ default: m.DeckBuilder })));
 const Mission = lazy(() => import("./pages/Mission").then(m => ({ default: m.Mission })));
 const EditCard   = lazy(() => import("./pages/EditCard").then(m => ({ default: m.EditCard })));
 const Trades     = lazy(() => import("./pages/Trades").then(m => ({ default: m.Trades })));
@@ -100,9 +99,7 @@ function App() {
                       <Route path="/collection" element={
                         <ProtectedRoute><Collection /></ProtectedRoute>
                       } />
-                      <Route path="/decks" element={
-                        <ProtectedRoute><DeckBuilder /></ProtectedRoute>
-                      } />
+                      <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
                       <Route path="/mission" element={
                         <ProtectedRoute><Mission /></ProtectedRoute>
                       } />

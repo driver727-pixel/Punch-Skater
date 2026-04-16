@@ -32,11 +32,10 @@ test.describe('Home page (Card Forge)', () => {
     await expect(cardForgeLink).toHaveClass(/active/);
   });
 
-  test('shows nav links for Collection, My Decks, Trades', async ({ page }) => {
+  test('shows nav links for Collection and Trades', async ({ page }) => {
     await page.goto('/');
     await ensureNavLinksVisible(page);
     await expect(page.getByRole('link', { name: /collection/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /my decks/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /trades/i })).toBeVisible();
   });
 

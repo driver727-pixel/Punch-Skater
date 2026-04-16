@@ -121,7 +121,7 @@ export async function importCardsIfPrompt(page: Page) {
 }
 
 export async function createDeckFromCard(page: Page, deckName: string, cardName: string) {
-  await page.goto('/decks');
+  await page.goto('/collection?tab=decks');
   await page.getByPlaceholder(/new deck name/i).fill(deckName);
   await page.getByRole('button', { name: /\+ new deck/i }).click();
   await expect(page.getByRole('heading', { name: deckName })).toBeVisible();
