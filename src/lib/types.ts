@@ -161,6 +161,8 @@ export interface DeckPayload {
   cards: CardPayload[];
   createdAt: string;
   updatedAt: string;
+  /** Persistent display order for deck lists. Lower values appear first. */
+  sortOrder?: number;
   /** Whether this deck is readied for battle in the multiplayer arena. */
   battleReady?: boolean;
 }

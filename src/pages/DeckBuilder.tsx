@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import type { CSSProperties, DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from "react";
 import type { DeckPayload, CardPayload } from "../lib/types";
 import { useDecks, DECK_CARD_LIMIT } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
@@ -18,8 +19,30 @@ import {
   FIRST_DECK_MIN_PUNCH_SKATERS,
 } from "../lib/deckValidation";
 
+const PORTRAIT_CARD_WIDTH = 120;
+const PORTRAIT_CARD_HEIGHT = 168;
+const DECK_SLOT_CARD_WIDTH = 110;
+const DECK_SLOT_CARD_HEIGHT = 154;
+const DECK_PREVIEW_CARD_WIDTH = 80;
+const DECK_PREVIEW_CARD_HEIGHT = 112;
+const MOBILE_LONG_PRESS_DELAY_MS = 280;
+const TOUCH_MOVEMENT_THRESHOLD_PX = 10;
+
+interface DeckTouchState {
+  index: number;
+  pointerId: number;
+  dragging: boolean;
+  startX: number;
+  startY: number;
+  element: HTMLDivElement | null;
+}
+
+function exceedsMovementThreshold(startX: number, startY: number, currentX: number, currentY: number, threshold: number) {
+  return Math.hypot(currentX - startX, currentY - startY) > threshold;
+}
+
 export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
-  const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck } = useDecks();
+  const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck, moveDeck } = useDecks();
   const { cards } = useCollection();
   const { tier, openUpgradeModal } = useTier();
   const { readyDeck, unreadyDeck, myArenaEntry } = useBattle();
@@ -31,7 +54,13 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
   const [renameVal, setRenameVal] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const [deckDragIdx, setDeckDragIdx] = useState<number | null>(null);
+  const [deckDragOver, setDeckDragOver] = useState<number | null>(null);
+  const [touchDraggingDeckId, setTouchDraggingDeckId] = useState<string | null>(null);
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
+  const deckLongPressTimerRef = useRef<number | null>(null);
+  const deckTouchStateRef = useRef<DeckTouchState | null>(null);
+  const ignoreDeckClickRef = useRef(false);
 
   // First-deck initiation status (only relevant when activeDeck is the first deck)
   const firstDeckInitStatus = useMemo(() => {
@@ -54,6 +83,12 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decks]);
+
+  useEffect(() => () => {
+    if (deckLongPressTimerRef.current !== null) {
+      window.clearTimeout(deckLongPressTimerRef.current);
+    }
+  }, []);
 
   const deckTotalPowerById = useMemo(() => Object.fromEntries(
     decks.map((deck) => [
@@ -139,6 +174,116 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
     setDragOver(null);
   };
 
+  const clearDeckLongPressTimer = () => {
+    if (deckLongPressTimerRef.current !== null) {
+      window.clearTimeout(deckLongPressTimerRef.current);
+      deckLongPressTimerRef.current = null;
+    }
+  };
+
+  const resetDeckDragState = () => {
+    clearDeckLongPressTimer();
+    setDeckDragIdx(null);
+    setDeckDragOver(null);
+    setTouchDraggingDeckId(null);
+    deckTouchStateRef.current = null;
+  };
+
+  const resolveDeckDropIndex = (clientX: number, clientY: number) => {
+    const target = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-deck-index]");
+    if (!target) return null;
+    const value = Number.parseInt(target.dataset.deckIndex ?? "", 10);
+    return Number.isNaN(value) ? null : value;
+  };
+
+  const handleDeckReorder = (toIndex: number | null) => {
+    if (deckDragIdx !== null && toIndex !== null && deckDragIdx !== toIndex) {
+      moveDeck(deckDragIdx, toIndex);
+    }
+    resetDeckDragState();
+  };
+
+  const handleDeckClick = (deck: DeckPayload) => {
+    if (ignoreDeckClickRef.current) {
+      ignoreDeckClickRef.current = false;
+      return;
+    }
+    handleSetActiveDeck(deck);
+  };
+
+  const handleDeckDragStart = (event: ReactDragEvent<HTMLDivElement>, index: number) => {
+    if ((event.target as HTMLElement).closest("button, input")) {
+      event.preventDefault();
+      return;
+    }
+    setDeckDragIdx(index);
+    setDeckDragOver(index);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  };
+
+  const handleDeckPointerDown = (event: ReactPointerEvent<HTMLDivElement>, index: number) => {
+    if (event.pointerType !== "touch" || (event.target as HTMLElement).closest("button, input")) return;
+    clearDeckLongPressTimer();
+    deckTouchStateRef.current = {
+      index,
+      pointerId: event.pointerId,
+      dragging: false,
+      startX: event.clientX,
+      startY: event.clientY,
+      element: event.currentTarget,
+    };
+    deckLongPressTimerRef.current = window.setTimeout(() => {
+      const state = deckTouchStateRef.current;
+      if (!state || state.pointerId !== event.pointerId) return;
+      state.dragging = true;
+      state.element?.setPointerCapture(event.pointerId);
+      ignoreDeckClickRef.current = true;
+      setDeckDragIdx(index);
+      setDeckDragOver(index);
+      setTouchDraggingDeckId(decks[index]?.id ?? null);
+    }, MOBILE_LONG_PRESS_DELAY_MS);
+  };
+
+  const handleDeckPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const state = deckTouchStateRef.current;
+    if (!state || state.pointerId !== event.pointerId) return;
+    if (!state.dragging) {
+      if (exceedsMovementThreshold(state.startX, state.startY, event.clientX, event.clientY, TOUCH_MOVEMENT_THRESHOLD_PX)) {
+        clearDeckLongPressTimer();
+        deckTouchStateRef.current = null;
+      }
+      return;
+    }
+    event.preventDefault();
+    setDeckDragOver(resolveDeckDropIndex(event.clientX, event.clientY) ?? state.index);
+  };
+
+  const handleDeckPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const state = deckTouchStateRef.current;
+    if (!state || state.pointerId !== event.pointerId) return;
+    clearDeckLongPressTimer();
+    if (state.element?.hasPointerCapture(event.pointerId)) {
+      state.element.releasePointerCapture(event.pointerId);
+    }
+    if (state.dragging) {
+      event.preventDefault();
+      handleDeckReorder(resolveDeckDropIndex(event.clientX, event.clientY) ?? deckDragOver ?? state.index);
+      return;
+    }
+    deckTouchStateRef.current = null;
+  };
+
+  const handleDeckPointerCancel = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const state = deckTouchStateRef.current;
+    if (!state || state.pointerId !== event.pointerId) return;
+    clearDeckLongPressTimer();
+    if (state.element?.hasPointerCapture(event.pointerId)) {
+      state.element.releasePointerCapture(event.pointerId);
+    }
+    resetDeckDragState();
+  };
+
   const availableCards = cards.filter(
     (c) => !activeDeck?.cards.some((dc) => dc.id === c.id)
   );
@@ -172,46 +317,96 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
               </div>
             )}
 
-            <div className="deck-list">
-              {decks.length === 0 && (
-                <p className="empty-text">No decks yet.</p>
-              )}
-              {decks.map((deck) => (
-                <div
-                  key={deck.id}
-                  className={`deck-item ${activeDeck?.id === deck.id ? "deck-item--active" : ""}`}
-                  onClick={() => handleSetActiveDeck(deck)}
-                >
-                  {renaming === deck.id ? (
-                    <input
-                      className="input rename-input"
-                      value={renameVal}
-                      autoFocus
-                      onChange={(e) => setRenameVal(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleConfirmRename(); if (e.key === "Escape") setRenaming(null); }}
-                      onBlur={handleConfirmRename}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : (
-                    <div className="deck-item-info">
-                      <span className="deck-name">{deck.name}</span>
-                      <span className="deck-power">
-                        <span aria-hidden="true">⚡</span> {deckTotalPowerById[deck.id] ?? 0} Power
-                      </span>
-                    </div>
-                  )}
-                  <span className="deck-count">{deck.cards.length}/{DECK_CARD_LIMIT}</span>
-                  <div className="deck-actions" onClick={(e) => e.stopPropagation()}>
-                    <button className="icon-btn" title="Rename" onClick={() => { sfxClick(); handleStartRename(deck); }}>✎</button>
-                    <button className="icon-btn" title="Export" onClick={() => { sfxClick(); handleExportDeck(deck); }}>⬇</button>
-                    <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => {
-                      deleteDeck(deck.id);
-                      if (activeDeck?.id === deck.id) setActiveDeck(null);
-                    }}>✕</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+             <div className="deck-list" aria-describedby={decks.length > 0 ? "deck-reorder-hint" : undefined}>
+               {decks.length === 0 && (
+                 <p className="empty-text">No decks yet.</p>
+               )}
+               {decks.length > 0 && (
+                 <p id="deck-reorder-hint" className="deck-reorder-hint" aria-live="polite">Drag decks to reorder them. On mobile, long-press and drag.</p>
+               )}
+               {decks.map((deck, deckIndex) => (
+                 <div
+                   key={deck.id}
+                   data-deck-index={deckIndex}
+                   className={`deck-item ${activeDeck?.id === deck.id ? "deck-item--active" : ""}${deckDragOver === deckIndex ? " deck-item--drag-over" : ""}${deckDragIdx === deckIndex ? " deck-item--dragging" : ""}${touchDraggingDeckId === deck.id ? " deck-item--touch-dragging" : ""}`}
+                   draggable={renaming !== deck.id}
+                   onClick={() => handleDeckClick(deck)}
+                   onDragStart={(event) => handleDeckDragStart(event, deckIndex)}
+                   onDragOver={(event) => {
+                     event.preventDefault();
+                     setDeckDragOver(deckIndex);
+                   }}
+                   onDragLeave={() => setDeckDragOver(null)}
+                   onDrop={() => handleDeckReorder(deckIndex)}
+                   onDragEnd={resetDeckDragState}
+                   onPointerDown={(event) => handleDeckPointerDown(event, deckIndex)}
+                   onPointerMove={handleDeckPointerMove}
+                   onPointerUp={handleDeckPointerUp}
+                   onPointerCancel={handleDeckPointerCancel}
+                 >
+                   <div className="deck-item-preview" aria-hidden="true">
+                     {deck.cards.length > 0 ? (
+                       deck.cards.slice(0, 5).map((card, previewIdx, previewCards) => {
+                         const spread = previewIdx - (previewCards.length - 1) / 2;
+                         const previewStyle = {
+                           "--deck-preview-offset": `${spread * 18}px`,
+                           "--deck-preview-rotate": `${spread * 6}deg`,
+                           zIndex: previewIdx + 1,
+                         } as CSSProperties;
+                         return (
+                           <div key={card.id} className="deck-preview-card" style={previewStyle}>
+                             <CardThumbnail card={card} width={DECK_PREVIEW_CARD_WIDTH} height={DECK_PREVIEW_CARD_HEIGHT} />
+                           </div>
+                         );
+                       })
+                     ) : (
+                       Array.from({ length: 3 }).map((_, previewIdx) => {
+                         const spread = previewIdx - 1;
+                         const previewStyle = {
+                           "--deck-preview-offset": `${spread * 18}px`,
+                           "--deck-preview-rotate": `${spread * 6}deg`,
+                           zIndex: previewIdx + 1,
+                         } as CSSProperties;
+                         return (
+                           <div key={previewIdx} className="deck-preview-card deck-preview-card--placeholder" style={previewStyle} />
+                         );
+                       })
+                     )}
+                   </div>
+
+                   <div className="deck-item-row">
+                     {renaming === deck.id ? (
+                       <input
+                         className="input rename-input"
+                         value={renameVal}
+                         autoFocus
+                         onChange={(e) => setRenameVal(e.target.value)}
+                         onKeyDown={(e) => { if (e.key === "Enter") handleConfirmRename(); if (e.key === "Escape") setRenaming(null); }}
+                         onBlur={handleConfirmRename}
+                         onClick={(e) => e.stopPropagation()}
+                       />
+                     ) : (
+                       <div className="deck-item-info">
+                         <span className="deck-name">{deck.name}</span>
+                         <span className="deck-power">
+                           <span aria-hidden="true">⚡</span> {deckTotalPowerById[deck.id] ?? 0} Power
+                         </span>
+                       </div>
+                     )}
+                     <span className="deck-count">{deck.cards.length}/{DECK_CARD_LIMIT}</span>
+                   </div>
+
+                   <div className="deck-actions" onClick={(e) => e.stopPropagation()}>
+                     <button className="icon-btn" title="Rename" onClick={() => { sfxClick(); handleStartRename(deck); }}>✎</button>
+                     <button className="icon-btn" title="Export" onClick={() => { sfxClick(); handleExportDeck(deck); }}>⬇</button>
+                     <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => {
+                       deleteDeck(deck.id);
+                       if (activeDeck?.id === deck.id) setActiveDeck(null);
+                     }}>✕</button>
+                   </div>
+                 </div>
+               ))}
+             </div>
           </div>
         )}
 
@@ -301,12 +496,12 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                         onDragEnd={() => { setDragIdx(null); setDragOver(null); }}
                       >
                         {card ? (
-                          <div className="deck-slot-card">
-                            <div className="deck-slot-art">
-                              <CardThumbnail card={card} width={110} height={76} />
-                            </div>
-                            <div className="deck-slot-info">
-                              <span className="card-name">{card.identity.name}</span>
+                           <div className="deck-slot-card">
+                             <div className="deck-slot-art">
+                               <CardThumbnail card={card} width={DECK_SLOT_CARD_WIDTH} height={DECK_SLOT_CARD_HEIGHT} />
+                             </div>
+                             <div className="deck-slot-info">
+                               <span className="card-name">{card.identity.name}</span>
                               <span className="card-sub">{getDisplayedArchetype(card)}</span>
                               <button
                                 className="btn-danger btn-sm"
@@ -343,11 +538,11 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                         ? canAddToFirstDeck(activeDeck.cards, card)
                         : { allowed: true as const };
                       const blocked = !addCheck.allowed;
-                      return (
-                        <div key={card.id} className={`card-thumb card-thumb--add${blocked ? " card-thumb--blocked" : ""}`}>
-                          <CardThumbnail card={card} width={120} height={84} />
-                          <div className="card-thumb-info">
-                            <span className="card-name">{card.identity.name}</span>
+                       return (
+                         <div key={card.id} className={`card-thumb card-thumb--add${blocked ? " card-thumb--blocked" : ""}`}>
+                           <CardThumbnail card={card} width={PORTRAIT_CARD_WIDTH} height={PORTRAIT_CARD_HEIGHT} />
+                           <div className="card-thumb-info">
+                             <span className="card-name">{card.identity.name}</span>
                             <span className="card-sub">{getDisplayedArchetype(card)}</span>
                             <button
                               className={blocked ? "btn-secondary btn-sm" : "btn-primary btn-sm"}
