@@ -276,8 +276,8 @@ export function GeoAtlas({
         ),
       ).length
     : null;
-  const inspectionCopy =
-    activeDistrictEntry?.kind === "district"
+  const inspectionCopy = activeDistrictEntry
+    ? activeDistrictEntry.kind === "district"
       ? {
           name: activeDistrictEntry.name,
           weatherSummary: getDistrictWeatherSummary({
@@ -306,7 +306,14 @@ export function GeoAtlas({
               )
             : null,
         }
-      : null;
+      : {
+          name: activeDistrictEntry.name,
+          weatherSummary: "Corridor exchange hub connecting district routes.",
+          accessSummary: "road corridors",
+          accessBlocked: false,
+          accessReason: null,
+        }
+    : null;
   const weatherBadge = weather?.stale ? "weather cached" : "weather live";
 
   const showAustralia = !section || section === "australia";
@@ -358,11 +365,12 @@ export function GeoAtlas({
                     <strong className="geo-atlas__inspection-title">{inspectionCopy.name}</strong>
                     <span className="geo-atlas__inspection-body">
                       {inspectionCopy.weatherSummary} Access now: {inspectionCopy.accessSummary}.
-                      {inspectionCopy.accessBlocked && inspectionCopy.accessReason
-                        ? ` Current setup blocked: ${inspectionCopy.accessReason}`
-                        : boardConfig
-                          ? " Current setup can ride this district."
-                          : ""}
+                      {activeDistrictEntry?.kind === "district" &&
+                        (inspectionCopy.accessBlocked && inspectionCopy.accessReason
+                          ? ` Current setup blocked: ${inspectionCopy.accessReason}`
+                          : boardConfig
+                            ? " Current setup can ride this district."
+                            : "")}
                     </span>
                   </div>
                 )}
