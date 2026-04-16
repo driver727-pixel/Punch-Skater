@@ -27,7 +27,7 @@ import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
-const AGE_GROUPS: AgeGroup[] = ["Adult", "Middle-aged", "Senior"];
+const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];
 const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Heavy"];
 const HAIR_LENGTHS: HairLength[] = ["Bald", "Short", "Medium", "Long"];
 const SKIN_TONES: SkinTone[] = ["Light", "Medium", "Dark", "Very Dark"];

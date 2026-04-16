@@ -158,7 +158,7 @@ function buildFaceDescription(faceCharacter?: string): string {
 }
 
 function buildAgeDescription(ageGroup: string): string {
-  return ageGroup === "Young Adult" ? "adult in their mid-20s, fresh-faced but clearly mature" :
+  return ageGroup === "Young Adult" ? "adult looking 21-31 years of age, fresh-faced with youthful energy but unmistakably grown" :
     ageGroup === "Adult"            ? "adult in their 30s, mature features with slight lines around the eyes" :
     ageGroup === "Middle-aged"      ? "middle-aged adult in their late 40s to 50s, prominent crow's feet, forehead wrinkles, visible laugh lines, slightly sagging jawline, greying at the temples" :
     /* Senior */                      "senior adult in their late 60s or older, deep wrinkles, age spots, thinning eyebrows, weathered leathery skin, sagging jowls";
