@@ -45,7 +45,7 @@ interface BoardBuilderProps {
 
 // Map each option array into the slim shape ConveyorCarousel expects.
 const COMPONENT_IMAGE_URLS = {
-  Street: withBoardComponentAssetVersion("/assets/boards/deck/street.png"),
+  Street: withBoardComponentAssetVersion("/assets/boards/deck/street-carbon.png"),
   AT: withBoardComponentAssetVersion("/assets/boards/deck/at-bamboo.png"),
   Mountain: withBoardComponentAssetVersion("/assets/boards/deck/mt-board.png"),
   Surf: withBoardComponentAssetVersion("/assets/boards/deck/surf-skate.png"),
@@ -57,7 +57,7 @@ const COMPONENT_IMAGE_URLS = {
   Standard: withBoardComponentAssetVersion("/assets/boards/motor/6354-motor.png"),
   Torque: withBoardComponentAssetVersion("/assets/boards/motor/6374-motor.png"),
   Outrunner: withBoardComponentAssetVersion("/assets/boards/motor/6396-motor.png"),
-  Urethane: withBoardComponentAssetVersion("/assets/boards/wheels/poly-urethane-wheels.png"),
+  Urethane: withBoardComponentAssetVersion("/assets/boards/wheels/poly-wheels.png"),
   Pneumatic: withBoardComponentAssetVersion("/assets/boards/wheels/pneumatic-wheels.png"),
   Rubber: withBoardComponentAssetVersion("/assets/boards/wheels/solid-rubber.png"),
   Cloud: withBoardComponentAssetVersion("/assets/boards/wheels/cloud-wheels.png"),

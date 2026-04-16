@@ -6515,6 +6515,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* Item dimensions exposed as a custom property for consistent reuse. */
 :root {
   --conveyor-item-size: 88px;
+  --conveyor-text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 0.95);
 }
 
 /*
@@ -6724,7 +6725,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .conveyor__item-img {
-  inset: 3px 3px 16px;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  bottom: 16px;
+  left: 3px;
   width: calc(100% - 6px);
   height: calc(100% - 19px);
   object-fit: contain;
@@ -6755,13 +6760,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
 }
 
-.conveyor__item-name   { font-size: 11px; font-weight: bold; color: var(--text); letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 0.95); }
+.conveyor__item-name {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text);
+  letter-spacing: 0.5px;
+  text-shadow: var(--conveyor-text-shadow);
+}
+
 .conveyor__item-tagline {
   font-size: 9px;
   color: var(--accent);
   letter-spacing: 0.3px;
   line-height: 1.3;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 0.95);
+  text-shadow: var(--conveyor-text-shadow);
 }
 
 @media (max-width: 1180px) {
