@@ -169,13 +169,15 @@ export function ConveyorCarousel({
                 <img
                   src={item.imageSrc}
                   alt={item.label}
-                  className="conveyor__item-img"
+                  className="conveyor__item-media conveyor__item-img"
                 />
               ) : (
-                <span className="conveyor__item-icon">{item.icon}</span>
+                <span className="conveyor__item-media conveyor__item-icon">{item.icon}</span>
               )}
-              <span className="conveyor__item-name">{item.label}</span>
-              <span className="conveyor__item-tagline">{item.tagline}</span>
+              <span className="conveyor__item-copy">
+                <span className="conveyor__item-name">{item.label}</span>
+                <span className="conveyor__item-tagline">{item.tagline}</span>
+              </span>
             </button>
           );
         })}

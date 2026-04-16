@@ -6640,10 +6640,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   height: var(--conveyor-item-size);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 6px 5px;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
   background: var(--bg3);
   border: 2px solid var(--border);
   border-radius: 4px;
@@ -6657,6 +6656,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     0 2px 8px rgba(0,0,0,0.5);
   transition: border-color 0.15s, transform 0.2s, box-shadow 0.2s, color 0.15s;
   position: relative;
+  overflow: visible;
 }
 
 .conveyor__item:hover {
@@ -6711,14 +6711,49 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   animation: clamp-pulse 1.2s ease-in-out infinite;
 }
 
-.conveyor__item-icon   { font-size: 18px; line-height: 1; }
-.conveyor__item-img    { width: 36px; height: 36px; object-fit: contain; object-position: center; }
+.conveyor__item-media {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.conveyor__item-icon {
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.conveyor__item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
 
 /* Disabled (incompatible) item */
 .conveyor__item--disabled {
   opacity: 0.3;
   pointer-events: none;
   filter: grayscale(1);
+}
+
+.conveyor__item-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: auto;
+  width: 100%;
+  padding: 26px 6px 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 4, 0, 0) 0%,
+    rgba(8, 4, 0, 0.35) 28%,
+    rgba(8, 4, 0, 0.84) 68%,
+    rgba(8, 4, 0, 0.96) 100%
+  );
 }
 
 .conveyor__item-name   { font-size: 11px; font-weight: bold; color: var(--text); letter-spacing: 0.5px; }
