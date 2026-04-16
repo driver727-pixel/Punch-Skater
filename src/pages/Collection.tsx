@@ -41,8 +41,14 @@ export function Collection() {
     () => (searchParams.get("tab") === "decks" ? "decks" : "collection")
   );
 
+  // Sync tab state with URL on external navigation (back/forward)
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    const urlTab = tabParam === "decks" ? "decks" : "collection";
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
   const handleTabChange = (tab: "collection" | "decks") => {
-    setActiveTab(tab);
     setSearchParams(tab === "decks" ? { tab: "decks" } : {}, { replace: true });
   };
 
@@ -256,23 +262,27 @@ export function Collection() {
     clearSelection();
   };
 
+  const tabBar = (
+    <div className="collection-tabs">
+      <button
+        className={`collection-tab${activeTab === "collection" ? " collection-tab--active" : ""}`}
+        onClick={() => handleTabChange("collection")}
+      >
+        Collection
+      </button>
+      <button
+        className={`collection-tab${activeTab === "decks" ? " collection-tab--active" : ""}`}
+        onClick={() => handleTabChange("decks")}
+      >
+        My Decks
+      </button>
+    </div>
+  );
+
   if (!tierData.canSave) {
     return (
       <div className="page">
-        <div className="collection-tabs">
-          <button
-            className={`collection-tab${activeTab === "collection" ? " collection-tab--active" : ""}`}
-            onClick={() => handleTabChange("collection")}
-          >
-            Collection
-          </button>
-          <button
-            className={`collection-tab${activeTab === "decks" ? " collection-tab--active" : ""}`}
-            onClick={() => handleTabChange("decks")}
-          >
-            My Decks
-          </button>
-        </div>
+        {tabBar}
         {activeTab === "decks" ? (
           <DeckBuilder embedded />
         ) : (
@@ -304,20 +314,7 @@ export function Collection() {
         </div>
       )}
 
-      <div className="collection-tabs">
-        <button
-          className={`collection-tab${activeTab === "collection" ? " collection-tab--active" : ""}`}
-          onClick={() => handleTabChange("collection")}
-        >
-          Collection
-        </button>
-        <button
-          className={`collection-tab${activeTab === "decks" ? " collection-tab--active" : ""}`}
-          onClick={() => handleTabChange("decks")}
-        >
-          My Decks
-        </button>
-      </div>
+      {tabBar}
 
       {activeTab === "decks" ? (
         <DeckBuilder embedded />
