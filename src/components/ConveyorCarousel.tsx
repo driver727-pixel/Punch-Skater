@@ -23,9 +23,18 @@ function isMatteBackgroundPixel(data: Uint8ClampedArray, offset: number) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const brightness = (r + g + b) / 3;
+  // Treat only bright, low-variance edge pixels as matte so the flood fill
+  // removes the white studio backdrop without cutting into the product art.
   return a > 0 && brightness >= 218 && max - min <= 42;
 }
 
+/**
+ * Converts edge-connected white matte pixels in imported PNGs into transparency.
+ *
+ * The processed data URL is cached by source path so repeated renders across the
+ * stacked conveyors reuse the same cleaned image instead of re-running canvas
+ * work for every button.
+ */
 function stripImageMatte(src: string) {
   let pending = conveyorImageCache.get(src);
   if (pending) return pending;
@@ -37,7 +46,7 @@ function stripImageMatte(src: string) {
       const canvas = document.createElement("canvas");
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
-      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const context = canvas.getContext("2d");
 
       if (!context) {
         resolve(src);
@@ -77,6 +86,8 @@ function stripImageMatte(src: string) {
         const y = Math.floor(index / width);
         const offset = index * 4;
         const brightness = (data[offset] + data[offset + 1] + data[offset + 2]) / 3;
+        // Fade only the brightest connected matte pixels: 218 matches the flood-fill
+        // threshold above, and the 37-point ramp softens the edge before full clear-out.
         const matteStrength = Math.max(0, Math.min(1, (brightness - 218) / 37));
         data[offset + 3] = Math.round(data[offset + 3] * (1 - matteStrength));
 
