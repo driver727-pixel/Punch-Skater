@@ -277,6 +277,11 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
 /**
  * Builds a prompt for the **frame layer** of a card.
  *
+ * Fallback-only for the current shipped catalog: all live rarity tiers are
+ * registered to uploaded static frame assets in `src/services/staticAssets.ts`,
+ * so the live forge normally never calls fal.ai for this layer. This prompt is
+ * retained for missing assets, future rarities, or emergency regeneration.
+ *
  * Generates an ornate playing-card-style border whose complexity and style
  * scales with the rarity tier.  The centre of the frame image is flat black
  * so that when composited on top of background+character via
@@ -346,6 +351,12 @@ export function buildCardBackPrompt(rarity: Rarity): string {
 
 /**
  * Builds a prompt for the **background layer** of a card.
+ *
+ * Fallback-only for the current shipped catalog: all live forge districts are
+ * registered to uploaded static background assets in
+ * `src/services/staticAssets.ts`, so the live forge normally never calls
+ * fal.ai for this layer. This prompt is retained for missing assets, future
+ * districts, or emergency regeneration.
  *
  * District descriptions are applied here — and **only** here — so that
  * environment language never leaks into character or skateboard prompts.

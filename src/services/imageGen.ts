@@ -93,7 +93,7 @@ export interface ImageDimensions {
 /**
  * Generate a card illustration via the Fal.ai proxy.
  *
- * @param prompt     - Text description built by `buildImagePrompt()`.
+ * @param prompt     - Text description built by one of the image prompt builders.
  * @param masterSeed - The card's string master seed; hashed to a 32-bit int so
  *                     the same card always produces the same image.
  * @returns          Resolves with the URL of the generated image.

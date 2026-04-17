@@ -76,6 +76,40 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
+## Prompt Surface Inventory
+
+### Current image-prompt map
+
+- `src/pages/CardForge.tsx`
+  - Orchestrates the live forge
+  - Builds the background, character, frame, and board prompt strings
+- `src/lib/promptBuilder.ts`
+  - Owns `buildCharacterPrompt`, `buildBackgroundPrompt`, `buildFramePrompt`
+  - Also retains `buildCardBackPrompt` and `buildImagePrompt` as dormant legacy/fallback builders
+- `src/lib/boardBuilder.ts`
+  - Owns `buildBoardImagePrompt`
+- `src/services/imageGen.ts`
+  - Appends the mandatory positive suffix and negative prompt to every generated image request
+- `src/services/staticAssets.ts`
+  - Short-circuits district backgrounds and rarity frames to uploaded files before Firestore cache or fal.ai generation is attempted
+
+### Prompt set that matters in normal runtime
+
+- Active prompts
+  - Character prompt
+  - Board prompt
+  - Global mandatory safety suffix / negative prompt
+- Fallback-only prompts for the current shipped catalog
+  - District / background prompt
+  - Border / frame prompt
+- Dormant legacy prompts
+  - Combined card prompt
+  - Card-back prompt
+
+### District and frame prompt status
+
+All current forge districts and all current rarity tiers are registered to static assets, so the live forge does not normally need district or frame prompts anymore. Those prompt builders remain in the codebase only as fallback support for missing assets, future districts / rarities, or emergency regeneration.
+
 ## Launch Asset Checklist
 
 ### Required before launch
