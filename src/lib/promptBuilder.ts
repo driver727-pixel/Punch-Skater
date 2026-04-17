@@ -147,6 +147,7 @@ function buildSkinDescription(skinTone?: string): string {
 function buildFaceDescription(faceCharacter?: string): string {
   if (!faceCharacter || faceCharacter === "Conventional") return "";
   const desc =
+    faceCharacter === "Attractive"  ? "Attractive facial features, balanced symmetry, clear skin, expressive eyes, flattering jawline, and an appealing adult face — handsome or beautiful in a grounded realistic way" :
     faceCharacter === "Weathered"   ? "Weathered, lived-in face with deep expression lines, sun damage, and rough uneven skin texture — NOT attractive, NOT pretty" :
     faceCharacter === "Scarred"     ? "Facial scars, healed cuts, a crooked nose from past breaks — battle-worn face, NOT conventionally attractive" :
     faceCharacter === "Asymmetric"  ? "Noticeably asymmetric face, one eye slightly smaller, crooked jaw, uneven features — distinctively unconventional" :

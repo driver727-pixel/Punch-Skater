@@ -30,7 +30,7 @@ const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"]
 const BODY_TYPES: BodyType[] = ["Slim", "Athletic", "Average", "Heavy"];
 const HAIR_LENGTHS: HairLength[] = ["Bald", "Short", "Medium", "Long"];
 const SKIN_TONES: SkinTone[] = ["Light", "Medium", "Dark", "Very Dark"];
-const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Weathered", "Scarred", "Rugged"];
+const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Attractive", "Weathered", "Scarred", "Rugged"];
 const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
 const BOARD_TYPES = BOARD_TYPE_OPTIONS.map((option) => option.value);
 const RANDOM_LOADOUT_SCOPES = ["character", "board", "both"] as const;

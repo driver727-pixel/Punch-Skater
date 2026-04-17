@@ -100,6 +100,19 @@ test.describe('Home page (Card Forge)', () => {
 
     await expect.poll(async () => JSON.stringify(await getSelectionSnapshot())).not.toBe(before);
   });
+
+  test('shows and toggles the Attractive face-character option', async ({ page }) => {
+    await page.goto('/');
+
+    const faceCharacterGroup = page
+      .locator('.form-group')
+      .filter({ has: page.locator('label', { hasText: 'Face Character' }) });
+    const attractiveButton = faceCharacterGroup.getByRole('button', { name: /^Attractive$/ });
+
+    await expect(attractiveButton).toBeVisible();
+    await attractiveButton.click();
+    await expect(attractiveButton).toHaveAttribute('aria-pressed', 'true');
+  });
 });
 
 // ── Login page ────────────────────────────────────────────────────────────────
