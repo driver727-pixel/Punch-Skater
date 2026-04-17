@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Archetype, CardPrompts, CardPayload, Rarity, District, Gender, AgeGroup, BodyType, Faction, HairLength, SkinTone, FaceCharacter } from "../lib/types";
-import { generateCard } from "../lib/generator";
+import { buildCharacterSeed, generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
 import { PrintModal } from "../components/PrintModal";
@@ -384,15 +384,16 @@ export function CardForge() {
 
     // Kick off all three layers in parallel
     const bgPrompt    = buildBackgroundPrompt(forgePrompts.district);
-    const charPrompt  = buildCharacterPrompt(generationPrompts);
+    const charPrompt  = buildCharacterPrompt(forgePrompts);
     const framePrompt = buildFramePrompt(prompts.rarity);
 
     const bgKey    = `bg::${card.backgroundSeed}`;
-    const charKey  = `char::${CHARACTER_CACHE_VERSION}::${card.characterSeed}`;
+    const charImageSeed = buildCharacterSeed(forgePrompts);
+    const charKey  = `char::${CHARACTER_CACHE_VERSION}::${charImageSeed}`;
     const frameKey = `frame::${card.frameSeed}`;
 
     const bgSeed    = card.backgroundSeed;
-    const charSeed  = card.characterSeed;
+    const charSeed  = charImageSeed;
     const frameSeed = card.frameSeed;
 
     const charPostProcess = async (url: string) => {

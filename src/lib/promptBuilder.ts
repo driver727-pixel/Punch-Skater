@@ -1,3 +1,4 @@
+import { getForgeArchetypeLabel } from "./factionDiscovery";
 import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
 
 // ── Lookup tables ──────────────────────────────────────────────────────────────
@@ -42,6 +43,32 @@ const ARCHETYPE_POSES: Record<string, string> = {
   "Hermes' Squirmies":      "lunging forward in a dramatic mid-delivery sprint, one arm swinging a heavy parcel overhead, body leaning hard into a sharp turn with intense determination, in union worker overalls covered in badge patches",
   "UCPS":                   "in an explosive action-hero leap over an obstacle, one arm clutching a package tight to the chest, legs kicked out in a dynamic hurdle pose, street-style hoodie and cargo pants, old-looking board with lights",
   "The Team":               "in a triumphant victory pose with both fists pumped skyward, muscles tensed, fierce competitive grin, powerful athletic stance, in a matching sponsor-logo ensemble, coordinated team colours",
+};
+
+const COVER_IDENTITY_ROLES: Record<string, string> = {
+  "The Knights Technarchy": "undercover operative courier",
+  Qu111s: "journalist courier",
+  "Ne0n Legion": "showboat stunt courier",
+  "Iron Curtains": "chef courier",
+  "D4rk $pider": "hacker courier",
+  "The Asclepians": "humanitarian courier",
+  "The Mesopotamian Society": "archaeologist courier",
+  "Hermes' Squirmies": "blue collar worker courier",
+  UCPS: "postal worker courier",
+  "The Team": "athlete courier",
+};
+
+const COVER_IDENTITY_POSES: Record<string, string> = {
+  "The Knights Technarchy": "holding a stealthy low-profile courier stance with precise balance, covert focus, and controlled movement",
+  Qu111s: "striking a focused investigative action pose with determined eye contact, messenger bag secured for a fast scoop",
+  "Ne0n Legion": "throwing a flashy high-energy stunt pose with bold confidence and showy athletic control",
+  "Iron Curtains": "leaning into a forceful action stance with tough kitchen-worker swagger and a heavy-duty delivery loadout",
+  "D4rk $pider": "locked into a sharp hacker courier pose with compact tech gear, fast hands, and high-alert focus",
+  "The Asclepians": "in a decisive emergency-response stance, ready to deliver urgent aid supplies without breaking stride",
+  "The Mesopotamian Society": "balancing confidently in an adventurous field-research pose with treasure-hunter swagger",
+  "Hermes' Squirmies": "driving forward in a hard-working delivery pose with practical momentum and union-job grit",
+  UCPS: "in a disciplined postal-delivery action pose with a secure parcel, practical utility gear, and efficient movement",
+  "The Team": "holding a polished elite-athlete delivery stance with disciplined posture, balance, and coordinated confidence",
 };
 
 const RARITY_MOOD: Record<string, string> = {
@@ -90,6 +117,17 @@ function joinPromptBlocks(...blocks: Array<string | undefined>): string {
   return blocks
     .filter((block): block is string => Boolean(block?.trim()))
     .join(" ");
+}
+
+function buildCoverIdentityRole(archetype: string): string {
+  return COVER_IDENTITY_ROLES[archetype]
+    ?? `${getForgeArchetypeLabel(archetype as CardPrompts["archetype"]).toLowerCase()} courier`;
+}
+
+function buildCoverIdentityPose(archetype: string): string {
+  return COVER_IDENTITY_POSES[archetype]
+    ?? ARCHETYPE_POSES[archetype]
+    ?? "striking a dramatic comic book action pose, dynamic and powerful";
 }
 
 // ── Appearance helpers ──────────────────────────────────────────────────────────
@@ -186,17 +224,18 @@ function buildBodyDescription(bodyType: string): string {
 /**
  * Builds a prompt for the **character layer** of a card.
  *
- * The character is rendered against a plain white background, which is then
+ * The character is rendered against a plain neutral studio background, which is then
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
  * The character layer is only regenerated when archetype, style, gender,
  * ageGroup, bodyType, hairLength, accentColor, skinTone, or faceCharacter changes
- * (matching the `characterSeed` cache key). Changing district or rarity leaves
+ * (matching the character-image cache key). Changing district or rarity leaves
  * this layer untouched.
  */
 export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
   const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
-  const pose      = ARCHETYPE_POSES[prompts.archetype] ?? `striking a dramatic comic book action pose, dynamic and powerful`;
+  const pose      = buildCoverIdentityPose(prompts.archetype);
+  const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const graffitiLine = graffitiWords?.length
     ? `The skateboard deck and wheels feature graffiti tags or brand logos reading '${graffitiWords.join("' and '")}'. `
@@ -218,13 +257,14 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Subject: full-body portrait of a clearly adult ${prompts.archetype} skateboarder courier.`,
-    `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, ${pose}.`,
+    `Subject: full-body portrait of a clearly adult ${coverRole}.`,
+    `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
     `Props: carrying courier gear suited to a fast courier run.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     ELECTRIC_SKATEBOARD_EXCLUSIONS,
     graffitiLine,
-    `Performance note: character is alert, street-tough, and ready to move.`,
+    `Identity note: the character should be recognizable as a ${coverRole}, not a faction mascot or logo character.`,
+    `Performance note: character is alert, capable, and ready to move.`,
     `Mood: ${mood}.`,
     characterDesc,
     AGE_RESTRICTION,
@@ -336,7 +376,8 @@ export function buildBackgroundPrompt(district: string): string {
  */
 export function buildImagePrompt(prompts: CardPrompts): string {
   const clothing = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
-  const pose     = ARCHETYPE_POSES[prompts.archetype] ?? `striking a dramatic comic book action pose, dynamic and powerful`;
+  const pose     = buildCoverIdentityPose(prompts.archetype);
+  const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const genderDesc =
     prompts.gender === "Woman" ? "a woman" :
@@ -352,11 +393,12 @@ export function buildImagePrompt(prompts: CardPrompts): string {
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Subject: clearly adult ${prompts.archetype} skateboarder courier.`,
-    `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, ${pose}.`,
+    `Subject: clearly adult ${coverRole}.`,
+    `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
     `Props: carrying courier gear suited to a fast courier run.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     ELECTRIC_SKATEBOARD_EXCLUSIONS,
+    `Identity note: the character should be recognizable as a ${coverRole}, not a faction mascot or logo character.`,
     `Performance note: character is alert and ready to move.`,
     `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}.`,
     `${hairDesc}${skinDesc}${faceDesc}`,
