@@ -97,8 +97,8 @@ export function Credits() {
             <span className="credits-desc">AI image generation infrastructure</span>
           </li>
           <li className="credits-item">
-            <a href="https://blackforestlabs.ai" target="_blank" rel="noopener noreferrer" className="credits-name">FLUX.1 [dev]</a>
-            <span className="credits-desc">Text-to-image foundation model (Black Forest Labs)</span>
+            <a href="https://blackforestlabs.ai" target="_blank" rel="noopener noreferrer" className="credits-name">FLUX LoRA models</a>
+            <span className="credits-desc">Text-to-image models used via Fal.ai (Black Forest Labs)</span>
           </li>
           <li className="credits-item">
             <a href="https://github.com/ZhengPeng7/BiRefNet" target="_blank" rel="noopener noreferrer" className="credits-name">BiRefNet</a>

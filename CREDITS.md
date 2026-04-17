@@ -40,7 +40,7 @@ listed here.
 | Service | Description |
 |---------|-------------|
 | [Fal.ai](https://fal.ai) | AI image generation infrastructure |
-| [FLUX.1 \[dev\]](https://blackforestlabs.ai) (Black Forest Labs) | Text-to-image foundation model |
+| [FLUX LoRA models](https://blackforestlabs.ai) (Black Forest Labs) | Text-to-image models used via Fal.ai |
 | [BiRefNet](https://github.com/ZhengPeng7/BiRefNet) | Background removal model via Fal.ai (MIT) |
 
 ## Linting & Code Quality
