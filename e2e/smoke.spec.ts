@@ -39,6 +39,13 @@ test.describe('Home page (Card Forge)', () => {
     await expect(page.getByRole('link', { name: /trades/i })).toBeVisible();
   });
 
+  test('shows the welcome prompt with getting started guidance', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: /welcome to punch skater, rookie/i })).toBeVisible();
+    await expect(page.getByText(/5 punch skater class cards and 1 master class card/i)).toBeVisible();
+    await expect(page.getByText(/battle arena/i)).toBeVisible();
+  });
+
 
 
   test('shows the site footer with copyright', async ({ page }) => {

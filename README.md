@@ -2,6 +2,14 @@
 
 A dense cyberpunk courier card game built with React, TypeScript, Vite, Firebase, and a small Express proxy for paid APIs.
 
+## Welcome to Punch Skater
+
+The Card Forge is your jump-off point: build your first deck, discover hidden factions, and explore more than 4 million possible character combinations.
+
+- **What** — Forge Punch Skater cards, add a Master card, and assemble a six-card deck for missions, battles, and trades.
+- **How** — Start with 5 Punch Skater class cards and 1 Master class card, then customize each skater's district, style, and board loadout.
+- **Why** — Earn points and power-ups on Missions, take your best deck into the Battle Arena, and trade for the cards that sharpen your strategy.
+
 ## Current Stack
 
 - React 18

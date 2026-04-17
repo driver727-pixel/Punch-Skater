@@ -672,6 +672,74 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 12px;
 }
 
+.forge-welcome {
+  position: relative;
+  margin: 18px 0 20px;
+  padding: 18px;
+  border: 1px solid rgba(0, 255, 136, 0.24);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(10, 18, 28, 0.96), rgba(26, 11, 34, 0.92)),
+    radial-gradient(circle at top right, rgba(0, 204, 255, 0.16), transparent 42%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 16px 36px rgba(0, 0, 0, 0.32),
+    0 0 24px rgba(0, 255, 136, 0.08);
+}
+
+.forge-welcome__eyebrow {
+  margin-bottom: 8px;
+  color: var(--accent2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.forge-welcome__title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: 1px;
+  color: #f4ffcb;
+  text-shadow: 0 0 18px rgba(141, 255, 92, 0.18);
+}
+
+.forge-welcome__lede {
+  max-width: 78ch;
+  margin: 0 0 16px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.forge-welcome__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.forge-welcome__item {
+  padding: 14px;
+  border: 1px solid rgba(0, 204, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(7, 12, 18, 0.48);
+}
+
+.forge-welcome__item h3 {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.forge-welcome__item p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .forge-randomize-button {
   width: auto;
   max-width: 100%;
@@ -682,6 +750,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     grid-template-columns: 1fr;
     max-width: 760px;
     margin: 0 auto;
+  }
+
+  .forge-welcome__grid {
+    grid-template-columns: 1fr;
   }
 }
 
