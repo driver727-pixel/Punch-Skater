@@ -733,11 +733,20 @@ const WHEEL_ACCESS_PROFILES: Record<WheelType, string> = {
 };
 const DEFAULT_ACCESS_PROFILE = "General district access";
 
+/**
+ * Builds the baseline district-access summary for a board.
+ *
+ * This intentionally ignores live weather locks by passing a null weather snapshot,
+ * so the returned string reflects the durable district access granted by the
+ * selected board type and wheels alone.
+ */
 function getBoardDistrictAccessProfile(config: BoardConfig): string {
   const normalizedConfig = normalizeBoardConfig(config);
   const accessibleDistricts = DISTRICT_ACCESS_ORDER.filter((district) =>
     isDistrictAccessibleWithBoardType(
       district,
+      // Null weather means "baseline access only" so live storm board-type
+      // restrictions do not get baked into a saved card stat string.
       null,
       normalizedConfig.boardType,
       normalizedConfig.wheels,
