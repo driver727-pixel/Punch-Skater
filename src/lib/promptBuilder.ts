@@ -140,7 +140,7 @@ function buildDynamicComposition(prompts: CardPrompts): string {
     "dramatic three-quarter camera angle",
     "cinematic low-angle action shot",
     "dynamic side-angle tracking view",
-    "off-centre full-body hero framing",
+    "off-center full-body hero framing",
     "slightly worm's-eye comic-book perspective",
   ]);
   const motionLine = rng.pick([
