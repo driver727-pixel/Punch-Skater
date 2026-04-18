@@ -1,7 +1,7 @@
 import { memo, useState, useEffect } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
-import { CardFrame, STANDARD_FRAME_RARITIES, FRAME_RENDER_WIDTH, FRAME_RENDER_HEIGHT } from "./CardFrame";
+import { FrameOverlay } from "./FrameOverlay";
 import { StatBar } from "./StatBar";
 import { ShareModal } from "./ShareModal";
 import { CardViewer3D } from "./CardViewer3D";
@@ -12,7 +12,7 @@ import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, B
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
-import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame, shouldRenderSvgFrame } from "../services/staticAssets";
 
 interface LayerLoading {
   background: boolean;
@@ -191,6 +191,7 @@ function CompositeArt({
   const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
     : "card-art-layer card-art-layer--background";
+  const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
@@ -232,7 +233,7 @@ function CompositeArt({
       ) : null}
 
       {/* Layer 3 – Frame (ornate rarity border, screen-blended AI image — used for Punch Skater) */}
-      {frameImageUrl ? (
+      {frameImageUrl && !showSvgFrame ? (
         <img
           src={frameImageUrl}
           alt="frame"
@@ -247,21 +248,12 @@ function CompositeArt({
       ) : null}
 
       {/* Layer 4 – SVG neon border overlay for the four redesigned rarity frames */}
-      {!frameImageUrl && (STANDARD_FRAME_RARITIES as readonly string[]).includes(card.prompts.rarity) && (
-        <svg
+      {showSvgFrame && (
+        <FrameOverlay
+          rarity={card.prompts.rarity}
+          frameSeed={card.frameSeed}
           className="card-art-layer card-art-layer--svg-frame"
-          viewBox={`0 0 ${FRAME_RENDER_WIDTH} ${FRAME_RENDER_HEIGHT}`}
-          preserveAspectRatio="xMidYMid meet"
-          aria-hidden="true"
-        >
-          <CardFrame
-            width={FRAME_RENDER_WIDTH}
-            height={FRAME_RENDER_HEIGHT}
-            rarity={card.prompts.rarity}
-            frameSeed={card.frameSeed}
-            uid={`cd_${(card.id || card.frameSeed || "frame").replace(/[^a-z0-9]/gi, "").slice(0, 16)}`}
-          />
-        </svg>
+        />
       )}
     </div>
   );

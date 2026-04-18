@@ -24,6 +24,15 @@ interface FrameProps {
   uid: string;
 }
 
+const FRAME_TOP_CONNECTORS = [170, 375, 580] as const;
+const FRAME_SIDE_CONNECTORS = [176, 314, 735, 874] as const;
+const CORNER_TRANSFORMS = [
+  { key: "tl", transform: "translate(54 54)" },
+  { key: "tr", transform: `translate(${FRAME_RENDER_WIDTH - 54} 54) scale(-1 1)` },
+  { key: "bl", transform: `translate(54 ${FRAME_RENDER_HEIGHT - 54}) scale(1 -1)` },
+  { key: "br", transform: `translate(${FRAME_RENDER_WIDTH - 54} ${FRAME_RENDER_HEIGHT - 54}) scale(-1 -1)` },
+] as const;
+
 function seededVal(seed: string, idx: number): number {
   let h = idx * 2654435761;
   for (let i = 0; i < seed.length; i++) {
@@ -34,171 +43,362 @@ function seededVal(seed: string, idx: number): number {
   return ((h >>> 0) % 1000) / 1000;
 }
 
-function chamferedRectPath(inset: number, chamfer: number) {
-  const x1 = inset;
-  const y1 = inset;
-  const x2 = FRAME_RENDER_WIDTH - inset;
-  const y2 = FRAME_RENDER_HEIGHT - inset;
-  return [
-    `M ${x1 + chamfer} ${y1}`,
-    `H ${x2 - chamfer}`,
-    `L ${x2} ${y1 + chamfer}`,
-    `V ${y2 - chamfer}`,
-    `L ${x2 - chamfer} ${y2}`,
-    `H ${x1 + chamfer}`,
-    `L ${x1} ${y2 - chamfer}`,
-    `V ${y1 + chamfer}`,
-    "Z",
-  ].join(" ");
+function sanitizeUid(uid: string): string {
+  return uid.replace(/[^a-z0-9_-]/gi, "").slice(0, 40) || "frame";
 }
 
-const CORNER_TRANSFORMS = [
-  { key: "tl", transform: "translate(48 48)" },
-  { key: "tr", transform: `translate(${FRAME_RENDER_WIDTH - 48} 48) scale(-1 1)` },
-  { key: "bl", transform: `translate(48 ${FRAME_RENDER_HEIGHT - 48}) scale(1 -1)` },
-  { key: "br", transform: `translate(${FRAME_RENDER_WIDTH - 48} ${FRAME_RENDER_HEIGHT - 48}) scale(-1 -1)` },
-] as const;
+function buildRustPatches(seed: string) {
+  return Array.from({ length: 8 }, (_, index) => {
+    const orientation = index < 4 ? "horizontal" : "vertical";
+    const along = 0.18 + seededVal(seed, index * 5) * 0.64;
+    const offset = 30 + seededVal(seed, index * 5 + 1) * 14;
+    const length = 30 + seededVal(seed, index * 5 + 2) * 22;
+    const thickness = 7 + seededVal(seed, index * 5 + 3) * 4;
+    const angle = (seededVal(seed, index * 5 + 4) - 0.5) * 14;
 
-function ApprenticeFrame({ uid }: { uid: string }) {
-  const sideTicks = [166, 256, 346, 704, 794, 884];
+    if (orientation === "horizontal") {
+      const isTop = index % 2 === 0;
+      return {
+        x: FRAME_RENDER_WIDTH * along - length / 2,
+        y: isTop ? offset : FRAME_RENDER_HEIGHT - offset - thickness,
+        width: length,
+        height: thickness,
+        angle,
+      };
+    }
+
+    const isLeft = index % 2 === 0;
+    return {
+      x: isLeft ? offset : FRAME_RENDER_WIDTH - offset - thickness,
+      y: FRAME_RENDER_HEIGHT * along - length / 2,
+      width: thickness,
+      height: length,
+      angle,
+    };
+  });
+}
+
+function buildEdgeSpecks(seed: string, colorA: string, colorB: string) {
+  return Array.from({ length: 24 }, (_, index) => {
+    const side = Math.floor(seededVal(seed, index * 6) * 4);
+    const along = 0.07 + seededVal(seed, index * 6 + 1) * 0.86;
+    const inset = 20 + seededVal(seed, index * 6 + 2) * 22;
+    const radius = 1.5 + seededVal(seed, index * 6 + 3) * 5.5;
+    const opacity = 0.25 + seededVal(seed, index * 6 + 4) * 0.45;
+    const color = seededVal(seed, index * 6 + 5) > 0.55 ? colorA : colorB;
+
+    if (side === 0) return { x: FRAME_RENDER_WIDTH * along, y: inset, radius, opacity, color };
+    if (side === 1) return { x: FRAME_RENDER_WIDTH - inset, y: FRAME_RENDER_HEIGHT * along, radius, opacity, color };
+    if (side === 2) return { x: FRAME_RENDER_WIDTH * along, y: FRAME_RENDER_HEIGHT - inset, radius, opacity, color };
+    return { x: inset, y: FRAME_RENDER_HEIGHT * along, radius, opacity, color };
+  });
+}
+
+function PunchSkaterFrame({ uid, frameSeed }: { uid: string; frameSeed: string }) {
+  const safeUid = sanitizeUid(uid);
+  const rustPatches = buildRustPatches(frameSeed);
+  const specks = buildEdgeSpecks(frameSeed, "#a9632e", "#4d2719");
+  const tieBands = [140, 375, 610];
+
   return (
     <>
       <defs>
-        <linearGradient id={`${uid}_appOuter`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#5ef2c7" />
-          <stop offset="100%" stopColor="#51bdf4" />
+        <linearGradient id={`${safeUid}_rustCable`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2f2118" />
+          <stop offset="28%" stopColor="#74472a" />
+          <stop offset="55%" stopColor="#b36a34" />
+          <stop offset="100%" stopColor="#4f2f1e" />
         </linearGradient>
-        <linearGradient id={`${uid}_appInner`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#d8fff2" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#7fe4ff" stopOpacity="0.75" />
+        <linearGradient id={`${safeUid}_rustHighlight`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#d9b07e" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#7e502b" stopOpacity="0.18" />
         </linearGradient>
-        <filter id={`${uid}_appGlow`} x="-18%" y="-18%" width="136%" height="136%">
-          <feGaussianBlur stdDeviation="5" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        <filter id={`${safeUid}_rustGlow`} x="-16%" y="-16%" width="132%" height="132%">
+          <feGaussianBlur stdDeviation="2.8" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
         </filter>
       </defs>
 
-      <rect x="18" y="18" width="714" height="1014" rx="34"
-        fill="none" stroke={`url(#${uid}_appOuter)`} strokeWidth="12" filter={`url(#${uid}_appGlow)`} />
-      <rect x="40" y="40" width="670" height="970" rx="28"
-        fill="none" stroke={`url(#${uid}_appInner)`} strokeWidth="4" />
-      <rect x="58" y="58" width="634" height="934" rx="24"
-        fill="none" stroke="#7df6d7" strokeWidth="2" strokeOpacity="0.55" />
+      <rect
+        x="20"
+        y="20"
+        width="710"
+        height="1010"
+        rx="44"
+        fill="none"
+        stroke={`url(#${safeUid}_rustCable)`}
+        strokeWidth="8"
+        filter={`url(#${safeUid}_rustGlow)`}
+      />
+      <rect
+        x="34"
+        y="34"
+        width="682"
+        height="982"
+        rx="36"
+        fill="none"
+        stroke={`url(#${safeUid}_rustHighlight)`}
+        strokeWidth="2.5"
+        strokeOpacity="0.95"
+      />
 
       {CORNER_TRANSFORMS.map((corner) => (
         <g key={corner.key} transform={corner.transform}>
-          <path d="M 0 112 C 0 44 44 0 112 0" fill="none"
-            stroke="#5ef2c7" strokeWidth="12" strokeLinecap="round" />
-          <path d="M 20 92 C 20 50 50 20 92 20" fill="none"
-            stroke="#dffff5" strokeWidth="3" strokeOpacity="0.85" />
-          <circle cx="42" cy="42" r="10" fill="#0e1520" stroke="#7cf3dc" strokeWidth="3" />
-          <path d="M 74 18 L 92 18 L 92 36" fill="none"
-            stroke="#51bdf4" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 18 74 L 18 92 L 36 92" fill="none"
-            stroke="#51bdf4" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M 0 86 C 0 34 34 0 86 0"
+            fill="none"
+            stroke="#6d4327"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 10 92 C 16 48 48 16 92 10"
+            fill="none"
+            stroke="#d5ae76"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeOpacity="0.72"
+          />
+          <circle cx="22" cy="64" r="7.5" fill="#3a2318" stroke="#8e552c" strokeWidth="2" />
+          <circle cx="64" cy="22" r="7.5" fill="#3a2318" stroke="#8e552c" strokeWidth="2" />
         </g>
       ))}
 
-      {[0.24, 0.5, 0.76].map((t) => (
-        <g key={`app-top-${t}`}>
-          <path
-            d={`M ${FRAME_RENDER_WIDTH * t - 44} 54 L ${FRAME_RENDER_WIDTH * t - 14} 34 L ${FRAME_RENDER_WIDTH * t + 14} 34 L ${FRAME_RENDER_WIDTH * t + 44} 54`}
-            fill="none"
-            stroke="#7ff6e1"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d={`M ${FRAME_RENDER_WIDTH * t - 44} ${FRAME_RENDER_HEIGHT - 54} L ${FRAME_RENDER_WIDTH * t - 14} ${FRAME_RENDER_HEIGHT - 34} L ${FRAME_RENDER_WIDTH * t + 14} ${FRAME_RENDER_HEIGHT - 34} L ${FRAME_RENDER_WIDTH * t + 44} ${FRAME_RENDER_HEIGHT - 54}`}
-            fill="none"
-            stroke="#7ff6e1"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+      {tieBands.map((x) => (
+        <g key={`rust-tie-top-${x}`}>
+          <rect x={x - 14} y="16" width="28" height="18" rx="6" fill="#b48a62" fillOpacity="0.9" />
+          <rect x={x - 14} y={FRAME_RENDER_HEIGHT - 34} width="28" height="18" rx="6" fill="#b48a62" fillOpacity="0.9" />
         </g>
       ))}
 
-      {sideTicks.map((y) => (
+      {FRAME_SIDE_CONNECTORS.map((y) => (
+        <g key={`rust-side-${y}`}>
+          <rect x="14" y={y - 12} width="18" height="24" rx="6" fill="#b48a62" fillOpacity="0.88" />
+          <rect x={FRAME_RENDER_WIDTH - 32} y={y - 12} width="18" height="24" rx="6" fill="#b48a62" fillOpacity="0.88" />
+        </g>
+      ))}
+
+      {rustPatches.map((patch, index) => (
+        <rect
+          key={`patch-${index}`}
+          x={patch.x}
+          y={patch.y}
+          width={patch.width}
+          height={patch.height}
+          rx={Math.min(patch.width, patch.height) / 2}
+          fill="#c9a377"
+          fillOpacity="0.82"
+          stroke="#8c603a"
+          strokeWidth="1.3"
+          transform={`rotate(${patch.angle}, ${patch.x + patch.width / 2}, ${patch.y + patch.height / 2})`}
+        />
+      ))}
+
+      {specks.map((speck, index) => (
+        <circle
+          key={`speck-${index}`}
+          cx={speck.x}
+          cy={speck.y}
+          r={speck.radius}
+          fill={speck.color}
+          fillOpacity={speck.opacity}
+        />
+      ))}
+    </>
+  );
+}
+
+function ApprenticeFrame({ uid }: { uid: string }) {
+  const safeUid = sanitizeUid(uid);
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${safeUid}_clearCable`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#e9ffff" stopOpacity="0.78" />
+          <stop offset="35%" stopColor="#c8faff" stopOpacity="0.62" />
+          <stop offset="100%" stopColor="#77cbe0" stopOpacity="0.75" />
+        </linearGradient>
+        <linearGradient id={`${safeUid}_clearCore`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#b0f4ff" stopOpacity="0.18" />
+        </linearGradient>
+        <filter id={`${safeUid}_clearGlow`} x="-18%" y="-18%" width="136%" height="136%">
+          <feGaussianBlur stdDeviation="3.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect
+        x="18"
+        y="18"
+        width="714"
+        height="1014"
+        rx="42"
+        fill="none"
+        stroke={`url(#${safeUid}_clearCable)`}
+        strokeWidth="6"
+        filter={`url(#${safeUid}_clearGlow)`}
+      />
+      <rect
+        x="30"
+        y="30"
+        width="690"
+        height="990"
+        rx="36"
+        fill="none"
+        stroke={`url(#${safeUid}_clearCore)`}
+        strokeWidth="2.5"
+      />
+      <rect
+        x="43"
+        y="43"
+        width="664"
+        height="964"
+        rx="30"
+        fill="none"
+        stroke="#ecffff"
+        strokeWidth="1.4"
+        strokeOpacity="0.46"
+      />
+
+      {CORNER_TRANSFORMS.map((corner) => (
+        <g key={corner.key} transform={corner.transform}>
+          <path
+            d="M 0 88 C 0 36 36 0 88 0"
+            fill="none"
+            stroke="#d8ffff"
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeOpacity="0.74"
+          />
+          <path
+            d="M 10 96 C 14 50 50 14 96 10"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeOpacity="0.8"
+          />
+          <rect x="16" y="58" width="22" height="12" rx="4" fill="#d6ffff" fillOpacity="0.25" stroke="#b0eef9" strokeWidth="1.5" />
+          <rect x="58" y="16" width="12" height="22" rx="4" fill="#d6ffff" fillOpacity="0.25" stroke="#b0eef9" strokeWidth="1.5" />
+        </g>
+      ))}
+
+      {FRAME_TOP_CONNECTORS.map((x) => (
+        <g key={`app-top-${x}`}>
+          <rect x={x - 26} y="14" width="52" height="18" rx="6" fill="#ebffff" fillOpacity="0.18" stroke="#b7edf9" strokeWidth="1.8" />
+          <rect x={x - 26} y={FRAME_RENDER_HEIGHT - 32} width="52" height="18" rx="6" fill="#ebffff" fillOpacity="0.18" stroke="#b7edf9" strokeWidth="1.8" />
+        </g>
+      ))}
+
+      {FRAME_SIDE_CONNECTORS.map((y) => (
         <g key={`app-side-${y}`}>
-          <path d={`M 32 ${y - 24} L 50 ${y} L 32 ${y + 24}`} fill="none"
-            stroke="#6fe6ea" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d={`M ${FRAME_RENDER_WIDTH - 32} ${y - 24} L ${FRAME_RENDER_WIDTH - 50} ${y} L ${FRAME_RENDER_WIDTH - 32} ${y + 24}`}
-            fill="none" stroke="#6fe6ea" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="14" y={y - 16} width="18" height="32" rx="6" fill="#ebffff" fillOpacity="0.16" stroke="#b7edf9" strokeWidth="1.8" />
+          <rect x={FRAME_RENDER_WIDTH - 32} y={y - 16} width="18" height="32" rx="6" fill="#ebffff" fillOpacity="0.16" stroke="#b7edf9" strokeWidth="1.8" />
         </g>
       ))}
-
-      <path d="M 296 30 H 454" fill="none" stroke="#d6fff8" strokeWidth="3" strokeLinecap="round" strokeOpacity="0.8" />
-      <path d={`M 296 ${FRAME_RENDER_HEIGHT - 30} H 454`} fill="none" stroke="#d6fff8" strokeWidth="3" strokeLinecap="round" strokeOpacity="0.8" />
     </>
   );
 }
 
 function MasterFrame({ uid }: { uid: string }) {
-  const runeY = [150, 240, 330, 720, 810, 900];
+  const safeUid = sanitizeUid(uid);
+  const collarY = [170, 330, 720, 880];
   return (
     <>
       <defs>
-        <linearGradient id={`${uid}_masterOuter`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#ff7cf9" />
-          <stop offset="50%" stopColor="#c766ff" />
-          <stop offset="100%" stopColor="#7e4dff" />
+        <linearGradient id={`${safeUid}_copperCable`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#6f3617" />
+          <stop offset="26%" stopColor="#b56532" />
+          <stop offset="52%" stopColor="#f4b176" />
+          <stop offset="78%" stopColor="#b5602b" />
+          <stop offset="100%" stopColor="#6f3819" />
         </linearGradient>
-        <linearGradient id={`${uid}_masterInner`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffd4ff" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#9ba4ff" stopOpacity="0.75" />
+        <linearGradient id={`${safeUid}_copperHighlight`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fff2dd" stopOpacity="0.84" />
+          <stop offset="100%" stopColor="#d87f43" stopOpacity="0.2" />
         </linearGradient>
-        <filter id={`${uid}_masterGlow`} x="-24%" y="-24%" width="148%" height="148%">
-          <feGaussianBlur stdDeviation="7" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        <filter id={`${safeUid}_copperGlow`} x="-16%" y="-16%" width="132%" height="132%">
+          <feGaussianBlur stdDeviation="2.6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
         </filter>
       </defs>
 
-      <rect x="22" y="22" width="706" height="1006" rx="30"
-        fill="none" stroke={`url(#${uid}_masterOuter)`} strokeWidth="14" filter={`url(#${uid}_masterGlow)`} />
-      <rect x="46" y="46" width="658" height="958" rx="24"
-        fill="none" stroke={`url(#${uid}_masterInner)`} strokeWidth="4" />
-      <path d={chamferedRectPath(66, 30)}
-        fill="none" stroke="#cc7cff" strokeWidth="3" strokeOpacity="0.75" />
-      <path d={chamferedRectPath(88, 24)}
-        fill="none" stroke="#6a53ff" strokeWidth="2.5" strokeOpacity="0.45" />
+      <rect
+        x="20"
+        y="20"
+        width="710"
+        height="1010"
+        rx="44"
+        fill="none"
+        stroke={`url(#${safeUid}_copperCable)`}
+        strokeWidth="7"
+        filter={`url(#${safeUid}_copperGlow)`}
+      />
+      <rect
+        x="34"
+        y="34"
+        width="682"
+        height="982"
+        rx="36"
+        fill="none"
+        stroke={`url(#${safeUid}_copperHighlight)`}
+        strokeWidth="2.4"
+      />
+      <rect
+        x="48"
+        y="48"
+        width="654"
+        height="954"
+        rx="30"
+        fill="none"
+        stroke="#f2c28e"
+        strokeWidth="1.4"
+        strokeOpacity="0.4"
+      />
 
       {CORNER_TRANSFORMS.map((corner) => (
         <g key={corner.key} transform={corner.transform}>
-          <path d="M 0 120 L 0 58 L 58 0 L 120 0"
-            fill="none" stroke="#ff86ff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 22 94 L 22 64 L 64 22 L 94 22"
-            fill="none" stroke="#d5cbff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-          <polygon points="58,10 88,40 58,70 28,40"
-            fill="#28163d" stroke="#ff9dff" strokeWidth="4" />
-          <polygon points="58,22 76,40 58,58 40,40"
-            fill="#ff78ff" fillOpacity="0.7" />
+          <path
+            d="M 0 84 C 0 34 34 0 84 0"
+            fill="none"
+            stroke="#a75828"
+            strokeWidth="7"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 8 94 C 16 48 48 16 94 8"
+            fill="none"
+            stroke="#fff0d3"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeOpacity="0.82"
+          />
+          <rect x="18" y="58" width="20" height="12" rx="5" fill="#7f451f" stroke="#f0b47b" strokeWidth="1.6" />
+          <rect x="58" y="18" width="12" height="20" rx="5" fill="#7f451f" stroke="#f0b47b" strokeWidth="1.6" />
         </g>
       ))}
 
-      {[375, 525].map((y) => (
-        <g key={`master-mid-${y}`}>
-          <polygon points={`375,${y - 34} 409,${y} 375,${y + 34} 341,${y}`}
-            fill="none" stroke="#ff9aff" strokeWidth="5" filter={`url(#${uid}_masterGlow)`} />
+      {FRAME_TOP_CONNECTORS.map((x) => (
+        <g key={`master-top-${x}`}>
+          <rect x={x - 24} y="14" width="48" height="18" rx="7" fill="#91512a" stroke="#efb57d" strokeWidth="1.8" />
+          <rect x={x - 24} y={FRAME_RENDER_HEIGHT - 32} width="48" height="18" rx="7" fill="#91512a" stroke="#efb57d" strokeWidth="1.8" />
         </g>
       ))}
 
-      {[0.27, 0.5, 0.73].map((t) => (
-        <g key={`master-cap-${t}`}>
-          <rect x={FRAME_RENDER_WIDTH * t - 52} y="34" width="104" height="18" rx="8"
-            fill="#26163a" stroke="#ff8aff" strokeWidth="4" />
-          <rect x={FRAME_RENDER_WIDTH * t - 34} y={FRAME_RENDER_HEIGHT - 52} width="68" height="18" rx="8"
-            fill="#26163a" stroke="#8a76ff" strokeWidth="4" />
-        </g>
-      ))}
-
-      {runeY.map((y) => (
-        <g key={`master-rune-${y}`}>
-          <path d={`M 30 ${y - 26} H 52 M 30 ${y} H 58 M 30 ${y + 26} H 52`}
-            fill="none" stroke="#f5a5ff" strokeWidth="4" strokeLinecap="round" />
-          <path d={`M ${FRAME_RENDER_WIDTH - 30} ${y - 26} H ${FRAME_RENDER_WIDTH - 52} M ${FRAME_RENDER_WIDTH - 30} ${y} H ${FRAME_RENDER_WIDTH - 58} M ${FRAME_RENDER_WIDTH - 30} ${y + 26} H ${FRAME_RENDER_WIDTH - 52}`}
-            fill="none" stroke="#f5a5ff" strokeWidth="4" strokeLinecap="round" />
+      {collarY.map((y) => (
+        <g key={`master-side-${y}`}>
+          <rect x="14" y={y - 15} width="18" height="30" rx="7" fill="#91512a" stroke="#efb57d" strokeWidth="1.8" />
+          <rect x={FRAME_RENDER_WIDTH - 32} y={y - 15} width="18" height="30" rx="7" fill="#91512a" stroke="#efb57d" strokeWidth="1.8" />
         </g>
       ))}
     </>
@@ -206,212 +406,232 @@ function MasterFrame({ uid }: { uid: string }) {
 }
 
 function RareFrame({ uid }: { uid: string }) {
-  const shardY = [176, 300, 432, 618, 750, 882];
-  return (
-    <>
-      <defs>
-        <linearGradient id={`${uid}_rareOuter`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#8fe2ff" />
-          <stop offset="50%" stopColor="#55a9ff" />
-          <stop offset="100%" stopColor="#2e53ff" />
-        </linearGradient>
-        <linearGradient id={`${uid}_rareInner`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#d6f7ff" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#8cb6ff" stopOpacity="0.7" />
-        </linearGradient>
-        <filter id={`${uid}_rareGlow`} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="5.5" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-
-      <path d={chamferedRectPath(20, 52)}
-        fill="none" stroke={`url(#${uid}_rareOuter)`} strokeWidth="14" filter={`url(#${uid}_rareGlow)`} />
-      <path d={chamferedRectPath(46, 40)}
-        fill="none" stroke={`url(#${uid}_rareInner)`} strokeWidth="4" />
-      <path d={chamferedRectPath(64, 28)}
-        fill="none" stroke="#95d9ff" strokeWidth="2.5" strokeOpacity="0.6" />
-
-      {CORNER_TRANSFORMS.map((corner) => (
-        <g key={corner.key} transform={corner.transform}>
-          <polygon points="0,70 70,0 124,0 124,54 54,124 0,124"
-            fill="none" stroke="#7bd6ff" strokeWidth="9" strokeLinejoin="round" />
-          <polygon points="26,74 74,26 98,26 98,50 50,98 26,98"
-            fill="#10264f" stroke="#d8f7ff" strokeWidth="3" strokeLinejoin="round" />
-          <polygon points="62,30 94,62 62,94 30,62"
-            fill="#68adff" fillOpacity="0.5" stroke="#c7eeff" strokeWidth="3" />
-        </g>
-      ))}
-
-      {[0.22, 0.5, 0.78].map((t) => (
-        <g key={`rare-top-${t}`}>
-          <polygon points={`${FRAME_RENDER_WIDTH * t - 34},36 ${FRAME_RENDER_WIDTH * t},18 ${FRAME_RENDER_WIDTH * t + 34},36 ${FRAME_RENDER_WIDTH * t},54`}
-            fill="#15316b" stroke="#95dfff" strokeWidth="4" />
-          <polygon points={`${FRAME_RENDER_WIDTH * t - 20},${FRAME_RENDER_HEIGHT - 36} ${FRAME_RENDER_WIDTH * t},${FRAME_RENDER_HEIGHT - 18} ${FRAME_RENDER_WIDTH * t + 20},${FRAME_RENDER_HEIGHT - 36} ${FRAME_RENDER_WIDTH * t},${FRAME_RENDER_HEIGHT - 54}`}
-            fill="#15316b" stroke="#95dfff" strokeWidth="4" />
-        </g>
-      ))}
-
-      {shardY.map((y) => (
-        <g key={`rare-shard-${y}`}>
-          <polygon points={`22,${y - 32} 44,${y - 10} 44,${y + 10} 22,${y + 32}`}
-            fill="#18386f" stroke="#8edfff" strokeWidth="4" />
-          <polygon points={`${FRAME_RENDER_WIDTH - 22},${y - 32} ${FRAME_RENDER_WIDTH - 44},${y - 10} ${FRAME_RENDER_WIDTH - 44},${y + 10} ${FRAME_RENDER_WIDTH - 22},${y + 32}`}
-            fill="#18386f" stroke="#8edfff" strokeWidth="4" />
-        </g>
-      ))}
-
-      <path d="M 130 74 H 620" fill="none" stroke="#c8f6ff" strokeWidth="3" strokeOpacity="0.8" />
-      <path d={`M 130 ${FRAME_RENDER_HEIGHT - 74} H 620`} fill="none" stroke="#c8f6ff" strokeWidth="3" strokeOpacity="0.8" />
-    </>
-  );
-}
-
-function LegendaryFrame({ uid }: { uid: string }) {
-  const filigreeX = [170, 260, 375, 490, 580];
-  return (
-    <>
-      <defs>
-        <linearGradient id={`${uid}_legendOuter`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#fff3bf" />
-          <stop offset="38%" stopColor="#ffca55" />
-          <stop offset="70%" stopColor="#ff9c1b" />
-          <stop offset="100%" stopColor="#ffef9d" />
-        </linearGradient>
-        <linearGradient id={`${uid}_legendInner`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fff6cf" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#ffb93b" stopOpacity="0.75" />
-        </linearGradient>
-        <filter id={`${uid}_legendGlow`} x="-26%" y="-26%" width="152%" height="152%">
-          <feGaussianBlur stdDeviation="8" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-
-      <rect x="18" y="18" width="714" height="1014" rx="40"
-        fill="none" stroke={`url(#${uid}_legendOuter)`} strokeWidth="18" filter={`url(#${uid}_legendGlow)`} />
-      <rect x="46" y="46" width="658" height="958" rx="30"
-        fill="none" stroke={`url(#${uid}_legendInner)`} strokeWidth="5" />
-      <rect x="66" y="66" width="618" height="918" rx="24"
-        fill="none" stroke="#ffe09e" strokeWidth="2.5" strokeOpacity="0.65" />
-
-      {CORNER_TRANSFORMS.map((corner) => (
-        <g key={corner.key} transform={corner.transform}>
-          <path d="M 0 130 C 0 54 54 0 130 0"
-            fill="none" stroke="#ffbf3d" strokeWidth="14" strokeLinecap="round" />
-          <path d="M 20 110 C 20 58 58 20 110 20"
-            fill="none" stroke="#fff0b2" strokeWidth="4" strokeLinecap="round" />
-          <path d="M 16 94 C 56 82 82 56 94 16"
-            fill="none" stroke="#ffda78" strokeWidth="4" strokeLinecap="round" />
-          <circle cx="56" cy="56" r="14" fill="#3a2300" stroke="#ffe8a0" strokeWidth="4" />
-          <circle cx="56" cy="56" r="5" fill="#ffdd73" />
-        </g>
-      ))}
-
-      <g filter={`url(#${uid}_legendGlow)`}>
-        <path d="M 275 30 L 320 52 H 430 L 475 30"
-          fill="none" stroke="#ffd464" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-        <path d={`M 300 ${FRAME_RENDER_HEIGHT - 30} L 336 ${FRAME_RENDER_HEIGHT - 52} H 414 L 450 ${FRAME_RENDER_HEIGHT - 30}`}
-          fill="none" stroke="#ffd464" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-      </g>
-
-      {[240, 810].map((y) => (
-        <g key={`legend-medal-${y}`}>
-          <circle cx="44" cy={y} r="17" fill="#472b00" stroke="#ffe18a" strokeWidth="4" />
-          <circle cx={FRAME_RENDER_WIDTH - 44} cy={y} r="17" fill="#472b00" stroke="#ffe18a" strokeWidth="4" />
-          <circle cx="44" cy={y} r="6" fill="#ffd36a" />
-          <circle cx={FRAME_RENDER_WIDTH - 44} cy={y} r="6" fill="#ffd36a" />
-        </g>
-      ))}
-
-      {filigreeX.map((x) => (
-        <g key={`legend-filigree-${x}`}>
-          <path d={`M ${x - 28} 52 Q ${x} 24 ${x + 28} 52`}
-            fill="none" stroke="#ffe297" strokeWidth="3.5" strokeLinecap="round" />
-          <path d={`M ${x - 22} ${FRAME_RENDER_HEIGHT - 52} Q ${x} ${FRAME_RENDER_HEIGHT - 24} ${x + 22} ${FRAME_RENDER_HEIGHT - 52}`}
-            fill="none" stroke="#ffe297" strokeWidth="3.5" strokeLinecap="round" />
-        </g>
-      ))}
-    </>
-  );
-}
-
-function PunchSkaterFrame({ frameSeed }: { frameSeed: string }) {
-  const w = FRAME_RENDER_WIDTH;
-  const h = FRAME_RENDER_HEIGHT;
-  const spatters = Array.from({ length: 24 }, (_, i) => {
-    const side = seededVal(frameSeed, i * 6) > 0.5 ? 1 : 3;
-    const pos = seededVal(frameSeed, i * 6 + 1);
-    const off = seededVal(frameSeed, i * 6 + 2) * 60 + 12;
-    const r = 4 + seededVal(frameSeed, i * 6 + 3) * 18;
-    const op = 0.3 + seededVal(frameSeed, i * 6 + 4) * 0.6;
-    const dark = seededVal(frameSeed, i * 6 + 5) > 0.55;
-    let px: number;
-    let py: number;
-    if (side === 1) {
-      px = w - off;
-      py = pos * h;
-    } else {
-      px = off;
-      py = pos * h;
-    }
-    return { x: px, y: py, r, op, color: dark ? "#5a0808" : "#8b1a1a" };
-  });
-  const edgeWraps = [
-    {
-      cy: 18,
-      ang: (seededVal(frameSeed, 400) - 0.5) * 6,
-      thickness: 24 + seededVal(frameSeed, 401) * 10,
-      opacity: 0.92 + seededVal(frameSeed, 402) * 0.08,
-    },
-    {
-      cy: h - 18,
-      ang: (seededVal(frameSeed, 410) - 0.5) * 6,
-      thickness: 24 + seededVal(frameSeed, 411) * 10,
-      opacity: 0.92 + seededVal(frameSeed, 412) * 0.08,
-    },
+  const safeUid = sanitizeUid(uid);
+  const neonNodes = [
+    { x: 144, y: 26, color: "#6ff6ff" },
+    { x: 375, y: 26, color: "#7eff73" },
+    { x: 606, y: 26, color: "#ff5cff" },
+    { x: 144, y: FRAME_RENDER_HEIGHT - 26, color: "#ffae4f" },
+    { x: 375, y: FRAME_RENDER_HEIGHT - 26, color: "#6ff6ff" },
+    { x: 606, y: FRAME_RENDER_HEIGHT - 26, color: "#ff5cff" },
+    { x: 26, y: 212, color: "#6ff6ff" },
+    { x: 26, y: 838, color: "#7eff73" },
+    { x: FRAME_RENDER_WIDTH - 26, y: 212, color: "#ff5cff" },
+    { x: FRAME_RENDER_WIDTH - 26, y: 838, color: "#ffae4f" },
   ];
-  const frays = Array.from({ length: 8 }, (_, i) => {
-    const isTop = i < 4;
-    const side = i % 2 === 0 ? "left" : "right";
-    const baseY = isTop ? 18 : h - 18;
-    const x = side === "left"
-      ? -8 + seededVal(frameSeed, 500 + i * 3) * 24
-      : w - 12 + seededVal(frameSeed, 500 + i * 3) * 24;
-    const y = baseY + (seededVal(frameSeed, 501 + i * 3) - 0.5) * 18;
-    const len = 18 + seededVal(frameSeed, 502 + i * 3) * 18;
-    const xDirection = side === "left" ? -1 : 1;
-    const yDirection = isTop ? -1 : 1;
-    return { x, y, len, xDirection, yDirection };
-  });
+
   return (
     <>
-      <rect x={4} y={4} width={w - 8} height={h - 8} rx={10}
-        fill="none" stroke="#c8b89a" strokeWidth="6" strokeOpacity="0.78" />
-      {edgeWraps.map((bandage, i) => (
-        <rect key={i}
-          x={-14} y={bandage.cy - bandage.thickness / 2}
-          width={w + 28} height={bandage.thickness} rx={6}
-          fill="#e8d8b0" fillOpacity={bandage.opacity}
-          stroke="#c8b89a" strokeWidth="3"
-          transform={`rotate(${bandage.ang},${w / 2},${bandage.cy})`} />
+      <defs>
+        <linearGradient id={`${safeUid}_silverCable`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#7b818b" />
+          <stop offset="34%" stopColor="#d7dce3" />
+          <stop offset="58%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#8b919d" />
+        </linearGradient>
+        <linearGradient id={`${safeUid}_silverCore`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.86" />
+          <stop offset="100%" stopColor="#c8d0db" stopOpacity="0.24" />
+        </linearGradient>
+        <filter id={`${safeUid}_silverGlow`} x="-16%" y="-16%" width="132%" height="132%">
+          <feGaussianBlur stdDeviation="2.8" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id={`${safeUid}_neonGlow`} x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect
+        x="18"
+        y="18"
+        width="714"
+        height="1014"
+        rx="44"
+        fill="none"
+        stroke={`url(#${safeUid}_silverCable)`}
+        strokeWidth="7"
+        filter={`url(#${safeUid}_silverGlow)`}
+      />
+      <rect
+        x="34"
+        y="34"
+        width="682"
+        height="982"
+        rx="36"
+        fill="none"
+        stroke={`url(#${safeUid}_silverCore)`}
+        strokeWidth="2.4"
+      />
+
+      {CORNER_TRANSFORMS.map((corner) => (
+        <g key={corner.key} transform={corner.transform}>
+          <path
+            d="M 0 84 C 0 34 34 0 84 0"
+            fill="none"
+            stroke="#dfe5ea"
+            strokeWidth="6"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 8 94 C 16 48 48 16 94 8"
+            fill="none"
+            stroke="#7ef8ff"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+            strokeOpacity="0.72"
+            filter={`url(#${safeUid}_neonGlow)`}
+          />
+        </g>
       ))}
-      {frays.map((fray, i) => (
-        <line
-          key={`fray-${i}`}
-          x1={fray.x}
-          y1={fray.y}
-          x2={fray.x + fray.len * fray.xDirection}
-          y2={fray.y + fray.yDirection * 6}
-          stroke="#d8c8a1"
-          strokeOpacity="0.45"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
+
+      {neonNodes.map((node, index) => (
+        <g key={`rare-node-${index}`} filter={`url(#${safeUid}_neonGlow)`}>
+          <circle cx={node.x} cy={node.y} r="7" fill={node.color} fillOpacity="0.9" />
+          <circle cx={node.x} cy={node.y} r="3" fill="#ffffff" fillOpacity="0.95" />
+        </g>
       ))}
-      {spatters.map((spatter, i) => (
-        <circle key={i} cx={spatter.x} cy={spatter.y} r={spatter.r}
-          fill={spatter.color} fillOpacity={spatter.op} />
+
+      {FRAME_SIDE_CONNECTORS.map((y) => (
+        <g key={`rare-side-${y}`}>
+          <rect x="14" y={y - 12} width="18" height="24" rx="6" fill="#757c87" stroke="#eef3f7" strokeWidth="1.7" />
+          <rect x={FRAME_RENDER_WIDTH - 32} y={y - 12} width="18" height="24" rx="6" fill="#757c87" stroke="#eef3f7" strokeWidth="1.7" />
+        </g>
+      ))}
+    </>
+  );
+}
+
+function LegendaryFrame({ uid, frameSeed }: { uid: string; frameSeed: string }) {
+  const safeUid = sanitizeUid(uid);
+  const neonBands = [
+    { colorA: "#ff4fd8", colorB: "#7effff", width: 2.4, dashOffset: seededVal(frameSeed, 100) * 36 },
+    { colorA: "#7eff73", colorB: "#ffd84f", width: 2.1, dashOffset: seededVal(frameSeed, 101) * 36 },
+    { colorA: "#5fa4ff", colorB: "#ff7d4f", width: 1.8, dashOffset: seededVal(frameSeed, 102) * 36 },
+  ];
+
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${safeUid}_goldCable`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#8a5a00" />
+          <stop offset="22%" stopColor="#f2c356" />
+          <stop offset="50%" stopColor="#fff0ad" />
+          <stop offset="78%" stopColor="#dca12e" />
+          <stop offset="100%" stopColor="#8d5c02" />
+        </linearGradient>
+        <linearGradient id={`${safeUid}_goldCore`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fff6d1" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#ffc247" stopOpacity="0.28" />
+        </linearGradient>
+        <filter id={`${safeUid}_goldGlow`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3.6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id={`${safeUid}_legendNeonGlow`} x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="5.4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect
+        x="18"
+        y="18"
+        width="714"
+        height="1014"
+        rx="46"
+        fill="none"
+        stroke={`url(#${safeUid}_goldCable)`}
+        strokeWidth="8"
+        strokeDasharray="10 12"
+        filter={`url(#${safeUid}_goldGlow)`}
+      />
+      <rect
+        x="18"
+        y="18"
+        width="714"
+        height="1014"
+        rx="46"
+        fill="none"
+        stroke="#8b5e00"
+        strokeWidth="3"
+        strokeDasharray="10 12"
+        strokeDashoffset="11"
+        strokeOpacity="0.78"
+      />
+      <rect
+        x="34"
+        y="34"
+        width="682"
+        height="982"
+        rx="38"
+        fill="none"
+        stroke={`url(#${safeUid}_goldCore)`}
+        strokeWidth="2.4"
+      />
+
+      {neonBands.map((band, index) => (
+        <g key={`legend-band-${index}`} filter={`url(#${safeUid}_legendNeonGlow)`}>
+          <linearGradient id={`${safeUid}_legendBand_${index}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={band.colorA} />
+            <stop offset="100%" stopColor={band.colorB} />
+          </linearGradient>
+          <rect
+            x={46 + index * 6}
+            y={46 + index * 6}
+            width={658 - index * 12}
+            height={958 - index * 12}
+            rx={32 - index * 2}
+            fill="none"
+            stroke={`url(#${safeUid}_legendBand_${index})`}
+            strokeWidth={band.width}
+            strokeOpacity="0.72"
+            strokeDasharray="18 20"
+            strokeDashoffset={band.dashOffset}
+          />
+        </g>
+      ))}
+
+      {CORNER_TRANSFORMS.map((corner) => (
+        <g key={corner.key} transform={corner.transform}>
+          <path
+            d="M 0 92 C 0 38 38 0 92 0"
+            fill="none"
+            stroke="#f4c652"
+            strokeWidth="7"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 6 100 C 18 52 52 18 100 6"
+            fill="none"
+            stroke="#fff1b3"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+            strokeOpacity="0.8"
+          />
+        </g>
+      ))}
+
+      {FRAME_TOP_CONNECTORS.map((x) => (
+        <g key={`legend-top-${x}`} filter={`url(#${safeUid}_legendNeonGlow)`}>
+          <rect x={x - 24} y="14" width="48" height="18" rx="7" fill="#8e6200" stroke="#ffd977" strokeWidth="1.8" />
+          <circle cx={x} cy="23" r="4" fill="#ffffff" fillOpacity="0.9" />
+          <circle cx={x} cy={FRAME_RENDER_HEIGHT - 23} r="4" fill="#ffffff" fillOpacity="0.9" />
+          <rect x={x - 24} y={FRAME_RENDER_HEIGHT - 32} width="48" height="18" rx="7" fill="#8e6200" stroke="#ffd977" strokeWidth="1.8" />
+        </g>
       ))}
     </>
   );
@@ -423,11 +643,11 @@ function CardFrameComponent({ width, height, rarity, frameSeed, uid }: FrameProp
 
   return (
     <g transform={`scale(${scaleX} ${scaleY})`}>
+      {rarity === "Punch Skater" && <PunchSkaterFrame uid={uid} frameSeed={frameSeed} />}
       {rarity === "Apprentice" && <ApprenticeFrame uid={uid} />}
       {rarity === "Master" && <MasterFrame uid={uid} />}
       {rarity === "Rare" && <RareFrame uid={uid} />}
-      {rarity === "Legendary" && <LegendaryFrame uid={uid} />}
-      {rarity === "Punch Skater" && <PunchSkaterFrame frameSeed={frameSeed} />}
+      {rarity === "Legendary" && <LegendaryFrame uid={uid} frameSeed={frameSeed} />}
     </g>
   );
 }

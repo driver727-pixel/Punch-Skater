@@ -1,5 +1,6 @@
 import type { Rarity } from "../lib/types";
-import { getFrameBlendMode } from "./staticAssets";
+import { buildFrameSvgDataUrl } from "./frameSvg";
+import { getFrameBlendMode, shouldRenderSvgFrame } from "./staticAssets";
 
 /**
  * Card download service — composites all three AI art layers onto a canvas
@@ -67,6 +68,7 @@ export async function downloadCardAsJpg(
   backgroundUrl: string | undefined,
   characterUrl: string | undefined,
   frameUrl: string | undefined,
+  frameSeed: string,
   characterBlend = 1,
 ): Promise<void> {
   const canvas = document.createElement("canvas");
@@ -94,9 +96,13 @@ export async function downloadCardAsJpg(
   }
 
   // ── Layer 3: frame (screen blend — black frame interior becomes transparent) ─
-  if (frameUrl) {
-    const img = await loadCrossOriginImage(frameUrl);
-    ctx.globalCompositeOperation = getFrameBlendMode(rarity, frameUrl) === "screen" ? "screen" : "source-over";
+  if (frameUrl || shouldRenderSvgFrame(rarity, frameUrl)) {
+    const resolvedFrameUrl = shouldRenderSvgFrame(rarity, frameUrl)
+      ? buildFrameSvgDataUrl(rarity, frameSeed)
+      : frameUrl;
+    if (!resolvedFrameUrl) return;
+    const img = await loadCrossOriginImage(resolvedFrameUrl);
+    ctx.globalCompositeOperation = frameUrl && getFrameBlendMode(rarity, frameUrl) === "screen" ? "screen" : "source-over";
     ctx.globalAlpha = 1;
     ctx.drawImage(img, 0, 0, CARD_WIDTH, CARD_HEIGHT);
   }

@@ -243,6 +243,7 @@ export function Collection() {
         selected.backgroundImageUrl,
         selected.characterImageUrl,
         selected.frameImageUrl,
+        selected.frameSeed,
       );
     } finally {
       setDownloading(false);

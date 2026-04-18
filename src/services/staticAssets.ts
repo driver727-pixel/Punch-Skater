@@ -126,6 +126,11 @@ export function getStaticFrameUrl(rarity: Rarity): string | null {
   return FRAME_ASSETS[rarity]?.url ?? null;
 }
 
+export function shouldRenderSvgFrame(rarity: Rarity, frameUrl?: string): boolean {
+  if (!frameUrl) return true;
+  return FRAME_ASSETS[rarity]?.url === frameUrl;
+}
+
 export function getFrameBlendMode(rarity: Rarity, frameUrl?: string): FrameBlendMode {
   if (!frameUrl) return "screen";
   const asset = FRAME_ASSETS[rarity];

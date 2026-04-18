@@ -1,6 +1,7 @@
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
-import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
+import { FrameOverlay } from "./FrameOverlay";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame, shouldRenderSvgFrame } from "../services/staticAssets";
 
 interface CardThumbnailProps {
   card: CardPayload;
@@ -14,6 +15,7 @@ interface CardThumbnailProps {
  */
 export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnailProps) {
   const { backgroundImageUrl, characterImageUrl, frameImageUrl } = card;
+  const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
   const hasLayers = backgroundImageUrl || characterImageUrl || frameImageUrl;
   const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
@@ -42,12 +44,19 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           className="card-art-layer card-art-layer--character"
         />
       )}
-      {frameImageUrl && (
+      {frameImageUrl && !showSvgFrame && (
         <img
           src={frameImageUrl}
           alt="frame"
           className="card-art-layer card-art-layer--frame"
           style={frameLayerStyle}
+        />
+      )}
+      {showSvgFrame && (
+        <FrameOverlay
+          rarity={card.prompts.rarity}
+          frameSeed={card.frameSeed}
+          className="card-art-layer card-art-layer--svg-frame"
         />
       )}
     </div>

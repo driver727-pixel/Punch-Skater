@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
+import { FrameOverlay } from "./FrameOverlay";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
-import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame, shouldRenderSvgFrame } from "../services/staticAssets";
 
 interface CardViewer3DProps {
   card: CardPayload;
@@ -46,6 +47,7 @@ export function CardViewer3D({
   const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "viewer3d-layer viewer3d-layer--bg viewer3d-layer--bg-inset"
     : "viewer3d-layer viewer3d-layer--bg";
+  const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
@@ -151,8 +153,15 @@ export function CardViewer3D({
                     style={characterBlend !== undefined ? { opacity: characterBlend } : undefined}
                   />
                 )}
-                {frameImageUrl && (
+                {frameImageUrl && !showSvgFrame && (
                   <img src={frameImageUrl} alt="frame" className="viewer3d-layer viewer3d-layer--frame" style={frameLayerStyle} />
+                )}
+                {showSvgFrame && (
+                  <FrameOverlay
+                    rarity={card.prompts.rarity}
+                    frameSeed={card.frameSeed}
+                    className="viewer3d-layer viewer3d-layer--svg-frame"
+                  />
                 )}
               </div>
             ) : (

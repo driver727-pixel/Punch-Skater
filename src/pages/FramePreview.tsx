@@ -1,48 +1,24 @@
-import { CardFrame, FRAME_RENDER_HEIGHT, FRAME_RENDER_WIDTH, FRAME_PREVIEW_RARITIES } from "../components/CardFrame";
-import { getFrameBlendMode, getStaticFrameUrl } from "../services/staticAssets";
+import { FRAME_RENDER_HEIGHT, FRAME_RENDER_WIDTH, FRAME_PREVIEW_RARITIES } from "../components/CardFrame";
+import { FrameOverlay } from "../components/FrameOverlay";
 
 function FramePreviewTile({ rarity, tileIndex }: { rarity: typeof FRAME_PREVIEW_RARITIES[number]; tileIndex: number }) {
-  const uid = `preview_${tileIndex}_${rarity.toLowerCase().replace(/\s+/g, "_")}`;
-  const staticFrameUrl = getStaticFrameUrl(rarity);
-  const frameLayerStyle = staticFrameUrl
-    ? { mixBlendMode: getFrameBlendMode(rarity, staticFrameUrl) }
-    : undefined;
-
   return (
     <article className="frame-preview-tile">
       <div className="frame-preview-canvas">
-        {staticFrameUrl ? (
-          <div
-            className="frame-preview-svg"
-            aria-label={`${rarity} frame preview`}
-            style={{ width: FRAME_RENDER_WIDTH, height: FRAME_RENDER_HEIGHT, background: "#000000" }}
-          >
-            <img
-              src={staticFrameUrl}
-              alt={`${rarity} frame`}
-              width={FRAME_RENDER_WIDTH}
-              height={FRAME_RENDER_HEIGHT}
-              style={{ width: "100%", height: "100%", objectFit: "fill", ...frameLayerStyle }}
-            />
-          </div>
-        ) : (
-          <svg
+        <div
+          className="frame-preview-svg"
+          aria-label={`${rarity} frame preview`}
+          style={{ width: FRAME_RENDER_WIDTH, height: FRAME_RENDER_HEIGHT, background: "#000000" }}
+        >
+          <FrameOverlay
+            rarity={rarity}
+            frameSeed={`${rarity}-${tileIndex}`}
+            className="card-art-layer card-art-layer--svg-frame"
             width={FRAME_RENDER_WIDTH}
             height={FRAME_RENDER_HEIGHT}
-            viewBox={`0 0 ${FRAME_RENDER_WIDTH} ${FRAME_RENDER_HEIGHT}`}
-            className="frame-preview-svg"
-            aria-label={`${rarity} frame preview`}
-          >
-            <rect width={FRAME_RENDER_WIDTH} height={FRAME_RENDER_HEIGHT} rx="42" fill="#000000" />
-            <CardFrame
-              width={FRAME_RENDER_WIDTH}
-              height={FRAME_RENDER_HEIGHT}
-              rarity={rarity}
-              frameSeed={rarity}
-              uid={uid}
-            />
-          </svg>
-        )}
+            label={`${rarity} frame`}
+          />
+        </div>
       </div>
       <div className="frame-preview-meta">
         <h2>{rarity}</h2>

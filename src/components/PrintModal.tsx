@@ -1,10 +1,11 @@
 import { useState } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
+import { FrameOverlay } from "./FrameOverlay";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
-import { getFrameBlendMode, shouldInsetBackgroundForFrame } from "../services/staticAssets";
+import { getFrameBlendMode, shouldInsetBackgroundForFrame, shouldRenderSvgFrame } from "../services/staticAssets";
 
 interface PrintModalProps {
   card: CardPayload;
@@ -57,6 +58,7 @@ export function PrintModal({
   const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "print-art-layer print-art-layer--bg print-art-layer--bg-inset"
     : "print-art-layer print-art-layer--bg";
+  const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
@@ -119,8 +121,15 @@ export function PrintModal({
                           style={characterBlend !== undefined ? { opacity: characterBlend } : undefined}
                         />
                       )}
-                      {frameImageUrl && (
+                      {frameImageUrl && !showSvgFrame && (
                         <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" style={frameLayerStyle} />
+                      )}
+                      {showSvgFrame && (
+                        <FrameOverlay
+                          rarity={card.prompts.rarity}
+                          frameSeed={card.frameSeed}
+                          className="print-art-layer print-art-layer--svg-frame"
+                        />
                       )}
                     </div>
                   ) : (
@@ -238,8 +247,15 @@ export function PrintModal({
                       style={characterBlend !== undefined ? { opacity: characterBlend } : undefined}
                     />
                   )}
-                  {frameImageUrl && (
+                  {frameImageUrl && !showSvgFrame && (
                     <img src={frameImageUrl} alt="frame" className="print-art-layer print-art-layer--frame" style={frameLayerStyle} />
+                  )}
+                  {showSvgFrame && (
+                    <FrameOverlay
+                      rarity={card.prompts.rarity}
+                      frameSeed={card.frameSeed}
+                      className="print-art-layer print-art-layer--svg-frame"
+                    />
                   )}
                 </div>
               ) : (
