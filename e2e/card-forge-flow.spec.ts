@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Card Forge flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('forge-welcome-dismissed', '1');
+    });
+  });
+
   test('uses a referral credit to forge a card and prompts free users to upgrade for saving', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => {

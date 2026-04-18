@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('forge-welcome-dismissed', '1');
+  });
+});
+
 async function openTierModal(page: import('@playwright/test').Page) {
   await page.goto('/');
   const desktopTierButton = page.locator('.nav-desktop-only.tier-badge-btn');
