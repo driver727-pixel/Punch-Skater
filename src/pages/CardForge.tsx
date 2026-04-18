@@ -152,7 +152,25 @@ export function CardForge() {
   const [isFirstCard, setIsFirstCard] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(
+    () => localStorage.getItem("forge-welcome-dismissed") !== "1"
+  );
+
+  const closeWelcome = useCallback(() => {
+    localStorage.setItem("forge-welcome-dismissed", "1");
+    setShowWelcome(false);
+  }, []);
+
+  // Close welcome modal on Escape key
+  useEffect(() => {
+    if (!showWelcome) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeWelcome();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showWelcome, closeWelcome]);
+
   // Abort controller ref for cancelling in-flight image generation
   const abortRef = useRef<AbortController | null>(null);
 
@@ -631,14 +649,14 @@ export function CardForge() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="forge-welcome-title"
-          onClick={() => setShowWelcome(false)}
+          onClick={closeWelcome}
         >
           <div className="modal-panel forge-welcome-panel" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="close-btn modal-close"
               aria-label="Close welcome"
-              onClick={() => setShowWelcome(false)}
+              onClick={closeWelcome}
             >
               ✕
             </button>
@@ -665,7 +683,7 @@ export function CardForge() {
               <button
                 type="button"
                 className="btn-primary"
-                onClick={() => setShowWelcome(false)}
+                onClick={closeWelcome}
               >
                 Got it, let's forge
               </button>
@@ -678,7 +696,10 @@ export function CardForge() {
         <button
           type="button"
           className="btn-outline btn-sm forge-welcome-reopen"
-          onClick={() => setShowWelcome(true)}
+          onClick={() => {
+            localStorage.removeItem("forge-welcome-dismissed");
+            setShowWelcome(true);
+          }}
           aria-label="Open Start Here welcome"
         >
           Start Here
