@@ -33,8 +33,7 @@ const SKIN_TONES: SkinTone[] = ["Light", "Medium", "Dark", "Very Dark"];
 const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Attractive", "Weathered", "Scarred", "Rugged"];
 const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
 const BOARD_TYPES = BOARD_TYPE_OPTIONS.map((option) => option.value);
-const RANDOM_LOADOUT_SCOPES = ["character", "board", "both"] as const;
-const RANDOM_SKATER_TOOLTIP = "Randomizes the Character loadout, the Board loadout, or both with one click.";
+const RANDOM_SKATER_TOOLTIP = "Randomizes the Character loadout and the Board loadout with one click.";
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#3366ff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
@@ -591,31 +590,26 @@ export function CardForge() {
 
   const handleRandomPunchSkater = useCallback(() => {
     sfxClick();
-    const scope = getRandomItem(RANDOM_LOADOUT_SCOPES);
 
-    if (scope === "character" || scope === "both") {
-      setPrompts((current) => {
-        const archetype = getRandomItemExcluding(ARCHETYPE_VALUES, current.archetype);
-        return {
-          ...current,
-          archetype,
-          style: resolveArchetypeStyle(archetype, current.style),
-          rarity: getRandomItemExcluding(RARITIES, current.rarity),
-          district: getRandomItemExcluding(DISTRICTS, current.district),
-          accentColor: getRandomItemExcluding(ACCENT_PRESETS, current.accentColor),
-          gender: getRandomItemExcluding(GENDERS, current.gender),
-          ageGroup: getRandomItemExcluding(AGE_GROUPS, current.ageGroup),
-          bodyType: getRandomItemExcluding(BODY_TYPES, current.bodyType),
-          hairLength: getRandomItemExcluding(HAIR_LENGTHS, current.hairLength),
-          skinTone: getRandomItemExcluding(SKIN_TONES, current.skinTone),
-          faceCharacter: getRandomItemExcluding(FACE_CHARACTERS, current.faceCharacter),
-        };
-      });
-    }
+    setPrompts((current) => {
+      const archetype = getRandomItemExcluding(ARCHETYPE_VALUES, current.archetype);
+      return {
+        ...current,
+        archetype,
+        style: resolveArchetypeStyle(archetype, current.style),
+        rarity: getRandomItemExcluding(RARITIES, current.rarity),
+        district: getRandomItemExcluding(DISTRICTS, current.district),
+        accentColor: getRandomItemExcluding(ACCENT_PRESETS, current.accentColor),
+        gender: getRandomItemExcluding(GENDERS, current.gender),
+        ageGroup: getRandomItemExcluding(AGE_GROUPS, current.ageGroup),
+        bodyType: getRandomItemExcluding(BODY_TYPES, current.bodyType),
+        hairLength: getRandomItemExcluding(HAIR_LENGTHS, current.hairLength),
+        skinTone: getRandomItemExcluding(SKIN_TONES, current.skinTone),
+        faceCharacter: getRandomItemExcluding(FACE_CHARACTERS, current.faceCharacter),
+      };
+    });
 
-    if (scope === "board" || scope === "both") {
-      setBoardConfig((current) => buildRandomBoardConfig(current));
-    }
+    setBoardConfig((current) => buildRandomBoardConfig(current));
   }, []);
 
   return (
@@ -651,10 +645,10 @@ export function CardForge() {
           onClick={handleRandomPunchSkater}
           disabled={forging || isAnyLayerLoading}
           title={RANDOM_SKATER_TOOLTIP}
-          aria-label={`Random Punch Skater. ${RANDOM_SKATER_TOOLTIP}`}
+          aria-label={`Random Skater. ${RANDOM_SKATER_TOOLTIP}`}
           data-testid="random-punch-skater-button"
         >
-          Random Punch Skater
+          Random Skater
         </button>
       </div>
 

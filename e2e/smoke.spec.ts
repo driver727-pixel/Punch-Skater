@@ -109,7 +109,7 @@ test.describe('Home page (Card Forge)', () => {
     await page.goto('/');
 
     const randomButton = page.getByTestId('random-punch-skater-button');
-    await expect(randomButton).toHaveAttribute('title', /character loadout, the board loadout, or both/i);
+    await expect(randomButton).toHaveAttribute('title', /character loadout and the board loadout/i);
     const getSelectionSnapshot = () => page.evaluate(() => (
       Array.from(document.querySelectorAll('button[aria-pressed="true"]'))
         .map((node) => {
