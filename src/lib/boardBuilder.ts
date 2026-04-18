@@ -570,7 +570,9 @@ export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentI
 // ── Board image prompt builder ─────────────────────────────────────────────────
 
 const BOARD_IMAGE_BASE_CONCEPT =
-  "An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background.";
+  "An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background. " +
+  "It has exactly four wheels mounted on front and rear trucks with fixed axles, the wheels aligned in matching pairs and pointing in the same direction as the deck. " +
+  "Never show caster-style pivoting wheels, sideways wheels, or wheels perpendicular to the board.";
 
 const BOARD_TYPE_IMAGE_DESCRIPTIONS: Record<BoardType, string> = {
   Street: "A Street style electric skateboard with a low-profile urban deck built for pavement.",
