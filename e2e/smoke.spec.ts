@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { calculateBoardStats } from '../src/lib/boardBuilder';
 
 async function ensureNavLinksVisible(page: Page) {
   const collectionLink = page.getByRole('link', { name: /collection/i });
@@ -84,6 +85,24 @@ test.describe('Home page (Card Forge)', () => {
     await expect(districtGroup.getByRole('button', { name: /^Glass City$/ })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.geo-atlas__inspection-title').first()).toHaveText('Glass City');
     await expect(page.locator('.geo-atlas__callout-pill').first()).toContainText('Selected setup');
+  });
+
+  test('derives board access from rideable districts instead of legacy wheel labels', () => {
+    expect(calculateBoardStats({
+      boardType: 'Street',
+      drivetrain: 'Belt',
+      motor: 'Standard',
+      wheels: 'Urethane',
+      battery: 'SlimStealth',
+    }).accessProfile).toBe('Airaway · The Grid · Glass City');
+
+    expect(calculateBoardStats({
+      boardType: 'Street',
+      drivetrain: 'Belt',
+      motor: 'Standard',
+      wheels: 'Cloud',
+      battery: 'SlimStealth',
+    }).accessProfile).toBe('Nightshade · Batteryville · The Grid · Glass City');
   });
 
   test('random punch skater button randomizes character and board selections', async ({ page }) => {
