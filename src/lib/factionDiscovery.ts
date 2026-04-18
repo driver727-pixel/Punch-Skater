@@ -4,19 +4,24 @@ import { remapStyleConnection } from "./styles";
 export interface ForgeArchetypeOption {
   value: Archetype;
   label: string;
+  coverRole: string;
 }
 
 export const FORGE_ARCHETYPE_OPTIONS: ForgeArchetypeOption[] = [
-  { value: "Qu111s", label: "Journalist" },
-  { value: "D4rk $pider", label: "Hacker" },
-  { value: "The Asclepians", label: "Humanitarian" },
-  { value: "The Mesopotamian Society", label: "Archeologist" },
-  { value: "Hermes' Squirmies", label: "Blue collar worker" },
-  { value: "UCPS", label: "Postal worker" },
-  { value: "Iron Curtains", label: "Chef" },
+  { value: "The Knights Technarchy", label: "Undercover operative", coverRole: "undercover operative courier" },
+  { value: "Qu111s", label: "Journalist", coverRole: "journalist courier" },
+  { value: "Ne0n Legion", label: "Showboat stunt courier", coverRole: "showboat stunt courier" },
+  { value: "Iron Curtains", label: "Chef", coverRole: "chef courier" },
+  { value: "D4rk $pider", label: "Hacker", coverRole: "hacker courier" },
+  { value: "The Asclepians", label: "Humanitarian", coverRole: "humanitarian courier" },
+  { value: "The Mesopotamian Society", label: "Archaeologist", coverRole: "archaeologist courier" },
+  { value: "Hermes' Squirmies", label: "Blue collar worker", coverRole: "blue collar worker courier" },
+  { value: "UCPS", label: "Postal worker", coverRole: "postal worker courier" },
+  { value: "The Team", label: "Athlete", coverRole: "athlete courier" },
 ];
 
 const ARCHETYPE_LABEL_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [option.value, option.label]));
+const ARCHETYPE_COVER_ROLE_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [option.value, option.coverRole]));
 
 // Legacy style cleanup keeps the Dark Spider reveal wired to the requested
 // successor styles after Ninja/Hacker were removed from the active style list.
@@ -30,6 +35,10 @@ const DARK_SPIDER_DISTRICT_MATCHES: ReadonlySet<District> = new Set([
 
 export function getForgeArchetypeLabel(archetype: Archetype): string {
   return ARCHETYPE_LABEL_MAP.get(archetype) ?? archetype;
+}
+
+export function getForgeCoverRole(archetype: Archetype): string {
+  return ARCHETYPE_COVER_ROLE_MAP.get(archetype) ?? `${getForgeArchetypeLabel(archetype).toLowerCase()} courier`;
 }
 
 export function resolveSecretFaction(prompts: CardPrompts): Faction | null {

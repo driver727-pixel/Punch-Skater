@@ -1,4 +1,4 @@
-import { getForgeArchetypeLabel } from "./factionDiscovery";
+import { getForgeCoverRole } from "./factionDiscovery";
 import { createSeededRandom } from "./prng";
 import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
 
@@ -44,19 +44,6 @@ const ARCHETYPE_POSES: Record<string, string> = {
   "Hermes' Squirmies":      "lunging forward in a dramatic mid-delivery sprint, one arm swinging a heavy parcel overhead, body leaning hard into a sharp turn with intense determination, in union worker overalls covered in badge patches",
   "UCPS":                   "in an explosive action-hero leap over an obstacle, one arm clutching a package tight to the chest, legs kicked out in a dynamic hurdle pose, street-style hoodie and cargo pants, old-looking board with lights",
   "The Team":               "in a triumphant victory pose with both fists pumped skyward, muscles tensed, fierce competitive grin, powerful athletic stance, in a matching sponsor-logo ensemble, coordinated team colours",
-};
-
-const COVER_IDENTITY_ROLES: Record<string, string> = {
-  "The Knights Technarchy": "undercover operative courier",
-  Qu111s: "journalist courier",
-  "Ne0n Legion": "showboat stunt courier",
-  "Iron Curtains": "chef courier",
-  "D4rk $pider": "hacker courier",
-  "The Asclepians": "humanitarian courier",
-  "The Mesopotamian Society": "archaeologist courier",
-  "Hermes' Squirmies": "blue collar worker courier",
-  UCPS: "postal worker courier",
-  "The Team": "athlete courier",
 };
 
 const COVER_IDENTITY_POSES: Record<string, string> = {
@@ -121,8 +108,7 @@ function joinPromptBlocks(...blocks: Array<string | undefined>): string {
 }
 
 function buildCoverIdentityRole(archetype: string): string {
-  return COVER_IDENTITY_ROLES[archetype]
-    ?? `${getForgeArchetypeLabel(archetype as CardPrompts["archetype"]).toLowerCase()} courier`;
+  return getForgeCoverRole(archetype as CardPrompts["archetype"]);
 }
 
 function buildCoverIdentityPose(archetype: string): string {
