@@ -55,6 +55,29 @@ test.describe('Home page (Card Forge)', () => {
     await expect(page.getByRole('link', { name: /^credits$/i })).toBeVisible();
   });
 
+  test('shows every cover identity button in the first forge section', async ({ page }) => {
+    await page.goto('/');
+
+    const coverIdentityGroup = page
+      .locator('.form-group')
+      .filter({ has: page.locator('label', { hasText: 'Cover Identity' }) });
+
+    for (const label of [
+      'Undercover operative',
+      'Journalist',
+      'Showboat stunt courier',
+      'Chef',
+      'Hacker',
+      'Humanitarian',
+      'Archaeologist',
+      'Blue collar worker',
+      'Postal worker',
+      'Athlete',
+    ]) {
+      await expect(coverIdentityGroup.getByRole('button', { name: label })).toBeVisible();
+    }
+  });
+
   test('keeps the configured board part selected and allows changing it', async ({ page }) => {
     await page.goto('/');
 
