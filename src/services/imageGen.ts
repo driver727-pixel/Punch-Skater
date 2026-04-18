@@ -63,6 +63,7 @@ const NEGATIVE_PROMPT =
   "death, killing, kill, murder, violence, decapitation, mutilation, kids, minors, " +
   "scooter, kick scooter, mobility scooter, mobility chair, roller skates, inline skates, rollerskates, " +
   "hoverboard, self-balancing scooter, self balancing scooter, segway, unicycle, mono wheel, monowheel, " +
+  "caster wheels, swivel wheels, shopping cart wheels, sideways wheels, perpendicular wheels, " +
   "blurry, blur, fuzzy, soft focus, out of focus, low resolution, low quality, degraded, " +
   "pixelated, jpeg artifacts, compression artifacts, watermark, signature, " +
   "photograph, photography, photorealistic, photo-realistic, realistic skin pores, live action, live-action, " +
