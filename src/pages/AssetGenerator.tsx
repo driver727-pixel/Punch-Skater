@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { generateImage, removeBackground } from "../services/imageGen";
 import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
+import { AdminFactionImagesPanel } from "../components/AdminFactionImagesPanel";
 import { AdminImageCachePanel } from "../components/AdminImageCachePanel";
 
 // ── Download helper ────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ interface ItemState {
 }
 
 export function AssetGenerator() {
-  const [activeTab, setActiveTab] = useState<"generator" | "cache">("generator");
+  const [activeTab, setActiveTab] = useState<"generator" | "factions" | "cache">("generator");
   const [states, setStates] = useState<Record<string, ItemState>>(
     Object.fromEntries(ALL_ITEMS.map((i) => [i.seedKey, { status: "idle" }]))
   );
@@ -179,9 +180,9 @@ export function AssetGenerator() {
     <div className="page asset-gen-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">🎨 Assets</h1>
+          <h1 className="page-title">🎨 Image Assets</h1>
           <p className="page-sub">
-            Admin tools for board asset generation and cached forge image cleanup.
+            Admin tools for board assets, faction images, and cached forge image cleanup.
           </p>
         </div>
       </div>
@@ -192,6 +193,12 @@ export function AssetGenerator() {
           onClick={() => setActiveTab("generator")}
         >
           🎨 Asset Generator
+        </button>
+        <button
+          className={`admin-tab${activeTab === "factions" ? " admin-tab--active" : ""}`}
+          onClick={() => setActiveTab("factions")}
+        >
+          🛡 Faction Images
         </button>
         <button
           className={`admin-tab${activeTab === "cache" ? " admin-tab--active" : ""}`}
@@ -306,6 +313,8 @@ export function AssetGenerator() {
             );
           })}
         </>
+      ) : activeTab === "factions" ? (
+        <AdminFactionImagesPanel />
       ) : (
         <AdminImageCachePanel />
       )}
