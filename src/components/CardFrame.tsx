@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { Rarity } from "../lib/types";
+import { createFrameUid } from "../lib/frameUid";
 
 export const FRAME_RENDER_WIDTH = 750;
 export const FRAME_RENDER_HEIGHT = 1050;
@@ -41,10 +42,6 @@ function seededVal(seed: string, idx: number): number {
   }
   h = Math.imul(h ^ (h >>> 16), 2246822519);
   return ((h >>> 0) % 1000) / 1000;
-}
-
-function sanitizeUid(uid: string): string {
-  return uid.replace(/[^a-z0-9_-]/gi, "").slice(0, 40) || "frame";
 }
 
 function buildRustPatches(seed: string) {
@@ -95,7 +92,7 @@ function buildEdgeSpecks(seed: string, colorA: string, colorB: string) {
 }
 
 function PunchSkaterFrame({ uid, frameSeed }: { uid: string; frameSeed: string }) {
-  const safeUid = sanitizeUid(uid);
+  const safeUid = createFrameUid(uid, 40);
   const rustPatches = buildRustPatches(frameSeed);
   const specks = buildEdgeSpecks(frameSeed, "#a9632e", "#4d2719");
   const tieBands = [140, 375, 610];
@@ -212,7 +209,7 @@ function PunchSkaterFrame({ uid, frameSeed }: { uid: string; frameSeed: string }
 }
 
 function ApprenticeFrame({ uid }: { uid: string }) {
-  const safeUid = sanitizeUid(uid);
+  const safeUid = createFrameUid(uid, 40);
   return (
     <>
       <defs>
@@ -308,7 +305,7 @@ function ApprenticeFrame({ uid }: { uid: string }) {
 }
 
 function MasterFrame({ uid }: { uid: string }) {
-  const safeUid = sanitizeUid(uid);
+  const safeUid = createFrameUid(uid, 40);
   const collarY = [170, 330, 720, 880];
   return (
     <>
@@ -406,7 +403,7 @@ function MasterFrame({ uid }: { uid: string }) {
 }
 
 function RareFrame({ uid }: { uid: string }) {
-  const safeUid = sanitizeUid(uid);
+  const safeUid = createFrameUid(uid, 40);
   const neonNodes = [
     { x: 144, y: 26, color: "#6ff6ff" },
     { x: 375, y: 26, color: "#7eff73" },
@@ -510,7 +507,7 @@ function RareFrame({ uid }: { uid: string }) {
 }
 
 function LegendaryFrame({ uid, frameSeed }: { uid: string; frameSeed: string }) {
-  const safeUid = sanitizeUid(uid);
+  const safeUid = createFrameUid(uid, 40);
   const neonBands = [
     { colorA: "#ff4fd8", colorB: "#7effff", width: 2.4, dashOffset: seededVal(frameSeed, 100) * 36 },
     { colorA: "#7eff73", colorB: "#ffd84f", width: 2.1, dashOffset: seededVal(frameSeed, 101) * 36 },

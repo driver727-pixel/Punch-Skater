@@ -100,7 +100,9 @@ export async function downloadCardAsJpg(
     const resolvedFrameUrl = shouldRenderSvgFrame(rarity, frameUrl)
       ? buildFrameSvgDataUrl(rarity, frameSeed)
       : frameUrl;
-    if (!resolvedFrameUrl) return;
+    if (!resolvedFrameUrl) {
+      throw new Error(`Frame download URL could not be resolved for ${rarity}.`);
+    }
     const img = await loadCrossOriginImage(resolvedFrameUrl);
     ctx.globalCompositeOperation = frameUrl && getFrameBlendMode(rarity, frameUrl) === "screen" ? "screen" : "source-over";
     ctx.globalAlpha = 1;

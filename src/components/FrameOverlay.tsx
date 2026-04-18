@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Rarity } from "../lib/types";
+import { createFrameUid } from "../lib/frameUid";
 import { CardFrame, FRAME_RENDER_HEIGHT, FRAME_RENDER_WIDTH } from "./CardFrame";
 
 interface FrameOverlayProps {
@@ -12,10 +13,6 @@ interface FrameOverlayProps {
   label?: string;
 }
 
-function buildUid(rarity: Rarity, frameSeed: string): string {
-  return `${rarity}-${frameSeed}`.replace(/[^a-z0-9_-]/gi, "").slice(0, 32) || "frame";
-}
-
 export function FrameOverlay({
   rarity,
   frameSeed,
@@ -25,7 +22,7 @@ export function FrameOverlay({
   height = FRAME_RENDER_HEIGHT,
   label,
 }: FrameOverlayProps) {
-  const uid = buildUid(rarity, frameSeed);
+  const uid = createFrameUid(`${rarity}-${frameSeed}`);
 
   return (
     <svg
