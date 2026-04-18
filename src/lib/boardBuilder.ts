@@ -12,6 +12,8 @@
  */
 
 import { withBoardComponentAssetVersion } from "./boardAssetVersion";
+import { isDistrictAccessibleWithBoardType } from "./districtWeather";
+import type { District } from "./types";
 
 export type BoardType = "Street" | "AT" | "Mountain" | "Surf" | "Slider";
 export type Drivetrain = "Belt" | "Hub" | "Gear" | "4WD";
@@ -724,6 +726,14 @@ const DEFAULT_STYLE = "Custom";
 const DEFAULT_SPEED = 5;
 const DEFAULT_ACCEL = 5;
 const DEFAULT_RANGE = 5;
+const DISTRICT_ACCESS_ORDER: District[] = [
+  "Airaway",
+  "Nightshade",
+  "Batteryville",
+  "The Grid",
+  "The Forest",
+  "Glass City",
+];
 const WHEEL_ACCESS_PROFILES: Record<WheelType, string> = {
   Urethane: "Urban district access",
   Pneumatic: "Off-grid district access",
@@ -731,6 +741,22 @@ const WHEEL_ACCESS_PROFILES: Record<WheelType, string> = {
   Cloud: "Corridor glide access",
 };
 const DEFAULT_ACCESS_PROFILE = "General district access";
+
+function getBoardDistrictAccessProfile(config: BoardConfig): string {
+  const normalizedConfig = normalizeBoardConfig(config);
+  const accessibleDistricts = DISTRICT_ACCESS_ORDER.filter((district) =>
+    isDistrictAccessibleWithBoardType(
+      district,
+      null,
+      normalizedConfig.boardType,
+      normalizedConfig.wheels,
+    ),
+  );
+
+  return accessibleDistricts.length > 0
+    ? accessibleDistricts.join(" · ")
+    : WHEEL_ACCESS_PROFILES[normalizedConfig.wheels] ?? DEFAULT_ACCESS_PROFILE;
+}
 
 
 /**
@@ -744,7 +770,7 @@ export interface BoardLoadout {
   speed: number;
   /** Acceleration rating determined by the motor (1–10). */
   acceleration: number;
-  /** Wheel-driven district / corridor access profile. */
+  /** Baseline district access profile derived from the current board setup. */
   accessProfile: string;
   /** Battery range rating (1–10). */
   range: number;
@@ -771,14 +797,13 @@ export function calculateBoardStats(config: BoardConfig): BoardLoadout {
   const deckModel    = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === deckSeed);
   const driveModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === driveSeed);
   const motorModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === motorSeed);
-  const wheelModel   = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === wheelSeed);
   const batteryModel = BOARD_COMPONENT_CATALOG.find((m) => m.seedKey === batterySeed);
 
   return {
     style:        deckModel?.style         ?? DEFAULT_STYLE,
     speed:        driveModel?.speed        ?? DEFAULT_SPEED,
     acceleration: motorModel?.acceleration ?? DEFAULT_ACCEL,
-    accessProfile: wheelModel?.accessProfile ?? WHEEL_ACCESS_PROFILES[normalizedConfig.wheels] ?? DEFAULT_ACCESS_PROFILE,
+    accessProfile: getBoardDistrictAccessProfile(normalizedConfig),
     range:        batteryModel?.range      ?? DEFAULT_RANGE,
   };
 }

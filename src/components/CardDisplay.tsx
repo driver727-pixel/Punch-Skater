@@ -8,7 +8,7 @@ import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { HIGH_RARITY_TIERS } from "../lib/generator";
 import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
-import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS, normalizeBoardConfig } from "../lib/boardBuilder";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS, calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
@@ -294,6 +294,7 @@ function CardDisplayComponent({
   const [viewing3D, setViewing3D] = useState(false);
   const [printing, setPrinting] = useState(false);
   const board = card.board ? normalizeBoardConfig(card.board) : null;
+  const boardLoadout = board ? calculateBoardStats(board) : card.boardLoadout;
   // false = show conlang (default for high-rarity), true = show English translation
   const [showEnglish, setShowEnglish] = useState(false);
 
@@ -611,8 +612,8 @@ function CardDisplayComponent({
                 value={BATTERY_OPTIONS.find((o) => o.value === board!.battery)?.label ?? board!.battery}
               />
             </div>
-            {card.boardLoadout && (
-              <SkateboardStatsPanel loadout={card.boardLoadout} />
+            {boardLoadout && (
+              <SkateboardStatsPanel loadout={boardLoadout} />
             )}
           </div>
         )}

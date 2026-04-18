@@ -2289,7 +2289,7 @@ export function buildMissionPreview(
 ): MissionPreview {
   const runnerCard = resolveRunnerCard(cards, runnerCardId);
   const runnerBoard = runnerCard?.board;
-  const runnerLoadout = runnerCard?.boardLoadout ?? (runnerBoard ? calculateBoardStats(runnerBoard) : null);
+  const runnerLoadout = runnerBoard ? calculateBoardStats(runnerBoard) : (runnerCard?.boardLoadout ?? null);
   const runnerBoardBonuses = runnerBoard ? getBoardStatBonuses(runnerBoard) : {};
 
   if (!runnerCard) {
