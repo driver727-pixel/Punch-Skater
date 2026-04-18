@@ -588,7 +588,7 @@ export function CardForge() {
     }
   }, [generated, layers, characterBlend]);
 
-  const handleRandomPunchSkater = useCallback(() => {
+  const handleRandomSkater = useCallback(() => {
     sfxClick();
 
     setPrompts((current) => {
@@ -642,7 +642,7 @@ export function CardForge() {
         <button
           type="button"
           className="btn-outline btn-sm forge-randomize-button"
-          onClick={handleRandomPunchSkater}
+          onClick={handleRandomSkater}
           disabled={forging || isAnyLayerLoading}
           title={RANDOM_SKATER_TOOLTIP}
           aria-label={`Random Skater. ${RANDOM_SKATER_TOOLTIP}`}
