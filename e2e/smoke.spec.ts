@@ -63,16 +63,16 @@ test.describe('Home page (Card Forge)', () => {
       .filter({ has: page.locator('label', { hasText: 'Cover Identity' }) });
 
     for (const label of [
-      'Undercover operative',
+      'Science Lab Technician',
       'Journalist',
-      'Showboat stunt courier',
+      'Security Guard',
       'Chef',
       'Hacker',
       'Humanitarian',
       'Archaeologist',
       'Blue collar worker',
       'Postal worker',
-      'Athlete',
+      'Bartender',
     ]) {
       await expect(coverIdentityGroup.getByRole('button', { name: label })).toBeVisible();
     }

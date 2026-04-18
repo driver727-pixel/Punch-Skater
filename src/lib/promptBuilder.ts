@@ -56,7 +56,7 @@ const COVER_IDENTITY_POSES: Record<string, string> = {
   "The Mesopotamian Society": "balancing confidently in an adventurous field-research pose with treasure-hunter swagger",
   "Hermes' Squirmies": "driving forward in a hard-working delivery pose with practical momentum and union-job grit",
   UCPS: "in a disciplined postal-delivery action pose with a secure parcel, practical utility gear, and efficient movement",
-  "The Team": "holding a polished elite-athlete delivery stance with disciplined posture, balance, and coordinated confidence",
+  "The Team": "holding a polished elite-athlete stance with disciplined posture, balance, and coordinated confidence",
 };
 
 const RARITY_MOOD: Record<string, string> = {

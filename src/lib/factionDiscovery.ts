@@ -8,16 +8,16 @@ export interface ForgeArchetypeOption {
 }
 
 export const FORGE_ARCHETYPE_OPTIONS: ForgeArchetypeOption[] = [
-  { value: "The Knights Technarchy", label: "Undercover operative", coverRole: "undercover operative courier" },
+  { value: "The Knights Technarchy", label: "Science Lab Technician", coverRole: "science lab technician courier" },
   { value: "Qu111s", label: "Journalist", coverRole: "journalist courier" },
-  { value: "Ne0n Legion", label: "Showboat stunt courier", coverRole: "showboat stunt courier" },
+  { value: "Ne0n Legion", label: "Security Guard", coverRole: "security guard courier" },
   { value: "Iron Curtains", label: "Chef", coverRole: "chef courier" },
   { value: "D4rk $pider", label: "Hacker", coverRole: "hacker courier" },
   { value: "The Asclepians", label: "Humanitarian", coverRole: "humanitarian courier" },
   { value: "The Mesopotamian Society", label: "Archaeologist", coverRole: "archaeologist courier" },
   { value: "Hermes' Squirmies", label: "Blue collar worker", coverRole: "blue collar worker courier" },
   { value: "UCPS", label: "Postal worker", coverRole: "postal worker courier" },
-  { value: "The Team", label: "Athlete", coverRole: "athlete courier" },
+  { value: "The Team", label: "Bartender", coverRole: "bartender courier" },
 ];
 
 const ARCHETYPE_LABEL_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [option.value, option.label]));
