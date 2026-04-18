@@ -12,7 +12,7 @@ export const FORGE_ARCHETYPE_OPTIONS: ForgeArchetypeOption[] = [
   { value: "Qu111s", label: "Journalist", coverRole: "journalist courier" },
   { value: "Ne0n Legion", label: "Security Guard", coverRole: "security guard courier" },
   { value: "Iron Curtains", label: "Chef", coverRole: "chef courier" },
-  { value: "D4rk $pider", label: "Hacker", coverRole: "hacker courier" },
+  { value: "D4rk $pider", label: "Coder", coverRole: "coder courier" },
   { value: "The Asclepians", label: "Humanitarian", coverRole: "humanitarian courier" },
   { value: "The Mesopotamian Society", label: "Archaeologist", coverRole: "archaeologist courier" },
   { value: "Hermes' Squirmies", label: "Blue collar worker", coverRole: "blue collar worker courier" },
