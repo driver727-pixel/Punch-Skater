@@ -79,7 +79,7 @@ function buildRandomBoardConfig(currentConfig: BoardConfig): BoardConfig {
 
 /** Maximum number of automatic retries per layer when a cached URL fails to load. */
 const MAX_LAYER_RETRIES = 1;
-const CHARACTER_CACHE_VERSION = "v3-adult-realism";
+const CHARACTER_CACHE_VERSION = "v4-dynamic-pose";
 const BOARD_IMAGE_CACHE_VERSION = "v2-component-composite";
 const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
   imageSize: { width: 1088, height: 1536 },

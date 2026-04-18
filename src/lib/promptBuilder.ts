@@ -120,6 +120,46 @@ function buildCoverIdentityPose(archetype: string): string {
     ?? "striking a dramatic comic book action pose, dynamic and powerful";
 }
 
+function buildCharacterVisualSeed(prompts: CardPrompts): string {
+  return [
+    prompts.archetype,
+    prompts.style,
+    prompts.gender,
+    prompts.ageGroup,
+    prompts.bodyType,
+    prompts.hairLength ?? "",
+    prompts.accentColor ?? "",
+    prompts.skinTone ?? "",
+    prompts.faceCharacter ?? "",
+  ].join("|");
+}
+
+function buildDynamicComposition(prompts: CardPrompts): string {
+  const rng = createSeededRandom(buildCharacterVisualSeed(prompts));
+  const cameraAngle = rng.pick([
+    "dramatic three-quarter camera angle",
+    "cinematic low-angle action shot",
+    "dynamic side-angle tracking view",
+    "off-center full-body hero framing",
+    "slightly worm's-eye comic-book perspective",
+  ]);
+  const motionLine = rng.pick([
+    "captured mid-carve with the rider leaning hard into momentum",
+    "caught in a fast push forward with one shoulder leading the motion",
+    "shown bracing through a sharp turn with the body counterbalancing the deck",
+    "posed as if popping over rough ground with the board alive underfoot",
+    "framed in a hard-driving glide with the deck cutting diagonally through the scene",
+  ]);
+  const gazeLine = rng.pick([
+    "eyes focused down the route instead of staring blankly at the camera",
+    "attention locked on the next obstacle or delivery line",
+    "expression alert and reactive, like the rider is already making the next move",
+    "gaze aimed just past the viewer with a sense of forward intent",
+  ]);
+
+  return `${cameraAngle}, ${motionLine}, ${gazeLine}`;
+}
+
 // ── Appearance helpers ──────────────────────────────────────────────────────────
 
 function describeAccentColor(accentColor?: string): string {
@@ -253,6 +293,7 @@ function buildBodyDescription(bodyType: string): string {
 export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
   const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
   const pose      = buildCoverIdentityPose(prompts.archetype);
+  const composition = buildDynamicComposition(prompts);
   const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const graffitiLine = graffitiWords?.length
@@ -277,7 +318,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
     `Subject: full-body portrait of a clearly adult ${coverRole}.`,
-    `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
+    `Composition: full-body action portrait with the entire rider and full skateboard visible from head to toe, ${composition}, asymmetrical and energetic rather than stiff or centered, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
     `Props: carrying courier gear suited to a fast courier run.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     ELECTRIC_SKATEBOARD_EXCLUSIONS,
@@ -407,6 +448,7 @@ export function buildBackgroundPrompt(district: string): string {
 export function buildImagePrompt(prompts: CardPrompts): string {
   const clothing = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
   const pose     = buildCoverIdentityPose(prompts.archetype);
+  const composition = buildDynamicComposition(prompts);
   const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const genderDesc =
@@ -425,7 +467,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
     `Subject: clearly adult ${coverRole}.`,
-    `Composition: facing directly toward the viewer, front-facing, looking at the camera, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
+    `Composition: full-body action portrait with the entire rider and full skateboard visible from head to toe, ${composition}, asymmetrical and energetic rather than stiff or centered, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
     `Props: carrying courier gear suited to a fast courier run.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     ELECTRIC_SKATEBOARD_EXCLUSIONS,
