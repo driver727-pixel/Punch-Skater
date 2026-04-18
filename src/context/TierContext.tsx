@@ -9,6 +9,7 @@ import {
   loadCheckoutSessionId,
   saveCheckoutSessionId,
   clearCheckoutSessionId,
+  FREE_CARD_USED_KEY,
   type TierLevel,
 } from "../lib/tiers";
 import { claimReferral, REFERRAL_CREDITS_KEY } from "../services/referrals";
@@ -37,17 +38,25 @@ function saveStoredCredits(n: number): void {
   localStorage.setItem(REFERRAL_CREDITS_KEY, String(Math.max(0, n)));
 }
 
+function loadFreeCardUsed(): boolean {
+  return localStorage.getItem(FREE_CARD_USED_KEY) === "1";
+}
+
 interface TierContextValue {
   tier: TierLevel;
   email: string;
   /** Number of referral-earned generate credits remaining. */
   generateCredits: number;
-  /** True when the user may forge a card (paid tier OR has credits). */
+  /** True when the user may forge a card (paid tier OR has credits OR free card available). */
   canForge: boolean;
+  /** True when the free tier's one complimentary card has already been used. */
+  freeCardUsed: boolean;
   setTier: (level: TierLevel, email?: string) => void;
   logout: () => void;
   /** Consume one generate credit (call after a successful forge on free tier). */
   consumeCredit: () => void;
+  /** Mark the free tier's one complimentary card as used. */
+  markFreeCardUsed: () => void;
   showUpgradeModal: boolean;
   openUpgradeModal: () => void;
   closeUpgradeModal: () => void;
@@ -79,6 +88,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
   const [tier, setTierState] = useState<TierLevel>("free");
   const [email, setEmailState] = useState<string>(resolveInitialEmail);
   const [generateCredits, setGenerateCredits] = useState<number>(loadStoredCredits);
+  const [freeCardUsed, setFreeCardUsed] = useState<boolean>(loadFreeCardUsed);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [verifiedCheckout, setVerifiedCheckout] = useState<VerifiedCheckout | null>(null);
 
@@ -241,7 +251,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const canForge = TIERS[tier].canGenerate || generateCredits > 0;
+  const canForge = TIERS[tier].canGenerate || generateCredits > 0 || (tier === "free" && !freeCardUsed);
 
   const setTier = useCallback((level: TierLevel, newEmail?: string) => {
     setTierState(level);
@@ -270,13 +280,18 @@ export function TierProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const markFreeCardUsed = useCallback(() => {
+    localStorage.setItem(FREE_CARD_USED_KEY, "1");
+    setFreeCardUsed(true);
+  }, []);
+
   const openUpgradeModal = useCallback(() => setShowUpgradeModal(true), []);
   const closeUpgradeModal = useCallback(() => setShowUpgradeModal(false), []);
 
   return (
     <TierContext.Provider value={{
-      tier, email, generateCredits, canForge,
-      setTier, logout, consumeCredit,
+      tier, email, generateCredits, canForge, freeCardUsed,
+      setTier, logout, consumeCredit, markFreeCardUsed,
       showUpgradeModal, openUpgradeModal, closeUpgradeModal,
     }}>
       {children}

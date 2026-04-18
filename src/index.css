@@ -586,6 +586,30 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-weight: bold;
 }
 .form-hint { font-size: 11px; color: var(--text-dim); margin: 6px 0 0; opacity: 0.75; }
+
+/* ── Locked form section (free tier) ──────────────────────────────────────── */
+.form-group--locked {
+  opacity: 0.45;
+  user-select: none;
+}
+.form-group--locked label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.form-group-lock-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: var(--purple);
+  border-radius: 999px;
+  padding: 2px 8px;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  cursor: pointer;
+}
+.form-group--locked .pill:disabled { cursor: not-allowed; }
 .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill {
   --soda-face: rgba(103, 81, 123, 0.8);

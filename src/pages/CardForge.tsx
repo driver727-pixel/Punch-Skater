@@ -126,7 +126,7 @@ const INITIAL_LAYER_STATE: LayerState = {
 };
 
 export function CardForge() {
-  const { tier, canForge, generateCredits, consumeCredit, openUpgradeModal } = useTier();
+  const { tier, canForge, generateCredits, consumeCredit, openUpgradeModal, freeCardUsed, markFreeCardUsed } = useTier();
   const { user } = useAuth();
   const tierData = TIERS[tier];
   const navigate = useNavigate();
@@ -384,8 +384,10 @@ export function CardForge() {
       setRevealedFaction(null);
     }
 
-    // Consume one referral credit when on the free tier
-    if (generateCredits > 0) {
+    // Consume one referral credit when on the free tier, or mark the free card as used
+    if (tier === "free" && !freeCardUsed) {
+      markFreeCardUsed();
+    } else if (generateCredits > 0) {
       consumeCredit();
     }
 
@@ -500,7 +502,7 @@ export function CardForge() {
     })();
 
     setForging(false);
-  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction, user?.uid]);
+  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction, user?.uid, tier, freeCardUsed, markFreeCardUsed]);
 
   // ── Expired-URL retry handler ────────────────────────────────────────────
   // Called when a composite img element fires onError (e.g. fal.ai CDN URL has
@@ -715,8 +717,15 @@ export function CardForge() {
       <div className="forge-layout">
         {/* ── Left column: form controls ── */}
         <div className="forge-form">
-          <div className="form-group">
-            <label>Cover Identity</label>
+          <div className={`form-group${tier === "free" ? " form-group--locked" : ""}`}>
+            <label>
+              Cover Identity
+              {tier === "free" && (
+                <button type="button" className="form-group-lock-badge" onClick={openUpgradeModal} aria-label="Upgrade to unlock Cover Identity">
+                  🔒 Upgrade
+                </button>
+              )}
+            </label>
             <div className="pill-group">
               {FORGE_ARCHETYPE_OPTIONS.map((opt) => (
                 <button
@@ -724,6 +733,7 @@ export function CardForge() {
                   className={`pill${prompts.archetype === opt.value ? " selected" : ""}`}
                   onClick={() => { sfxClick(); setArchetype(opt.value); }}
                   aria-pressed={prompts.archetype === opt.value}
+                  disabled={tier === "free"}
                 >
                   {opt.label}
                 </button>
@@ -732,8 +742,15 @@ export function CardForge() {
             <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
           </div>
 
-          <div className="form-group">
-            <label>Class</label>
+          <div className={`form-group${tier === "free" ? " form-group--locked" : ""}`}>
+            <label>
+              Class
+              {tier === "free" && (
+                <button type="button" className="form-group-lock-badge" onClick={openUpgradeModal} aria-label="Upgrade to unlock Class">
+                  🔒 Upgrade
+                </button>
+              )}
+            </label>
             <div className="pill-group">
               {RARITIES.map((opt) => (
                 <button
@@ -741,6 +758,7 @@ export function CardForge() {
                   className={`pill${prompts.rarity === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("rarity", opt); }}
                   aria-pressed={prompts.rarity === opt}
+                  disabled={tier === "free"}
                 >
                   {opt}
                 </button>
@@ -748,8 +766,15 @@ export function CardForge() {
             </div>
           </div>
 
-          <div className="form-group">
-            <label>District</label>
+          <div className={`form-group${tier === "free" ? " form-group--locked" : ""}`}>
+            <label>
+              District
+              {tier === "free" && (
+                <button type="button" className="form-group-lock-badge" onClick={openUpgradeModal} aria-label="Upgrade to unlock District">
+                  🔒 Upgrade
+                </button>
+              )}
+            </label>
             <div className="pill-group">
               {DISTRICTS.map((opt) => (
                 <button
@@ -757,6 +782,7 @@ export function CardForge() {
                   className={`pill${prompts.district === opt ? " selected" : ""}`}
                   onClick={() => { sfxClick(); set("district", opt); }}
                   aria-pressed={prompts.district === opt}
+                  disabled={tier === "free"}
                 >
                   {opt}
                 </button>
@@ -901,6 +927,8 @@ export function CardForge() {
               ? "✨ Generating…"
               : !canForge
               ? "🔒 FORGE YOUR CARD — Upgrade to Unlock"
+              : tier === "free" && !freeCardUsed
+              ? "⚡ FORGE YOUR CARD (1 free card)"
               : generateCredits > 0
               ? `⚡ FORGE YOUR CARD (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
               : "⚡ FORGE YOUR CARD"

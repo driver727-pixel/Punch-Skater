@@ -47,6 +47,7 @@ export const TIERS: Record<TierLevel, Tier> = {
     maxDecks: 0,
     description: "Explore the app — upgrade or earn referral credits to forge cards.",
     features: [
+      "1 free player card",
       "Browse the app",
       "Share cards via link",
       "Earn free generate credits via referrals",
@@ -99,6 +100,8 @@ export const TIERS: Record<TierLevel, Tier> = {
     stripePriceId: tierPricing.tier3.stripePriceId,
   },
 };
+
+export const FREE_CARD_USED_KEY = "skpd_free_card_used";
 
 const TIER_KEY = "skpd_tier";
 const EMAIL_KEY = "skpd_email";
