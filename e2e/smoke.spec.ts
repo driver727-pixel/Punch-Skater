@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { calculateBoardStats } from '../src/lib/boardBuilder';
 
 async function ensureNavLinksVisible(page: Page) {
   const collectionLink = page.getByRole('link', { name: /collection/i });
@@ -86,32 +87,22 @@ test.describe('Home page (Card Forge)', () => {
     await expect(page.locator('.geo-atlas__callout-pill').first()).toContainText('Selected setup');
   });
 
-  test('derives board access from rideable districts instead of legacy wheel labels', async ({ page }) => {
-    await page.goto('/');
+  test('derives board access from rideable districts instead of legacy wheel labels', () => {
+    expect(calculateBoardStats({
+      boardType: 'Street',
+      drivetrain: 'Belt',
+      motor: 'Standard',
+      wheels: 'Urethane',
+      battery: 'SlimStealth',
+    }).accessProfile).toBe('Airaway · The Grid · Glass City');
 
-    const accessProfiles = await page.evaluate(async () => {
-      const { calculateBoardStats } = await import('/src/lib/boardBuilder.ts');
-
-      return {
-        urethane: calculateBoardStats({
-          boardType: 'Street',
-          drivetrain: 'Belt',
-          motor: 'Standard',
-          wheels: 'Urethane',
-          battery: 'SlimStealth',
-        }).accessProfile,
-        cloud: calculateBoardStats({
-          boardType: 'Street',
-          drivetrain: 'Belt',
-          motor: 'Standard',
-          wheels: 'Cloud',
-          battery: 'SlimStealth',
-        }).accessProfile,
-      };
-    });
-
-    expect(accessProfiles.urethane).toBe('Airaway · The Grid · Glass City');
-    expect(accessProfiles.cloud).toBe('Nightshade · Batteryville · The Grid · Glass City');
+    expect(calculateBoardStats({
+      boardType: 'Street',
+      drivetrain: 'Belt',
+      motor: 'Standard',
+      wheels: 'Cloud',
+      battery: 'SlimStealth',
+    }).accessProfile).toBe('Nightshade · Batteryville · The Grid · Glass City');
   });
 
   test('random punch skater button randomizes character and board selections', async ({ page }) => {
