@@ -672,19 +672,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 12px;
 }
 
-.forge-welcome {
-  position: relative;
-  margin: 18px 0 20px;
-  padding: 18px;
-  border: 1px solid rgba(0, 255, 136, 0.24);
-  border-radius: 10px;
+.forge-welcome-panel {
+  border-color: rgba(0, 255, 136, 0.32);
   background:
-    linear-gradient(135deg, rgba(10, 18, 28, 0.96), rgba(26, 11, 34, 0.92)),
+    linear-gradient(135deg, rgba(10, 18, 28, 0.98), rgba(26, 11, 34, 0.96)),
     radial-gradient(circle at top right, rgba(0, 204, 255, 0.16), transparent 42%);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 16px 36px rgba(0, 0, 0, 0.32),
-    0 0 24px rgba(0, 255, 136, 0.08);
 }
 
 .forge-welcome__eyebrow {
@@ -738,6 +730,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--text-dim);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.forge-welcome__actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .forge-randomize-button {

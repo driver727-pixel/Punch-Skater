@@ -152,6 +152,25 @@ export function CardForge() {
   const [isFirstCard, setIsFirstCard] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
+  const [showWelcome, setShowWelcome] = useState(
+    () => localStorage.getItem("forge-welcome-dismissed") !== "1"
+  );
+
+  const closeWelcome = useCallback(() => {
+    localStorage.setItem("forge-welcome-dismissed", "1");
+    setShowWelcome(false);
+  }, []);
+
+  // Close welcome modal on Escape key
+  useEffect(() => {
+    if (!showWelcome) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeWelcome();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showWelcome, closeWelcome]);
+
   // Abort controller ref for cancelling in-flight image generation
   const abortRef = useRef<AbortController | null>(null);
 
@@ -623,28 +642,68 @@ export function CardForge() {
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <h1 className="page-title">CARD FORGE</h1>
       <p className="page-sub">Configure your Sk8r and forge a unique card</p>
-      <section className="forge-welcome" aria-labelledby="forge-welcome-title">
-        <div className="forge-welcome__eyebrow">Start Here</div>
-        <h2 id="forge-welcome-title" className="forge-welcome__title">Welcome to Punch Skater, rookie.</h2>
-        <p className="forge-welcome__lede">
-          The Card Forge is where you build your first deck, uncover hidden factions, and chase wild new combos across more than 4 million possible character variations.
-        </p>
-        <div className="forge-welcome__grid">
-          <div className="forge-welcome__item">
-            <h3>What</h3>
-            <p>Create Punch Skater cards, upgrade your squad with a Master card, and assemble a six-card deck built for missions, battles, and trades.</p>
-          </div>
-          <div className="forge-welcome__item">
-            <h3>How</h3>
-            <p>Start by forging 5 Punch Skater class cards and 1 Master class card, then tune their look, district, and board loadout before you lock them into your lineup.</p>
-          </div>
-          <div className="forge-welcome__item">
-            <h3>Why</h3>
-            <p>Earn points and power-ups on Missions, bring your best deck into the Battle Arena, and trade for the cards that complete your next big strategy.</p>
+
+      {showWelcome && (
+        <div
+          className="modal-overlay forge-welcome-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="forge-welcome-title"
+          onClick={closeWelcome}
+        >
+          <div className="modal-panel forge-welcome-panel" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="close-btn modal-close"
+              aria-label="Close welcome"
+              onClick={closeWelcome}
+            >
+              ✕
+            </button>
+            <div className="forge-welcome__eyebrow">Start Here</div>
+            <h2 id="forge-welcome-title" className="forge-welcome__title">Welcome to Punch Skater, rookie.</h2>
+            <p className="forge-welcome__lede">
+              The Card Forge is where you build your first deck, uncover hidden factions, and chase wild new combos across more than 4 million possible character variations.
+            </p>
+            <div className="forge-welcome__grid">
+              <div className="forge-welcome__item">
+                <h3>What</h3>
+                <p>Create Punch Skater cards, upgrade your squad with a Master card, and assemble a six-card deck built for missions, battles, and trades.</p>
+              </div>
+              <div className="forge-welcome__item">
+                <h3>How</h3>
+                <p>Start by forging 5 Punch Skater class cards and 1 Master class card, then tune their look, district, and board loadout before you lock them into your lineup.</p>
+              </div>
+              <div className="forge-welcome__item">
+                <h3>Why</h3>
+                <p>Earn points and power-ups on Missions, bring your best deck into the Battle Arena, and trade for the cards that complete your next big strategy.</p>
+              </div>
+            </div>
+            <div className="forge-welcome__actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={closeWelcome}
+              >
+                Got it, let's forge
+              </button>
+            </div>
           </div>
         </div>
-      </section>
+      )}
+
       <div className="forge-quick-actions">
+        <button
+          type="button"
+          className="btn-outline btn-sm forge-welcome-reopen"
+          onClick={() => {
+            localStorage.removeItem("forge-welcome-dismissed");
+            setShowWelcome(true);
+          }}
+          aria-label="Open Start Here welcome"
+        >
+          Start Here
+        </button>
         <button
           type="button"
           className="btn-outline btn-sm forge-randomize-button"
