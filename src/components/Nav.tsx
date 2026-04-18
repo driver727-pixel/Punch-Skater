@@ -111,7 +111,7 @@ export function Nav() {
             ⚙ Admin
           </NavLink>
           <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
-            🎨 Assets
+            🎨 Image Assets
           </NavLink>
         </>
       )}

@@ -10,15 +10,11 @@ import {
   limit,
   startAfter,
   getCountFromServer,
-  deleteField,
   type DocumentSnapshot,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, auth, storage } from "../lib/firebase";
+import { db, auth } from "../lib/firebase";
 import { TIERS, type TierLevel } from "../lib/tiers";
 import { resolveApiUrl } from "../lib/apiUrls";
-import { FACTION_LORE } from "../lib/lore";
-import { factionSlug } from "../lib/factionSlug";
 
 interface UserProfile {
   uid: string;
@@ -225,100 +221,6 @@ export function Admin() {
 
   const tierOptions: TierLevel[] = ["free", "tier2", "tier3"];
 
-  // ── Faction image upload ───────────────────────────────────────────────────
-  const [selectedFaction, setSelectedFaction] = useState(FACTION_LORE[0].name);
-  const [factionImageFile, setFactionImageFile] = useState<File | null>(null);
-  const [factionImagePreview, setFactionImagePreview] = useState<string | null>(null);
-  const [factionCurrentImages, setFactionCurrentImages] = useState<Record<string, string>>({});
-  const [factionCurrentExts, setFactionCurrentExts] = useState<Record<string, string>>({});
-  const [factionUploadStatus, setFactionUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
-  const [factionUploadError, setFactionUploadError] = useState("");
-  const factionFileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!db) return;
-    getDocs(collection(db, "factionImages")).then((snap) => {
-      const imageMap: Record<string, string> = {};
-      const extMap: Record<string, string> = {};
-      snap.forEach((d) => {
-        const data = d.data();
-        if (typeof data.imageUrl === "string") imageMap[d.id] = data.imageUrl;
-        if (typeof data.imageExt === "string") extMap[d.id] = data.imageExt;
-      });
-      setFactionCurrentImages(imageMap);
-      setFactionCurrentExts(extMap);
-    }).catch(console.error);
-  }, []);
-
-  const handleFactionFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setFactionImageFile(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => setFactionImagePreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
-    } else {
-      setFactionImagePreview(null);
-    }
-  };
-
-  const handleFactionImageUpload = async () => {
-    if (!factionImageFile || !storage || !db || !auth?.currentUser) return;
-    setFactionUploadStatus("uploading");
-    setFactionUploadError("");
-    try {
-      const slug = factionSlug(selectedFaction);
-      const ext = factionImageFile.name.split(".").pop()?.toLowerCase() ?? "png";
-      const storageRef = ref(storage, `factionImages/${slug}.${ext}`);
-      await uploadBytes(storageRef, factionImageFile, { contentType: factionImageFile.type });
-      const downloadUrl = await getDownloadURL(storageRef);
-      await setDoc(doc(db, "factionImages", slug), {
-        factionName: selectedFaction,
-        imageUrl: downloadUrl,
-        imageExt: ext,
-        updatedAt: serverTimestamp(),
-      });
-      setFactionCurrentImages((prev) => ({ ...prev, [slug]: downloadUrl }));
-      setFactionCurrentExts((prev) => ({ ...prev, [slug]: ext }));
-      setFactionImageFile(null);
-      setFactionImagePreview(null);
-      if (factionFileInputRef.current) factionFileInputRef.current.value = "";
-      setFactionUploadStatus("success");
-      setTimeout(() => setFactionUploadStatus("idle"), 2500);
-    } catch (err) {
-      console.error("Faction image upload error:", err);
-      setFactionUploadError("Upload failed — check your connection and try again.");
-      setFactionUploadStatus("error");
-    }
-  };
-
-  const handleFactionImageRemove = async (faction: string) => {
-    if (!db || !auth?.currentUser) return;
-    if (!window.confirm(`Remove the background image for "${faction}"?`)) return;
-    const slug = factionSlug(faction);
-    try {
-      await setDoc(doc(db, "factionImages", slug), { imageUrl: deleteField(), imageExt: deleteField() }, { merge: true });
-      setFactionCurrentImages((prev) => {
-        const next = { ...prev };
-        delete next[slug];
-        return next;
-      });
-      if (storage) {
-        const ext = factionCurrentExts[slug];
-        if (ext) {
-          try {
-            await deleteObject(ref(storage, `factionImages/${slug}.${ext}`));
-          } catch (err) {
-            console.warn("Could not delete storage object:", err);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Faction image remove error:", err);
-      setError("Failed to remove faction image.");
-    }
-  };
-
   return (
     <div className="page admin-page">
       <div className="page-header">
@@ -362,98 +264,6 @@ export function Admin() {
             </form>
             {createError && <p className="admin-error">{createError}</p>}
             {createSuccess && <p className="admin-saved" style={{ marginTop: 8 }}>{createSuccess}</p>}
-          </div>
-
-          {/* ── Faction Images ─────────────────────────────────────────────── */}
-          <div className="admin-create-user">
-            <h2 className="admin-section-title">Faction Background Images</h2>
-            <p style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 10 }}>
-              Upload an image to display behind a faction's description on the Factions page.
-            </p>
-            <div className="admin-create-form" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-              <div className="form-group" style={{ flex: "1 1 200px", marginBottom: 0 }}>
-                <select
-                  className="input"
-                  value={selectedFaction}
-                  onChange={(e) => setSelectedFaction(e.target.value)}
-                >
-                  {FACTION_LORE.map((f) => (
-                    <option key={f.name} value={f.name}>{f.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group" style={{ flex: "2 1 240px", marginBottom: 0 }}>
-                <input
-                  ref={factionFileInputRef}
-                  className="input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFactionFileChange}
-                  style={{ cursor: "pointer" }}
-                />
-              </div>
-              <button
-                className="btn-primary"
-                type="button"
-                disabled={!factionImageFile || factionUploadStatus === "uploading"}
-                onClick={handleFactionImageUpload}
-              >
-                {factionUploadStatus === "uploading" ? "⏳ Uploading…" : "Upload Image"}
-              </button>
-            </div>
-            {factionImagePreview && (
-              <div style={{ marginTop: 10 }}>
-                <p style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 4 }}>Preview:</p>
-                <img
-                  src={factionImagePreview}
-                  alt="Preview"
-                  style={{ maxHeight: 120, borderRadius: 4, border: "1px solid var(--border)" }}
-                />
-              </div>
-            )}
-            {factionUploadStatus === "success" && (
-              <p className="admin-saved" style={{ marginTop: 8 }}>✓ Image uploaded successfully.</p>
-            )}
-            {factionUploadStatus === "error" && (
-              <p className="admin-error" style={{ marginTop: 8 }}>{factionUploadError}</p>
-            )}
-
-            {/* Existing faction images */}
-            {Object.keys(factionCurrentImages).length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <p style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 8 }}>Current faction images:</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {FACTION_LORE.filter((f) => factionCurrentImages[factionSlug(f.name)]).map((f) => (
-                    <div
-                      key={f.name}
-                      style={{
-                        position: "relative",
-                        border: "1px solid var(--border)",
-                        borderRadius: 4,
-                        overflow: "hidden",
-                        width: 120,
-                      }}
-                    >
-                      <img
-                        src={factionCurrentImages[factionSlug(f.name)]}
-                        alt={f.name}
-                        style={{ width: "100%", height: 72, objectFit: "cover", display: "block" }}
-                      />
-                      <div style={{ padding: "4px 6px", fontSize: 10, color: "var(--text-dim)", background: "var(--bg2)" }}>
-                        {f.name}
-                      </div>
-                      <button
-                        className="btn-outline admin-delete-user-btn"
-                        style={{ width: "100%", borderRadius: 0, fontSize: 11 }}
-                        onClick={() => handleFactionImageRemove(f.name)}
-                      >
-                        🗑 Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* ── Stats row ──────────────────────────────────────────────────── */}
