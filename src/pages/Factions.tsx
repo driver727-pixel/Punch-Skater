@@ -37,7 +37,7 @@ export function Factions() {
               const isExpanded = Boolean(expandedFactions[faction.name]);
               const detailsId = `faction-details-${slug}`;
               return (
-                <article
+                <div
                   key={faction.name}
                   className={`lore-faction-item${isExpanded ? " lore-faction-item--expanded" : ""}`}
                 >
@@ -77,7 +77,7 @@ export function Factions() {
                       <p className="lore-body lore-body--sm">{faction.description}</p>
                     </div>
                   )}
-                </article>
+                </div>
               );
             })}
           </div>

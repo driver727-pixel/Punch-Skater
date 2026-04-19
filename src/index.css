@@ -4017,9 +4017,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   min-height: 220px;
   display: flex;
   align-items: flex-end;
-  background:
-    linear-gradient(135deg, rgba(0, 255, 136, 0.12), rgba(0, 204, 255, 0.08)),
-    linear-gradient(180deg, rgba(13, 12, 34, 0.92), rgba(8, 8, 24, 0.98));
+  background-color: rgba(8, 8, 24, 0.98);
+  background-image:
+    linear-gradient(135deg, rgba(0, 255, 136, 0.12), rgba(0, 204, 255, 0.08));
   background-size: cover;
   background-position: center;
 }
