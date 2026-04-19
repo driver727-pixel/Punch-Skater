@@ -44,14 +44,14 @@ function buildBoardPrompt(config: BoardConfig): string {
   return (
     "A stylized, gouache painting of a 'Punch Skater' electric skateboard. " +
     `The board features a ${normalizedConfig.boardType} deck, ${normalizedConfig.drivetrain} drivetrain, and ${normalizedConfig.wheels} wheels. ` +
+    `It uses ${normalizedConfig.motor} motors matched to the selected performance setup. ` +
     `A ${normalizedConfig.battery} battery case is securely mounted. ` +
     "The artwork features matte, opaque brushwork, thick textures, and a clean, neutral studio gray background suitable for a UI cutout."
   );
 }
 
-function slugFromUrl(url: string): string {
-  const pathname = new URL(url).pathname;
-  return pathname.split("/").pop()?.replace(/\.[a-z0-9]+$/i, "") ?? "unknown";
+function toCacheToken(value: string): string {
+  return value.trim().replace(/([a-z0-9])([A-Z])/g, "$1-$2").replace(/\s+/g, "-").toLowerCase();
 }
 
 function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string[]): string {
@@ -59,8 +59,12 @@ function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string
   return [
     "board-img",
     BOARD_IMAGE_CACHE_VERSION,
-    normalizedConfig.boardType.toLowerCase(),
-    ...imageUrls.map(slugFromUrl),
+    toCacheToken(normalizedConfig.boardType),
+    toCacheToken(normalizedConfig.drivetrain),
+    toCacheToken(normalizedConfig.motor),
+    toCacheToken(normalizedConfig.wheels),
+    toCacheToken(normalizedConfig.battery),
+    ...imageUrls,
   ].join("::");
 }
 
