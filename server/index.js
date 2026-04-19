@@ -79,6 +79,15 @@ const imageRateLimit = rateLimit({
   message: { error: 'Too many image requests — please wait a moment and try again.' },
 });
 
+// Status-check polling is cheap (no AI inference), so allow a higher burst.
+const boardImageStatusRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many status requests — please slow down.' },
+});
+
 // The import endpoint is cheaper to call, so allow a somewhat higher burst.
 const importRateLimit = rateLimit({
   windowMs: 60 * 1000,
@@ -732,11 +741,31 @@ function normalizeBoardReferenceUrls(value) {
 }
 
 function extractBoardImageUrl(result) {
-  const image = result?.data?.image;
-  if (typeof image === 'string' && image) return image;
-  if (typeof image?.url === 'string' && image.url) return image.url;
-  if (typeof result?.data?.image_url === 'string' && result.data.image_url) return result.data.image_url;
+  // Log the raw structure when debug logging is enabled so we can diagnose
+  // unexpected response shapes without cluttering normal production logs.
+  if (process.env.FAL_DEBUG) console.log('Raw fal board result:', JSON.stringify(result));
+
+  // fal.subscribe / fal.queue.result wraps model output in .data; some paths
+  // fall back to a top-level structure for forward compatibility.
+  const data = result?.data ?? result;
+
+  // { image: "https://..." }
+  if (typeof data?.image === 'string' && data.image) return data.image;
+  // { image: { url: "https://..." } }
+  if (typeof data?.image?.url === 'string' && data.image.url) return data.image.url;
+  // { image_url: "https://..." }
+  if (typeof data?.image_url === 'string' && data.image_url) return data.image_url;
+  // { images: [{ url: "..." }, ...] }  — same shape as Flux models
+  if (Array.isArray(data?.images) && typeof data.images[0]?.url === 'string' && data.images[0].url) {
+    return data.images[0].url;
+  }
+  // { output: "https://..." }  or  { output: { url: "..." } }
+  if (typeof data?.output === 'string' && data.output) return data.output;
+  if (typeof data?.output?.url === 'string' && data.output.url) return data.output.url;
+
+  // Legacy top-level fallback
   if (typeof result?.image?.url === 'string' && result.image.url) return result.image.url;
+
   return null;
 }
 
@@ -754,28 +783,67 @@ app.post('/api/generate-board-image', imageRateLimit, async (req, res) => {
       return;
     }
 
-    const result = await fal.subscribe('fal-ai/nano-banana-2', {
+    // Submit to fal.ai queue and return the jobId immediately so the client
+    // can poll /api/board-image-status/:jobId.  This avoids the 30-second
+    // proxy timeout that occurs when fal.subscribe() blocks the HTTP response.
+    const { request_id: jobId } = await fal.queue.submit('fal-ai/nano-banana-2', {
       input: {
         prompt,
-        // Fal.ai's Nano Banana 2 API expects snake_case `image_urls`.
         image_urls: imageUrls,
-        // These settings are intentionally fixed for board generation so every
-        // request uses the same higher-reasoning, no-web-search render mode.
         thinking_level: 'high',
         enable_web_search: false,
       },
     });
 
-    const imageUrl = extractBoardImageUrl(result);
-    if (!imageUrl) {
-      res.status(502).json({ error: 'Fal.ai did not return a board image URL.' });
+    res.json({ jobId });
+  } catch (err) {
+    console.error('Board image submit error:', err);
+    res.status(500).json({ error: 'Board image generation submission failed.' });
+  }
+});
+
+// Polls the fal.ai queue for a previously submitted board-image job.
+// Returns { status: 'pending' }, { status: 'completed', imageUrl } or
+// { status: 'failed', error }.
+app.get('/api/board-image-status/:jobId', boardImageStatusRateLimit, async (req, res) => {
+  try {
+    if (!FAL_KEY) {
+      res.status(503).json({ error: 'Board image generation is not configured.' });
       return;
     }
 
-    res.json({ imageUrl, requestId: result?.requestId ?? null });
+    const { jobId } = req.params;
+    if (!jobId || !/^[a-zA-Z0-9_-]+$/.test(jobId)) {
+      res.status(400).json({ error: 'Invalid jobId.' });
+      return;
+    }
+
+    const status = await fal.queue.status('fal-ai/nano-banana-2', {
+      requestId: jobId,
+      logs: false,
+    });
+
+    if (status.status === 'COMPLETED') {
+      const result = await fal.queue.result('fal-ai/nano-banana-2', { requestId: jobId });
+      const imageUrl = extractBoardImageUrl(result);
+      if (!imageUrl) {
+        res.status(502).json({ error: 'Fal.ai did not return a board image URL.' });
+        return;
+      }
+      res.json({ status: 'completed', imageUrl, requestId: jobId });
+      return;
+    }
+
+    if (status.status === 'FAILED' || status.status === 'CANCELLED') {
+      res.status(502).json({ status: 'failed', error: 'Board image generation job failed.' });
+      return;
+    }
+
+    // IN_QUEUE or IN_PROGRESS — ask the client to poll again.
+    res.json({ status: 'pending' });
   } catch (err) {
-    console.error('Board image proxy error:', err);
-    res.status(500).json({ error: 'Board image generation proxy failed.' });
+    console.error('Board image status error:', err);
+    res.status(500).json({ error: 'Failed to retrieve board image job status.' });
   }
 });
 
