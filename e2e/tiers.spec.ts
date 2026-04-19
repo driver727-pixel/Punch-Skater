@@ -140,6 +140,23 @@ test.describe('Forge gating — free tier', () => {
     await expect(page.getByRole('heading', { name: /choose your tier/i })).not.toBeVisible();
     await expect(page.getByRole('button', { name: /save to collection/i })).toBeVisible();
   });
+
+  test('free-tier forges do not reveal factions', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.removeItem('skpd_tier');
+      localStorage.removeItem('ps_gen_credits');
+      localStorage.removeItem('skpd_free_card_used');
+      localStorage.removeItem('skpd_faction_discoveries');
+    });
+    await page.reload();
+
+    await page.getByTestId('forge-button').click();
+
+    await expect(page.getByRole('button', { name: /save to collection/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /secret faction discovered!/i })).not.toBeVisible();
+    await expect(page.getByRole('link', { name: /^factions$/i })).not.toBeVisible();
+  });
 });
 
 // ── Forge gating — tampered localStorage tiers ────────────────────────────────

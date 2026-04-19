@@ -358,7 +358,7 @@ export function CardForge() {
 
     const forgePrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
     const displayArchetype = getForgeArchetypeLabel(forgePrompts.archetype);
-    const secretFaction = resolveSecretFaction(forgePrompts);
+    const secretFaction = tier === "free" ? null : resolveSecretFaction(forgePrompts);
     const generationPrompts =
       secretFaction === "D4rk $pider"
         ? { ...forgePrompts, archetype: "D4rk $pider" as const }
