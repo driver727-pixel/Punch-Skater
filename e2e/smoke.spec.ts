@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { calculateBoardStats } from '../src/lib/boardBuilder';
+import { FACTION_LORE } from '../src/lib/lore';
 
 async function ensureNavLinksVisible(page: Page) {
   const collectionLink = page.getByRole('link', { name: /collection/i });
@@ -256,6 +257,35 @@ test.describe('Credits page', () => {
     await page.getByRole('link', { name: /^credits$/i }).click();
     await expect(page).toHaveURL('/credits');
     await expect(page.locator('.credits-org')).toHaveText('SP Digital LLC');
+  });
+});
+
+// ── Factions page ──────────────────────────────────────────────────────────────
+
+test.describe('Factions page', () => {
+  test('renders faction descriptions over the image and lets the expanded card collapse from the description area', async ({ page }) => {
+    const knownFaction = FACTION_LORE[0];
+
+    await page.goto('/');
+    await page.evaluate((factionName) => {
+      localStorage.setItem('skpd_faction_discoveries', JSON.stringify([factionName]));
+    }, knownFaction.name);
+    await page.goto('/factions');
+
+    const factionCard = page.locator('.lore-faction-item').filter({ hasText: knownFaction.name });
+    const factionToggle = factionCard.locator('.lore-faction-toggle');
+    const description = page.getByText(knownFaction.description);
+
+    await expect(description).toBeHidden();
+
+    await factionToggle.click();
+
+    await expect(description).toBeVisible();
+    await expect(factionCard.locator('.lore-faction-media').filter({ hasText: knownFaction.description })).toBeVisible();
+
+    await description.click();
+
+    await expect(description).toBeHidden();
   });
 });
 

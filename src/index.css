@@ -4007,6 +4007,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   padding: 0;
   background: none;
   color: inherit;
+  display: block;
   text-align: left;
   cursor: pointer;
 }
@@ -4093,9 +4094,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .lore-faction-details {
-  padding: 14px 16px 16px;
-  background: linear-gradient(180deg, rgba(8, 8, 24, 0.96), rgba(5, 5, 14, 0.98));
-  border-top: 1px solid rgba(0, 204, 255, 0.2);
+  display: none;
+  max-width: 60ch;
+}
+
+.lore-faction-details--visible {
+  display: block;
+}
+
+.lore-faction-description {
+  color: var(--text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
 .lore-faction-toggle:focus-visible {

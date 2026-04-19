@@ -68,17 +68,19 @@ export function Factions() {
                           <span className="lore-faction-districts">{faction.districts.join(" · ")}</span>
                         </div>
                         <p className="lore-tagline lore-tagline--sm">"{faction.tagline}"</p>
+                        <div
+                          id={detailsId}
+                          className={`lore-faction-details${isExpanded ? " lore-faction-details--visible" : ""}`}
+                          aria-hidden={!isExpanded}
+                        >
+                          <p className="lore-body lore-faction-description">{faction.description}</p>
+                        </div>
                         <span className="lore-faction-toggle-label">
                           {isExpanded ? "Hide intel ▲" : "Show intel ▼"}
                         </span>
                       </div>
                     </div>
                   </button>
-                  {isExpanded && (
-                    <div id={detailsId} className="lore-faction-details">
-                      <p className="lore-body lore-body--sm">{faction.description}</p>
-                    </div>
-                  )}
                 </div>
               );
             })}
