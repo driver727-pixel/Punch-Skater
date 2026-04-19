@@ -8,11 +8,25 @@ const BOARD_IMAGE_API_URL = resolveApiUrl(
   import.meta.env.VITE_BOARD_IMAGE_API_URL as string | undefined,
   "/api/generate-board-image",
 );
+// Derive the status-polling URL from the generation URL, e.g.
+// "/api/generate-board-image" → "/api/board-image-status"
+const BOARD_IMAGE_STATUS_BASE_URL = BOARD_IMAGE_API_URL.replace(
+  /\/[^/]+$/,
+  "/board-image-status",
+);
 // Increment when the board-generation prompt, model, or cache-key inputs change
 // in a way that should invalidate previously generated board art.
 const BOARD_IMAGE_CACHE_VERSION = "v3-fal-gouache-board";
 const BOARD_IMAGE_LOCAL_CACHE_PREFIX = "skpd_board_image_cache::";
 const BOARD_IMAGE_PUBLIC_ORIGIN = "https://punchskater.com";
+
+// Maximum wall-clock time (ms) the client will poll before giving up.
+const BOARD_IMAGE_POLL_TIMEOUT_MS = 120_000;
+// Initial polling interval; increases to BOARD_IMAGE_POLL_INTERVAL_SLOW_MS
+// after the first 30 s to avoid hammering the server on longer jobs.
+const BOARD_IMAGE_POLL_INTERVAL_FAST_MS = 3_000;
+const BOARD_IMAGE_POLL_INTERVAL_SLOW_MS = 5_000;
+const BOARD_IMAGE_POLL_SLOW_THRESHOLD_MS = 30_000;
 
 type BoardImageCategoryValue = {
   category: "deck" | "drivetrain" | "wheels" | "battery";
@@ -84,8 +98,64 @@ function setLocalCachedBoardImage(cacheKey: string, imageUrl: string): void {
   }
 }
 
-function isBoardImageResponse(value: unknown): value is { imageUrl: string } {
-  return Boolean(value) && typeof value === "object" && typeof (value as { imageUrl?: unknown }).imageUrl === "string";
+function isBoardImageSubmitResponse(value: unknown): value is { jobId: string } {
+  return Boolean(value) && typeof value === "object" && typeof (value as { jobId?: unknown }).jobId === "string";
+}
+
+type BoardImagePollStatus =
+  | { status: "pending" }
+  | { status: "completed"; imageUrl: string }
+  | { status: "failed"; error: string };
+
+function isBoardImagePollStatus(value: unknown): value is BoardImagePollStatus {
+  if (!value || typeof value !== "object") return false;
+  const s = (value as { status?: unknown }).status;
+  return s === "pending" || s === "completed" || s === "failed";
+}
+
+async function pollBoardImageJob(jobId: string): Promise<string> {
+  const started = Date.now();
+  while (true) {
+    const statusUrl = `${BOARD_IMAGE_STATUS_BASE_URL}/${encodeURIComponent(jobId)}`;
+    const response = await fetch(statusUrl);
+
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const errBody = await response.json();
+        detail = errBody?.error ?? "";
+      } catch {
+        // Ignore malformed error bodies.
+      }
+      throw new Error(
+        `Board image status check failed: ${response.status} ${response.statusText}${detail ? ` — ${detail}` : ""}`,
+      );
+    }
+
+    const data: unknown = await response.json();
+    if (!isBoardImagePollStatus(data)) {
+      throw new Error("Unexpected response from board image status endpoint.");
+    }
+
+    if (data.status === "completed") return data.imageUrl;
+    if (data.status === "failed") {
+      throw new Error(`Board image generation failed: ${data.error}`);
+    }
+
+    // status === 'pending' — wait before the next poll
+    const elapsed = Date.now() - started;
+    if (elapsed >= BOARD_IMAGE_POLL_TIMEOUT_MS) {
+      throw new Error("Board image generation timed out after polling for 120 s.");
+    }
+    await new Promise<void>((resolve) =>
+      setTimeout(
+        resolve,
+        elapsed < BOARD_IMAGE_POLL_SLOW_THRESHOLD_MS
+          ? BOARD_IMAGE_POLL_INTERVAL_FAST_MS
+          : BOARD_IMAGE_POLL_INTERVAL_SLOW_MS,
+      ),
+    );
+  }
 }
 
 export async function generateGouacheBoard(config: BoardConfig): Promise<string> {
@@ -102,7 +172,9 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
     return cachedRemote;
   }
 
-  const response = await fetch(BOARD_IMAGE_API_URL, {
+  // Submit the job — server returns immediately with a jobId so the
+  // 30-second Render proxy timeout is never hit.
+  const submitResponse = await fetch(BOARD_IMAGE_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -111,29 +183,32 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
     }),
   });
 
-  if (!response.ok) {
+  if (!submitResponse.ok) {
     let detail = "";
     try {
-      const errorBody = await response.json();
+      const errorBody = await submitResponse.json();
       detail = errorBody?.detail ?? errorBody?.error ?? "";
     } catch {
       // Ignore malformed error bodies.
     }
     throw new Error(
-      `Board image generation failed: ${response.status} ${response.statusText}${detail ? ` — ${detail}` : ""}`,
+      `Board image generation failed: ${submitResponse.status} ${submitResponse.statusText}${detail ? ` — ${detail}` : ""}`,
     );
   }
 
-  const data: unknown = await response.json();
-  if (!isBoardImageResponse(data)) {
-    throw new Error("Board image generation succeeded but no image URL was returned.");
+  const submitData: unknown = await submitResponse.json();
+  if (!isBoardImageSubmitResponse(submitData)) {
+    throw new Error("Board image generation submission returned an unexpected response.");
   }
 
-  setLocalCachedBoardImage(cacheKey, data.imageUrl);
-  await setCachedImage(cacheKey, data.imageUrl, {
+  // Poll until the job completes (or times out).
+  const imageUrl = await pollBoardImageJob(submitData.jobId);
+
+  setLocalCachedBoardImage(cacheKey, imageUrl);
+  await setCachedImage(cacheKey, imageUrl, {
     prompt: buildBoardPrompt(config),
     layer: "board-img",
     seed: cacheKey,
   });
-  return data.imageUrl;
+  return imageUrl;
 }
