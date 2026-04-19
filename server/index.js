@@ -696,6 +696,9 @@ app.post('/api/generate-image', imageRateLimit, async (req, res) => {
 });
 
 function normalizeBoardReferenceUrls(value) {
+  const BOARD_REFERENCE_IMAGE_PATH_PATTERN =
+    /^\/assets\/boards\/(deck|drivetrain|wheels|battery)\/[a-z0-9-]+\.png$/i;
+
   if (!Array.isArray(value) || value.length !== 4) return null;
 
   const urls = [];
@@ -713,7 +716,7 @@ function normalizeBoardReferenceUrls(value) {
     }
 
     if (parsed.origin !== 'https://punchskater.com') return null;
-    if (!/^\/assets\/boards\/(deck|drivetrain|wheels|battery)\/[a-z0-9-]+\.png$/i.test(parsed.pathname)) {
+    if (!BOARD_REFERENCE_IMAGE_PATH_PATTERN.test(parsed.pathname)) {
       return null;
     }
 
