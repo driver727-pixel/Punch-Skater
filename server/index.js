@@ -698,13 +698,26 @@ app.post('/api/generate-image', imageRateLimit, async (req, res) => {
 function normalizeBoardReferenceUrls(value) {
   if (!Array.isArray(value) || value.length !== 4) return null;
 
-  const urls = value
-    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
-    .filter(Boolean);
+  const urls = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string') return null;
 
-  if (urls.length !== 4) return null;
-  if (!urls.every((url) => url.startsWith('https://punchskater.com/assets/boards/'))) {
-    return null;
+    const trimmed = entry.trim();
+    if (!trimmed) return null;
+
+    let parsed;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      return null;
+    }
+
+    if (parsed.origin !== 'https://punchskater.com') return null;
+    if (!/^\/assets\/boards\/(deck|drivetrain|wheels|battery)\/[a-z0-9-]+\.png$/i.test(parsed.pathname)) {
+      return null;
+    }
+
+    urls.push(parsed.toString());
   }
 
   return urls;
@@ -727,6 +740,7 @@ app.post('/api/generate-board-image', imageRateLimit, async (req, res) => {
     const result = await fal.subscribe('fal-ai/nano-banana-2', {
       input: {
         prompt,
+        // Fal.ai's Nano Banana 2 API expects snake_case `image_urls`.
         image_urls: imageUrls,
         thinking_level: 'high',
         enable_web_search: false,

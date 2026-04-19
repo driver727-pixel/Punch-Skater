@@ -27,9 +27,11 @@ function getResolvedBoardReferenceUrls(config: BoardConfig): string[] {
   ];
 
   return selections.map(({ category, value }) => {
-    const relativeUrl = getMatchingCategoryImages(category, value)[0] ?? getCategoryImages(category)[0] ?? null;
+    const matchingImage = getMatchingCategoryImages(category, value)[0] ?? null;
+    const fallbackImage = getCategoryImages(category)[0] ?? null;
+    const relativeUrl = matchingImage ?? fallbackImage;
     if (!relativeUrl) {
-      throw new Error(`Missing board reference image for ${category} "${value}".`);
+      throw new Error(`No board reference images are available in the ${category} category.`);
     }
     return new URL(relativeUrl, BOARD_IMAGE_PUBLIC_ORIGIN).toString();
   });
@@ -76,6 +78,10 @@ function setLocalCachedBoardImage(cacheKey: string, imageUrl: string): void {
   }
 }
 
+function isBoardImageResponse(value: unknown): value is { imageUrl: string } {
+  return Boolean(value) && typeof value === "object" && typeof (value as { imageUrl?: unknown }).imageUrl === "string";
+}
+
 export async function generateGouacheBoard(config: BoardConfig): Promise<string> {
   const imageUrls = getResolvedBoardReferenceUrls(config);
   const cacheKey = buildBoardImageCacheKey(config, imageUrls);
@@ -112,8 +118,8 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
     );
   }
 
-  const data = await response.json() as { imageUrl?: string };
-  if (!data.imageUrl) {
+  const data: unknown = await response.json();
+  if (!isBoardImageResponse(data)) {
     throw new Error("Board image generation succeeded but no image URL was returned.");
   }
 
