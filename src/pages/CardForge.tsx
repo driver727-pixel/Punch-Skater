@@ -8,6 +8,7 @@ import { PrintModal } from "../components/PrintModal";
 import { ReferralPanel } from "../components/ReferralPanel";
 import { generateImage, removeBackground, isImageGenConfigured, getImageDimensions, type ImageGenOptions } from "../services/imageGen";
 import { getCachedImage, setCachedImage } from "../services/imageCache";
+import { generateGouacheBoard } from "../services/boardImageGen";
 import { getStaticBackgroundUrl, getStaticBackgroundSmallUrl, getStaticFrameUrl } from "../services/staticAssets";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 import { useTier } from "../context/TierContext";
@@ -19,7 +20,7 @@ import { downloadCardAsJpg } from "../services/cardDownload";
 import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, resolveSecretFaction } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
-import { BOARD_TYPE_OPTIONS, calculateBoardStats, buildBoardImagePrompt, getAllowedComponents } from "../lib/boardBuilder";
+import { BOARD_TYPE_OPTIONS, calculateBoardStats, getAllowedComponents } from "../lib/boardBuilder";
 import { resolveArchetypeStyle } from "../lib/styles";
 import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
 
@@ -80,7 +81,6 @@ function buildRandomBoardConfig(currentConfig: BoardConfig): BoardConfig {
 /** Maximum number of automatic retries per layer when a cached URL fails to load. */
 const MAX_LAYER_RETRIES = 1;
 const CHARACTER_CACHE_VERSION = "v4-dynamic-pose";
-const BOARD_IMAGE_CACHE_VERSION = "v2-component-composite";
 const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
   imageSize: { width: 1088, height: 1536 },
   numInferenceSteps: 45,
@@ -474,28 +474,11 @@ export function CardForge() {
 
     // Board image layer — generate a single skateboard image from the combined
     // component descriptions.  The result is stored as boardImageUrl on the card.
-    const boardPrompt = buildBoardImagePrompt(boardConfig);
-    const boardCacheKey = `board-img::${BOARD_IMAGE_CACHE_VERSION}::${boardConfig.boardType}::${boardConfig.drivetrain}::${boardConfig.motor}::${boardConfig.wheels}::${boardConfig.battery}`;
-    const boardSeed = `${boardConfig.boardType}-${boardConfig.drivetrain}-${boardConfig.motor}-${boardConfig.wheels}-${boardConfig.battery}`;
-
     (async () => {
       try {
-        // Check Firestore cache first
-        const cachedBoard = await getCachedImage(boardCacheKey);
+        const boardImageUrl = await generateGouacheBoard(boardConfig);
         if (signal.aborted) return;
-        if (cachedBoard) {
-          setGenerated((prev) => prev ? { ...prev, boardImageUrl: cachedBoard } : prev);
-          return;
-        }
-
-        const result = await generateImage(boardPrompt, boardSeed, {
-          imageSize: "square_hd",
-          ...NON_LORA_GENERATION_OPTIONS,
-        });
-        if (signal.aborted) return;
-
-        await setCachedImage(boardCacheKey, result.imageUrl, { prompt: boardPrompt, layer: "board-img", seed: boardSeed });
-        setGenerated((prev) => prev ? { ...prev, boardImageUrl: result.imageUrl } : prev);
+        setGenerated((prev) => prev ? { ...prev, boardImageUrl } : prev);
       } catch (err) {
         console.warn("Board image generation failed:", err);
       }

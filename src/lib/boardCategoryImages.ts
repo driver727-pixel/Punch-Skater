@@ -144,9 +144,22 @@ export function getMatchingCategoryImage(
   category: BoardCategory,
   value: string,
 ): string | null {
+  const matches = getMatchingCategoryImages(category, value);
+  if (matches.length > 0) {
+    return matches[Math.floor(Math.random() * matches.length)];
+  }
+
+  const urls = getCategoryImages(category);
+  return urls.length > 0 ? urls[Math.floor(Math.random() * urls.length)] : null;
+}
+
+export function getMatchingCategoryImages(
+  category: BoardCategory,
+  value: string,
+): readonly string[] {
   const glob = CATEGORY_GLOBS[category];
   const paths = Object.keys(glob);
-  if (paths.length === 0) return null;
+  if (paths.length === 0) return [];
 
   const keywords =
     COMPONENT_IMAGE_KEYWORDS[category]?.[value] ??
@@ -163,13 +176,7 @@ export function getMatchingCategoryImage(
     }
   }
 
-  if (matches.length > 0) {
-    return matches[Math.floor(Math.random() * matches.length)];
-  }
-
-  // No keyword match — return a random URL from the category as a fallback.
-  const urls = Object.values(glob);
-  return urls[Math.floor(Math.random() * urls.length)];
+  return matches;
 }
 
 /**

@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import Stripe from 'stripe';
+import { fal } from '@fal-ai/client';
 import 'dotenv/config';
 import { createRequire } from 'module';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -219,6 +220,8 @@ function sendCheckoutVerificationFailure(res) {
 
 if (!FAL_KEY) {
   console.warn('⚠️  FAL_KEY environment variable is not set — requests will be rejected by Fal.ai.');
+} else {
+  fal.config({ credentials: FAL_KEY });
 }
 if (!stripe) {
   console.warn('⚠️  STRIPE_SECRET_KEY environment variable is not set — checkout sessions will be unavailable.');
@@ -689,6 +692,63 @@ app.post('/api/generate-image', imageRateLimit, async (req, res) => {
   } catch (err) {
     console.error('Proxy error:', err);
     res.status(500).json({ error: 'Image generation proxy failed.' });
+  }
+});
+
+function normalizeBoardReferenceUrls(value) {
+  if (!Array.isArray(value) || value.length !== 4) return null;
+
+  const urls = value
+    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+    .filter(Boolean);
+
+  if (urls.length !== 4) return null;
+  if (!urls.every((url) => url.startsWith('https://punchskater.com/assets/boards/'))) {
+    return null;
+  }
+
+  return urls;
+}
+
+app.post('/api/generate-board-image', imageRateLimit, async (req, res) => {
+  try {
+    if (!FAL_KEY) {
+      res.status(503).json({ error: 'Board image generation is not configured.' });
+      return;
+    }
+
+    const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
+    const imageUrls = normalizeBoardReferenceUrls(req.body?.imageUrls);
+    if (!prompt || !imageUrls) {
+      res.status(400).json({ error: 'A prompt and exactly four Punch Skater board image URLs are required.' });
+      return;
+    }
+
+    const result = await fal.subscribe('fal-ai/nano-banana-2', {
+      input: {
+        prompt,
+        image_urls: imageUrls,
+        thinking_level: 'high',
+        enable_web_search: false,
+      },
+    });
+
+    const imageUrl =
+      result?.data?.image?.url ??
+      (typeof result?.data?.image === 'string' ? result.data.image : null) ??
+      result?.data?.image_url ??
+      result?.image?.url ??
+      null;
+
+    if (!imageUrl) {
+      res.status(502).json({ error: 'Fal.ai did not return a board image URL.' });
+      return;
+    }
+
+    res.json({ imageUrl, requestId: result?.requestId ?? null });
+  } catch (err) {
+    console.error('Board image proxy error:', err);
+    res.status(500).json({ error: 'Board image generation proxy failed.' });
   }
 });
 
