@@ -552,7 +552,12 @@ async function getRemoteFalRequestConfig(configUrl) {
     const config = sanitizeFalRequestConfig(extractFalRequestConfigCandidate(payload));
 
     if (!config) {
-      throw new Error('Remote config JSON did not contain supported Fal request fields.');
+      const emptyConfig = {};
+      falRequestConfigCache.set(configUrl, {
+        payload: emptyConfig,
+        fetchedAt: now,
+      });
+      return emptyConfig;
     }
 
     falRequestConfigCache.set(configUrl, {
