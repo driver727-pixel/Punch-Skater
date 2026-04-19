@@ -35,7 +35,7 @@
  *  appropriate folder, then register them here.
  */
 
-import type { District, Rarity } from "../lib/types";
+import type { District, Faction, Rarity } from "../lib/types";
 
 export type FrameBlendMode = "normal" | "screen";
 
@@ -147,4 +147,32 @@ export function shouldInsetBackgroundForFrame(rarity: Rarity, frameUrl?: string)
     return asset.insetBackground ?? false;
   }
   return rarity === "Punch Skater";
+}
+
+// ── Faction background registry ───────────────────────────────────────────────
+//
+// Files live in  public/assets/factions/<slug>.jpg
+// Used as the background image on the Factions page faction cards.
+// Firebase-uploaded images (from the Admin panel) take precedence over these.
+// Add an entry here once you have placed the corresponding file in that folder.
+
+const FACTION_ASSETS: Partial<Record<Faction, string>> = {
+  "Qu111s (Quills)":                      "/assets/factions/qu111s_quills.jpg",
+  "The Asclepians":                        "/assets/factions/the_asclepians.jpg",
+  "The Knights Technarchy":               "/assets/factions/the_knights_technarchy.jpg",
+  "The Mesopotamian Society":             "/assets/factions/the_mesopotamian_society.jpg",
+  "The Team":                             "/assets/factions/the_team.jpg",
+  "The Wooders":                          "/assets/factions/the_wooders.jpg",
+  "United Corporations of America (UCA)": "/assets/factions/uca.jpg",
+  "UCPS Workers":                         "/assets/factions/ucps_workers.jpg",
+};
+
+/**
+ * Returns the public URL of the static faction background image for the given
+ * faction name, or null if no static file has been registered.
+ *
+ * Firebase-uploaded images should take precedence over this value.
+ */
+export function getStaticFactionImageUrl(faction: Faction): string | null {
+  return FACTION_ASSETS[faction] ?? null;
 }
