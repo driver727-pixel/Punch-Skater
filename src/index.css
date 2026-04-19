@@ -3994,17 +3994,45 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   gap: 0;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   position: relative;
   overflow: hidden;
 }
 .lore-faction-item:hover { border-color: var(--accent2); }
+.lore-faction-item--expanded { border-color: var(--accent2); }
 
-/* Dark overlay that sits on top of the background image */
+.lore-faction-toggle {
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lore-faction-media {
+  position: relative;
+  aspect-ratio: 7 / 5;
+  min-height: 220px;
+  display: flex;
+  align-items: flex-end;
+  /* Fallback when no faction image is available */
+  background-color: rgba(8, 8, 24, 0.98);
+  background-image: linear-gradient(135deg, rgba(0, 255, 136, 0.12), rgba(0, 204, 255, 0.08));
+}
+
+/* Light-to-dark gradient for text readability over faction imagery */
 .lore-faction-img-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(10, 10, 18, 0.72);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(173, 216, 255, 0.1) 18%,
+    rgba(9, 10, 22, 0.52) 44%,
+    rgba(5, 5, 14, 0.82) 100%
+  );
   pointer-events: none;
   z-index: 0;
 }
@@ -4017,6 +4045,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  justify-content: flex-end;
 }
 
 .lore-faction-header {
@@ -4054,6 +4084,34 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   line-height: 1.6;
 }
 .lore-body--sm { font-size: 11px; color: var(--text-dim); }
+
+.lore-faction-toggle-label {
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+
+.lore-faction-details {
+  padding: 14px 16px 16px;
+  background: linear-gradient(180deg, rgba(8, 8, 24, 0.96), rgba(5, 5, 14, 0.98));
+  border-top: 1px solid rgba(0, 204, 255, 0.2);
+}
+
+.lore-faction-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@media (max-width: 640px) {
+  .lore-faction-media {
+    min-height: 180px;
+  }
+
+  .lore-faction-content {
+    padding: 12px 14px;
+  }
+}
 
 .lore-flavor-pool {
   display: flex;
