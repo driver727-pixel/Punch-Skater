@@ -5,10 +5,18 @@
  *
  * Examples:
  *   "D4rk $pider"                          → "d4rk_pider"  ($ stripped)
- *   "United Corporations of America (UCA)" → "united_corporations_of_america_uca"
+ *   "United Corporations of America (UCA)" → "uca"
  *   "Hermes' Squirmies"                    → "hermes_squirmies"
  */
+
+const SLUG_OVERRIDES: Record<string, string> = {
+  "United Corporations of America (UCA)": "uca",
+};
+
 export function factionSlug(name: string): string {
+  if (Object.prototype.hasOwnProperty.call(SLUG_OVERRIDES, name)) {
+    return SLUG_OVERRIDES[name];
+  }
   return name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
