@@ -529,6 +529,14 @@ function resolveFalProfile(profile) {
   };
 }
 
+function cacheFalRequestConfig(configUrl, payload, fetchedAt) {
+  falRequestConfigCache.set(configUrl, {
+    payload,
+    fetchedAt,
+  });
+  return payload;
+}
+
 async function getRemoteFalRequestConfig(configUrl) {
   if (!configUrl) return null;
 
@@ -552,15 +560,12 @@ async function getRemoteFalRequestConfig(configUrl) {
     const config = sanitizeFalRequestConfig(extractFalRequestConfigCandidate(payload));
 
     if (!config) {
-      throw new Error('Remote config JSON did not contain supported Fal request fields.');
+      // Treat unsupported remote JSON as "no remote defaults" so image requests
+      // still fall back to built-in settings without logging repeated refresh errors.
+      return cacheFalRequestConfig(configUrl, {}, now);
     }
 
-    falRequestConfigCache.set(configUrl, {
-      payload: config,
-      fetchedAt: now,
-    });
-
-    return config;
+    return cacheFalRequestConfig(configUrl, config, now);
   } catch (err) {
     console.error(`Fal config refresh failed for ${configUrl}:`, err);
 
