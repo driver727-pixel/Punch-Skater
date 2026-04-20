@@ -85,7 +85,8 @@ export type BoardCategory = keyof typeof CATEGORY_GLOBS;
 // Maps each component option value to the filename keywords that identify its
 // image.  When a user uploads `5055-motor.webp` the keyword "5055" links it to
 // the "Micro" motor option; "poly" links `poly-wheels.webp` to the "Urethane"
-// option (polyurethane), and so on.
+// option (polyurethane), and the matcher still accepts legacy .png/.jpg/.jpeg
+// filenames for backward compatibility while the asset migration settles.
 
 const COMPONENT_IMAGE_KEYWORDS: Record<BoardCategory, Record<string, readonly string[]>> = {
   deck: {
