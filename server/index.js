@@ -482,6 +482,8 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return;
   const exactEmail = getTrimmedString(email, 320);
+  // Prefer the normalized field, but fall back to legacy exact-email queries so
+  // purchases still sync for older profiles that predate emailLower.
   const snapshots = await Promise.all([
     adminDb.collection('userProfiles').where('emailLower', '==', normalizedEmail).limit(25).get(),
     exactEmail ? adminDb.collection('userProfiles').where('email', '==', exactEmail).limit(25).get() : null,
@@ -940,18 +942,23 @@ async function fetchDistrictWeatherSnapshot(district, location) {
 
 async function buildDistrictWeatherPayload() {
   const districtEntries = Object.entries(DISTRICT_WEATHER_LOCATIONS);
-  const districtFetchResults = await Promise.allSettled(
-    districtEntries.map(([district, location]) =>
-      fetchDistrictWeatherSnapshot(district, location),
-    ),
+  const districtFetchResults = await Promise.all(
+    districtEntries.map(async ([district, location]) => {
+      try {
+        const snapshot = await fetchDistrictWeatherSnapshot(district, location);
+        return { status: 'fulfilled', district, location, snapshot };
+      } catch (error) {
+        return { status: 'rejected', district, location, error };
+      }
+    }),
   );
   const fallbackGeneratedAt = new Date().toISOString();
-  const districts = districtFetchResults.map((result, index) => {
-    const [district, location] = districtEntries[index];
+  const districts = districtFetchResults.map((result) => {
     if (result.status === 'fulfilled') {
-      return result.value;
+      return result.snapshot;
     }
-    console.error(`District weather refresh failed for ${district}:`, result.reason);
+    const { district, location } = result;
+    console.error(`District weather refresh failed for ${district}:`, result.error);
     return {
       district,
       city: location.city,
@@ -1134,8 +1141,9 @@ app.post('/api/generate-board-image', imageRateLimit, async (req, res) => {
       },
     });
 
-    // Board-image ownership is tracked in memory only; after a process restart,
-    // pending jobs must be resubmitted so they can be associated with a caller.
+    // Board-image ownership is tracked in memory only. pruneBoardImageJobs()
+    // clears stale entries after BOARD_IMAGE_JOB_TTL_MS, and a process restart
+    // drops pending ownership state entirely, so affected users must resubmit.
     pruneBoardImageJobs();
     boardImageJobs.set(jobId, {
       uid: caller.uid,
