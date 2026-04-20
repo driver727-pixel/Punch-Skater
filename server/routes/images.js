@@ -20,6 +20,7 @@ export function registerImageRoutes(app, {
   fal,
   FAL_KEY,
   BIREFNET_URL,
+  adminAuth,
   imageRateLimit,
   boardImageStatusRateLimit,
   authenticateFirebaseUser,
@@ -39,7 +40,7 @@ export function registerImageRoutes(app, {
         return;
       }
 
-      await authenticateFirebaseUser(req);
+      if (adminAuth) await authenticateFirebaseUser(req);
       const sanitizedBody = sanitizeGenerateImageBody(req.body);
       const profileSettings = resolveFalProfile(normalizeFalProfile(sanitizedBody.fal_profile));
       const upstream = await fetch(profileSettings.modelUrl, {
@@ -74,7 +75,7 @@ export function registerImageRoutes(app, {
         return;
       }
 
-      const caller = await authenticateFirebaseUser(req);
+      const caller = adminAuth ? await authenticateFirebaseUser(req) : { uid: 'anonymous' };
       const { prompt, imageUrls } = sanitizeBoardImageBody(req.body);
       if (!prompt || !imageUrls) {
         res.status(400).json({ error: 'A prompt and exactly four Punch Skater board image URLs are required.' });
@@ -109,7 +110,7 @@ export function registerImageRoutes(app, {
         return;
       }
 
-      const caller = await authenticateFirebaseUser(req);
+      const caller = adminAuth ? await authenticateFirebaseUser(req) : { uid: 'anonymous' };
       const { jobId } = req.params;
       if (!jobId || !/^[a-zA-Z0-9_-]+$/.test(jobId)) {
         res.status(400).json({ error: 'Invalid jobId.' });
@@ -160,7 +161,7 @@ export function registerImageRoutes(app, {
         return;
       }
 
-      await authenticateFirebaseUser(req);
+      if (adminAuth) await authenticateFirebaseUser(req);
       const sanitizedBody = sanitizeBackgroundRemovalBody(req.body);
       const upstream = await fetch(BIREFNET_URL, {
         method: 'POST',
