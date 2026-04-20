@@ -34,11 +34,9 @@ export function CardForge() {
     handleCollectionNavigation,
     handleDownloadJpg,
     handleForge,
-    handleLayerError,
     handleOpen3D,
     handleOpenFactions,
     handleOpenPrint,
-    handlePreviewUpdate,
     handleRandomSkater,
     handleReopenWelcome,
     handleSaveToCollection,
@@ -136,8 +134,6 @@ export function CardForge() {
           characterBlend={characterBlend}
           isImageGenConfigured={isImageGenConfigured}
           layers={layers}
-          onCardUpdate={handlePreviewUpdate}
-          onLayerError={handleLayerError}
         />
       </div>
 

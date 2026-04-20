@@ -5108,6 +5108,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   padding: 0;
 }
 
+.forge-stat-card-wrap {
+  padding: 0;
+}
+
 /* ===================================================================
    @media print — actual print output
    =================================================================== */
