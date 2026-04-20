@@ -12,6 +12,7 @@ import type {
   SkinTone,
 } from "../../lib/types";
 import { BoardBuilder } from "../../components/BoardBuilder";
+import { GeoAtlas } from "../../components/GeoAtlas";
 import { ReferralPanel } from "../../components/ReferralPanel";
 import type { BoardConfig } from "../../lib/boardBuilder";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
@@ -169,25 +170,30 @@ export function ForgeControlsPanel({
         </div>
       </div>
 
-      <div className={`form-group${isFreeTier ? " form-group--locked" : ""}`}>
-        <label>
-          District
-          {isFreeTier && (
-            <ForgeLockBadge onClick={onOpenUpgradeModal} label="Upgrade to unlock District" />
-          )}
-        </label>
+      <div className="form-group">
+        <label>District</label>
         <div className="pill-group">
           {districts.map((option) => (
             <PillButton
               key={option}
               active={prompts.district === option}
               label={option}
-              disabled={isFreeTier}
               onClick={() => onPromptChange("district", option)}
             />
           ))}
         </div>
       </div>
+
+      <GeoAtlas
+        boardConfig={boardConfig}
+        selectedDistrict={prompts.district ?? null}
+        onDistrictSelect={(d) => {
+          sfxClick();
+          onPromptChange("district", d);
+        }}
+        districtInteractionMode="press"
+        section="australia"
+      />
 
       <div className="form-group">
         <label>Gender</label>

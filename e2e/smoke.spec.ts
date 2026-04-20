@@ -15,6 +15,12 @@ async function ensureNavLinksVisible(page: Page) {
 // ── Home / Card Forge ─────────────────────────────────────────────────────────
 
 test.describe('Home page (Card Forge)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('forge-welcome-dismissed', '1');
+    });
+  });
+
   test('has correct page title', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/Punch Skater/i);
@@ -68,7 +74,7 @@ test.describe('Home page (Card Forge)', () => {
       'Journalist',
       'Security Guard',
       'Chef',
-      'Hacker',
+      'Coder',
       'Humanitarian',
       'Archaeologist',
       'Blue collar worker',
