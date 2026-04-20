@@ -250,6 +250,8 @@ export function useForgeGeneration() {
     prompts,
     revealedFaction,
     setArchetype,
+    setBoardConfig,
+    setCharacterBlend,
     setPrompt,
     tier,
   ]);
