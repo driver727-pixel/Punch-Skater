@@ -2,10 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Archetype, CardPrompts, CardPayload, Rarity, District, Gender, AgeGroup, BodyType, Faction, HairLength, SkinTone, FaceCharacter } from "../lib/types";
 import { buildCharacterSeed, generateCard } from "../lib/generator";
-import { CardDisplay } from "../components/CardDisplay";
-import { CardViewer3D } from "../components/CardViewer3D";
-import { PrintModal } from "../components/PrintModal";
-import { ReferralPanel } from "../components/ReferralPanel";
 import { removeBackground, isImageGenConfigured, type ImageGenOptions } from "../services/imageGen";
 import { generateGouacheBoard } from "../services/boardImageGen";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
@@ -16,12 +12,15 @@ import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { TIERS } from "../lib/tiers";
 import { downloadCardAsJpg } from "../services/cardDownload";
 import { applyFactionBranding, FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, resolveSecretFaction } from "../lib/factionDiscovery";
-import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
+import { DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats } from "../lib/boardBuilder";
 import { buildRandomBoardConfig, getRandomItemExcluding } from "../lib/cardForgeRandom";
 import { resolveArchetypeStyle } from "../lib/styles";
 import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
+import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
+import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
+import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
 import { createCharacterLayerValidator, useForgeLayers } from "./cardForge/useForgeLayers";
 
@@ -337,6 +336,48 @@ export function CardForge() {
     setBoardConfig((current) => buildRandomBoardConfig(current));
   }, []);
 
+  const handleReopenWelcome = useCallback(() => {
+    localStorage.removeItem("forge-welcome-dismissed");
+    setShowWelcome(true);
+  }, []);
+
+  const handleOpen3D = useCallback(() => {
+    sfxClick();
+    setViewing3D(true);
+  }, []);
+
+  const handleOpenPrint = useCallback(() => {
+    sfxClick();
+    setPrinting(true);
+  }, []);
+
+  const handleCollectionNavigation = useCallback(() => {
+    setSavedCard(null);
+    navigate("/collection");
+  }, [navigate]);
+
+  const handleOpenFactions = useCallback(() => {
+    setRevealedFaction(null);
+    navigate("/factions");
+  }, [navigate]);
+
+  const handlePreviewUpdate = useCallback((updates: { name?: string; age?: number; flavorText?: string }) => {
+    setGenerated((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        identity: (updates.name != null || updates.age != null)
+          ? {
+              ...prev.identity,
+              ...(updates.name != null ? { name: updates.name } : {}),
+              ...(updates.age != null ? { age: updates.age } : {}),
+            }
+          : prev.identity,
+        flavorText: updates.flavorText ?? prev.flavorText,
+      };
+    });
+  }, []);
+
   return (
     <div className="page">
       <span className="build-number">{__BUILD_NUMBER__}</span>
@@ -349,10 +390,7 @@ export function CardForge() {
         <button
           type="button"
           className="btn-outline btn-sm forge-welcome-reopen"
-          onClick={() => {
-            localStorage.removeItem("forge-welcome-dismissed");
-            setShowWelcome(true);
-          }}
+          onClick={handleReopenWelcome}
           aria-label="Open Start Here welcome"
         >
           Start Here
@@ -371,423 +409,68 @@ export function CardForge() {
       </div>
 
       <div className="forge-layout">
-        {/* ── Left column: form controls ── */}
-        <div className="forge-form">
-          <div className={`form-group${tier === "free" ? " form-group--locked" : ""}`}>
-            <label>
-              Cover Identity
-              {tier === "free" && (
-                <button type="button" className="form-group-lock-badge" onClick={openUpgradeModal} aria-label="Upgrade to unlock Cover Identity">
-                  🔒 Upgrade
-                </button>
-              )}
-            </label>
-            <div className="pill-group">
-              {FORGE_ARCHETYPE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  className={`pill${prompts.archetype === opt.value ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); setArchetype(opt.value); }}
-                  aria-pressed={prompts.archetype === opt.value}
-                  disabled={tier === "free"}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
-          </div>
+        <ForgeControlsPanel
+          accentPresets={ACCENT_PRESETS}
+          ageGroups={AGE_GROUPS}
+          bodyTypes={BODY_TYPES}
+          boardConfig={boardConfig}
+          canForge={canForge}
+          canSaveToCollection={tierData.canSave}
+          characterBlend={characterBlend}
+          districts={DISTRICTS}
+          downloading={downloading}
+          faceCharacters={FACE_CHARACTERS}
+          forging={forging}
+          freeCardUsed={freeCardUsed}
+          genders={GENDERS}
+          generateCredits={generateCredits}
+          generated={generated}
+          hairLengths={HAIR_LENGTHS}
+          hasAnyLayerUrl={hasAnyLayerUrl}
+          isAnyLayerLoading={isAnyLayerLoading}
+          onArchetypeChange={setArchetype}
+          onBlendChange={setCharacterBlend}
+          onBoardConfigChange={setBoardConfig}
+          onDownloadJpg={handleDownloadJpg}
+          onForge={handleForge}
+          onOpen3D={handleOpen3D}
+          onOpenPrint={handleOpenPrint}
+          onOpenUpgradeModal={openUpgradeModal}
+          onPromptChange={set}
+          onSaveToCollection={handleSaveToCollection}
+          prompts={prompts}
+          rarities={RARITIES}
+          saveError={saveError}
+          saving={saving}
+          skinTones={SKIN_TONES}
+          tier={tier}
+        />
 
-          <div className={`form-group${tier === "free" ? " form-group--locked" : ""}`}>
-            <label>
-              Class
-              {tier === "free" && (
-                <button type="button" className="form-group-lock-badge" onClick={openUpgradeModal} aria-label="Upgrade to unlock Class">
-                  🔒 Upgrade
-                </button>
-              )}
-            </label>
-            <div className="pill-group">
-              {RARITIES.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.rarity === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("rarity", opt); }}
-                  aria-pressed={prompts.rarity === opt}
-                  disabled={tier === "free"}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={`form-group${tier === "free" ? " form-group--locked" : ""}`}>
-            <label>
-              District
-              {tier === "free" && (
-                <button type="button" className="form-group-lock-badge" onClick={openUpgradeModal} aria-label="Upgrade to unlock District">
-                  🔒 Upgrade
-                </button>
-              )}
-            </label>
-            <div className="pill-group">
-              {DISTRICTS.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.district === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("district", opt); }}
-                  aria-pressed={prompts.district === opt}
-                  disabled={tier === "free"}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Gender</label>
-            <div className="pill-group">
-              {GENDERS.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.gender === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("gender", opt); }}
-                  aria-pressed={prompts.gender === opt}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Age Group</label>
-            <div className="pill-group">
-              {AGE_GROUPS.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.ageGroup === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("ageGroup", opt); }}
-                  aria-pressed={prompts.ageGroup === opt}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Body Type</label>
-            <div className="pill-group">
-              {BODY_TYPES.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.bodyType === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("bodyType", opt); }}
-                  aria-pressed={prompts.bodyType === opt}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Hair Length</label>
-            <div className="pill-group">
-              {HAIR_LENGTHS.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.hairLength === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("hairLength", opt); }}
-                  aria-pressed={prompts.hairLength === opt}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Skin Tone</label>
-            <div className="pill-group">
-              {SKIN_TONES.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.skinTone === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("skinTone", opt); }}
-                  aria-pressed={prompts.skinTone === opt}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Face Character</label>
-            <div className="pill-group">
-              {FACE_CHARACTERS.map((opt) => (
-                <button
-                  key={opt}
-                  className={`pill${prompts.faceCharacter === opt ? " selected" : ""}`}
-                  onClick={() => { sfxClick(); set("faceCharacter", opt); }}
-                  aria-pressed={prompts.faceCharacter === opt}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Accent Color</label>
-            <p className="form-hint">Accent color also drives hair color.</p>
-            <div className="color-group">
-              {ACCENT_PRESETS.map((c) => (
-                <button
-                  key={c}
-                  className={`color-swatch${prompts.accentColor === c ? " selected" : ""}`}
-                  style={{ background: c }}
-                  onClick={() => { sfxClick(); set("accentColor", c); }}
-                  aria-pressed={prompts.accentColor === c}
-                  aria-label={`Accent color ${c}`}
-                  title={c}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Board Loadout</label>
-            <p className="form-hint" style={{ marginBottom: 6 }}>
-              Build your electric skateboard — your most important piece of gear.
-            </p>
-            <BoardBuilder
-              value={boardConfig}
-              onChange={setBoardConfig}
-              accentColor={prompts.accentColor}
-              onSave={(config) => { setBoardConfig(config); }}
-            />
-          </div>
-
-          <button
-            className="btn-primary btn-lg btn-forge"
-            onClick={handleForge}
-            disabled={forging || isAnyLayerLoading}
-            data-testid="forge-button"
-          >
-            {isAnyLayerLoading
-              ? "✨ Generating…"
-              : !canForge
-              ? "🔒 FORGE YOUR CARD — Upgrade to Unlock"
-              : tier === "free" && !freeCardUsed
-              ? "⚡ FORGE YOUR CARD (1 free card)"
-              : generateCredits > 0
-              ? `⚡ FORGE YOUR CARD (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
-              : "⚡ FORGE YOUR CARD"
-            }
-          </button>
-
-          {/* Referral panel — helps free-tier users earn credits by sharing */}
-          <ReferralPanel />
-
-          {/* Post-generation controls */}
-          {generated && (
-            <div className="forge-generated-actions">
-              {(hasAnyLayerUrl || isAnyLayerLoading) && (
-                <div className="blend-control">
-                  <label className="blend-control__label">
-                    <span>Character Blend</span>
-                    <span>{Math.round(characterBlend * 100)}%</span>
-                  </label>
-                  <input
-                    type="range"
-                    className="range-slider"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={characterBlend}
-                    onChange={(e) => setCharacterBlend(Number(e.target.value))}
-                  />
-                </div>
-              )}
-              <div className="forge-generated-buttons">
-                <button className="btn-outline btn-3d" onClick={() => { sfxClick(); setViewing3D(true); }} title="View card in 3D">
-                  ◈ 3D
-                </button>
-                <button className="btn-outline" onClick={() => { sfxClick(); setPrinting(true); }} title="Print this card">
-                  🖨 Print
-                </button>
-                {tierData.canSave ? (
-                  <button
-                    className="btn-primary"
-                    onClick={handleSaveToCollection}
-                    disabled={saving}
-                    title="Save card to your Collection"
-                  >
-                    {saving ? "💾 Saving…" : "💾 Save to Collection"}
-                  </button>
-                ) : (
-                  <button
-                    className="btn-outline"
-                    onClick={openUpgradeModal}
-                    title="Upgrade to save cards to your Collection"
-                  >
-                    🔒 Save to Collection
-                  </button>
-                )}
-                <button
-                  className="btn-outline"
-                  onClick={handleDownloadJpg}
-                  disabled={downloading || isAnyLayerLoading}
-                  title="Download composed card as JPG"
-                >
-                  {downloading ? "⏳ Saving…" : "⬇ Download JPG"}
-                </button>
-              </div>
-              {saveError && (
-                <p className="forge-image-error" role="alert">{saveError}</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── Right column: card preview ── */}
-        <div className="forge-preview">
-          {generated ? (
-            <div className="forge-card-wrapper">
-              <div>
-                {/* Layer errors */}
-                {layers.errors.length > 0 && (
-                  <div className="forge-image-errors">
-                    {layers.errors.map((err, i) => (
-                      <p key={i} className="forge-image-error">{err}</p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Image gen not configured notice */}
-                {!isImageGenConfigured && (
-                  <p className="forge-image-notice">
-                    AI image generation is not configured. Set{" "}
-                    <code>VITE_IMAGE_API_URL</code> in your <code>.env</code> to
-                    enable Fal.ai layered artwork.
-                  </p>
-                )}
-
-                <CardDisplay
-                  card={generated}
-                  backgroundImageUrl={layers.backgroundUrl}
-                  characterImageUrl={layers.characterUrl}
-                  frameImageUrl={layers.frameUrl}
-                  layerLoading={layers.loading}
-                  characterBlend={characterBlend}
-                  hideToolButtons
-                  onLayerError={handleLayerError}
-                  onUpdate={(updates) => {
-                    setGenerated((prev) => {
-                      if (!prev) return prev;
-                      return {
-                        ...prev,
-                        identity: (updates.name != null || updates.age != null)
-                          ? {
-                              ...prev.identity,
-                              ...(updates.name != null ? { name: updates.name } : {}),
-                              ...(updates.age != null ? { age: updates.age } : {}),
-                            }
-                          : prev.identity,
-                        flavorText: updates.flavorText ?? prev.flavorText,
-                      };
-                    });
-                  }}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="empty-preview">
-              <span className="empty-icon">🛹</span>
-              <span>Select prompts &amp; forge a card</span>
-            </div>
-          )}
-        </div>
+        <ForgePreviewPanel
+          card={generated}
+          characterBlend={characterBlend}
+          isImageGenConfigured={isImageGenConfigured}
+          layers={layers}
+          onCardUpdate={handlePreviewUpdate}
+          onLayerError={handleLayerError}
+        />
       </div>
 
-      {/* 3D viewer and print modals — rendered at page level since tool buttons are hidden on the card */}
-      {generated && viewing3D && (
-        <CardViewer3D
-          card={generated}
-          backgroundImageUrl={layers.backgroundUrl}
-          characterImageUrl={layers.characterUrl}
-          frameImageUrl={layers.frameUrl}
-          characterBlend={characterBlend}
-          onClose={() => setViewing3D(false)}
-        />
-      )}
-      {generated && printing && (
-        <PrintModal
-          card={generated}
-          backgroundImageUrl={layers.backgroundUrl}
-          backgroundPrintUrl={layers.backgroundPrintUrl}
-          characterImageUrl={layers.characterUrl}
-          frameImageUrl={layers.frameUrl}
-          characterBlend={characterBlend}
-          onClose={() => setPrinting(false)}
-        />
-      )}
-      {/* ── Save-to-collection celebration overlay ── */}
-      {savedCard && (
-        <div className="save-celebrate-overlay" onClick={() => { setSavedCard(null); navigate("/collection"); }}>
-          <div className="save-celebrate-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="save-celebrate-emoji">🎉</div>
-            <h2 className="save-celebrate-title">
-              {isFirstCard
-                ? "Congrats! You saved your first card!"
-                : "Card saved to your Collection!"}
-            </h2>
-            <p className="save-celebrate-name">{savedCard.identity.name}</p>
-            <p className="save-celebrate-seed">SEED · {savedCard.seed}</p>
-            <button
-              className="btn-primary"
-              onClick={() => { sfxClick(); setSavedCard(null); navigate("/collection"); }}
-            >
-              Go to My Collection →
-            </button>
-          </div>
-        </div>
-      )}
-      {revealedFaction && (
-        <div className="save-celebrate-overlay" onClick={() => setRevealedFaction(null)}>
-          <div className="save-celebrate-modal save-celebrate-modal--reveal" onClick={(e) => e.stopPropagation()}>
-            <div className="save-celebrate-emoji">{generated?.discovery?.logoMark ?? "🎴"}</div>
-            <h2 className="save-celebrate-title">
-              {revealedFaction.isNew
-                ? "Secret faction discovered!"
-                : "Faction signal reacquired!"}
-            </h2>
-            <p className="save-celebrate-name">{revealedFaction.faction}</p>
-            <p className="save-celebrate-notice">
-              Your forged card has been branded with the faction mark, and the Factions tab is now tracking what you know.
-            </p>
-            <div className="forge-generated-buttons">
-              <button
-                className="btn-primary"
-                onClick={() => { setRevealedFaction(null); navigate("/factions"); }}
-              >
-                Open Factions →
-              </button>
-              <button
-                className="btn-outline"
-                onClick={() => setRevealedFaction(null)}
-              >
-                Keep Forging
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ForgeResultOverlays
+        card={generated}
+        characterBlend={characterBlend}
+        isFirstCard={isFirstCard}
+        layers={layers}
+        onCloseFactionReveal={() => setRevealedFaction(null)}
+        onClosePrint={() => setPrinting(false)}
+        onCloseViewer3D={() => setViewing3D(false)}
+        onGoToCollection={handleCollectionNavigation}
+        onOpenFactions={handleOpenFactions}
+        printing={printing}
+        revealedFaction={revealedFaction}
+        savedCard={savedCard}
+        viewing3D={viewing3D}
+      />
     </div>
   );
 }

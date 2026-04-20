@@ -6,7 +6,7 @@ import { getStaticBackgroundSmallUrl, getStaticBackgroundUrl, getStaticFrameUrl 
 
 export type ForgeLayer = "background" | "character" | "frame";
 
-interface LayerState {
+export interface LayerState {
   backgroundUrl?: string;
   backgroundPrintUrl?: string;
   characterUrl?: string;

@@ -28,7 +28,10 @@ import {
 } from './lib/fal.js';
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerBattleRoutes } from './routes/battle.js';
+import { registerImageRoutes } from './routes/images.js';
 import { registerPaymentRoutes } from './routes/payments.js';
+import { registerWeatherRoutes } from './routes/weather.js';
 
 // Load the shared pricing config — the single source of truth for Stripe
 // price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
@@ -222,28 +225,6 @@ const DEFAULT_FAL_ENABLE_SAFETY_CHECKER = true;
 const DEFAULT_FAL_OUTPUT_FORMAT = 'png';
 const FAL_CONFIG_CACHE_TTL_MS = 5 * 60 * 1000;
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
-const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
-const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000;
-const HEAVY_RAIN_MM = 7;
-const HEATWAVE_TEMP_C = 35;
-const STRONG_WIND_KPH = 45;
-const HEAVY_RAIN_CODES = new Set([63, 65, 82, 95, 96, 99]);
-
-const DISTRICT_WEATHER_LOCATIONS = {
-  Airaway: { city: 'Brisbane', state: 'QLD', latitude: -27.4698, longitude: 153.0251 },
-  Electropolis: { city: 'Sydney', state: 'NSW', latitude: -33.8688, longitude: 151.2093 },
-  'Glass City': { city: 'Melbourne', state: 'VIC', latitude: -37.8136, longitude: 144.9631 },
-  'The Grid': { city: 'Canberra', state: 'ACT', latitude: -35.2809, longitude: 149.13 },
-  Batteryville: { city: 'Adelaide', state: 'SA', latitude: -34.9285, longitude: 138.6007 },
-  'The Roads': { city: 'Alice Springs', state: 'NT', latitude: -23.698, longitude: 133.8807 },
-  Nightshade: { city: 'Perth', state: 'WA', latitude: -31.9523, longitude: 115.8613 },
-  'The Forest': { city: 'Hobart', state: 'TAS', latitude: -42.8821, longitude: 147.3272 },
-};
-
-let districtWeatherCache = {
-  payload: null,
-  fetchedAt: 0,
-};
 
 const falRequestConfigCache = new Map();
 
@@ -703,48 +684,19 @@ registerAdminRoutes(app, {
   deleteQueryDocs,
 });
 
-function roundWeatherMetric(value) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return null;
-  return Number(value.toFixed(1));
-}
+registerWeatherRoutes(app, {
+  weatherRateLimit,
+});
 
-function resolveWeatherSummary({ rainMm, weatherCode, windSpeedKph, temperatureC }) {
-  if ((rainMm ?? 0) >= HEAVY_RAIN_MM || HEAVY_RAIN_CODES.has(weatherCode ?? -1)) return 'Heavy rain';
-  if ((rainMm ?? 0) > 0) return 'Rain';
-  if ((windSpeedKph ?? 0) >= STRONG_WIND_KPH) return 'Strong wind';
-  if ((temperatureC ?? 0) >= HEATWAVE_TEMP_C) return 'Heatwave';
-  return 'Clear';
-}
-
-function buildWeatherAccessRule(district, city, summary) {
-  if (summary !== 'Heavy rain') return null;
-  return {
-    requiredBoardType: 'Mountain',
-    reason: `Heavy rain over ${city} has turned ${district} into Mountain-board-only territory.`,
-    source: 'heavy-rain',
-  };
-}
-
-function buildFallbackDistrictWeatherPayload() {
-  const generatedAt = new Date().toISOString();
-  return {
-    generatedAt,
-    stale: true,
-    source: 'fallback',
-    districts: Object.entries(DISTRICT_WEATHER_LOCATIONS).map(([district, location]) => ({
-      district,
-      city: location.city,
-      state: location.state,
-      summary: 'Weather uplink offline',
-      temperatureC: null,
-      windSpeedKph: null,
-      rainMm: null,
-      weatherCode: null,
-      updatedAt: generatedAt,
-      accessRule: null,
-    })),
-  };
-}
+registerBattleRoutes(app, {
+  adminDb,
+  battleRateLimit,
+  authenticateFirebaseUser,
+  createBattleCardSnapshot,
+  resolveBattleWithEffects,
+  randomUUID,
+  FieldValue,
+});
 
 function normalizeFalProfile(value) {
   return value === 'character' ? 'character' : 'default';
@@ -839,318 +791,21 @@ async function buildFalImageRequest(body = {}) {
   };
 }
 
-async function fetchDistrictWeatherSnapshot(district, location) {
-  const url = new URL(WEATHER_URL);
-  url.searchParams.set('latitude', String(location.latitude));
-  url.searchParams.set('longitude', String(location.longitude));
-  url.searchParams.set('current', 'temperature_2m,rain,weather_code,wind_speed_10m');
-  url.searchParams.set('timezone', 'Australia/Sydney');
-  url.searchParams.set('forecast_days', '1');
-
-  const upstream = await fetch(url);
-  if (!upstream.ok) {
-    throw new Error(`Weather upstream failed for ${district} with ${upstream.status}.`);
-  }
-
-  const data = await upstream.json();
-  const current = data?.current ?? {};
-  const temperatureC = roundWeatherMetric(current.temperature_2m);
-  const windSpeedKph = roundWeatherMetric(current.wind_speed_10m);
-  const rainMm = roundWeatherMetric(current.rain);
-  const weatherCode = typeof current.weather_code === 'number' ? current.weather_code : null;
-  const summary = resolveWeatherSummary({ rainMm, weatherCode, windSpeedKph, temperatureC });
-
-  return {
-    district,
-    city: location.city,
-    state: location.state,
-    summary,
-    temperatureC,
-    windSpeedKph,
-    rainMm,
-    weatherCode,
-    updatedAt: new Date().toISOString(),
-    accessRule: buildWeatherAccessRule(district, location.city, summary),
-  };
-}
-
-async function buildDistrictWeatherPayload() {
-  const districtEntries = Object.entries(DISTRICT_WEATHER_LOCATIONS);
-  const districtFetchResults = await Promise.all(
-    districtEntries.map(async ([district, location]) => {
-      try {
-        const snapshot = await fetchDistrictWeatherSnapshot(district, location);
-        return { status: 'fulfilled', district, location, snapshot };
-      } catch (error) {
-        return { status: 'rejected', district, location, error };
-      }
-    }),
-  );
-  const fallbackGeneratedAt = new Date().toISOString();
-  const districts = districtFetchResults.map((result) => {
-    if (result.status === 'fulfilled') {
-      return result.snapshot;
-    }
-    const { district, location } = result;
-    console.error(`District weather refresh failed for ${district}:`, result.error);
-    return {
-      district,
-      city: location.city,
-      state: location.state,
-      summary: 'Weather uplink offline',
-      temperatureC: null,
-      windSpeedKph: null,
-      rainMm: null,
-      weatherCode: null,
-      updatedAt: fallbackGeneratedAt,
-      accessRule: null,
-      source: 'fallback',
-    };
-  });
-  const stale = districtFetchResults.some((result) => result.status === 'rejected');
-
-  return {
-    generatedAt: new Date().toISOString(),
-    stale,
-    source: stale ? 'partial-live' : 'live',
-    districts,
-  };
-}
-
-async function getDistrictWeatherPayload() {
-  const now = Date.now();
-  const hasFreshCache =
-    districtWeatherCache.payload &&
-    now - districtWeatherCache.fetchedAt < WEATHER_CACHE_TTL_MS;
-
-  if (hasFreshCache) {
-    return {
-      ...districtWeatherCache.payload,
-      stale: false,
-      source: districtWeatherCache.payload.source === 'fallback' ? 'fallback' : 'cache',
-    };
-  }
-
-  try {
-    const payload = await buildDistrictWeatherPayload();
-    districtWeatherCache = { payload, fetchedAt: now };
-    return payload;
-  } catch (err) {
-    console.error('District weather refresh failed:', err);
-
-    if (districtWeatherCache.payload) {
-      return {
-        ...districtWeatherCache.payload,
-        stale: true,
-        source: districtWeatherCache.payload.source === 'fallback' ? 'fallback' : 'cache',
-      };
-    }
-
-    const fallback = buildFallbackDistrictWeatherPayload();
-    districtWeatherCache = { payload: fallback, fetchedAt: now };
-    return fallback;
-  }
-}
-
-// Transparent proxy: the React front-end POSTs to /api/generate-image and
-// this server forwards the request to Fal.ai, attaching the secret key.
-app.post('/api/generate-image', imageRateLimit, async (req, res) => {
-  try {
-    if (!FAL_KEY) {
-      res.status(503).json({ error: 'Image generation is not configured.' });
-      return;
-    }
-
-    await authenticateFirebaseUser(req);
-    const sanitizedBody = sanitizeGenerateImageBody(req.body);
-    const profileSettings = resolveFalProfile(normalizeFalProfile(sanitizedBody.fal_profile));
-    const upstream = await fetch(profileSettings.modelUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Key ${FAL_KEY}`,
-      },
-      body: JSON.stringify(await buildFalImageRequest(sanitizedBody)),
-    });
-
-    if (!upstream.ok) {
-      const text = await upstream.text();
-      let body;
-      try { body = JSON.parse(text); } catch { body = { error: text }; }
-      res.status(upstream.status).json(body);
-      return;
-    }
-
-    const data = await upstream.json();
-    res.json(data);
-  } catch (err) {
-    console.error('Proxy error:', err);
-    res.status(err.statusCode ?? 500).json({ error: err.message ?? 'Image generation proxy failed.' });
-  }
-});
-
-
-function extractBoardImageUrl(result) {
-  // Log the raw structure when debug logging is enabled so we can diagnose
-  // unexpected response shapes without cluttering normal production logs.
-  if (process.env.FAL_DEBUG) console.log('Raw fal board result:', JSON.stringify(result));
-
-  // fal.subscribe / fal.queue.result wraps model output in .data; some paths
-  // fall back to a top-level structure for forward compatibility.
-  const data = result?.data ?? result;
-
-  // { image: "https://..." }
-  if (typeof data?.image === 'string' && data.image) return data.image;
-  // { image: { url: "https://..." } }
-  if (typeof data?.image?.url === 'string' && data.image.url) return data.image.url;
-  // { image_url: "https://..." }
-  if (typeof data?.image_url === 'string' && data.image_url) return data.image_url;
-  // { images: [{ url: "..." }, ...] }  — same shape as Flux models
-  if (Array.isArray(data?.images) && typeof data.images[0]?.url === 'string' && data.images[0].url) {
-    return data.images[0].url;
-  }
-  // { output: "https://..." }  or  { output: { url: "..." } }
-  if (typeof data?.output === 'string' && data.output) return data.output;
-  if (typeof data?.output?.url === 'string' && data.output.url) return data.output.url;
-
-  // Legacy top-level fallback
-  if (typeof result?.image?.url === 'string' && result.image.url) return result.image.url;
-
-  return null;
-}
-
-app.post('/api/generate-board-image', imageRateLimit, async (req, res) => {
-  try {
-    if (!FAL_KEY) {
-      res.status(503).json({ error: 'Board image generation is not configured.' });
-      return;
-    }
-
-    const caller = await authenticateFirebaseUser(req);
-    const { prompt, imageUrls } = sanitizeBoardImageBody(req.body);
-    if (!prompt || !imageUrls) {
-      res.status(400).json({ error: 'A prompt and exactly four Punch Skater board image URLs are required.' });
-      return;
-    }
-
-    // Submit to fal.ai queue and return the jobId immediately so the client
-    // can poll /api/board-image-status/:jobId.  This avoids the 30-second
-    // proxy timeout that occurs when fal.subscribe() blocks the HTTP response.
-    // Ownership is tracked in-memory only, so a server restart drops pending
-    // job access state and affected users must resubmit the board generation.
-    const { request_id: jobId } = await fal.queue.submit('fal-ai/nano-banana-2', {
-      input: {
-        prompt,
-        image_urls: imageUrls,
-        thinking_level: 'high',
-        enable_web_search: false,
-      },
-    });
-
-    // Board-image ownership is tracked in memory only. pruneBoardImageJobs()
-    // clears stale entries after BOARD_IMAGE_JOB_TTL_MS, and a process restart
-    // drops pending ownership state entirely, so affected users must resubmit.
-    pruneBoardImageJobs();
-    boardImageJobs.set(jobId, {
-      uid: caller.uid,
-      createdAt: Date.now(),
-    });
-    res.json({ jobId });
-  } catch (err) {
-    console.error('Board image submit error:', err);
-    res.status(err.statusCode ?? 500).json({ error: err.message ?? 'Board image generation submission failed.' });
-  }
-});
-
-// Polls the fal.ai queue for a previously submitted board-image job.
-// Returns { status: 'pending' }, { status: 'completed', imageUrl } or
-// { status: 'failed', error }.
-app.get('/api/board-image-status/:jobId', boardImageStatusRateLimit, async (req, res) => {
-  try {
-    if (!FAL_KEY) {
-      res.status(503).json({ error: 'Board image generation is not configured.' });
-      return;
-    }
-
-    const caller = await authenticateFirebaseUser(req);
-    const { jobId } = req.params;
-    if (!jobId || !/^[a-zA-Z0-9_-]+$/.test(jobId)) {
-      res.status(400).json({ error: 'Invalid jobId.' });
-      return;
-    }
-
-    pruneBoardImageJobs();
-    const jobOwner = boardImageJobs.get(jobId);
-    if (!jobOwner || jobOwner.uid !== caller.uid) {
-      res.status(404).json({ error: 'Board image job not found.' });
-      return;
-    }
-
-    const status = await fal.queue.status('fal-ai/nano-banana-2', {
-      requestId: jobId,
-      logs: false,
-    });
-
-    if (status.status === 'COMPLETED') {
-      const result = await fal.queue.result('fal-ai/nano-banana-2', { requestId: jobId });
-      const imageUrl = extractBoardImageUrl(result);
-      if (!imageUrl) {
-        res.status(502).json({ error: 'Fal.ai did not return a board image URL.' });
-        return;
-      }
-      boardImageJobs.delete(jobId);
-      res.json({ status: 'completed', imageUrl, requestId: jobId });
-      return;
-    }
-
-    if (status.status === 'FAILED' || status.status === 'CANCELLED') {
-      boardImageJobs.delete(jobId);
-      res.status(502).json({ status: 'failed', error: 'Board image generation job failed.' });
-      return;
-    }
-
-    // IN_QUEUE or IN_PROGRESS — ask the client to poll again.
-    res.json({ status: 'pending' });
-  } catch (err) {
-    console.error('Board image status error:', err);
-    res.status(err.statusCode ?? 500).json({ error: err.message ?? 'Failed to retrieve board image job status.' });
-  }
-});
-
-// Background removal proxy: strips the white/solid background from a generated
-// character image and returns a transparent PNG via the Fal.ai birefnet model.
-app.post('/api/remove-background', imageRateLimit, async (req, res) => {
-  try {
-    if (!FAL_KEY) {
-      res.status(503).json({ error: 'Background removal is not configured.' });
-      return;
-    }
-
-    await authenticateFirebaseUser(req);
-    const sanitizedBody = sanitizeBackgroundRemovalBody(req.body);
-    const upstream = await fetch(BIREFNET_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Key ${FAL_KEY}`,
-      },
-      body: JSON.stringify(sanitizedBody),
-    });
-
-    if (!upstream.ok) {
-      const text = await upstream.text();
-      let body;
-      try { body = JSON.parse(text); } catch { body = { error: text }; }
-      res.status(upstream.status).json(body);
-      return;
-    }
-
-    const data = await upstream.json();
-    res.json(data);
-  } catch (err) {
-    console.error('Background removal proxy error:', err);
-    res.status(err.statusCode ?? 500).json({ error: err.message ?? 'Background removal proxy failed.' });
-  }
+registerImageRoutes(app, {
+  fal,
+  FAL_KEY,
+  BIREFNET_URL,
+  imageRateLimit,
+  boardImageStatusRateLimit,
+  authenticateFirebaseUser,
+  sanitizeGenerateImageBody,
+  sanitizeBoardImageBody,
+  sanitizeBackgroundRemovalBody,
+  buildFalImageRequest,
+  normalizeFalProfile,
+  resolveFalProfile,
+  boardImageJobs,
+  pruneBoardImageJobs,
 });
 
 // ── JSON Import validation endpoint ──────────────────────────────────────────
@@ -1238,126 +893,6 @@ app.post('/api/import', importRateLimit, (req, res) => {
     ...(language ? { language } : {}),
     ...(vocabulary ? { vocabularyCount: vocabulary.length } : {}),
   });
-});
-
-app.get('/api/district-weather', weatherRateLimit, async (_req, res) => {
-  const payload = await getDistrictWeatherPayload();
-  res.json(payload);
-});
-
-app.post('/api/resolve-battle', battleRateLimit, async (req, res) => {
-  if (!adminDb) {
-    res.status(503).json({ error: 'Battle resolution is not configured on this server.' });
-    return;
-  }
-
-  let caller;
-  try {
-    caller = await authenticateFirebaseUser(req);
-  } catch (error) {
-    res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
-    return;
-  }
-
-  const challengerUid = caller.uid;
-  const challengerDeckId = typeof req.body?.challengerDeckId === 'string' ? req.body.challengerDeckId.trim() : '';
-  const defenderUid = typeof req.body?.defenderUid === 'string' ? req.body.defenderUid.trim() : '';
-  const defenderDeckId = typeof req.body?.defenderDeckId === 'string' ? req.body.defenderDeckId.trim() : '';
-
-  if (!challengerDeckId || !defenderUid || !defenderDeckId) {
-    res.status(400).json({ error: 'challengerDeckId, defenderUid, and defenderDeckId are required.' });
-    return;
-  }
-
-  if (challengerUid === defenderUid) {
-    res.status(400).json({ error: 'You cannot challenge yourself.' });
-    return;
-  }
-
-  try {
-    const result = await adminDb.runTransaction(async (tx) => {
-      const challengerArenaRef = adminDb.collection('arena').doc(challengerUid);
-      const defenderArenaRef = adminDb.collection('arena').doc(defenderUid);
-      const challengerDeckRef = adminDb.collection('users').doc(challengerUid).collection('decks').doc(challengerDeckId);
-      const defenderDeckRef = adminDb.collection('users').doc(defenderUid).collection('decks').doc(defenderDeckId);
-      const [challengerArenaSnap, defenderArenaSnap, challengerDeckSnap, defenderDeckSnap] = await Promise.all([
-        tx.get(challengerArenaRef),
-        tx.get(defenderArenaRef),
-        tx.get(challengerDeckRef),
-        tx.get(defenderDeckRef),
-      ]);
-
-      if (!challengerArenaSnap.exists || !defenderArenaSnap.exists) {
-        throw Object.assign(new Error('One of the arena entries is no longer available.'), { statusCode: 409 });
-      }
-
-      const challengerArena = challengerArenaSnap.data();
-      const defenderArena = defenderArenaSnap.data();
-      if (challengerArena.deckId !== challengerDeckId || defenderArena.deckId !== defenderDeckId) {
-        throw Object.assign(new Error('One of the selected decks is no longer readied for battle.'), { statusCode: 409 });
-      }
-
-      if (!challengerDeckSnap.exists || !defenderDeckSnap.exists) {
-        throw Object.assign(new Error('One of the selected decks no longer exists.'), { statusCode: 409 });
-      }
-
-      const challengerDeck = challengerDeckSnap.data();
-      const defenderDeck = defenderDeckSnap.data();
-      if (challengerDeck.battleReady !== true || defenderDeck.battleReady !== true) {
-        throw Object.assign(new Error('One of the selected decks is no longer readied for battle.'), { statusCode: 409 });
-      }
-
-      const challengerCards = Array.isArray(challengerDeck.cards) ? challengerDeck.cards.map(createBattleCardSnapshot) : [];
-      const defenderCards = Array.isArray(defenderDeck.cards) ? defenderDeck.cards.map(createBattleCardSnapshot) : [];
-      if (challengerCards.length === 0 || defenderCards.length === 0) {
-        throw Object.assign(new Error('Both battle decks must contain at least one card.'), { statusCode: 409 });
-      }
-
-      const battleId = `battle-${randomUUID()}`;
-      const battleSeed = randomUUID();
-      const resolution = resolveBattleWithEffects(challengerCards, defenderCards, battleSeed);
-      const winnerUid =
-        resolution.winnerSide === 'challenger'
-          ? challengerUid
-          : resolution.winnerSide === 'defender'
-            ? defenderUid
-            : '';
-      const now = new Date().toISOString();
-      const result = {
-        id: battleId,
-        challengerUid,
-        challengerDeckId,
-        challengerDeckName: challengerDeck.name ?? challengerArena.deckName ?? 'Challenger Deck',
-        defenderUid,
-        defenderDeckId,
-        defenderDeckName: defenderDeck.name ?? defenderArena.deckName ?? 'Defender Deck',
-        winnerUid,
-        challengerScore: resolution.challengerScore,
-        defenderScore: resolution.defenderScore,
-        wagerPoints: resolution.wagerPoints,
-        winningDeckCardIds: resolution.winningDeckCardIds,
-        challengerCardResolutions: resolution.challengerCardResolutions,
-        defenderCardResolutions: resolution.defenderCardResolutions,
-        createdAt: now,
-      };
-
-      tx.set(adminDb.collection('battleResults').doc(battleId), {
-        ...result,
-        _ts: FieldValue.serverTimestamp(),
-      });
-      tx.delete(challengerArenaRef);
-      tx.delete(defenderArenaRef);
-      tx.update(challengerDeckRef, { battleReady: false, updatedAt: now });
-      tx.update(defenderDeckRef, { battleReady: false, updatedAt: now });
-
-      return result;
-    });
-
-    res.status(201).json(result);
-  } catch (error) {
-    console.error('Battle resolution error:', error);
-    res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to resolve battle.' });
-  }
 });
 
 // Health-check route — required so Render's uptime ping returns 200 instead of
