@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Archetype, CardPrompts, CardPayload, Rarity, District, Gender, AgeGroup, BodyType, Faction, HairLength, SkinTone, FaceCharacter } from "../lib/types";
 import { buildCharacterSeed, generateCard } from "../lib/generator";
@@ -6,10 +6,8 @@ import { CardDisplay } from "../components/CardDisplay";
 import { CardViewer3D } from "../components/CardViewer3D";
 import { PrintModal } from "../components/PrintModal";
 import { ReferralPanel } from "../components/ReferralPanel";
-import { generateImage, removeBackground, isImageGenConfigured, getImageDimensions, type ImageGenOptions } from "../services/imageGen";
-import { getCachedImage, setCachedImage } from "../services/imageCache";
+import { removeBackground, isImageGenConfigured, type ImageGenOptions } from "../services/imageGen";
 import { generateGouacheBoard } from "../services/boardImageGen";
-import { getStaticBackgroundUrl, getStaticBackgroundSmallUrl, getStaticFrameUrl } from "../services/staticAssets";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../lib/promptBuilder";
 import { useTier } from "../context/TierContext";
 import { useAuth } from "../context/AuthContext";
@@ -24,6 +22,8 @@ import { calculateBoardStats } from "../lib/boardBuilder";
 import { buildRandomBoardConfig, getRandomItemExcluding } from "../lib/cardForgeRandom";
 import { resolveArchetypeStyle } from "../lib/styles";
 import { sfxSuccessPing, sfxSuccess, sfxError, sfxClick } from "../lib/sfx";
+import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
+import { createCharacterLayerValidator, useForgeLayers } from "./cardForge/useForgeLayers";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
@@ -38,10 +38,6 @@ const RANDOM_SKATER_TOOLTIP = "Randomizes the Character loadout and the Board lo
 
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#3366ff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
-// ── Image generation layer helpers ─────────────────────────────────────────────
-
-/** Maximum number of automatic retries per layer when a cached URL fails to load. */
-const MAX_LAYER_RETRIES = 1;
 const CHARACTER_CACHE_VERSION = "v4-dynamic-pose";
 const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
   imageSize: { width: 1088, height: 1536 },
@@ -54,38 +50,6 @@ const NON_LORA_GENERATION_OPTIONS: ImageGenOptions = {
 };
 const CHARACTER_MIN_DIMENSIONS = { width: 1088, height: 1536 };
 const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
-
-/** Converts a display name to a kebab-case filename stem (e.g. "The Grid" → "the-grid"). */
-function toFileSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, "-");
-}
-
-interface LayerState {
-  backgroundUrl?: string;
-  /** Full print-quality background URL (1536 × 2048 px). Only set when a
-   *  screen-quality small variant is available; used for print / download. */
-  backgroundPrintUrl?: string;
-  characterUrl?: string;
-  frameUrl?: string;
-  loading: { background: boolean; character: boolean; frame: boolean };
-  errors: string[];
-}
-
-/** Per-layer generation parameters stored for retry use by handleLayerError. */
-interface LayerGenParams {
-  key: string;
-  prompt: string;
-  seed?: string;
-  attempts?: Array<{ seed: string; generationOptions?: ImageGenOptions }>;
-  postProcess?: (url: string) => Promise<string>;
-  validateResult?: (url: string) => Promise<void>;
-  generationOptions?: ImageGenOptions;
-}
-
-const INITIAL_LAYER_STATE: LayerState = {
-  loading: { background: false, character: false, frame: false },
-  errors: [],
-};
 
 export function CardForge() {
   const { tier, canForge, generateCredits, consumeCredit, openUpgradeModal, freeCardUsed, markFreeCardUsed } = useTier();
@@ -102,7 +66,6 @@ export function CardForge() {
   });
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [generated, setGenerated] = useState<CardPayload | null>(null);
-  const [layers, setLayers] = useState<LayerState>(INITIAL_LAYER_STATE);
   const [characterBlend, setCharacterBlend] = useState(1);
   const [forging, setForging] = useState(false);
   const [viewing3D, setViewing3D] = useState(false);
@@ -116,6 +79,16 @@ export function CardForge() {
   const [showWelcome, setShowWelcome] = useState(
     () => localStorage.getItem("forge-welcome-dismissed") !== "1"
   );
+  const {
+    abortRef,
+    generateLayer,
+    handleLayerError,
+    hasAnyLayerUrl,
+    isAnyLayerLoading,
+    layers,
+    resetLayerSession,
+    setLayerParams,
+  } = useForgeLayers();
 
   const closeWelcome = useCallback(() => {
     localStorage.setItem("forge-welcome-dismissed", "1");
@@ -132,26 +105,6 @@ export function CardForge() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showWelcome, closeWelcome]);
 
-  // Abort controller ref for cancelling in-flight image generation
-  const abortRef = useRef<AbortController | null>(null);
-
-  // Per-layer retry tracking — each entry is the number of retries attempted for
-  // the current forge session.  Reset when handleForge starts a fresh forge.
-  const retryCountRef = useRef<Record<"background" | "character" | "frame", number>>({
-    background: 0, character: 0, frame: 0,
-  });
-
-  // Parameters stored for each layer so the retry handler can re-trigger
-  // generation without re-running the full forge flow.
-  const layerParamsRef = useRef<Record<"background" | "character" | "frame", LayerGenParams | null>>({
-    background: null, character: null, frame: null,
-  });
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => { abortRef.current?.abort(); };
-  }, []);
-
   const set = <K extends keyof CardPrompts>(key: K, val: CardPrompts[K]) =>
     setPrompts((p) => ({ ...p, [key]: val }));
   const setArchetype = (archetype: Archetype) =>
@@ -160,147 +113,6 @@ export function CardForge() {
       archetype,
       style: resolveArchetypeStyle(archetype, current.style),
     }));
-
-  // ── Generate a single layer (background, character, or frame) ────────────
-  const generateLayer = useCallback(
-    async (
-      layer: "background" | "character" | "frame",
-      cacheKey: string,
-      prompt: string,
-      seed: string | undefined,
-      signal: AbortSignal,
-      postProcess?: (url: string) => Promise<string>,
-      validateResult?: (url: string) => Promise<void>,
-      generationOptions?: ImageGenOptions,
-      attempts?: Array<{ seed: string; generationOptions?: ImageGenOptions }>,
-      skipCache = false,
-    ) => {
-      setLayers((s) => ({ ...s, loading: { ...s.loading, [layer]: true } }));
-      try {
-        if (!skipCache) {
-          // 1. Check for a pre-loaded static asset (served from public/assets/).
-          //    These are permanent files that never expire and consume no credits.
-          //    For backgrounds we prefer the screen-quality small variant for
-          //    display and keep the full-size URL as backgroundPrintUrl for
-          //    print / download.
-          const staticUrl =
-            layer === "background"
-              ? getStaticBackgroundUrl(seed as District)
-              : layer === "frame"
-              ? getStaticFrameUrl(seed as Rarity)
-              : null;
-
-          if (staticUrl) {
-            if (signal.aborted) return;
-            if (layer === "background") {
-              const smallUrl = getStaticBackgroundSmallUrl(seed as District);
-              setLayers((s) => ({
-                ...s,
-                backgroundUrl: smallUrl ?? staticUrl,
-                backgroundPrintUrl: smallUrl ? staticUrl : undefined,
-                loading: { ...s.loading, background: false },
-              }));
-            } else {
-              const urlKey = `${layer}Url` as keyof Pick<LayerState, "characterUrl" | "frameUrl">;
-              setLayers((s) => ({
-                ...s,
-                [urlKey]: staticUrl,
-                loading: { ...s.loading, [layer]: false },
-              }));
-            }
-            return;
-          }
-
-          // 2. Check the Firestore cache (write-once, shared across users).
-          const cached = await getCachedImage(cacheKey);
-          if (signal.aborted) return;
-          if (cached) {
-            const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
-            setLayers((s) => ({
-              ...s,
-              [urlKey]: cached,
-              loading: { ...s.loading, [layer]: false },
-            }));
-            return;
-          }
-        }
-
-        // 3. Generate via Fal.ai
-        const seedAttempts = attempts?.length
-          ? attempts
-          : seed
-            ? [{ seed, generationOptions }]
-            : [];
-
-        if (seedAttempts.length === 0) {
-          throw new Error(`No generation seed configured for ${layer} layer.`);
-        }
-
-        let finalUrl: string | null = null;
-        let lastGenerationError: unknown = null;
-
-        for (const attempt of seedAttempts) {
-          try {
-            const result = await generateImage(prompt, attempt.seed, attempt.generationOptions ?? generationOptions);
-            if (signal.aborted) return;
-
-            let candidateUrl = result.imageUrl;
-
-            // Post-process (e.g., background removal for character layer)
-            if (postProcess) {
-              candidateUrl = await postProcess(candidateUrl);
-              if (signal.aborted) return;
-            }
-
-            if (validateResult) {
-              await validateResult(candidateUrl);
-              if (signal.aborted) return;
-            }
-
-            finalUrl = candidateUrl;
-            break;
-          } catch (err) {
-            lastGenerationError = err;
-          }
-        }
-
-        if (!finalUrl) {
-          throw lastGenerationError ?? new Error(`Failed to generate ${layer} layer.`);
-        }
-
-        // Log the URL so users can download and save as a static asset
-        if (layer === "background") {
-          console.info(`[StaticAsset] Generated background for ${seed}: ${finalUrl}`);
-          console.info(`  → Download and save to public/assets/backgrounds/${toFileSlug(seed)}.webp`);
-          console.info(`  → Then register it in src/services/staticAssets.ts`);
-        } else if (layer === "frame") {
-          console.info(`[StaticAsset] Generated frame for ${seed}: ${finalUrl}`);
-          console.info(`  → Download and save to public/assets/frames/${toFileSlug(seed)}.webp`);
-          console.info(`  → Then register it in src/services/staticAssets.ts`);
-        }
-
-        // Cache the result in Firestore (write-once; a concurrent write for the same
-        // key is harmless — the second write is silently rejected by the security rule)
-        await setCachedImage(cacheKey, finalUrl, { prompt, layer, seed });
-
-        const urlKey = `${layer}Url` as keyof Pick<LayerState, "backgroundUrl" | "characterUrl" | "frameUrl">;
-        setLayers((s) => ({
-          ...s,
-          [urlKey]: finalUrl,
-          loading: { ...s.loading, [layer]: false },
-        }));
-      } catch (err) {
-        if (signal.aborted) return;
-        const msg = err instanceof Error ? err.message : String(err);
-        setLayers((s) => ({
-          ...s,
-          loading: { ...s.loading, [layer]: false },
-          errors: [...s.errors, `${layer}: ${msg}`],
-        }));
-      }
-    },
-    [],
-  );
 
   // ── Main forge handler ───────────────────────────────────────────────────
   const handleForge = useCallback(() => {
@@ -353,11 +165,7 @@ export function CardForge() {
       consumeCredit();
     }
 
-    // Reset layer state
-    setLayers(INITIAL_LAYER_STATE);
-
-    // Reset per-layer retry counts for this new forge session
-    retryCountRef.current = { background: 0, character: 0, frame: 0 };
+    resetLayerSession();
 
     if (!isImageGenConfigured) {
       setForging(false);
@@ -382,21 +190,14 @@ export function CardForge() {
       const result = await removeBackground(url);
       return result.imageUrl;
     };
-    const validateCharacterLayer = async (url: string) => {
-      const { width, height } = await getImageDimensions(url);
-      if (width < CHARACTER_MIN_DIMENSIONS.width || height < CHARACTER_MIN_DIMENSIONS.height) {
-        throw new Error(
-          `Character layer dimensions ${width}×${height} are below the minimum ${CHARACTER_MIN_DIMENSIONS.width}×${CHARACTER_MIN_DIMENSIONS.height}.`,
-        );
-      }
-    };
+    const validateCharacterLayer = createCharacterLayerValidator(CHARACTER_MIN_DIMENSIONS);
     const charAttempts = CHARACTER_SEED_VARIANTS.map((variant) => ({
       seed: `${charSeed}|${variant}`,
       generationOptions: CHARACTER_GENERATION_OPTIONS,
     }));
 
     // Store params so handleLayerError can retry without re-running handleForge
-    layerParamsRef.current = {
+    setLayerParams({
       background: { key: bgKey,    prompt: bgPrompt,    seed: bgSeed    },
       character:  {
         key: charKey,
@@ -413,7 +214,7 @@ export function CardForge() {
         seed: frameSeed,
         generationOptions: NON_LORA_GENERATION_OPTIONS,
       },
-    };
+    });
 
     // Background layer
     generateLayer("background", bgKey, bgPrompt, bgSeed, signal);
@@ -447,50 +248,7 @@ export function CardForge() {
     })();
 
     setForging(false);
-  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction, user?.uid, tier, freeCardUsed, markFreeCardUsed]);
-
-  // ── Expired-URL retry handler ────────────────────────────────────────────
-  // Called when a composite img element fires onError (e.g. fal.ai CDN URL has
-  // expired).  Bypasses the Firestore cache and re-generates from fal.ai.
-  // Limited to one retry per layer per forge session to prevent infinite loops.
-  const handleLayerError = useCallback(
-    (layer: "background" | "character" | "frame") => {
-      const params = layerParamsRef.current?.[layer];
-      if (!params) return;
-
-      // Only retry once per layer per forge session
-      if (retryCountRef.current[layer] >= MAX_LAYER_RETRIES) return;
-      retryCountRef.current[layer] += 1;
-
-      // Clear the broken URL and errors, then re-generate skipping cache
-      setLayers((s) => ({
-        ...s,
-        [`${layer}Url`]: undefined,
-        errors: s.errors.filter((e) => !e.startsWith(`${layer}:`)),
-      }));
-
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      generateLayer(
-        layer,
-        params.key,
-        params.prompt,
-        params.seed,
-        controller.signal,
-        params.postProcess,
-        params.validateResult,
-        params.generationOptions,
-        params.attempts,
-        true, // skipCache — bypass the expired Firestore URL
-      );
-    },
-    [generateLayer],
-  );
-
-  // ── Derive UI state ──────────────────────────────────────────────────────
-  const isAnyLayerLoading = layers.loading.background || layers.loading.character || layers.loading.frame;
-  const hasAnyLayerUrl = !!(layers.backgroundUrl || layers.characterUrl || layers.frameUrl);
+  }, [prompts, boardConfig, generateLayer, canForge, generateCredits, consumeCredit, openUpgradeModal, hasFaction, unlockFaction, user?.uid, tier, freeCardUsed, markFreeCardUsed, resetLayerSession, setLayerParams, abortRef]);
 
   // ── Save to Collection ───────────────────────────────────────────────────
   const handleSaveToCollection = useCallback(async () => {
@@ -585,54 +343,7 @@ export function CardForge() {
       <h1 className="page-title">CARD FORGE</h1>
       <p className="page-sub">Configure your Sk8r and forge a unique card</p>
 
-      {showWelcome && (
-        <div
-          className="modal-overlay forge-welcome-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="forge-welcome-title"
-          onClick={closeWelcome}
-        >
-          <div className="modal-panel forge-welcome-panel" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="close-btn modal-close"
-              aria-label="Close welcome"
-              onClick={closeWelcome}
-            >
-              ✕
-            </button>
-            <div className="forge-welcome__eyebrow">Start Here</div>
-            <h2 id="forge-welcome-title" className="forge-welcome__title">Welcome to Punch Skater, rookie.</h2>
-            <p className="forge-welcome__lede">
-              The Card Forge is where you build your first deck, uncover hidden factions, and chase wild new combos across more than 4 million possible character variations.
-            </p>
-            <div className="forge-welcome__grid">
-              <div className="forge-welcome__item">
-                <h3>What</h3>
-                <p>Create Punch Skater cards, upgrade your squad with a Master card, and assemble a six-card deck built for missions, battles, and trades.</p>
-              </div>
-              <div className="forge-welcome__item">
-                <h3>How</h3>
-                <p>Start by forging 5 Punch Skater class cards and 1 Master class card, then tune their look, district, and board loadout before you lock them into your lineup.</p>
-              </div>
-              <div className="forge-welcome__item">
-                <h3>Why</h3>
-                <p>Earn points and power-ups on Missions, bring your best deck into the Battle Arena, and trade for the cards that complete your next big strategy.</p>
-              </div>
-            </div>
-            <div className="forge-welcome__actions">
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={closeWelcome}
-              >
-                Got it, let's forge
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
 
       <div className="forge-quick-actions">
         <button

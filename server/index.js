@@ -27,6 +27,8 @@ import {
   sanitizeFalRequestConfig,
 } from './lib/fal.js';
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
+import { registerAdminRoutes } from './routes/admin.js';
+import { registerPaymentRoutes } from './routes/payments.js';
 
 // Load the shared pricing config — the single source of truth for Stripe
 // price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
@@ -118,62 +120,6 @@ app.use(cors({
     callback(new Error('CORS origin is not allowed.'));
   },
 }));
-
-// Stripe webhook signature verification needs the exact raw request body, so
-// this route must stay ahead of JSON parsing middleware.
-app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '256kb' }), async (req, res) => {
-  if (!stripe || !stripeWebhookSecret) {
-    res.status(503).json({ error: 'Stripe webhook handling is not configured.' });
-    return;
-  }
-
-  const signature = req.headers['stripe-signature'];
-  if (typeof signature !== 'string' || !signature.trim()) {
-    res.status(400).json({ error: 'Missing Stripe signature.' });
-    return;
-  }
-
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, signature, stripeWebhookSecret);
-  } catch (error) {
-    console.error('Stripe webhook signature verification failed:', error);
-    res.status(400).json({ error: 'Invalid Stripe signature.' });
-    return;
-  }
-
-  try {
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      let paidTier = resolveTierFromPriceId(session.metadata?.priceId);
-      if (!paidTier) {
-        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-        const fallbackPriceId = lineItems.data[0]?.price?.id ?? '';
-        paidTier = resolveTierFromPriceId(fallbackPriceId);
-      }
-      const customerEmail = typeof session.customer_details?.email === 'string'
-        ? session.customer_details.email
-        : typeof session.customer_email === 'string'
-          ? session.customer_email
-          : '';
-      if (paidTier && session.payment_status === 'paid') {
-        await syncPurchasedTier({
-          tier: paidTier,
-          email: customerEmail,
-          sessionId: session.id,
-        });
-      }
-    }
-
-    res.json({ received: true });
-  } catch (error) {
-    console.error('Stripe webhook handling failed:', error);
-    res.status(500).json({ error: 'Failed to process Stripe webhook.' });
-  }
-});
-
-app.use(compression());
-app.use(express.json({ limit: '256kb' }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 const { store: sharedRateLimitStore } = createRateLimitStore(REDIS_URL);
@@ -548,6 +494,21 @@ function sendCheckoutVerificationFailure(res) {
   res.status(409).json({ error: 'Checkout session could not be verified.' });
 }
 
+registerPaymentRoutes(app, {
+  stripe,
+  stripeWebhookSecret,
+  checkoutRateLimit,
+  resolveTierFromPriceId,
+  syncPurchasedTier,
+  isAllowedRedirectUrl,
+  normalizeEmail,
+  timingSafeEmailMatches,
+  sendCheckoutVerificationFailure,
+});
+
+app.use(compression());
+app.use(express.json({ limit: '256kb' }));
+
 if (!FAL_KEY) {
   console.warn('⚠️  FAL_KEY environment variable is not set — requests will be rejected by Fal.ai.');
 } else {
@@ -705,21 +666,6 @@ async function authenticateAdminRequest(req) {
   return decodedToken;
 }
 
-app.post('/api/auth/sync-session', authSyncRateLimit, async (req, res) => {
-  if (!adminAuth) {
-    res.status(503).json({ error: 'Firebase Admin authentication is not configured.' });
-    return;
-  }
-
-  try {
-    const decodedToken = await authenticateFirebaseUser(req);
-    const claimSync = await syncAdminClaim(decodedToken.uid, decodedToken.email ?? '');
-    res.json(claimSync);
-  } catch (error) {
-    res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to sync auth session.' });
-  }
-});
-
 async function deleteCollectionDocs(collectionRef, pageSize = 200) {
   while (true) {
     const snap = await collectionRef.limit(pageSize).get();
@@ -741,6 +687,21 @@ async function deleteQueryDocs(queryRef, pageSize = 200) {
     if (snap.size < pageSize) return;
   }
 }
+
+registerAdminRoutes(app, {
+  adminAuth,
+  adminDb,
+  authSyncRateLimit,
+  adminUserRateLimit,
+  authenticateFirebaseUser,
+  authenticateAdminRequest,
+  syncAdminClaim,
+  isStrongPassword,
+  buildUserDisplayName,
+  upsertUserLookupRecord,
+  deleteCollectionDocs,
+  deleteQueryDocs,
+});
 
 function roundWeatherMetric(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) return null;
@@ -1394,229 +1355,6 @@ app.post('/api/resolve-battle', battleRateLimit, async (req, res) => {
   } catch (error) {
     console.error('Battle resolution error:', error);
     res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to resolve battle.' });
-  }
-});
-
-// ── Stripe Checkout Sessions ──────────────────────────────────────────────────
-// Creates a Stripe Checkout Session for one of the two allowed price IDs and
-// returns the hosted payment page URL.  The caller supplies success_url and
-// cancel_url so the user is returned to the correct page after payment.
-app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => {
-  if (!stripe) {
-    res.status(503).json({ error: 'Payment processing is not configured.' });
-    return;
-  }
-
-  const { priceId, successUrl, cancelUrl, email } = req.body ?? {};
-  const normalizedEmail = normalizeEmail(email);
-  const paidTier = resolveTierFromPriceId(priceId);
-
-  if (!priceId || typeof priceId !== 'string' || !paidTier) {
-    res.status(400).json({ error: 'Invalid or unsupported price ID.' });
-    return;
-  }
-
-  if (!isAllowedRedirectUrl(successUrl) || !isAllowedRedirectUrl(cancelUrl)) {
-    res.status(400).json({ error: 'successUrl and cancelUrl must use an approved application origin.' });
-    return;
-  }
-
-  try {
-    const session = await stripe.checkout.sessions.create({
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: 'payment',
-      ...(typeof email === 'string' && email.trim()
-        ? { customer_email: email.trim() }
-        : {}),
-      metadata: {
-        priceId,
-        paidTier,
-        ...(normalizedEmail ? { emailLower: normalizedEmail } : {}),
-      },
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-    });
-    res.json({ url: session.url });
-  } catch (err) {
-    console.error('Stripe checkout error:', err);
-    res.status(500).json({ error: 'Failed to create checkout session.' });
-  }
-});
-
-app.get('/api/verify-checkout-session', checkoutRateLimit, async (req, res) => {
-  if (!stripe) {
-    res.status(503).json({ error: 'Payment processing is not configured.' });
-    return;
-  }
-
-  const sessionId = typeof req.query.session_id === 'string' ? req.query.session_id.trim() : '';
-  const expectedEmail = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
-  if (!sessionId) {
-    res.status(400).json({ error: 'session_id is required.' });
-    return;
-  }
-  if (!expectedEmail) {
-    res.status(400).json({ error: 'email is required.' });
-    return;
-  }
-
-  try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
-    const priceId = lineItems.data[0]?.price?.id;
-    const paidTier = resolveTierFromPriceId(priceId);
-    const sessionEmail = (session.customer_details?.email ?? session.customer_email ?? '').trim().toLowerCase();
-
-    if (
-      !priceId ||
-      !paidTier ||
-      session.payment_status !== 'paid' ||
-      !sessionEmail ||
-      !timingSafeEmailMatches(sessionEmail, expectedEmail)
-    ) {
-      console.warn('Stripe checkout verification rejected.', {
-        sessionId,
-        hasPriceId: Boolean(priceId),
-        hasPaidTier: Boolean(paidTier),
-        paymentStatus: session.payment_status,
-        hasSessionEmail: Boolean(sessionEmail),
-      });
-      sendCheckoutVerificationFailure(res);
-      return;
-    }
-
-    await syncPurchasedTier({
-      tier: paidTier,
-      email: sessionEmail,
-      sessionId,
-    });
-    res.json({
-      tier: paidTier,
-      email: sessionEmail,
-    });
-  } catch (err) {
-    console.error('Stripe checkout verification error:', err);
-    res.status(500).json({ error: 'Failed to verify checkout session.' });
-  }
-});
-
-// ── Admin: Create user ────────────────────────────────────────────────────────
-// Creates a new Firebase Auth user on behalf of an authenticated admin.
-// The caller must supply a valid Firebase ID token in the Authorization header.
-// Custom admin claims are preferred, with the configured admin-email allow-list
-// acting as a bootstrap path until the claim has been refreshed on the client.
-app.post('/api/admin/create-user', adminUserRateLimit, async (req, res) => {
-  if (!adminAuth) {
-    res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
-    return;
-  }
-
-  try {
-    await authenticateAdminRequest(req);
-  } catch (error) {
-    res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
-    return;
-  }
-
-  const { email, password } = req.body ?? {};
-  if (!email || typeof email !== 'string') {
-    res.status(400).json({ error: 'email is required.' });
-    return;
-  }
-  if (!isStrongPassword(password)) {
-    res.status(400).json({ error: 'password must be at least 12 characters and include upper, lower, number, and symbol.' });
-    return;
-  }
-
-  try {
-    const userRecord = await adminAuth.createUser({
-      email: email.trim(),
-      password,
-    });
-    await upsertUserLookupRecord({
-      uid: userRecord.uid,
-      email: userRecord.email ?? email.trim(),
-      displayName: buildUserDisplayName({ email: userRecord.email ?? email.trim() }),
-    });
-    await syncAdminClaim(userRecord.uid, userRecord.email ?? email.trim());
-    res.status(201).json({ uid: userRecord.uid, email: userRecord.email ?? email.trim() });
-  } catch (err) {
-    console.error('Create user error:', err);
-    if (err?.code === 'auth/email-already-exists') {
-      res.status(400).json({ error: 'An account with that email already exists.' });
-      return;
-    }
-    if (err?.code === 'auth/invalid-password') {
-      res.status(400).json({ error: err.message ?? 'Password does not meet Firebase requirements.' });
-      return;
-    }
-    res.status(500).json({ error: 'Failed to create user.' });
-  }
-});
-
-app.post('/api/admin/delete-user', adminUserRateLimit, async (req, res) => {
-  if (!adminAuth || !adminDb) {
-    res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
-    return;
-  }
-
-  let caller;
-  try {
-    caller = await authenticateAdminRequest(req);
-  } catch (error) {
-    const statusCode = error?.statusCode ?? 500;
-    res.status(statusCode).json({ error: error.message ?? 'Could not verify admin access.' });
-    return;
-  }
-
-  const uid = typeof req.body?.uid === 'string' ? req.body.uid.trim() : '';
-  if (!uid) {
-    res.status(400).json({ error: 'uid is required.' });
-    return;
-  }
-  if (uid === caller.uid) {
-    res.status(400).json({ error: 'You cannot delete the account you are currently using.' });
-    return;
-  }
-
-  let userRecord;
-  try {
-    userRecord = await adminAuth.getUser(uid);
-  } catch (error) {
-    if (error?.code === 'auth/user-not-found') {
-      res.status(404).json({ error: 'User not found.' });
-      return;
-    }
-    console.error('Admin delete-user lookup failed:', error);
-    res.status(500).json({ error: 'Failed to load user.' });
-    return;
-  }
-
-  try {
-    const userDocRef = adminDb.collection('users').doc(uid);
-    await Promise.all([
-      deleteCollectionDocs(userDocRef.collection('cards')),
-      deleteCollectionDocs(userDocRef.collection('decks')),
-      deleteQueryDocs(adminDb.collection('trades').where('fromUid', '==', uid)),
-      deleteQueryDocs(adminDb.collection('trades').where('toUid', '==', uid)),
-      deleteQueryDocs(adminDb.collection('battleResults').where('challengerUid', '==', uid)),
-      deleteQueryDocs(adminDb.collection('battleResults').where('defenderUid', '==', uid)),
-      deleteQueryDocs(adminDb.collection('referralClaims').where('referrerUid', '==', uid)),
-    ]);
-
-    await Promise.all([
-      userDocRef.delete(),
-      adminDb.collection('userProfiles').doc(uid).delete(),
-      adminDb.collection('userLookup').doc(uid).delete(),
-      adminDb.collection('arena').doc(uid).delete(),
-      adminDb.collection('leaderboard').doc(uid).delete(),
-    ]);
-
-    await adminAuth.deleteUser(uid);
-    res.json({ uid, email: userRecord.email ?? '' });
-  } catch (error) {
-    console.error('Admin delete-user failed:', error);
-    res.status(500).json({ error: 'Failed to delete user.' });
   }
 });
 
