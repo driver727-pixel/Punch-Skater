@@ -116,7 +116,7 @@ export function createFalRequestConfigLoader({
     try {
       const upstream = await fetchImpl(configUrl);
       if (!upstream.ok) {
-        throw new Error(`Remote Fal config fetch from ${configUrl} failed with ${upstream.status} ${upstream.statusText}.`);
+        throw new Error(`Remote FAL config fetch from ${configUrl} failed with ${upstream.status} ${upstream.statusText}.`);
       }
 
       const payload = await upstream.json();
