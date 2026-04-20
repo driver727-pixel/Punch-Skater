@@ -79,17 +79,19 @@ function getFallbackDisplayName(user: User): string {
 async function upsertUserProfile(user: User) {
   if (!db) return;
   const email = user.email ?? "";
+  const emailLower = email.trim().toLowerCase();
+  const displayName = getFallbackDisplayName(user);
   const profilePayload = {
     uid: user.uid,
     email,
-    emailLower: email.trim().toLowerCase(),
-    displayName: getFallbackDisplayName(user),
+    emailLower,
+    displayName,
     updatedAt: serverTimestamp(),
   };
   const lookupPayload = {
     uid: user.uid,
-    emailLower: email.trim().toLowerCase(),
-    displayName: getFallbackDisplayName(user),
+    emailLower,
+    displayName,
     updatedAt: serverTimestamp(),
   };
   await Promise.all([

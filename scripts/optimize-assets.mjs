@@ -36,6 +36,8 @@ async function optimizeImage(filePath) {
   }
 
   await sharp(filePath)
+    // Respect EXIF orientation on uploaded photography while leaving assets
+    // without orientation metadata unchanged.
     .rotate()
     .webp({ quality: WEBP_QUALITY, effort: 6 })
     .toFile(targetPath);

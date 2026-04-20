@@ -145,7 +145,12 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      const paidTier = resolveTierFromPriceId(session.metadata?.priceId);
+      let paidTier = resolveTierFromPriceId(session.metadata?.priceId);
+      if (!paidTier) {
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+        const fallbackPriceId = lineItems.data[0]?.price?.id ?? '';
+        paidTier = resolveTierFromPriceId(fallbackPriceId);
+      }
       const customerEmail = typeof session.customer_details?.email === 'string'
         ? session.customer_details.email
         : typeof session.customer_email === 'string'
