@@ -81,7 +81,7 @@ cd /path/to/Punch-Skater
 npm install
 npm run lint
 npm run build
-npm run optimize:assets   # optional: generate .webp siblings for public/assets
+WEBP_QUALITY=72 npm run optimize:assets   # optional: generate .webp siblings for public/assets
 npx playwright install chromium
 npm run test:e2e
 ```

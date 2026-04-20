@@ -54,6 +54,10 @@ const ALLOWED_REMOTE_IMAGE_HOST_PATTERNS = [
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 const boardImageJobs = new Map();
 
+function normalizeEmail(value) {
+  return getTrimmedString(value, 320).toLowerCase();
+}
+
 // Render (and most PaaS reverse-proxies) add X-Forwarded-For so Express can
 // determine the real client IP.  Without trust proxy = 1, express-rate-limit
 // throws a ValidationError and rate-limiting cannot identify callers correctly.
@@ -103,6 +107,8 @@ app.use(cors({
   },
 }));
 
+// Stripe webhook signature verification needs the exact raw request body, so
+// this route must stay ahead of JSON parsing middleware.
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '256kb' }), async (req, res) => {
   if (!stripe || !stripeWebhookSecret) {
     res.status(503).json({ error: 'Stripe webhook handling is not configured.' });
@@ -473,7 +479,7 @@ function pruneBoardImageJobs(now = Date.now()) {
 
 async function syncPurchasedTier({ tier, email, sessionId }) {
   if (!adminDb || !tier) return;
-  const normalizedEmail = getTrimmedString(email, 320).toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return;
   const exactEmail = getTrimmedString(email, 320);
   const snapshots = await Promise.all([
@@ -933,13 +939,13 @@ async function fetchDistrictWeatherSnapshot(district, location) {
 }
 
 async function buildDistrictWeatherPayload() {
-  const districtResults = await Promise.allSettled(
+  const districtFetchResults = await Promise.allSettled(
     Object.entries(DISTRICT_WEATHER_LOCATIONS).map(([district, location]) =>
       fetchDistrictWeatherSnapshot(district, location),
     ),
   );
   const fallbackGeneratedAt = new Date().toISOString();
-  const districts = districtResults.map((result, index) => {
+  const districts = districtFetchResults.map((result, index) => {
     const [district, location] = Object.entries(DISTRICT_WEATHER_LOCATIONS)[index];
     if (result.status === 'fulfilled') {
       return result.value;
@@ -959,7 +965,7 @@ async function buildDistrictWeatherPayload() {
       source: 'fallback',
     };
   });
-  const stale = districtResults.some((result) => result.status === 'rejected');
+  const stale = districtFetchResults.some((result) => result.status === 'rejected');
 
   return {
     generatedAt: new Date().toISOString(),
@@ -1127,6 +1133,8 @@ app.post('/api/generate-board-image', imageRateLimit, async (req, res) => {
       },
     });
 
+    // Board-image ownership is tracked in memory only; after a process restart,
+    // pending jobs must be resubmitted so they can be associated with a caller.
     pruneBoardImageJobs();
     boardImageJobs.set(jobId, {
       uid: caller.uid,
@@ -1448,7 +1456,7 @@ app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => 
   }
 
   const { priceId, successUrl, cancelUrl, email } = req.body ?? {};
-  const normalizedEmail = getTrimmedString(email, 320).toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   const paidTier = resolveTierFromPriceId(priceId);
 
   if (!priceId || typeof priceId !== 'string' || !ALLOWED_PRICE_IDS.has(priceId) || !paidTier) {

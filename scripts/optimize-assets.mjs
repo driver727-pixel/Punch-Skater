@@ -5,6 +5,8 @@ import sharp from 'sharp';
 const repoRoot = path.resolve(new URL('..', import.meta.url).pathname);
 const assetsRoot = path.join(repoRoot, 'public', 'assets');
 const SUPPORTED_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg']);
+// q=72 keeps transparent UI assets visibly crisp while still cutting most of
+// the oversized source images down enough for fast browser delivery.
 const WEBP_QUALITY = Number.parseInt(process.env.WEBP_QUALITY || '72', 10);
 const SKIP_DIRS = new Set(['small']);
 

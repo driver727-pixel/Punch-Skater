@@ -86,6 +86,8 @@ export async function setCachedImage(
   if (!db || !auth?.currentUser) return;
   try {
     const ref = doc(db, COLLECTION, encodeKey(cacheKey));
+    // Avoid a doomed write when another user has already populated this
+    // immutable cache entry; the extra read is cheaper than a rejected write.
     const existing = await getDoc(ref);
     if (existing.exists()) return;
     const data: Record<string, unknown> = {
