@@ -4,7 +4,7 @@
  * Assembly-line board loadout builder powered by five stacked ConveyorCarousel
  * belts:  Decks (top) → Drivetrains → Motors → Wheels → Batteries (bottom).
  *
- * Each conveyor belt item displays the real product WebP directly on the button,
+ * Each conveyor belt item displays the real product image directly on the button,
  * replacing the old emoji icon and the separate composite preview grid.
  *
  * A PowerSwitchButton at the bottom triggers a satisfying animation sequence
@@ -18,6 +18,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { BoardConfig, BoardLoadout } from "../lib/boardBuilder";
 import {
+  BOARD_COMPONENT_IMAGE_URLS,
   BOARD_TYPE_OPTIONS,
   DRIVETRAIN_OPTIONS,
   MOTOR_OPTIONS,
@@ -29,7 +30,6 @@ import {
   getAllowedComponents,
   validateBoardCompatibility,
 } from "../lib/boardBuilder";
-import { withBoardComponentAssetVersion } from "../lib/boardAssetVersion";
 import { ConveyorCarousel } from "./ConveyorCarousel";
 import { PowerSwitchButton } from "./PowerSwitchButton";
 import type { CarouselItem } from "./ConveyorCarousel";
@@ -45,25 +45,11 @@ interface BoardBuilderProps {
 
 // Map each option array into the slim shape ConveyorCarousel expects.
 const COMPONENT_IMAGE_URLS = {
-  Street: withBoardComponentAssetVersion("/assets/boards/deck/street-carbon.webp"),
-  AT: withBoardComponentAssetVersion("/assets/boards/deck/at-bamboo.webp"),
-  Mountain: withBoardComponentAssetVersion("/assets/boards/deck/mt-board.webp"),
-  Surf: withBoardComponentAssetVersion("/assets/boards/deck/surf-skate.webp"),
-  Belt: withBoardComponentAssetVersion("/assets/boards/drivetrain/drivetrain-dual-belt-drive.webp"),
-  Hub: withBoardComponentAssetVersion("/assets/boards/drivetrain/hub-drive.webp"),
-  Gear: withBoardComponentAssetVersion("/assets/boards/drivetrain/gear-drive.webp"),
-  "4WD": withBoardComponentAssetVersion("/assets/boards/drivetrain/4wd-drive.webp"),
-  Micro: withBoardComponentAssetVersion("/assets/boards/motor/5055-motor.webp"),
-  Standard: withBoardComponentAssetVersion("/assets/boards/motor/6354-motor.webp"),
-  Torque: withBoardComponentAssetVersion("/assets/boards/motor/6374-motor.webp"),
-  Outrunner: withBoardComponentAssetVersion("/assets/boards/motor/6396-motor.webp"),
-  Urethane: withBoardComponentAssetVersion("/assets/boards/wheels/poly-wheels.webp"),
-  Pneumatic: withBoardComponentAssetVersion("/assets/boards/wheels/pneumatic-wheels.webp"),
-  Rubber: withBoardComponentAssetVersion("/assets/boards/wheels/solid-rubber.webp"),
-  Cloud: withBoardComponentAssetVersion("/assets/boards/wheels/cloud-wheels.webp"),
-  SlimStealth: withBoardComponentAssetVersion("/assets/boards/battery/battery-slim-stealth-pack.webp"),
-  DoubleStack: withBoardComponentAssetVersion("/assets/boards/battery/double-battery.webp"),
-  TopPeli: withBoardComponentAssetVersion("/assets/boards/battery/top-mount-battery.webp"),
+  ...BOARD_COMPONENT_IMAGE_URLS.deck,
+  ...BOARD_COMPONENT_IMAGE_URLS.drivetrain,
+  ...BOARD_COMPONENT_IMAGE_URLS.motor,
+  ...BOARD_COMPONENT_IMAGE_URLS.wheels,
+  ...BOARD_COMPONENT_IMAGE_URLS.battery,
 } as const;
 
 const DECK_ITEMS: CarouselItem[] = BOARD_TYPE_OPTIONS.map((o) => ({

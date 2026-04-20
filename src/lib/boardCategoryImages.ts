@@ -1,11 +1,11 @@
 /**
  * boardCategoryImages.ts
  *
- * Uses the curated WebP images in `public/assets/boards/<category>/` for the
+ * Uses the curated public asset images in `public/assets/boards/<category>/` for the
  * board preview grid.
  *
  * How to add images:
- *   1. Drop any `.webp` file into the matching category folder:
+ *   1. Drop any `.png` or `.webp` file into the matching category folder:
  *        public/assets/boards/motor/        ← motor photos
  *        public/assets/boards/deck/         ← deck photos
  *        public/assets/boards/drivetrain/   ← drivetrain photos
@@ -14,7 +14,7 @@
  *   2. Commit the file and redeploy so browsers can fetch the refreshed assets.
  *
  * File names should contain a keyword that identifies the component they
- * represent (e.g. `carbon-fiber.webp` for the Street deck, `5055-motor.webp`
+ * represent (e.g. `street.png` for the Street deck, `5055-motor.png`
  * for the Micro motor).  `getMatchingCategoryImage` uses this naming
  * convention to return the correct image when a specific component is
  * selected on the conveyor belt.
@@ -23,7 +23,7 @@
  * any image from the folder at random.
  *
  * The preview grid now resolves directly from `public/assets/boards/` so the
- * latest uploaded transparent WebPs are always preferred over older bundled
+ * latest uploaded transparent component images are always preferred over older bundled
  * source assets.
  */
 
@@ -45,37 +45,33 @@ function createCategoryImageMap(
 
 const CATEGORY_GLOBS = {
   deck: createCategoryImageMap("deck", [
-    "street.webp",
-    "street-carbon.webp",
-    "mt-board.webp",
-    "at-bamboo.webp",
-    "surf-skate.webp",
+    "street.png",
+    "mt-board.png",
+    "at-bamboo.png",
+    "surf-skate.png",
   ]),
   drivetrain: createCategoryImageMap("drivetrain", [
-    "gear-drive.webp",
-    "4wd-drive.webp",
-    "hub-drive.webp",
-    "drivetrain-dual-belt-drive.webp",
+    "gear-drive.png",
+    "4wd-drive.png",
+    "hub-drive.png",
+    "drivetrain-dual-belt-drive.png",
   ]),
   motor: createCategoryImageMap("motor", [
-    "6354-motor.webp",
-    "6374-motor.webp",
-    "5055-motor.webp",
-    "6396-motor.webp",
+    "6354-motor.png",
+    "6374-motor.png",
+    "5055-motor.png",
+    "6396-motor.png",
   ]),
   wheels: createCategoryImageMap("wheels", [
-    "pneumatic-wheels.webp",
-    "cloud-wheels.webp",
-    "poly-wheels.webp",
-    "poly-urethane-wheels.webp",
-    "solid-rubber.webp",
+    "pneumatic-wheels-new.png",
+    "cloud-wheels.png",
+    "poly-wheels.png",
+    "solid-rubber.png",
   ]),
   battery: createCategoryImageMap("battery", [
-    "peli.webp",
-    "battery-slim-stealth-pack.webp",
-    "top-mount-battery.webp",
-    "double-battery.webp",
-    "slim-battery.webp",
+    "top-mount-battery.png",
+    "double-battery.png",
+    "slim-battery.png",
   ]),
 } satisfies Record<string, Record<string, string>>;
 
@@ -83,8 +79,8 @@ export type BoardCategory = keyof typeof CATEGORY_GLOBS;
 
 // ── Keyword map ────────────────────────────────────────────────────────────────
 // Maps each component option value to the filename keywords that identify its
-// image.  When a user uploads `5055-motor.webp` the keyword "5055" links it to
-// the "Micro" motor option; "poly" links `poly-wheels.webp` to the "Urethane"
+// image.  When a user uploads `5055-motor.png` the keyword "5055" links it to
+// the "Micro" motor option; "poly" links `poly-wheels.png` to the "Urethane"
 // option (polyurethane), and the matcher still accepts legacy .png/.jpg/.jpeg
 // filenames for backward compatibility while the asset migration settles.
 

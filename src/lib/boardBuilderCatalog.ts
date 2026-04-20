@@ -217,6 +217,39 @@ export const BATTERY_SEED: Record<BatteryType, string | null> = {
   TopPeli: "battery-top-mounted-peli-case",
 };
 
+export const BOARD_COMPONENT_IMAGE_URLS = {
+  deck: {
+    Street: withBoardComponentAssetVersion("/assets/boards/deck/street.png"),
+    AT: withBoardComponentAssetVersion("/assets/boards/deck/at-bamboo.png"),
+    Mountain: withBoardComponentAssetVersion("/assets/boards/deck/mt-board.png"),
+    Surf: withBoardComponentAssetVersion("/assets/boards/deck/surf-skate.png"),
+    Slider: withBoardComponentAssetVersion("/assets/boards/deck/street.png"),
+  } satisfies Record<BoardType, string>,
+  drivetrain: {
+    Belt: withBoardComponentAssetVersion("/assets/boards/drivetrain/drivetrain-dual-belt-drive.png"),
+    Hub: withBoardComponentAssetVersion("/assets/boards/drivetrain/hub-drive.png"),
+    Gear: withBoardComponentAssetVersion("/assets/boards/drivetrain/gear-drive.png"),
+    "4WD": withBoardComponentAssetVersion("/assets/boards/drivetrain/4wd-drive.png"),
+  } satisfies Record<Drivetrain, string>,
+  motor: {
+    Micro: withBoardComponentAssetVersion("/assets/boards/motor/5055-motor.png"),
+    Standard: withBoardComponentAssetVersion("/assets/boards/motor/6354-motor.png"),
+    Torque: withBoardComponentAssetVersion("/assets/boards/motor/6374-motor.png"),
+    Outrunner: withBoardComponentAssetVersion("/assets/boards/motor/6396-motor.png"),
+  } satisfies Record<MotorType, string>,
+  wheels: {
+    Urethane: withBoardComponentAssetVersion("/assets/boards/wheels/poly-wheels.png"),
+    Pneumatic: withBoardComponentAssetVersion("/assets/boards/wheels/pneumatic-wheels-new.png"),
+    Rubber: withBoardComponentAssetVersion("/assets/boards/wheels/solid-rubber.png"),
+    Cloud: withBoardComponentAssetVersion("/assets/boards/wheels/cloud-wheels.png"),
+  } satisfies Record<WheelType, string>,
+  battery: {
+    SlimStealth: withBoardComponentAssetVersion("/assets/boards/battery/slim-battery.png"),
+    DoubleStack: withBoardComponentAssetVersion("/assets/boards/battery/double-battery.png"),
+    TopPeli: withBoardComponentAssetVersion("/assets/boards/battery/top-mount-battery.png"),
+  } satisfies Record<BatteryType, string>,
+} as const;
+
 export function getBoardAssetUrls(config: BoardConfig): {
   deckUrl: string | null;
   drivetrainUrl: string | null;
@@ -234,11 +267,11 @@ export function getBoardAssetUrls(config: BoardConfig): {
   const batteryOpt = BATTERY_OPTIONS.find((option) => option.value === normalizedConfig.battery);
 
   return {
-    deckUrl: deckSeed ? `/assets/boards/${deckSeed}.webp` : null,
-    drivetrainUrl: driveSeed ? `/assets/boards/${driveSeed}.webp` : null,
-    motorUrl: motorSeed ? `/assets/boards/${motorSeed}.webp` : null,
-    wheelsUrl: wheelSeed ? `/assets/boards/${wheelSeed}.webp` : null,
-    batteryUrl: batterySeed ? `/assets/boards/${batterySeed}.webp` : null,
+    deckUrl: deckSeed ? BOARD_COMPONENT_IMAGE_URLS.deck[normalizedConfig.boardType] : null,
+    drivetrainUrl: driveSeed ? BOARD_COMPONENT_IMAGE_URLS.drivetrain[normalizedConfig.drivetrain] : null,
+    motorUrl: motorSeed ? BOARD_COMPONENT_IMAGE_URLS.motor[normalizedConfig.motor] : null,
+    wheelsUrl: wheelSeed ? BOARD_COMPONENT_IMAGE_URLS.wheels[normalizedConfig.wheels] : null,
+    batteryUrl: batterySeed ? BOARD_COMPONENT_IMAGE_URLS.battery[normalizedConfig.battery] : null,
     batteryIsTopMounted: batteryOpt?.isTopMounted ?? false,
   };
 }
@@ -246,10 +279,10 @@ export function getBoardAssetUrls(config: BoardConfig): {
 export function getBoardComponentImageUrls(config: BoardConfig): BoardComponentImageUrls {
   const normalizedConfig = normalizeBoardConfig(config);
   return {
-    deckUrl: withBoardComponentAssetVersion(`/assets/boards/deck/${normalizedConfig.boardType}.webp`),
-    drivetrainUrl: withBoardComponentAssetVersion(`/assets/boards/drivetrain/${normalizedConfig.drivetrain}.webp`),
-    motorUrl: withBoardComponentAssetVersion(`/assets/boards/motor/${normalizedConfig.motor}.webp`),
-    wheelsUrl: withBoardComponentAssetVersion(`/assets/boards/wheels/${normalizedConfig.wheels}.webp`),
-    batteryUrl: withBoardComponentAssetVersion(`/assets/boards/battery/${normalizedConfig.battery}.webp`),
+    deckUrl: BOARD_COMPONENT_IMAGE_URLS.deck[normalizedConfig.boardType],
+    drivetrainUrl: BOARD_COMPONENT_IMAGE_URLS.drivetrain[normalizedConfig.drivetrain],
+    motorUrl: BOARD_COMPONENT_IMAGE_URLS.motor[normalizedConfig.motor],
+    wheelsUrl: BOARD_COMPONENT_IMAGE_URLS.wheels[normalizedConfig.wheels],
+    batteryUrl: BOARD_COMPONENT_IMAGE_URLS.battery[normalizedConfig.battery],
   };
 }

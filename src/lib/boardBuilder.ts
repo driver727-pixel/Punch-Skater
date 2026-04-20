@@ -26,6 +26,7 @@ export {
 } from "./boardBuilderOptions";
 
 export {
+  BOARD_COMPONENT_IMAGE_URLS,
   BATTERY_SEED,
   BOARD_COMPONENT_CATALOG,
   BOARD_TYPE_DECK_SEED,
