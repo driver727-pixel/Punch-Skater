@@ -7,8 +7,6 @@ import { fal } from '@fal-ai/client';
 import 'dotenv/config';
 import { createRequire } from 'module';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
-import { cert, getApps, initializeApp as initializeAdminApp } from 'firebase-admin/app';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { createBattleCardSnapshot, resolveBattleWithEffects } from './battle.js';
 import {
@@ -24,6 +22,7 @@ import {
   normalizeFalLoras,
   parseFalScale,
 } from './lib/fal.js';
+import { createFirebaseAdminServices } from './lib/firebaseAdmin.js';
 import {
   createFalImageRequestBuilder,
   createFalRequestConfigLoader,
@@ -196,10 +195,6 @@ const battleRateLimit = buildRateLimiter({
 
 const FAL_KEY = process.env.FAL_KEY || '';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || '';
-const FIREBASE_ADMIN_CLIENT_EMAIL = process.env.FIREBASE_ADMIN_CLIENT_EMAIL || '';
-const FIREBASE_ADMIN_PRIVATE_KEY = process.env.FIREBASE_ADMIN_PRIVATE_KEY || '';
-const FIREBASE_SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 const falRequestConfig = readFalRequestConfig(process.env, console);
 const getRemoteFalRequestConfig = createFalRequestConfigLoader({
@@ -488,57 +483,14 @@ if (!stripeWebhookSecret) {
   console.warn('⚠️  STRIPE_WEBHOOK_SECRET environment variable is not set — Stripe webhooks will be unavailable.');
 }
 
-function getFirebaseServiceAccount() {
-  if (FIREBASE_SERVICE_ACCOUNT_JSON) {
-    try {
-      const parsed = JSON.parse(FIREBASE_SERVICE_ACCOUNT_JSON);
-      return {
-        projectId: parsed.project_id ?? parsed.projectId ?? FIREBASE_PROJECT_ID,
-        clientEmail: parsed.client_email ?? parsed.clientEmail,
-        privateKey: typeof parsed.private_key === 'string'
-          ? parsed.private_key.replace(/\\n/g, '\n')
-          : typeof parsed.privateKey === 'string'
-            ? parsed.privateKey.replace(/\\n/g, '\n')
-            : '',
-      };
-    } catch (error) {
-      console.error('Firebase service-account JSON is invalid:', error);
-      return null;
-    }
-  }
-
-  if (!FIREBASE_PROJECT_ID || !FIREBASE_ADMIN_CLIENT_EMAIL || !FIREBASE_ADMIN_PRIVATE_KEY) {
-    return null;
-  }
-
-  return {
-    projectId: FIREBASE_PROJECT_ID,
-    clientEmail: FIREBASE_ADMIN_CLIENT_EMAIL,
-    privateKey: FIREBASE_ADMIN_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  };
-}
-
-function createFirebaseAdminServices() {
-  const serviceAccount = getFirebaseServiceAccount();
-  if (!serviceAccount?.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-    return { adminAuth: null, adminDb: null };
-  }
-
-  const app = getApps()[0] ?? initializeAdminApp({
-    credential: cert(serviceAccount),
-  });
-
-  return {
-    adminAuth: getAdminAuth(app),
-    adminDb: getAdminFirestore(app),
-  };
-}
-
-const { adminAuth, adminDb } = createFirebaseAdminServices();
+const { adminAuth, adminDb } = createFirebaseAdminServices({
+  env: process.env,
+  logger: console,
+});
 
 if (!adminAuth || !adminDb) {
   console.warn(
-    '⚠️  Firebase Admin credentials are not set — set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, and FIREBASE_ADMIN_PRIVATE_KEY to enable secure battle resolution, authenticated image proxies, and admin account management.',
+    '⚠️  Firebase Admin credentials are not set — configure FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID + FIREBASE_ADMIN_CLIENT_EMAIL + FIREBASE_ADMIN_PRIVATE_KEY, or application default credentials to enable secure battle resolution, authenticated image proxies, and admin account management.',
   );
 }
 if (REDIS_URL) {

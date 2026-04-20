@@ -59,7 +59,7 @@ Copy `.env.example` to `.env` for local client config.
 - `ADMIN_EMAILS`
 - `APP_ORIGINS` (optional; extra CORS / checkout redirect origins)
 - `REDIS_URL` (optional; enables shared Redis-backed rate limiting)
-- `FIREBASE_SERVICE_ACCOUNT_JSON` or (`FIREBASE_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`)
+- `FIREBASE_SERVICE_ACCOUNT_JSON` or (`FIREBASE_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`), or platform-provided application default credentials
 
 Do not commit server secrets.
 
