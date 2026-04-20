@@ -223,6 +223,7 @@ export const BOARD_COMPONENT_IMAGE_URLS = {
     AT: withBoardComponentAssetVersion("/assets/boards/deck/at-bamboo.png"),
     Mountain: withBoardComponentAssetVersion("/assets/boards/deck/mt-board.png"),
     Surf: withBoardComponentAssetVersion("/assets/boards/deck/surf-skate.png"),
+    // Slider does not have a dedicated uploaded deck asset yet, so reuse Street.
     Slider: withBoardComponentAssetVersion("/assets/boards/deck/street.png"),
   } satisfies Record<BoardType, string>,
   drivetrain: {
