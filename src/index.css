@@ -1896,6 +1896,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .nav-inner {
     padding: 10px 12px;
     gap: 10px;
+    justify-content: flex-start;
+    overflow: hidden;
   }
 
   .nav-hamburger { display: inline-flex; align-items: center; }
@@ -1903,8 +1905,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .nav-desktop-only { display: none !important; }
   .nav-mobile-menu { display: flex; }
   .nav-brand {
+    flex: 1 1 auto;
+    min-width: 0;
     align-items: flex-start;
-    max-width: calc(100% - 92px);
     padding: 4px 8px;
   }
   .nav-title {
