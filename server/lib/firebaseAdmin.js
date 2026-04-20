@@ -52,8 +52,13 @@ export function getFirebaseServiceAccount(env = process.env, logger = console) {
       return null;
     }
 
+    const projectId = parsed.project_id ?? parsed.projectId ?? '';
+    if (!projectId && getFirebaseProjectId(env)) {
+      logger.warn('Firebase service-account JSON is missing project_id — falling back to environment project ID.');
+    }
+
     return {
-      projectId: parsed.project_id ?? parsed.projectId ?? getFirebaseProjectId(env),
+      projectId: projectId || getFirebaseProjectId(env),
       clientEmail: parsed.client_email ?? parsed.clientEmail ?? '',
       privateKey: normalizePrivateKey(parsed.private_key ?? parsed.privateKey),
     };
@@ -107,7 +112,7 @@ export function createFirebaseAdminServices({
       adminDb: getAdminFirestoreImpl(app),
     };
   } catch (error) {
-    if (!serviceAccount) logger.warn('Firebase Admin initialization failed using application default credentials.', error);
+    if (!serviceAccount) logger.warn('Firebase Admin initialization failed using optional application default credentials.', error);
     else logger.error('Firebase Admin initialization failed.', error);
     return { adminAuth: null, adminDb: null };
   }

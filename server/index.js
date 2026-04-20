@@ -7,7 +7,7 @@ import { fal } from '@fal-ai/client';
 import 'dotenv/config';
 import { createRequire } from 'module';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
-import { FieldValue, getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { createBattleCardSnapshot, resolveBattleWithEffects } from './battle.js';
 import {
   buildUserDisplayName,
