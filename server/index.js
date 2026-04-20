@@ -351,7 +351,7 @@ function sanitizeGenerateImageBody(body = {}) {
     seed: sanitizeInteger(body.seed, {
       fieldName: 'seed',
       minimum: 0,
-      maximum: 2_147_483_647,
+      maximum: 4_294_967_295,
     }),
     image_size: sanitizeFalImageSize(body.image_size),
     num_inference_steps: sanitizeInteger(body.num_inference_steps, {
