@@ -77,6 +77,7 @@ async function upsertUserProfile(user: User) {
     {
       uid: user.uid,
       email,
+      emailLower: email.trim().toLowerCase(),
       displayName: user.displayName ?? user.email?.split("@")[0] ?? "Skater",
       ...(admin ? { isAdmin: true, tier: "tier3" } : {}),
       updatedAt: serverTimestamp(),

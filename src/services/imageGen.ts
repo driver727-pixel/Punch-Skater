@@ -1,3 +1,4 @@
+import { auth } from "../lib/firebase";
 import { hashSeedToInt } from "../utils/hash";
 
 // ── Configuration ──────────────────────────────────────────────────────────────
@@ -27,6 +28,17 @@ const BG_REMOVAL_URL = PROXY_API_URL
  * so callers can gate image generation UI without attempting a doomed request.
  */
 export const isImageGenConfigured = Boolean(PROXY_API_URL);
+
+async function buildAuthorizedJsonHeaders(): Promise<HeadersInit> {
+  const token = await auth?.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error("Sign in to forge or edit AI-generated artwork.");
+  }
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+}
 
 // ── Generation parameters ──────────────────────────────────────────────────────
 // Adjust these to trade off quality vs. generation speed.
@@ -107,13 +119,12 @@ export async function generateImage(
 ): Promise<ImageGenResult> {
   const seed = hashSeedToInt(masterSeed);
 
-  // Build headers — Authorization is omitted because the proxy adds it server-side.
-  const headers: HeadersInit = { "Content-Type": "application/json" };
   if (!PROXY_API_URL) {
     throw new Error(
       "Image generation is not configured. Set VITE_IMAGE_API_URL in your .env to route requests through the proxy.",
     );
   }
+  const headers = await buildAuthorizedJsonHeaders();
 
   // Always append the mandatory safety suffix so it cannot be omitted regardless
   // of which prompt builder was used or how the prompt was constructed.
@@ -145,7 +156,7 @@ export async function generateImage(
     }
     const authHint =
       response.status === 401
-        ? " Check that the proxy server has a valid FAL_KEY configured."
+        ? " Sign in again and confirm the proxy server has Firebase Admin + FAL_KEY configured."
         : "";
     throw new Error(
       `Image generation failed: ${response.status} ${response.statusText}${detail ? ` — ${detail}` : ""}${authHint}`,
@@ -178,7 +189,7 @@ export async function removeBackground(imageUrl: string): Promise<ImageGenResult
     );
   }
 
-  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const headers = await buildAuthorizedJsonHeaders();
   const body = JSON.stringify({ image_url: imageUrl });
 
   const response = await fetch(BG_REMOVAL_URL, { method: "POST", headers, body });

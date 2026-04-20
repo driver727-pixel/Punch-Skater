@@ -1,4 +1,4 @@
-import { db } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
 import {
   collection,
   doc,
@@ -83,8 +83,11 @@ export async function setCachedImage(
   imageUrl: string,
   meta?: CacheEntryMeta,
 ): Promise<void> {
+  if (!db || !auth?.currentUser) return;
   try {
     const ref = doc(db, COLLECTION, encodeKey(cacheKey));
+    const existing = await getDoc(ref);
+    if (existing.exists()) return;
     const data: Record<string, unknown> = {
       imageUrl,
       createdAt: serverTimestamp(),

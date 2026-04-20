@@ -31,9 +31,20 @@ service cloud.firestore {
     // The create rule validates document shape to prevent cache poisoning.
     match /imageCache/{cacheKey} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['imageUrl', 'createdAt', 'prompt', 'layer', 'seed'])
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['imageUrl', 'createdAt', 'prompt', 'layer', 'seed'])
         && request.resource.data.imageUrl is string
-        && request.resource.data.imageUrl.matches('https://.+');
+        && (
+          request.resource.data.imageUrl.matches('https://([a-z0-9-]+\\.)*fal\\.media/.+')
+          || request.resource.data.imageUrl.matches('https://firebasestorage\\.googleapis\\.com/.+')
+          || request.resource.data.imageUrl.matches('https://storage\\.googleapis\\.com/.+')
+        )
+        && (!request.resource.data.keys().hasAny(['prompt'])
+          || (request.resource.data.prompt is string && request.resource.data.prompt.size() <= 512))
+        && (!request.resource.data.keys().hasAny(['layer'])
+          || (request.resource.data.layer is string && request.resource.data.layer.size() <= 64))
+        && (!request.resource.data.keys().hasAny(['seed'])
+          || (request.resource.data.seed is string && request.resource.data.seed.size() <= 512));
       allow update: if false;
       allow delete: if request.auth != null
         && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.isAdmin == true;

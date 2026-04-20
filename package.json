@@ -11,11 +11,13 @@
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
     "start": "node server/index.js",
+    "optimize:assets": "node scripts/optimize-assets.mjs",
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.5",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
@@ -40,6 +42,7 @@
     "eslint-plugin-react-refresh": "^0.4.14",
     "gh-pages": "^6.2.0",
     "globals": "^15.11.0",
+    "sharp": "^0.34.4",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.11.0",
     "vite": "^6.4.2",

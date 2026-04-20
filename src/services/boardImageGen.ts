@@ -2,6 +2,7 @@ import { resolveApiUrl } from "../lib/apiUrls";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { normalizeBoardConfig } from "../lib/boardBuilder";
 import { getCategoryImages, getMatchingCategoryImages } from "../lib/boardCategoryImages";
+import { auth } from "../lib/firebase";
 import { getCachedImage, setCachedImage } from "./imageCache";
 
 const BOARD_IMAGE_API_URL = resolveApiUrl(
@@ -27,6 +28,17 @@ const BOARD_IMAGE_POLL_TIMEOUT_MS = 120_000;
 const BOARD_IMAGE_POLL_INTERVAL_FAST_MS = 3_000;
 const BOARD_IMAGE_POLL_INTERVAL_SLOW_MS = 5_000;
 const BOARD_IMAGE_POLL_SLOW_THRESHOLD_MS = 30_000;
+
+async function buildAuthorizedJsonHeaders(): Promise<HeadersInit> {
+  const token = await auth?.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error("Sign in to generate board artwork.");
+  }
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+}
 
 type BoardImageCategoryValue = {
   category: "deck" | "drivetrain" | "wheels" | "battery";
@@ -114,10 +126,11 @@ function isBoardImagePollStatus(value: unknown): value is BoardImagePollStatus {
 }
 
 async function pollBoardImageJob(jobId: string): Promise<string> {
+  const headers = await buildAuthorizedJsonHeaders();
   const started = Date.now();
   while (true) {
     const statusUrl = `${BOARD_IMAGE_STATUS_BASE_URL}/${encodeURIComponent(jobId)}`;
-    const response = await fetch(statusUrl);
+    const response = await fetch(statusUrl, { headers });
 
     if (!response.ok) {
       let detail = "";
@@ -176,7 +189,7 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
   // 30-second Render proxy timeout is never hit.
   const submitResponse = await fetch(BOARD_IMAGE_API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await buildAuthorizedJsonHeaders(),
     body: JSON.stringify({
       prompt: buildBoardPrompt(config),
       imageUrls,

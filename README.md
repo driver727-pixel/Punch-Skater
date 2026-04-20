@@ -54,8 +54,9 @@ Copy `.env.example` to `.env` for local client config.
 - `FAL_CHARACTER_LORA_PATH` (optional; server-side default character LoRA path)
 - `FAL_CHARACTER_LORA_SCALE` (optional; server-side default character LoRA scale)
 - `STRIPE_SECRET_KEY`
-- `FIREBASE_API_KEY`
+- `STRIPE_WEBHOOK_SECRET`
 - `ADMIN_EMAILS`
+- `APP_ORIGINS` (optional; extra CORS / checkout redirect origins)
 - `FIREBASE_SERVICE_ACCOUNT_JSON` or (`FIREBASE_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`)
 
 Do not commit server secrets.
@@ -67,7 +68,7 @@ cd /path/to/Punch-Skater
 npm install
 
 # terminal 1
-FAL_KEY=your_key_here npm start
+FAL_KEY=your_key_here STRIPE_WEBHOOK_SECRET=whsec_... npm start
 
 # terminal 2
 npm run dev
@@ -80,9 +81,16 @@ cd /path/to/Punch-Skater
 npm install
 npm run lint
 npm run build
+npm run optimize:assets   # optional: generate .webp siblings for public/assets
 npx playwright install chromium
 npm run test:e2e
 ```
+
+## Security Notes
+
+- The Express API is intentionally hardened for API-only hosting. If you ever serve the SPA from the same origin, expand the CSP `connectSrc` allow-list first so Firebase, Stripe, and Fal requests continue to work.
+- Fal image-generation, board-generation, and background-removal routes now require an authenticated Firebase user plus Firebase Admin credentials on the server.
+- Stripe checkout redirects are restricted to approved app origins, and webhook delivery should be configured for `/api/stripe/webhook`.
 
 ## Prompt Surface Inventory
 

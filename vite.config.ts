@@ -18,6 +18,9 @@ export default defineConfig({
   define: {
     __BUILD_NUMBER__: JSON.stringify(_buildNumber),
   },
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+  },
   server: {
     proxy: {
       '/api': {
@@ -50,9 +53,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'robots.txt', 'LICENSE.txt'],
       workbox: {
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
@@ -65,6 +70,22 @@ export default defineConfig({
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 86400,
+              },
+            },
+          },
+          {
+            urlPattern: ({ request, url }) =>
+              request.destination === 'image' &&
+              url.pathname.startsWith('/assets/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-image-assets',
+              expiration: {
+                maxEntries: 120,
+                maxAgeSeconds: 30 * 24 * 60 * 60,
+              },
+              cacheableResponse: {
+                statuses: [200],
               },
             },
           },
