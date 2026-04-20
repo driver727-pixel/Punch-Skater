@@ -22,13 +22,13 @@ export const RANDOM_SKATER_TOOLTIP = "Randomizes the Character loadout and the B
 export const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#3366ff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 export const CHARACTER_CACHE_VERSION = "v4-dynamic-pose";
 export const CHARACTER_GENERATION_OPTIONS: ImageGenOptions = {
-  imageSize: { width: 1088, height: 1536 },
-  numInferenceSteps: 45,
+  imageSize: { width: 750, height: 1050 },
+  numInferenceSteps: 28,
   guidanceScale: 4,
   falProfile: "character",
 };
 export const NON_LORA_GENERATION_OPTIONS: ImageGenOptions = {
   loras: [],
 };
-export const CHARACTER_MIN_DIMENSIONS = { width: 1088, height: 1536 };
+export const CHARACTER_MIN_DIMENSIONS = { width: 750, height: 1050 };
 export const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
