@@ -998,6 +998,30 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* Card wrapper — centers the zoomed card inside the preview panel */
 .forge-card-wrapper { display: flex; justify-content: center; width: 100%; }
+.forge-preview-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+.forge-preview-section {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.forge-preview-heading {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
 
 /* Generated-action strip in the form — blend slider + icon buttons */
 .forge-generated-actions {
@@ -1052,6 +1076,38 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     0 0 8px rgba(0,255,136,0.15),
     0 0 24px rgba(0,0,0,0.4),
     inset 0 0 12px rgba(0,0,0,0.3);
+}
+.card-stack-shell {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.card-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.card-stack .card-full {
+  width: 110px;
+  min-height: 0;
+  zoom: 2.15;
+}
+.card-full--front,
+.card-full--back {
+  height: auto;
+}
+.card-full--front .card-art-composite,
+.card-full--front .card-art-image--full,
+.card-full--front .card-art-skeleton--full,
+.card-full--front svg {
+  margin-bottom: 4px;
+}
+.card-full--back .card-stats {
+  margin-top: 0;
 }
 
 /* Equal-halves layout: top = character + name + bio, bottom = skateboard + stats */
@@ -1157,6 +1213,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* ===== Card Actions ===== */
 .card-actions { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+.card-stack-shell .card-actions {
+  justify-content: center;
+  margin-top: 0;
+}
 
 /* ===== Print: exact playing-card dimensions ===== */
 @media print {
@@ -4684,6 +4744,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   user-select: none;
 }
 
+.viewer3d-inline {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .viewer3d-scene {
   display: flex;
   flex-direction: column;
@@ -4694,9 +4760,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   perspective-origin: 50% 40%;
 }
 
+.viewer3d-scene--inline {
+  width: 100%;
+  gap: 12px;
+}
+
 .viewer3d-card {
-  width: 252px;
-  height: 352px;
+  width: 189px;
+  height: 264px;
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.05s linear;
@@ -4708,325 +4779,30 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .viewer3d-face {
   position: absolute;
   inset: 0;
-  border-radius: 10px;
-  border: 2px solid var(--border);
+  border-radius: 6px;
   overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-/* Front */
-.viewer3d-face--front {
-  background: #0a0a0f;
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  gap: 6px;
-}
-
-.viewer3d-art-composite,
-.viewer3d-art-svg {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.viewer3d-layer {
-  position: absolute;
-  inset: 0;
+.viewer3d-face.print-card {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-.viewer3d-layer--bg {
-  z-index: 1;
-  mix-blend-mode: normal;
-}
-.viewer3d-layer--char {
-  z-index: 2;
-  mix-blend-mode: normal; /* transparent PNG composites cleanly over background */
-  object-fit: contain;    /* match card-art-layer--character; avoids cropping the portrait */
-  transform: scale(0.85);
-  transform-origin: bottom center;
-}
-.viewer3d-layer--bg-inset {
-  transform: scale(0.88);
-  transform-origin: center;
-}
-.viewer3d-layer--frame {
-  z-index: 3;
-  mix-blend-mode: screen; /* black background of frame image becomes transparent; colored border stays visible */
-  object-fit: fill;       /* stretch to exactly match the card surface so the border aligns with the edges */
-}
-.viewer3d-layer--svg-frame {
-  z-index: 3;
-  mix-blend-mode: normal;
-  pointer-events: none;
-}
-
-/* Gloss overlay on the front face */
-.viewer3d-gloss {
-  position: absolute;
-  inset: 0;
-  border-radius: 8px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.06) 40%,
-    transparent 60%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
-  pointer-events: none;
-  z-index: 10;
-}
-
-.viewer3d-front-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 6px;
-  letter-spacing: 0.8px;
-  color: #b8b8d4;
-  flex-shrink: 0;
-}
-
-.viewer3d-front-rarity {
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.viewer3d-front-art {
-  position: relative;
-  flex: 0 0 56%;
-  min-height: 0;
-  overflow: hidden;
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(7, 11, 22, 0.95), rgba(12, 16, 28, 0.98));
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.viewer3d-front-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 0;
-}
-
-.viewer3d-front-identity {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.viewer3d-front-name {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.1;
-  color: #f3f3ff;
-}
-
-.viewer3d-front-age {
-  margin: 0;
-  font-size: 8px;
-  color: #8f8fb2;
-}
-
-.viewer3d-front-bio,
-.viewer3d-front-catchphrase {
-  margin: 0;
-  font-size: 7px;
-  line-height: 1.45;
-}
-
-.viewer3d-front-bio {
-  color: #c9c9df;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.viewer3d-front-catchphrase {
-  color: #8f8fb2;
-  font-style: italic;
-}
-
-.viewer3d-front-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  align-items: center;
-  font-size: 6px;
-  color: #8f8fb2;
-  letter-spacing: 0.5px;
-}
-
-.viewer3d-front-meta-sep {
-  color: rgba(255,255,255,0.18);
+  border: 0;
+  border-radius: inherit;
 }
 
 /* Back */
 .viewer3d-face--back {
-  background: #0f0f1a;
   transform: rotateY(180deg);
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-  font-size: 7px;
-  font-family: 'Courier New', Courier, monospace;
-  color: #e0e0f0;
-}
-
-.viewer3d-back-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 8px;
-  color: #000;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-.viewer3d-back-name { font-size: 9px; letter-spacing: 1px; }
-.viewer3d-back-rarity { font-size: 7px; opacity: 0.75; }
-
-.viewer3d-back-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-height: 0;
-  padding: 8px;
-}
-
-.viewer3d-back-section-label {
-  display: block;
-  font-size: 6px;
-  letter-spacing: 1.2px;
-  color: #8f8fb2;
-  text-transform: uppercase;
-}
-
-.viewer3d-back-board {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.viewer3d-back-board-image,
-.viewer3d-back-board-placeholder {
-  width: 100%;
-  min-height: 78px;
-  max-height: 96px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: radial-gradient(circle at top, rgba(0, 255, 136, 0.12), transparent 55%), rgba(255,255,255,0.03);
-}
-
-.viewer3d-back-board-image {
-  object-fit: contain;
-  padding: 6px;
-}
-
-.viewer3d-back-board-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  color: rgba(255,255,255,0.38);
-}
-
-.viewer3d-back-loadout {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px 8px;
-  flex-shrink: 0;
-}
-
-.viewer3d-back-loadout-item {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: 3px;
-  align-items: center;
-  min-width: 0;
-  font-size: 6px;
-}
-
-.viewer3d-back-loadout-icon {
-  font-size: 8px;
-  line-height: 1;
-}
-
-.viewer3d-back-loadout-key {
-  color: #8f8fb2;
-  letter-spacing: 0.5px;
-}
-
-.viewer3d-back-loadout-value {
-  color: #f0f0ff;
-  font-weight: bold;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.viewer3d-back-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.viewer3d-back-board-stats,
-.viewer3d-back-player-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 6px;
-  border-top: 1px solid #1e1e3a;
-}
-
-.viewer3d-back-board-stats .skate-stats-panel {
-  margin-top: 0;
-  padding: 4px;
-  gap: 3px;
-}
-
-.viewer3d-back-board-stats .skate-stats-title,
-.viewer3d-back-board-stats .skate-stat-label,
-.viewer3d-back-board-stats .skate-stat-value,
-.viewer3d-back-board-stats .skate-text-key,
-.viewer3d-back-board-stats .skate-text-val {
-  font-size: 6px;
-}
-
-.viewer3d-back-board-stats .skate-stat-label {
-  width: 26px;
-}
-
-.viewer3d-back-board-stats .neon-tube {
-  height: 4px;
-}
-
-.viewer3d-back-stats .stat-bar { gap: 2px; }
-.viewer3d-back-stats .stat-label { font-size: 6px; width: 24px; }
-.viewer3d-back-stats .stat-value { font-size: 6px; width: 8px; }
-.viewer3d-back-stats .stat-track { height: 2px; }
-
-.viewer3d-back-serial {
-  font-size: 6px;
-  color: #7070a0;
-  letter-spacing: 1px;
-  margin-top: auto;
 }
 
 /* Controls row */
 .viewer3d-controls {
   display: flex;
   gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 .viewer3d-btn {
   background: rgba(255,255,255,0.08);
@@ -5210,6 +4986,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   height: 100%;
   object-fit: contain;
 }
+.print-back-board-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.print-back-board-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: rgba(255,255,255,0.32);
+}
 
 /* Back face in preview */
 .print-card--back {
@@ -5310,6 +5100,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .print-modal-actions { display: flex; gap: 8px; }
+
+.print-preview-area--forge {
+  gap: 16px;
+}
+.print-preview-area--forge .print-card-wrap {
+  padding: 0;
+}
 
 /* ===================================================================
    @media print — actual print output

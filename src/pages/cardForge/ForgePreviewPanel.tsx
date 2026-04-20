@@ -1,4 +1,6 @@
 import { CardDisplay } from "../../components/CardDisplay";
+import { CardViewer3D } from "../../components/CardViewer3D";
+import { PrintedCardPreviewPair } from "../../components/PrintedCardFaces";
 import type { CardPayload } from "../../lib/types";
 import type { LayerState, ForgeLayer } from "./useForgeLayers";
 
@@ -23,7 +25,7 @@ export function ForgePreviewPanel({
     <div className="forge-preview">
       {card ? (
         <div className="forge-card-wrapper">
-          <div>
+          <div className="forge-preview-stack">
             {layers.errors.length > 0 && (
               <div className="forge-image-errors">
                 {layers.errors.map((error, index) => (
@@ -40,17 +42,44 @@ export function ForgePreviewPanel({
               </p>
             )}
 
-            <CardDisplay
-              card={card}
-              backgroundImageUrl={layers.backgroundUrl}
-              characterImageUrl={layers.characterUrl}
-              frameImageUrl={layers.frameUrl}
-              layerLoading={layers.loading}
-              characterBlend={characterBlend}
-              hideToolButtons
-              onLayerError={onLayerError}
-              onUpdate={onCardUpdate}
-            />
+            <section className="forge-preview-section">
+              <h2 className="forge-preview-heading">3D Viewer</h2>
+              <CardViewer3D
+                card={card}
+                backgroundImageUrl={layers.backgroundUrl}
+                characterImageUrl={layers.characterUrl}
+                frameImageUrl={layers.frameUrl}
+                characterBlend={characterBlend}
+                inline
+              />
+            </section>
+
+            <section className="forge-preview-section">
+              <h2 className="forge-preview-heading">Printed Version</h2>
+              <PrintedCardPreviewPair
+                card={card}
+                backgroundImageUrl={layers.backgroundUrl}
+                characterImageUrl={layers.characterUrl}
+                frameImageUrl={layers.frameUrl}
+                characterBlend={characterBlend}
+                className="print-preview-area--forge"
+              />
+            </section>
+
+            <section className="forge-preview-section">
+              <h2 className="forge-preview-heading">Final Stat Card</h2>
+              <CardDisplay
+                card={card}
+                backgroundImageUrl={layers.backgroundUrl}
+                characterImageUrl={layers.characterUrl}
+                frameImageUrl={layers.frameUrl}
+                layerLoading={layers.loading}
+                characterBlend={characterBlend}
+                hideToolButtons
+                onLayerError={onLayerError}
+                onUpdate={onCardUpdate}
+              />
+            </section>
           </div>
         </div>
       ) : (
