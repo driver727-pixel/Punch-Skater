@@ -1,4 +1,5 @@
 import { auth } from "../lib/firebase";
+import { ELECTRIC_SKATEBOARD_EXCLUSIONS } from "../lib/promptBuilder";
 import { hashSeedToInt } from "../utils/hash";
 
 // ── Configuration ──────────────────────────────────────────────────────────────
@@ -130,9 +131,16 @@ export async function generateImage(
   // of which prompt builder was used or how the prompt was constructed.
   const safePrompt = `${prompt} ${MANDATORY_POSITIVE_SUFFIX}`;
 
+  // For character generations, append skateboard exclusions to the negative prompt
+  // so the model is steered away from non-skateboard vehicles on both axes.
+  const negativePrompt =
+    options.falProfile === "character"
+      ? `${NEGATIVE_PROMPT} ${ELECTRIC_SKATEBOARD_EXCLUSIONS}`
+      : NEGATIVE_PROMPT;
+
   const body = JSON.stringify({
     prompt: safePrompt,
-    negative_prompt: NEGATIVE_PROMPT,
+    negative_prompt: negativePrompt,
     seed,
     image_size: options.imageSize ?? IMAGE_SIZE,
     num_inference_steps: options.numInferenceSteps ?? INFERENCE_STEPS,

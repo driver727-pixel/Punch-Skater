@@ -87,13 +87,8 @@ const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
     "Dark background. Hard sci-fi, no fantasy, no gold, no foliage.",
 };
 
-/** Shared age-restriction phrase appended to all character prompts. */
-const AGE_RESTRICTION =
-  "Clearly an adult subject aged 21 or older with fully grown body proportions and mature facial structure. Never a child or teenager. ";
-
 const CORE_COMIC_BOOK_STYLE =
-  "Comic-book illustration styled for a premium trading card. " +
-  "Adult anatomy, crisp detail, grounded faces, and strong silhouette readability. ";
+  "Comic-book illustration for a premium trading card: crisp detail, grounded faces, and strong silhouette readability. ";
 
 const ELECTRIC_SKATEBOARD_REQUIREMENT =
   "Vehicle: an electric skateboard only — a single board deck under the rider's feet with exactly four skateboard wheels. " +
@@ -101,7 +96,7 @@ const ELECTRIC_SKATEBOARD_REQUIREMENT =
   "All four wheels point in the same riding direction as the board, never sideways or perpendicular to the deck, and they do not pivot like caster wheels. " +
   "No handlebars, no seat, no extra chassis. ";
 
-const ELECTRIC_SKATEBOARD_EXCLUSIONS =
+export const ELECTRIC_SKATEBOARD_EXCLUSIONS =
   "Never depict a scooter, mobility chair, roller skates, inline skates, children’s hoverboard, self-balancing board, segway, caster wheels, sideways wheels, perpendicular wheels, swivel wheels, or any other device underfoot. ";
 
 function joinPromptBlocks(...blocks: Array<string | undefined>): string {
@@ -317,20 +312,13 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Subject: full-body portrait of a clearly adult ${coverRole}.`,
-    `Composition: full-body action portrait with the entire rider and full skateboard visible from head to toe, ${composition}, asymmetrical and energetic rather than stiff or centered, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
-    `Props: carrying courier gear suited to a fast courier run.`,
+    `Full-body comic-book portrait of an adult ${coverRole}, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
-    ELECTRIC_SKATEBOARD_EXCLUSIONS,
-    graffitiLine,
-    `Identity note: the character should be recognizable as a ${coverRole}, not a faction mascot or logo character.`,
-    `Performance note: character is alert, capable, and ready to move.`,
-    `Mood: ${mood}.`,
     characterDesc,
-    AGE_RESTRICTION,
-    `Render goals: crisp trading-card finish, dramatic lighting, and realistic adult proportions.`,
-    `Background: isolated on a solid neutral medium-gray studio background, full figure visible from head to toe, centred.`,
-    `Safe-for-work, fully clothed adult character art, LGBTQIA+.`,
+    graffitiLine,
+    `Mood: ${mood}.`,
+    `Background: solid neutral medium-gray studio, full figure head-to-toe, centered.`,
+    `Adult subject (21+), fully clothed, SFW, LGBTQIA+ inclusive.`,
   );
 }
 
@@ -464,20 +452,14 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
 
+  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
+
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Subject: clearly adult ${coverRole}.`,
-    `Composition: full-body action portrait with the entire rider and full skateboard visible from head to toe, ${composition}, asymmetrical and energetic rather than stiff or centered, wearing ${clothing}, riding an electric skateboard, ${pose}.`,
-    `Props: carrying courier gear suited to a fast courier run.`,
+    `Full-body comic-book portrait of an adult ${coverRole}, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
-    ELECTRIC_SKATEBOARD_EXCLUSIONS,
-    `Identity note: the character should be recognizable as a ${coverRole}, not a faction mascot or logo character.`,
-    `Performance note: character is alert and ready to move.`,
-    `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}.`,
-    `${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`,
+    characterDesc,
     `Mood: ${mood}.`,
-    AGE_RESTRICTION,
-    `Render goals: cinematic lighting, crisp detail, and realistic adult proportions.`,
-    `Safe-for-work, fully clothed adult character art, LGBTQIA+.`,
+    `Adult subject (21+), fully clothed, SFW, LGBTQIA+ inclusive.`,
   );
 }
