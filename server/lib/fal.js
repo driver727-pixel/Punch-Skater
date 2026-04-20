@@ -1,5 +1,5 @@
 const BOARD_REFERENCE_IMAGE_PATH_PATTERN =
-  /^\/assets\/boards\/(deck|drivetrain|motor|wheels|battery)\/[a-z0-9-]+\.(png|webp)$/i;
+  /^\/assets\/boards\/(deck|drivetrain|motor|wheels|battery)\/[a-z0-9-]+\.webp$/i;
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
