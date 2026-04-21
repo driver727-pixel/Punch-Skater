@@ -1,16 +1,16 @@
-import { CardDisplay } from "../../components/CardDisplay";
 import { CardViewer3D } from "../../components/CardViewer3D";
-import { PrintedCardPreviewPair } from "../../components/PrintedCardFaces";
+import {
+  PrintedCardBackContent,
+  PrintedCardPreviewPair,
+} from "../../components/PrintedCardFaces";
 import type { CardPayload } from "../../lib/types";
-import type { LayerState, ForgeLayer } from "./useForgeLayers";
+import type { LayerState } from "./useForgeLayers";
 
 interface ForgePreviewPanelProps {
   card: CardPayload | null;
   characterBlend: number;
   isImageGenConfigured: boolean;
   layers: LayerState;
-  onCardUpdate: (updates: { name?: string; age?: number; flavorText?: string }) => void;
-  onLayerError: (layer: ForgeLayer) => void;
 }
 
 export function ForgePreviewPanel({
@@ -18,8 +18,6 @@ export function ForgePreviewPanel({
   characterBlend,
   isImageGenConfigured,
   layers,
-  onCardUpdate,
-  onLayerError,
 }: ForgePreviewPanelProps) {
   return (
     <div className="forge-preview">
@@ -68,17 +66,11 @@ export function ForgePreviewPanel({
 
             <section className="forge-preview-section">
               <h2 className="forge-preview-heading">Final Stat Card</h2>
-              <CardDisplay
-                card={card}
-                backgroundImageUrl={layers.backgroundUrl}
-                characterImageUrl={layers.characterUrl}
-                frameImageUrl={layers.frameUrl}
-                layerLoading={layers.loading}
-                characterBlend={characterBlend}
-                hideToolButtons
-                onLayerError={onLayerError}
-                onUpdate={onCardUpdate}
-              />
+              <div className="print-card-wrap forge-stat-card-wrap">
+                <div className="print-card print-card--back">
+                  <PrintedCardBackContent card={card} />
+                </div>
+              </div>
             </section>
           </div>
         </div>
