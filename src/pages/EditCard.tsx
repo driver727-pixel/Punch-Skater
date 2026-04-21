@@ -137,19 +137,44 @@ export function EditCard() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const previewPrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
     const newCard = generateCard(previewPrompts);
+    const preservedName = preview?.identity.name ?? original.identity.name;
+    const preservedAge = preview?.identity.age ?? original.identity.age ?? "";
+    const preservedFlavorText = preview?.flavorText ?? original.flavorText;
     const merged: CardPayload = {
       ...newCard,
       id: original.id,
       createdAt: original.createdAt,
+      identity: {
+        ...newCard.identity,
+        name: preservedName,
+        age: preservedAge,
+      },
       backgroundImageUrl: original.backgroundImageUrl,
       characterImageUrl: original.characterImageUrl,
       frameImageUrl: original.frameImageUrl,
       imageUrl: original.imageUrl,
       discovery: original.discovery,
+      flavorText: preservedFlavorText,
       board: boardConfig,
       boardLoadout: calculateBoardStats(boardConfig),
     };
     setPreview(merged);
+    setSaved(false);
+  };
+
+  const handleCardTextUpdate = (updates: { name?: string; age?: string; flavorText?: string }) => {
+    setPreview((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        identity: {
+          ...current.identity,
+          ...(updates.name !== undefined ? { name: updates.name } : {}),
+          ...(updates.age !== undefined ? { age: updates.age } : {}),
+        },
+        flavorText: updates.flavorText ?? current.flavorText,
+      };
+    });
     setSaved(false);
   };
 
@@ -308,6 +333,7 @@ export function EditCard() {
               <CardDisplay
                 card={preview}
                 showShare={false}
+                onUpdate={handleCardTextUpdate}
               />
             </>
           ) : (

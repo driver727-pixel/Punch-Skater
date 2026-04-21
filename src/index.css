@@ -1003,16 +1003,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 18px;
   width: 100%;
-  align-items: center;
+  align-items: stretch;
   position: relative;
   z-index: 2;
 }
 .forge-preview-section {
   width: 100%;
-  max-width: 420px;
+  max-width: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
 }
 .forge-preview-heading {
@@ -5149,11 +5149,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .print-preview-area--forge .print-card-wrap {
   padding: 0;
+  width: 100%;
 }
 .print-preview-area--forge .print-preview-slot {
   width: 100%;
-  max-width: 189px;
+  max-width: none;
   gap: 6px;
+}
+.print-preview-area--forge .print-card {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 189 / 264;
 }
 .print-preview-area--forge .print-preview-label {
   font-size: 12px;
@@ -5518,6 +5524,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* Bio textarea (same dimensions as existing card-edit-textarea) */
 .card-bio-textarea {
   margin-top: 2px;
+}
+
+.card-meta-edit-button {
+  width: 100%;
+  margin-bottom: 4px;
 }
 
 /* Pencil hint shown on editable fields */
@@ -7069,6 +7080,27 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .page {
     padding: 20px 12px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .page-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .page-header-actions > * {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .page-header > button {
+    width: 100%;
+    max-width: 100%;
   }
 
   .page-sub {
