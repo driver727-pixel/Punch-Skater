@@ -240,7 +240,7 @@ export function GeoAtlas({
 }: GeoAtlasProps) {
   const [hoveredDistrict, setHoveredDistrict] = useState<WorldLocation | null>(null);
   const [inspectedDistrict, setInspectedDistrict] = useState<WorldLocation | null>(null);
-  const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(false);
+  const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(true);
   const [isNeonCollapsed, setIsNeonCollapsed] = useState(false);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const activeInteractionDistrict =
@@ -329,7 +329,7 @@ export function GeoAtlas({
   return (
     <div className={getAtlasClassName(compact, className)}>
       {showAustralia && (
-        <section className="geo-atlas__panel">
+        <section className="geo-atlas__panel geo-atlas__panel--continental">
           <div className="geo-atlas__panel-head">
             <div>
               <p className="geo-atlas__eyebrow">continental theater</p>
