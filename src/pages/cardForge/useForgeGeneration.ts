@@ -110,6 +110,16 @@ export function useForgeGeneration() {
 
     resetLayerSession();
 
+    (async () => {
+      try {
+        const boardImageUrl = await generateGouacheBoard(boardConfig);
+        if (signal.aborted) return;
+        setGenerated((current) => (current ? { ...current, boardImageUrl } : current));
+      } catch (error) {
+        console.warn("Board image generation failed:", error);
+      }
+    })();
+
     if (!isImageGenConfigured) {
       setForging(false);
       return;
@@ -161,16 +171,6 @@ export function useForgeGeneration() {
       characterAttempts,
     );
     generateLayer("frame", frameKey, framePrompt, card.frameSeed, signal);
-
-    (async () => {
-      try {
-        const boardImageUrl = await generateGouacheBoard(boardConfig);
-        if (signal.aborted) return;
-        setGenerated((current) => (current ? { ...current, boardImageUrl } : current));
-      } catch (error) {
-        console.warn("Board image generation failed:", error);
-      }
-    })();
 
     setForging(false);
   }, [
