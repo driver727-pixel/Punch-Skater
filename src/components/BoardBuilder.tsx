@@ -155,6 +155,7 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={DECK_ITEMS}
         selected={value.boardType}
         onSelect={(v) => handleCarouselChange({ ...value, boardType: v as typeof value.boardType })}
+        showAllItems
       />
 
       {/* Belt 2 — Drivetrains (determines Top Speed) */}
@@ -163,6 +164,7 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredDrivetrainItems}
         selected={value.drivetrain}
         onSelect={(v) => handleCarouselChange({ ...value, drivetrain: v as typeof value.drivetrain })}
+        showAllItems
       />
 
       {/* Belt 3 — Motors (determines Acceleration) */}
@@ -171,6 +173,7 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredMotorItems}
         selected={value.motor}
         onSelect={(v) => handleCarouselChange({ ...value, motor: v as typeof value.motor })}
+        showAllItems
       />
 
       {/* Belt 4 — Wheels (determines access profile) */}
@@ -179,6 +182,7 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredWheelItems}
         selected={value.wheels}
         onSelect={(v) => handleCarouselChange({ ...value, wheels: v as typeof value.wheels })}
+        showAllItems
       />
 
       {/* Belt 5 — Batteries (determines Range) */}
@@ -187,6 +191,7 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredBatteryItems}
         selected={value.battery}
         onSelect={(v) => handleCarouselChange({ ...value, battery: v as typeof value.battery })}
+        showAllItems
       />
 
       {/* Compatibility warnings */}

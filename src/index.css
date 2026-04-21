@@ -6939,6 +6939,26 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   animation: conveyor-belt-move 0.8s linear infinite;
 }
 
+.conveyor__track--all-visible {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--conveyor-item-size), 100%), 1fr));
+  gap: 12px;
+  padding: 12px 10px;
+  overflow: visible;
+  scroll-snap-type: none;
+  animation: none;
+}
+
+.conveyor__track--all-visible .conveyor__item {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.conveyor__track--all-visible .conveyor__item--selected {
+  transform: scale(1.03);
+}
+
 /* Pause belt animation while the user hovers over the track */
 .conveyor__track:hover {
   animation-play-state: paused;
@@ -9176,4 +9196,3 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 0 0 8px rgba(95, 255, 138, 0.18);
   --map-node-glow: rgba(95, 255, 138, 0.25);
 }
-

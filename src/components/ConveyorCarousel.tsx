@@ -139,6 +139,8 @@ interface ConveyorCarouselProps {
   selected: string;
   /** Called when the user snaps a new item to center. */
   onSelect: (value: string) => void;
+  /** When true, render the full belt as a visible grid instead of a center-snapped carousel. */
+  showAllItems?: boolean;
 }
 
 export function ConveyorCarousel({
@@ -146,6 +148,7 @@ export function ConveyorCarousel({
   items,
   selected,
   onSelect,
+  showAllItems = false,
 }: ConveyorCarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   // Track which item is visually centered (may differ from `selected` mid-scroll).
@@ -215,6 +218,7 @@ export function ConveyorCarousel({
 
   /** When the container scrolls, debounce and fire onSelect for the centered item. */
   const handleScroll = useCallback(() => {
+    if (showAllItems) return;
     if (syncingScrollRef.current) {
       releaseScrollSync();
       return;
@@ -231,10 +235,11 @@ export function ConveyorCarousel({
         }
       }
     });
-  }, [getCenteredIndex, items, onSelect, releaseScrollSync, selected]);
+  }, [getCenteredIndex, items, onSelect, releaseScrollSync, selected, showAllItems]);
 
   /** Scroll a specific item into the snap position (center). */
   const scrollToIndex = useCallback((idx: number, behavior: ScrollBehavior = "smooth") => {
+    if (showAllItems) return;
     const track = trackRef.current;
     if (!track) return;
     // Children layout: [spacer, item0, item1, ..., itemN, spacer]
@@ -247,16 +252,17 @@ export function ConveyorCarousel({
     syncingScrollRef.current = true;
     releaseScrollSync();
     track.scrollTo({ left: targetScrollLeft, behavior });
-  }, [releaseScrollSync]);
+  }, [releaseScrollSync, showAllItems]);
 
   /** On mount / whenever `selected` changes externally, scroll to match. */
   useEffect(() => {
+    if (showAllItems) return;
     const idx = items.findIndex((it) => it.value === selected);
     if (idx >= 0) {
       scrollToIndex(idx, initialSyncDoneRef.current ? "smooth" : "auto");
       initialSyncDoneRef.current = true;
     }
-  }, [selected, items, scrollToIndex]);
+  }, [selected, items, scrollToIndex, showAllItems]);
 
   useEffect(() => () => {
     if (selectionFrameRef.current !== null) cancelAnimationFrame(selectionFrameRef.current);
@@ -275,12 +281,11 @@ export function ConveyorCarousel({
 
       {/* Animated belt track */}
       <div
-        className="conveyor__track"
+        className={`conveyor__track${showAllItems ? " conveyor__track--all-visible" : ""}`}
         ref={trackRef}
         onScroll={handleScroll}
       >
-        {/* Spacer so the first/last item can be snapped to the center */}
-        <div className="conveyor__edge-spacer" aria-hidden="true" />
+        {!showAllItems && <div className="conveyor__edge-spacer" aria-hidden="true" />}
 
         {items.map((item) => {
           const isSelected = item.value === selected;
@@ -292,8 +297,10 @@ export function ConveyorCarousel({
               className={`conveyor__item${isSelected ? " conveyor__item--selected" : ""}${isDisabled ? " conveyor__item--disabled" : ""}`}
               onClick={() => {
                 if (isDisabled) return;
-                const idx = items.findIndex((it) => it.value === item.value);
-                scrollToIndex(idx);
+                if (!showAllItems) {
+                  const idx = items.findIndex((it) => it.value === item.value);
+                  scrollToIndex(idx);
+                }
                 onSelect(item.value);
               }}
               aria-pressed={isSelected}
@@ -316,7 +323,7 @@ export function ConveyorCarousel({
           );
         })}
 
-        <div className="conveyor__edge-spacer" aria-hidden="true" />
+        {!showAllItems && <div className="conveyor__edge-spacer" aria-hidden="true" />}
       </div>
     </div>
   );
