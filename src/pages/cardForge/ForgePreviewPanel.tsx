@@ -36,26 +36,6 @@ export function ForgePreviewPanel({
               </p>
             )}
 
-            {card.board && (
-              <section className="forge-preview-section">
-                <h2 className="forge-preview-heading">Skateboard Preview</h2>
-                <div className="forge-board-preview">
-                  {card.boardImageUrl ? (
-                    <img
-                      src={card.boardImageUrl}
-                      alt="Generated electric skateboard"
-                      className="forge-board-preview__image"
-                    />
-                  ) : (
-                    <div className="forge-board-preview__placeholder" role="status" aria-live="polite">
-                      <span className="forge-board-preview__icon" aria-hidden="true">🛹</span>
-                      <span className="forge-board-preview__label">Generating skateboard…</span>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-
             <section className="forge-preview-section">
               <h2 className="forge-preview-heading">Card Preview</h2>
               <PrintedCardPreviewPair

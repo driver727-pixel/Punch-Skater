@@ -5079,10 +5079,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* Print back face – skateboard composite image box */
 .print-back-board {
-  width: 80%;
+  width: 92%;
   margin: 4px auto;
-  aspect-ratio: 5 / 7;
+  aspect-ratio: 16 / 7;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  box-sizing: border-box;
   overflow: hidden;
   border-radius: 3px;
   border: 1px solid rgba(255,255,255,0.15);
