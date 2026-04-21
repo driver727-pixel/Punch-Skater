@@ -2402,7 +2402,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background: transparent;
   object-fit: unset;
 }
-/* Shimmer sweep rendered on top of the loading APNG */
+/* Shimmer sweep rendered on top of the loading GIF */
 .card-art-layer--loading::after {
   content: "";
   position: absolute;
@@ -2419,8 +2419,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 0;
 }
 
-/* ── Loading APNG sizing ─────────────────────────────────────────────────────
- * Applied to every <img src="/assets/loading.apng"> used inside loading
+/* ── Loading GIF sizing ──────────────────────────────────────────────────────
+ * Applied to every <img src="/assets/loading_2.gif"> used inside loading
  * skeletons and layer-loading divs.  Scales to fit the 5/7 card aspect ratio
  * without cropping so the full animation is always visible.
  */
