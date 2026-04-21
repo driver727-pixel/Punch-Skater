@@ -1024,10 +1024,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .forge-preview-hint {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
   text-align: center;
   letter-spacing: 0.5px;
+  line-height: 1.45;
 }
 
 /* Generated-action strip in the form — blend slider + icon buttons */
@@ -4769,7 +4770,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   width: 100%;
   /* perspective for the 3D stage */
   perspective: 900px;
-  perspective-origin: 50% 40%;
+  perspective-origin: 50% 50%;
 }
 
 .viewer3d-scene--inline {
@@ -5140,10 +5141,45 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-modal-actions { display: flex; gap: 8px; }
 
 .print-preview-area--forge {
+  width: 100%;
+  margin-bottom: 0;
+  flex-direction: column;
+  align-items: center;
   gap: 16px;
 }
 .print-preview-area--forge .print-card-wrap {
   padding: 0;
+}
+.print-preview-area--forge .print-preview-slot {
+  width: 100%;
+  max-width: 189px;
+  gap: 6px;
+}
+.print-preview-area--forge .print-preview-label {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+}
+.print-preview-area--forge .print-front-name {
+  font-size: 10px;
+}
+.print-preview-area--forge .print-front-bio {
+  font-size: 6px;
+}
+.print-preview-area--forge .print-card--back {
+  font-size: 7px;
+}
+.print-preview-area--forge .print-back-name {
+  font-size: 9px;
+}
+.print-preview-area--forge .print-back-rarity,
+.print-preview-area--forge .print-back-row-label,
+.print-preview-area--forge .print-back-row-value,
+.print-preview-area--forge .print-back-stats .stat-label,
+.print-preview-area--forge .print-back-stats .stat-value,
+.print-preview-area--forge .print-back-trait-label,
+.print-preview-area--forge .print-back-trait-desc,
+.print-preview-area--forge .print-back-serial {
+  font-size: 6px;
 }
 
 .forge-stat-card-wrap {
@@ -7028,7 +7064,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 @media (max-width: 640px) {
   :root {
-    --conveyor-item-size: 72px;
+    --conveyor-item-size: 64px;
   }
 
   .page {
@@ -7036,9 +7072,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 
   .page-sub {
-    font-size: 14px;
+    font-size: 15px;
     letter-spacing: 1px;
-    line-height: 1.5;
+    line-height: 1.45;
   }
 
   .forge-form,
@@ -7072,6 +7108,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .forge-quick-actions > button {
     width: 100%;
     min-height: 44px;
+    font-size: 13px;
   }
 
   .forge-form .pill-group {
@@ -7088,17 +7125,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .forge-generated-buttons > button {
     flex: 1 1 100%;
+    font-size: 13px;
   }
 
   .conveyor__header {
-    padding: 8px 10px 6px;
+    gap: 6px;
+    padding: 6px 8px 4px;
   }
 
   .conveyor__selected-name {
     min-width: 0;
     width: 100%;
     text-align: left;
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.3;
   }
 
   .conveyor__track {
@@ -7106,8 +7146,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
        so players can browse loadout parts without horizontal swiping. */
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    padding: 10px 8px;
+    gap: 4px;
+    padding: 8px 6px;
     overflow: visible;
     scroll-snap-type: none;
     animation: none;
@@ -7124,17 +7164,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 
   .conveyor__item--selected {
-    transform: translateY(-2px);
+    transform: scale(1.04);
   }
 
   .conveyor__item-copy {
-    gap: 2px;
-    padding: 14px 4px 6px;
+    gap: 1px;
+    padding: 12px 4px 5px;
   }
 
   .conveyor__item-name {
-    font-size: 10px;
-    line-height: 1.25;
+    font-size: 9px;
+    line-height: 1.15;
   }
 
   .conveyor__item-tagline {
@@ -7161,6 +7201,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     font-size: 14px;
     letter-spacing: 3px;
   }
+
+  .forge-preview-hint {
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 520px) {
@@ -7171,15 +7215,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .forge-form .pill-group {
     grid-template-columns: minmax(0, 1fr);
   }
-
-  .conveyor__track {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 380px) {
+  :root {
+    --conveyor-item-size: 56px;
+  }
+
   .conveyor__track {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

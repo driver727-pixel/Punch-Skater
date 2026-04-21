@@ -1,6 +1,4 @@
-import {
-  PrintedCardFrontContent,
-} from "../../components/PrintedCardFaces";
+import { PrintedCardPreviewPair } from "../../components/PrintedCardFaces";
 import type { CardPayload } from "../../lib/types";
 import type { LayerState } from "./useForgeLayers";
 
@@ -40,19 +38,16 @@ export function ForgePreviewPanel({
 
             <section className="forge-preview-section">
               <h2 className="forge-preview-heading">Card Preview</h2>
-              <div className="print-card-wrap">
-                <div className="print-card print-card--front">
-                  <PrintedCardFrontContent
-                    card={card}
-                    backgroundImageUrl={layers.backgroundUrl}
-                    characterImageUrl={layers.characterUrl}
-                    frameImageUrl={layers.frameUrl}
-                    characterBlend={characterBlend}
-                  />
-                </div>
-              </div>
+              <PrintedCardPreviewPair
+                card={card}
+                backgroundImageUrl={layers.backgroundUrl}
+                characterImageUrl={layers.characterUrl}
+                frameImageUrl={layers.frameUrl}
+                characterBlend={characterBlend}
+                className="print-preview-area--forge"
+              />
               <p className="forge-preview-hint">
-                Use the ◈ 3D and 🖨 Print buttons to view the full card.
+                Use ◈ 3D for the spinning card and 🖨 Print for the print-ready popup.
               </p>
             </section>
           </div>
