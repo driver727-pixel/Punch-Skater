@@ -63,6 +63,7 @@ const CATEGORY_GLOBS = {
     "6396-motor.png",
   ]),
   wheels: createCategoryImageMap("wheels", [
+    // The deployed pneumatic wheel asset still uses the "-new" suffix.
     "pneumatic-wheels-new.png",
     "cloud-wheels.png",
     "poly-wheels.png",
