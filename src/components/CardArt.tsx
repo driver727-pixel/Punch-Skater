@@ -1016,13 +1016,13 @@ function CardArtComponent({ card, width = 200, height = 140 }: CardArtProps) {
           transform={`translate(${width / 2 - (stars - 1) * 7 + i * 14}, 12)`}
         />
       ))}
-      <text x={width - 4} y={height - 4} textAnchor="end" fontSize="6"
+      <text x={width - 4} y={height - 4} textAnchor="end" fontSize="9"
         fill={accent} fontFamily="monospace" fillOpacity="0.8">
         {card.prompts.district}
       </text>
-      <rect x={2} y={2} width={44} height={12} rx={3}
+      <rect x={2} y={2} width={60} height={14} rx={3}
         fill={accent} fillOpacity="0.2" stroke={accent} strokeWidth="0.5" />
-      <text x={24} y={11} textAnchor="middle" fontSize="7" fill={accent} fontFamily="monospace">
+      <text x={32} y={13} textAnchor="middle" fontSize="10" fill={accent} fontFamily="monospace">
         {getDisplayedArchetype(card).toUpperCase()}
       </text>
     </svg>
