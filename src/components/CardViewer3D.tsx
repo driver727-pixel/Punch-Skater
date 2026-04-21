@@ -26,6 +26,7 @@ export function CardViewer3D({
   const [rotateX, setRotateX] = useState(-5);
   const [rotateY, setRotateY] = useState(15);
   const [autoSpin, setAutoSpin] = useState(false);
+  const maxTiltX = inline ? 28 : 35;
 
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -67,8 +68,8 @@ export function CardViewer3D({
     const dy = e.clientY - lastPos.current.y;
     lastPos.current = { x: e.clientX, y: e.clientY };
     setRotateY((y) => y + dx * 0.5);
-    setRotateX((x) => Math.max(-45, Math.min(45, x - dy * 0.5)));
-  }, []);
+    setRotateX((x) => Math.max(-maxTiltX, Math.min(maxTiltX, x - dy * 0.5)));
+  }, [maxTiltX]);
 
   const onMouseUp = useCallback(() => { dragging.current = false; }, []);
 
@@ -89,8 +90,8 @@ export function CardViewer3D({
     const dy = t.clientY - lastPos.current.y;
     lastPos.current = { x: t.clientX, y: t.clientY };
     setRotateY((y) => y + dx * 0.5);
-    setRotateX((x) => Math.max(-45, Math.min(45, x - dy * 0.5)));
-  }, []);
+    setRotateX((x) => Math.max(-maxTiltX, Math.min(maxTiltX, x - dy * 0.5)));
+  }, [maxTiltX]);
 
   // ── Flip ─────────────────────────────────────────────────────────────────────
   const handleFlip = () => {
@@ -106,31 +107,33 @@ export function CardViewer3D({
 
   const scene = (
     <div className={`viewer3d-scene${inline ? " viewer3d-scene--inline" : ""}`} onClick={(e) => e.stopPropagation()}>
-      <div
-        className="viewer3d-card"
-        style={{ transform: cardTransform }}
-        onMouseDown={onMouseDown}
-        onDragStart={(e) => e.preventDefault()}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onMouseUp}
-        onTouchCancel={onMouseUp}
-      >
-        <div className="viewer3d-face viewer3d-face--front print-card print-card--front">
-          <PrintedCardFrontContent
-            card={card}
-            backgroundImageUrl={backgroundImageUrl}
-            characterImageUrl={characterImageUrl}
-            frameImageUrl={frameImageUrl}
-            characterBlend={characterBlend}
-          />
-        </div>
-
+      <div className={`viewer3d-stage${inline ? " viewer3d-stage--inline" : ""}`}>
         <div
-          className="viewer3d-face viewer3d-face--back print-card print-card--back"
-          style={{ "--accent": card.visuals.accentColor || "#00ff88" } as React.CSSProperties}
+          className="viewer3d-card"
+          style={{ transform: cardTransform }}
+          onMouseDown={onMouseDown}
+          onDragStart={(e) => e.preventDefault()}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onMouseUp}
+          onTouchCancel={onMouseUp}
         >
-          <PrintedCardBackContent card={card} />
+          <div className="viewer3d-face viewer3d-face--front print-card print-card--front">
+            <PrintedCardFrontContent
+              card={card}
+              backgroundImageUrl={backgroundImageUrl}
+              characterImageUrl={characterImageUrl}
+              frameImageUrl={frameImageUrl}
+              characterBlend={characterBlend}
+            />
+          </div>
+
+          <div
+            className="viewer3d-face viewer3d-face--back print-card print-card--back"
+            style={{ "--accent": card.visuals.accentColor || "#00ff88" } as React.CSSProperties}
+          >
+            <PrintedCardBackContent card={card} />
+          </div>
         </div>
       </div>
 
