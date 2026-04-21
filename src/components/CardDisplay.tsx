@@ -328,6 +328,13 @@ function CardDisplayComponent({
     setLocalBio(trimmed);
     if (trimmed !== card.flavorText) onUpdate?.({ flavorText: trimmed });
   };
+
+  const openMetadataEditor = () => {
+    if (!onUpdate) return;
+    setEditingName(true);
+    setEditingAge(false);
+    setEditingBio(false);
+  };
   // ─────────────────────────────────────────────────────────────────────────
 
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
@@ -443,6 +450,15 @@ function CardDisplayComponent({
           )}
 
           <div className="card-identity">
+            {onUpdate && (
+              <button
+                type="button"
+                className="card-meta-edit-button"
+                onClick={openMetadataEditor}
+              >
+                ✎ Edit Bio / Name / Age
+              </button>
+            )}
             {onUpdate && editingName ? (
               <input
                 className="card-edit-input"
