@@ -7126,12 +7126,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 
   .conveyor__item-name {
-    font-size: 9px;
+    font-size: 10px;
     line-height: 1.25;
   }
 
   .conveyor__item-tagline {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .board-builder__lock-row .psb {
