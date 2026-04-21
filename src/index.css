@@ -114,12 +114,14 @@ body::after {
 }
 
 .nav-inner {
-  max-width: 960px;
+  width: 100%;
+  max-width: min(1200px, 95vw);
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 12px 18px;
+  box-sizing: border-box;
 }
 
 .nav-brand {
@@ -221,25 +223,25 @@ body::after {
   .nav-neon-map { display: none; }
 }
 
-.nav-links { display: flex; gap: 4px; }
+.nav-links { display: flex; gap: 6px; flex-wrap: wrap; }
 .nav-link {
   --nav-soda-face: rgba(91, 74, 118, 0.9);
   --nav-soda-face-deep: rgba(45, 31, 62, 0.98);
-  --nav-soda-ink: #efe5ff;
-  --nav-soda-hotspot: rgba(245, 225, 255, 0.48);
-  --nav-soda-glow: rgba(185, 135, 255, 0.18);
+  --nav-soda-ink: #fff7d6;
+  --nav-soda-hotspot: rgba(255, 244, 198, 0.6);
+  --nav-soda-glow: rgba(255, 215, 130, 0.32);
   --nav-soda-dead-zone: rgba(21, 12, 31, 0.5);
   --nav-soda-bezel: rgba(10, 10, 14, 0.96);
   --nav-soda-edge: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 16px;
-  min-height: 36px;
+  padding: 8px 18px;
+  min-height: 40px;
   color: var(--nav-soda-ink);
   text-decoration: none;
-  font-size: 12px;
-  letter-spacing: 1px;
+  font-size: 15px;
+  letter-spacing: 1.5px;
   border: 3px solid var(--nav-soda-bezel);
   border-radius: 8px;
   clip-path: polygon(
@@ -253,12 +255,13 @@ body::after {
     0 var(--nav-soda-edge)
   );
   background:
-    radial-gradient(circle at 24% 28%, var(--nav-soda-hotspot), rgba(255, 238, 178, 0.14) 18%, transparent 42%),
-    radial-gradient(circle at 78% 35%, rgba(255, 249, 232, 0.26), transparent 18%),
+    radial-gradient(ellipse at 50% 55%, rgba(255, 247, 210, 0.55), rgba(255, 220, 140, 0.18) 38%, transparent 70%),
+    radial-gradient(circle at 24% 28%, var(--nav-soda-hotspot), rgba(255, 238, 178, 0.18) 18%, transparent 42%),
+    radial-gradient(circle at 78% 35%, rgba(255, 249, 232, 0.3), transparent 18%),
     radial-gradient(circle at 68% 72%, var(--nav-soda-dead-zone), transparent 28%),
     linear-gradient(120deg, transparent 0 28%, rgba(255, 255, 255, 0.16) 29% 30%, transparent 31% 100%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, rgba(0, 0, 0, 0.04) 1px 3px, transparent 3px 6px),
-    linear-gradient(180deg, rgba(255, 239, 186, 0.28), rgba(255, 214, 120, 0.08) 22%, rgba(42, 22, 22, 0.12) 58%, rgba(16, 10, 8, 0.44)),
+    linear-gradient(180deg, rgba(255, 239, 186, 0.32), rgba(255, 214, 120, 0.1) 22%, rgba(42, 22, 22, 0.12) 58%, rgba(16, 10, 8, 0.44)),
     linear-gradient(135deg, var(--nav-soda-face), var(--nav-soda-face-deep));
   box-shadow:
     0 0 0 1px rgba(213, 217, 228, 0.2),
@@ -268,11 +271,15 @@ body::after {
     inset 0 1px 0 rgba(255, 249, 240, 0.34),
     inset 0 -8px 12px rgba(16, 10, 18, 0.34);
   transition: all 0.2s ease;
-  font-weight: bold;
+  font-weight: 800;
+  /* Backlit text — bright ink with soft halo and dark outline so the lettering
+     reads cleanly on top of the lit "soda machine" face. */
   text-shadow:
-    0.05em 0 rgba(152, 16, 16, 0.26),
-    -0.05em 0 rgba(92, 162, 255, 0.12),
-    0 1px 1px rgba(0, 0, 0, 0.86);
+    0 0 4px rgba(255, 252, 220, 0.95),
+    0 0 10px rgba(255, 230, 150, 0.7),
+    0 0 18px rgba(255, 196, 110, 0.45),
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 2px 2px rgba(0, 0, 0, 0.6);
 }
 .nav-link:hover {
   color: #fff8ea;
@@ -415,9 +422,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     inset 12px 0 18px rgba(255, 236, 190, 0.08),
     inset -10px 0 14px rgba(34, 17, 17, 0.18);
   text-shadow:
-    0.05em 0 rgba(152, 16, 16, 0.35),
-    -0.05em 0 rgba(92, 162, 255, 0.18),
-    0 1px 1px rgba(0, 0, 0, 0.86);
+    0 0 4px rgba(255, 252, 220, 0.95),
+    0 0 10px rgba(255, 230, 150, 0.7),
+    0 0 18px rgba(255, 196, 110, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 2px 2px rgba(0, 0, 0, 0.7);
   transform: translateY(0);
 }
 
@@ -429,8 +438,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-glow: rgba(141, 255, 92, 0.26);
   --soda-dead-zone: rgba(21, 31, 18, 0.48);
   --soda-corner-cut: 10px;
-  padding: 8px 18px;
-  font-size: 14px;
+  padding: 9px 20px;
+  font-size: 16px;
   letter-spacing: 2px;
   font-weight: bold;
   text-transform: uppercase;
@@ -495,8 +504,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --soda-bezel: rgba(28, 28, 34, 0.98);
   --soda-bezel-highlight: rgba(208, 212, 225, 0.32);
   --soda-corner-cut: 10px;
-  padding: 8px 16px;
-  font-size: 14px;
+  padding: 9px 18px;
+  font-size: 16px;
   letter-spacing: 1px;
 }
 .btn-outline:hover:not(:disabled) {
@@ -618,17 +627,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .pill {
   --soda-face: rgba(103, 81, 123, 0.8);
   --soda-face-deep: rgba(52, 34, 69, 0.94);
-  --soda-ink: rgba(246, 237, 255, 0.86);
-  --soda-hotspot: rgba(252, 240, 211, 0.32);
-  --soda-glow: rgba(172, 139, 215, 0.08);
+  --soda-ink: #fff5d6;
+  --soda-hotspot: rgba(252, 240, 211, 0.46);
+  --soda-glow: rgba(255, 200, 130, 0.18);
   --soda-dead-zone: rgba(18, 10, 22, 0.36);
   --soda-corner-cut: 7px;
-  padding: 7px 14px;
-  min-height: 40px;
-  font-size: 13px;
+  padding: 8px 16px;
+  min-height: 42px;
+  font-size: 15px;
   font-family: var(--font);
   letter-spacing: 0.5px;
   line-height: 1.35;
+  font-weight: 700;
   transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
 }
 .pill:hover {
@@ -8910,3 +8920,239 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     animation: none !important;
   }
 }
+
+/* ========================================================================
+   Soda-machine flicker — make a few buttons look like an old machine whose
+   tubes flicker on and off. Different durations/delays per nth-child make
+   the pattern feel random. The text glow and the bulb's halo both flutter.
+   ======================================================================== */
+@keyframes soda-flicker {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  3%       { opacity: 0.78; filter: brightness(0.6); }
+  4%       { opacity: 1; filter: brightness(1.1); }
+  7%       { opacity: 0.55; filter: brightness(0.55); }
+  8%       { opacity: 1; filter: brightness(1); }
+  41%      { opacity: 0.85; filter: brightness(0.75); }
+  42%      { opacity: 1; filter: brightness(1.05); }
+  43%      { opacity: 0.5;  filter: brightness(0.5); }
+  44%      { opacity: 1; filter: brightness(1); }
+  78%      { opacity: 0.7;  filter: brightness(0.7); }
+  79%      { opacity: 1; filter: brightness(1); }
+}
+
+@keyframes soda-flicker-slow {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  22%      { opacity: 1; filter: brightness(1); }
+  23%      { opacity: 0.6; filter: brightness(0.6); }
+  24%      { opacity: 1; filter: brightness(1.1); }
+  61%      { opacity: 0.4; filter: brightness(0.45); }
+  62%      { opacity: 1; filter: brightness(1); }
+  63%      { opacity: 0.7; filter: brightness(0.7); }
+  64%      { opacity: 1; filter: brightness(1); }
+}
+
+/* Apply random-looking flicker to a subset of header & forge buttons by
+   nth-child so the pattern varies and feels unpredictable. */
+.nav-links .nav-link:nth-child(3n + 1) {
+  animation: soda-flicker 7.3s steps(60, end) infinite;
+}
+.nav-links .nav-link:nth-child(4n + 2) {
+  animation: soda-flicker-slow 11.7s steps(60, end) infinite;
+  animation-delay: 1.4s;
+}
+.nav-links .nav-link:nth-child(5n + 3) {
+  animation: soda-flicker 9.1s steps(60, end) infinite;
+  animation-delay: 3.2s;
+}
+
+.forge-form .pill-group .pill:nth-child(4n + 1) {
+  animation: soda-flicker 9.4s steps(60, end) infinite;
+  animation-delay: 0.6s;
+}
+.forge-form .pill-group .pill:nth-child(7n + 4) {
+  animation: soda-flicker-slow 13.2s steps(60, end) infinite;
+  animation-delay: 2.1s;
+}
+.forge-generated-buttons .btn-outline:nth-child(odd),
+.forge-generated-buttons .btn-primary:nth-child(odd) {
+  animation: soda-flicker 10.5s steps(60, end) infinite;
+  animation-delay: 0.9s;
+}
+.btn-forge {
+  animation: soda-flicker-slow 14.6s steps(60, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-links .nav-link,
+  .forge-form .pill-group .pill,
+  .forge-generated-buttons .btn-outline,
+  .forge-generated-buttons .btn-primary,
+  .btn-forge {
+    animation: none !important;
+  }
+}
+
+/* ========================================================================
+   Backlit text — make the lettering on every header/Card-Forge button feel
+   like it's lit from inside the cabinet so it stays readable on top of the
+   warm "soda machine" face. We layer a tight bright halo and a soft outer
+   glow plus a dark contour so the glyph edges stay crisp.
+   ======================================================================== */
+.btn-primary,
+.btn-outline,
+.btn-danger,
+.pill,
+.btn-forge {
+  text-shadow:
+    0 0 4px rgba(255, 252, 220, 0.95),
+    0 0 10px rgba(255, 230, 150, 0.75),
+    0 0 20px rgba(255, 196, 110, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 2px 2px rgba(0, 0, 0, 0.65);
+}
+
+.btn-primary,
+.btn-outline,
+.btn-danger { font-size: 16px; letter-spacing: 1.5px; }
+.pill        { font-size: 15px; letter-spacing: 0.5px; }
+.btn-forge   { font-size: 18px; letter-spacing: 4px; }
+
+/* The Card Forge "FORGE YOUR CARD" CTA is the hottest bulb of all. */
+.btn-forge {
+  text-shadow:
+    0 0 6px rgba(255, 255, 220, 1),
+    0 0 16px rgba(190, 255, 140, 0.85),
+    0 0 28px rgba(120, 255, 110, 0.6),
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 2px 2px rgba(0, 0, 0, 0.75);
+}
+
+/* ========================================================================
+   Continental Theater — wireframe / 90's CRT screen restyle.
+   Targets only the Australia overmap panel; the global Neon world map keeps
+   its existing look.
+   ======================================================================== */
+.geo-atlas__panel--continental {
+  --crt-phosphor: #5fff8a;
+  --crt-phosphor-dim: rgba(95, 255, 138, 0.55);
+  --crt-phosphor-faint: rgba(95, 255, 138, 0.22);
+  background: #020604;
+  border: 1px solid var(--crt-phosphor-dim);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 24px rgba(95, 255, 138, 0.08),
+    0 0 0 1px rgba(95, 255, 138, 0.18);
+  font-family: "Courier New", "Lucida Console", monospace;
+}
+
+.geo-atlas__panel--continental .geo-atlas__eyebrow,
+.geo-atlas__panel--continental .geo-atlas__title,
+.geo-atlas__panel--continental .geo-atlas__badge,
+.geo-atlas__panel--continental .geo-atlas__callout-copy,
+.geo-atlas__panel--continental .geo-atlas__callout-pill,
+.geo-atlas__panel--continental .geo-atlas__inspection,
+.geo-atlas__panel--continental .geo-atlas__inspection-title,
+.geo-atlas__panel--continental .geo-atlas__inspection-body,
+.geo-atlas__panel--continental .geo-atlas__collapse-btn {
+  font-family: "Courier New", "Lucida Console", monospace;
+  color: var(--crt-phosphor);
+  text-shadow: 0 0 4px rgba(95, 255, 138, 0.5);
+  letter-spacing: 1px;
+}
+
+.geo-atlas__panel--continental .geo-atlas__title {
+  text-transform: uppercase;
+}
+
+.geo-atlas__panel--continental .geo-atlas__badge,
+.geo-atlas__panel--continental .geo-atlas__callout-pill,
+.geo-atlas__panel--continental .geo-atlas__inspection {
+  background: transparent;
+  border: 1px solid var(--crt-phosphor-dim);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.geo-atlas__panel--continental .geo-atlas__collapse-btn {
+  background: transparent;
+  border: 1px solid var(--crt-phosphor-dim);
+  border-radius: 2px;
+}
+.geo-atlas__panel--continental .geo-atlas__collapse-btn:hover {
+  color: #c9ffd6;
+  border-color: var(--crt-phosphor);
+}
+
+.geo-atlas__panel--continental .geo-atlas__map--australia {
+  background: #020604;
+  border: 1px solid var(--crt-phosphor-dim);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 30px rgba(95, 255, 138, 0.1),
+    inset 0 0 4px rgba(95, 255, 138, 0.18);
+}
+
+/* Wireframe grid overlay (graph paper) */
+.geo-atlas__panel--continental .geo-atlas__map--australia::before {
+  background-image:
+    linear-gradient(rgba(95, 255, 138, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(95, 255, 138, 0.28) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.6;
+}
+
+/* CRT scanlines */
+.geo-atlas__panel--continental .geo-atlas__map--australia::after {
+  background:
+    repeating-linear-gradient(180deg, rgba(95, 255, 138, 0.12) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, rgba(95, 255, 138, 0.05), transparent 30%, transparent 70%, rgba(95, 255, 138, 0.05));
+  opacity: 0.55;
+}
+
+/* Strip the rich neon styling off the SVG geometry — flat phosphor strokes. */
+.geo-atlas__panel--continental .geo-atlas__continent-shape,
+.geo-atlas__panel--continental .geo-atlas__continent-shape--tasmania {
+  fill: transparent;
+  stroke: var(--crt-phosphor);
+  stroke-width: 0.6;
+  filter: none;
+}
+.geo-atlas__panel--continental .geo-atlas__mesh-line {
+  stroke: var(--crt-phosphor-faint);
+  stroke-dasharray: 1 1;
+  stroke-width: 0.3;
+}
+.geo-atlas__panel--continental .geo-atlas__route-casing {
+  stroke: transparent;
+}
+.geo-atlas__panel--continental .geo-atlas__route-line {
+  stroke: var(--crt-phosphor) !important;
+  stroke-width: 0.8;
+  stroke-dasharray: 1.2 1.2;
+  filter: none !important;
+}
+.geo-atlas__panel--continental .geo-atlas__route--highlight .geo-atlas__route-line,
+.geo-atlas__panel--continental .geo-atlas__route--focus .geo-atlas__route-line {
+  stroke: #c9ffd6 !important;
+  stroke-width: 1.1;
+  filter: none !important;
+}
+.geo-atlas__panel--continental .geo-atlas__station {
+  fill: #020604;
+  stroke: var(--crt-phosphor) !important;
+  stroke-width: 0.8;
+  filter: none;
+}
+
+/* District nodes — boxy old-terminal labels instead of glassy pills. */
+.geo-atlas__panel--continental .geo-atlas__district {
+  background: #020604;
+  border: 1px solid var(--crt-phosphor);
+  border-radius: 0;
+  color: var(--crt-phosphor);
+  font-family: "Courier New", "Lucida Console", monospace;
+  text-shadow: 0 0 3px rgba(95, 255, 138, 0.55);
+  box-shadow: 0 0 8px rgba(95, 255, 138, 0.18);
+  --map-node-glow: rgba(95, 255, 138, 0.25);
+}
+
