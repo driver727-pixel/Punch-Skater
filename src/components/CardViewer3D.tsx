@@ -74,7 +74,7 @@ export function CardViewer3D({
     if (Math.abs(centerDelta) > 0.5) {
       setAnchorOffsetY((current) => current + centerDelta);
     }
-  }, [anchorOffsetY, rotateX, rotateY]);
+  }, [rotateX, rotateY]);
 
   // ── Mouse drag ───────────────────────────────────────────────────────────────
   const onMouseDown = useCallback((e: React.MouseEvent) => {

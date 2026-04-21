@@ -7215,10 +7215,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .forge-form .pill-group {
     grid-template-columns: minmax(0, 1fr);
   }
-
-  .conveyor__track {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 380px) {
