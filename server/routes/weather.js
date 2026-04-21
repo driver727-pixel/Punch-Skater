@@ -1,5 +1,7 @@
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000;
+const WEATHER_RETRY_ATTEMPTS = 3;
+const WEATHER_RETRY_BASE_DELAY_MS = 1000;
 const HEAVY_RAIN_MM = 7;
 const HEATWAVE_TEMP_C = 35;
 const STRONG_WIND_KPH = 45;
@@ -59,6 +61,10 @@ function buildFallbackDistrictWeatherPayload() {
   };
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function fetchDistrictWeatherSnapshot(district, location) {
   const url = new URL(WEATHER_URL);
   url.searchParams.set('latitude', String(location.latitude));
@@ -67,31 +73,42 @@ async function fetchDistrictWeatherSnapshot(district, location) {
   url.searchParams.set('timezone', 'Australia/Sydney');
   url.searchParams.set('forecast_days', '1');
 
-  const upstream = await fetch(url);
-  if (!upstream.ok) {
-    throw new Error(`Weather upstream failed for ${district} with ${upstream.status}.`);
+  let lastError = new Error(`Weather upstream rate limited for ${district}.`);
+  for (let attempt = 0; attempt < WEATHER_RETRY_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await sleep(WEATHER_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1));
+    }
+    const upstream = await fetch(url);
+    if (upstream.status === 429) {
+      lastError = new Error(`Weather upstream rate limited for ${district} (attempt ${attempt + 1}).`);
+      continue;
+    }
+    if (!upstream.ok) {
+      throw new Error(`Weather upstream failed for ${district} with ${upstream.status}.`);
+    }
+
+    const data = await upstream.json();
+    const current = data?.current ?? {};
+    const temperatureC = roundWeatherMetric(current.temperature_2m);
+    const windSpeedKph = roundWeatherMetric(current.wind_speed_10m);
+    const rainMm = roundWeatherMetric(current.rain);
+    const weatherCode = typeof current.weather_code === 'number' ? current.weather_code : null;
+    const summary = resolveWeatherSummary({ rainMm, weatherCode, windSpeedKph, temperatureC });
+
+    return {
+      district,
+      city: location.city,
+      state: location.state,
+      summary,
+      temperatureC,
+      windSpeedKph,
+      rainMm,
+      weatherCode,
+      updatedAt: new Date().toISOString(),
+      accessRule: buildWeatherAccessRule(district, location.city, summary),
+    };
   }
-
-  const data = await upstream.json();
-  const current = data?.current ?? {};
-  const temperatureC = roundWeatherMetric(current.temperature_2m);
-  const windSpeedKph = roundWeatherMetric(current.wind_speed_10m);
-  const rainMm = roundWeatherMetric(current.rain);
-  const weatherCode = typeof current.weather_code === 'number' ? current.weather_code : null;
-  const summary = resolveWeatherSummary({ rainMm, weatherCode, windSpeedKph, temperatureC });
-
-  return {
-    district,
-    city: location.city,
-    state: location.state,
-    summary,
-    temperatureC,
-    windSpeedKph,
-    rainMm,
-    weatherCode,
-    updatedAt: new Date().toISOString(),
-    accessRule: buildWeatherAccessRule(district, location.city, summary),
-  };
+  throw lastError;
 }
 
 async function buildDistrictWeatherPayload() {
