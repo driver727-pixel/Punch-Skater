@@ -7021,7 +7021,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 @media (max-width: 640px) {
   :root {
-    --conveyor-item-size: 100px;
+    --conveyor-item-size: 72px;
   }
 
   .page {
@@ -7098,9 +7098,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     /* Keep the industrial belt styling, but switch to a fixed grid on phones
        so players can browse loadout parts without horizontal swiping. */
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px 8px;
     overflow: visible;
     scroll-snap-type: none;
     animation: none;
@@ -7121,17 +7121,25 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 
   .conveyor__item-copy {
-    padding: 26px 8px 12px;
+    gap: 2px;
+    padding: 14px 4px 6px;
   }
 
   .conveyor__item-name {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.25;
   }
 
   .conveyor__item-tagline {
-    font-size: 10px;
-    line-height: 1.35;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .board-builder__lock-row .psb {
