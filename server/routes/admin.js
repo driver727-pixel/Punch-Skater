@@ -9,6 +9,7 @@ export function registerAdminRoutes(app, {
   isStrongPassword,
   buildUserDisplayName,
   upsertUserLookupRecord,
+  reconcilePurchasedTierForUser,
   deleteCollectionDocs,
   deleteQueryDocs,
 }) {
@@ -24,6 +25,15 @@ export function registerAdminRoutes(app, {
 
     try {
       const decodedToken = await authenticateFirebaseUser(req);
+      await upsertUserLookupRecord({
+        uid: decodedToken.uid,
+        email: decodedToken.email ?? '',
+        displayName: decodedToken.name ?? decodedToken.email ?? '',
+      });
+      await reconcilePurchasedTierForUser({
+        uid: decodedToken.uid,
+        email: decodedToken.email ?? '',
+      });
       const claimSync = await syncAdminClaim(decodedToken.uid, decodedToken.email ?? '');
       res.json(claimSync);
     } catch (error) {

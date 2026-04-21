@@ -30,6 +30,12 @@ import {
   readFalRequestConfig,
   resolveFalProfile as resolveConfiguredFalProfile,
 } from './lib/falRequest.js';
+import {
+  buildPurchasedTierUpdate,
+  buildPendingPurchaseUpdate,
+  normalizePaidTier,
+  resolveHigherPaidTier,
+} from './lib/payments.js';
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerBattleRoutes } from './routes/battle.js';
@@ -405,7 +411,9 @@ function pruneBoardImageJobs(now = Date.now()) {
 }
 
 async function syncPurchasedTier({ tier, email, sessionId }) {
-  if (!adminDb || !tier) return;
+  if (!adminDb) return;
+  const normalizedTier = normalizePaidTier(tier);
+  if (!normalizedTier) return;
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return;
   const exactEmail = getTrimmedString(email, 320);
@@ -424,17 +432,68 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
       matchingDocs.set(docSnap.ref.path, docSnap);
     });
   });
-  if (matchingDocs.size === 0) return;
+  const batch = adminDb.batch();
+
+  if (matchingDocs.size === 0) {
+    const pendingPurchaseRef = adminDb.collection('stripePurchases').doc(normalizedEmail);
+    const pendingPurchaseSnap = await pendingPurchaseRef.get();
+    const pendingUpdate = buildPendingPurchaseUpdate(pendingPurchaseSnap.data(), {
+      emailLower: normalizedEmail,
+      tier: normalizedTier,
+      sessionId,
+    }, FieldValue.serverTimestamp());
+    if (pendingUpdate) {
+      batch.set(pendingPurchaseRef, pendingUpdate, { merge: true });
+    }
+    await batch.commit();
+    return;
+  }
+
+  matchingDocs.forEach((docSnap) => {
+    const nextData = buildPurchasedTierUpdate(docSnap.data(), {
+      tier: normalizedTier,
+      emailLower: normalizedEmail,
+      sessionId,
+    }, FieldValue.serverTimestamp());
+    if (!nextData) return;
+    batch.set(docSnap.ref, nextData, { merge: true });
+  });
+  const pendingPurchaseRef = adminDb.collection('stripePurchases').doc(normalizedEmail);
+  const pendingPurchaseSnap = await pendingPurchaseRef.get();
+  const pendingUpdate = buildPendingPurchaseUpdate(pendingPurchaseSnap.data(), {
+    emailLower: normalizedEmail,
+    tier: normalizedTier,
+    sessionId,
+  }, FieldValue.serverTimestamp());
+  if (pendingUpdate) {
+    batch.set(pendingPurchaseRef, pendingUpdate, { merge: true });
+  }
+  await batch.commit();
+}
+
+async function applyPendingPurchasedTierToProfile(uid, email) {
+  if (!adminDb) return;
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return;
+
+  const pendingPurchaseRef = adminDb.collection('stripePurchases').doc(normalizedEmail);
+  const [pendingPurchaseSnap, profileSnap] = await Promise.all([
+    pendingPurchaseRef.get(),
+    adminDb.collection('userProfiles').doc(uid).get(),
+  ]);
+  if (!pendingPurchaseSnap.exists) return;
+
+  const pendingPurchase = pendingPurchaseSnap.data();
+  const nextData = buildPurchasedTierUpdate(profileSnap.data(), {
+    tier: pendingPurchase?.tier,
+    emailLower: normalizedEmail,
+    sessionId: pendingPurchase?.lastCheckoutSessionId,
+  }, FieldValue.serverTimestamp());
+  if (!nextData) return;
 
   const batch = adminDb.batch();
-  matchingDocs.forEach((docSnap) => {
-    batch.set(docSnap.ref, {
-      tier,
-      purchaseEmail: normalizedEmail,
-      lastCheckoutSessionId: sessionId,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-  });
+  batch.set(adminDb.collection('userProfiles').doc(uid), nextData, { merge: true });
+  batch.delete(pendingPurchaseRef);
   await batch.commit();
 }
 
@@ -551,12 +610,32 @@ async function upsertUserLookupRecord({ uid, email, displayName }) {
   if (!adminDb) return;
   const normalizedEmail = normalizeEmail(email);
   const resolvedDisplayName = buildUserDisplayName({ email, displayName });
+  let purchasedTierPatch = null;
+
+  if (normalizedEmail) {
+    const stripePurchaseSnap = await adminDb.collection('stripePurchases').doc(normalizedEmail).get();
+    if (stripePurchaseSnap.exists) {
+      const purchaseData = stripePurchaseSnap.data() ?? {};
+      const purchasedTier = resolveHigherPaidTier(null, purchaseData.tier);
+      if (purchasedTier) {
+        purchasedTierPatch = buildPurchasedTierUpdate({}, {
+          tier: purchasedTier,
+          emailLower: normalizedEmail,
+          sessionId: typeof purchaseData.lastCheckoutSessionId === 'string'
+            ? purchaseData.lastCheckoutSessionId
+            : '',
+        }, FieldValue.serverTimestamp());
+      }
+    }
+  }
+
   const profilePayload = {
     uid,
     email: typeof email === 'string' ? email.trim() : '',
     emailLower: normalizedEmail,
     displayName: resolvedDisplayName,
     updatedAt: FieldValue.serverTimestamp(),
+    ...(purchasedTierPatch ?? {}),
   };
   const lookupPayload = {
     uid,
@@ -615,6 +694,7 @@ registerAdminRoutes(app, {
   authenticateFirebaseUser,
   authenticateAdminRequest,
   syncAdminClaim,
+  reconcilePurchasedTierForUser: applyPendingPurchasedTierToProfile,
   isStrongPassword,
   buildUserDisplayName,
   upsertUserLookupRecord,

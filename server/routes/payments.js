@@ -62,7 +62,7 @@ export function registerPaymentRoutes(app, {
     }
   });
 
-  app.post('/api/create-checkout-session', checkoutRateLimit, async (req, res) => {
+  app.post('/api/create-checkout-session', express.json({ limit: '256kb' }), checkoutRateLimit, async (req, res) => {
     if (!stripe) {
       res.status(503).json({ error: 'Payment processing is not configured.' });
       return;
