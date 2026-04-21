@@ -4,7 +4,8 @@ import type { BatteryType, BoardConfig, BoardType, Drivetrain, WheelType } from 
 const BOARD_IMAGE_BASE_CONCEPT =
   "An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background. " +
   "It has exactly four wheels mounted on front and rear trucks with fixed axles, the wheels aligned in matching pairs and pointing in the same direction as the deck. " +
-  "Never show caster-style pivoting wheels, sideways wheels, or wheels perpendicular to the board.";
+  "Never show caster-style pivoting wheels, sideways wheels, or wheels perpendicular to the board. " +
+  "Unless the drivetrain is explicitly 4WD, only the rear wheels are drive wheels and the front wheels must remain unpowered free-rolling wheels.";
 
 const BOARD_TYPE_IMAGE_DESCRIPTIONS: Record<BoardType, string> = {
   Street: "A Street style electric skateboard with a low-profile urban deck built for pavement.",
@@ -15,10 +16,10 @@ const BOARD_TYPE_IMAGE_DESCRIPTIONS: Record<BoardType, string> = {
 };
 
 const DRIVETRAIN_IMAGE_DESCRIPTIONS: Record<Drivetrain, string> = {
-  Belt: "It has belt driven rear wheels with exposed belts, pulleys, and rear motor mounts.",
-  Hub: "It has hub driven rear wheels with the motors hidden inside the rear wheel cores and no exposed belts.",
-  Gear: "It has gear driven rear wheels with sealed enclosed gearboxes instead of belts.",
-  "4WD": "It has powered front and rear trucks in a true four-wheel-drive setup.",
+  Belt: "It has belt driven rear wheels only, with exposed belts, pulleys, and rear motor mounts while the front wheels stay non-driven.",
+  Hub: "It has hub driven rear wheels only, with the motors hidden inside the rear wheel cores and no exposed belts while the front wheels stay non-driven.",
+  Gear: "It has gear driven rear wheels only, with sealed enclosed gearboxes instead of belts while the front wheels stay non-driven.",
+  "4WD": "It has powered front and rear trucks in a true four-wheel-drive setup with all four wheels driven.",
 };
 
 const WHEEL_IMAGE_DESCRIPTIONS: Record<WheelType, string> = {
@@ -78,6 +79,7 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
     `${BATTERY_IMAGE_DESCRIPTIONS[normalizedConfig.battery]} ` +
     `Show one fully assembled complete skateboard only. ` +
     `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type, and battery form factor with no substitutions. ` +
+    `For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD. ` +
     `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, no text, no watermark.`
   );
 }
