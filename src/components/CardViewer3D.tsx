@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { CardPayload } from "../lib/types";
 import { PrintedCardBackContent, PrintedCardFrontContent } from "./PrintedCardFaces";
 
@@ -31,9 +31,6 @@ export function CardViewer3D({
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const spinRef = useRef<number | null>(null);
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  const anchoredCenterYRef = useRef<number | null>(null);
-  const [anchorOffsetY, setAnchorOffsetY] = useState(0);
 
   // ── Close on Escape ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -57,24 +54,6 @@ export function CardViewer3D({
     }
     return () => { if (spinRef.current !== null) cancelAnimationFrame(spinRef.current); };
   }, [autoSpin]);
-
-  useLayoutEffect(() => {
-    const cardElement = cardRef.current;
-    if (!cardElement) return;
-
-    const rect = cardElement.getBoundingClientRect();
-    const currentCenterY = rect.top + rect.height / 2;
-
-    if (anchoredCenterYRef.current === null) {
-      anchoredCenterYRef.current = currentCenterY;
-      return;
-    }
-
-    const centerDelta = anchoredCenterYRef.current - currentCenterY;
-    if (Math.abs(centerDelta) > 0.5) {
-      setAnchorOffsetY((current) => current + centerDelta);
-    }
-  }, [rotateX, rotateY]);
 
   // ── Mouse drag ───────────────────────────────────────────────────────────────
   const onMouseDown = useCallback((e: React.MouseEvent) => {
@@ -124,14 +103,13 @@ export function CardViewer3D({
     setAutoSpin((v) => !v);
   };
 
-  const cardTransform = `translateY(${anchorOffsetY}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  const cardTransform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
 
   const scene = (
     <div className={`viewer3d-scene${inline ? " viewer3d-scene--inline" : ""}`} onClick={(e) => e.stopPropagation()}>
       <div className={`viewer3d-stage${inline ? " viewer3d-stage--inline" : ""}`}>
         <div
           className="viewer3d-card"
-          ref={cardRef}
           style={{ transform: cardTransform }}
           onMouseDown={onMouseDown}
           onDragStart={(e) => e.preventDefault()}
