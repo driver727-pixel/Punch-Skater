@@ -1,6 +1,37 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CardPayload } from "../lib/types";
 import { PrintedCardBackContent, PrintedCardFrontContent } from "./PrintedCardFaces";
+
+const VIEWER_CARD_WIDTH = 189;
+const VIEWER_CARD_HEIGHT = 264;
+const VIEWER_PERSPECTIVE = 900;
+
+function getProjectedCardCenterY(rotateX: number, rotateY: number) {
+  const rotateXRad = (rotateX * Math.PI) / 180;
+  const rotateYRad = (rotateY * Math.PI) / 180;
+  const halfWidth = VIEWER_CARD_WIDTH / 2;
+  const halfHeight = VIEWER_CARD_HEIGHT / 2;
+
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  // The card transform is rotateX(...) rotateY(...), which CSS applies
+  // right-to-left, so we project each corner after a Y rotation followed by X.
+  for (const x of [-halfWidth, halfWidth]) {
+    for (const y of [-halfHeight, halfHeight]) {
+      const zAfterYRotation = -x * Math.sin(rotateYRad);
+      const yAfterXRotation = y * Math.cos(rotateXRad) - zAfterYRotation * Math.sin(rotateXRad);
+      const zAfterXRotation = y * Math.sin(rotateXRad) + zAfterYRotation * Math.cos(rotateXRad);
+      const perspectiveScale = VIEWER_PERSPECTIVE / (VIEWER_PERSPECTIVE - zAfterXRotation);
+      const screenY = yAfterXRotation * perspectiveScale;
+
+      minY = Math.min(minY, screenY);
+      maxY = Math.max(maxY, screenY);
+    }
+  }
+
+  return (minY + maxY) / 2;
+}
 
 interface CardViewer3DBaseProps {
   card: CardPayload;
@@ -103,7 +134,13 @@ export function CardViewer3D({
     setAutoSpin((v) => !v);
   };
 
-  const cardTransform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  const frontCenterY = useMemo(() => getProjectedCardCenterY(rotateX, 0), [rotateX]);
+  const anchorOffsetY = useMemo(
+    () => frontCenterY - getProjectedCardCenterY(rotateX, rotateY),
+    [frontCenterY, rotateX, rotateY],
+  );
+
+  const cardTransform = `translateY(${anchorOffsetY}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
 
   const scene = (
     <div className={`viewer3d-scene${inline ? " viewer3d-scene--inline" : ""}`} onClick={(e) => e.stopPropagation()}>
