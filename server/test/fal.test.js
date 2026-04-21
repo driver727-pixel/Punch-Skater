@@ -52,6 +52,38 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs including w
   ]);
 });
 
+test('normalizeBoardReferenceUrls accepts canonical board asset URLs with png extension', () => {
+  const urls = normalizeBoardReferenceUrls([
+    'https://punchskater.com/assets/boards/deck/street.png',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    'https://punchskater.com/assets/boards/battery/slim-battery.png',
+  ]);
+
+  assert.deepEqual(urls, [
+    'https://punchskater.com/assets/boards/deck/street.png',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    'https://punchskater.com/assets/boards/battery/slim-battery.png',
+  ]);
+});
+
+test('normalizeBoardReferenceUrls accepts canonical board asset URLs with version query params', () => {
+  const urls = normalizeBoardReferenceUrls([
+    'https://punchskater.com/assets/boards/deck/street.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/battery/slim-battery.png?v=2026-04-20',
+  ]);
+
+  assert.deepEqual(urls, [
+    'https://punchskater.com/assets/boards/deck/street.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/battery/slim-battery.png?v=2026-04-20',
+  ]);
+});
+
 test('normalizeBoardReferenceUrls rejects non-canonical origins and paths', () => {
   assert.equal(
     normalizeBoardReferenceUrls([
