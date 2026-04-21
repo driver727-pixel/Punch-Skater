@@ -4742,12 +4742,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   justify-content: center;
   z-index: 2000;
   user-select: none;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .viewer3d-inline {
   width: 100%;
   display: flex;
   justify-content: center;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .viewer3d-scene {
@@ -4772,6 +4776,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transform-style: preserve-3d;
   transition: transform 0.05s linear;
   cursor: grab;
+  touch-action: none;
+  -webkit-user-drag: none;
 }
 .viewer3d-card:active { cursor: grabbing; }
 
@@ -4790,6 +4796,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   height: 100%;
   border: 0;
   border-radius: inherit;
+}
+
+.viewer3d-card img,
+.viewer3d-card svg {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* Back */

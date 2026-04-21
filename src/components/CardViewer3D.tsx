@@ -75,6 +75,7 @@ export function CardViewer3D({
   // ── Touch drag ───────────────────────────────────────────────────────────────
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (autoSpin) return;
+    e.preventDefault();
     dragging.current = true;
     const t = e.touches[0];
     lastPos.current = { x: t.clientX, y: t.clientY };
@@ -82,6 +83,7 @@ export function CardViewer3D({
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (!dragging.current) return;
+    e.preventDefault();
     const t = e.touches[0];
     const dx = t.clientX - lastPos.current.x;
     const dy = t.clientY - lastPos.current.y;
@@ -108,9 +110,11 @@ export function CardViewer3D({
         className="viewer3d-card"
         style={{ transform: cardTransform }}
         onMouseDown={onMouseDown}
+        onDragStart={(e) => e.preventDefault()}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onMouseUp}
+        onTouchCancel={onMouseUp}
       >
         <div className="viewer3d-face viewer3d-face--front print-card print-card--front">
           <PrintedCardFrontContent
