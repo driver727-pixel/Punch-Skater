@@ -38,6 +38,18 @@ export function CardViewer3D({
   const lastPos = useRef({ x: 0, y: 0 });
   const spinRef = useRef<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  // Cache getBoundingClientRect to avoid forced layout reflow on every mousemove.
+  const cardRectRef = useRef<DOMRect | null>(null);
+
+  // Refresh the cached rect on window resize so the tilt origin stays accurate.
+  useEffect(() => {
+    const updateRect = () => {
+      if (cardRef.current) cardRectRef.current = cardRef.current.getBoundingClientRect();
+    };
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    return () => window.removeEventListener("resize", updateRect);
+  }, []);
 
   // ── Close on Escape ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -82,10 +94,10 @@ export function CardViewer3D({
       return;
     }
 
-    if (autoSpin || !cardRef.current) return;
+    if (autoSpin || !cardRectRef.current) return;
 
     // Hover tilt — map cursor offset from card center to ±HOVER_TILT degrees.
-    const rect = cardRef.current.getBoundingClientRect();
+    const rect = cardRectRef.current;
     const offsetX = (e.clientX - (rect.left + rect.width  / 2)) / (rect.width  / 2); // -1..1
     const offsetY = (e.clientY - (rect.top  + rect.height / 2)) / (rect.height / 2); // -1..1
     setRotateY(NEUTRAL_Y + offsetX * HOVER_TILT);
@@ -147,6 +159,7 @@ export function CardViewer3D({
           ref={cardRef}
           className={cardClassName}
           style={{ ...cardVars, transform: cardTransform }}
+          onMouseEnter={() => { if (cardRef.current) cardRectRef.current = cardRef.current.getBoundingClientRect(); }}
           onMouseDown={onMouseDown}
           onDragStart={(e) => e.preventDefault()}
           onTouchStart={onTouchStart}
