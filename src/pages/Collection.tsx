@@ -521,7 +521,7 @@ export function Collection() {
           {selected && (
               <div className="card-detail-panel">
                 <button className="close-btn" onClick={() => setSelected(null)}>✕</button>
-              <CardContainer cardVars={buildCardVars(selected, "print-screen")}>
+              <CardContainer cardVars={buildCardVars(selected, "collection")}>
                 <PrintedCardPreviewPair
                   card={selected}
                   className="print-preview-area--collection"
