@@ -28,11 +28,11 @@ export function buildCardVars(
     // (e.g. --card-name-size: 10pt) to scale for high-res output without
     // rewriting any layout or positioning rules.
     return {
-      "--card-name-size": "1.75rem",      // ≈ 28 px — large enough to fill bottom third
-      "--card-bio-size":  "1rem",         // ≈ 16 px
-      "--card-age-size":  "0.875rem",     // ≈ 14 px
-      "--card-back-name-size": "1.1rem",  // ≈ 17.6 px
-      "--card-back-body-size": "0.75rem", // ≈ 12 px
+      "--card-name-size": "2.1rem",       // ≈ 34 px — fills more of the front face
+      "--card-bio-size":  "1.2rem",       // ≈ 19 px
+      "--card-age-size":  "1rem",         // ≈ 16 px
+      "--card-back-name-size": "1.35rem", // ≈ 22 px
+      "--card-back-body-size": "0.95rem", // ≈ 15 px
       "--card-accent": accent,
     } as CSSProperties;
   }

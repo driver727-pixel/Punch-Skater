@@ -5183,10 +5183,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   gap: 0.5%;
-  padding-right: 26%;
 }
 .print-back-row { display: flex; gap: 3px; align-items: baseline; }
-.print-back-row-label { color: #7070a0; width: 42px; flex-shrink: 0; font-size: var(--card-back-body-size); letter-spacing: 0.3px; }
+.print-back-row-label { color: #7070a0; width: 8ch; flex-shrink: 0; font-size: var(--card-back-body-size); letter-spacing: 0.3px; }
 .print-back-row-value { color: #e0e0f0; font-size: var(--card-back-body-size); }
 
 .print-back-stats {
@@ -5196,10 +5195,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 0.5%;
   border-top: 1px solid #1e1e3a;
 }
-.print-back-stats .stat-bar  { gap: 1%; }
-.print-back-stats .stat-label { font-size: var(--stat-font-size); width: 22px; }
-.print-back-stats .stat-value { font-size: var(--stat-font-size); width: 8px; }
-.print-back-stats .stat-track { height: 2px; }
+.print-back-stats .stat-bar  { gap: 2%; }
+.print-back-stats .stat-label { font-size: var(--stat-font-size); width: 7ch; }
+.print-back-stats .stat-value { font-size: var(--stat-font-size); width: 2ch; }
+.print-back-stats .stat-track { height: max(2px, calc(var(--stat-font-size) * 0.28)); }
 
 .print-back-trait {
   padding: 1.1% 3.2%;
@@ -5230,10 +5229,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 0.5%;
 }
 .print-back-tag {
-  font-size: 4px;
-  padding: 1px 2px;
+  font-size: calc(var(--card-back-body-size) * 0.85);
+  padding: 0.15em 0.45em;
   border: 1px solid;
-  border-radius: 3px;
+  border-radius: 0.4em;
   opacity: 0.75;
 }
 
@@ -5449,7 +5448,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     width: 60%;
     margin: 4pt auto;
   }
-  .print-only-card .print-back-info   { padding: 4pt 8pt; padding-right: 0.7in; gap: 2pt; }
+  .print-only-card .print-back-info   { padding: 4pt 8pt; gap: 2pt; }
   .print-only-card .print-back-row-label { font-size: 5pt; width: 0.6in; }
   .print-only-card .print-back-row-value { font-size: 5pt; }
   .print-only-card .print-back-stats  { padding: 3pt 8pt; gap: 2pt; }
