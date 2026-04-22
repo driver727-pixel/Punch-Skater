@@ -22,17 +22,15 @@ export function buildCardVars(
   const accent = card?.visuals.accentColor ?? "#00ff88";
 
   if (mode === "editor") {
-    // These rem values mirror the pixel sizes previously hard-coded in
-    // .print-preview-area--forge (name: 13 px, bio/body: 10 px, back-name: 12 px).
-    // Using rem lets a future Print-preview wrapper override a single variable
-    // (e.g. --card-name-size: 10pt) to scale for high-res output without
-    // rewriting any layout or positioning rules.
+    // These rem values tune the editor preview independently from the 189 px
+    // print/3D card baseline so the mobile forge layout stays readable without
+    // overflowing the front bio or crowding the back-card hero overlays.
     return {
-      "--card-name-size": "2.1rem",       // ≈ 34 px — fills more of the front face
-      "--card-bio-size":  "1.2rem",       // ≈ 19 px
-      "--card-age-size":  "1rem",         // ≈ 16 px
-      "--card-back-name-size": "1.35rem", // ≈ 22 px
-      "--card-back-body-size": "0.95rem", // ≈ 15 px
+      "--card-name-size": "2.1rem",
+      "--card-bio-size":  "0.95rem",
+      "--card-age-size":  "0.95rem",
+      "--card-back-name-size": "1.2rem",
+      "--card-back-body-size": "0.78rem",
       "--card-accent": accent,
     } as CSSProperties;
   }
