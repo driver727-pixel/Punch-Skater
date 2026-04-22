@@ -51,8 +51,10 @@ function getResolvedBoardReferenceUrls(config: BoardConfig): string[] {
     { category: "deck", value: normalizedConfig.boardType },
     { category: "drivetrain", value: normalizedConfig.drivetrain },
     { category: "wheels", value: normalizedConfig.wheels },
-    { category: "battery", value: normalizedConfig.battery },
   ];
+  if (normalizedConfig.battery !== "SlimStealth") {
+    selections.push({ category: "battery", value: normalizedConfig.battery });
+  }
 
   return selections.map(({ category, value }) => {
     const matchingImage = getMatchingCategoryImages(category, value)[0] ?? null;
@@ -67,11 +69,15 @@ function getResolvedBoardReferenceUrls(config: BoardConfig): string[] {
 
 function buildBoardPrompt(config: BoardConfig): string {
   const normalizedConfig = normalizeBoardConfig(config);
+  const batterySentence =
+    normalizedConfig.battery === "SlimStealth"
+      ? ""
+      : `A ${normalizedConfig.battery} battery case is securely mounted. `;
   return (
     "A stylized, gouache painting of a 'Punch Skater' electric skateboard. " +
     `The board features a ${normalizedConfig.boardType} deck, ${normalizedConfig.drivetrain} drivetrain, and ${normalizedConfig.wheels} wheels. ` +
     `It uses ${normalizedConfig.motor} motors matched to the selected performance setup. ` +
-    `A ${normalizedConfig.battery} battery case is securely mounted. ` +
+    batterySentence +
     "The artwork features matte, opaque brushwork, thick textures, and a clean, neutral studio gray background suitable for a UI cutout."
   );
 }

@@ -30,7 +30,7 @@ const WHEEL_IMAGE_DESCRIPTIONS: Record<WheelType, string> = {
 };
 
 const BATTERY_IMAGE_DESCRIPTIONS: Record<BatteryType, string> = {
-  SlimStealth: "It has a hidden built in battery pack mounted underneath the deck.",
+  SlimStealth: "",
   DoubleStack: "It has a thick double-stack battery enclosure mounted underneath the deck.",
   TopPeli: "It has a rugged top-mounted Peli-style battery case strapped above the deck.",
 };
@@ -69,6 +69,10 @@ function getMotorImageDescription(config: BoardConfig): string {
 
 export function buildBoardImagePrompt(config: BoardConfig): string {
   const normalizedConfig = normalizeBoardConfig(config);
+  const batteryPreservationClause =
+    normalizedConfig.battery === "SlimStealth"
+      ? ""
+      : " and battery form factor";
 
   return (
     `${BOARD_IMAGE_BASE_CONCEPT} ` +
@@ -78,7 +82,7 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
     `${WHEEL_IMAGE_DESCRIPTIONS[normalizedConfig.wheels]} ` +
     `${BATTERY_IMAGE_DESCRIPTIONS[normalizedConfig.battery]} ` +
     `Show one fully assembled complete skateboard only. ` +
-    `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type, and battery form factor with no substitutions. ` +
+    `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type${batteryPreservationClause} with no substitutions. ` +
     `For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD. ` +
     `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, no text, no watermark.`
   );
