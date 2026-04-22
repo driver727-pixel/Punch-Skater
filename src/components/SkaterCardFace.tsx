@@ -313,6 +313,7 @@ export function SkaterCardFace({
   onBioChange,
   onAgeChange,
   onStatChange,
+  boardImageLoading,
 }: SkaterCardFaceProps) {
   if (face === "front") {
     return (
