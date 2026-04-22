@@ -1,5 +1,5 @@
-import { getForgeCoverRole } from "./factionDiscovery";
 import { createSeededRandom } from "./prng";
+import { getCoverIdentityProfile } from "./coverIdentity";
 import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
 
 // ── Lookup tables ──────────────────────────────────────────────────────────────
@@ -31,32 +31,6 @@ const STYLE_CLOTHING: Record<string, string> = {
   Hacker:         "a dark hoodie with embedded tech and a screen-visor or goggles with small display screens",
   Chef:           "a white chef apron and tall chef hat, kitchen non-slip shoes",
   Fascist:        "rugged survivalist explorer gear with utility belts and cargo pockets",
-};
-
-const ARCHETYPE_POSES: Record<string, string> = {
-  "The Knights Technarchy": "crouched in a dynamic stealthy combat stance, one hand reaching for a concealed weapon, weight shifted forward ready to spring into action, dressed in all black with no lights on the board",
-  "Qu111s":                 "a defiant, heroic investigative reporter striking an exaggerated, dynamic action pose, intensely determined expression, dramatically windswept hair, riding a low tech electric skateboard with smaller all-terrain wheels",
-  "Ne0n Legion":            "mid-kickflip in a flashy acrobatic trick pose, one arm raised high trailing neon light streaks, body twisted in a dynamic aerial spin with an electrifying expression",
-  "Iron Curtains":          "a hyper-muscular mercenary, 90s comic book military, big muscles bodybuilder type, exaggerated pose and facial expression, riding big girthy electric skateboards on big chunky off-road wheels",
-  "D4rk $pider":            "a cyber-hacker wearing mirrored wrap-around visor shades, surrounded by thick glowing neon-green fiber-optic cables, fiercely typing on a chunky retro-futuristic mechanical hacking deck, riding a high tech electric skateboard with lots of wires and antennas",
-  "The Asclepians":         "striking a commanding power pose with one arm thrust forward pointing decisively, chin raised with fierce confidence, one foot planted firmly on the board, high-tech earpiece visible, corporate logo on the board",
-  "The Mesopotamian Society":"defiant rock-star pose in rugged survivalist gear, all-terrain off-road mountain board style",
-  "Hermes' Squirmies":      "lunging forward in a dramatic mid-delivery sprint, one arm swinging a heavy parcel overhead, body leaning hard into a sharp turn with intense determination, in union worker overalls covered in badge patches",
-  "UCPS":                   "in an explosive action-hero leap over an obstacle, one arm clutching a package tight to the chest, legs kicked out in a dynamic hurdle pose, street-style hoodie and cargo pants, old-looking board with lights",
-  "The Team":               "in a triumphant victory pose with both fists pumped skyward, muscles tensed, fierce competitive grin, powerful athletic stance, in a matching sponsor-logo ensemble, coordinated team colours",
-};
-
-const COVER_IDENTITY_POSES: Record<string, string> = {
-  "The Knights Technarchy": "holding a stealthy low-profile courier stance with precise balance, covert focus, and controlled movement",
-  Qu111s: "striking a focused investigative action pose with determined eye contact, messenger bag secured for a fast scoop",
-  "Ne0n Legion": "throwing a flashy high-energy stunt pose with bold confidence and showy athletic control",
-  "Iron Curtains": "leaning into a forceful action stance with tough kitchen-worker swagger and a heavy-duty delivery loadout",
-  "D4rk $pider": "locked into a sharp hacker courier pose with compact tech gear, fast hands, and high-alert focus",
-  "The Asclepians": "in a decisive emergency-response stance, ready to deliver urgent aid supplies without breaking stride",
-  "The Mesopotamian Society": "balancing confidently in an adventurous field-research pose with treasure-hunter swagger",
-  "Hermes' Squirmies": "driving forward in a hard-working delivery pose with practical momentum and union-job grit",
-  UCPS: "in a disciplined postal-delivery action pose with a secure parcel, practical utility gear, and efficient movement",
-  "The Team": "holding a polished elite-athlete stance with disciplined posture, balance, and coordinated confidence",
 };
 
 const RARITY_MOOD: Record<string, string> = {
@@ -105,13 +79,8 @@ function joinPromptBlocks(...blocks: Array<string | undefined>): string {
     .join(" ");
 }
 
-function buildCoverIdentityRole(archetype: string): string {
-  return getForgeCoverRole(archetype as CardPrompts["archetype"]);
-}
-
 function buildCoverIdentityPose(archetype: string): string {
-  return COVER_IDENTITY_POSES[archetype]
-    ?? ARCHETYPE_POSES[archetype]
+  return getCoverIdentityProfile(archetype)?.posePrompt
     ?? "striking a dramatic comic book action pose, dynamic and powerful";
 }
 
@@ -280,16 +249,16 @@ function buildBodyDescription(bodyType: string): string {
  * The character is rendered against a plain neutral studio background, which is then
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
- * The character layer is only regenerated when archetype, style, gender,
+ * The character layer is only regenerated when cover identity, style, gender,
  * ageGroup, bodyType, hairLength, accentColor, skinTone, or faceCharacter changes
  * (matching the character-image cache key). Changing district or rarity leaves
  * this layer untouched.
  */
 export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
-  const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
+  const coverIdentity = getCoverIdentityProfile(prompts.archetype);
+  const clothing  = coverIdentity?.lookPrompt ?? STYLE_CLOTHING[prompts.style] ?? prompts.style;
   const pose      = buildCoverIdentityPose(prompts.archetype);
   const composition = buildDynamicComposition(prompts);
-  const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const graffitiLine = graffitiWords?.length
     ? `The skateboard deck and wheels feature graffiti tags or brand logos reading '${graffitiWords.join("' and '")}'. `
@@ -312,7 +281,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Full-body comic-book portrait of an adult ${coverRole}, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
+    `Full-body comic-book portrait of an adult courier operating under a ${coverIdentity?.label.toLowerCase() ?? "civilian"} cover identity, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     characterDesc,
     graffitiLine,
@@ -434,10 +403,10 @@ export function buildBackgroundPrompt(district: string): string {
  * `hashSeedToInt(masterSeed)`.
  */
 export function buildImagePrompt(prompts: CardPrompts): string {
-  const clothing = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
+  const coverIdentity = getCoverIdentityProfile(prompts.archetype);
+  const clothing = coverIdentity?.lookPrompt ?? STYLE_CLOTHING[prompts.style] ?? prompts.style;
   const pose     = buildCoverIdentityPose(prompts.archetype);
   const composition = buildDynamicComposition(prompts);
-  const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const genderDesc =
     prompts.gender === "Woman" ? "a woman" :
@@ -456,7 +425,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Full-body comic-book portrait of an adult ${coverRole}, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
+    `Full-body comic-book portrait of an adult courier operating under a ${coverIdentity?.label.toLowerCase() ?? "civilian"} cover identity, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     characterDesc,
     `Mood: ${mood}.`,

@@ -1,24 +1,14 @@
-import type { Archetype, CardPayload, Style } from "./types";
+import type { CardPayload, Style } from "./types";
+import { resolveCoverIdentityStyle } from "./coverIdentity";
 import { normalizeCardStats } from "./generator";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
-  // Legacy removed styles now inherit the active style bundled into the
-  // matching cover identity so old saved/imported cards follow the new wiring.
+  // Legacy removed styles still normalize into the current active style list so
+  // old saved/imported cards keep a valid style selection.
   Chef: "Street",
   Ninja: "Ex Military",
   Hacker: "Punk Rocker",
   Military: "Ex Military",
-};
-
-const COMBINED_ARCHETYPE_STYLES: Partial<Record<Archetype, Style>> = {
-  "The Knights Technarchy": "Ex Military",
-  Qu111s: "Corporate",
-  "D4rk $pider": "Punk Rocker",
-  "The Asclepians": "Ex Military",
-  "The Mesopotamian Society": "Off-grid",
-  "Hermes' Squirmies": "Union",
-  UCPS: "Olympic",
-  "Iron Curtains": "Street",
 };
 
 export const ACTIVE_STYLES: Style[] = [
@@ -34,11 +24,6 @@ export const ACTIVE_STYLES: Style[] = [
 
 const ACTIVE_STYLE_SET = new Set<string>(ACTIVE_STYLES);
 
-export function getCombinedStyleForArchetype(archetype: unknown): Style | null {
-  if (typeof archetype !== "string") return null;
-  return COMBINED_ARCHETYPE_STYLES[archetype as Archetype] ?? null;
-}
-
 export function normalizeStyle(style: unknown): Style {
   let resolved = typeof style === "string" ? style : "Street";
   const seen = new Set<string>();
@@ -52,7 +37,7 @@ export function normalizeStyle(style: unknown): Style {
 }
 
 export function resolveArchetypeStyle(archetype: unknown, style: unknown): Style {
-  return getCombinedStyleForArchetype(archetype) ?? normalizeStyle(style);
+  return resolveCoverIdentityStyle(archetype) ?? normalizeStyle(style);
 }
 
 /**

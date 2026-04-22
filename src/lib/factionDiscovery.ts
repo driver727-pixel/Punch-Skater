@@ -1,27 +1,13 @@
 import type { Archetype, CardPayload, CardPrompts, District, Faction } from "./types";
 import { remapStyleConnection } from "./styles";
 
+export { FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel, getForgeCoverRole } from "./coverIdentity";
+
 export interface ForgeArchetypeOption {
   value: Archetype;
   label: string;
   coverRole: string;
 }
-
-export const FORGE_ARCHETYPE_OPTIONS: ForgeArchetypeOption[] = [
-  { value: "The Knights Technarchy", label: "Science Lab Technician", coverRole: "science lab technician courier" },
-  { value: "Qu111s", label: "Journalist", coverRole: "journalist courier" },
-  { value: "Ne0n Legion", label: "Security Guard", coverRole: "security guard courier" },
-  { value: "Iron Curtains", label: "Chef", coverRole: "chef courier" },
-  { value: "D4rk $pider", label: "Coder", coverRole: "coder courier" },
-  { value: "The Asclepians", label: "Humanitarian", coverRole: "humanitarian courier" },
-  { value: "The Mesopotamian Society", label: "Archaeologist", coverRole: "archaeologist courier" },
-  { value: "Hermes' Squirmies", label: "Blue collar worker", coverRole: "blue collar worker courier" },
-  { value: "UCPS", label: "Postal worker", coverRole: "postal worker courier" },
-  { value: "The Team", label: "Bartender", coverRole: "bartender courier" },
-];
-
-const ARCHETYPE_LABEL_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [option.value, option.label]));
-const ARCHETYPE_COVER_ROLE_MAP = new Map(FORGE_ARCHETYPE_OPTIONS.map((option) => [option.value, option.coverRole]));
 
 // Legacy style cleanup keeps the Dark Spider reveal wired to the requested
 // successor styles after Ninja/Hacker were removed from the active style list.
@@ -96,14 +82,6 @@ const FACTION_BRANDING: Partial<Record<Faction, { logoMark: string; flavorText: 
   },
 };
 
-export function getForgeArchetypeLabel(archetype: Archetype): string {
-  return ARCHETYPE_LABEL_MAP.get(archetype) ?? archetype;
-}
-
-export function getForgeCoverRole(archetype: Archetype): string {
-  return ARCHETYPE_COVER_ROLE_MAP.get(archetype) ?? `${getForgeArchetypeLabel(archetype).toLowerCase()} courier`;
-}
-
 export function resolveSecretFaction(prompts: CardPrompts): Faction | null {
   // 1. Any forge inside The Forest reveals The Wooders — it's their exclusive territory.
   if (prompts.district === "The Forest") return "The Wooders";
@@ -132,19 +110,9 @@ export function resolveSecretFaction(prompts: CardPrompts): Faction | null {
     return "Moonrisers";
   }
 
-  // 5. Archetype-based reveals: selecting an archetype directly uncovers its faction.
-  switch (prompts.archetype) {
-    case "The Knights Technarchy": return "The Knights Technarchy";
-    case "Qu111s": return "Qu111s (Quills)";
-    case "Ne0n Legion": return "Ne0n Legion";
-    case "Iron Curtains": return "Iron Curtains";
-    case "The Asclepians": return "The Asclepians";
-    case "The Mesopotamian Society": return "The Mesopotamian Society";
-    case "Hermes' Squirmies": return "Hermes' Squirmies";
-    case "UCPS": return "UCPS Workers";
-    case "The Team": return "The Team";
-    default: return null;
-  }
+  // 5. Remaining factions stay hidden until additional gameplay-specific
+  //    reveal combinations are satisfied.
+  return null;
 }
 
 export function applyFactionBranding(
