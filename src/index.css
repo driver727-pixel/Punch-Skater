@@ -5120,30 +5120,55 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-shadow: 0 1px 2px rgba(0,0,0,0.65);
 }
 
-/* Print back face – skateboard composite image box — always 1:1 (square) */
-.print-back-board {
-  width: 85%;
-  margin: 4px auto;
-  aspect-ratio: 1 / 1;
+/* Print back face – skateboard art becomes the hero image under the back copy */
+.print-back-hero {
+  --print-back-hero-info-right: 24%;
+  --print-back-board-scale: 1.2;
+  --print-back-label-width: 7.5ch;
+  --print-back-spinner-width: 28%;
+  --print-back-info-top-padding: 3.2%;
+  --print-back-info-side-padding: 4%;
+  --print-back-info-bottom-padding: 1.2%;
+  --print-back-stats-top-padding: 10%;
+  --print-back-spinner-max: 72px;
   position: relative;
+  height: 40%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at center, rgba(0,255,136,0.12) 0%, rgba(0,255,136,0) 52%),
+    linear-gradient(180deg, #101022 0%, #090912 100%);
+  border-top: 1px solid #1e1e3a;
+  border-bottom: 1px solid #1e1e3a;
+  flex-shrink: 0;
+}
+.print-back-board {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
   overflow: hidden;
-  border-radius: 3px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: #0a0a14;
+  background: transparent;
 }
 .print-back-board img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 .print-back-board-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(var(--print-back-board-scale));
+  filter: saturate(1.05) contrast(1.04) drop-shadow(0 6px 12px rgba(0,0,0,0.55));
+}
+.print-back-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(6,6,14,0.72) 0%, rgba(6,6,14,0.18) 32%, rgba(6,6,14,0.18) 58%, rgba(6,6,14,0.9) 100%);
+  pointer-events: none;
 }
 .print-back-board-placeholder {
   width: 100%;
@@ -5151,11 +5176,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
-  color: rgba(255,255,255,0.32);
+  font-size: clamp(36px, 5rem, 68px);
+  color: rgba(255,255,255,0.28);
 }
-/* Loading spinner shown while the board image is being generated.
- * Container is square (1:1) so there is no layout shift when the image loads. */
 .print-back-board-loading {
   width: 100%;
   height: 100%;
@@ -5164,8 +5187,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   justify-content: center;
 }
 .print-back-board-spinner {
-  /* 60% of the 1:1 container, also square — matches the hourglass-spinner.gif */
-  width: 60%;
+  width: min(var(--print-back-spinner-width), var(--print-back-spinner-max));
   aspect-ratio: 1 / 1;
   object-fit: contain;
 }
@@ -5203,26 +5225,76 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .print-back-info {
-  padding: 1.6% 3.2%;
   display: flex;
   flex-direction: column;
-  gap: 0.5%;
+  gap: 0.5em;
 }
-.print-back-row { display: flex; gap: 3px; align-items: baseline; }
-.print-back-row-label { color: #7070a0; width: 8ch; flex-shrink: 0; font-size: var(--card-back-body-size); letter-spacing: 0.3px; }
-.print-back-row-value { color: #e0e0f0; font-size: var(--card-back-body-size); }
+.print-back-info--overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: var(--print-back-hero-info-right);
+  z-index: 2;
+  padding:
+    var(--print-back-info-top-padding)
+    var(--print-back-info-side-padding)
+    var(--print-back-info-bottom-padding);
+  background: linear-gradient(90deg, rgba(9,9,18,0.72) 0%, rgba(9,9,18,0.18) 78%, rgba(9,9,18,0) 100%);
+}
+.print-back-row {
+  display: grid;
+  grid-template-columns: var(--print-back-label-width) minmax(0, 1fr);
+  gap: 4px;
+  align-items: baseline;
+}
+.print-back-row-label {
+  color: #8e8ed0;
+  font-size: var(--card-back-body-size);
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+}
+.print-back-row-value {
+  color: #f0f0ff;
+  font-size: var(--card-back-body-size);
+  min-width: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+}
 
 .print-back-stats {
-  padding: 1.6% 3.2%;
   display: flex;
   flex-direction: column;
-  gap: 0.5%;
-  border-top: 1px solid #1e1e3a;
+  gap: 0.5em;
+}
+.print-back-stats--overlay {
+  --print-back-stat-label-color: rgba(255, 202, 115, 0.92);
+  --print-back-stat-value-color: #fff5d9;
+  --print-back-stat-track-bg: rgba(90, 63, 16, 0.78);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: var(--print-back-stats-top-padding) 4% 3.4%;
+  background: linear-gradient(180deg, rgba(9,9,18,0) 0%, rgba(9,9,18,0.82) 42%, rgba(9,9,18,0.96) 100%);
 }
 .print-back-stats .stat-bar  { gap: 2%; }
-.print-back-stats .stat-label { font-size: var(--stat-font-size); width: 7ch; }
-.print-back-stats .stat-value { font-size: var(--stat-font-size); width: 2ch; }
-.print-back-stats .stat-track { height: max(2px, calc(var(--stat-font-size) * 0.28)); }
+.print-back-stats .stat-label {
+  font-size: var(--stat-font-size);
+  width: 7ch;
+  color: var(--print-back-stat-label-color);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+}
+.print-back-stats .stat-value {
+  font-size: var(--stat-font-size);
+  width: 2ch;
+  color: var(--print-back-stat-value-color);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+}
+.print-back-stats .stat-track {
+  height: max(2px, calc(var(--stat-font-size) * 0.28));
+  background: var(--print-back-stat-track-bg);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
 
 .print-back-trait {
   padding: 1.1% 3.2%;
@@ -5326,6 +5398,21 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: var(--card-back-body-size);
   /* --stat-font-size is set to --card-back-body-size by the .print-card token,
      so overriding --card-back-body-size cascades automatically. */
+}
+
+.print-preview-area--collection {
+  width: 100%;
+  margin-bottom: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.print-preview-area--collection .print-card-wrap {
+  padding: 0;
+}
+.print-preview-area--collection .print-preview-slot {
+  width: 100%;
+  gap: 6px;
 }
 
 /* ── Card Editor: inline editable inputs overlaid on the card faces ─────── */
@@ -5478,14 +5565,21 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     top: 24pt; right: 6pt;
     width: 0.55in; height: 0.55in;
   }
-  .print-only-card .print-back-board {
-    width: 60%;
-    margin: 4pt auto;
+  .print-only-card .print-back-hero   {
+    --print-back-hero-info-right: 22%;
+    --print-back-label-width: 0.6in;
+    --print-back-info-top-padding: 6pt;
+    --print-back-info-side-padding: 8pt;
+    --print-back-info-bottom-padding: 1pt;
+    --print-back-stats-top-padding: 16pt;
+    height: 40%;
   }
-  .print-only-card .print-back-info   { padding: 4pt 8pt; gap: 2pt; }
+  .print-only-card .print-back-board  { inset: 0; }
+  .print-only-card .print-back-info   { gap: 2pt; }
   .print-only-card .print-back-row-label { font-size: 5pt; width: 0.6in; }
   .print-only-card .print-back-row-value { font-size: 5pt; }
-  .print-only-card .print-back-stats  { padding: 3pt 8pt; gap: 2pt; }
+  .print-only-card .print-back-stats  { gap: 2pt; }
+  .print-only-card .print-back-stats--overlay { padding: var(--print-back-stats-top-padding) 8pt 6pt; }
   .print-only-card .print-back-stats .stat-label { font-size: 5pt; }
   .print-only-card .print-back-stats .stat-value { font-size: 5pt; }
   .print-only-card .print-back-stats .stat-track { height: 2pt; }

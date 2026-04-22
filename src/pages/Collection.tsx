@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import type { CardPayload, Rarity, Archetype, Faction, District } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
-import { CardDisplay } from "../components/CardDisplay";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { TradeModal } from "../components/TradeModal";
@@ -11,7 +10,10 @@ import { ImportModal } from "../components/ImportModal";
 import { ShareModal } from "../components/ShareModal";
 import { CardViewer3D } from "../components/CardViewer3D";
 import { PrintModal } from "../components/PrintModal";
+import { PrintedCardPreviewPair } from "../components/PrintedCardFaces";
+import { CardContainer } from "../components/CardContainer";
 import { exportJson } from "../lib/storage";
+import { buildCardVars } from "../lib/cardVars";
 import { downloadCardAsJpg } from "../services/cardDownload";
 import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
@@ -30,7 +32,7 @@ const RARITY_ORDER: Record<Rarity, number> = {
 const UNKNOWN_RARITY_ORDER = 5;
 
 export function Collection() {
-  const { cards, removeCard, addCard, updateCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
+  const { cards, removeCard, addCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
   const { removeCardFromAllDecks } = useDecks();
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
@@ -216,21 +218,6 @@ export function Collection() {
   const handleImportCards = (incoming: CardPayload[]) => {
     for (const card of incoming) addCard(card);
     if (incoming.length > 0) sfxSuccess();
-  };
-
-  const handleCardUpdate = (updates: { name?: string; age?: string; flavorText?: string }) => {
-    if (!selected) return;
-    const updated: CardPayload = {
-      ...selected,
-      identity: {
-        ...selected.identity,
-        ...(updates.name !== undefined ? { name: updates.name } : {}),
-        ...(updates.age !== undefined ? { age: updates.age } : {}),
-      },
-      flavorText: updates.flavorText ?? selected.flavorText,
-    };
-    updateCard(updated);
-    setSelected(updated);
   };
 
   const handleDownload = async () => {
@@ -532,13 +519,14 @@ export function Collection() {
           </div>
 
           {selected && (
-            <div className="card-detail-panel">
-              <button className="close-btn" onClick={() => setSelected(null)}>✕</button>
-              <CardDisplay
-                card={selected}
-                onUpdate={tierData.canSave ? handleCardUpdate : undefined}
-                hideAllActions
-              />
+              <div className="card-detail-panel">
+                <button className="close-btn" onClick={() => setSelected(null)}>✕</button>
+              <CardContainer cardVars={buildCardVars(selected, "collection")}>
+                <PrintedCardPreviewPair
+                  card={selected}
+                  className="print-preview-area--collection"
+                />
+              </CardContainer>
               <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {tierData.canSave && (
                   <button

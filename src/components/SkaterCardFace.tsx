@@ -181,6 +181,12 @@ function CardBack({
 }: Pick<SkaterCardFaceProps, "card" | "editable" | "onStatChange" | "boardImageLoading">) {
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
+  const backInfoRows = [
+    ["ARCHETYPE", getDisplayedArchetype(card)],
+    ["STYLE", card.prompts.style],
+    ["DISTRICT", card.prompts.district],
+    ["CREW", getDisplayedCrew(card)],
+  ] as [string, string][];
 
   return (
     <>
@@ -189,39 +195,46 @@ function CardBack({
         <span className="print-back-rarity">{card.prompts.rarity.toUpperCase()}</span>
       </div>
 
-      {card.board && (
-        <div className="print-back-board">
-          {card.boardImageUrl ? (
-            <img src={card.boardImageUrl} alt="Electric skateboard" className="print-back-board-image" />
-          ) : boardImageLoading ? (
-            /* 1:1 square spinner — matches the final image container so there
-               is no layout shift when the board image finishes loading.
-               Drop a hourglass-spinner.gif at public/assets/hourglass-spinner.gif
-               and it will appear here automatically; falls back to the standard
-               animated loading gif if the file is not yet present. */
-            <div className="print-back-board-loading">
-              <img
-                src="/assets/hourglass-spinner.gif"
-                alt="Generating skateboard…"
-                className="print-back-board-spinner"
-                onError={(e) => {
-                  const img = e.currentTarget as HTMLImageElement;
-                  if (!img.dataset.fallback) {
-                    img.dataset.fallback = "1";
-                    img.src = "/assets/loading_2.gif";
-                  }
-                }}
-              />
-            </div>
-          ) : (
-            <div className="print-back-board-placeholder">🛹</div>
-          )}
-        </div>
-      )}
+      <div className="print-back-hero">
+        {card.board && (
+          <div className="print-back-board">
+            {card.boardImageUrl ? (
+              <img src={card.boardImageUrl} alt="Electric skateboard" className="print-back-board-image" />
+            ) : boardImageLoading ? (
+              <div className="print-back-board-loading">
+                <img
+                  src="/assets/hourglass-spinner.gif"
+                  alt="Generating skateboard…"
+                  className="print-back-board-spinner"
+                  onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement;
+                    if (!img.dataset.fallback) {
+                      img.dataset.fallback = "1";
+                      img.src = "/assets/loading_2.gif";
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="print-back-board-placeholder">🛹</div>
+            )}
+          </div>
+        )}
 
-      <div className="print-back-stats">
-        {editable ? (
-          (STAT_ENTRIES).map(([key, { label, tooltip }]) => (
+        <div className="print-back-hero-scrim" />
+
+        <div className="print-back-info print-back-info--overlay">
+          {backInfoRows.map(([label, value]) => (
+            <div key={label} className="print-back-row">
+              <span className="print-back-row-label">{label}</span>
+              <span className="print-back-row-value">{value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="print-back-stats print-back-stats--overlay">
+          {editable ? (
+            STAT_ENTRIES.map(([key, { label, tooltip }]) => (
               <div key={key} className="stat-bar card-stat-editor-row">
                 <span className="stat-label" title={tooltip}>{label}</span>
                 <input
@@ -236,33 +249,17 @@ function CardBack({
                   }
                 />
               </div>
-            ),
-          )
-        ) : (
-          <>
-            <StatBar label={CARD_STAT_LABELS.speed.label}   value={card.stats.speed}   color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.tech.label}    value={card.stats.tech}    color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
-          </>
-        )}
-      </div>
-
-      <div className="print-back-info">
-        {(
-          [
-            ["ARCHETYPE", getDisplayedArchetype(card)],
-            ["STYLE",     card.prompts.style],
-            ["DISTRICT",  card.prompts.district],
-            ["CREW",      getDisplayedCrew(card)],
-          ] as [string, string][]
-        ).map(([label, value]) => (
-          <div key={label} className="print-back-row">
-            <span className="print-back-row-label">{label}</span>
-            <span className="print-back-row-value">{value}</span>
-          </div>
-        ))}
+            ))
+          ) : (
+            <>
+              <StatBar label={CARD_STAT_LABELS.speed.label}   value={card.stats.speed}   color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.tech.label}    value={card.stats.tech}    color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
+              <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
+            </>
+          )}
+        </div>
       </div>
 
       <div className="print-back-trait">

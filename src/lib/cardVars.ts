@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { CardPayload } from "./types";
 
-export type CardRenderMode = "editor" | "3d" | "print-screen";
+export type CardRenderMode = "editor" | "3d" | "print-screen" | "collection";
 
 /**
  * Build a CSS-variable style object for the given card and render mode.
@@ -37,7 +37,7 @@ export function buildCardVars(
     } as CSSProperties;
   }
 
-  // "3d" and "print-screen" use the .print-card default tokens (small sizes
-  // appropriate for the 189 px base card) — only pass accent.
+  // "3d", "print-screen", and "collection" use the .print-card default tokens
+  // (small sizes appropriate for the 189 px base card) — only pass accent.
   return { "--card-accent": accent } as CSSProperties;
 }
