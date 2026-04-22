@@ -8,6 +8,7 @@ import {
 } from "../../lib/factionDiscovery";
 import { DEFAULT_BOARD_CONFIG } from "../../components/BoardBuilder";
 import { calculateBoardStats } from "../../lib/boardBuilder";
+import { resolveArchetypeStyle } from "../../lib/styles";
 import { sfxClick, sfxSuccessPing } from "../../lib/sfx";
 import { removeBackground, isImageGenConfigured } from "../../services/imageGen";
 import { generateGouacheBoard } from "../../services/boardImageGen";
@@ -61,6 +62,7 @@ export function useForgeGeneration() {
     setPrompts((current) => ({
       ...current,
       archetype,
+      style: resolveArchetypeStyle(archetype, current.style),
     }));
   }, []);
 
@@ -76,7 +78,7 @@ export function useForgeGeneration() {
     abortRef.current = controller;
     const { signal } = controller;
 
-    const forgePrompts = prompts;
+    const forgePrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
     const displayArchetype = getForgeArchetypeLabel(forgePrompts.archetype);
     const secretFaction = tier === "free" ? null : resolveSecretFaction(forgePrompts);
     const generationPrompts =

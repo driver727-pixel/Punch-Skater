@@ -9,6 +9,7 @@ import { FORGE_ARCHETYPE_OPTIONS } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
+import { resolveArchetypeStyle } from "../lib/styles";
 import { sfxClick } from "../lib/sfx";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
@@ -93,7 +94,7 @@ export function EditCard() {
       setPrompts({
         archetype: original.prompts.archetype,
         rarity: original.prompts.rarity as Rarity,
-        style: original.prompts.style,
+        style: resolveArchetypeStyle(original.prompts.archetype, original.prompts.style),
         district: original.prompts.district as District,
         accentColor: original.prompts.accentColor,
         gender: (original.prompts.gender as Gender) ?? "Non-binary",
@@ -127,13 +128,14 @@ export function EditCard() {
     setPrompts((current) => current ? {
       ...current,
       archetype,
+      style: resolveArchetypeStyle(archetype, current.style),
     } : current);
     setSaved(false);
   };
 
   const handlePreview = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const previewPrompts = prompts;
+    const previewPrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
     const newCard = generateCard(previewPrompts);
     const preservedName = preview?.identity.name ?? original.identity.name;
     const preservedAge = preview?.identity.age ?? original.identity.age ?? "";

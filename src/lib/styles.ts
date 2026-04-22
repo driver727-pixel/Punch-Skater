@@ -1,4 +1,5 @@
 import type { CardPayload, Style } from "./types";
+import { resolveCoverIdentityStyle } from "./coverIdentity";
 import { normalizeCardStats } from "./generator";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
@@ -35,6 +36,10 @@ export function normalizeStyle(style: unknown): Style {
   return (ACTIVE_STYLE_SET.has(resolved) ? resolved : "Street") as Style;
 }
 
+export function resolveArchetypeStyle(archetype: unknown, style: unknown): Style {
+  return resolveCoverIdentityStyle(archetype) ?? normalizeStyle(style);
+}
+
 /**
  * Applies only the first legacy hop so old style-linked gameplay/faction rules
  * can be reassigned exactly as requested before full style normalization.
@@ -46,7 +51,7 @@ export function remapStyleConnection(style: unknown): string {
 
 export function normalizeCardPayload(card: CardPayload): CardPayload {
   const rawStyle = typeof card.prompts?.style === "string" ? card.prompts.style : "Street";
-  const style = normalizeStyle(rawStyle);
+  const style = resolveArchetypeStyle(card.prompts?.archetype, rawStyle);
   const normalizedStats = normalizeCardStats(card.stats);
   const hasStyleChange = style !== rawStyle;
   const hasStatChange = (Object.keys(card.stats) as Array<keyof typeof card.stats>)
