@@ -4870,6 +4870,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: relative;
   transform-style: preserve-3d;
   transform-origin: center center;
+  /* Base transition: tight, for drag and auto-spin frames */
   transition: transform 0.05s linear;
   cursor: grab;
   touch-action: none;
@@ -4877,6 +4878,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   will-change: transform;
 }
 .viewer3d-card:active { cursor: grabbing; }
+
+/* During hover-tilt (not dragging) use a slightly longer ease so the card
+   glides smoothly as the cursor moves, and eases back to neutral on leave.
+   This class is removed the moment a drag starts, restoring the fast linear
+   transition so there is zero input lag while the user manually spins. */
+.viewer3d-card.is-tilting {
+  transition: transform 0.1s ease-out;
+}
 
 /* Both faces */
 .viewer3d-face {
