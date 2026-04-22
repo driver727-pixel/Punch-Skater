@@ -32,7 +32,7 @@ const RARITY_ORDER: Record<Rarity, number> = {
 const UNKNOWN_RARITY_ORDER = 5;
 
 export function Collection() {
-  const { cards, removeCard, addCard, updateCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
+  const { cards, removeCard, addCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
   const { removeCardFromAllDecks } = useDecks();
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
