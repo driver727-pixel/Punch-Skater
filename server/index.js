@@ -537,8 +537,7 @@ if (!FAL_KEY) {
 }
 if (!stripe) {
   console.warn('⚠️  STRIPE_SECRET_KEY environment variable is not set — checkout sessions will be unavailable.');
-}
-if (!stripeWebhookSecret) {
+} else if (!stripeWebhookSecret) {
   console.warn('⚠️  STRIPE_WEBHOOK_SECRET environment variable is not set — Stripe webhooks will be unavailable.');
 }
 
