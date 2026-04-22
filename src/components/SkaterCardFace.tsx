@@ -137,12 +137,15 @@ function CardFront({
               onChange={(e) => onNameChange?.(e.target.value)}
               placeholder="Name"
             />
-            <input
-              className="card-age-input"
-              value={card.identity.age ?? ""}
-              onChange={(e) => onAgeChange?.(e.target.value)}
-              placeholder="Age"
-            />
+            <label className="card-age-field">
+              <span className="card-age-label">AGE</span>
+              <input
+                className="card-age-input"
+                value={card.identity.age ?? ""}
+                onChange={(e) => onAgeChange?.(e.target.value)}
+                placeholder="Age"
+              />
+            </label>
             <textarea
               className="card-bio-input"
               value={card.flavorText}
@@ -191,7 +194,6 @@ function CardBack({
   return (
     <>
       <div className="print-back-header" style={{ background: rarityColor }}>
-        <span className="print-back-name">{card.identity.name}</span>
         <span className="print-back-rarity">{card.prompts.rarity.toUpperCase()}</span>
       </div>
 
@@ -220,46 +222,44 @@ function CardBack({
             )}
           </div>
         )}
+      </div>
 
-        <div className="print-back-hero-scrim" />
+      <div className="print-back-info">
+        {backInfoRows.map(([label, value]) => (
+          <div key={label} className="print-back-row">
+            <span className="print-back-row-label">{label}</span>
+            <span className="print-back-row-value">{value}</span>
+          </div>
+        ))}
+      </div>
 
-        <div className="print-back-info print-back-info--overlay">
-          {backInfoRows.map(([label, value]) => (
-            <div key={label} className="print-back-row">
-              <span className="print-back-row-label">{label}</span>
-              <span className="print-back-row-value">{value}</span>
+      <div className="print-back-stats">
+        {editable ? (
+          STAT_ENTRIES.map(([key, { label, tooltip }]) => (
+            <div key={key} className="stat-bar card-stat-editor-row">
+              <span className="stat-label" title={tooltip}>{label}</span>
+              <input
+                type="number"
+                className="card-stat-input"
+                min={0}
+                max={10}
+                value={card.stats[key]}
+                onChange={(e) => onStatChange?.(key, Number(e.target.value))}
+                onBlur={(e) =>
+                  onStatChange?.(key, Math.max(0, Math.min(10, Number(e.target.value))))
+                }
+              />
             </div>
-          ))}
-        </div>
-
-        <div className="print-back-stats print-back-stats--overlay">
-          {editable ? (
-            STAT_ENTRIES.map(([key, { label, tooltip }]) => (
-              <div key={key} className="stat-bar card-stat-editor-row">
-                <span className="stat-label" title={tooltip}>{label}</span>
-                <input
-                  type="number"
-                  className="card-stat-input"
-                  min={0}
-                  max={10}
-                  value={card.stats[key]}
-                  onChange={(e) => onStatChange?.(key, Number(e.target.value))}
-                  onBlur={(e) =>
-                    onStatChange?.(key, Math.max(0, Math.min(10, Number(e.target.value))))
-                  }
-                />
-              </div>
-            ))
-          ) : (
-            <>
-              <StatBar label={CARD_STAT_LABELS.speed.label}   value={card.stats.speed}   color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
-              <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
-              <StatBar label={CARD_STAT_LABELS.tech.label}    value={card.stats.tech}    color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
-              <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
-              <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
-            </>
-          )}
-        </div>
+          ))
+        ) : (
+          <>
+            <StatBar label={CARD_STAT_LABELS.speed.label}   value={card.stats.speed}   color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.tech.label}    value={card.stats.tech}    color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
+          </>
+        )}
       </div>
 
       <div className="print-back-trait">

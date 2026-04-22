@@ -5096,6 +5096,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: #fff;
   letter-spacing: 0.5px;
   text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  overflow-wrap: anywhere;
 }
 .print-front-age {
   font-size: var(--card-age-size);
@@ -5120,19 +5121,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-shadow: 0 1px 2px rgba(0,0,0,0.65);
 }
 
-/* Print back face – skateboard art becomes the hero image under the back copy */
+/* Print back face – skateboard art is a clean banner on top, structured info
+   sits below in its own section so labels never overlap the board image. */
 .print-back-hero {
-  --print-back-hero-info-right: 24%;
-  --print-back-board-scale: 1.2;
-  --print-back-label-width: 7.5ch;
+  --print-back-board-scale: 1.05;
   --print-back-spinner-width: 28%;
-  --print-back-info-top-padding: 2.6%;
-  --print-back-info-side-padding: 4%;
-  --print-back-info-bottom-padding: 1.2%;
-  --print-back-stats-top-padding: 8%;
   --print-back-spinner-max: 72px;
   position: relative;
-  height: 40%;
+  height: 22%;
   overflow: hidden;
   background:
     radial-gradient(circle at center, rgba(0,255,136,0.12) 0%, rgba(0,255,136,0) 52%),
@@ -5140,9 +5136,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-top: 1px solid #1e1e3a;
   border-bottom: 1px solid #1e1e3a;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
 }
 .print-back-board {
   position: absolute;
@@ -5165,13 +5158,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   object-position: center;
   transform: scale(var(--print-back-board-scale));
   filter: saturate(1.05) contrast(1.04) drop-shadow(0 6px 12px rgba(0,0,0,0.55));
-}
-.print-back-hero-scrim {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(6,6,14,0.56) 0%, rgba(6,6,14,0.1) 32%, rgba(6,6,14,0.1) 58%, rgba(6,6,14,0.72) 100%);
-  pointer-events: none;
 }
 .print-back-board-placeholder {
   width: 100%;
@@ -5201,11 +5187,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   font-size: 6px;
   overflow: hidden;
+  --print-back-label-width: max-content;
 }
 
 .print-back-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   /* % padding scales with card width so header proportions hold at all sizes */
   padding: 2.6% 3.7%;
@@ -5213,8 +5200,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-weight: bold;
   flex-shrink: 0;
 }
-.print-back-name  { font-size: var(--card-back-name-size); letter-spacing: 0.5px; }
-.print-back-rarity { font-size: var(--card-back-body-size); opacity: 0.7; }
+.print-back-rarity { font-size: var(--card-back-name-size); letter-spacing: 0.5px; }
 
 .print-back-portrait {
   position: absolute;
@@ -5230,70 +5216,48 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-back-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
-}
-.print-back-info--overlay {
-  position: relative;
-  z-index: 2;
-  width: calc(100% - var(--print-back-hero-info-right));
-  max-width: 100%;
-  margin-right: auto;
-  padding:
-    var(--print-back-info-top-padding)
-    var(--print-back-info-side-padding)
-    var(--print-back-info-bottom-padding);
-  background: linear-gradient(90deg, rgba(9,9,18,0.5) 0%, rgba(9,9,18,0.12) 78%, rgba(9,9,18,0) 100%);
+  gap: 0.4em;
+  padding: 3% 4% 1.5%;
+  flex-shrink: 0;
 }
 .print-back-row {
   display: grid;
   grid-template-columns: var(--print-back-label-width) minmax(0, 1fr);
-  gap: 4px;
+  column-gap: 0.7em;
   align-items: baseline;
 }
 .print-back-row-label {
   color: #8e8ed0;
   font-size: var(--card-back-body-size);
   letter-spacing: 0.3px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
 .print-back-row-value {
   color: #f0f0ff;
   font-size: var(--card-back-body-size);
   min-width: 0;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
 
 .print-back-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
+  gap: 0.45em;
+  padding: 1.5% 4% 2.5%;
+  flex-shrink: 0;
 }
-.print-back-stats--overlay {
-  --print-back-stat-label-color: rgba(255, 202, 115, 0.92);
-  --print-back-stat-value-color: #fff5d9;
-  --print-back-stat-track-bg: rgba(90, 63, 16, 0.78);
-  position: relative;
-  z-index: 2;
-  margin-top: auto;
-  padding: var(--print-back-stats-top-padding) 4% 3.4%;
-  background: linear-gradient(180deg, rgba(9,9,18,0) 0%, rgba(9,9,18,0.62) 42%, rgba(9,9,18,0.84) 100%);
-}
-.print-back-stats .stat-bar  { gap: 2%; }
+.print-back-stats .stat-bar  { gap: 4%; }
 .print-back-stats .stat-label {
   font-size: var(--stat-font-size);
   width: 7ch;
-  color: var(--print-back-stat-label-color);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  color: #ffca73;
 }
 .print-back-stats .stat-value {
   font-size: var(--stat-font-size);
   width: 2ch;
-  color: var(--print-back-stat-value-color);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  color: #fff5d9;
 }
 .print-back-stats .stat-track {
   height: max(2px, calc(var(--stat-font-size) * 0.28));
-  background: var(--print-back-stat-track-bg);
+  background: rgba(90, 63, 16, 0.78);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 
@@ -5338,7 +5302,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: var(--card-back-body-size);
   color: #7070a0;
   letter-spacing: 0.5px;
-  margin-top: auto;
 }
 
 .print-modal-actions { display: flex; gap: 8px; }
@@ -5367,9 +5330,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
    * This two-class selector has higher specificity than the single-class
   * .print-card baseline rule, so these overrides win even though .print-card
   * also defines the same custom properties on its own element. */
-  --card-name-size:      2.1rem;
+  --card-name-size:      1.7rem;
   --card-bio-size:       0.95rem;
-  --card-age-size:       0.95rem;
+  --card-age-size:       1.1rem;
   --card-back-name-size: 1.2rem;
   --card-back-body-size: 0.78rem;
   --stat-font-size:      var(--card-back-body-size);
@@ -5385,10 +5348,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-preview-area--forge .print-front-bio {
   font-size: var(--card-bio-size);
 }
-.print-preview-area--forge .print-back-name {
+.print-preview-area--forge .print-back-rarity {
   font-size: var(--card-back-name-size);
 }
-.print-preview-area--forge .print-back-rarity,
 .print-preview-area--forge .print-back-row-label,
 .print-preview-area--forge .print-back-row-value,
 .print-preview-area--forge .print-back-stats .stat-label,
@@ -5432,16 +5394,34 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-shadow: 0 1px 3px rgba(0,0,0,0.7);
   width: 100%;
 }
+.card-age-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  width: 100%;
+}
+.card-age-label {
+  color: rgba(255,255,255,0.7);
+  font-family: inherit;
+  font-size: calc(var(--card-age-size) * 0.7);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  flex-shrink: 0;
+}
 .card-age-input {
   background: transparent;
   border: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.25);
-  color: rgba(255,255,255,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.92);
   font-family: inherit;
   font-size: var(--card-age-size);
+  line-height: 1.2;
+  min-height: calc(var(--card-age-size) * 1.4);
   outline: none;
   padding: 0;
-  width: 55%;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .card-bio-input {
   background: transparent;
@@ -5560,27 +5540,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   /* Reuse shared .print-back-* classes, just increase font sizes for print */
   .print-only-card .print-back-header { padding: 6pt 8pt; }
-  .print-only-card .print-back-name   { font-size: 9pt; }
-  .print-only-card .print-back-rarity { font-size: 6pt; }
+  .print-only-card .print-back-rarity { font-size: 9pt; }
   .print-only-card .print-back-portrait {
     top: 24pt; right: 6pt;
     width: 0.55in; height: 0.55in;
   }
   .print-only-card .print-back-hero   {
-    --print-back-hero-info-right: 22%;
-    --print-back-label-width: 0.6in;
-    --print-back-info-top-padding: 6pt;
-    --print-back-info-side-padding: 8pt;
-    --print-back-info-bottom-padding: 1pt;
-    --print-back-stats-top-padding: 16pt;
-    height: 40%;
+    height: 22%;
   }
   .print-only-card .print-back-board  { inset: 0; }
-  .print-only-card .print-back-info   { gap: 2pt; }
-  .print-only-card .print-back-row-label { font-size: 5pt; width: 0.6in; }
+  .print-only-card .print-back-info   { gap: 2pt; padding: 6pt 8pt 2pt; }
+  .print-only-card .print-back-row-label { font-size: 5pt; }
   .print-only-card .print-back-row-value { font-size: 5pt; }
-  .print-only-card .print-back-stats  { gap: 2pt; }
-  .print-only-card .print-back-stats--overlay { padding: var(--print-back-stats-top-padding) 8pt 6pt; }
+  .print-only-card .print-back-stats  { gap: 2pt; padding: 2pt 8pt 6pt; }
   .print-only-card .print-back-stats .stat-label { font-size: 5pt; }
   .print-only-card .print-back-stats .stat-value { font-size: 5pt; }
   .print-only-card .print-back-stats .stat-track { height: 2pt; }
@@ -5798,12 +5770,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .card-age-placeholder {
   opacity: 0.35;
   font-style: italic;
-}
-
-/* Age input inside the card (smaller than name input) */
-.card-age-input {
-  font-size: 5px !important;
-  font-weight: normal !important;
 }
 
 /* Bio field shown under name/age */

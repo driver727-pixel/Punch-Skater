@@ -256,7 +256,7 @@ export const generateCard = (prompts: CardPrompts, options: GenerateCardOptions 
       storagePackStyle,
     },
     ozzies,
-    flavorText: `A ${prompts.rarity} ${prompts.archetype} running packages through ${prompts.district}.`,
+    flavorText: `Running packages through ${prompts.district}.`,
     tags: [prompts.archetype, prompts.style, prompts.rarity, prompts.district],
     createdAt: new Date().toISOString(),
   };

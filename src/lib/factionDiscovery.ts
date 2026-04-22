@@ -126,7 +126,7 @@ export function applyFactionBranding(
     ...card,
     flavorText: branding
       ? branding.flavorText
-      : `A ${card.prompts.rarity} ${displayArchetype} running packages through ${card.prompts.district}.`,
+      : `Running packages through ${card.prompts.district}.`,
     tags: Array.from(
       new Set([
         ...card.tags.filter((tag) => tag !== card.prompts.archetype),
