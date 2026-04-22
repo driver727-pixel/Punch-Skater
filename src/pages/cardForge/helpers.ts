@@ -1,5 +1,4 @@
 import { buildRandomBoardConfig, getRandomItemExcluding } from "../../lib/cardForgeRandom";
-import { resolveArchetypeStyle } from "../../lib/styles";
 import type { CardPayload, CardPrompts } from "../../lib/types";
 import type { BoardConfig } from "../../lib/boardBuilder";
 import {
@@ -19,7 +18,6 @@ export function buildRandomizedPrompts(prompts: CardPrompts, archetypeValues: re
   return {
     ...prompts,
     archetype,
-    style: resolveArchetypeStyle(archetype, prompts.style),
     rarity: getRandomItemExcluding(RARITIES, prompts.rarity),
     district: getRandomItemExcluding(DISTRICTS, prompts.district),
     accentColor: getRandomItemExcluding(ACCENT_PRESETS, prompts.accentColor),

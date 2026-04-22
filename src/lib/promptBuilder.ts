@@ -1,4 +1,3 @@
-import { getForgeCoverRole } from "./factionDiscovery";
 import { createSeededRandom } from "./prng";
 import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
 
@@ -103,10 +102,6 @@ function joinPromptBlocks(...blocks: Array<string | undefined>): string {
   return blocks
     .filter((block): block is string => Boolean(block?.trim()))
     .join(" ");
-}
-
-function buildCoverIdentityRole(archetype: string): string {
-  return getForgeCoverRole(archetype as CardPrompts["archetype"]);
 }
 
 function buildCoverIdentityPose(archetype: string): string {
@@ -280,7 +275,7 @@ function buildBodyDescription(bodyType: string): string {
  * The character is rendered against a plain neutral studio background, which is then
  * stripped by the birefnet background-removal model to produce a transparent PNG
  * that composites cleanly over the background layer using CSS mix-blend-mode: normal.
- * The character layer is only regenerated when archetype, style, gender,
+ * The character layer is only regenerated when cover identity, style, gender,
  * ageGroup, bodyType, hairLength, accentColor, skinTone, or faceCharacter changes
  * (matching the character-image cache key). Changing district or rarity leaves
  * this layer untouched.
@@ -289,7 +284,6 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
   const clothing  = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
   const pose      = buildCoverIdentityPose(prompts.archetype);
   const composition = buildDynamicComposition(prompts);
-  const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const graffitiLine = graffitiWords?.length
     ? `The skateboard deck and wheels feature graffiti tags or brand logos reading '${graffitiWords.join("' and '")}'. `
@@ -312,7 +306,7 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Full-body comic-book portrait of an adult ${coverRole}, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
+    `Full-body comic-book portrait of an adult courier, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     characterDesc,
     graffitiLine,
@@ -437,7 +431,6 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const clothing = STYLE_CLOTHING[prompts.style]    ?? prompts.style;
   const pose     = buildCoverIdentityPose(prompts.archetype);
   const composition = buildDynamicComposition(prompts);
-  const coverRole = buildCoverIdentityRole(prompts.archetype);
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const genderDesc =
     prompts.gender === "Woman" ? "a woman" :
@@ -456,7 +449,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Full-body comic-book portrait of an adult ${coverRole}, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
+    `Full-body comic-book portrait of an adult courier, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
     characterDesc,
     `Mood: ${mood}.`,
