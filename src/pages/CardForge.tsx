@@ -1,3 +1,4 @@
+import { DailyMissionsPanel } from "../components/DailyMissionsPanel";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
@@ -15,6 +16,7 @@ import {
   SKIN_TONES,
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
+import { useDailyMissions } from "../hooks/useDailyMissions";
 import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
@@ -64,6 +66,7 @@ export function CardForge() {
     tierCanSave,
     viewing3D,
   } = useCardForgeController();
+  const dailyMissions = useDailyMissions();
 
   return (
     <div className="page">
@@ -94,6 +97,8 @@ export function CardForge() {
           Random Skater
         </button>
       </div>
+
+      <DailyMissionsPanel dailyMissions={dailyMissions} />
 
       <div className="forge-layout">
         <ForgeControlsPanel

@@ -159,5 +159,54 @@ service cloud.firestore {
         && request.auth.token.admin == true;
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // New collections — read-only stubs (Sprint 0)
+    // Client reads allowed for authenticated users; all writes are server-only
+    // until the corresponding feature passes QA and the flag is enabled.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // ── Daily Streaks ────────────────────────────────────────────────────────
+    // Per-user daily login streak. Doc ID = uid.
+    match /dailyStreaks/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    // ── Missions ─────────────────────────────────────────────────────────────
+    // Per-user mission / quest progress.
+    match /missions/{missionId} {
+      allow read: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    // ── Battle Pass ──────────────────────────────────────────────────────────
+    // Per-user battle pass tier + XP state. Doc ID = uid.
+    match /battlePass/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    // ── Crews ────────────────────────────────────────────────────────────────
+    // Player crew / guild. Any authed user can browse; writes are server-only.
+    match /crews/{crewId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+    }
+
+    // ── Ranked Seasons ───────────────────────────────────────────────────────
+    // Season config + standings. Any authed user can read.
+    match /rankedSeasons/{seasonId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+    }
+
+    // ── Share Links ──────────────────────────────────────────────────────────
+    // Publicly viewable card / deck share links.
+    match /shareLinks/{linkId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
   }
 }
