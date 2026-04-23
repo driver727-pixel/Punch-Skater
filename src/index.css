@@ -5025,7 +5025,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --card-bio-size:       0.5625rem;   /* ≈  9 px */
   --card-age-size:       0.5rem;      /* ≈  8 px */
   --card-back-name-size: 0.625rem;    /* ≈ 10 px */
-  --card-back-body-size: 0.54rem;     /* ≈  9 px */
+  --card-back-body-size: 0.54rem;     /* ≈  8.6 px */
+  --card-back-small-size: calc(var(--card-back-body-size) * 0.95);
   --stat-font-size:      var(--card-back-body-size); /* explicit named alias */
   width: 189px;
   aspect-ratio: var(--card-aspect-ratio);
@@ -5240,7 +5241,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .print-back-rarity { font-size: var(--card-back-name-size); letter-spacing: 0.5px; }
 .print-back-tuned {
-  font-size: calc(var(--card-back-body-size) * 0.95);
+  font-size: var(--card-back-small-size);
   letter-spacing: 0.06em;
 }
 
@@ -5365,7 +5366,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .print-back-serial {
   padding: 0 4% 2.2%;
-  font-size: calc(var(--card-back-body-size) * 0.95);
+  font-size: var(--card-back-small-size);
   color: #7070a0;
   letter-spacing: 0.08em;
 }
