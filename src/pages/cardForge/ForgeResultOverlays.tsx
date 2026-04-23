@@ -84,7 +84,7 @@ export function ForgeResultOverlays({
       {revealedFaction && (
         <div className="save-celebrate-overlay" onClick={onCloseFactionReveal}>
           <div className="save-celebrate-modal save-celebrate-modal--reveal" onClick={(event) => event.stopPropagation()}>
-            <div className="save-celebrate-emoji">{card?.discovery?.logoMark ?? "🎴"}</div>
+            <div className="save-celebrate-emoji">🎴</div>
             <h2 className="save-celebrate-title">
               {revealedFaction.isNew
                 ? "Secret faction discovered!"

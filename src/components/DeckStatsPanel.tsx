@@ -10,10 +10,9 @@ interface DeckStatsPanelProps {
 
 const STAT_DEFS = [
   { key: "speed"   as const, color: "#00ccff", glow: "rgba(0,204,255,0.7)"   },
-  { key: "stealth" as const, color: "#00ff88", glow: "rgba(0,255,136,0.7)"   },
-  { key: "tech"    as const, color: "#cc44ff", glow: "rgba(204,68,255,0.7)"  },
+  { key: "range"   as const, color: "#00ff88", glow: "rgba(0,255,136,0.7)"   },
+  { key: "stealth" as const, color: "#cc44ff", glow: "rgba(204,68,255,0.7)"  },
   { key: "grit"    as const, color: "#ff6644", glow: "rgba(255,102,68,0.7)"  },
-  { key: "rep"     as const, color: "#ffdd00", glow: "rgba(255,221,0,0.7)"   },
 ];
 
 export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {

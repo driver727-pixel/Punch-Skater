@@ -24,7 +24,7 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     icon: "🏕️",
     tagline: "No road required",
     description: "Elevated clearance and reinforced trucks handle cracked concrete, dirt, and debris with ease.",
-    statBonuses: { grit: 2, rep: 1 },
+    statBonuses: { grit: 2, range: 1 },
     weight: 30,
   },
   {
@@ -42,7 +42,7 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     icon: "🏄",
     tagline: "Flow state activated",
     description: "Spring-loaded trucks simulate the pump of a wave. Smooth roads become infinite barrels.",
-    statBonuses: { stealth: 2, rep: 1 },
+    statBonuses: { stealth: 2, range: 1 },
     weight: 20,
   },
 ];
@@ -54,7 +54,7 @@ export const DRIVETRAIN_OPTIONS: BoardOption<Drivetrain>[] = [
     icon: "⚙️",
     tagline: "Classic torque",
     description: "Exposed belt transfers maximum torque. Higher top speed, loud, and serviceable in the field.",
-    statBonuses: { speed: 2, tech: 1 },
+    statBonuses: { speed: 2, grit: 1 },
     weight: 10,
   },
   {
@@ -72,7 +72,7 @@ export const DRIVETRAIN_OPTIONS: BoardOption<Drivetrain>[] = [
     icon: "🔩",
     tagline: "Built to last",
     description: "Helical gears deliver smooth consistent torque with no belt to snap during critical drops.",
-    statBonuses: { grit: 2, tech: 1 },
+    statBonuses: { grit: 2, stealth: 1 },
     weight: 30,
   },
   {
@@ -94,7 +94,7 @@ export const MOTOR_OPTIONS: MotorOption[] = [
     tagline: "Lightweight compact",
     description: "Small 5055-class motor. Quiet, efficient, and easy to replace. Best for lightweight commuter setups.",
     acceleration: 3,
-    statBonuses: { stealth: 1, tech: 1 },
+    statBonuses: { stealth: 1, grit: 1 },
     weight: 10,
   },
   {
@@ -114,7 +114,7 @@ export const MOTOR_OPTIONS: MotorOption[] = [
     tagline: "Race grade",
     description: "Heavy 6374-class motor built for instant torque. Launches hard off the line and eats steep grades.",
     acceleration: 8,
-    statBonuses: { grit: 2, rep: 1 },
+    statBonuses: { grit: 2, stealth: 1 },
     weight: 30,
   },
   {
@@ -124,7 +124,7 @@ export const MOTOR_OPTIONS: MotorOption[] = [
     tagline: "4wd-grade power",
     description: "Oversized 6396-class outrunner motor. Maximum acceleration for riders who need to disappear fast.",
     acceleration: 10,
-    statBonuses: { speed: 2, rep: 1 },
+    statBonuses: { speed: 2, range: 1 },
     weight: 40,
   },
 ];
@@ -136,7 +136,7 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
     icon: "🟡",
     tagline: "Grip and carve",
     description: "High-rebound urethane bites into asphalt and holds a line through high-speed corners.",
-    statBonuses: { speed: 1, rep: 1 },
+    statBonuses: { speed: 1, range: 1 },
     weight: 10,
   },
   {
@@ -163,7 +163,7 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
     icon: "⚪",
     tagline: "Smooth and floaty",
     description: "Semi-transparent foam-core wheels with a wide contact patch. Absorbs road buzz and flows through carves.",
-    statBonuses: { stealth: 1, rep: 1 },
+    statBonuses: { stealth: 1, range: 1 },
     weight: 20,
   },
 ];
@@ -188,7 +188,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
     description: "Heavy, thick enclosure meant for long journeys.",
     range: 8,
     isTopMounted: false,
-    statBonuses: { grit: 1, rep: 1 },
+    statBonuses: { grit: 1, range: 1 },
     weight: 30,
   },
   {
@@ -199,7 +199,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
     description: "A rugged, waterproof utility box strapped to the top of the deck.",
     range: 10,
     isTopMounted: true,
-    statBonuses: { tech: 1, rep: 2 },
+    statBonuses: { range: 2, stealth: 1 },
     weight: 40,
   },
 ];

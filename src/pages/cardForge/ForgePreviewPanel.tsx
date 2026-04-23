@@ -33,7 +33,7 @@ export function ForgePreviewPanel({
     [patchIdentity],
   );
   const handleBioChange = useCallback(
-    (flavorText: string) => patchGeneratedCard({ flavorText }),
+    (flavorText: string) => patchGeneratedCard({ front: { flavorText } }),
     [patchGeneratedCard],
   );
   const handleAgeChange = useCallback(
