@@ -1,5 +1,18 @@
 import type { BoardLoadout } from "../lib/boardBuilder";
-import { BOARD_STAT_LABELS, SKATE_STAT_LABELS } from "../lib/statLabels";
+
+// Inline stat labels since BOARD_STAT_LABELS and SKATE_STAT_LABELS were removed
+const BOARD_STATS = {
+  speed:        { label: "Speed",  tooltip: "Board top speed" },
+  acceleration: { label: "Accel",  tooltip: "How quickly the board reaches top speed" },
+  range:        { label: "Range",  tooltip: "Battery range before recharge is needed" },
+} as const;
+
+const SKATE_STATS = {
+  spd: { label: "SPD", tooltip: "Speed — penalised by total component weight" },
+  rng: { label: "RNG", tooltip: "Range — distance covered before battery is depleted" },
+  stl: { label: "STL", tooltip: "Stealth — penalised by total component weight" },
+  grt: { label: "GRT", tooltip: "Grit — toughness and off-road resilience" },
+} as const;
 
 interface SkateboardStatsPanelProps {
   loadout: BoardLoadout;
@@ -46,9 +59,9 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
     <div className="skate-stats-panel">
       <span className="skate-stats-title">BOARD STATS</span>
 
-      <NeonBar label={BOARD_STAT_LABELS.speed.label}        value={loadout.speed}        max={10} colorClass="neon-tube--cyan"    tooltip={BOARD_STAT_LABELS.speed.tooltip} />
-      <NeonBar label={BOARD_STAT_LABELS.acceleration.label} value={loadout.acceleration} max={10} colorClass="neon-tube--magenta" tooltip={BOARD_STAT_LABELS.acceleration.tooltip} />
-      <NeonBar label={BOARD_STAT_LABELS.range.label}        value={loadout.range}        max={10} colorClass="neon-tube--green"   tooltip={BOARD_STAT_LABELS.range.tooltip} />
+      <NeonBar label={BOARD_STATS.speed.label}        value={loadout.speed}        max={10} colorClass="neon-tube--cyan"    tooltip={BOARD_STATS.speed.tooltip} />
+      <NeonBar label={BOARD_STATS.acceleration.label} value={loadout.acceleration} max={10} colorClass="neon-tube--magenta" tooltip={BOARD_STATS.acceleration.tooltip} />
+      <NeonBar label={BOARD_STATS.range.label}        value={loadout.range}        max={10} colorClass="neon-tube--green"   tooltip={BOARD_STATS.range.tooltip} />
 
       {skateStats && (
         <>
@@ -58,10 +71,10 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
               ⚡ TUNED
             </span>
           )}
-          <NeonBar label={SKATE_STAT_LABELS.spd.label} value={skateStats.spd} max={SKATE_STAT_MAX} colorClass="neon-tube--cyan"    tooltip={SKATE_STAT_LABELS.spd.tooltip} />
-          <NeonBar label={SKATE_STAT_LABELS.rng.label} value={skateStats.rng} max={SKATE_STAT_MAX} colorClass="neon-tube--green"   tooltip={SKATE_STAT_LABELS.rng.tooltip} />
-          <NeonBar label={SKATE_STAT_LABELS.stl.label} value={skateStats.stl} max={SKATE_STAT_MAX} colorClass="neon-tube--magenta" tooltip={SKATE_STAT_LABELS.stl.tooltip} />
-          <NeonBar label={SKATE_STAT_LABELS.grt.label} value={skateStats.grt} max={SKATE_STAT_MAX} colorClass="neon-tube--yellow"  tooltip={SKATE_STAT_LABELS.grt.tooltip} />
+          <NeonBar label={SKATE_STATS.spd.label} value={skateStats.spd} max={SKATE_STAT_MAX} colorClass="neon-tube--cyan"    tooltip={SKATE_STATS.spd.tooltip} />
+          <NeonBar label={SKATE_STATS.rng.label} value={skateStats.rng} max={SKATE_STAT_MAX} colorClass="neon-tube--green"   tooltip={SKATE_STATS.rng.tooltip} />
+          <NeonBar label={SKATE_STATS.stl.label} value={skateStats.stl} max={SKATE_STAT_MAX} colorClass="neon-tube--magenta" tooltip={SKATE_STATS.stl.tooltip} />
+          <NeonBar label={SKATE_STATS.grt.label} value={skateStats.grt} max={SKATE_STAT_MAX} colorClass="neon-tube--yellow"  tooltip={SKATE_STATS.grt.tooltip} />
           <div className="skate-text-stats">
             <div className="skate-text-row">
               <span className="skate-text-key">WEIGHT</span>

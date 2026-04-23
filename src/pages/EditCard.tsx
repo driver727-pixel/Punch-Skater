@@ -136,10 +136,11 @@ export function EditCard() {
   const handlePreview = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const previewPrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
+    const normalizedBoard = normalizeBoardConfig(boardConfig);
     const newCard = generateCard(previewPrompts);
     const preservedName = preview?.identity.name ?? original.identity.name;
     const preservedAge = preview?.identity.age ?? original.identity.age ?? "";
-    const preservedFlavorText = preview?.flavorText ?? original.flavorText;
+    const preservedFlavorText = preview?.front?.flavorText ?? original.front?.flavorText;
     const merged: CardPayload = {
       ...newCard,
       id: original.id,
@@ -152,11 +153,15 @@ export function EditCard() {
       backgroundImageUrl: original.backgroundImageUrl,
       characterImageUrl: original.characterImageUrl,
       frameImageUrl: original.frameImageUrl,
-      imageUrl: original.imageUrl,
-      discovery: original.discovery,
-      flavorText: preservedFlavorText,
-      board: boardConfig,
-      boardLoadout: calculateBoardStats(boardConfig),
+      front: {
+        ...newCard.front,
+        ...(preservedFlavorText !== undefined ? { flavorText: preservedFlavorText } : {}),
+      },
+      board: {
+        ...newCard.board,
+        config: normalizedBoard,
+        loadout: calculateBoardStats(normalizedBoard),
+      },
     };
     setPreview(merged);
     setSaved(false);
@@ -172,7 +177,10 @@ export function EditCard() {
           ...(updates.name !== undefined ? { name: updates.name } : {}),
           ...(updates.age !== undefined ? { age: updates.age } : {}),
         },
-        flavorText: updates.flavorText ?? current.flavorText,
+        front: {
+          ...current.front,
+          ...(updates.flavorText !== undefined ? { flavorText: updates.flavorText } : {}),
+        },
       };
     });
     setSaved(false);

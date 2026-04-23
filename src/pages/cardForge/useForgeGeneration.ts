@@ -7,7 +7,6 @@ import {
   resolveSecretFaction,
 } from "../../lib/factionDiscovery";
 import { DEFAULT_BOARD_CONFIG } from "../../components/BoardBuilder";
-import { calculateBoardStats, computeSkateStats, CRITICAL_FORGE_CHANCE } from "../../lib/boardBuilder";
 import { resolveArchetypeStyle } from "../../lib/styles";
 import { sfxClick, sfxSuccessPing } from "../../lib/sfx";
 import { removeBackground, isImageGenConfigured } from "../../services/imageGen";
@@ -93,14 +92,8 @@ export function useForgeGeneration() {
       secretFaction,
     );
 
-    // ── Critical Forge roll (5 % chance) ────────────────────────────────────
-    const isCriticalForge = Math.random() < CRITICAL_FORGE_CHANCE;
-    const boardLoadout = {
-      ...calculateBoardStats(boardConfig),
-      skateStats: computeSkateStats(boardConfig, { criticalForge: isCriticalForge }),
-    };
-    const cardTags = isCriticalForge ? [...card.tags, "Tuned"] : card.tags;
-    const cardWithBoard = { ...card, tags: cardTags, board: boardConfig, boardLoadout };
+    // ── Board stats & forge state (now inside buildForgedCard, but keep for board image) ─────
+    const cardWithBoard = { ...card, board: { ...card.board } };
     setGenerated(cardWithBoard);
     setForging(true);
     if (secretFaction) {
@@ -124,7 +117,10 @@ export function useForgeGeneration() {
       try {
         const boardImageUrl = await generateGouacheBoard(boardConfig);
         if (signal.aborted) return;
-        setGenerated((current) => (current ? { ...current, boardImageUrl } : current));
+        setGenerated((current) => current ? {
+          ...current,
+          board: { ...current.board, imageUrl: boardImageUrl },
+        } : current);
       } catch (error) {
         console.warn("Board image generation failed:", error);
       } finally {
@@ -210,7 +206,7 @@ export function useForgeGeneration() {
     setBoardConfig((current) => buildRandomizedBoardConfig(current));
   }, []);
 
-  const handlePreviewUpdate = useCallback((updates: { name?: string; age?: number; flavorText?: string }) => {
+  const handlePreviewUpdate = useCallback((updates: { name?: string; age?: string; flavorText?: string }) => {
     setGenerated((current) => applyPreviewUpdates(current, updates));
   }, []);
 

@@ -14,8 +14,8 @@ export interface BoardConfig {
   battery: BatteryType;
 }
 
-/** Stat keys that board bonuses can affect (mirrors CardPayload.stats). */
-export type BoardStatKey = "speed" | "stealth" | "tech" | "grit" | "rep";
+/** Stat keys that board bonuses can affect (mirrors ForgedCardStats battle keys). */
+export type BoardStatKey = "speed" | "range" | "stealth" | "grit";
 
 export interface BoardOption<T extends string> {
   value: T;

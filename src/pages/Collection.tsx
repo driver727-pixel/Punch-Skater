@@ -137,10 +137,13 @@ export function Collection() {
           c.identity.name,
           getDisplayedArchetype(c),
           c.identity.crew,
+          c.class.badgeLabel,
+          c.role.label,
+          c.role.coverRole,
+          c.identity.serialNumber,
           c.prompts.rarity,
           c.prompts.district,
-          c.flavorText,
-          ...c.tags,
+          c.front.flavorText ?? "",
         ]
           .join(" ")
           .toLowerCase();
@@ -326,7 +329,7 @@ export function Collection() {
             <button className="btn-outline btn-sm" onClick={() => setShowImport(true)}>
               Import JSON
             </button>
-            <button className="btn-outline" onClick={handleExport} disabled={cards.length === 0}>
+            <button className="btn-outline" onClick={() => handleExport()} disabled={cards.length === 0}>
               Export All
             </button>
         </div>

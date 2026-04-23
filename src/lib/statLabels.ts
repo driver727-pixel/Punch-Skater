@@ -2,35 +2,11 @@
 // Every UI surface that shows a stat abbreviation should pull from here so that
 // labels stay consistent and users always see the same tooltip descriptions.
 
-/** Character card stats */
+/** Forged card stats (canonical model) */
 export const CARD_STAT_LABELS = {
   speed:   { label: "Speed",   tooltip: "Movement speed and evasion ability" },
+  range:   { label: "Range",   tooltip: "Battery range and sustained run distance" },
+  rangeNm: { label: "NM",      tooltip: "Estimated range in nautical miles" },
   stealth: { label: "Stealth", tooltip: "Ability to avoid detection and move unseen" },
-  tech:    { label: "Tech",    tooltip: "Technical skill, hacking, and gadget proficiency" },
   grit:    { label: "Grit",    tooltip: "Toughness, resilience, and raw endurance" },
-  rep:     { label: "Rep",     tooltip: "Street reputation and social influence" },
-} as const;
-
-/** Board / skateboard loadout stats */
-export const BOARD_STAT_LABELS = {
-  speed:        { label: "Speed",        tooltip: "Board top speed" },
-  acceleration: { label: "Accel",        tooltip: "How quickly the board reaches top speed" },
-  range:        { label: "Range",        tooltip: "Battery range before recharge is needed" },
-} as const;
-
-/** Skateboard Stat Engine envelope stats (SPD / RNG / STL / GRT). */
-export const SKATE_STAT_LABELS = {
-  spd: { label: "SPD", tooltip: "Speed — penalised by total component weight" },
-  rng: { label: "RNG", tooltip: "Range — distance covered before battery is depleted" },
-  stl: { label: "STL", tooltip: "Stealth — penalised by total component weight" },
-  grt: { label: "GRT", tooltip: "Grit — toughness and off-road resilience" },
-} as const;
-
-/** Mission-specific stat labels (combines card + board concepts) */
-export const MISSION_STAT_LABELS = {
-  speed:            { label: "Speed",        tooltip: "Combined movement speed for this mission" },
-  acceleration:     { label: "Accel",        tooltip: "How quickly the runner accelerates" },
-  stealth:          { label: "Stealth",      tooltip: "Ability to avoid detection during the mission" },
-  batteryRemaining: { label: "Range",        tooltip: "Remaining battery range" },
-  health:           { label: "Health",       tooltip: "Hit points remaining" },
 } as const;

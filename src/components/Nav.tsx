@@ -86,11 +86,6 @@ export function Nav() {
       <NavLink to="/collection" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Collection
       </NavLink>
-      {user && (
-        <NavLink to="/mission" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Mission
-        </NavLink>
-      )}
       <NavLink to="/trades" className={({ isActive }) => `nav-link${isActive ? " active" : ""}${pendingTrades > 0 ? " nav-link--badge" : ""}`} onClick={handleNav}>
         Trades{pendingTrades > 0 && <span className="nav-badge">{pendingTrades}</span>}
       </NavLink>

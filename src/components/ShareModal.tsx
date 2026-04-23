@@ -11,12 +11,12 @@ export function ShareModal({ card, onClose }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
 
   const shareText = [
-    `🛹 ${card.identity.name} — ${getDisplayedArchetype(card)} · ${card.prompts.rarity}`,
+    `🛹 ${card.identity.name} — ${getDisplayedArchetype(card)} · ${card.class.badgeLabel}`,
     `Faction: ${getDisplayedCrew(card)}`,
-    `Speed ${card.stats.speed} | Stealth ${card.stats.stealth} | Tech ${card.stats.tech} | Grit ${card.stats.grit} | Rep ${card.stats.rep}`,
-    `"${card.flavorText}"`,
+    `Speed ${card.stats.speed} | Range ${card.stats.range} | Stealth ${card.stats.stealth} | Grit ${card.stats.grit}`,
+    card.front.flavorText ? `"${card.front.flavorText}"` : "",
     `\n#SkaterPunkDeckBuilder`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareText).then(() => {
@@ -31,7 +31,6 @@ export function ShareModal({ card, onClose }: ShareModalProps) {
     JSON.stringify({
       archetype: getDisplayedArchetype(card),
       rarity: card.prompts.rarity,
-      styleVibe: card.prompts.styleVibe,
       district: card.prompts.district,
       accentColor: card.prompts.accentColor,
       seed: card.seed,

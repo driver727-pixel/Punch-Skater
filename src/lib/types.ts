@@ -36,7 +36,7 @@ export type Archetype =
   | "The Team";
 export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legendary";
 export const PUNCH_SKATER_RARITY: Rarity = "Punch Skater";
-/** @deprecated Vibe was removed from the forge UI. Kept as a type alias for legacy card compatibility. */
+/** @deprecated Vibe was removed from the forge UI. */
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
 export type Style =
   | "Corporate"
@@ -74,15 +74,66 @@ export interface CardPrompts {
   shoeStyle?: ShoeStyle;
 }
 
-// ── Conlang overlay (CraftLingua integration) ─────────────────────────────────
+// ── Forged card sub-types ─────────────────────────────────────────────────────
 
-export interface ConlangOverlay {
-  passiveTrait: string;
-  activeAbility: string;
-  flavorText: string;
-  catchphrase: string;
-  languageName: string;
-  languageCode: string;
+export type MaintenanceState = "active" | "in_shop" | "impounded";
+
+export interface RoleBonusSet {
+  speed: number;
+  range: number;
+  stealth: number;
+  grit: number;
+}
+
+export interface ForgedRoleData {
+  archetype: Archetype;
+  label: string;
+  coverRole: string;
+  passiveName: string;
+  passiveDescription: string;
+  roleBonuses: RoleBonusSet;
+}
+
+export interface ForgedVarianceData {
+  speed: number;
+  range: number;
+  stealth: number;
+  grit: number;
+}
+
+export interface ForgedCardStats {
+  speed: number;
+  range: number;
+  rangeNm: number;
+  stealth: number;
+  grit: number;
+}
+
+export interface ForgedBoardComponents {
+  boardType: string;
+  drivetrain: string;
+  motor: string;
+  wheels: string;
+  battery: string;
+}
+
+export interface ForgedBoardData {
+  config: import("./boardBuilder").BoardConfig;
+  loadout?: import("./boardBuilder").BoardLoadout;
+  imageUrl?: string;
+  totalWeight: number;
+  tuned: boolean;
+  components: ForgedBoardComponents;
+  loadoutSummary: string;
+  accessProfile: string;
+}
+
+export interface ForgedMaintenanceData {
+  state: MaintenanceState;
+  chargePct: number;
+  repairMinutes: number;
+  repairEndsAt?: string;
+  fastTrackCreditCost?: number;
 }
 
 // ── Card payload ──────────────────────────────────────────────────────────────
@@ -90,13 +141,23 @@ export interface ConlangOverlay {
 export interface CardPayload {
   id: string;
   version: string;
+  createdAt: string;
+
   /** Master seed: "frameSeed::backgroundSeed::characterSeed" */
   seed: string;
   /** Derived per-layer cache keys */
   frameSeed: string;
   backgroundSeed: string;
   characterSeed: string;
+
   prompts: CardPrompts;
+
+  class: {
+    rarity: Rarity;
+    multiplier: number;
+    badgeLabel: string;
+  };
+
   identity: {
     name: string;
     crew: Faction;
@@ -104,52 +165,37 @@ export interface CardPayload {
     /** User-defined age displayed on the card beneath the character name. */
     age?: string;
   };
-  stats: {
-    speed: number;
-    stealth: number;
-    tech: number;
-    grit: number;
-    rep: number;
-  };
-  traits: {
-    passiveTrait: { name: string; description: string };
-    activeAbility: { name: string; description: string };
-    personalityTags: string[];
-  };
+
+  role: ForgedRoleData;
+
+  variance: ForgedVarianceData;
+
+  stats: ForgedCardStats;
+
+  board: ForgedBoardData;
+
+  maintenance: ForgedMaintenanceData;
+
   visuals: {
     helmetStyle: string;
-    boardStyle: string;
     jacketStyle: string;
     colorScheme: string;
     accentColor: string;
     storagePackStyle: string;
   };
-  flavorText: string;
-  tags: string[];
-  /** Random Ozzycred value ($1.00–$100.00) assigned when the card is minted. */
-  ozzies?: number;
-  /** Electric skateboard loadout attached to this character. */
-  board?: import("./boardBuilder").BoardConfig;
-  /** Computed board stats derived from the four chosen components. */
-  boardLoadout?: import("./boardBuilder").BoardLoadout;
-  /** AI-generated skateboard image URL built from the board config description. */
-  boardImageUrl?: string;
-  createdAt: string;
-  /** Legacy single-image URL (AI-generated illustration). */
-  imageUrl?: string;
+
+  front: {
+    flavorText?: string;
+  };
+
+  back: {
+    notes?: string;
+  };
+
   /** Layered AI art URLs */
   backgroundImageUrl?: string;
   characterImageUrl?: string;
   frameImageUrl?: string;
-  /** CraftLingua conlang overlay — present on Rare/Legendary cards with a linked language profile. */
-  conlang?: ConlangOverlay;
-  discovery?: {
-    displayArchetype?: string;
-    revealedFaction?: Faction;
-    isSecretReveal?: boolean;
-    logoMark?: string;
-    unlockedAt?: string;
-  };
 }
 
 // ── Deck payload ──────────────────────────────────────────────────────────────
@@ -170,7 +216,7 @@ export interface DeckPayload {
 // ── Battle payload ──────────────────────────────────────────────────────────
 
 /** Stat keys used for wager deduction and battle resolution. */
-export type StatKey = "speed" | "stealth" | "tech" | "grit" | "rep";
+export type StatKey = "speed" | "range" | "stealth" | "grit";
 
 /** Minimal public card snapshot used for readying decks and resolving battles. */
 export interface BattleCardSnapshot {

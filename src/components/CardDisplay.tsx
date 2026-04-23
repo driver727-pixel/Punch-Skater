@@ -6,9 +6,8 @@ import { StatBar } from "./StatBar";
 import { ShareModal } from "./ShareModal";
 import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
-import { HIGH_RARITY_TIERS } from "../lib/generator";
-import { getDisplayedArchetype, isSecretFactionCard } from "../lib/cardIdentity";
-import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS, calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
+import { getDisplayedArchetype } from "../lib/cardIdentity";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
@@ -29,8 +28,6 @@ interface CardDisplayProps {
   isSaved?: boolean;
   showShare?: boolean;
   saveLabel?: string;
-  /** URL of the AI-generated illustration (legacy single-image). */
-  imageUrl?: string;
   /** When true, shows a loading skeleton while the AI image is being fetched. */
   imageLoading?: boolean;
   /** Background layer URL (district scene, no characters). */
@@ -55,12 +52,6 @@ interface CardDisplayProps {
   onLayerError?: (layer: "background" | "character" | "frame") => void;
 }
 
-function shallowEqualArray<T>(previous: readonly T[] | undefined, next: readonly T[] | undefined): boolean {
-  if (previous === next) return true;
-  if (!previous || !next || previous.length !== next.length) return false;
-  return previous.every((value, index) => value === next[index]);
-}
-
 function shallowEqualObject(
   previous: Record<string, unknown> | null | undefined,
   next: Record<string, unknown> | null | undefined,
@@ -76,14 +67,6 @@ function shallowEqualObject(
   return previousKeys.every((key) => nextKeySet.has(key) && previous[key] === next[key]);
 }
 
-function areCardTraitsEqual(previous: CardPayload["traits"], next: CardPayload["traits"]): boolean {
-  return (
-    shallowEqualArray(previous.personalityTags, next.personalityTags) &&
-    shallowEqualObject(previous.passiveTrait, next.passiveTrait) &&
-    shallowEqualObject(previous.activeAbility, next.activeAbility)
-  );
-}
-
 function areCardsEqual(previous: CardPayload, next: CardPayload): boolean {
   if (previous === next) return true;
 
@@ -94,24 +77,21 @@ function areCardsEqual(previous: CardPayload, next: CardPayload): boolean {
     previous.frameSeed === next.frameSeed &&
     previous.backgroundSeed === next.backgroundSeed &&
     previous.characterSeed === next.characterSeed &&
-    previous.flavorText === next.flavorText &&
     previous.createdAt === next.createdAt &&
-    previous.imageUrl === next.imageUrl &&
     previous.backgroundImageUrl === next.backgroundImageUrl &&
     previous.characterImageUrl === next.characterImageUrl &&
     previous.frameImageUrl === next.frameImageUrl &&
-    previous.boardImageUrl === next.boardImageUrl &&
-    previous.ozzies === next.ozzies &&
-    shallowEqualObject(previous.prompts, next.prompts) &&
-    shallowEqualObject(previous.identity, next.identity) &&
-    shallowEqualObject(previous.stats, next.stats) &&
-    shallowEqualObject(previous.visuals, next.visuals) &&
-    areCardTraitsEqual(previous.traits, next.traits) &&
-    shallowEqualArray(previous.tags, next.tags) &&
-    shallowEqualObject(previous.conlang, next.conlang) &&
-    shallowEqualObject(previous.discovery, next.discovery) &&
-    shallowEqualObject(previous.board, next.board) &&
-    shallowEqualObject(previous.boardLoadout, next.boardLoadout)
+    shallowEqualObject(previous.prompts as unknown as Record<string, unknown>, next.prompts as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.identity as unknown as Record<string, unknown>, next.identity as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.class as unknown as Record<string, unknown>, next.class as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.role as unknown as Record<string, unknown>, next.role as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.stats as unknown as Record<string, unknown>, next.stats as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.visuals as unknown as Record<string, unknown>, next.visuals as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.front as unknown as Record<string, unknown>, next.front as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.back as unknown as Record<string, unknown>, next.back as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.maintenance as unknown as Record<string, unknown>, next.maintenance as unknown as Record<string, unknown>) &&
+    previous.board.imageUrl === next.board.imageUrl &&
+    previous.board.tuned === next.board.tuned
   );
 }
 
@@ -270,7 +250,6 @@ function CardDisplayComponent({
   isSaved,
   showShare = false,
   saveLabel,
-  imageUrl,
   imageLoading,
   backgroundImageUrl,
   characterImageUrl,
@@ -285,28 +264,23 @@ function CardDisplayComponent({
   const [sharing, setSharing] = useState(false);
   const [viewing3D, setViewing3D] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const board = card.board ? normalizeBoardConfig(card.board) : null;
-  const boardLoadout = board ? calculateBoardStats(board) : card.boardLoadout;
-  // false = show conlang (default for high-rarity), true = show English translation
-  const [showEnglish, setShowEnglish] = useState(false);
 
   // ── Inline editable name, age & bio ──────────────────────────────────────
   const [localName, setLocalName] = useState(card.identity.name);
   const [localAge, setLocalAge] = useState(card.identity.age ?? "");
-  const [localBio, setLocalBio] = useState(card.flavorText);
+  const [localBio, setLocalBio] = useState(card.front.flavorText ?? "");
   const [editingName, setEditingName] = useState(false);
   const [editingAge, setEditingAge] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
 
-  // Sync local state when the card identity changes (e.g. a new card is forged)
   useEffect(() => {
     setLocalName(card.identity.name);
     setLocalAge(card.identity.age ?? "");
-    setLocalBio(card.flavorText);
+    setLocalBio(card.front.flavorText ?? "");
     setEditingName(false);
     setEditingAge(false);
     setEditingBio(false);
-  }, [card.id, card.identity.name, card.identity.age, card.flavorText]);
+  }, [card.id, card.identity.name, card.identity.age, card.front.flavorText]);
 
   const commitName = () => {
     setEditingName(false);
@@ -324,9 +298,9 @@ function CardDisplayComponent({
 
   const commitBio = () => {
     setEditingBio(false);
-    const trimmed = localBio.trim() || card.flavorText;
+    const trimmed = localBio.trim() || (card.front.flavorText ?? "");
     setLocalBio(trimmed);
-    if (trimmed !== card.flavorText) onUpdate?.({ flavorText: trimmed });
+    if (trimmed !== (card.front.flavorText ?? "")) onUpdate?.({ flavorText: trimmed });
   };
 
   const openMetadataEditor = () => {
@@ -337,31 +311,13 @@ function CardDisplayComponent({
   };
   // ─────────────────────────────────────────────────────────────────────────
 
-  const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
+  const rarityColor = RARITY_COLORS[card.class.rarity] || "#aaaaaa";
   const accent = card.visuals.accentColor || "#00ff88";
   const displayedArchetype = getDisplayedArchetype(card);
-  const secretFactionCard = isSecretFactionCard(card);
 
-  // Whether this card has conlang data and is a high-rarity tier
-  const hasConlangLore =
-    !!card.conlang && HIGH_RARITY_TIERS.has(card.prompts.rarity);
-
-  // Helpers that return the active language string (conlang or English)
-  const passiveTraitDesc = hasConlangLore && !showEnglish
-    ? card.conlang!.passiveTrait
-    : card.traits.passiveTrait.description;
-  const activeAbilityDesc = hasConlangLore && !showEnglish
-    ? card.conlang!.activeAbility
-    : card.traits.activeAbility.description;
-  const displayFlavorText = hasConlangLore && !showEnglish
-    ? card.conlang!.flavorText
-    : localBio;
-
-  // Prefer layer URLs from props; fall back to card-stored URLs; then legacy imageUrl
   const resolvedBackground = backgroundImageUrl ?? card.backgroundImageUrl;
   const resolvedCharacter  = characterImageUrl  ?? card.characterImageUrl;
   const resolvedFrame      = frameImageUrl      ?? card.frameImageUrl;
-  const resolvedImageUrl   = imageUrl           ?? card.imageUrl;
 
   const hasLayeredImages = resolvedBackground || resolvedCharacter || resolvedFrame;
   const resolvedLayerLoading = layerLoading ?? { background: false, character: false, frame: false };
@@ -385,26 +341,27 @@ function CardDisplayComponent({
             height={112}
             onLayerError={onLayerError}
           />
-        ) : resolvedImageUrl ? (
-          <img
-            src={resolvedImageUrl}
-            alt={`${card.identity.name} illustration`}
-            className="card-art-image"
-          />
         ) : (
           <CardArt card={card} width={160} height={112} />
         )}
         <div className="card-compact-info">
           <span className="card-name">{card.identity.name}</span>
-          <span className="card-rarity" style={{ color: rarityColor }}>{card.prompts.rarity}</span>
+          <span className="card-rarity" style={{ color: rarityColor }}>{card.class.badgeLabel}</span>
           <span className="card-archetype">{displayedArchetype}</span>
-          {secretFactionCard && (
-            <span className="card-secret-badge">{card.discovery?.logoMark ?? card.discovery?.revealedFaction}</span>
+          {card.board.tuned && <span className="card-compact-badge">⚡ Tuned</span>}
+          {card.maintenance.state !== "active" && (
+            <span className="card-compact-status">{card.maintenance.state.replace("_", " ")}</span>
           )}
         </div>
       </div>
     );
   }
+
+  const bt = BOARD_TYPE_OPTIONS.find((o) => o.value === card.board.config.boardType);
+  const dr = DRIVETRAIN_OPTIONS.find((o) => o.value === card.board.config.drivetrain);
+  const mt = MOTOR_OPTIONS.find((o) => o.value === card.board.config.motor);
+  const wh = WHEEL_OPTIONS.find((o) => o.value === card.board.config.wheels);
+  const ba = BATTERY_OPTIONS.find((o) => o.value === card.board.config.battery);
 
   return (
     <div className="card-stack-shell">
@@ -412,13 +369,8 @@ function CardDisplayComponent({
         <div className="card-full card-full--front" style={{ "--accent": accent } as React.CSSProperties}>
           <div className="card-header">
             <span className="card-serial">{card.identity.serialNumber}</span>
-            <span className="card-rarity" style={{ color: rarityColor }}>{card.prompts.rarity.toUpperCase()}</span>
+            <span className="card-rarity" style={{ color: rarityColor }}>{card.class.badgeLabel.toUpperCase()}</span>
           </div>
-          {secretFactionCard && (
-            <div className="card-secret-brand">
-              <span>{card.discovery?.logoMark ?? card.discovery?.revealedFaction}</span>
-            </div>
-          )}
 
           {(layerLoading?.background || layerLoading?.character || layerLoading?.frame) && (
             <LayerStatusBadges loading={resolvedLayerLoading} />
@@ -439,12 +391,6 @@ function CardDisplayComponent({
             <div className="card-art-skeleton card-art-skeleton--full">
               <img src="/assets/loading_2.gif" alt="Loading…" className="card-art-loading-gif" />
             </div>
-          ) : resolvedImageUrl ? (
-            <img
-              src={resolvedImageUrl}
-              alt={`${card.identity.name} illustration`}
-              className="card-art-image card-art-image--full"
-            />
           ) : (
             <CardArt card={card} width={200} height={140} />
           )}
@@ -511,14 +457,14 @@ function CardDisplayComponent({
             )}
 
             {(localBio || onUpdate) && (
-              onUpdate && !hasConlangLore && editingBio ? (
+              onUpdate && editingBio ? (
                 <textarea
                   className="card-edit-textarea card-bio-textarea"
                   value={localBio}
                   onChange={(e) => setLocalBio(e.target.value)}
                   onBlur={commitBio}
                   onKeyDown={(e) => {
-                    if (e.key === "Escape") { setLocalBio(card.flavorText); setEditingBio(false); }
+                    if (e.key === "Escape") { setLocalBio(card.front.flavorText ?? ""); setEditingBio(false); }
                   }}
                   autoFocus
                   rows={3}
@@ -526,45 +472,36 @@ function CardDisplayComponent({
                 />
               ) : (
                 <p
-                  className={`card-bio${onUpdate && !hasConlangLore ? " card-bio--editable" : ""}`}
-                  onClick={() => { if (onUpdate && !hasConlangLore) setEditingBio(true); }}
-                  title={onUpdate && !hasConlangLore ? "Click to edit bio" : undefined}
+                  className={`card-bio${onUpdate ? " card-bio--editable" : ""}`}
+                  onClick={() => { if (onUpdate) setEditingBio(true); }}
+                  title={onUpdate ? "Click to edit bio" : undefined}
                 >
                   {localBio}
-                  {onUpdate && !hasConlangLore && <span className="card-edit-hint">✎</span>}
+                  {onUpdate && <span className="card-edit-hint">✎</span>}
                 </p>
               )
             )}
 
-            {card.conlang?.catchphrase && (
-              <p className="card-catchphrase">
-                &ldquo;{card.conlang.catchphrase}&rdquo;
-              </p>
-            )}
             <div className="card-subline">
-              <span>{displayedArchetype}</span>
+              <span>{card.class.badgeLabel}</span>
               <span className="sep">·</span>
-              <span>{card.prompts.style}</span>
+              <span>{displayedArchetype}</span>
+              {card.board.tuned && (
+                <>
+                  <span className="sep">·</span>
+                  <span className="card-tuned-badge">⚡ Tuned</span>
+                </>
+              )}
             </div>
             <div className="card-subline">
               <span style={{ opacity: 0.6 }}>{card.prompts.district}</span>
-              {card.conlang && (
-                <>
-                  <span className="sep">·</span>
-                  <span className="card-lang-badge" title={`Language: ${card.conlang.languageName}`}>
-                    🌐 {card.conlang.languageCode.toUpperCase()}
-                  </span>
-                </>
-              )}
+              <span className="sep">·</span>
+              <span style={{ opacity: 0.6 }}>{card.identity.crew}</span>
             </div>
           </div>
 
           <div className="stat-flavor">
-            {hasConlangLore && !showEnglish ? (
-              <em className="stat-flavor-text conlang-text">
-                &ldquo;{displayFlavorText}&rdquo;
-              </em>
-            ) : localBio && !onUpdate ? (
+            {localBio && !onUpdate ? (
               <em className="stat-flavor-text">
                 &ldquo;{localBio}&rdquo;
               </em>
@@ -575,102 +512,55 @@ function CardDisplayComponent({
         <div className="card-full card-full--back" style={{ "--accent": accent } as React.CSSProperties}>
           <div className="card-header">
             <span className="card-serial">BACKSIDE</span>
-            <span className="card-rarity" style={{ color: rarityColor }}>{card.prompts.rarity.toUpperCase()}</span>
+            <span className="card-rarity" style={{ color: rarityColor }}>{card.class.badgeLabel.toUpperCase()}</span>
           </div>
 
-          {card.board && (
-            <div className="card-board">
-              <span className="card-board__label">BOARD</span>
-              {card.boardImageUrl ? (
-                <img
-                  src={card.boardImageUrl}
-                  alt="Electric skateboard"
-                  className="card-board__generated-img"
-                />
-              ) : (
-                <div className="card-board__placeholder">🛹</div>
-              )}
-              <div className="card-board__rows">
-                <BoardRow
-                  icon={BOARD_TYPE_OPTIONS.find((o) => o.value === board!.boardType)?.icon ?? "🛹"}
-                  label="TYPE"
-                  value={board!.boardType}
-                />
-                <BoardRow
-                  icon={DRIVETRAIN_OPTIONS.find((o) => o.value === board!.drivetrain)?.icon ?? "⚙️"}
-                  label="DRIVE"
-                  value={DRIVETRAIN_OPTIONS.find((o) => o.value === board!.drivetrain)?.label ?? board!.drivetrain}
-                />
-                {board?.motor && (
-                  <BoardRow
-                    icon={MOTOR_OPTIONS.find((o) => o.value === board!.motor)?.icon ?? "⚡"}
-                    label="MOTOR"
-                    value={MOTOR_OPTIONS.find((o) => o.value === board!.motor)?.label ?? board!.motor}
-                  />
-                )}
-                <BoardRow
-                  icon={WHEEL_OPTIONS.find((o) => o.value === board!.wheels)?.icon ?? "⚫"}
-                  label="WHEELS"
-                  value={board!.wheels}
-                />
-                <BoardRow
-                  icon={BATTERY_OPTIONS.find((o) => o.value === board!.battery)?.icon ?? "🔋"}
-                  label="BATTERY"
-                  value={BATTERY_OPTIONS.find((o) => o.value === board!.battery)?.label ?? board!.battery}
-                />
-              </div>
-              {boardLoadout && (
-                <SkateboardStatsPanel loadout={boardLoadout} />
-              )}
+          <div className="card-board">
+            <span className="card-board__label">BOARD</span>
+            {card.board.imageUrl ? (
+              <img
+                src={card.board.imageUrl}
+                alt="Electric skateboard"
+                className="card-board__generated-img"
+              />
+            ) : (
+              <div className="card-board__placeholder">🛹</div>
+            )}
+            <div className="card-board__rows">
+              <BoardRow icon={bt?.icon ?? "🛹"}  label="TYPE"    value={bt?.label ?? card.board.components.boardType} />
+              <BoardRow icon={dr?.icon ?? "⚙️"}  label="DRIVE"   value={dr?.label ?? card.board.components.drivetrain} />
+              <BoardRow icon={mt?.icon ?? "⚡"}   label="MOTOR"   value={mt?.label ?? card.board.components.motor} />
+              <BoardRow icon={wh?.icon ?? "⚫"}   label="WHEELS"  value={wh?.label ?? card.board.components.wheels} />
+              <BoardRow icon={ba?.icon ?? "🔋"}   label="BATTERY" value={ba?.label ?? card.board.components.battery} />
             </div>
-          )}
+            {card.board.loadout && (
+              <SkateboardStatsPanel loadout={card.board.loadout} />
+            )}
+          </div>
 
           <div className="card-stats">
-            <StatBar label={CARD_STAT_LABELS.speed.label} value={card.stats.speed} color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.speed.label}   value={card.stats.speed}   color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.range.label}   value={card.stats.range}   color={accent} tooltip={CARD_STAT_LABELS.range.tooltip} />
             <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.tech.label} value={card.stats.tech} color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.grit.label} value={card.stats.grit} color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.rep.label} value={card.stats.rep} color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
             <div className="card-worth">
               <span className="card-worth-label">Worth</span>
-              <span className="card-worth-value" style={{ color: accent }}>${computeCardWorth(card).toFixed(2)} Ozzies</span>
+              <span className="card-worth-value" style={{ color: accent }}>{computeCardWorth(card)} pts</span>
             </div>
-            <div className="stat-active">
-              <span className="stat-label" title="Active ability">Active</span>
-              <div className="stat-active-body">
-                <span className="stat-active-name">{card.traits.activeAbility.name}</span>
-                <p className={`stat-active-desc${hasConlangLore && !showEnglish ? " conlang-text" : ""}`}>
-                  {activeAbilityDesc}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card-personality">
-            {card.traits.personalityTags.map((t) => (
-              <span key={t} className="tag" style={{ borderColor: accent }}>{t}</span>
-            ))}
           </div>
 
           <div className="card-traits">
             <div className="trait">
               <span className="trait-label">PASSIVE</span>
-              <span className="trait-name">{card.traits.passiveTrait.name}</span>
-              <p className={`trait-desc${hasConlangLore && !showEnglish ? " conlang-text" : ""}`}>
-                {passiveTraitDesc}
-              </p>
+              <span className="trait-name">{card.role.passiveName}</span>
+              <p className="trait-desc">{card.role.passiveDescription}</p>
             </div>
-            {hasConlangLore && (
-              <div className="conlang-translate-row">
-                <button
-                  className="btn-translate"
-                  onClick={() => setShowEnglish((v) => !v)}
-                  title={showEnglish ? "Show conlang lore" : "Translate to English"}
-                >
-                  {showEnglish ? "🌐 Show Lore" : "🔤 Translate"}
-                </button>
-              </div>
-            )}
+          </div>
+
+          <div className="card-maintenance">
+            <span className="maint-label">MAINTENANCE</span>
+            <span className="maint-state">{card.maintenance.state.replace("_", " ")}</span>
+            <span className="maint-charge">{card.maintenance.chargePct}%</span>
           </div>
         </div>
       </div>
@@ -749,7 +639,6 @@ function areCardDisplayPropsEqual(previous: CardDisplayProps, next: CardDisplayP
     previous.isSaved === next.isSaved &&
     previous.showShare === next.showShare &&
     previous.saveLabel === next.saveLabel &&
-    previous.imageUrl === next.imageUrl &&
     previous.imageLoading === next.imageLoading &&
     previous.backgroundImageUrl === next.backgroundImageUrl &&
     previous.characterImageUrl === next.characterImageUrl &&

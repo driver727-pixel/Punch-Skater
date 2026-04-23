@@ -1,10 +1,7 @@
 import type { CardPayload, Style } from "./types";
 import { resolveCoverIdentityStyle } from "./coverIdentity";
-import { normalizeCardStats } from "./generator";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
-  // Legacy removed styles still normalize into the current active style list so
-  // old saved/imported cards keep a valid style selection.
   Chef: "Street",
   Ninja: "Ex Military",
   Hacker: "Punk Rocker",
@@ -52,24 +49,9 @@ export function remapStyleConnection(style: unknown): string {
 export function normalizeCardPayload(card: CardPayload): CardPayload {
   const rawStyle = typeof card.prompts?.style === "string" ? card.prompts.style : "Street";
   const style = resolveArchetypeStyle(card.prompts?.archetype, rawStyle);
-  const normalizedStats = normalizeCardStats(card.stats);
-  const hasStyleChange = style !== rawStyle;
-  const hasStatChange = (Object.keys(card.stats) as Array<keyof typeof card.stats>)
-    .some((key) => normalizedStats[key] !== card.stats[key]);
-
-  if (!hasStyleChange && !hasStatChange) {
-    return card;
-  }
-
+  if (style === rawStyle) return card;
   return {
     ...card,
-    stats: normalizedStats,
-    prompts: {
-      ...card.prompts,
-      style,
-    },
-    tags: Array.isArray(card.tags)
-      ? Array.from(new Set(card.tags.map((tag) => (tag === rawStyle ? style : tag))))
-      : card.tags,
+    prompts: { ...card.prompts, style },
   };
 }

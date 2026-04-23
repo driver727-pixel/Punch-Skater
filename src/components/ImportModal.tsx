@@ -155,9 +155,6 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
               <div className="import-lang-badge">
                 🌐 Language: <strong>{result.language.name}</strong>{" "}
                 <span className="import-lang-code">({result.language.code})</span>
-                {result.language.description && (
-                  <p className="import-lang-desc">{result.language.description}</p>
-                )}
               </div>
             )}
 
