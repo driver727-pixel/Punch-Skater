@@ -1,7 +1,8 @@
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000;
 const WEATHER_RETRY_ATTEMPTS = 3;
-const WEATHER_RETRY_BASE_DELAY_MS = 1000;
+const WEATHER_RETRY_BASE_DELAY_MS = 2000;
+const WEATHER_STAGGER_MS = 250;
 const HEAVY_RAIN_MM = 7;
 const HEATWAVE_TEMP_C = 35;
 const STRONG_WIND_KPH = 45;
@@ -65,7 +66,11 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchDistrictWeatherSnapshot(district, location) {
+async function fetchDistrictWeatherSnapshot(district, location, staggerMs = 0) {
+  if (staggerMs > 0) {
+    await sleep(staggerMs);
+  }
+
   const url = new URL(WEATHER_URL);
   url.searchParams.set('latitude', String(location.latitude));
   url.searchParams.set('longitude', String(location.longitude));
@@ -76,11 +81,18 @@ async function fetchDistrictWeatherSnapshot(district, location) {
   let lastError = new Error(`Weather upstream rate limited for ${district}.`);
   for (let attempt = 0; attempt < WEATHER_RETRY_ATTEMPTS; attempt++) {
     if (attempt > 0) {
-      await sleep(WEATHER_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1));
+      const jitter = Math.random() * WEATHER_RETRY_BASE_DELAY_MS;
+      await sleep(WEATHER_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1) + jitter);
     }
     const upstream = await fetch(url);
     if (upstream.status === 429) {
+      const retryAfterSecs = Number(upstream.headers.get('retry-after') ?? 0);
+      const baseDelay = retryAfterSecs > 0
+        ? retryAfterSecs * 1000
+        : WEATHER_RETRY_BASE_DELAY_MS * 2 ** attempt;
+      const jitter = Math.random() * WEATHER_RETRY_BASE_DELAY_MS;
       lastError = new Error(`Weather upstream rate limited for ${district} (attempt ${attempt + 1}).`);
+      await sleep(baseDelay + jitter);
       continue;
     }
     if (!upstream.ok) {
@@ -114,9 +126,9 @@ async function fetchDistrictWeatherSnapshot(district, location) {
 async function buildDistrictWeatherPayload() {
   const districtEntries = Object.entries(DISTRICT_WEATHER_LOCATIONS);
   const districtFetchResults = await Promise.all(
-    districtEntries.map(async ([district, location]) => {
+    districtEntries.map(async ([district, location], index) => {
       try {
-        const snapshot = await fetchDistrictWeatherSnapshot(district, location);
+        const snapshot = await fetchDistrictWeatherSnapshot(district, location, index * WEATHER_STAGGER_MS);
         return { status: 'fulfilled', district, location, snapshot };
       } catch (error) {
         return { status: 'rejected', district, location, error };
