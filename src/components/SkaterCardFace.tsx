@@ -19,6 +19,7 @@ import { FrameOverlay } from "./FrameOverlay";
 import { StatBar } from "./StatBar";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
+import stamp360Gif from "../../stamp360.gif";
 import {
   getFrameBlendMode,
   shouldInsetBackgroundForFrame,
@@ -211,7 +212,7 @@ function CardBack({
           ) : boardImageLoading ? (
             <div className="print-back-board-loading">
               <img
-                src="/assets/hourglass-spinner.gif"
+                src={stamp360Gif}
                 alt="Generating skateboard…"
                 className="print-back-board-spinner"
                 onError={(e) => {
