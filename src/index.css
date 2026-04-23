@@ -722,6 +722,174 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 12px;
 }
 
+/* ── Battle Pass panel ─────────────────────────────────────────────────────── */
+.battle-pass-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(10, 18, 28, 0.95), rgba(20, 10, 30, 0.92));
+}
+
+.battle-pass-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.battle-pass-panel__title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--purple);
+}
+
+.battle-pass-panel__season {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.battle-pass-panel__tier-display {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.battle-pass-panel__tier-number {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.battle-pass-panel__tier-label {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.battle-pass-panel__xp-bar {
+  margin-bottom: 14px;
+}
+
+.battle-pass-panel__xp-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.battle-pass-panel__xp-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.4s ease;
+}
+
+.battle-pass-panel__xp-text {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.battle-pass-panel__track {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.battle-pass-tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 72px;
+  padding: 6px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  opacity: 0.5;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.battle-pass-tier--unlocked {
+  opacity: 1;
+}
+
+.battle-pass-tier--current {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.15);
+}
+
+.battle-pass-tier__number {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.battle-pass-tier__rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.battle-pass-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 10px;
+  color: var(--text);
+  text-align: left;
+  transition: border-color 0.2s;
+  position: relative;
+}
+
+.battle-pass-reward:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.battle-pass-reward--premium {
+  border-color: rgba(204, 68, 255, 0.3);
+}
+
+.battle-pass-reward--claimed {
+  opacity: 0.5;
+  border-color: var(--accent);
+}
+
+.battle-pass-reward--locked {
+  opacity: 0.4;
+}
+
+.battle-pass-reward__icon {
+  font-size: 12px;
+}
+
+.battle-pass-reward__name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.battle-pass-reward__check {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.battle-pass-reward__lock {
+  font-size: 10px;
+}
+
 .forge-welcome-panel {
   border-color: rgba(0, 255, 136, 0.32);
   background:

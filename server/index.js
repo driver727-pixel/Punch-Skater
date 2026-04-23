@@ -42,6 +42,7 @@ import { registerBattleRoutes } from './routes/battle.js';
 import { registerImageRoutes } from './routes/images.js';
 import { registerImportRoutes } from './routes/import.js';
 import { registerPaymentRoutes } from './routes/payments.js';
+import { registerBattlePassRoutes } from './battlePass.js';
 import { registerWeatherRoutes } from './routes/weather.js';
 
 // Load the shared pricing config — the single source of truth for Stripe
@@ -196,6 +197,13 @@ const battleRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 30,
   message: { error: 'Too many battle requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const battlePassRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: 'Too many battle pass requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -713,6 +721,13 @@ registerBattleRoutes(app, {
   createBattleCardSnapshot,
   resolveBattleWithEffects,
   randomUUID,
+  FieldValue,
+});
+
+registerBattlePassRoutes(app, {
+  adminDb,
+  battlePassRateLimit,
+  authenticateFirebaseUser,
   FieldValue,
 });
 
