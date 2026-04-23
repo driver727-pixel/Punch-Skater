@@ -16,6 +16,7 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     tagline: "Built for the grid",
     description: "Low-profile deck tuned for urban pavement, tight alleyways, and short-range blitzes.",
     statBonuses: { speed: 2, stealth: 1 },
+    weight: 10,
   },
   {
     value: "AT",
@@ -24,6 +25,7 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     tagline: "No road required",
     description: "Elevated clearance and reinforced trucks handle cracked concrete, dirt, and debris with ease.",
     statBonuses: { grit: 2, rep: 1 },
+    weight: 30,
   },
   {
     value: "Mountain",
@@ -32,6 +34,7 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     tagline: "Downhill specialist",
     description: "Wide deck and aggressive stance for steep descents, off-camber trails, and high-G carves.",
     statBonuses: { speed: 1, grit: 2 },
+    weight: 40,
   },
   {
     value: "Surf",
@@ -40,6 +43,7 @@ export const BOARD_TYPE_OPTIONS: BoardOption<BoardType>[] = [
     tagline: "Flow state activated",
     description: "Spring-loaded trucks simulate the pump of a wave. Smooth roads become infinite barrels.",
     statBonuses: { stealth: 2, rep: 1 },
+    weight: 20,
   },
 ];
 
@@ -51,6 +55,7 @@ export const DRIVETRAIN_OPTIONS: BoardOption<Drivetrain>[] = [
     tagline: "Classic torque",
     description: "Exposed belt transfers maximum torque. Higher top speed, loud, and serviceable in the field.",
     statBonuses: { speed: 2, tech: 1 },
+    weight: 10,
   },
   {
     value: "Hub",
@@ -59,6 +64,7 @@ export const DRIVETRAIN_OPTIONS: BoardOption<Drivetrain>[] = [
     tagline: "Silent operator",
     description: "Motors live inside the wheels. Near-silent operation is perfect for ghost runs and surveillance.",
     statBonuses: { stealth: 3 },
+    weight: 20,
   },
   {
     value: "Gear",
@@ -67,6 +73,7 @@ export const DRIVETRAIN_OPTIONS: BoardOption<Drivetrain>[] = [
     tagline: "Built to last",
     description: "Helical gears deliver smooth consistent torque with no belt to snap during critical drops.",
     statBonuses: { grit: 2, tech: 1 },
+    weight: 30,
   },
   {
     value: "4WD",
@@ -75,45 +82,50 @@ export const DRIVETRAIN_OPTIONS: BoardOption<Drivetrain>[] = [
     tagline: "All four pushing",
     description: "Four-wheel drive obliterates loose terrain and wet surfaces. Heavy, but nothing stops it.",
     statBonuses: { grit: 2, speed: 1 },
+    weight: 40,
   },
 ];
 
 export const MOTOR_OPTIONS: MotorOption[] = [
   {
     value: "Micro",
-    label: "Micro 5055",
+    label: "Micro 500x2",
     icon: "🔌",
-    tagline: "Lightweight starter",
+    tagline: "Lightweight compact",
     description: "Small 5055-class motor. Quiet, efficient, and easy to replace. Best for lightweight commuter setups.",
     acceleration: 3,
     statBonuses: { stealth: 1, tech: 1 },
+    weight: 10,
   },
   {
     value: "Standard",
-    label: "Standard 6354",
+    label: "Single 2000",
     icon: "⚡",
     tagline: "Balanced power",
     description: "Mid-range 6354-class motor delivers reliable acceleration for everyday runs and hill climbs.",
     acceleration: 5,
     statBonuses: { speed: 1, grit: 1 },
+    weight: 20,
   },
   {
     value: "Torque",
-    label: "Torque 6374",
+    label: "Torque 7000",
     icon: "💪",
-    tagline: "Maximum pull",
+    tagline: "Race grade",
     description: "Heavy 6374-class motor built for instant torque. Launches hard off the line and eats steep grades.",
     acceleration: 8,
     statBonuses: { grit: 2, rep: 1 },
+    weight: 30,
   },
   {
     value: "Outrunner",
-    label: "Outrunner 6396",
+    label: "Mtn Runner 10000",
     icon: "🚀",
-    tagline: "Race-grade power",
+    tagline: "4wd-grade power",
     description: "Oversized 6396-class outrunner motor. Maximum acceleration for riders who need to disappear fast.",
     acceleration: 10,
     statBonuses: { speed: 2, rep: 1 },
+    weight: 40,
   },
 ];
 
@@ -125,6 +137,7 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
     tagline: "Grip and carve",
     description: "High-rebound urethane bites into asphalt and holds a line through high-speed corners.",
     statBonuses: { speed: 1, rep: 1 },
+    weight: 10,
   },
   {
     value: "Pneumatic",
@@ -133,6 +146,7 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
     tagline: "Air-cushioned",
     description: "Inflatable tires absorb punishment from rough roads, curbs, and gravel with natural suspension.",
     statBonuses: { grit: 1, stealth: 1 },
+    weight: 30,
   },
   {
     value: "Rubber",
@@ -141,6 +155,7 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
     tagline: "Puncture proof",
     description: "Solid rubber core never flats. Heavier ride, but ideal for debris-strewn industrial zones.",
     statBonuses: { grit: 2 },
+    weight: 40,
   },
   {
     value: "Cloud",
@@ -149,6 +164,7 @@ export const WHEEL_OPTIONS: BoardOption<WheelType>[] = [
     tagline: "Smooth and floaty",
     description: "Semi-transparent foam-core wheels with a wide contact patch. Absorbs road buzz and flows through carves.",
     statBonuses: { stealth: 1, rep: 1 },
+    weight: 20,
   },
 ];
 
@@ -162,6 +178,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
     range: 4,
     isTopMounted: false,
     statBonuses: { stealth: 2 },
+    weight: 10,
   },
   {
     value: "DoubleStack",
@@ -172,6 +189,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
     range: 8,
     isTopMounted: false,
     statBonuses: { grit: 1, rep: 1 },
+    weight: 30,
   },
   {
     value: "TopPeli",
@@ -182,6 +200,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
     range: 10,
     isTopMounted: true,
     statBonuses: { tech: 1, rep: 2 },
+    weight: 40,
   },
 ];
 
