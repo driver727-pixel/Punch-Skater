@@ -58,7 +58,10 @@ interface GenerateCardOptions {
 
 /**
  * generateCard is now a thin wrapper around buildForgedCard.
- * Uses the default board configuration for prompt-only card generation.
+ * Uses DEFAULT_BOARD_CONFIG because generateCard callers (EditCard, quick
+ * previews) don't need a customised board — the full forge flow in
+ * useForgeGeneration already passes a user-selected boardConfig directly to
+ * buildForgedCard via the synthesis layer.
  */
 export const generateCard = (prompts: CardPrompts, options: GenerateCardOptions = {}): CardPayload => {
   return buildForgedCard({
