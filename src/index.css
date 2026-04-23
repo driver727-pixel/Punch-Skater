@@ -722,6 +722,97 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 12px;
 }
 
+/* ── Weekly Heat banner ────────────────────────────────────────────────────── */
+.weekly-heat-banner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.weekly-heat-banner__heat,
+.weekly-heat-banner__quest {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(10, 18, 28, 0.95), rgba(20, 10, 30, 0.92));
+}
+
+.weekly-heat-banner__heat {
+  border-color: var(--heat-accent, var(--purple));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--heat-accent, var(--purple)) 20%, transparent);
+}
+
+.weekly-heat-banner__quest {
+  border-color: var(--accent2);
+}
+
+.weekly-heat-banner__heat-badge,
+.weekly-heat-banner__quest-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.weekly-heat-banner__heat-badge {
+  background: var(--heat-accent, var(--purple));
+  color: #000;
+}
+
+.weekly-heat-banner__quest-badge {
+  background: var(--accent2);
+  color: #000;
+}
+
+.weekly-heat-banner__heat-info,
+.weekly-heat-banner__quest-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.weekly-heat-banner__heat-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--heat-accent, var(--purple));
+}
+
+.weekly-heat-banner__heat-desc,
+.weekly-heat-banner__quest-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.weekly-heat-banner__heat-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.weekly-heat-banner__quest-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--accent2);
+}
+
+.weekly-heat-banner__quest-reward {
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .weekly-heat-banner {
+    grid-template-columns: 1fr;
+  }
+}
+
 .forge-welcome-panel {
   border-color: rgba(0, 255, 136, 0.32);
   background:

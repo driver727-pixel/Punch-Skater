@@ -57,6 +57,27 @@ export interface BattlePassState {
   updatedAt: string;
 }
 
+// ── Weekly Heat (Gamma) ──────────────────────────────────────────────────────
+
+/** @sprint 1 @owner gamma — Weekly Heat card forging record. Doc ID = {weekId}_{uid}. */
+export interface WeeklyHeatForge {
+  uid: string;
+  weekId: string;
+  heatCardName: string;
+  forgedAt: string;
+}
+
+/** @sprint 1 @owner gamma — Weekly weather quest progress. Doc ID = {weekId}_{uid}. */
+export interface WeeklyQuestProgress {
+  uid: string;
+  weekId: string;
+  questTitle: string;
+  progress: number;
+  target: number;
+  completed: boolean;
+  updatedAt: string;
+}
+
 // ── Crews (Charlie) ──────────────────────────────────────────────────────────
 
 /** @sprint 0 @owner charlie */

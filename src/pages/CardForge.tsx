@@ -1,3 +1,4 @@
+import { WeeklyHeatBanner } from "../components/WeeklyHeatBanner";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
@@ -15,6 +16,7 @@ import {
   SKIN_TONES,
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
+import { useWeeklyHeat } from "../hooks/useWeeklyHeat";
 import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
@@ -64,6 +66,7 @@ export function CardForge() {
     tierCanSave,
     viewing3D,
   } = useCardForgeController();
+  const weeklyHeat = useWeeklyHeat();
 
   return (
     <div className="page">
@@ -71,6 +74,7 @@ export function CardForge() {
       <h1 className="page-title">CARD FORGE</h1>
       <p className="page-sub">Configure your Sk8r and forge a unique card</p>
 
+      <WeeklyHeatBanner weeklyHeat={weeklyHeat} />
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
 
       <div className="forge-quick-actions">

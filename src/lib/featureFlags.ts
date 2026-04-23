@@ -27,6 +27,9 @@ export const featureFlags = {
   /** Battle pass tier progression + premium track. @owner gamma */
   BATTLE_PASS: envFlag("VITE_FF_BATTLE_PASS", false),
 
+  /** Weekly Heat card + weather quests. @owner gamma */
+  WEEKLY_HEAT: envFlag("VITE_FF_WEEKLY_HEAT", false),
+
   /** Crew / guild system. @owner charlie */
   CREWS: envFlag("VITE_FF_CREWS", false),
 
