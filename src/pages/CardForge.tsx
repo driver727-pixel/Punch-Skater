@@ -1,3 +1,4 @@
+import { ChargeUpIndicator } from "../components/ChargeUpIndicator";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
@@ -23,6 +24,7 @@ export function CardForge() {
     boardImageLoading,
     canForge,
     characterBlend,
+    chargeUp,
     closeWelcome,
     downloading,
     forging,
@@ -94,6 +96,8 @@ export function CardForge() {
           Random Skater
         </button>
       </div>
+
+      <ChargeUpIndicator chargeUp={chargeUp} />
 
       <div className="forge-layout">
         <ForgeControlsPanel

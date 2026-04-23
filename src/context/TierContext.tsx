@@ -13,6 +13,7 @@ import {
   type TierLevel,
 } from "../lib/tiers";
 import { claimReferral, REFERRAL_CREDITS_KEY } from "../services/referrals";
+import { useChargeUp, type ChargeUpState } from "../hooks/useChargeUp";
 import { useAuth } from "./AuthContext";
 import { db } from "../lib/firebase";
 import { resolveApiUrl } from "../lib/apiUrls";
@@ -47,10 +48,12 @@ interface TierContextValue {
   email: string;
   /** Number of referral-earned generate credits remaining. */
   generateCredits: number;
-  /** True when the user may forge a card (paid tier OR has credits OR free card available). */
+  /** True when the user may forge a card (paid tier OR has credits OR free card available OR charge up). */
   canForge: boolean;
   /** True when the free tier's one complimentary card has already been used. */
   freeCardUsed: boolean;
+  /** Charge Up timer state (8-hour free forge). */
+  chargeUp: ChargeUpState;
   setTier: (level: TierLevel, email?: string) => void;
   logout: () => void;
   /** Consume one generate credit (call after a successful forge on free tier). */
@@ -240,7 +243,8 @@ export function TierProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const canForge = TIERS[tier].canGenerate || generateCredits > 0 || (tier === "free" && !freeCardUsed);
+  const chargeUp = useChargeUp();
+  const canForge = TIERS[tier].canGenerate || generateCredits > 0 || (tier === "free" && !freeCardUsed) || chargeUp.available;
 
   const setTier = useCallback((level: TierLevel, newEmail?: string) => {
     setTierState(level);
@@ -275,7 +279,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
 
   return (
     <TierContext.Provider value={{
-      tier, email, generateCredits, canForge, freeCardUsed,
+      tier, email, generateCredits, canForge, freeCardUsed, chargeUp,
       setTier, logout, consumeCredit, markFreeCardUsed,
       showUpgradeModal, openUpgradeModal, closeUpgradeModal,
     }}>

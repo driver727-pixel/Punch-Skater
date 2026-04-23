@@ -722,6 +722,54 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 12px;
 }
 
+/* ── Charge Up indicator ───────────────────────────────────────────────────── */
+.charge-up-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(10, 18, 28, 0.95), rgba(20, 10, 30, 0.92));
+  font-size: 14px;
+  color: var(--text-dim);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.charge-up-indicator--ready {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.15), inset 0 0 20px rgba(0, 255, 136, 0.04);
+  animation: charge-pulse 2s ease-in-out infinite;
+}
+
+.charge-up-indicator--compact {
+  padding: 4px 10px;
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+.charge-up-indicator__icon {
+  font-size: 1.2em;
+}
+
+.charge-up-indicator__label {
+  font-family: var(--font);
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.charge-up-indicator__hint {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+@keyframes charge-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 255, 136, 0.15), inset 0 0 20px rgba(0, 255, 136, 0.04); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), inset 0 0 30px rgba(0, 255, 136, 0.08); }
+}
+
 .forge-welcome-panel {
   border-color: rgba(0, 255, 136, 0.32);
   background:

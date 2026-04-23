@@ -22,6 +22,7 @@ export function useCardForgeController() {
     boardImageLoading: forge.boardImageLoading,
     canForge: forge.canForge,
     characterBlend: forge.characterBlend,
+    chargeUp: forge.chargeUp,
     closeWelcome: navigation.closeWelcome,
     downloading: save.downloading,
     forging: forge.forging,
