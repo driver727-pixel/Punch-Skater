@@ -7,7 +7,7 @@ import {
   resolveSecretFaction,
 } from "../../lib/factionDiscovery";
 import { DEFAULT_BOARD_CONFIG } from "../../components/BoardBuilder";
-import { calculateBoardStats } from "../../lib/boardBuilder";
+import { calculateBoardStats, computeSkateStats, CRITICAL_FORGE_CHANCE } from "../../lib/boardBuilder";
 import { resolveArchetypeStyle } from "../../lib/styles";
 import { sfxClick, sfxSuccessPing } from "../../lib/sfx";
 import { removeBackground, isImageGenConfigured } from "../../services/imageGen";
@@ -92,7 +92,15 @@ export function useForgeGeneration() {
       displayArchetype,
       secretFaction,
     );
-    const cardWithBoard = { ...card, board: boardConfig, boardLoadout: calculateBoardStats(boardConfig) };
+
+    // ── Critical Forge roll (5 % chance) ────────────────────────────────────
+    const isCriticalForge = Math.random() < CRITICAL_FORGE_CHANCE;
+    const boardLoadout = {
+      ...calculateBoardStats(boardConfig),
+      skateStats: computeSkateStats(boardConfig, { criticalForge: isCriticalForge }),
+    };
+    const cardTags = isCriticalForge ? [...card.tags, "Tuned"] : card.tags;
+    const cardWithBoard = { ...card, tags: cardTags, board: boardConfig, boardLoadout };
     setGenerated(cardWithBoard);
     setForging(true);
     if (secretFaction) {

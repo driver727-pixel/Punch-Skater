@@ -13,6 +13,7 @@ export type {
   Drivetrain,
   MotorOption,
   MotorType,
+  SkateStats,
   WheelType,
 } from "./boardBuilderTypes";
 
@@ -51,3 +52,9 @@ export {
 } from "./boardBuilderStats";
 
 export { buildBoardImagePrompt } from "./boardBuilderPrompt";
+
+export {
+  computeSkateStats,
+  CRITICAL_FORGE_CHANCE,
+  CRITICAL_FORGE_WEIGHT_REDUCTION,
+} from "./boardBuilderStatEnvelope";

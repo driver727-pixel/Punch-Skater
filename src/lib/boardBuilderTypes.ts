@@ -24,6 +24,8 @@ export interface BoardOption<T extends string> {
   tagline: string;
   description: string;
   statBonuses: Partial<Record<BoardStatKey, number>>;
+  /** Component weight used by the Stat Envelope Engine penalty formula. */
+  weight: number;
 }
 
 export interface MotorOption {
@@ -34,6 +36,8 @@ export interface MotorOption {
   description: string;
   acceleration: number;
   statBonuses: Partial<Record<BoardStatKey, number>>;
+  /** Component weight used by the Stat Envelope Engine penalty formula. */
+  weight: number;
 }
 
 export interface BatteryOption {
@@ -45,6 +49,24 @@ export interface BatteryOption {
   range: number;
   isTopMounted: boolean;
   statBonuses: Partial<Record<BoardStatKey, number>>;
+  /** Component weight used by the Stat Envelope Engine penalty formula. */
+  weight: number;
+}
+
+/** Four-stat envelope produced by the Skateboard Stat Engine. */
+export interface SkateStats {
+  /** Speed — raw base points minus weight penalty (floored at 0). */
+  spd: number;
+  /** Range — raw base points, unaffected by weight. */
+  rng: number;
+  /** Stealth — raw base points minus weight penalty (floored at 0). */
+  stl: number;
+  /** Grit — raw base points, unaffected by weight. */
+  grt: number;
+  /** Sum of all five component weights. */
+  totalWeight: number;
+  /** True when a Critical Forge roll reduced the effective weight by 15 %. */
+  isTuned: boolean;
 }
 
 export interface BoardComponentModel {
@@ -75,6 +97,8 @@ export interface BoardLoadout {
   acceleration: number;
   accessProfile: string;
   range: number;
+  /** Skateboard Stat Engine envelope (present on all freshly forged cards). */
+  skateStats?: SkateStats;
 }
 
 export interface CompatibilityError {

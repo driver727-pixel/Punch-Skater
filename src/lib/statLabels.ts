@@ -18,6 +18,14 @@ export const BOARD_STAT_LABELS = {
   range:        { label: "Range",        tooltip: "Battery range before recharge is needed" },
 } as const;
 
+/** Skateboard Stat Engine envelope stats (SPD / RNG / STL / GRT). */
+export const SKATE_STAT_LABELS = {
+  spd: { label: "SPD", tooltip: "Speed — penalised by total component weight" },
+  rng: { label: "RNG", tooltip: "Range — distance covered before battery is depleted" },
+  stl: { label: "STL", tooltip: "Stealth — penalised by total component weight" },
+  grt: { label: "GRT", tooltip: "Grit — toughness and off-road resilience" },
+} as const;
+
 /** Mission-specific stat labels (combines card + board concepts) */
 export const MISSION_STAT_LABELS = {
   speed:            { label: "Speed",        tooltip: "Combined movement speed for this mission" },

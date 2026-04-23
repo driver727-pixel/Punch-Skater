@@ -7027,6 +7027,33 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   animation: neon-hum-green 3.2s ease-in-out infinite;
 }
 
+.neon-tube--yellow .neon-filament {
+  background: linear-gradient(90deg, rgba(255,200,0,0.7), #ffc800);
+  box-shadow: 0 0 4px #ffc800, 0 0 8px #ffc800;
+}
+.neon-tube--yellow {
+  animation: neon-hum-green 3.6s ease-in-out infinite;
+}
+
+/* Divider between legacy board stats and the new Stat Envelope section */
+.skate-stats-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  margin: 3px 0;
+}
+
+/* "⚡ TUNED" badge shown on Critical Forge cards */
+.skate-stats-tuned-badge {
+  display: inline-block;
+  font-size: 5px;
+  font-weight: bold;
+  letter-spacing: 0.8px;
+  color: #ffc800;
+  text-shadow: 0 0 6px rgba(255,200,0,0.9);
+  margin-bottom: 2px;
+}
+
 /* Text stat rows (District / Style) */
 .skate-text-stats {
   display: flex;
