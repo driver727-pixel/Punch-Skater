@@ -1,6 +1,7 @@
 import { resolveApiUrl } from "../lib/apiUrls";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { normalizeBoardConfig } from "../lib/boardBuilder";
+import { buildBoardImagePrompt } from "../lib/boardBuilderPrompt";
 import { getCategoryImages, getMatchingCategoryImages } from "../lib/boardCategoryImages";
 import { auth } from "../lib/firebase";
 import { getCachedImage, setCachedImage } from "./imageCache";
@@ -17,7 +18,7 @@ const BOARD_IMAGE_STATUS_BASE_URL = BOARD_IMAGE_API_URL.replace(
 );
 // Increment when the board-generation prompt, model, or cache-key inputs change
 // in a way that should invalidate previously generated board art.
-const BOARD_IMAGE_CACHE_VERSION = "v4-fal-gouache-board-square";
+const BOARD_IMAGE_CACHE_VERSION = "v5-fal-gouache-board-square";
 const BOARD_IMAGE_LOCAL_CACHE_PREFIX = "skpd_board_image_cache::";
 const BOARD_IMAGE_PUBLIC_ORIGIN = "https://punchskater.com";
 
@@ -72,20 +73,6 @@ function getResolvedBoardReferenceUrls(config: BoardConfig): string[] {
   });
 }
 
-function buildBoardPrompt(config: BoardConfig): string {
-  const normalizedConfig = normalizeBoardConfig(config);
-  const batterySentence =
-    normalizedConfig.battery === "SlimStealth"
-      ? ""
-      : `A ${normalizedConfig.battery} battery case is securely mounted. `;
-  return (
-    "A stylized, gouache painting of a 'Punch Skater' electric skateboard. " +
-    `The board features a ${normalizedConfig.boardType} deck, ${normalizedConfig.drivetrain} drivetrain, and ${normalizedConfig.wheels} wheels. ` +
-    `It uses ${normalizedConfig.motor} motors matched to the selected performance setup. ` +
-    batterySentence +
-    "The artwork features matte, opaque brushwork, thick textures, and a clean, neutral studio gray background suitable for a UI cutout."
-  );
-}
 
 function toCacheToken(value: string): string {
   return value.trim().replace(/([a-z0-9])([A-Z])/g, "$1-$2").replace(/\s+/g, "-").toLowerCase();
@@ -202,7 +189,7 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
     method: "POST",
     headers: await buildAuthorizedJsonHeaders(),
     body: JSON.stringify({
-      prompt: buildBoardPrompt(config),
+      prompt: buildBoardImagePrompt(config),
       imageUrls,
     }),
   });
@@ -230,7 +217,7 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
 
   setLocalCachedBoardImage(cacheKey, imageUrl);
   await setCachedImage(cacheKey, imageUrl, {
-    prompt: buildBoardPrompt(config),
+    prompt: buildBoardImagePrompt(config),
     layer: "board-img",
     seed: cacheKey,
   });
