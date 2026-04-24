@@ -2447,6 +2447,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   mix-blend-mode: screen;
   object-fit: fill;
 }
+.card-art-layer--frame-wrap {
+  /* Punch Skater frame PNGs include transparent padding and slight left/right
+     asymmetry. Position the image with explicit overscan instead of a centred
+     transform so the visible bandage artwork reaches the card edge cleanly. */
+  inset: auto;
+  top: -4.731183%;
+  left: -8.936826%;
+  width: 118.335901%;
+  height: 110.107527%;
+}
 .card-art-layer--svg-frame {
   /* SVG neon border overlay for the four redesigned rarity frames (Apprentice, Master,
      Rare, Legendary).  Sits above the AI frame image layer so the deterministic neon
@@ -5091,14 +5101,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 /* Wrap-around bandage-style frames (currently only Punch Skater) ship PNG
- * assets with ~7.5% horizontal and ~4.3% vertical transparent padding around
- * the visible artwork.  Scale the layer up so the artwork's outer edge meets
- * the card's outer edge on every side, producing the illusion that the
- * bandage wraps around the card.  The transparent padding overflows past the
- * card box and is clipped by .print-card { overflow: hidden }. */
+ * assets with asymmetric transparent padding around the visible artwork.
+ * Position the image with explicit overscan so the artwork reaches the card
+ * edge cleanly on every side while the transparent canvas is clipped away. */
 .print-art-layer--frame-wrap {
-  transform: scale(1.184, 1.101);
-  transform-origin: center center;
+  inset: auto;
+  top: -4.731183%;
+  left: -8.936826%;
+  width: 118.335901%;
+  height: 110.107527%;
+}
+.print-art-layer--frame-wrap.print-art-layer--frame-back {
+  left: -9.399076%;
 }
 
 /* Front face info overlay (name + bio shown over the character art) */
@@ -5727,8 +5741,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     object-fit: fill;
   }
   .print-only-card .print-art-layer--frame-wrap {
-    transform: scale(1.184, 1.101);
-    transform-origin: center center;
+    inset: auto;
+    top: -4.731183%;
+    left: -8.936826%;
+    width: 118.335901%;
+    height: 110.107527%;
+  }
+  .print-only-card .print-art-layer--frame-wrap.print-art-layer--frame-back {
+    left: -9.399076%;
   }
 
   @page {
