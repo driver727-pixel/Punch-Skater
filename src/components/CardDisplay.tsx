@@ -11,7 +11,12 @@ import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, B
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
-import { getFrameBlendMode, shouldInsetBackgroundForFrame, shouldRenderSvgFrame } from "../services/staticAssets";
+import {
+  getFrameBlendMode,
+  isWraparoundFrame,
+  shouldInsetBackgroundForFrame,
+  shouldRenderSvgFrame,
+} from "../services/staticAssets";
 
 interface LayerLoading {
   background: boolean;
@@ -172,9 +177,13 @@ function CompositeArt({
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
     : "card-art-layer card-art-layer--background";
   const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
+  const wraparoundFrame = isWraparoundFrame(card.prompts.rarity);
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
+  const frameLayerClassName = wraparoundFrame
+    ? "card-art-layer card-art-layer--frame card-art-layer--frame-wrap"
+    : "card-art-layer card-art-layer--frame";
 
   // No AI layer data at all — render SVG fallback
   if (!hasAnyLayer) {
@@ -217,7 +226,7 @@ function CompositeArt({
         <img
           src={frameImageUrl}
           alt="frame"
-          className="card-art-layer card-art-layer--frame"
+          className={frameLayerClassName}
           style={frameLayerStyle}
           onError={() => onLayerError?.("frame")}
         />
