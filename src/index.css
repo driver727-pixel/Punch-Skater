@@ -5076,6 +5076,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transform-origin: center;
 }
 
+/* Back-face frame overlay — wraps a transparent border around the card-back so
+ * that decorations on the front frame (e.g. corner bandages) appear to wrap
+ * around the card.  Sits on top of all back-face content but is click-through
+ * so editable inputs remain usable. */
+.print-art-layer--frame-back {
+  z-index: 10;
+  pointer-events: none;
+  object-fit: fill;
+}
+
 /* Front face info overlay (name + bio shown over the character art) */
 .print-front-overlay {
   position: absolute;
@@ -5691,6 +5701,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .print-only-card .print-art-layer--bg-inset {
     transform: scale(0.88);
     transform-origin: center;
+  }
+  .print-only-card .print-art-layer--frame-back {
+    z-index: 10;
+    pointer-events: none;
+    object-fit: fill;
   }
 
   @page {

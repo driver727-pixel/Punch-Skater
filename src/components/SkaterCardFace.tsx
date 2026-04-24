@@ -22,6 +22,7 @@ import { CARD_STAT_LABELS } from "../lib/statLabels";
 import stamp360Gif from "../../stamp360.gif";
 import {
   getFrameBlendMode,
+  getStaticFrameBackUrl,
   shouldInsetBackgroundForFrame,
   shouldRenderSvgFrame,
 } from "../services/staticAssets";
@@ -184,6 +185,10 @@ function CardBack({
 }: Pick<SkaterCardFaceProps, "card" | "editable" | "onStatChange" | "boardImageLoading">) {
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
+  const backFrameUrl = getStaticFrameBackUrl(card.prompts.rarity);
+  const backFrameStyle = backFrameUrl
+    ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, backFrameUrl) }
+    : undefined;
   const backInfoRows = [
     ["ROLE",     getDisplayedArchetype(card)],
     ["COVER",    card.role.coverRole],
@@ -304,6 +309,15 @@ function CardBack({
       </div>
 
       <div className="print-back-serial">{card.identity.serialNumber}</div>
+
+      {backFrameUrl && (
+        <img
+          src={backFrameUrl}
+          alt="frame"
+          className="print-art-layer print-art-layer--frame print-art-layer--frame-back"
+          style={backFrameStyle}
+        />
+      )}
     </>
   );
 }

@@ -40,7 +40,14 @@ import type { District, Faction, Rarity } from "../lib/types";
 export type FrameBlendMode = "normal" | "screen";
 
 interface FrameAssetConfig {
+  /** Front-face frame image (overlaid above background + character). */
   url: string;
+  /**
+   * Optional back-face frame image.  When set, this image is overlaid on top
+   * of the rendered card-back so the border can wrap continuously around the
+   * front and back faces (e.g. corner bandages on the Punch Skater frame).
+   */
+  backUrl?: string;
   blendMode?: FrameBlendMode;
   insetBackground?: boolean;
 }
@@ -84,7 +91,10 @@ const BACKGROUND_ASSETS_SMALL: Partial<Record<District, string>> = {
 //   Legendary: { url: "/assets/frames/legendary.webp" },
 
 const FRAME_ASSETS: Partial<Record<Rarity, FrameAssetConfig>> = {
-  "Punch Skater": { url: "/assets/frames/punch-skater.webp" },
+  "Punch Skater": {
+    url:     "/assets/frames/punch-skater-front.png",
+    backUrl: "/assets/frames/punch-skater-rear.png",
+  },
   Apprentice:     { url: "/assets/frames/apprentice.webp" },
   Master:         { url: "/assets/frames/master.webp" },
   Rare:           { url: "/assets/frames/rare.webp" },
@@ -124,6 +134,17 @@ export function getStaticBackgroundSmallUrl(district: District): string | null {
  */
 export function getStaticFrameUrl(rarity: Rarity): string | null {
   return FRAME_ASSETS[rarity]?.url ?? null;
+}
+
+/**
+ * Returns the public URL of the pre-loaded static frame image to overlay on
+ * the **back** face of the card for the given rarity, or null if no
+ * back-specific frame is registered.  When set, the back-face frame should be
+ * rendered the same way as the front-face frame so that border decorations
+ * (e.g. corner bandages) appear to wrap continuously around the card.
+ */
+export function getStaticFrameBackUrl(rarity: Rarity): string | null {
+  return FRAME_ASSETS[rarity]?.backUrl ?? null;
 }
 
 export function shouldRenderSvgFrame(rarity: Rarity, frameUrl?: string): boolean {
