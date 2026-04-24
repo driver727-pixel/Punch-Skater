@@ -147,6 +147,22 @@ export function getStaticFrameBackUrl(rarity: Rarity): string | null {
   return FRAME_ASSETS[rarity]?.backUrl ?? null;
 }
 
+/**
+ * True when the rarity ships a wrap-around bandage-style frame whose front and
+ * back PNGs are designed to look like a single continuous decoration wrapping
+ * the card edges (currently only "Punch Skater").  Today we use the presence
+ * of a registered `backUrl` as the signal, since that is precisely the set of
+ * rarities that ship card-sized PNG frames for both faces.
+ *
+ * Wrap-around frames are rendered with the `.print-art-layer--frame-wrap`
+ * modifier so the layer is scaled up to compensate for the transparent
+ * padding inside the PNG, making the visible artwork reach the card's outer
+ * edge on every side.
+ */
+export function isWraparoundFrame(rarity: Rarity): boolean {
+  return Boolean(FRAME_ASSETS[rarity]?.backUrl);
+}
+
 export function shouldRenderSvgFrame(rarity: Rarity, frameUrl?: string): boolean {
   if (!frameUrl) return true;
   const asset = FRAME_ASSETS[rarity];

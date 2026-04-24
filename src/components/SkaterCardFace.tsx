@@ -23,6 +23,7 @@ import stamp360Gif from "../../stamp360.gif";
 import {
   getFrameBlendMode,
   getStaticFrameBackUrl,
+  isWraparoundFrame,
   shouldInsetBackgroundForFrame,
   shouldRenderSvgFrame,
 } from "../services/staticAssets";
@@ -86,9 +87,13 @@ function CardFront({
     ? "print-art-layer print-art-layer--bg print-art-layer--bg-inset"
     : "print-art-layer print-art-layer--bg";
   const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
+  const wraparoundFrame = isWraparoundFrame(card.prompts.rarity);
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
+  const frameLayerClass = wraparoundFrame
+    ? "print-art-layer print-art-layer--frame print-art-layer--frame-wrap"
+    : "print-art-layer print-art-layer--frame";
 
   const flavorText = card.front.flavorText ?? "";
 
@@ -111,7 +116,7 @@ function CardFront({
             <img
               src={frameImageUrl}
               alt="frame"
-              className="print-art-layer print-art-layer--frame"
+              className={frameLayerClass}
               style={frameLayerStyle}
             />
           )}
@@ -186,9 +191,13 @@ function CardBack({
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const backFrameUrl = getStaticFrameBackUrl(card.prompts.rarity);
+  const backWraparoundFrame = isWraparoundFrame(card.prompts.rarity);
   const backFrameStyle = backFrameUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, backFrameUrl) }
     : undefined;
+  const backFrameClass = backWraparoundFrame
+    ? "print-art-layer print-art-layer--frame print-art-layer--frame-back print-art-layer--frame-wrap"
+    : "print-art-layer print-art-layer--frame print-art-layer--frame-back";
   const backInfoRows = [
     ["ROLE",     getDisplayedArchetype(card)],
     ["COVER",    card.role.coverRole],
@@ -315,7 +324,7 @@ function CardBack({
           <img
             src={backFrameUrl}
             alt="frame"
-            className="print-art-layer print-art-layer--frame print-art-layer--frame-back"
+            className={backFrameClass}
             style={backFrameStyle}
           />
         </div>

@@ -5090,6 +5090,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   object-fit: fill;
 }
 
+/* Wrap-around bandage-style frames (currently only Punch Skater) ship PNG
+ * assets with ~7.5% horizontal and ~4.3% vertical transparent padding around
+ * the visible artwork.  Scale the layer up so the artwork's outer edge meets
+ * the card's outer edge on every side, producing the illusion that the
+ * bandage wraps around the card.  The transparent padding overflows past the
+ * card box and is clipped by .print-card { overflow: hidden }. */
+.print-art-layer--frame-wrap {
+  transform: scale(1.184, 1.101);
+  transform-origin: center center;
+}
+
 /* Front face info overlay (name + bio shown over the character art) */
 .print-front-overlay {
   position: absolute;
@@ -5714,6 +5725,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     z-index: 10;
     pointer-events: none;
     object-fit: fill;
+  }
+  .print-only-card .print-art-layer--frame-wrap {
+    transform: scale(1.184, 1.101);
+    transform-origin: center center;
   }
 
   @page {
