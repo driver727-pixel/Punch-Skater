@@ -1,9 +1,11 @@
 import { useMemo } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { useForgeGeneration } from "./useForgeGeneration";
 import { useForgeNavigation } from "./useForgeNavigation";
 import { useForgeSave } from "./useForgeSave";
 
 export function useCardForgeController() {
+  const { user } = useAuth();
   const forge = useForgeGeneration();
   const save = useForgeSave({
     characterBlend: forge.characterBlend,
@@ -11,6 +13,7 @@ export function useCardForgeController() {
     layers: forge.layers,
     openUpgradeModal: forge.openUpgradeModal,
     tier: forge.tier,
+    uid: user?.uid ?? null,
   });
   const navigation = useForgeNavigation({
     onBeforeCollectionNavigation: save.clearSavedCard,

@@ -173,7 +173,9 @@ service cloud.firestore {
     }
 
     // ── Missions ─────────────────────────────────────────────────────────────
-    // Per-user mission / quest progress.
+    // Per-user daily missions. Doc ID format: {uid}_{date}_{templateId}
+    // Owners may read their own mission documents.
+    // All writes are server-only (client create/update/delete blocked).
     match /missions/{missionId} {
       allow read: if request.auth != null
         && resource.data.uid == request.auth.uid;

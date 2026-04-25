@@ -8,7 +8,7 @@
  *  4. Every addition must include a JSDoc comment with the sprint and owner.
  */
 
-import type { CardPayload } from "./types";
+import type { Archetype, CardPayload, District, Faction, ForgedCardStats } from "./types";
 
 // ── Daily Streaks (Gamma) ────────────────────────────────────────────────────
 
@@ -27,12 +27,34 @@ export interface DailyStreak {
 /** @sprint 0 @owner gamma */
 export type MissionStatus = "active" | "completed" | "expired";
 
+/**
+ * Stat keys that missions may target. Excludes `rangeNm` (internal display
+ * unit) so mission descriptions remain human-readable.
+ * @sprint 1 @owner gamma
+ */
+export type MissionStat = Exclude<keyof ForgedCardStats, "rangeNm">;
+
+/**
+ * Typed union of all mission types. Replaces the old `type: string` field.
+ * @sprint 1 @owner gamma
+ */
+export type MissionType =
+  | "forge_card"             // forge any card
+  | "forge_archetype"        // forge a card of a specific archetype
+  | "win_battle"             // win N battles
+  | "complete_district_run"  // complete a courier run in a specific district
+  | "achieve_stat_threshold" // have a newly-forged card with a stat ≥ target
+  | "daily_login"            // log in N days in a row
+  | "trade_card"             // complete a trade
+  | "build_deck";            // assemble a valid deck
+
 /** @sprint 0 @owner gamma */
 export interface Mission {
   id: string;
   uid: string;
   title: string;
   description: string;
+  /** @sprint 0 @deprecated Use the typed `missionType` field instead. */
   type: string;
   target: number;
   progress: number;
@@ -41,7 +63,34 @@ export interface Mission {
   createdAt: string;
   expiresAt?: string;
   completedAt?: string;
+  /** @sprint 1 @owner gamma — Typed mission kind, supersedes the legacy `type: string` field. */
+  missionType?: MissionType;
+  /** @sprint 1 @owner gamma — District context for district-specific missions. */
+  district?: District;
+  /** @sprint 1 @owner gamma — Archetype context for archetype-specific missions. */
+  archetype?: Archetype;
+  /** @sprint 1 @owner gamma — Faction context for faction-specific missions. */
+  faction?: Faction;
+  /** @sprint 1 @owner gamma — Stat targeted by `achieve_stat_threshold` missions. */
+  stat?: MissionStat;
+  /** @sprint 1 @owner gamma — Ozzies (in-world currency) awarded on completion. */
+  rewardOzzies?: number;
 }
+
+/**
+ * Discriminated union for events that can advance mission progress.
+ * Emit one of these events after the matching user action completes.
+ * @sprint 1 @owner gamma
+ */
+export type MissionEvent =
+  | { type: "forge_card"; archetype: Archetype }
+  | { type: "forge_archetype"; archetype: Archetype }
+  | { type: "win_battle" }
+  | { type: "complete_district_run"; district: District }
+  | { type: "achieve_stat_threshold"; stat: MissionStat; value: number }
+  | { type: "daily_login" }
+  | { type: "trade_card" }
+  | { type: "build_deck" };
 
 // ── Battle Pass (Gamma) ──────────────────────────────────────────────────────
 

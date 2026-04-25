@@ -4,10 +4,13 @@ import { AuthProvider } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { useTier } from "./context/TierContext";
+import { useAuth } from "./context/AuthContext";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
+import { MissionsPanel } from "./components/MissionsPanel";
+import { isEnabled } from "./lib/featureFlags";
 import { firebaseUnavailableMessage, isFirebaseConfigured } from "./lib/firebase";
 
 /** Applies data-theme and data-time attributes to <html> for CSS theming. */
@@ -68,6 +71,13 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+/** Renders the MissionsPanel for the authenticated user when the flag is on. */
+function MissionsSidebar() {
+  const { user } = useAuth();
+  if (!user || !isEnabled("MISSIONS")) return null;
+  return <MissionsPanel uid={user.uid} />;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -117,6 +127,7 @@ function App() {
                       <Route path="/dev/frame-preview" element={<FramePreview />} />
                     </Routes>
                   </Suspense>
+                  <MissionsSidebar />
                 </main>
                 <Footer />
               </div>

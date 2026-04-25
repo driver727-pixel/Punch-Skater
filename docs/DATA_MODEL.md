@@ -291,7 +291,6 @@ The following collections are defined in `firestore.rules` as read-only stubs
 | Collection | Purpose | Owner |
 |---|---|---|
 | `dailyStreaks/{uid}` | Daily login streak tracking | Gamma |
-| `missions/{missionId}` | Per-user mission / quest progress | Gamma |
 | `battlePass/{uid}` | Battle pass tier + XP state | Gamma |
 | `crews/{crewId}` | Player crew / guild membership | Charlie |
 | `rankedSeasons/{seasonId}` | Ranked season config + standings | Charlie |
@@ -299,3 +298,43 @@ The following collections are defined in `firestore.rules` as read-only stubs
 
 Document shapes for these collections will be defined in `src/lib/sharedTypes.ts`
 as implementation progresses.
+
+---
+
+## Missions Collection (Sprint 1)
+
+### `missions/{missionId}` — Mission
+
+Doc ID format: `{uid}_{date}_{templateId}` (e.g. `abc123_2026-04-25_forge_any_1`).
+
+Owner-only read. All writes are server-only.
+
+```
+{
+  id: string,               // same as doc ID
+  uid: string,              // owner uid
+  title: string,
+  description: string,
+  type: string,             // @deprecated — use missionType
+  missionType: MissionType, // "forge_card" | "forge_archetype" | "win_battle"
+                            // | "complete_district_run" | "achieve_stat_threshold"
+                            // | "daily_login" | "trade_card" | "build_deck"
+  target: number,           // completion threshold
+  progress: number,         // current progress counter
+  status: "active" | "completed" | "expired",
+  rewardXp: number,
+  rewardOzzies?: number,    // Ozzies (in-world currency) awarded on completion
+  createdAt: string,        // ISO 8601
+  expiresAt?: string,       // ISO 8601 — midnight UTC on the issue date
+  completedAt?: string,     // ISO 8601 — set when progress >= target
+  rewardClaimedAt?: Timestamp, // set by claimMissionReward()
+  // Lore context (optional, present when relevant to the mission type)
+  district?: District,      // "Airaway" | "Batteryville" | "The Grid" | ...
+  archetype?: Archetype,    // "The Knights Technarchy" | "Ne0n Legion" | ...
+  faction?: Faction,        // canonical faction string
+  stat?: MissionStat,       // "speed" | "range" | "stealth" | "grit"
+}
+```
+
+**Composite index:** `uid ASC, expiresAt ASC` (defined in `firestore.indexes.json`).
+

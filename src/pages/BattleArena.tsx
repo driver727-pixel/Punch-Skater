@@ -20,6 +20,8 @@ import {
   sfxClick,
 } from "../lib/sfx";
 import { spawnCelebrationBurst } from "../lib/celebration";
+import { isEnabled } from "../lib/featureFlags";
+import { trackMissionEvent } from "../services/missions";
 
 // ── Battle animation overlay ────────────────────────────────────────────────
 
@@ -296,6 +298,16 @@ export function BattleArena() {
       setShowOutcome(true);
     }
   }, [battleResult, showAnimation]);
+
+  // Track win_battle mission event when the current user wins (fire-and-forget)
+  useEffect(() => {
+    if (!battleResult || !uid) return;
+    if (!isEnabled("MISSIONS")) return;
+    const isDraw = battleResult.challengerScore === battleResult.defenderScore;
+    if (!isDraw && battleResult.winnerUid === uid) {
+      void trackMissionEvent(uid, { type: "win_battle" });
+    }
+  }, [battleResult, uid]);
 
   const selectedDeck = decks.find((d) => d.id === selectedDeckId) ?? null;
   const selectedDeckSummary = useMemo(
