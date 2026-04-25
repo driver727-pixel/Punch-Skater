@@ -71,8 +71,9 @@ const CATEGORY_GLOBS = {
   ]),
   battery: createCategoryImageMap("battery", [
     "top-mount-battery.png",
-    "double-battery.png",
-    "slim-battery.png",
+    "double-battery-2.png",
+    "double-battery-new.png",
+    "battery-slim-new.png",
   ]),
 } satisfies Record<string, Record<string, string>>;
 
