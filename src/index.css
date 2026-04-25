@@ -5167,6 +5167,26 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
 }
 
+/* Back-face content sits above the district background image (z:1) and the
+ * darkening scrim (z:1), but below the wrap-around frame overlay (z:10).  The
+ * back content blocks are normally in-flow (no `position`), which means an
+ * absolutely-positioned bg image with `z-index: 1` would paint over them.
+ * Lift them into a positioned stacking layer so the skateboard image, header,
+ * stats, and info rows render on top of the district photo. */
+.print-card--back :where(
+  .print-back-header,
+  .print-back-hero,
+  .print-back-info,
+  .print-back-stats,
+  .print-back-lower,
+  .print-back-trait,
+  .print-back-maintenance,
+  .print-back-serial
+) {
+  position: relative;
+  z-index: 2;
+}
+
 .print-back-hero {
   --print-back-board-scale: 1.12;
   --print-back-spinner-width: 28%;
