@@ -302,12 +302,12 @@ export function BattleArena() {
   // Track win_battle mission event when the current user wins (fire-and-forget)
   useEffect(() => {
     if (!battleResult || !uid) return;
-    if (!isEnabled("MISSIONS")) return;
+    if (!isEnabled("MISSIONS", user)) return;
     const isDraw = battleResult.challengerScore === battleResult.defenderScore;
     if (!isDraw && battleResult.winnerUid === uid) {
-      void trackMissionEvent(uid, { type: "win_battle" });
+      void trackMissionEvent(uid, { type: "win_battle" }, user?.email);
     }
-  }, [battleResult, uid]);
+  }, [battleResult, uid, user]);
 
   const selectedDeck = decks.find((d) => d.id === selectedDeckId) ?? null;
   const selectedDeckSummary = useMemo(

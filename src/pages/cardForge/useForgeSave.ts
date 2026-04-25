@@ -16,6 +16,8 @@ interface UseForgeSaveOptions {
   tier: TierLevel;
   /** Firebase Auth UID of the current user — required for mission tracking. */
   uid?: string | null;
+  /** Firebase Auth email of the current user — required for user-level feature flag overrides. */
+  userEmail?: string | null;
 }
 
 function buildSavedCard(generated: CardPayload, layers: LayerState): CardPayload {
@@ -34,6 +36,7 @@ export function useForgeSave({
   openUpgradeModal,
   tier,
   uid,
+  userEmail,
 }: UseForgeSaveOptions) {
   const { addCard, cards } = useCollection();
   const tierData = TIERS[tier];
@@ -67,10 +70,10 @@ export function useForgeSave({
       setSavedCard(cardToSave);
 
       // Emit mission events for forge actions (fire-and-forget; non-blocking)
-      if (uid && isEnabled("MISSIONS")) {
+      if (uid && isEnabled("MISSIONS", userEmail)) {
         const archetype = cardToSave.role.archetype;
-        void trackMissionEvent(uid, { type: "forge_card", archetype });
-        void trackMissionEvent(uid, { type: "forge_archetype", archetype });
+        void trackMissionEvent(uid, { type: "forge_card", archetype }, userEmail);
+        void trackMissionEvent(uid, { type: "forge_archetype", archetype }, userEmail);
       }
     } catch (error) {
       console.error("Failed to save card:", error);
@@ -79,7 +82,7 @@ export function useForgeSave({
     } finally {
       setSaving(false);
     }
-  }, [addCard, cards.length, generated, layers, openUpgradeModal, tierData, uid]);
+  }, [addCard, cards.length, generated, layers, openUpgradeModal, tierData, uid, userEmail]);
 
   const handleDownloadJpg = useCallback(async () => {
     if (!generated) return;

@@ -74,7 +74,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 /** Renders the MissionsPanel for the authenticated user when the flag is on. */
 function MissionsSidebar() {
   const { user } = useAuth();
-  if (!user || !isEnabled("MISSIONS")) return null;
+  if (!user || !isEnabled("MISSIONS", user)) return null;
   return <MissionsPanel uid={user.uid} />;
 }
 
