@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { isEnabled } from "../lib/featureFlags";
+import { useAuth } from "../context/AuthContext";
 import { getDailyMissions, claimMissionReward } from "../services/missions";
 import type { Mission } from "../lib/sharedTypes";
 
@@ -129,6 +130,7 @@ function MissionCard({
 }
 
 export function MissionsPanel({ uid }: MissionsPanelProps) {
+  const { user } = useAuth();
   const countdown = useMidnightCountdown();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,10 +138,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isEnabled("MISSIONS")) return;
+    if (!isEnabled("MISSIONS", user)) return;
     let cancelled = false;
     setLoading(true);
-    getDailyMissions(uid).then((result) => {
+    getDailyMissions(uid, user?.email).then((result) => {
       if (!cancelled) {
         setMissions(result);
         setLoading(false);
@@ -151,13 +153,13 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       }
     });
     return () => { cancelled = true; };
-  }, [uid]);
+  }, [uid, user]);
 
   const handleClaim = useCallback(async (missionId: string) => {
     setClaimingId(missionId);
     setClaimError(null);
     try {
-      const { xp, ozzies } = await claimMissionReward(uid, missionId);
+      const { xp, ozzies } = await claimMissionReward(uid, missionId, user?.email);
       setMissions((prev) =>
         prev.map((m) =>
           m.id === missionId
@@ -172,9 +174,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     } finally {
       setClaimingId(null);
     }
-  }, [uid]);
+  }, [uid, user]);
 
-  if (!isEnabled("MISSIONS")) return null;
+  if (!isEnabled("MISSIONS", user)) return null;
 
   return (
     <div className="missions-panel">

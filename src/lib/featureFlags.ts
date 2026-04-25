@@ -39,7 +39,39 @@ export const featureFlags = {
 
 export type FeatureFlagKey = keyof typeof featureFlags;
 
-/** Runtime check — use in components / hooks to gate UI. */
-export function isEnabled(flag: FeatureFlagKey): boolean {
-  return featureFlags[flag];
+/**
+ * Per-feature allow-lists of user emails that have early access.
+ * A user whose email appears here can access the feature even when the
+ * global build-time flag is off.
+ */
+const featureFlagOverrides: Partial<Record<FeatureFlagKey, readonly string[]>> = {
+  MISSIONS: ["driver727@gmail.com"],
+};
+
+/**
+ * Runtime check — use in components / hooks to gate UI.
+ *
+ * Pass the current user object (or just the email string) to enable
+ * per-user overrides:
+ *   isEnabled("MISSIONS", user)
+ *   isEnabled("MISSIONS", userEmail)
+ *
+ * A feature is considered enabled when either:
+ *   1. The global build-time flag is true, OR
+ *   2. The provided user's email is in the override list for that feature.
+ */
+export function isEnabled(
+  flag: FeatureFlagKey,
+  user?: { email?: string | null } | string | null,
+): boolean {
+  if (featureFlags[flag]) return true;
+  const overrides = featureFlagOverrides[flag];
+  if (overrides) {
+    const email = typeof user === "string" ? user : user?.email;
+    if (email) {
+      const emailLower = email.toLowerCase();
+      return overrides.some((e) => e.toLowerCase() === emailLower);
+    }
+  }
+  return false;
 }

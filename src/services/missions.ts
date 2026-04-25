@@ -42,8 +42,8 @@ function todayUtc(): string {
  * Returns an empty array when the MISSIONS flag is off or Firebase is
  * unavailable.
  */
-export async function getDailyMissions(uid: string): Promise<Mission[]> {
-  if (!isEnabled("MISSIONS") || !db) return [];
+export async function getDailyMissions(uid: string, userEmail?: string | null): Promise<Mission[]> {
+  if (!isEnabled("MISSIONS", userEmail) || !db) return [];
 
   const date = todayUtc();
 
@@ -81,9 +81,10 @@ export async function getDailyMissions(uid: string): Promise<Mission[]> {
  */
 export async function trackMissionEvent(
   uid: string,
-  event: MissionEvent
+  event: MissionEvent,
+  userEmail?: string | null,
 ): Promise<void> {
-  if (!isEnabled("MISSIONS") || !db) return;
+  if (!isEnabled("MISSIONS", userEmail) || !db) return;
 
   const date = todayUtc();
 
@@ -146,10 +147,11 @@ export async function trackMissionEvent(
  */
 export async function claimMissionReward(
   uid: string,
-  missionId: string
+  missionId: string,
+  userEmail?: string | null,
 ): Promise<{ xp: number; ozzies: number }> {
   if (!db) throw new Error("Firebase is not configured.");
-  if (!isEnabled("MISSIONS")) throw new Error("Missions are not enabled.");
+  if (!isEnabled("MISSIONS", userEmail)) throw new Error("Missions are not enabled.");
 
   const missionRef = doc(db, COLLECTION, missionId);
   const profileRef = doc(db, "userProfiles", uid);
