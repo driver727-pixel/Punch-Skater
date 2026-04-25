@@ -4,6 +4,7 @@ import { PrintedCardPreviewPair } from "./PrintedCardFaces";
 import { SkaterCardFace } from "./SkaterCardFace";
 import { CardContainer } from "./CardContainer";
 import { buildCardVars } from "../lib/cardVars";
+import { getStaticFrameBackUrl } from "../services/staticAssets";
 
 interface PrintModalProps {
   card: CardPayload;
@@ -44,6 +45,12 @@ export function PrintModal({
   const [side, setSide] = useState<PrintSide>("both");
   // Use the full print-quality background in the hidden printable area when available.
   const printBackgroundUrl = backgroundPrintUrl ?? backgroundImageUrl;
+  // Pass the wrap-frame modifier through to the print-only card faces so
+  // dual-face PNG frames become the leading edge in print, mirroring the
+  // editor / 3D preview behaviour.
+  const wrapFrameClass = getStaticFrameBackUrl(card.prompts.rarity) != null
+    ? " print-card--wrap-frame"
+    : "";
 
   const handlePrint = () => {
     window.print();
@@ -109,7 +116,7 @@ export function PrintModal({
         <div className="print-only-card-wrap">
           <div className="print-only-bleed">
             <BleedMarks />
-            <div className="print-only-card">
+            <div className={`print-only-card${wrapFrameClass}`}>
               <SkaterCardFace
                 face="front"
                 card={card}
@@ -131,7 +138,7 @@ export function PrintModal({
           <div className="print-only-bleed">
             <BleedMarks />
             <div
-              className="print-only-card print-only-card--back"
+              className={`print-only-card print-only-card--back${wrapFrameClass}`}
               style={{ "--accent": card.visuals.accentColor || "#00ff88" } as React.CSSProperties}
             >
               <SkaterCardFace face="back" card={card} />

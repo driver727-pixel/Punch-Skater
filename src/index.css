@@ -5106,6 +5106,50 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
 }
 
+/* ── Wrap-frame inset ────────────────────────────────────────────────────────
+ * When a rarity ships a dual-face PNG frame (apprentice / master / rare /
+ * legendary / punch-skater), the frame defines the card's leading edge.  The
+ * background photo and all text/stats need to sit inside that visible frame
+ * border so nothing gets cut off.  --frame-edge-inset is the canonical inset
+ * (≈45px on a 1500px-wide print frame ⇒ 3%); shared by both front and back
+ * faces and by the smaller card-art-composite (collection thumbnails).
+ * Applied via `.print-card--wrap-frame` / `.card-art-composite--wrap-frame`
+ * modifier classes added in JSX when a back-frame URL is registered. */
+.print-card--wrap-frame,
+.card-art-composite--wrap-frame {
+  --frame-edge-inset: 3%;
+}
+
+/* Background photo (and back-face scrim) shrunk so the PNG frame is the
+   leading edge.  Frame layers are explicitly excluded — they stay full-bleed. */
+.print-card--wrap-frame .print-art-layer--bg,
+.print-card--wrap-frame .print-back-scrim,
+.card-art-composite--wrap-frame .card-art-layer--background {
+  top:    var(--frame-edge-inset);
+  right:  var(--frame-edge-inset);
+  bottom: var(--frame-edge-inset);
+  left:   var(--frame-edge-inset);
+  width:  auto;
+  height: auto;
+}
+
+/* Front overlay (name / age / bio / class·role): keep the gradient flush with
+   the card edge so it blends with the bg, but shift its content inward so the
+   text is centered inside the visible frame. */
+.print-card--wrap-frame .print-front-overlay {
+  padding-left:   calc(4.2% + var(--frame-edge-inset));
+  padding-right:  calc(4.2% + var(--frame-edge-inset));
+  padding-bottom: calc(3.5% + var(--frame-edge-inset));
+}
+
+/* Back face: pad the flex container so all flow content (header, hero, info,
+   components, stats, trait, maintenance, serial) sits inside the visible
+   frame.  Absolutely-positioned layers (bg, scrim, frame) are anchored to
+   .print-card's padding edge and are not affected by this padding. */
+.print-card--wrap-frame.print-card--back {
+  padding: var(--frame-edge-inset);
+}
+
 /* Front face info overlay (name + bio shown over the character art) */
 .print-front-overlay {
   position: absolute;
@@ -5749,6 +5793,31 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     height: 100%;
     object-fit: fill;
     pointer-events: none;
+  }
+
+  /* Wrap-frame inset on the printed card — keeps parity with the on-screen
+     preview so dual-face PNG frames are the leading edge and content stays
+     centered inside the frame.  See the screen rules near .print-card--wrap-frame
+     for the full explanation. */
+  .print-only-card.print-card--wrap-frame {
+    --frame-edge-inset: 3%;
+  }
+  .print-only-card.print-card--wrap-frame .print-art-layer--bg,
+  .print-only-card.print-card--wrap-frame .print-back-scrim {
+    top:    var(--frame-edge-inset);
+    right:  var(--frame-edge-inset);
+    bottom: var(--frame-edge-inset);
+    left:   var(--frame-edge-inset);
+    width:  auto;
+    height: auto;
+  }
+  .print-only-card.print-card--wrap-frame .print-front-overlay {
+    padding-left:   calc(8pt + var(--frame-edge-inset));
+    padding-right:  calc(8pt + var(--frame-edge-inset));
+    padding-bottom: calc(6pt + var(--frame-edge-inset));
+  }
+  .print-only-card.print-card--wrap-frame.print-only-card--back {
+    padding: var(--frame-edge-inset);
   }
 
   @page {
