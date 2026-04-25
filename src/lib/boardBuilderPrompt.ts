@@ -3,6 +3,7 @@ import type { BatteryType, BoardConfig, BoardType, Drivetrain, WheelType } from 
 
 const BOARD_IMAGE_BASE_CONCEPT =
   "An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background. " +
+  "CRITICAL: The image must contain exactly ONE skateboard. Never show two or more skateboards in the same image under any circumstances. " +
   "It has exactly four wheels mounted on front and rear trucks with fixed axles, the wheels aligned in matching pairs and pointing in the same direction as the deck. " +
   "Never show caster-style pivoting wheels, sideways wheels, or wheels perpendicular to the board. " +
   "The NOSE is the front tip of the board; the TAIL is the rear. " +
@@ -88,6 +89,6 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
     `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type${batteryPreservationClause} with no substitutions. ` +
     `For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD. ` +
     `CRITICAL: On non-4WD boards the nose truck must look identical to a plain unpowered truck — no motors, no belts, no pulleys, no gearboxes. ` +
-    `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, no text, no watermark.`
+    `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, no text, no watermark, exactly one skateboard in the image.`
   );
 }
