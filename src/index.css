@@ -5109,7 +5109,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
 }
 
-/* Front face info overlay (name + bio shown over the character art) */
+/* Front face info overlay (name + bio shown over the character art) —
+ * sits below the frame overlay (z:3) so the decorative border visually
+ * contains the text, matching the back-face treatment for the board hero. */
 .print-front-overlay {
   position: absolute;
   bottom: 0;
@@ -5119,7 +5121,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   min-height: 37%;
   padding: 10% 4.2% 3.5%;
   background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.54) 58%, transparent 100%);
-  z-index: 5;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 1.4%;
