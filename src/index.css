@@ -5119,7 +5119,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   right: 0;
   /* Reserve a bit more than 1/3 of the card face so longer bios still fit cleanly. */
   min-height: 37%;
-  padding: 10% 4.2% 3.5%;
+  /* 12% horizontal keeps text inside the frame border (~12% wide on all PNG frames).
+   * 12% bottom clears the bottom frame border (~8.3% card-height ≈ 11.6% card-width). */
+  padding: 10% 12% 12%;
   background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.54) 58%, transparent 100%);
   z-index: 2;
   display: flex;
@@ -5313,7 +5315,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   justify-content: flex-end;
   align-items: center;
   gap: 0.5em;
-  padding: 1% 3.5% 0;
+  padding: 1% 12% 0;
   flex-shrink: 0;
   min-height: 0;
 }
@@ -5336,7 +5338,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: center;
   /* % padding scales with card width so header proportions hold at all sizes */
   gap: 0.5em;
-  padding: 2.1% 3.5%;
+  padding: 2.1% 12%;
   color: #000;
   font-weight: bold;
   flex-shrink: 0;
@@ -5362,7 +5364,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   gap: 0.42em;
-  padding: 2.5% 4% 1.4%;
+  padding: 2.5% 12% 1.4%;
   flex-shrink: 0;
 }
 .print-back-row {
@@ -5413,6 +5415,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   grid-template-columns: 1fr 1fr;
   flex-shrink: 0;
   border-bottom: 1px solid #1e1e3a;
+  /* Inset the two-column section within the frame border */
+  padding: 0 12%;
 }
 .print-back-components {
   display: flex;
@@ -5423,7 +5427,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .print-back-trait {
-  padding: 1.4% 4%;
+  padding: 1.4% 12%;
   border-top: 1px solid #1e1e3a;
 }
 .print-back-trait-label {
@@ -5463,7 +5467,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   grid-template-columns: max-content minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.8em;
-  padding: 1.3% 4% 1.8%;
+  padding: 1.3% 12% 1.8%;
   border-top: 1px solid #1e1e3a;
   font-size: var(--card-back-body-size);
 }
@@ -5481,7 +5485,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-weight: bold;
 }
 .print-back-serial {
-  padding: 0 4% 2.2%;
+  padding: 0 12% 2.2%;
   font-size: var(--card-back-small-size);
   color: #7070a0;
   letter-spacing: 0.08em;
