@@ -16,6 +16,7 @@ import { getFrameBlendMode, shouldRenderSvgFrame } from "./staticAssets";
 /** Output dimensions for the downloaded card (poker card at 300 dpi). */
 const CARD_WIDTH  = 750;
 const CARD_HEIGHT = 1050;
+const CHARACTER_LAYER_SCALE = 0.85;
 
 function drawImageCover(
   ctx: CanvasRenderingContext2D,
@@ -40,6 +41,22 @@ function drawImageCover(
   }
 
   ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+}
+
+function drawImageContainBottom(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource & { width: number; height: number },
+  targetWidth: number,
+  targetHeight: number,
+  scale = 1,
+): void {
+  const containScale = Math.min(targetWidth / img.width, targetHeight / img.height) * scale;
+  const drawWidth = img.width * containScale;
+  const drawHeight = img.height * containScale;
+  const drawX = (targetWidth - drawWidth) / 2;
+  const drawY = targetHeight - drawHeight;
+
+  ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
 }
 
 function loadCrossOriginImage(url: string): Promise<HTMLImageElement> {
@@ -91,7 +108,7 @@ export async function downloadCardAsJpg(
     const img = await loadCrossOriginImage(characterUrl);
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = Math.max(0, Math.min(1, characterBlend));
-    drawImageCover(ctx, img, CARD_WIDTH, CARD_HEIGHT);
+    drawImageContainBottom(ctx, img, CARD_WIDTH, CARD_HEIGHT, CHARACTER_LAYER_SCALE);
     ctx.globalAlpha = 1;
   }
 

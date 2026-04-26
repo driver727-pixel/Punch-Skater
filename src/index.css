@@ -5068,6 +5068,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 2;
   mix-blend-mode: normal;
   object-fit: contain;
+  object-position: center bottom;
   transform: scale(0.85);
   transform-origin: bottom center;
 }
@@ -5763,6 +5764,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     z-index: 2;
     mix-blend-mode: normal;
     object-fit: contain;
+    object-position: center bottom;
     transform: scale(0.85);
     transform-origin: bottom center;
   }
