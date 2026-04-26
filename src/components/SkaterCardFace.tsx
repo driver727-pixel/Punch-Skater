@@ -192,11 +192,10 @@ function CardFront({
 
 function CardBack({
   card,
-  backgroundImageUrl,
   editable = false,
   onStatChange,
   boardImageLoading = false,
-}: Pick<SkaterCardFaceProps, "card" | "backgroundImageUrl" | "editable" | "onStatChange" | "boardImageLoading">) {
+}: Pick<SkaterCardFaceProps, "card" | "editable" | "onStatChange" | "boardImageLoading">) {
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const backFrameUrl = getStaticFrameBackUrl(card.prompts.rarity);
@@ -208,13 +207,7 @@ function CardBack({
     ? "print-art-layer print-art-layer--frame print-art-layer--frame-back print-art-layer--frame-wrap"
     : "print-art-layer print-art-layer--frame print-art-layer--frame-back";
 
-  // Focal-crop background (back face uses a different crop from the front).
-  const bgStyle: React.CSSProperties | undefined = (backgroundImageUrl && hasBackFrame)
-    ? {
-        objectFit: "cover",
-        objectPosition: computeFocalCrop(card.frameSeed, "back").objectPosition,
-      }
-    : undefined;
+  // Focal-crop background is no longer used on the back face.
   const backInfoRows = [
     ["ROLE",     getDisplayedArchetype(card)],
     ["COVER",    card.role.coverRole],
@@ -238,22 +231,7 @@ function CardBack({
 
   return (
     <>
-      {/* Layer 1 — District background (only when a dual-face frame is registered) */}
-      {backgroundImageUrl && hasBackFrame && (
-        <img
-          src={backgroundImageUrl}
-          alt="background"
-          className="print-art-layer print-art-layer--bg"
-          style={bgStyle}
-        />
-      )}
-      {/* Layer 2 — Dark scrim so text/stats remain legible over the photo */}
-      {backgroundImageUrl && hasBackFrame && (
-        <div className="print-back-scrim" />
-      )}
-
-      <div className="print-back-header" style={{ background: rarityColor }}>
-        <span className="print-back-rarity">{card.class.badgeLabel.toUpperCase()}</span>
+      <div className="print-back-header-slim">
         {card.board.tuned && <span className="print-back-tuned">⚡ TUNED</span>}
       </div>
 
@@ -303,6 +281,11 @@ function CardBack({
         </div>
 
       <div className="print-back-stats">
+        <div className="print-back-rarity-row">
+          <span className="print-back-rarity-label" style={{ color: rarityColor }}>
+            {card.prompts.rarity.toUpperCase()}
+          </span>
+        </div>
         {editable ? (
           (["speed", "range", "stealth", "grit"] as const).map((key) => (
             <div key={key} className="stat-bar card-stat-editor-row">
@@ -406,7 +389,6 @@ export function SkaterCardFace({
   return (
     <CardBack
       card={card}
-      backgroundImageUrl={backgroundImageUrl}
       editable={editable}
       onStatChange={onStatChange}
       boardImageLoading={boardImageLoading}
