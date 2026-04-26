@@ -142,7 +142,7 @@ export function shouldRenderSvgFrame(rarity: Rarity, frameUrl?: string): boolean
 export function getFrameBlendMode(rarity: Rarity, frameUrl?: string): FrameBlendMode {
   if (!frameUrl) return "screen";
   const asset = FRAME_ASSETS[rarity];
-  if (asset && asset.url === frameUrl) {
+  if (asset && (asset.url === frameUrl || asset.backUrl === frameUrl)) {
     return asset.blendMode ?? "normal";
   }
   return "screen";
