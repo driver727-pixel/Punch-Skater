@@ -3,22 +3,22 @@
     "price": "$4.99/mo",
     "annualPrice": "$39/year",
     "checkoutMode": "subscription",
-    "stripePriceId": "price_1TJOKHRCr5JxQN06wMYFHTm5",
-    "stripeAnnualPriceId": "",
+    "stripePriceId": "price_1TT9HSRCj5JxQN06EIOBy7Zu",
+    "stripeAnnualPriceId": "price_1TT9HSRCj5JxQN06Dz0lhJfo",
     "stripeUrl": "https://buy.stripe.com/4gW2bUeLCceFa3x8M2"
   },
   "tier3": {
     "price": "$9.99/mo",
     "annualPrice": "$79/year",
     "checkoutMode": "subscription",
-    "stripePriceId": "price_1TJOKrRCr5JxQN06RyDF02bi",
-    "stripeAnnualPriceId": "",
+    "stripePriceId": "price_1TT9JDRCr5JxQN064RqMrX17",
+    "stripeAnnualPriceId": "price_1TT9KvRCr5JxQN061uvMxs3S",
     "stripeUrl": "https://buy.stripe.com/cNi5kF3XOcFA4DH1w25ZC01"
   },
   "seasonPass": {
     "price": "$4.99 / season",
     "checkoutMode": "payment",
-    "stripePriceId": "",
+    "stripePriceId": "price_1TT9MeRCr5JxQN06FKc58NlH",
     "stripeUrl": ""
   }
 }

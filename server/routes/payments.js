@@ -143,7 +143,7 @@ export function registerPaymentRoutes(app, {
     const checkoutMode = resolveCheckoutModeFromPriceId(priceId);
     const billingPeriod = resolveBillingPeriodFromPriceId(priceId);
 
-    if (!priceId || typeof priceId !== 'string' || !paidTier || !checkoutMode) {
+    if (!priceId || typeof priceId !== 'string' || !checkoutMode) {
       res.status(400).json({ error: 'Invalid or unsupported price ID.' });
       return;
     }
@@ -158,22 +158,23 @@ export function registerPaymentRoutes(app, {
     }
 
     try {
+      const checkoutMetadata = {
+        priceId,
+        checkoutMode,
+        billingPeriod,
+        ...(paidTier ? { paidTier } : {}),
+        ...(normalizedEmail ? { emailLower: normalizedEmail } : {}),
+      };
       const session = await stripe.checkout.sessions.create({
         line_items: [{ price: priceId, quantity: 1 }],
         mode: checkoutMode,
         ...(checkoutMode === 'subscription'
-          ? { subscription_data: { metadata: { priceId, paidTier, billingPeriod } } }
+          ? { subscription_data: { metadata: checkoutMetadata } }
           : {}),
         ...(typeof email === 'string' && email.trim()
           ? { customer_email: email.trim() }
           : {}),
-        metadata: {
-          priceId,
-          paidTier,
-          checkoutMode,
-          billingPeriod,
-          ...(normalizedEmail ? { emailLower: normalizedEmail } : {}),
-        },
+        metadata: checkoutMetadata,
         success_url: successUrl,
         cancel_url: cancelUrl,
       });
