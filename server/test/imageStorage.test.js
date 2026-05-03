@@ -99,6 +99,10 @@ test('persistImageToStorage returns Firebase Storage URL on success', async () =
     assert.equal(savedData[0].name, 'my-project.appspot.com');
     assert.equal(savedData[0].path, 'generatedImages/boards/job-123.png');
     assert.equal(savedData[0].options.contentType, 'image/png');
+    assert.equal(
+      savedData[0].options.metadata?.cacheControl,
+      'public, max-age=31536000, immutable, no-transform',
+    );
     assert.ok(savedData[0].options.metadata?.metadata?.firebaseStorageDownloadTokens, 'Download token should be set');
   } finally {
     globalThis.fetch = originalFetch;
