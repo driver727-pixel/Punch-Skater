@@ -125,7 +125,7 @@ export function LanguageProfilePanel() {
             Apply to card generation
             <span className="lang-panel-toggle__hint">
               {useCraftlingua
-                ? "✓ Conlang names, lore & graffiti enabled"
+                ? "✓ Conlang names and lore enabled"
                 : "Off — profile loaded but not applied"}
             </span>
           </span>

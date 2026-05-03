@@ -1045,7 +1045,7 @@ function areCardArtPropsEqual(previous: CardArtProps, next: CardArtProps): boole
     previous.card.prompts.vibe === next.card.prompts.vibe &&
     previous.card.visuals.accentColor === next.card.visuals.accentColor &&
     previous.card.visuals.storagePackStyle === next.card.visuals.storagePackStyle &&
-    previous.card.discovery?.displayArchetype === next.card.discovery?.displayArchetype
+    previous.card.role.archetype === next.card.role.archetype
   );
 }
 

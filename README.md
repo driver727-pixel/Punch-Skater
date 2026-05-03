@@ -4,11 +4,24 @@ A dense cyberpunk courier card game built with React, TypeScript, Vite, Firebase
 
 ## Welcome to Punch Skater
 
-The Card Forge is your jump-off point: build your first deck, discover hidden factions, and explore more than 4 million possible character combinations.
+The Card Forge is your jump-off point: build your collection, assemble your Crew, and compete in the world of Sk8rpunk.
 
-- **What** — Forge Punch Skater cards, add a Master card, and assemble a six-card deck for missions, battles, and trades.
-- **How** — Start with 5 Punch Skater class cards and 1 Master class card, then customize each skater's district, style, and board loadout.
-- **Why** — Earn points and power-ups on Missions, take your best deck into the Battle Arena, and trade for the cards that sharpen your strategy.
+- **What** — Forge Punch Skater cards and build a collection. Choose your best 6 cards as your active **Crew** and name it.
+- **How** — Start with a bonus Rare card on signup, then earn more through missions, battles, trades, and daily login streaks.
+- **Why** — Run district missions for XP, Points, and Ozzies. Grow your Crew's Deck Power to unlock higher rarity forges. Hit the leaderboard and prove your Crew's worth.
+
+### Progression at a glance
+
+| Axis | What it means |
+|---|---|
+| **XP** | What your cards have done — earned through missions, battles, and streaks |
+| **Points** | What your cards can do — individual stat numbers (Speed, Range, Stealth, Grit) |
+| **Deck Power** | How strong your Crew is — sum of all stat Points across all 6 active cards |
+| **Ozzies** | How valuable and respected your collection is — earned Ozzy value per card |
+
+No pay-to-win. Legendary status cannot be forged — only earned through gameplay, missions, achievements, or leaderboard rewards.
+
+See [`docs/PROGRESSION.md`](docs/PROGRESSION.md) for the full progression model.
 
 ## Current Stack
 
@@ -22,12 +35,13 @@ The Card Forge is your jump-off point: build your first deck, discover hidden fa
 
 ## Core Game Systems
 
-- **Card Forge** — deterministic card generation, layered art, factions, referrals, and monetized forge access
-- **Collection** — saved cards in Firestore for signed-in users, local storage for guests
-- **Deck Builder** — up to 6 cards per deck with persistent deck sync
-- **Missions** — district map, mission branches, and live weather restrictions
-- **Trades + Leaderboard** — direct offers, market listings, and public deck rankings
+- **Card Forge** — deterministic card generation, layered art, factions, referrals, and forge access
+- **Collection** — saved cards in Firestore for signed-in users, local storage for guests; signup rewards 1 bonus Rare card
+- **Crew / Deck Builder** — choose 6 cards as your active Crew and name it; Deck Power = sum of all Crew card stats
+- **Missions** — server-authored district contracts, deck checks, route access, and risk/reward stat changes
+- **Trades + Leaderboard** — direct offers, market listings, and public Crew rankings by Deck Power, Crew Ozzies, and Crew XP
 - **Battle Arena** — public scouting summaries, real opponent deck snapshots, persistent results, and stat resolution syncing for both players
+- **CraftLingua Codex** — district language library, account-linked share codes, forge profile uploads, and Rare/Legendary conlang flavor text
 
 ## Environment
 
@@ -42,6 +56,9 @@ Copy `.env.example` to `.env` for local client config.
 - `VITE_ADMIN_API_URL`
 - `VITE_BATTLE_API_URL`
 - `VITE_DISTRICT_WEATHER_API_URL`
+- `VITE_CRAFTLINGUA_DISTRICTS_API_URL`
+- `VITE_CRAFTLINGUA_TRANSLATE_API_URL`
+- `VITE_CRAFTLINGUA_RESOLVE_API_URL`
 
 ### Server-only variables
 
@@ -59,6 +76,7 @@ Copy `.env.example` to `.env` for local client config.
 - `ADMIN_EMAILS`
 - `APP_ORIGINS` (optional; extra CORS / checkout redirect origins)
 - `REDIS_URL` (optional; enables shared Redis-backed rate limiting)
+- `PUNCHSKATER_PARTNER_KEY` (reserved for CraftLingua partner integrations; keep server-only)
 - `FIREBASE_SERVICE_ACCOUNT_JSON` or (`FIREBASE_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`), or platform-provided application default credentials
 
 Do not commit server secrets.

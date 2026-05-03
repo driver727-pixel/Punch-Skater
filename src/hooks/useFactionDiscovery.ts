@@ -23,22 +23,13 @@ export function useFactionDiscovery() {
       return;
     }
 
-    const localDiscoveries = dedupeFactions(loadFactionDiscoveries());
-    if (localDiscoveries.length > 0) {
-      setDoc(doc(db, "userProfiles", uid), { discoveredFactions: localDiscoveries }, { merge: true }).catch(console.error);
-    }
+    setDiscoveredFactions([]);
 
     const unsub = onSnapshot(doc(db, "userProfiles", uid), (snap) => {
       const profileDiscoveries = Array.isArray(snap.data()?.discoveredFactions)
         ? (snap.data()?.discoveredFactions as string[])
         : [];
-      const merged = dedupeFactions([...localDiscoveries, ...profileDiscoveries]);
-      setDiscoveredFactions(merged);
-      saveFactionDiscoveries(merged);
-
-      if (merged.length !== profileDiscoveries.length) {
-        setDoc(doc(db, "userProfiles", uid), { discoveredFactions: merged }, { merge: true }).catch(console.error);
-      }
+      setDiscoveredFactions(dedupeFactions(profileDiscoveries));
     });
 
     return unsub;
@@ -47,10 +38,11 @@ export function useFactionDiscovery() {
   const unlockFaction = useCallback((faction: Faction) => {
     setDiscoveredFactions((prev) => {
       const next = dedupeFactions([...prev, faction]);
-      saveFactionDiscoveries(next);
 
       if (uid && db) {
         setDoc(doc(db, "userProfiles", uid), { discoveredFactions: next }, { merge: true }).catch(console.error);
+      } else if (!uid) {
+        saveFactionDiscoveries(next);
       }
 
       return next;

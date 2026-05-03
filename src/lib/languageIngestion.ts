@@ -8,7 +8,7 @@
  *  - Generating phonetically consistent character names from vocabulary
  *  - Generating a "Signature Catchphrase" for a card
  *  - Translating English text to the constructed language (word substitution)
- *  - Picking graffiti / brand-logo words for Fal.ai prompt injection
+ *  - Picking short display words from vocabulary
  */
 
 import type { CraftlinguaEnvelope, CraftlinguaWord } from "./types";
@@ -100,18 +100,17 @@ export function translateToConlang(text: string, vocabulary: CraftlinguaWord[]):
   return text.replace(/\b[A-Za-z]+\b/g, (match) => lookup.get(match.toLowerCase()) ?? match);
 }
 
-// ── Graffiti / brand-logo word picker ─────────────────────────────────────────
+// ── Display word picker ───────────────────────────────────────────────────────
 
 /**
- * Pick 1–2 vocabulary words suitable for Fal.ai prompt injection as graffiti
- * tags or brand logos on a skater's gear (wheels, decks, batteries).
+ * Pick 1–2 short vocabulary words suitable for compact card display text.
  *
- * Short single-token words are preferred so they look plausible on gear art.
+ * Short single-token words are preferred for legibility.
  */
-export function getGraffitiWords(vocabulary: CraftlinguaWord[], seed: string): string[] {
+export function getDisplayWords(vocabulary: CraftlinguaWord[], seed: string): string[] {
   if (vocabulary.length === 0) return [];
 
-  const rng = createSeededRandom(seed + "|graffiti");
+  const rng = createSeededRandom(seed + "|display-words");
   // Favour short, single-token words for legibility in generated images.
   const singleToken = vocabulary.filter((w) => !/[\s]/.test(w.word));
   const pool = singleToken.length >= 2 ? singleToken : vocabulary;

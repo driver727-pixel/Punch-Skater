@@ -166,6 +166,7 @@ export function Login() {
         <h1 className="login-title">Punch Skater</h1>
         <p className="login-subtitle">DECK BUILDER</p>
         <p className="login-game-badge"><a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer">A Sk8r Punk Game</a></p>
+        <p className="login-hint">Create an account to claim your Rare card bonus and start your login streak.</p>
         {isAuthUnavailable && <p className="login-error">{firebaseUnavailableMessage}</p>}
 
         <div className="login-tabs">

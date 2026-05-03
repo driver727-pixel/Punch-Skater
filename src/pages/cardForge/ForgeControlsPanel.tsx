@@ -4,17 +4,27 @@ import type {
   BodyType,
   CardPayload,
   CardPrompts,
+  CompositeLayerOrder,
   District,
   FaceCharacter,
   Gender,
   HairLength,
-  Rarity,
   SkinTone,
 } from "../../lib/types";
 import { BoardBuilder } from "../../components/BoardBuilder";
 import { GeoAtlas } from "../../components/GeoAtlas";
+import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
 import { ReferralPanel } from "../../components/ReferralPanel";
 import type { BoardConfig } from "../../lib/boardBuilder";
+import {
+  BOARD_PLACEMENT_MAX_SCALE,
+  BOARD_PLACEMENT_MIN_SCALE,
+  BOARD_PLACEMENT_SCALE_STEP,
+  CHARACTER_PLACEMENT_MAX_SCALE,
+  CHARACTER_PLACEMENT_MIN_SCALE,
+  CHARACTER_PLACEMENT_SCALE_STEP,
+} from "../../lib/boardPlacement";
+import { LEGENDARY_FORGE_NOTICE, type ForgeClassOption } from "../../lib/cardClassProgression";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
 
@@ -56,9 +66,14 @@ interface ForgeControlsPanelProps {
   accentPresets: string[];
   bodyTypes: BodyType[];
   boardConfig: BoardConfig;
+  boardLayerOrder: CompositeLayerOrder;
+  boardRotation: number;
+  boardScale: number;
   canForge: boolean;
   canSaveToCollection: boolean;
-  characterBlend: number;
+  characterRotation: number;
+  characterScale: number;
+  classOptions: ForgeClassOption[];
   districts: District[];
   downloading: boolean;
   faceCharacters: FaceCharacter[];
@@ -68,11 +83,14 @@ interface ForgeControlsPanelProps {
   generateCredits: number;
   generated: CardPayload | null;
   hairLengths: HairLength[];
-  hasAnyLayerUrl: boolean;
   isAnyLayerLoading: boolean;
   onArchetypeChange: (archetype: Archetype) => void;
-  onBlendChange: (value: number) => void;
+  onBoardLayerOrderChange: (value: CompositeLayerOrder) => void;
+  onBoardRotationChange: (value: number) => void;
   onBoardConfigChange: (config: BoardConfig) => void;
+  onBoardScaleChange: (value: number) => void;
+  onCharacterRotationChange: (value: number) => void;
+  onCharacterScaleChange: (value: number) => void;
   onDownloadJpg: () => void;
   onForge: () => void;
   onOpen3D: () => void;
@@ -81,7 +99,6 @@ interface ForgeControlsPanelProps {
   onPromptChange: <K extends keyof CardPrompts>(key: K, value: CardPrompts[K]) => void;
   onSaveToCollection: () => void;
   prompts: CardPrompts;
-  rarities: Rarity[];
   saveError: string | null;
   saving: boolean;
   skinTones: SkinTone[];
@@ -93,9 +110,14 @@ export function ForgeControlsPanel({
   accentPresets,
   bodyTypes,
   boardConfig,
+  boardLayerOrder,
+  boardRotation,
+  boardScale,
   canForge,
   canSaveToCollection,
-  characterBlend,
+  characterRotation,
+  characterScale,
+  classOptions,
   districts,
   downloading,
   faceCharacters,
@@ -105,11 +127,14 @@ export function ForgeControlsPanel({
   generateCredits,
   generated,
   hairLengths,
-  hasAnyLayerUrl,
   isAnyLayerLoading,
   onArchetypeChange,
-  onBlendChange,
+  onBoardLayerOrderChange,
+  onBoardRotationChange,
   onBoardConfigChange,
+  onBoardScaleChange,
+  onCharacterRotationChange,
+  onCharacterScaleChange,
   onDownloadJpg,
   onForge,
   onOpen3D,
@@ -118,7 +143,6 @@ export function ForgeControlsPanel({
   onPromptChange,
   onSaveToCollection,
   prompts,
-  rarities,
   saveError,
   saving,
   skinTones,
@@ -126,6 +150,8 @@ export function ForgeControlsPanel({
   ageGroups,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
+  const selectedClassHint = classOptions.find((option) => option.rarity === prompts.rarity)?.unlockHint
+    || `Start with Punch Skaters, then unlock higher classes with XP or Ozzies. ${LEGENDARY_FORGE_NOTICE}`;
 
   return (
     <div className="forge-form">
@@ -150,24 +176,20 @@ export function ForgeControlsPanel({
         <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
       </div>
 
-      <div className={`form-group${isFreeTier ? " form-group--locked" : ""}`}>
-        <label>
-          Class
-          {isFreeTier && (
-            <ForgeLockBadge onClick={onOpenUpgradeModal} label="Upgrade to unlock Class" />
-          )}
-        </label>
+      <div className="form-group">
+        <label>Class</label>
         <div className="pill-group">
-          {rarities.map((option) => (
+          {classOptions.map((option) => (
             <PillButton
-              key={option}
-              active={prompts.rarity === option}
-              label={option}
-              disabled={isFreeTier}
-              onClick={() => onPromptChange("rarity", option)}
+              key={option.rarity}
+              active={prompts.rarity === option.rarity}
+              label={option.unlocked ? option.rarity : `${option.rarity} 🔒`}
+              disabled={!option.unlocked}
+              onClick={() => onPromptChange("rarity", option.rarity)}
             />
           ))}
         </div>
+        <p className="form-hint">{selectedClassHint}</p>
       </div>
 
       <div className="form-group">
@@ -194,6 +216,8 @@ export function ForgeControlsPanel({
         districtInteractionMode="press"
         section="australia"
       />
+
+      <LanguageProfilePanel />
 
       <div className="form-group">
         <label>Gender</label>
@@ -334,23 +358,89 @@ export function ForgeControlsPanel({
 
       {generated && (
         <div className="forge-generated-actions">
-          {(hasAnyLayerUrl || isAnyLayerLoading) && (
-            <div className="blend-control">
-              <label className="blend-control__label">
-                <span>Character Blend</span>
-                <span>{Math.round(characterBlend * 100)}%</span>
-              </label>
-              <input
-                type="range"
-                className="range-slider"
-                min={0}
-                max={1}
-                step={0.05}
-                value={characterBlend}
-                onChange={(event) => onBlendChange(Number(event.target.value))}
-              />
-            </div>
-          )}
+          <div className="blend-control">
+            <label className="blend-control__label">
+              <span>Skateboard Size</span>
+              <span>{Math.round(boardScale * 100)}%</span>
+            </label>
+            <input
+              type="range"
+              className="range-slider"
+              min={BOARD_PLACEMENT_MIN_SCALE}
+              max={BOARD_PLACEMENT_MAX_SCALE}
+              step={BOARD_PLACEMENT_SCALE_STEP}
+              value={boardScale}
+              onChange={(event) => onBoardScaleChange(Number(event.target.value))}
+              aria-label="Skateboard size"
+            />
+          </div>
+          <div className="blend-control">
+            <label className="blend-control__label">
+              <span>Skateboard Rotation</span>
+              <span>{Math.round(boardRotation)}°</span>
+            </label>
+            <input
+              type="range"
+              className="range-slider"
+              min={-180}
+              max={180}
+              step={1}
+              value={boardRotation}
+              onChange={(event) => onBoardRotationChange(Number(event.target.value))}
+              aria-label="Skateboard rotation"
+            />
+          </div>
+          <div className="blend-control">
+            <label className="blend-control__label">
+              <span>Character Size</span>
+              <span>{Math.round(characterScale * 100)}%</span>
+            </label>
+            <input
+              type="range"
+              className="range-slider"
+              min={CHARACTER_PLACEMENT_MIN_SCALE}
+              max={CHARACTER_PLACEMENT_MAX_SCALE}
+              step={CHARACTER_PLACEMENT_SCALE_STEP}
+              value={characterScale}
+              onChange={(event) => onCharacterScaleChange(Number(event.target.value))}
+              aria-label="Character size"
+            />
+          </div>
+          <div className="blend-control">
+            <label className="blend-control__label">
+              <span>Character Rotation</span>
+              <span>{Math.round(characterRotation)}°</span>
+            </label>
+            <input
+              type="range"
+              className="range-slider"
+              min={-180}
+              max={180}
+              step={1}
+              value={characterRotation}
+              onChange={(event) => onCharacterRotationChange(Number(event.target.value))}
+              aria-label="Character rotation"
+            />
+          </div>
+          <div className="blend-control">
+            <label className="blend-control__label">
+              <span>Skateboard Layer</span>
+              <span>{boardLayerOrder === "behind-character" ? "Behind Character" : "In Front"}</span>
+            </label>
+            <input
+              type="range"
+              className="range-slider"
+              min={0}
+              max={1}
+              step={1}
+              value={boardLayerOrder === "behind-character" ? 0 : 1}
+              onChange={(event) => onBoardLayerOrderChange(Number(event.target.value) === 0 ? "behind-character" : "in-front")}
+              aria-label="Skateboard layer"
+            />
+            <p className="form-hint">
+              Drag the board or character on the card face to place them before saving. On mobile, use one finger to move and two fingers to pinch or rotate.
+            </p>
+          </div>
           <div className="forge-generated-buttons">
             <button className="btn-outline btn-3d" onClick={onOpen3D} title="View card in 3D">
               ◈ 3D

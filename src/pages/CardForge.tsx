@@ -12,7 +12,6 @@ import {
   GENDERS,
   HAIR_LENGTHS,
   RANDOM_SKATER_TOOLTIP,
-  RARITIES,
   SKIN_TONES,
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
@@ -23,11 +22,16 @@ export function CardForge() {
   const {
     boardConfig,
     boardImageLoading,
+    boardLayerOrder,
+    boardPlacement,
     canForge,
+    characterPlacement,
     characterBlend,
+    clearSavedCard,
     closeWelcome,
     downloading,
     forging,
+    forgeClassOptions,
     freeCardUsed,
     generated,
     generateCredits,
@@ -43,7 +47,6 @@ export function CardForge() {
     handleRandomSkater,
     handleReopenWelcome,
     handleSaveToCollection,
-    hasAnyLayerUrl,
     isAnyLayerLoading,
     isFirstCard,
     layers,
@@ -58,9 +61,15 @@ export function CardForge() {
     savedCard,
     saving,
     setArchetype,
+    setBoardPlacement,
+    setBoardScale,
     setBoardConfig,
-    setCharacterBlend,
+    setBoardLayerOrder,
     setPrompt,
+    setBoardRotation,
+    setCharacterPlacement,
+    setCharacterRotation,
+    setCharacterScale,
     showWelcome,
     tier,
     tierCanSave,
@@ -104,9 +113,12 @@ export function CardForge() {
           ageGroups={AGE_GROUPS}
           bodyTypes={BODY_TYPES}
           boardConfig={boardConfig}
+          boardLayerOrder={boardLayerOrder}
+          boardRotation={boardPlacement?.rotationDeg ?? 0}
+          boardScale={boardPlacement?.scale ?? 1}
           canForge={canForge}
           canSaveToCollection={tierCanSave}
-          characterBlend={characterBlend}
+          classOptions={forgeClassOptions}
           districts={DISTRICTS}
           downloading={downloading}
           faceCharacters={FACE_CHARACTERS}
@@ -116,11 +128,16 @@ export function CardForge() {
           generateCredits={generateCredits}
           generated={generated}
           hairLengths={HAIR_LENGTHS}
-          hasAnyLayerUrl={hasAnyLayerUrl}
           isAnyLayerLoading={isAnyLayerLoading}
+          characterRotation={characterPlacement?.rotationDeg ?? 0}
+          characterScale={characterPlacement?.scale ?? 1}
           onArchetypeChange={setArchetype}
-          onBlendChange={setCharacterBlend}
+          onBoardLayerOrderChange={setBoardLayerOrder}
+          onBoardRotationChange={setBoardRotation}
+          onBoardScaleChange={setBoardScale}
           onBoardConfigChange={setBoardConfig}
+          onCharacterRotationChange={setCharacterRotation}
+          onCharacterScaleChange={setCharacterScale}
           onDownloadJpg={handleDownloadJpg}
           onForge={handleForge}
           onOpen3D={handleOpen3D}
@@ -129,7 +146,6 @@ export function CardForge() {
           onPromptChange={setPrompt}
           onSaveToCollection={handleSaveToCollection}
           prompts={prompts}
-          rarities={RARITIES}
           saveError={saveError}
           saving={saving}
           skinTones={SKIN_TONES}
@@ -145,6 +161,8 @@ export function CardForge() {
           patchGeneratedCard={patchGeneratedCard}
           patchIdentity={patchIdentity}
           patchStats={patchStats}
+          onBoardPlacementChange={setBoardPlacement}
+          onCharacterPlacementChange={setCharacterPlacement}
         />
       </div>
 
@@ -159,6 +177,7 @@ export function CardForge() {
         onClosePrint={handleClosePrint}
         onCloseViewer3D={handleClose3D}
         onGoToCollection={handleCollectionNavigation}
+        onKeepForging={clearSavedCard}
         onOpenFactions={handleOpenFactions}
         printing={printing}
         revealedFaction={revealedFaction}

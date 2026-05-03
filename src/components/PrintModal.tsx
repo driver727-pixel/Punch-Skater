@@ -8,10 +8,6 @@ import { buildCardVars } from "../lib/cardVars";
 interface PrintModalProps {
   card: CardPayload;
   backgroundImageUrl?: string;
-  /** Full print-quality background URL (1536 × 2048 px). When provided, this
-   *  is used in the hidden print-only area instead of backgroundImageUrl so the
-   *  browser prints at the highest available resolution. */
-  backgroundPrintUrl?: string;
   characterImageUrl?: string;
   frameImageUrl?: string;
   characterBlend?: number;
@@ -35,15 +31,12 @@ function BleedMarks() {
 export function PrintModal({
   card,
   backgroundImageUrl,
-  backgroundPrintUrl,
   characterImageUrl,
   frameImageUrl,
   characterBlend,
   onClose,
 }: PrintModalProps) {
   const [side, setSide] = useState<PrintSide>("both");
-  // Use the full print-quality background in the hidden printable area when available.
-  const printBackgroundUrl = backgroundPrintUrl ?? backgroundImageUrl;
 
   const handlePrint = () => {
     window.print();
@@ -113,7 +106,7 @@ export function PrintModal({
               <SkaterCardFace
                 face="front"
                 card={card}
-                backgroundImageUrl={printBackgroundUrl}
+                backgroundImageUrl={backgroundImageUrl}
                 characterImageUrl={characterImageUrl}
                 frameImageUrl={frameImageUrl}
                 characterBlend={characterBlend}

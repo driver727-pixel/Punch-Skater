@@ -238,6 +238,7 @@ export function useBattle() {
       return;
     }
 
+    setMyArenaEntry(null);
     return onSnapshot(doc(db, "arena", uid), (snap) => {
       setMyArenaEntry(snap.exists() ? (snap.data() as ArenaEntry) : null);
     });
@@ -270,7 +271,10 @@ export function useBattle() {
 
   // ── Subscribe to battle results for both challenger and defender ──────────
   useEffect(() => {
-    if (!uid || !db) return;
+    if (!uid || !db) {
+      seenBattleResultsRef.current = new Set();
+      return;
+    }
 
     seenBattleResultsRef.current = loadSeenBattleResults(uid);
     const battleResultsRef = collection(db, "battleResults");

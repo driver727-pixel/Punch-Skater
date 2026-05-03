@@ -1,32 +1,57 @@
 import { normalizeBoardConfig } from "./boardBuilderCompatibility";
 import type { BatteryType, BoardConfig, BoardType, Drivetrain, WheelType } from "./boardBuilderTypes";
 
+export const CRITICAL_SINGLE_ASSEMBLY_CONSTRAINT =
+  "CRITICAL: Render one coherent, fully assembled skateboard product only — not a collage of separate parts or reference cutouts. It has exactly TWO trucks only: one front truck mounted under the NOSE and one rear truck mounted under the TAIL. Each truck has exactly ONE axle carrying exactly TWO wheels, for exactly four wheels total. Never duplicate, split, stack, offset, or graft extra trucks, axles, wheel pods, motors, or drivetrain assemblies anywhere on the board.";
+
+export const MOUNTAINBOARD_LORE_CONSTRAINT =
+  "Mountainboards, Mountain Boards, and 4WD boards always have foot straps on top of the deck plus a compact top-mounted battery pack sized so an adult rider's feet can still fit naturally in the straps. Never omit the foot straps, never make the battery so large that it blocks the stance area, and do not treat a battery-free deck reference as permission to omit the top battery.";
+
 const BOARD_IMAGE_BASE_CONCEPT =
   "An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background. " +
+  "CRITICAL: The image must contain exactly ONE skateboard. Never show two or more skateboards in the same image under any circumstances. " +
+  `${CRITICAL_SINGLE_ASSEMBLY_CONSTRAINT} ` +
   "It has exactly four wheels mounted on front and rear trucks with fixed axles, the wheels aligned in matching pairs and pointing in the same direction as the deck. " +
   "Never show caster-style pivoting wheels, sideways wheels, or wheels perpendicular to the board. " +
-  "Unless the drivetrain is explicitly 4WD, only the rear wheels are drive wheels and the front wheels must remain unpowered free-rolling wheels.";
+  "The NOSE is the front tip of the board; the TAIL is the rear. " +
+  "Unless the drivetrain is explicitly 4WD, ALL drive hardware — motors, motor mounts, belts, pulleys, gearboxes, hub-motor casings — belongs exclusively at the TAIL (rear truck). " +
+  "The NOSE truck must have NO motors, NO motor mounts, NO belts, NO pulleys, and NO gearboxes on any non-4WD board. " +
+  "Placing any drive hardware at the nose on a non-4WD board is a critical error that must never happen.";
 
 const BOARD_TYPE_IMAGE_DESCRIPTIONS: Record<BoardType, string> = {
-  Street: "A Street style electric skateboard with a low-profile urban deck built for pavement.",
-  AT: "An all-terrain electric skateboard with a rugged top-mount deck and extra ground clearance.",
-  Mountain: "A mountain-board style electric skateboard with an aggressive deck built for steep rough terrain.",
-  Surf: "A surf-skate inspired electric skateboard with a wide swallowtail cruiser deck and flowing stance.",
+  Street:
+    "A Street style electric skateboard with a flat matte black carbon-fiber deck — no wood, no maple, no bamboo, no wood grain anywhere on the deck surface. " +
+    "The deck has NO kicktail at the nose or the rear; instead it has a subtle drop-down camber between the front and rear axles for better handling and a lower center of gravity.",
+  AT:
+    "An all-terrain electric skateboard with a rugged top-mount deck. " +
+    "The deck has NO kicktail at the nose or the rear; instead it has a subtle drop-down profile between the front and rear axles for improved handling.",
+  Mountain:
+    "A mountain-board style electric skateboard with an aggressive deck built for steep rough terrain. " +
+    "The deck has NO kicktail at the nose or the rear; instead it has a subtle drop-down profile between the front and rear axles.",
+  Surf: "A surf-skate inspired electric skateboard with a wide swallowtail cruiser deck, a prominent upward rear kicktail, and a flowing stance.",
   Slider: "A slider style electric skateboard built around a low, compact deck for tight technical movement.",
 };
 
 const DRIVETRAIN_IMAGE_DESCRIPTIONS: Record<Drivetrain, string> = {
-  Belt: "It has belt driven rear wheels only, with exposed belts, pulleys, and rear motor mounts while the front wheels stay non-driven.",
-  Hub: "It has hub driven rear wheels only, with the motors hidden inside the rear wheel cores and no exposed belts while the front wheels stay non-driven.",
-  Gear: "It has gear driven rear wheels only, with sealed enclosed gearboxes instead of belts while the front wheels stay non-driven.",
+  Belt:
+    "It has belt driven rear wheels only, with exposed belts, pulleys, rear motor mounts, and one external electric motor mounted behind each rear wheel on the TAIL truck only. " +
+    "There are NO hub-motor casings inside any wheel — all motors are external. " +
+    "The NOSE truck has bare axles with no belts, no pulleys, and no motor mounts.",
+  Hub:
+    "It has hub driven rear wheels only, with the motors hidden inside the REAR wheel cores only. " +
+    "There are NO external belts, NO exposed pulleys, NO external motor mounts, and NO external motors anywhere on the board — this is NOT a belt drive. " +
+    "The NOSE wheels are plain unpowered urethane with no hub-motor casings and no internal motors.",
+  Gear: "It has gear driven rear wheels only, with sealed enclosed gearboxes on the TAIL truck only; the NOSE truck has no gearboxes and no drive hardware.",
   "4WD": "It has powered front and rear trucks in a true four-wheel-drive setup with all four wheels driven.",
 };
 
 const WHEEL_IMAGE_DESCRIPTIONS: Record<WheelType, string> = {
-  Urethane: "It has 4 poly-urethane wheels.",
-  Pneumatic: "It has 4 large pneumatic all-terrain tires with visible tread.",
-  Rubber: "It has 4 solid rubber all-terrain wheels with thick puncture-proof sidewalls.",
-  Cloud: "It has 4 oversized vapor wheels with a soft semi-transparent cushioned look.",
+  Urethane: "It has 4 poly-urethane wheels, each 97 mm in diameter, the smallest wheel option and a scale anchor for the skateboard beside an adult rider.",
+  Pneumatic:
+    "It has 4 large chunky pneumatic all-terrain tires, each 150 mm in diameter, with thick air-filled rubber construction, chunky knobby tread, and tall visible sidewalls. " +
+    "These tires are clearly inflated rubber — NOT polyurethane, NOT hard plastic, NOT hub-motor shells. The taller stance is clearly visible compared to polyurethane wheels.",
+  Rubber: "It has 4 solid rubber all-terrain wheels, each 175 mm in diameter, with thick puncture-proof sidewalls; these are the largest wheel option and make the board visibly taller beside an adult rider.",
+  Cloud: "It has 4 oversized vapor wheels, each 107 mm in diameter, with a soft semi-transparent cushioned look; they are slightly larger than 97 mm polyurethane wheels but much smaller than 150 mm pneumatic tires.",
 };
 
 const BATTERY_IMAGE_DESCRIPTIONS: Record<BatteryType, string> = {
@@ -67,6 +92,10 @@ function getMotorImageDescription(config: BoardConfig): string {
   }
 }
 
+function getMountainboardLoreDescription(config: BoardConfig): string {
+  return config.boardType === "Mountain" || config.drivetrain === "4WD" ? MOUNTAINBOARD_LORE_CONSTRAINT : "";
+}
+
 export function buildBoardImagePrompt(config: BoardConfig): string {
   const normalizedConfig = normalizeBoardConfig(config);
   const batteryPreservationClause =
@@ -81,9 +110,12 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
     `${getMotorImageDescription(normalizedConfig)} ` +
     `${WHEEL_IMAGE_DESCRIPTIONS[normalizedConfig.wheels]} ` +
     `${BATTERY_IMAGE_DESCRIPTIONS[normalizedConfig.battery]} ` +
+    `${getMountainboardLoreDescription(normalizedConfig)} ` +
     `Show one fully assembled complete skateboard only. ` +
-    `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type${batteryPreservationClause} with no substitutions. ` +
+    `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type and wheel diameter${batteryPreservationClause} with no substitutions. ` +
     `For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD. ` +
-    `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, no text, no watermark.`
+    `CRITICAL: On non-4WD boards the nose truck must look identical to a plain unpowered truck — no motors, no belts, no pulleys, no gearboxes. ` +
+    `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, exactly one skateboard in the image. ` +
+    `CRITICAL: Absolutely no text, words, letters, numbers, labels, captions, annotations, callout lines, dimension lines, part names, diagrams, watermarks, or any written characters anywhere in the image or on the skateboard itself.`
   );
 }

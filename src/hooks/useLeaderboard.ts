@@ -5,13 +5,13 @@ import {
   setDoc,
   onSnapshot,
   query,
-  orderBy,
   limit,
 } from "firebase/firestore";
 import type { DeckPayload, LeaderboardEntry } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 import { buildArenaDeckSummary, computeDeckScore, computeDeckWorth } from "../lib/battle";
+import { computeCrewOzzies, computeCrewXp, computeLeaderboardScore } from "../lib/progression";
 
 /** Maximum entries shown on the leaderboard. */
 const LEADERBOARD_LIMIT = 50;
@@ -28,12 +28,12 @@ export function useLeaderboard() {
     if (!db) return;
     const q = query(
       collection(db, "leaderboard"),
-      orderBy("deckPower", "desc"),
-      orderBy("ozzies", "desc"),
       limit(LEADERBOARD_LIMIT),
     );
     const unsub = onSnapshot(q, (snap) => {
-      setEntries(snap.docs.map((d) => d.data() as LeaderboardEntry));
+      const data = snap.docs.map((d) => d.data() as LeaderboardEntry);
+      data.sort((a, b) => b.deckPower - a.deckPower || b.ozzies - a.ozzies);
+      setEntries(data);
     });
     return unsub;
   }, []);
@@ -45,14 +45,21 @@ export function useLeaderboard() {
       setUploading(true);
       try {
         const summary = buildArenaDeckSummary(deck.cards);
+        const deckPower   = computeDeckScore(deck.cards);
+        const crewOzzies  = computeCrewOzzies(deck.cards);
+        const crewXp      = computeCrewXp(deck.cards);
+        const leaderboardScore = computeLeaderboardScore(deckPower, crewOzzies, crewXp);
         const entry: LeaderboardEntry = {
           uid,
           displayName:
             user?.displayName ?? user?.email?.split("@")[0] ?? "Skater",
           deckName: deck.name,
           cardCount: deck.cards.length,
-          deckPower: computeDeckScore(deck.cards),
+          deckPower,
           ozzies: computeDeckWorth(deck.cards),
+          crewOzzies,
+          crewXp,
+          leaderboardScore,
           strongestStat: summary.strongestStat,
           strongestStatTotal: summary.strongestStatTotal,
           synergyBonusPct: summary.synergyBonusPct,

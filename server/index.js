@@ -39,11 +39,15 @@ import {
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerBattleRoutes } from './routes/battle.js';
+import { registerRaceRoutes } from './routes/race.js';
 import { registerImageRoutes } from './routes/images.js';
 import { registerImportRoutes } from './routes/import.js';
+import { registerMissionRoutes } from './routes/missions.js';
 import { registerPaymentRoutes } from './routes/payments.js';
 import { registerBattlePassRoutes } from './battlePass.js';
-import { registerWeatherRoutes } from './routes/weather.js';
+import { registerRewardRoutes } from './routes/rewards.js';
+import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
+import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
 
 // Load the shared pricing config — the single source of truth for Stripe
 // price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
@@ -67,6 +71,9 @@ const ALLOWED_APP_ORIGINS = new Set([
   ...DEFAULT_ALLOWED_APP_ORIGINS,
   ...APP_ORIGINS,
 ]);
+// Cache browser CORS preflight checks for 10 minutes. This trims repeated
+// authenticated OPTIONS traffic while keeping CORS policy changes reasonably quick to propagate.
+const PREFLIGHT_CACHE_SECONDS = 10 * 60;
 const MAX_TEXT_FIELD_LENGTH = 4_000;
 const MAX_BOARD_PROMPT_LENGTH = 1_500;
 const MAX_IMAGE_DIMENSION = 1_536;
@@ -133,6 +140,7 @@ app.use(cors({
     }
     callback(new Error('CORS origin is not allowed.'));
   },
+  maxAge: PREFLIGHT_CACHE_SECONDS,
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
@@ -193,6 +201,13 @@ const weatherRateLimit = buildRateLimiter({
   store: sharedRateLimitStore,
 });
 
+const missionRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many mission requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
 const battleRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 30,
@@ -204,6 +219,24 @@ const battlePassRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 20,
   message: { error: 'Too many battle pass requests — please wait a moment and try again.' },
+const raceRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many race requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const rewardRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many reward requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const craftlinguaRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many CraftLingua requests — please slow down.' },
   store: sharedRateLimitStore,
 });
 
@@ -550,7 +583,7 @@ if (!stripeWebhookSecret) {
   console.warn('⚠️  STRIPE_WEBHOOK_SECRET environment variable is not set — Stripe webhooks will be unavailable.');
 }
 
-const { adminAuth, adminDb } = createFirebaseAdminServices({
+const { adminAuth, adminDb, adminStorage } = createFirebaseAdminServices({
   env: process.env,
   logger: console,
 });
@@ -710,8 +743,28 @@ registerAdminRoutes(app, {
   deleteQueryDocs,
 });
 
+const districtWeatherService = createDistrictWeatherService();
+
 registerWeatherRoutes(app, {
   weatherRateLimit,
+  districtWeatherService,
+});
+
+registerCraftlinguaRoutes(app, {
+  craftlinguaRateLimit,
+});
+
+registerMissionRoutes(app, {
+  adminDb,
+  missionRateLimit,
+  authenticateFirebaseUser,
+  districtWeatherService,
+});
+
+registerRewardRoutes(app, {
+  adminDb,
+  rewardRateLimit,
+  authenticateFirebaseUser,
 });
 
 registerBattleRoutes(app, {
@@ -728,6 +781,11 @@ registerBattlePassRoutes(app, {
   adminDb,
   battlePassRateLimit,
   authenticateFirebaseUser,
+registerRaceRoutes(app, {
+  adminDb,
+  raceRateLimit,
+  authenticateFirebaseUser,
+  randomUUID,
   FieldValue,
 });
 
@@ -746,6 +804,8 @@ registerImageRoutes(app, {
   resolveFalProfile,
   boardImageJobs,
   pruneBoardImageJobs,
+  adminStorage,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
 });
 
 registerImportRoutes(app, {

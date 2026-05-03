@@ -11,6 +11,8 @@ import type { BoardConfig } from "../lib/boardBuilder";
 import { calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
 import { resolveArchetypeStyle } from "../lib/styles";
 import { sfxClick } from "../lib/sfx";
+import { useLanguage } from "../context/LanguageContext";
+import { buildCraftlinguaFlavorFields } from "../services/craftlingua";
 
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
@@ -78,6 +80,7 @@ export function EditCard() {
   const navigate = useNavigate();
   const { cards, updateCard } = useCollection();
   const { openUpgradeModal } = useTier();
+  const { linkedLanguage, profile, useCraftlingua } = useLanguage();
 
   const original = cards.find((c) => c.id === cardId) ?? null;
 
@@ -87,6 +90,20 @@ export function EditCard() {
   const [saved, setSaved] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const refreshCraftlinguaFront = async (card: CardPayload) => {
+    const front = await buildCraftlinguaFlavorFields({
+      card,
+      linkedLanguage,
+      profile,
+      useCraftlingua,
+    });
+    setPreview((current) => (
+      current && current.id === card.id
+        ? { ...current, front }
+        : current
+    ));
+  };
 
   // Initialise prompts from the original card once loaded
   useEffect(() => {
@@ -136,10 +153,11 @@ export function EditCard() {
   const handlePreview = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const previewPrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
+    const normalizedBoard = normalizeBoardConfig(boardConfig);
     const newCard = generateCard(previewPrompts);
     const preservedName = preview?.identity.name ?? original.identity.name;
     const preservedAge = preview?.identity.age ?? original.identity.age ?? "";
-    const preservedFlavorText = preview?.flavorText ?? original.flavorText;
+    const preservedFlavorText = preview?.front?.flavorTextEnglish ?? preview?.front?.flavorText ?? original.front?.flavorTextEnglish ?? original.front?.flavorText;
     const merged: CardPayload = {
       ...newCard,
       id: original.id,
@@ -152,13 +170,18 @@ export function EditCard() {
       backgroundImageUrl: original.backgroundImageUrl,
       characterImageUrl: original.characterImageUrl,
       frameImageUrl: original.frameImageUrl,
-      imageUrl: original.imageUrl,
-      discovery: original.discovery,
-      flavorText: preservedFlavorText,
-      board: boardConfig,
-      boardLoadout: calculateBoardStats(boardConfig),
+      front: {
+        ...newCard.front,
+        ...(preservedFlavorText !== undefined ? { flavorText: preservedFlavorText, flavorTextEnglish: preservedFlavorText } : {}),
+      },
+      board: {
+        ...newCard.board,
+        config: normalizedBoard,
+        loadout: calculateBoardStats(normalizedBoard),
+      },
     };
     setPreview(merged);
+    void refreshCraftlinguaFront(merged);
     setSaved(false);
   };
 
@@ -172,9 +195,25 @@ export function EditCard() {
           ...(updates.name !== undefined ? { name: updates.name } : {}),
           ...(updates.age !== undefined ? { age: updates.age } : {}),
         },
-        flavorText: updates.flavorText ?? current.flavorText,
-      };
+        front: {
+          ...current.front,
+          ...(updates.flavorText !== undefined ? { flavorText: updates.flavorText, flavorTextEnglish: updates.flavorText } : {}),
+        },
+      } satisfies CardPayload;
     });
+    if (updates.flavorText !== undefined) {
+      const next = preview
+        ? {
+            ...preview,
+            front: {
+              ...preview.front,
+              flavorText: updates.flavorText,
+              flavorTextEnglish: updates.flavorText,
+            },
+          }
+        : null;
+      if (next) void refreshCraftlinguaFront(next);
+    }
     setSaved(false);
   };
 

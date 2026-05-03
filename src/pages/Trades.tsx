@@ -42,6 +42,11 @@ export function Trades() {
   const resolvedOutboxCount = outbox.length - pendingOutboxCount;
 
   useEffect(() => {
+    setInbox([]);
+    setOutbox([]);
+    setMarket([]);
+    setSelectedLeaderboardDeckId(null);
+    setLeaderboardSuccess(false);
     if (!uid) return;
 
     setError("");

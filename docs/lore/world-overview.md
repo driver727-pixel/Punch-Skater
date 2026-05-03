@@ -1,35 +1,67 @@
 # World Overview
 
-## Locations and Governance
-The world is mostly unified under the structure of the **United Corporations of America (UCA)**, which operates from the elevated, shining city of **Airaway**. Airaway is home to a consortium of leading corporations that cooperatively manage global infrastructure. The wealthy reside in mansions here, utilizing elevators and tubes for transit. For security reasons, Airaway has outlawed all old-fashioned motorized vehicles. One can still see the occasional Recreational Vehicle, or Off-Road 4x4 vehicle from time to time.
+## The City
+The world of **Punch Skater** is mostly unified under the **United Corporations of America (UCA)**.
+Its public face is **Airaway**: a Blue Mountains sky-city suspended above Greater Western Sydney,
+where executives live in polished towers while the basin below chokes on industrial smog.
+Below that corporate canopy stretches a courier underworld built out of decayed roads,
+repurposed tunnels, rail scaffolds, and off-grid settlements.
 
-Below Airaway, the ground-level infrastructure has been naturally repurposed:
+The live theatre is now explicitly localized to Australia. Each district maps to a specific
+Australian analogue, giving the world a tighter geographic identity without changing the
+core cyberpunk courier fantasy.
 
-* **The Roads** are a dedicated courier corridor layer where route-specific events erupt: hijackings, raids, weather disasters, and other threats that only happen in transit.
-* **Underground tunnels** now serve as a vast network of shaded, intimate transit lanes, where a vibrant, close-knit community has established unique subterranean homes and hangouts.
-* **Key lower-city areas** include **Batteryville** (where protagonist Skids grew up) and **The Grid** (where his parents worked).
-* **The Nightshade (aka the Murk)** is a specific area featuring tunnels utilized by tight-knit, territorial skate crews for rapid transit and private meetings.
-* **Outside the main city complex** is a wood-based, agrarian forest settlement of **Ludites** who try to build without technology. The settlement resembles an Ewok village, featuring wooden boardwalks and tree trunks that the “Wooders” love for grinding. (They’re named that because of their insistence on exclusively using wood for their skateboard decks.)
+## Transit Doctrine
+**Esk8 (electric skateboards)** are the dominant transport system. They are cheaper than flying
+cars, better suited to failing infrastructure, and harder to lock down than conventional vehicles.
+The most valuable runner in the City is the **Skater Courier**: a person carrying critical data,
+contraband, medicine, or relics by hand.
 
-## Transportation and the Fate of Bicycles
-**Esk8 (Electric Skateboards)** became the ubiquitous transportation method worldwide, being cheaper than flying cars and ideal for the decayed roads. The most effective analog transportation system is the **Skater Courier**, who could but mostly don’t use Roller blading (because they need their feet free) and is highly sought after by competing factions.
+The City follows a simple brutal rule: **data on a thumb drive beats data on a server**.
+Digital networks are too easy to hack, intercept, poison, or surveil. Physical delivery is trust.
 
-Most Bicycles are rare, junky, and hard to own, mostly because of the **Punch Skaters**. The low-level skaters attack anyone riding a bike, typically with a broomstick in the spokes. Especially the branded **UCA Bikes**. The United Corporations of America (UCA) does provide identical white bikes to their workers and families, and these bikes are seen as a symbol of complicity to the mega corps. Key Factions and Organizations. Thus the Punch Skaters have been targeting them relentlessly. 
+## The Roads
+**The Roads** are no longer treated as a standard district. They are a corridor gameplay layer:
+Nullarbor-like straightaways, freight arteries, underpasses, and weather-beaten transit routes where
+hijackings, raids, and route events erupt between destination hubs.
 
-Information and data storage are key commodities, often trafficked via thumb drives and other off-grid storage devices to avoid hackers.
+## The Code
+- Esk8 or die — motorized vehicles are relics.
+- Never open the package.
+- UCA white bikes are enemy symbols — broomstick first.
+- The Nightshade belongs to the crews. Outsiders skate at their own risk.
+- Scratch talks; corps walk.
+- Airaway is not for you — unless you've got a contractor pass or nerve.
+- Data on a thumb drive beats data on a server.
+- A Punch Skater owes nothing to nobody. Until they owe everything.
 
-## Key Factions and Organizations
-* **Qu111s (Quills):** A guerilla journalist organization that monitors the activities of the oligarchs. They are known to protect individuals like Skids and plan to release data to incite a revolution.
-* **Ne0n(Neon) Legion:** Thieves and mercenaries for hire who steal information to sell back to the oligarchs or other political interests.
-* **Iron Curtains:** Publicly known as a Communist revolutionary insurgent group wanting to overthrow the oligarchy. They traffic in weapons and terrorism, viewing themselves as freedom fighters, and use stolen information as leverage. [Future Reveal Detail]: The Iron Curtains are later revealed to be a secret arm of the UCA, operating as a false flag revolutionary group to suck in malcontents and keep them impotent.
-* **D4rk $pider (Dark Spider):** Hackers on the dark web who mirror the Qu111’s but use data for blackmail and scams. [Mysterious Detail]: It is unknown if they are secretly funded by revolutionaries (like the Iron Curtains) or if they are simply poor people using their skills to earn money.
-* **The Asclepians:** A medical humanitarian organization funded by rich oligarchy philanthropy. They use couriers to transport special medical gear, organs, or medicine to impoverished neighborhoods, though sometimes to rich people as well. These items are highly sought after and often stolen.
-* **The Mesopotamian Society:** A University Archeological organization dedicated to tracking down and transporting rare artifacts ("Indiana Jones on an Electric Mountain Skateboard") for museums and wealthy Airaway mansions. Their work leads them to the Nightshade and secret religious cults who try to steal the items back.
-* **The Knights Technarchy:** Cyber ninja zealots who serve a massive secret society known as the **Dark Lights**. They move packages between hidden temples, and few dare to open them for fear of being disappeared. They are predicted to attack the protagonist to acquire a sacred artifact.
-* **Hermes' Squirmies:** A neutral union of couriers with a strong policy on secrecy. They will take any job, with the price adjusted for risk.
-* **United Corporation Postal Service (UCPS):** The postal service sanctioned by the Airaway governing body. They use board-riding workers and are known to hire from the Punch Skater crowds because of their knowledge of the "ropes".
+## Major Power Blocs
+- **United Corporations of America (UCA)** — the infrastructure empire in Airaway.
+- **Qu111s (Quills)** — guerrilla journalists gathering truth for release.
+- **Ne0n Legion** — transactional thieves and mercenaries.
+- **Iron Curtains** — apparent revolutionaries with a hidden UCA tether.
+- **D4rk $pider** — blackmail-minded dark-web survivalists.
+- **The Asclepians** — medical couriers moving life-saving cargo.
+- **The Mesopotamian Society** — relic hunters and artifact couriers.
+- **The Knights Technarchy** — Dark Lights zealots hunting sacred packages.
+- **Hermes' Squirmies** — neutral couriers who price risk honestly.
+- **UCPS Workers** — sanctioned board-riding postal labor.
+- **Moonrisers** — rave-born agitators looking for a spark.
+- **The Wooders** — off-grid deck purists living beyond the grid.
+- **Punch Skaters** — the bruised, bloodied bottom rung that gives the world its name.
+- **The Team** — ex-athlete operators whose coordination rivals the corps.
 
-## The Lowest Rung: Punch Skaters
-The **Punch Skater** is a coined phrase referring to the lowest rung of Esk8r (Electric Skateboarder): bruised, bloodied gutter punks. The term is both a noun and a verb, and everyone in this world generally wants to "punch them”. AKA Skater Punk, Punk Skater, Esk8r Punk, Punky Skater, Punk Esk8r, Punchy Skater, Skater Punched. 
+## Skids and the Current Story Pressure
+**Skip “Skids” Mayhew** is a Batteryville kid with roots in The Grid through his disappeared parents.
+He moves through a world where the Moonrisers, Asclepians, Quills, and artifact hunters all overlap.
+His current orbit includes:
 
-They are the most amateur, unclassed, and faction-less grunts, who probably do the stealing of sought-after medical gear. They are outlawed in Airaway and considered a nuisance whom professional skaters hate being associated with.
+- The **Moonrisers** noticing him in Nightshade.
+- The **Asclepians** using his clean record as cover.
+- The **Mesopotamian Society** and **Knights Technarchy** tying him to a sacred artifact run.
+- The **Quills** trying to turn the fallout into a city-shaking truth release.
+
+## Codex Visibility Rules
+The in-app **Codex** now exposes the macro world state publicly, while the dedicated **Factions** page
+holds discovery-gated dossiers. The canon is still shared; the difference is what the player has earned
+permission to know.

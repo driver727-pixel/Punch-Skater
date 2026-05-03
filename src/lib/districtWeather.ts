@@ -30,7 +30,7 @@ export interface DistrictWeatherSnapshot {
 export interface DistrictWeatherResponse {
   generatedAt: string;
   stale: boolean;
-  source: "live" | "cache" | "fallback";
+  source: "live" | "partial-live" | "cache" | "fallback";
   districts: DistrictWeatherSnapshot[];
 }
 

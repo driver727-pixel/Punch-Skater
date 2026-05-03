@@ -81,7 +81,8 @@ Owner-only sub-collection. Each document mirrors `CardPayload` from `src/lib/typ
   },
   flavorText: string,
   tags: string[],
-  ozzies?: number,              // $1.00–$100.00
+  ozzies?: number,              // base Ozzy value assigned at forge time; increases via missions/events
+  xp?: number,                 // accumulated gameplay XP — starts at 0, max 100,000,000
   board?: BoardConfig,
   boardLoadout?: BoardLoadout,
   boardImageUrl?: string,
@@ -243,16 +244,19 @@ Server-written battle outcomes. Participant read only.
 
 ### `leaderboard/{uid}` — LeaderboardEntry
 
-Public leaderboard. Owner write.
+Public leaderboard. Owner write. Ordered by `deckPower` DESC, `ozzies` DESC.
 
 ```
 {
   uid: string,
   displayName: string,
-  deckName: string,
+  deckName: string,             // player-facing Crew name
   cardCount: number,
-  deckPower: number,
-  ozzies: number,
+  deckPower: number,            // Deck Power = sum of all stat Points across active 6-card Crew
+  ozzies: number,               // legacy stat-based worth (backward compat)
+  crewOzzies?: number,          // sum of card Ozzy values across active 6-card Crew
+  crewXp?: number,              // sum of card XP across active 6-card Crew
+  leaderboardScore?: number,    // deckPower + crewOzzies + (crewXp / 10,000) + districtRep
   strongestStat: StatKey,
   strongestStatTotal: number,
   synergyBonusPct: number,
@@ -260,6 +264,8 @@ Public leaderboard. Owner write.
   updatedAt: string,
 }
 ```
+
+See `docs/PROGRESSION.md` for the full leaderboard scoring formula.
 
 ### `factionImages/{factionKey}`
 
@@ -291,7 +297,6 @@ The following collections are defined in `firestore.rules` as read-only stubs
 | Collection | Purpose | Owner |
 |---|---|---|
 | `dailyStreaks/{uid}` | Daily login streak tracking | Gamma |
-| `missions/{missionId}` | Per-user mission / quest progress | Gamma |
 | `battlePass/{uid}` | Battle pass tier + XP state | Gamma |
 | `crews/{crewId}` | Player crew / guild membership | Charlie |
 | `rankedSeasons/{seasonId}` | Ranked season config + standings | Charlie |
@@ -299,3 +304,47 @@ The following collections are defined in `firestore.rules` as read-only stubs
 
 Document shapes for these collections will be defined in `src/lib/sharedTypes.ts`
 as implementation progresses.
+
+---
+
+## Missions Collection (Sprint 2)
+
+### `missions/{missionId}` — Mission
+
+Doc ID format: `{uid}_{definitionId}` (e.g. `abc123_grid-trace`).
+
+Owner-only read. All writes are server-only.
+
+```
+{
+  id: string,                  // same as doc ID
+  uid: string,                 // owner uid
+  system: "mission_board",
+  schemaVersion: 2,
+  definitionId: string,        // stable mission template key
+  sortOrder: number,
+  title: string,
+  tagline: string,
+  description: string,
+  district: District,          // contract destination / district gate
+  rewardXp: number,
+  rewardOzzies: number,
+  requirements: MissionRequirement[],
+  status: "active" | "completed" | "expired",
+  progress: number,            // 0 until cleared, 1 after success
+  target: number,              // currently 1 for route contracts
+  createdAt: string,           // ISO 8601
+  updatedAt: string,           // ISO 8601
+  completedAt?: string,        // ISO 8601
+  selectedDeckId?: string,     // last deck used for this mission
+  selectedDeckName?: string,
+  lastRunAt?: string,          // ISO 8601
+  lastRunSucceeded?: boolean,
+  lastRunSummary?: string,
+  lastRunFailureReasons?: string[],
+}
+```
+
+The server seeds one board per user, validates chosen decks against mission requirements,
+and writes completion / failure state back into these documents. Mission rewards are persisted
+onto `userProfiles/{uid}.missionXp` and `userProfiles/{uid}.missionOzzies`.

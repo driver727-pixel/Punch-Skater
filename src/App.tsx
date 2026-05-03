@@ -1,6 +1,6 @@
-import { Component, ReactNode, lazy, Suspense, useEffect } from "react";
+import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { useTier } from "./context/TierContext";
@@ -31,9 +31,23 @@ function ThemeApplier() {
   return null;
 }
 
+function PlayerRewardBanner() {
+  const { playerRewards } = useAuth();
+  if (!playerRewards) return null;
+
+  const message = [
+    playerRewards.signupBonusGranted ? "🎁 Rare signup bonus added to your Collection." : "",
+    playerRewards.dailyReward?.claimed
+      ? `🔥 ${playerRewards.dailyReward?.currentStreak}-day streak claimed for +${playerRewards.dailyReward?.rewardXp} XP and +${playerRewards.dailyReward?.rewardOzzies} Ozzies.`
+      : "",
+  ].filter(Boolean).join(" ");
+
+  if (!message) return null;
+  return <div className="player-reward-banner">{message}</div>;
+}
+
 const CardForge  = lazy(() => import("./pages/CardForge").then(m => ({ default: m.CardForge })));
 const Collection = lazy(() => import("./pages/Collection").then(m => ({ default: m.Collection })));
-const Mission = lazy(() => import("./pages/Mission").then(m => ({ default: m.Mission })));
 const EditCard   = lazy(() => import("./pages/EditCard").then(m => ({ default: m.EditCard })));
 const Trades     = lazy(() => import("./pages/Trades").then(m => ({ default: m.Trades })));
 const Login      = lazy(() => import("./pages/Login").then(m => ({ default: m.Login })));
@@ -47,13 +61,19 @@ const AccountSettings = lazy(() => import("./pages/AccountSettings").then(m => (
 const Admin           = lazy(() => import("./pages/Admin").then(m => ({ default: m.Admin })));
 const AssetGenerator  = lazy(() => import("./pages/AssetGenerator").then(m => ({ default: m.AssetGenerator })));
 const BattleArena     = lazy(() => import("./pages/BattleArena").then(m => ({ default: m.BattleArena })));
+const RaceTrack       = lazy(() => import("./pages/RaceTrack").then(m => ({ default: m.RaceTrack })));
 const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ default: m.FramePreview })));
+const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
 
   static getDerivedStateFromError() {
     return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[ErrorBoundary] Unhandled render error:", error, info.componentStack);
   }
 
   render() {
@@ -69,6 +89,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+
 function App() {
   return (
     <BrowserRouter>
@@ -82,6 +103,7 @@ function App() {
                 {!isFirebaseConfigured && (
                   <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                 )}
+                <PlayerRewardBanner />
                 <main className="main">
                   <Suspense fallback={<div className="page-loading">Loading…</div>}>
                     <Routes>
@@ -100,9 +122,6 @@ function App() {
                         <ProtectedRoute><Collection /></ProtectedRoute>
                       } />
                       <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
-                      <Route path="/mission" element={
-                        <ProtectedRoute><Mission /></ProtectedRoute>
-                      } />
                       <Route path="/edit/:cardId" element={
                         <ProtectedRoute><EditCard /></ProtectedRoute>
                       } />
@@ -111,6 +130,12 @@ function App() {
                       } />
                       <Route path="/arena" element={
                         <ProtectedRoute><BattleArena /></ProtectedRoute>
+                      } />
+                      <Route path="/race/:raceId" element={
+                        <ProtectedRoute><RaceTrack /></ProtectedRoute>
+                      } />
+                      <Route path="/missions" element={
+                        <ProtectedRoute><Missions /></ProtectedRoute>
                       } />
                       <Route path="/admin" element={
                         <AdminRoute><Admin /></AdminRoute>

@@ -96,6 +96,33 @@ test('normalizeBoardReferenceUrls rejects non-canonical origins and paths', () =
   );
 });
 
+test('normalizeBoardReferenceUrls accepts motor URL as fourth reference (SlimStealth battery case)', () => {
+  const urls = normalizeBoardReferenceUrls([
+    'https://punchskater.com/assets/boards/deck/street.png',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png',
+  ]);
+
+  assert.deepEqual(urls, [
+    'https://punchskater.com/assets/boards/deck/street.png',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png',
+  ]);
+});
+
+test('normalizeBoardReferenceUrls rejects fewer than four URLs', () => {
+  assert.equal(
+    normalizeBoardReferenceUrls([
+      'https://punchskater.com/assets/boards/deck/street.png',
+      'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+      'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    ]),
+    null,
+  );
+});
+
 test('readFalRequestConfig normalizes env-backed Fal profiles and warns on invalid scales', () => {
   const warnings = [];
   const config = readFalRequestConfig({

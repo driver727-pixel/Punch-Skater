@@ -1,9 +1,11 @@
 import { useMemo } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { useForgeGeneration } from "./useForgeGeneration";
 import { useForgeNavigation } from "./useForgeNavigation";
 import { useForgeSave } from "./useForgeSave";
 
 export function useCardForgeController() {
+  const { user } = useAuth();
   const forge = useForgeGeneration();
   const save = useForgeSave({
     characterBlend: forge.characterBlend,
@@ -11,6 +13,8 @@ export function useCardForgeController() {
     layers: forge.layers,
     openUpgradeModal: forge.openUpgradeModal,
     tier: forge.tier,
+    uid: user?.uid ?? null,
+    userEmail: user?.email ?? null,
   });
   const navigation = useForgeNavigation({
     onBeforeCollectionNavigation: save.clearSavedCard,
@@ -20,11 +24,16 @@ export function useCardForgeController() {
   return useMemo(() => ({
     boardConfig: forge.boardConfig,
     boardImageLoading: forge.boardImageLoading,
+    boardLayerOrder: forge.boardLayerOrder,
+    boardPlacement: forge.boardPlacement,
     canForge: forge.canForge,
+    characterPlacement: forge.characterPlacement,
     characterBlend: forge.characterBlend,
+    clearSavedCard: save.clearSavedCard,
     closeWelcome: navigation.closeWelcome,
     downloading: save.downloading,
     forging: forge.forging,
+    forgeClassOptions: forge.forgeClassOptions,
     freeCardUsed: forge.freeCardUsed,
     generated: forge.generated,
     generateCredits: forge.generateCredits,
@@ -58,7 +67,14 @@ export function useCardForgeController() {
     saving: save.saving,
     setArchetype: forge.setArchetype,
     setBoardConfig: forge.setBoardConfig,
+    setBoardLayerOrder: forge.setBoardLayerOrder,
+    setBoardPlacement: forge.setBoardPlacement,
+    setBoardRotation: forge.setBoardRotation,
+    setBoardScale: forge.setBoardScale,
+    setCharacterPlacement: forge.setCharacterPlacement,
     setCharacterBlend: forge.setCharacterBlend,
+    setCharacterRotation: forge.setCharacterRotation,
+    setCharacterScale: forge.setCharacterScale,
     setPrompt: forge.setPrompt,
     showWelcome: navigation.showWelcome,
     tier: forge.tier,

@@ -598,3 +598,49 @@ export const FACTION_LORE: FactionLoreEntry[] = [
       "out how to buy them — yet.",
   },
 ];
+
+export interface LoreUpdateEntry {
+  changedAt: string;
+  title: string;
+  summary: string;
+  highlights: string[];
+}
+
+export const LORE_UPDATES: LoreUpdateEntry[] = [
+  {
+    changedAt: "2026-04",
+    title: "Australian theatre dossiers consolidated",
+    summary:
+      "The Codex now treats every live district as part of a localized Australian theatre, " +
+      "including explicit analogues, atmosphere notes, and corridor framing for The Roads.",
+    highlights: [
+      "Airaway anchors to the Blue Mountains above Greater Western Sydney.",
+      "The Roads are a courier corridor layer rather than a forge district or mission hub.",
+      "Electropolis remains a classified future reveal tied to the Fuzz.",
+    ],
+  },
+  {
+    changedAt: "2026-04",
+    title: "Faction intel moved behind discoveries",
+    summary:
+      "Faction names remain part of the world dossier, but their full field reports now stay " +
+      "hidden until a forged combination surfaces the crew on the dedicated Factions page.",
+    highlights: [
+      "The Codex tracks the wider power blocs without exposing every dossier up front.",
+      "Card Forge discoveries unlock faction-specific lore in a separate Factions tab.",
+      "Punch Skaters, Moonrisers, and other crews stay in the canon even when undiscovered.",
+    ],
+  },
+  {
+    changedAt: "2026-04",
+    title: "Courier schools aligned with live forge archetypes",
+    summary:
+      "Archetype references were refreshed to match the active forge taxonomy, so the Codex, " +
+      "generator, and design docs now all describe the same ten courier schools.",
+    highlights: [
+      "The Knights Technarchy, Qu111s, and Iron Curtains remain core playable archetypes.",
+      "UCPS and The Team stay in rotation as sanctioned and coordinated courier schools.",
+      "Descriptions now reflect Skids, the artifact run, and the current faction web.",
+    ],
+  },
+];

@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import type { ReactNode } from "react";
-import type { CraftlinguaEnvelope, CraftlinguaWord } from "../lib/types";
+import type { CraftlinguaEnvelope, CraftlinguaLink, CraftlinguaWord } from "../lib/types";
 import { parseCraftlinguaProfile } from "../lib/languageIngestion";
+import { useAuth } from "./AuthContext";
 
 const LS_KEY        = "ps_language_profile";
 const LS_ENABLED_KEY = "ps_craftlingua_enabled";
@@ -40,6 +41,8 @@ interface LanguageContextValue {
   clearProfile: () => void;
   /** Toggle whether CraftLingua vocabulary is applied to card generation. */
   setUseCraftlingua: (enabled: boolean) => void;
+  /** Account-linked CraftLingua district language, if one is saved. */
+  linkedLanguage: CraftlinguaLink | null;
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
@@ -49,38 +52,64 @@ const LanguageContext = createContext<LanguageContextValue>({
   loadProfile: () => {},
   clearProfile: () => {},
   setUseCraftlingua: () => {},
+  linkedLanguage: null,
 });
 
 // ── Provider ───────────────────────────────────────────────────────────────────
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile]             = useState<CraftlinguaEnvelope | null>(loadFromStorage);
-  const [useCraftlingua, setEnabled]      = useState<boolean>(loadEnabledFromStorage);
+  const {
+    user,
+    userProfile,
+    saveCraftlinguaProfile,
+    setCraftlinguaEnabled,
+  } = useAuth();
+  const [guestProfile, setGuestProfile] = useState<CraftlinguaEnvelope | null>(loadFromStorage);
+  const [guestEnabled, setGuestEnabled] = useState<boolean>(loadEnabledFromStorage);
+
+  const profile = user ? (userProfile?.craftlinguaProfile ?? null) : guestProfile;
+  const useCraftlingua = user ? (userProfile?.craftlinguaEnabled ?? false) : guestEnabled;
+  const linkedLanguage = user ? (userProfile?.craftlinguaLink ?? null) : null;
 
   const vocabulary: CraftlinguaWord[] = profile?.vocabulary ?? [];
 
   const loadProfile = useCallback((p: CraftlinguaEnvelope) => {
-    setProfile(p);
+    if (user) {
+      void saveCraftlinguaProfile(p).catch(console.error);
+      return;
+    }
+    setGuestProfile(p);
     try {
       localStorage.setItem(LS_KEY, JSON.stringify(p));
     } catch {
       // Silently ignore storage errors (e.g. private browsing quota).
     }
-  }, []);
+  }, [saveCraftlinguaProfile, user]);
 
   const clearProfile = useCallback(() => {
-    setProfile(null);
-    setEnabled(false);
+    if (user) {
+      void Promise.all([
+        saveCraftlinguaProfile(null),
+        setCraftlinguaEnabled(false),
+      ]).catch(console.error);
+      return;
+    }
+    setGuestProfile(null);
+    setGuestEnabled(false);
     try {
       localStorage.removeItem(LS_KEY);
       localStorage.removeItem(LS_ENABLED_KEY);
     } catch {
       // Silently ignore.
     }
-  }, []);
+  }, [saveCraftlinguaProfile, setCraftlinguaEnabled, user]);
 
   const setUseCraftlingua = useCallback((enabled: boolean) => {
-    setEnabled(enabled);
+    if (user) {
+      void setCraftlinguaEnabled(enabled).catch(console.error);
+      return;
+    }
+    setGuestEnabled(enabled);
     try {
       if (enabled) {
         localStorage.setItem(LS_ENABLED_KEY, "true");
@@ -90,11 +119,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch {
       // Silently ignore.
     }
-  }, []);
+  }, [setCraftlinguaEnabled, user]);
 
   return (
     <LanguageContext.Provider
-      value={{ profile, vocabulary, useCraftlingua, loadProfile, clearProfile, setUseCraftlingua }}
+      value={{ profile, vocabulary, useCraftlingua, loadProfile, clearProfile, setUseCraftlingua, linkedLanguage }}
     >
       {children}
     </LanguageContext.Provider>

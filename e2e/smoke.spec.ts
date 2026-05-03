@@ -301,6 +301,9 @@ test.describe('Lore page', () => {
   test('shows the district map and arterial routes', async ({ page }) => {
     await page.goto('/lore');
     await expect(page.getByRole('heading', { name: /australia theater map/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /courier archetypes/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /recent codex revisions/i })).toBeVisible();
+    await expect(page.getByText(/australian theatre dossiers consolidated/i)).toBeVisible();
     await page.getByRole('button', { name: /expand australia overmap/i }).click();
     await expect(page.getByTestId('australia-overmap')).toBeVisible();
     await expect(page.getByTestId('district-node-airaway')).toContainText(/airaway/i);

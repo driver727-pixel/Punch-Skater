@@ -3,7 +3,6 @@ import type { CSSProperties, DragEvent as ReactDragEvent, PointerEvent as ReactP
 import type { DeckPayload, CardPayload } from "../lib/types";
 import { useDecks, DECK_CARD_LIMIT } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
-import { useBattle, MIN_BATTLE_CARDS } from "../hooks/useBattle";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { DeckStatsPanel } from "../components/DeckStatsPanel";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
@@ -42,10 +41,9 @@ function exceedsMovementThreshold(startX: number, startY: number, currentX: numb
 }
 
 export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
-  const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck, moveDeck } = useDecks();
+  const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck, moveDeck, setPrimaryDeck, setChallengerCard } = useDecks();
   const { cards } = useCollection();
   const { tier, openUpgradeModal } = useTier();
-  const { readyDeck, unreadyDeck, myArenaEntry } = useBattle();
   const tierData = TIERS[tier];
 
   const [activeDeck, setActiveDeck] = useState<DeckPayload | null>(null);
@@ -347,7 +345,7 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                  >
                    <div className="deck-item-preview" aria-hidden="true">
                      {deck.cards.length > 0 ? (
-                       deck.cards.slice(0, 5).map((card, previewIdx, previewCards) => {
+                        deck.cards.slice(0, DECK_CARD_LIMIT).map((card, previewIdx, previewCards) => {
                          const spread = previewIdx - (previewCards.length - 1) / 2;
                          const previewStyle = {
                            "--deck-preview-offset": `${spread * 18}px`,
@@ -388,7 +386,12 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                        />
                      ) : (
                        <div className="deck-item-info">
-                         <span className="deck-name">{deck.name}</span>
+                         <span className="deck-name">
+                          {deck.name}
+                          {deck.isPrimary && (
+                            <span className="deck-primary-badge" title="Primary deck — challengeable in the Race Arena">🌟</span>
+                          )}
+                        </span>
                          <span className="deck-power">
                            <span aria-hidden="true">⚡</span> {deckTotalPowerById[deck.id] ?? 0} Power
                          </span>
@@ -398,6 +401,11 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                    </div>
 
                    <div className="deck-actions" onClick={(e) => e.stopPropagation()}>
+                     <button
+                       className={`icon-btn${deck.isPrimary ? " icon-btn--active" : ""}`}
+                       title={deck.isPrimary ? "Primary deck (cards are challengeable in the Race Arena)" : "Set as Primary deck"}
+                       onClick={() => { sfxClick(); setPrimaryDeck(deck.id); }}
+                     >🌟</button>
                      <button className="icon-btn" title="Rename" onClick={() => { sfxClick(); handleStartRename(deck); }}>✎</button>
                      <button className="icon-btn" title="Export" onClick={() => { sfxClick(); handleExportDeck(deck); }}>⬇</button>
                      <button className="icon-btn icon-btn--danger" title="Delete" onClick={() => {
@@ -427,22 +435,6 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                 <h2>{activeDeck.name}</h2>
                 <span className="deck-count">{activeDeck.cards.length}/{DECK_CARD_LIMIT} cards</span>
                 <button className="btn-outline" onClick={() => { sfxClick(); handleExportDeck(activeDeck); }}>Export JSON</button>
-                {activeDeck.cards.length >= MIN_BATTLE_CARDS && (
-                  <label className="battle-ready-toggle" title="Toggle Battle Ready status for this deck">
-                    <input
-                      type="checkbox"
-                      checked={myArenaEntry?.deckId === activeDeck.id}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          readyDeck(activeDeck);
-                        } else {
-                          unreadyDeck();
-                        }
-                      }}
-                    />
-                    <span className="battle-ready-label">⚔️ Battle Ready</span>
-                  </label>
-                )}
               </div>
 
               {/* First-deck initiation banner */}
@@ -500,16 +492,33 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                            <div className="deck-slot-card">
                              <div className="deck-slot-art">
                                <CardThumbnail card={card} width={DECK_SLOT_CARD_WIDTH} height={DECK_SLOT_CARD_HEIGHT} />
+                               {activeDeck.challengerCardId === card.id && (
+                                 <span className="deck-slot-challenger-badge" title="Challenger — represents you on the Race Arena starting grid">🏁</span>
+                               )}
                              </div>
                              <div className="deck-slot-info">
                                <span className="card-name">{card.identity.name}</span>
                               <span className="card-sub">{getDisplayedArchetype(card)}</span>
-                              <button
-                                className="btn-danger btn-sm"
-                                onClick={() => handleRemoveCard(card.id)}
-                              >
-                                Remove
-                              </button>
+                              <div className="deck-slot-actions">
+                                <button
+                                  className={activeDeck.challengerCardId === card.id ? "btn-primary btn-sm" : "btn-outline btn-sm"}
+                                  title={activeDeck.challengerCardId === card.id
+                                    ? "This card is your Challenger. Click to clear."
+                                    : "Make this card your Challenger for the Race Arena"}
+                                  onClick={() => {
+                                    sfxClick();
+                                    setChallengerCard(activeDeck.id, activeDeck.challengerCardId === card.id ? null : card.id);
+                                  }}
+                                >
+                                  {activeDeck.challengerCardId === card.id ? "🏁 Challenger" : "🏁 Make Challenger"}
+                                </button>
+                                <button
+                                  className="btn-danger btn-sm"
+                                  onClick={() => handleRemoveCard(card.id)}
+                                >
+                                  Remove
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ) : (

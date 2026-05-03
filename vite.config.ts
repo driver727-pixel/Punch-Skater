@@ -56,6 +56,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt', 'LICENSE.txt', 'pwa-192x192.png', 'pwa-512x512.png'],
       workbox: {
+        skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,svg,webp,webmanifest,woff2}'],

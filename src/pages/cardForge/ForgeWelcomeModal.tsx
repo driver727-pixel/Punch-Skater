@@ -31,15 +31,15 @@ export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
         <div className="forge-welcome__grid">
           <div className="forge-welcome__item">
             <h3>What</h3>
-            <p>Create Punch Skater cards, upgrade your squad with a Master card, and assemble a six-card deck built for missions, battles, and trades.</p>
+            <p>Forge Punch Skater cards, claim a Rare signup bonus, and build toward stronger classes as your crew earns XP and Ozzies.</p>
           </div>
           <div className="forge-welcome__item">
             <h3>How</h3>
-            <p>Start by forging 5 Punch Skater class cards and 1 Master class card, then tune their look, district, and board loadout before you lock them into your lineup.</p>
+            <p>Start with Punch Skater class cards only, then unlock Apprentice, Master, and Rare forging over time. Legendary cards stay off the table.</p>
           </div>
           <div className="forge-welcome__item">
             <h3>Why</h3>
-            <p>Earn points and power-ups on Missions, bring your best deck into the Battle Arena, and trade for the cards that complete your next big strategy.</p>
+            <p>Build the right deck for each district mission, bring your best lineup into the Battle Arena, and trade for the cards that complete your next big strategy.</p>
           </div>
         </div>
         <div className="forge-welcome__actions">

@@ -60,6 +60,7 @@ export function useForgeSave({
       sfxSuccess();
       setIsFirstCard(firstCard);
       setSavedCard(cardToSave);
+
     } catch (error) {
       console.error("Failed to save card:", error);
       sfxError();
@@ -76,11 +77,17 @@ export function useForgeSave({
       await downloadCardAsJpg(
         generated.identity.name,
         generated.prompts.rarity,
-        layers.backgroundPrintUrl ?? layers.backgroundUrl,
+        layers.backgroundUrl,
         layers.characterUrl,
         layers.frameUrl,
         generated.frameSeed,
+        generated.visuals.accentColor,
         characterBlend,
+        generated.board.imageUrl,
+        generated.characterSeed,
+        generated.board.placement,
+        generated.characterPlacement,
+        generated.board.layerOrder,
       );
     } catch (error) {
       console.error("Card JPG download failed:", error);

@@ -114,8 +114,13 @@ export function sanitizeFalRequestConfig(candidate) {
   return Object.keys(config).length ? config : null;
 }
 
+// Single source of truth for the number of board reference image URLs that
+// /api/generate-board-image requires.  Changing this constant is the one
+// place to adjust the contract; don't hardcode 4 elsewhere.
+export const BOARD_IMAGE_REQUIRED_URL_COUNT = 4;
+
 export function normalizeBoardReferenceUrls(value, publicOrigin = 'https://punchskater.com') {
-  if (!Array.isArray(value) || value.length !== 4) return null;
+  if (!Array.isArray(value) || value.length !== BOARD_IMAGE_REQUIRED_URL_COUNT) return null;
 
   const urls = [];
   for (const entry of value) {

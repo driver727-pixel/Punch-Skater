@@ -124,22 +124,15 @@ export function applyFactionBranding(
 
   return {
     ...card,
-    flavorText: branding
-      ? branding.flavorText
-      : `Running packages through ${card.prompts.district}.`,
-    tags: Array.from(
-      new Set([
-        ...card.tags.filter((tag) => tag !== card.prompts.archetype),
-        displayArchetype,
-        ...(revealedFaction ? [revealedFaction, "Secret Faction"] : []),
-      ]),
-    ),
-    discovery: {
-      displayArchetype,
-      isSecretReveal: !!revealedFaction,
-      ...(revealedFaction != null ? { revealedFaction } : {}),
-      ...(branding ? { logoMark: branding.logoMark } : {}),
-      ...(revealedFaction != null ? { unlockedAt: new Date().toISOString() } : {}),
+    front: {
+      ...card.front,
+      flavorText: branding
+        ? branding.flavorText
+        : `Running packages through ${card.prompts.district}.`,
+    },
+    role: {
+      ...card.role,
+      label: displayArchetype,
     },
   };
 }

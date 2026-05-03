@@ -13,32 +13,37 @@
  * set for each context.
  */
 
-import type { CardPayload } from "../lib/types";
+import { useCallback, useRef, useState } from "react";
+import type { PointerEvent } from "react";
+import type { BoardPlacement, CardPayload, CharacterPlacement, LayerPlacement } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
 import { StatBar } from "./StatBar";
-import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
+import { getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
+import stamp360Gif from "../../stamp360.gif";
+import { InsetNeonTube } from "./InsetNeonTube";
+import { hasBuiltInFrameDesignator, RARITY_COLORS } from "../lib/cardRarityVisuals";
 import {
   getFrameBlendMode,
+  getStaticFrameBackUrl,
   shouldInsetBackgroundForFrame,
   shouldRenderSvgFrame,
 } from "../services/staticAssets";
-
-// ── Module-level typed constant to avoid repeated inline type assertions ──────
-
-type StatEntry = [keyof CardPayload["stats"], { label: string; tooltip: string }];
-const STAT_ENTRIES = Object.entries(CARD_STAT_LABELS) as StatEntry[];
+import { computeFocalCrop } from "../lib/focalCrop";
+import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
+import {
+  buildBoardPlacementStyle,
+  buildCharacterPlacementStyle,
+  CHARACTER_LAYER_Z_INDEX,
+  getBoardLayerZIndex,
+  normalizeBoardPlacement,
+  normalizeCharacterPlacement,
+  resolveBoardLayerOrder,
+} from "../lib/boardPlacement";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
 
 // ── Rarity colour map used on the card-back header ───────────────────────────
-
-const RARITY_COLORS: Record<string, string> = {
-  "Punch Skater": "#aa9988",
-  Apprentice: "#44ddaa",
-  Master: "#cc44ff",
-  Rare: "#4488ff",
-  Legendary: "#ffaa00",
-};
 
 export interface SkaterCardFaceProps {
   /** The fully generated card to render. */
@@ -56,6 +61,8 @@ export interface SkaterCardFaceProps {
   fallbackHeight?: number;
   /** When true, name/bio/age (front) and stats (back) become editable inputs. */
   editable?: boolean;
+  onBoardPlacementChange?: (placement: BoardPlacement) => void;
+  onCharacterPlacementChange?: (placement: CharacterPlacement) => void;
   onNameChange?: (value: string) => void;
   onBioChange?: (value: string) => void;
   onAgeChange?: (value: string) => void;
@@ -66,6 +73,135 @@ export interface SkaterCardFaceProps {
    * generateGouacheBoard() is in flight.
    */
   boardImageLoading?: boolean;
+}
+
+interface PointerPoint {
+  x: number;
+  y: number;
+}
+
+interface PlacementGestureOptions<TPlacement extends LayerPlacement> {
+  editable: boolean;
+  placement: TPlacement;
+  normalizePlacement: (placement: Partial<TPlacement>) => TPlacement;
+  onPlacementChange?: (placement: TPlacement) => void;
+}
+
+function getPointerCenter(points: PointerPoint[]): PointerPoint {
+  if (points.length === 0) return { x: 0, y: 0 };
+  const total = points.reduce((acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }), { x: 0, y: 0 });
+  return { x: total.x / points.length, y: total.y / points.length };
+}
+
+function getPointerDistance(first: PointerPoint, second: PointerPoint): number {
+  return Math.hypot(second.x - first.x, second.y - first.y);
+}
+
+function getPointerAngle(first: PointerPoint, second: PointerPoint): number {
+  return Math.atan2(second.y - first.y, second.x - first.x) * (180 / Math.PI);
+}
+
+function normalizeAngleDeltaTo180Range(angle: number): number {
+  if (angle > 180) return angle - 360;
+  if (angle < -180) return angle + 360;
+  return angle;
+}
+
+function usePlacementGesture<TPlacement extends LayerPlacement>({
+  editable,
+  placement,
+  normalizePlacement,
+  onPlacementChange,
+}: PlacementGestureOptions<TPlacement>) {
+  const activePointersRef = useRef(new Map<number, PointerPoint>());
+  const currentPlacementRef = useRef(placement);
+  const baselineRef = useRef<{
+    placement: TPlacement;
+    center: PointerPoint;
+    distance: number;
+    angle: number;
+  } | null>(null);
+  currentPlacementRef.current = placement;
+
+  const resetBaseline = useCallback(() => {
+    const points = [...activePointersRef.current.values()];
+    if (points.length === 0) {
+      baselineRef.current = null;
+      return;
+    }
+
+    const center = getPointerCenter(points);
+    const [firstPoint, secondPoint] = points;
+    baselineRef.current = {
+      placement: currentPlacementRef.current,
+      center,
+      distance: points.length >= 2 ? getPointerDistance(firstPoint, secondPoint) : 0,
+      angle: points.length >= 2 ? getPointerAngle(firstPoint, secondPoint) : currentPlacementRef.current.rotationDeg,
+    };
+  }, []);
+
+  const handlePointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
+    if (!editable || !onPlacementChange || (event.pointerType === "mouse" && event.button !== 0)) {
+      return;
+    }
+
+    activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    resetBaseline();
+  }, [editable, onPlacementChange, resetBaseline]);
+
+  const handlePointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
+    if (!editable || !onPlacementChange || !activePointersRef.current.has(event.pointerId)) {
+      return;
+    }
+
+    activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const points = [...activePointersRef.current.values()];
+    const baseline = baselineRef.current;
+    const container = event.currentTarget.parentElement;
+    if (!baseline || !container || points.length === 0) return;
+
+    const rect = container.getBoundingClientRect();
+    const center = getPointerCenter(points);
+    const deltaXPercent = ((center.x - baseline.center.x) / rect.width) * 100;
+    const deltaYPercent = ((center.y - baseline.center.y) / rect.height) * 100;
+    const nextPlacement: Partial<TPlacement> = {
+      ...baseline.placement,
+      xPercent: baseline.placement.xPercent + deltaXPercent,
+      yPercent: baseline.placement.yPercent + deltaYPercent,
+    };
+
+    if (points.length >= 2) {
+      const [firstPoint, secondPoint] = points;
+      const distance = getPointerDistance(firstPoint, secondPoint);
+      const angle = getPointerAngle(firstPoint, secondPoint);
+      const scaleRatio = baseline.distance > 0 ? distance / baseline.distance : 1;
+      nextPlacement.scale = baseline.placement.scale * scaleRatio;
+      nextPlacement.rotationDeg = baseline.placement.rotationDeg + normalizeAngleDeltaTo180Range(angle - baseline.angle);
+    }
+
+    event.preventDefault();
+    const normalizedPlacement = normalizePlacement(nextPlacement);
+    currentPlacementRef.current = normalizedPlacement;
+    onPlacementChange(normalizedPlacement);
+  }, [editable, normalizePlacement, onPlacementChange]);
+
+  const handlePointerUp = useCallback((event: PointerEvent<HTMLElement>) => {
+    if (!activePointersRef.current.has(event.pointerId)) return;
+
+    activePointersRef.current.delete(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    resetBaseline();
+  }, [resetBaseline]);
+
+  return {
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+  };
 }
 
 // ── Front face ────────────────────────────────────────────────────────────────
@@ -80,39 +216,121 @@ function CardFront({
   fallbackHeight = 264,
   editable = false,
   onNameChange,
-  onBioChange,
-  onAgeChange,
-}: Omit<SkaterCardFaceProps, "face" | "onStatChange">) {
+  onBoardPlacementChange,
+  onCharacterPlacementChange,
+}: Omit<SkaterCardFaceProps, "face" | "onStatChange" | "onBioChange" | "onAgeChange">) {
+  const [boardImageFailed, setBoardImageFailed] = useState(false);
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
-  const revealedFaction = card.discovery?.revealedFaction;
   const bgClass = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "print-art-layer print-art-layer--bg print-art-layer--bg-inset"
     : "print-art-layer print-art-layer--bg";
   const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
+  const hasBackFrame = getStaticFrameBackUrl(card.prompts.rarity) != null;
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
+  const frameLayerClass = hasBackFrame
+    ? "print-art-layer print-art-layer--frame print-art-layer--frame-wrap"
+    : "print-art-layer print-art-layer--frame";
+  const boardPoseScene = resolveBoardPoseScene(card.characterSeed);
+  const boardLayerOrder = resolveBoardLayerOrder(card.board.layerOrder);
+  const showExactBoardLayer = Boolean(card.board.imageUrl && (backgroundImageUrl || characterImageUrl));
+  const boardPlacement = normalizeBoardPlacement(boardPoseScene.key, card.board.placement);
+  const boardPlacementStyle = {
+    ...buildBoardPlacementStyle(boardPoseScene.key, boardPlacement),
+    zIndex: getBoardLayerZIndex(boardLayerOrder),
+  };
+  const characterPlacement = normalizeCharacterPlacement(card.characterPlacement);
+  const characterPlacementStyle = {
+    ...buildCharacterPlacementStyle(characterPlacement),
+    opacity: characterBlend,
+    zIndex: CHARACTER_LAYER_Z_INDEX,
+  };
+  const boardPlacementChangeHandler = editable ? onBoardPlacementChange : undefined;
+  const characterPlacementChangeHandler = editable ? onCharacterPlacementChange : undefined;
+  const boardGesture = usePlacementGesture({
+    editable,
+    placement: boardPlacement,
+    normalizePlacement: (nextPlacement) => normalizeBoardPlacement(boardPoseScene.key, nextPlacement),
+    onPlacementChange: boardPlacementChangeHandler,
+  });
+  const characterGesture = usePlacementGesture({
+    editable,
+    placement: characterPlacement,
+    normalizePlacement: normalizeCharacterPlacement,
+    onPlacementChange: characterPlacementChangeHandler,
+  });
+
+  // Focal-crop background when the rarity has a dual-face PNG frame.
+  const bgStyle: React.CSSProperties | undefined = (backgroundImageUrl && hasBackFrame)
+    ? {
+        objectFit: "cover",
+        objectPosition: computeFocalCrop(card.frameSeed, "front").objectPosition,
+      }
+    : undefined;
+
+  const nameField = editable ? (
+    <input
+      className="card-name-input"
+      value={card.identity.name}
+      onChange={(e) => onNameChange?.(e.target.value)}
+      placeholder="Name"
+    />
+  ) : (
+    <span className="print-front-name">{card.identity.name}</span>
+  );
 
   return (
     <>
       {hasAnyLayer ? (
         <div className="print-art-composite">
           {backgroundImageUrl && (
-            <img src={backgroundImageUrl} alt="background" className={bgClass} />
+            <img src={backgroundImageUrl} alt="background" className={bgClass} style={bgStyle} />
+          )}
+          <InsetNeonTube rarity={card.prompts.rarity} accentColor={card.visuals.accentColor} />
+          {showExactBoardLayer && card.board.imageUrl && !boardImageFailed && (
+            <div
+              className={`print-art-layer print-art-layer--board-exact${boardPlacementChangeHandler ? " print-art-layer--board-editable" : ""}`}
+              style={boardPlacementStyle}
+              role={boardPlacementChangeHandler ? "img" : undefined}
+              aria-label={boardPlacementChangeHandler ? "Editable skateboard. Drag to reposition, or pinch and rotate on touch devices." : undefined}
+              onPointerDown={boardGesture.handlePointerDown}
+              onPointerMove={boardGesture.handlePointerMove}
+              onPointerUp={boardGesture.handlePointerUp}
+              onPointerCancel={boardGesture.handlePointerUp}
+            >
+              <img
+                src={card.board.imageUrl}
+                alt="exact generated skateboard"
+                className="print-art-layer--board-image"
+                draggable={false}
+                onError={() => setBoardImageFailed(true)}
+              />
+            </div>
           )}
           {characterImageUrl && (
-            <img
-              src={characterImageUrl}
-              alt="character"
-              className="print-art-layer print-art-layer--char"
-              style={characterBlend !== undefined ? { opacity: characterBlend } : undefined}
-            />
+            <div
+              className={`print-art-layer print-art-layer--char${characterPlacementChangeHandler ? " print-art-layer--char-editable" : ""}`}
+              style={characterPlacementStyle}
+              role={characterPlacementChangeHandler ? "img" : undefined}
+              aria-label={characterPlacementChangeHandler ? "Editable character. Drag to reposition, or pinch and rotate on touch devices." : undefined}
+              onPointerDown={characterGesture.handlePointerDown}
+              onPointerMove={characterGesture.handlePointerMove}
+              onPointerUp={characterGesture.handlePointerUp}
+              onPointerCancel={characterGesture.handlePointerUp}
+            >
+              <img
+                src={characterImageUrl}
+                alt="character"
+                className="print-art-layer--char-image"
+              />
+            </div>
           )}
           {frameImageUrl && !showSvgFrame && (
             <img
               src={frameImageUrl}
               alt="frame"
-              className="print-art-layer print-art-layer--frame"
+              className={frameLayerClass}
               style={frameLayerStyle}
             />
           )}
@@ -128,47 +346,8 @@ function CardFront({
         <CardArt card={card} width={fallbackWidth} height={fallbackHeight} />
       )}
 
-      <div className="print-front-overlay">
-        {editable ? (
-          <>
-            <input
-              className="card-name-input"
-              value={card.identity.name}
-              onChange={(e) => onNameChange?.(e.target.value)}
-              placeholder="Name"
-            />
-            <label className="card-age-field">
-              <span className="card-age-label">AGE</span>
-              <input
-                className="card-age-input"
-                value={card.identity.age ?? ""}
-                onChange={(e) => onAgeChange?.(e.target.value)}
-                placeholder="Age"
-              />
-            </label>
-            <textarea
-              className="card-bio-input"
-              value={card.flavorText}
-              onChange={(e) => onBioChange?.(e.target.value)}
-              placeholder="Bio / flavor text"
-              rows={2}
-            />
-            {revealedFaction && (
-              <p className="print-front-faction">Faction Reveal · {revealedFaction}</p>
-            )}
-          </>
-        ) : (
-          <>
-            <span className="print-front-name">{card.identity.name}</span>
-            {card.identity.age && (
-              <span className="print-front-age">{card.identity.age}</span>
-            )}
-            <p className="print-front-bio">&ldquo;{card.flavorText}&rdquo;</p>
-            {revealedFaction && (
-              <p className="print-front-faction">Faction Reveal · {revealedFaction}</p>
-            )}
-          </>
-        )}
+      <div className="print-front-name-overlay">
+        {nameField}
       </div>
     </>
   );
@@ -179,49 +358,128 @@ function CardFront({
 function CardBack({
   card,
   editable = false,
+  onNameChange,
+  onBioChange,
+  onAgeChange,
   onStatChange,
   boardImageLoading = false,
-}: Pick<SkaterCardFaceProps, "card" | "editable" | "onStatChange" | "boardImageLoading">) {
+}: Pick<SkaterCardFaceProps, "card" | "editable" | "onNameChange" | "onBioChange" | "onAgeChange" | "onStatChange" | "boardImageLoading">) {
+  const [boardImageFailed, setBoardImageFailed] = useState(false);
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
+  const hasBuiltInDesignator = hasBuiltInFrameDesignator(card.prompts.rarity);
+  const backFrameUrl = getStaticFrameBackUrl(card.prompts.rarity);
+  const hasBackFrame = backFrameUrl != null;
+  const backFrameStyle = backFrameUrl
+    ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, backFrameUrl) }
+    : undefined;
+  const backFrameClass = hasBackFrame
+    ? "print-art-layer print-art-layer--frame print-art-layer--frame-back print-art-layer--frame-wrap"
+    : "print-art-layer print-art-layer--frame print-art-layer--frame-back";
+
+  // Focal-crop background is no longer used on the back face.
   const backInfoRows = [
-    ["ARCHETYPE", getDisplayedArchetype(card)],
-    ["STYLE", card.prompts.style],
     ["DISTRICT", card.prompts.district],
-    ["CREW", getDisplayedCrew(card)],
+    ["CREW",     getDisplayedCrew(card)],
   ] as [string, string][];
+
+  const flavorText = card.front.flavorTextEnglish ?? card.front.flavorText ?? "";
+  const conlangFlavorText = card.front.flavorTextConlang ?? "";
+
+  const bt = BOARD_TYPE_OPTIONS.find((o) => o.value === card.board.config.boardType);
+  const dr = DRIVETRAIN_OPTIONS.find((o) => o.value === card.board.config.drivetrain);
+  const mt = MOTOR_OPTIONS.find((o) => o.value === card.board.config.motor);
+  const wh = WHEEL_OPTIONS.find((o) => o.value === card.board.config.wheels);
+  const ba = BATTERY_OPTIONS.find((o) => o.value === card.board.config.battery);
+  const boardRows = [
+    { icon: bt?.icon ?? "🛹",  label: "TYPE",    value: bt?.label ?? card.board.components.boardType },
+    { icon: dr?.icon ?? "⚙️", label: "DRIVE",   value: dr?.label ?? card.board.components.drivetrain },
+    { icon: mt?.icon ?? "⚡",  label: "MOTOR",   value: mt?.label ?? card.board.components.motor },
+    { icon: wh?.icon ?? "⚫",  label: "WHEELS",  value: wh?.label ?? card.board.components.wheels },
+    { icon: ba?.icon ?? "🔋",  label: "BATTERY", value: ba?.label ?? card.board.components.battery },
+  ];
 
   return (
     <>
-      <div className="print-back-header" style={{ background: rarityColor }}>
-        <span className="print-back-rarity">{card.prompts.rarity.toUpperCase()}</span>
+      <div className="print-back-identity">
+        {editable ? (
+          <input
+            className="card-name-input print-back-identity-name-input"
+            value={card.identity.name}
+            onChange={(e) => onNameChange?.(e.target.value)}
+            placeholder="Name"
+          />
+        ) : (
+          <span className="print-back-identity-name">{card.identity.name}</span>
+        )}
+        <div className="print-back-identity-meta">
+          {!hasBuiltInDesignator && <span className="print-back-identity-badge">{card.class.badgeLabel}</span>}
+          <span className="print-back-identity-role">{card.role.label}</span>
+          {card.board.tuned && <span className="print-back-identity-tuned">⚡ TUNED</span>}
+          {card.identity.age && (
+            editable ? (
+              <label className="print-back-identity-age-field">
+                <span className="print-back-identity-age-label">AGE</span>
+                <input
+                  className="card-age-input print-back-identity-age-input"
+                  value={card.identity.age ?? ""}
+                  onChange={(e) => onAgeChange?.(e.target.value)}
+                  placeholder="Age"
+                />
+              </label>
+            ) : (
+              <span className="print-back-identity-age">{card.identity.age}</span>
+            )
+          )}
+        </div>
+        {editable ? (
+          <textarea
+            className="card-bio-input print-back-identity-bio-input"
+            value={flavorText}
+            onChange={(e) => onBioChange?.(e.target.value)}
+            placeholder="Bio / flavor text"
+            rows={2}
+          />
+        ) : (
+          <>
+            {flavorText && (
+              <p className="print-back-identity-bio">&ldquo;{flavorText}&rdquo;</p>
+            )}
+            {conlangFlavorText && (
+              <p className="print-back-identity-bio print-back-identity-bio--conlang">{conlangFlavorText}</p>
+            )}
+          </>
+        )}
       </div>
 
       <div className="print-back-hero">
-        {card.board && (
-          <div className="print-back-board">
-            {card.boardImageUrl ? (
-              <img src={card.boardImageUrl} alt="Electric skateboard" className="print-back-board-image" />
-            ) : boardImageLoading ? (
-              <div className="print-back-board-loading">
-                <img
-                  src="/assets/hourglass-spinner.gif"
-                  alt="Generating skateboard…"
-                  className="print-back-board-spinner"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    if (!img.dataset.fallback) {
-                      img.dataset.fallback = "1";
-                      img.src = "/assets/loading_2.gif";
-                    }
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="print-back-board-placeholder">🛹</div>
-            )}
-          </div>
-        )}
+        <div className="print-back-board">
+          {card.board.imageUrl && !boardImageFailed ? (
+            <img
+              src={card.board.imageUrl}
+              alt="Electric skateboard"
+              className="print-back-board-image"
+              onError={() => setBoardImageFailed(true)}
+            />
+          ) : boardImageLoading ? (
+            <div className="print-back-board-loading">
+              <img
+                src={stamp360Gif}
+                alt="Generating skateboard…"
+                className="print-back-board-spinner"
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  if (!img.dataset.fallback) {
+                    img.dataset.fallback = "1";
+                    img.src = "/assets/loading_2.gif";
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="print-back-board-placeholder">🛹</div>
+          )}
+        </div>
       </div>
 
       <div className="print-back-info">
@@ -233,11 +491,29 @@ function CardBack({
         ))}
       </div>
 
+      <div className="print-back-lower">
+        <div className="print-back-components">
+          {boardRows.map(({ icon, label, value }) => (
+            <div key={label} className="print-back-board-row">
+              <span className="print-back-board-icon">{icon}</span>
+              <span className="print-back-board-key">{label}</span>
+              <span className="print-back-board-val">{value}</span>
+            </div>
+          ))}
+        </div>
+
       <div className="print-back-stats">
+        {!hasBuiltInDesignator && (
+          <div className="print-back-rarity-row">
+            <span className="print-back-rarity-label" style={{ color: rarityColor }}>
+              {card.prompts.rarity.toUpperCase()}
+            </span>
+          </div>
+        )}
         {editable ? (
-          STAT_ENTRIES.map(([key, { label, tooltip }]) => (
+          (["speed", "range", "stealth", "grit"] as const).map((key) => (
             <div key={key} className="stat-bar card-stat-editor-row">
-              <span className="stat-label" title={tooltip}>{label}</span>
+              <span className="stat-label" title={CARD_STAT_LABELS[key].tooltip}>{CARD_STAT_LABELS[key].label}</span>
               <input
                 type="number"
                 className="card-stat-input"
@@ -254,37 +530,34 @@ function CardBack({
         ) : (
           <>
             <StatBar label={CARD_STAT_LABELS.speed.label}   value={card.stats.speed}   color={accent} tooltip={CARD_STAT_LABELS.speed.tooltip} />
+            <StatBar label={CARD_STAT_LABELS.range.label}   value={card.stats.range}   color={accent} tooltip={CARD_STAT_LABELS.range.tooltip} />
             <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.tech.label}    value={card.stats.tech}    color={accent} tooltip={CARD_STAT_LABELS.tech.tooltip} />
             <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
-            <StatBar label={CARD_STAT_LABELS.rep.label}     value={card.stats.rep}     color={accent} tooltip={CARD_STAT_LABELS.rep.tooltip} />
+            <div className="stat-bar stat-rangeNm">
+              <span className="stat-label" title={CARD_STAT_LABELS.rangeNm.tooltip}>{CARD_STAT_LABELS.rangeNm.label}</span>
+              <span className="stat-value">{card.stats.rangeNm} nm</span>
+            </div>
           </>
         )}
       </div>
-
-      <div className="print-back-trait">
-        <span className="print-back-trait-label">
-          PASSIVE · {card.traits.passiveTrait.name}
-        </span>
-        <p className="print-back-trait-desc">{card.traits.passiveTrait.description}</p>
       </div>
 
-      <div className="print-back-trait">
-        <span className="print-back-trait-label">
-          ACTIVE · {card.traits.activeAbility.name}
-        </span>
-        <p className="print-back-trait-desc">{card.traits.activeAbility.description}</p>
-      </div>
-
-      <div className="print-back-tags">
-        {card.traits.personalityTags.map((tag) => (
-          <span key={tag} className="print-back-tag" style={{ borderColor: accent }}>
-            {tag}
-          </span>
-        ))}
+      <div className="print-back-maintenance">
+        <span className="print-back-maint-label">MAINTENANCE</span>
+        <span className="print-back-maint-state">{card.maintenance.state.replace("_", " ")}</span>
+        <span className="print-back-maint-charge">{card.maintenance.chargePct}%</span>
       </div>
 
       <div className="print-back-serial">{card.identity.serialNumber}</div>
+
+      {backFrameUrl && (
+        <img
+          src={backFrameUrl}
+          alt="frame"
+          className={backFrameClass}
+          style={backFrameStyle}
+        />
+      )}
     </>
   );
 }
@@ -310,6 +583,8 @@ export function SkaterCardFace({
   onBioChange,
   onAgeChange,
   onStatChange,
+  onBoardPlacementChange,
+  onCharacterPlacementChange,
   boardImageLoading,
 }: SkaterCardFaceProps) {
   if (face === "front") {
@@ -324,8 +599,8 @@ export function SkaterCardFace({
         fallbackHeight={fallbackHeight}
         editable={editable}
         onNameChange={onNameChange}
-        onBioChange={onBioChange}
-        onAgeChange={onAgeChange}
+        onBoardPlacementChange={onBoardPlacementChange}
+        onCharacterPlacementChange={onCharacterPlacementChange}
       />
     );
   }
@@ -334,6 +609,9 @@ export function SkaterCardFace({
     <CardBack
       card={card}
       editable={editable}
+      onNameChange={onNameChange}
+      onBioChange={onBioChange}
+      onAgeChange={onAgeChange}
       onStatChange={onStatChange}
       boardImageLoading={boardImageLoading}
     />

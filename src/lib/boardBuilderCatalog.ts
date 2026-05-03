@@ -246,8 +246,8 @@ export const BOARD_COMPONENT_IMAGE_URLS = {
     Cloud: withBoardComponentAssetVersion("/assets/boards/wheels/cloud-wheels.png"),
   } satisfies Record<WheelType, string>,
   battery: {
-    SlimStealth: withBoardComponentAssetVersion("/assets/boards/battery/slim-battery.png"),
-    DoubleStack: withBoardComponentAssetVersion("/assets/boards/battery/double-battery.png"),
+    SlimStealth: withBoardComponentAssetVersion("/assets/boards/battery/battery-slim-new.png"),
+    DoubleStack: withBoardComponentAssetVersion("/assets/boards/battery/double-battery-2.png"),
     TopPeli: withBoardComponentAssetVersion("/assets/boards/battery/top-mount-battery.png"),
   } satisfies Record<BatteryType, string>,
 } as const;

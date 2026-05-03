@@ -143,6 +143,39 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ── Race Arena: Challenges ───────────────────────────────────────────────
+    // RaceChallenge docs. Both participants can read; all writes are server-only
+    // (the /api/race/* routes own all challenge state transitions).
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid == request.auth.uid
+      );
+      allow create, update, delete: if false;
+    }
+
+    // ── Race Arena: Races ────────────────────────────────────────────────────
+    // Resolved race timelines. Both participants can read for replay; writes
+    // are server-only.
+    match /races/{raceId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid == request.auth.uid
+      );
+      allow create, update, delete: if false;
+    }
+
+    // ── Notifications inbox ──────────────────────────────────────────────────
+    // Per-user inbox. Owner-readable; mark-as-read updates are owner-allowed
+    // and restricted to the `read` boolean field. Creates are server-only.
+    match /notifications/{uid}/items/{notifId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow create: if false;
+    }
+
     // ── Leaderboard ──────────────────────────────────────────────────────────
     // Public leaderboard entries keyed by uid.
     // Any signed-in user may read all entries; only the owner can write their own.
@@ -173,7 +206,8 @@ service cloud.firestore {
     }
 
     // ── Missions ─────────────────────────────────────────────────────────────
-    // Per-user mission / quest progress.
+    // Per-user mission board documents. Owners may read their own contracts and
+    // mission-run state. All writes are server-only (client create/update/delete blocked).
     match /missions/{missionId} {
       allow read: if request.auth != null
         && resource.data.uid == request.auth.uid;
