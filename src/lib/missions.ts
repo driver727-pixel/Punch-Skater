@@ -51,6 +51,8 @@ function buildMissionRequirementLabel(requirement: MissionRequirement): string {
       return `Reach ${count} total ${capitalize(requirement.stat)} across the deck.`;
     case "district_card":
       return `Include ${count} ${requirement.district} ${pluralize(count, "local")} in the deck.`;
+    default:
+      throw new Error(`Unknown mission requirement type: ${(requirement as { type?: string }).type}`);
   }
 }
 
@@ -82,6 +84,8 @@ function relaxMissionRequirement(
     case "stat_total":
       nextCount = Math.max(1, count - statReduction);
       break;
+    default:
+      throw new Error(`Unknown mission requirement type: ${(requirement as { type?: string }).type}`);
   }
 
   if (nextCount <= 0) return null;
