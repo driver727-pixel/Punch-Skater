@@ -293,7 +293,7 @@ function getRequirementTip(
     : "the required wheel setup";
   switch (result.requirement.type) {
     case "min_cards":
-      return "Mission decks need at least five filled slots before the run can launch.";
+      return "Mission decks need at least five mission-ready cards to clear the contract clean.";
     case "district_access":
       return weather?.accessRule
         ? `${currentAccessSummary} Weather is adding a board-type lock on top of the normal wheel rules.`
@@ -309,7 +309,7 @@ function getRequirementTip(
     case "faction":
       return `Any courier from the ${result.requirement.faction} crew counts toward this route.`;
     default:
-      return "This check must pass before the mission can launch.";
+      return "This check must pass if you want the launch to clear instead of fail.";
   }
 }
 
@@ -462,12 +462,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     if (!selectedMission) return [];
     return [
       `${selectedMission.district} access right now: ${getMissionDistrictAccessSummary(selectedMission, selectedDistrictWeather)}.`,
-      "Pick a route first. Fork choices can add new deck requirements before the run will unlock.",
       selectedEvaluation?.eligible
-        ? "This deck clears the checks, so Launch Run will go live."
-        : `Current blocker: ${selectedEvaluation?.summary ?? "Choose a deck to see what is blocking the run."}`,
+        ? "This deck clears the active checks, so a clean clear is on the table."
+        : "Launch Run still works even if this deck misses checks, but a failed push can sideline one courier for a short injury, breakdown, or arrest timeout.",
+      selectedForkOption
+        ? `Optional route locked: ${selectedForkOption.label}.`
+        : "Route forks stay optional and sit after the launch stage.",
     ];
-  }, [selectedDistrictWeather, selectedEvaluation, selectedMission]);
+  }, [selectedDistrictWeather, selectedEvaluation, selectedForkOption, selectedMission]);
 
   const handleRunMission = useCallback(async () => {
     if (!selectedMission || !selectedDeck) return;
@@ -652,59 +654,13 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               />
 
               <div className="mission-flow">
-                {selectedMission.fork && (
-                  <section className="mission-stage mission-panel mission-fork">
-                    <div className="mission-stage__header">
-                      <div>
-                        <span className="mission-stage__eyebrow">Route choice</span>
-                        <h4 className="mission-stage__title">Choose the line you want to push</h4>
-                        <p className="mission-stage__summary">
-                          Different paths shift the payout and the pressure on your crew.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mission-fork__header">
-                      <span className="mission-fork__badge">{selectedMission.fork.badge}</span>
-                      <p className="mission-fork__prompt">{selectedMission.fork.prompt}</p>
-                    </div>
-                    <div className="mission-fork__options">
-                      {selectedMission.fork.options.map((option) => (
-                        <button
-                          key={`${selectedMission.id}-${option.id}`}
-                          type="button"
-                          className={`mission-fork__option${selectedForkOption?.id === option.id ? " mission-fork__option--active" : ""}`}
-                          onClick={() => setSelectedForkOptionId(option.id)}
-                          aria-pressed={selectedForkOption?.id === option.id}
-                        >
-                          <span className="mission-fork__option-label">{option.label}</span>
-                          <span className="mission-fork__option-meta">
-                            {option.rewardOzziesDelta && option.rewardXpDelta
-                              ? "Split reward route"
-                              : option.rewardOzziesDelta
-                                ? "Cash pressure route"
-                                : "XP pressure route"}
-                          </span>
-                          <span className="mission-fork__option-desc">{option.description}</span>
-                          {(option.rewardXpDelta || option.rewardOzziesDelta) && (
-                            <span className="mission-fork__option-desc">
-                              {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
-                              {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
-                              {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
                 <section className="mission-stage mission-panel">
                   <div className="mission-stage__header">
                     <div>
                       <span className="mission-stage__eyebrow">Deck selection</span>
                       <h4 className="mission-stage__title">Pick the crew taking the run</h4>
                       <p className="mission-stage__summary">
-                        Lock in a deck first, then use the outcome panel to confirm the route is worth launching.
+                        Lock in a deck first. The launch stage comes next, and the route fork stays optional after that.
                       </p>
                     </div>
                     <div className="mission-deck-focus">
@@ -732,7 +688,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           <span
                             className={`mission-result__badge ${evaluation.eligible ? "mission-result__badge--success" : "mission-result__badge--fail"}`}
                           >
-                            {evaluation.eligible ? "Can run" : "Blocked"}
+                            {evaluation.eligible ? "Clean" : "At risk"}
                           </span>
                         </button>
                       );
@@ -743,10 +699,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 <section className="mission-stage mission-panel">
                   <div className="mission-stage__header">
                     <div>
-                      <span className="mission-stage__eyebrow">Run outlook</span>
-                      <h4 className="mission-stage__title">See the outcome before you launch</h4>
+                      <span className="mission-stage__eyebrow">Launch stage</span>
+                      <h4 className="mission-stage__title">Launch the run when you are ready</h4>
                       <p className="mission-stage__summary">
-                        Confirm access, rewards, and requirements with your selected deck before you commit.
+                        Launch is always available once you pick a deck. Clearing every active check is how you win and avoid a short downtime hit.
                       </p>
                     </div>
                     <div className="mission-stage__actions">
@@ -756,8 +712,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                         disabled={
                           runningMissionId === selectedMission.id ||
                           selectedMission.status === "completed" ||
-                          !selectedDeck ||
-                          !selectedEvaluation?.eligible
+                          !selectedDeck
                         }
                       >
                         {selectedMission.status === "completed"
@@ -862,6 +817,52 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     <p className="mission-warning">{selectedMission.lastRunSummary}</p>
                   )}
                 </section>
+
+                {selectedMission.fork && (
+                  <section className="mission-stage mission-panel mission-fork">
+                    <div className="mission-stage__header">
+                      <div>
+                        <span className="mission-stage__eyebrow">Optional route fork</span>
+                        <h4 className="mission-stage__title">Push the main line or add more pressure</h4>
+                        <p className="mission-stage__summary">
+                          These route choices stay optional and only change the run if you decide to lock one in.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mission-fork__header">
+                      <span className="mission-fork__badge">{selectedMission.fork.badge}</span>
+                      <p className="mission-fork__prompt">{selectedMission.fork.prompt}</p>
+                    </div>
+                    <div className="mission-fork__options">
+                      {selectedMission.fork.options.map((option) => (
+                        <button
+                          key={`${selectedMission.id}-${option.id}`}
+                          type="button"
+                          className={`mission-fork__option${selectedForkOption?.id === option.id ? " mission-fork__option--active" : ""}`}
+                          onClick={() => setSelectedForkOptionId(option.id)}
+                          aria-pressed={selectedForkOption?.id === option.id}
+                        >
+                          <span className="mission-fork__option-label">{option.label}</span>
+                          <span className="mission-fork__option-meta">
+                            {option.rewardOzziesDelta && option.rewardXpDelta
+                              ? "Split reward route"
+                              : option.rewardOzziesDelta
+                                ? "Cash pressure route"
+                                : "XP pressure route"}
+                          </span>
+                          <span className="mission-fork__option-desc">{option.description}</span>
+                          {(option.rewardXpDelta || option.rewardOzziesDelta) && (
+                            <span className="mission-fork__option-desc">
+                              {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
+                              {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
+                              {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
 
               <div className="mission-intel-grid">
@@ -891,7 +892,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       ))}
                     </ul>
                   <p className="mission-intel-card__quote">
-                    Launch Run only enables when your selected deck passes every active check.
+                    Launch Run stays live after deck pick. Passing every active check is still how you clear the contract and avoid downtime.
                   </p>
                 </article>
               </div>
@@ -935,12 +936,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   ? getMissionPresentation(missionResult.mission).successLabel
                   : getMissionPresentation(missionResult.mission).failureLabel}
               </h3>
-              <p className="mission-selector-card__tagline">
-                {missionResult.rewardGranted
-                  ? missionResult.mission.lastRunSummary ?? missionResult.evaluation.summary
-                  : missionResult.evaluation.summary}
-              </p>
-            </div>
+                <p className="mission-selector-card__tagline">
+                  {missionResult.mission.lastRunSummary ?? missionResult.evaluation.summary}
+                </p>
+              </div>
             <div className="mission-result__rewards">
               <div className="mission-result__reward-card">
                 <span className="mission-result__reward-label">Chosen deck</span>

@@ -10,6 +10,7 @@ import {
 
 function buildCard(overrides = {}) {
   return {
+    id: overrides.id ?? 'card-default',
     prompts: {
       archetype: 'The Knights Technarchy',
       district: 'The Grid',
@@ -32,6 +33,12 @@ function buildCard(overrides = {}) {
         wheels: 'Urethane',
         ...overrides.board?.config,
       },
+    },
+    maintenance: {
+      state: 'active',
+      chargePct: 100,
+      repairMinutes: 15,
+      ...overrides.maintenance,
     },
   };
 }
@@ -139,6 +146,26 @@ test('evaluateMissionDeck now lets a generic five-card deck clear the base Grid 
   assert.equal(result.eligible, true);
   assert.equal(result.results.some((entry) => entry.requirement.type === 'archetype'), false);
   assert.equal(result.results.find((entry) => entry.requirement.type === 'min_cards')?.needed, 5);
+});
+
+test('evaluateMissionDeck ignores cards that are still in repair timeout', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-trace');
+  const deck = {
+    id: 'deck-5',
+    name: 'Bruised Stack',
+    cards: Array.from({ length: 5 }, (_, index) => buildCard({
+      id: `card-${index + 1}`,
+      prompts: { archetype: 'Qu111s' },
+      identity: { crew: 'Qu111s' },
+      stats: { speed: 5 + index, range: 4, stealth: 4, grit: 4 },
+      ...(index === 0 ? { maintenance: { state: 'in_shop', repairEndsAt: '2999-01-01T00:00:00.000Z' } } : {}),
+    })),
+  };
+
+  const result = evaluateMissionDeck(deck, mission);
+  assert.equal(result.eligible, false);
+  assert.match(result.summary, /4\/5 cards ready for the run/i);
+  assert.equal(result.results.find((entry) => entry.requirement.type === 'min_cards')?.current, 4);
 });
 
 test('getMissionEffectiveRewards includes selected fork bonuses', () => {

@@ -9,6 +9,40 @@ const COLLECTION = 'missions';
 const PROFILE_COLLECTION = 'userProfiles';
 const SYSTEM = 'mission_board';
 const SCHEMA_VERSION = 2;
+const DEFAULT_FAILURE_LOCK_MINUTES = 15;
+
+const MISSION_FAILURE_CONSEQUENCES = {
+  Airaway: {
+    state: 'in_shop',
+    summary: 'took an injury timeout',
+    label: 'Injury timeout',
+  },
+  Batteryville: {
+    state: 'in_shop',
+    summary: 'is stuck in a breakdown repair',
+    label: 'Breakdown repair',
+  },
+  'The Grid': {
+    state: 'impounded',
+    summary: 'got hit with a trace arrest',
+    label: 'Trace arrest',
+  },
+  Nightshade: {
+    state: 'impounded',
+    summary: 'was impounded in the Murk',
+    label: 'Impound hold',
+  },
+  'The Forest': {
+    state: 'in_shop',
+    summary: 'needs rough-route repairs',
+    label: 'Rough-route repair',
+  },
+  'Glass City': {
+    state: 'impounded',
+    summary: 'was arrested at the exchange',
+    label: 'Exchange arrest',
+  },
+};
 
 function sortMissionBoardEntries(missions) {
   return [...missions].sort((a, b) => {
@@ -39,6 +73,53 @@ function getMissionDefinitionFields(entry) {
     rewardOzzies: entry.rewardOzzies,
     requirements: entry.requirements,
     fork: entry.fork,
+  };
+}
+
+function isMissionCardReady(card, nowMs = Date.now()) {
+  const maintenance = card?.maintenance;
+  if (!maintenance || maintenance.state === 'active') return true;
+  if (!maintenance.repairEndsAt) return false;
+  const repairEndsMs = Date.parse(maintenance.repairEndsAt);
+  return Number.isFinite(repairEndsMs) && repairEndsMs <= nowMs;
+}
+
+function buildMissionFailureRisk(mission, deck, now) {
+  const cards = Array.isArray(deck?.cards) ? deck.cards : [];
+  const nowMs = Date.parse(now);
+  const riskedCard = cards.find((card) => isMissionCardReady(card, nowMs));
+  if (!riskedCard?.id) return null;
+
+  const consequence = MISSION_FAILURE_CONSEQUENCES[mission?.district] ?? {
+    state: 'in_shop',
+    summary: 'needs repairs after the wipeout',
+    label: 'Mission fallout',
+  };
+  const repairMinutes = Number(riskedCard?.maintenance?.repairMinutes) || DEFAULT_FAILURE_LOCK_MINUTES;
+  const lockMinutes = Math.min(Math.max(repairMinutes, 5), DEFAULT_FAILURE_LOCK_MINUTES);
+  const recoveryAt = new Date(nowMs + lockMinutes * 60_000).toISOString();
+  const cardName = typeof riskedCard?.identity?.name === 'string' && riskedCard.identity.name.trim()
+    ? riskedCard.identity.name.trim()
+    : 'One courier';
+  const affectedCard = {
+    ...riskedCard,
+    maintenance: {
+      ...(riskedCard.maintenance ?? {}),
+      state: consequence.state,
+      repairMinutes: lockMinutes,
+      repairEndsAt: recoveryAt,
+    },
+  };
+
+  return {
+    affectedCard,
+    summary: `${cardName} ${consequence.summary} for the next ${lockMinutes} minutes.`,
+    detail: `${consequence.label}: ${cardName} is unavailable for the next ${lockMinutes} minutes.`,
+    updatedDeck: {
+      ...deck,
+      cards: cards.map((card) => (card?.id === affectedCard.id ? affectedCard : card)),
+      updatedAt: now,
+    },
   };
 }
 
@@ -187,6 +268,8 @@ export function registerMissionRoutes(app, {
         }
 
         if (!evaluation.eligible) {
+          const failureRisk = buildMissionFailureRisk(mission, deck, now);
+          const failureReasons = evaluation.results.filter((result) => !result.met).map((result) => result.detail);
           const updatedMission = {
             ...mission,
             selectedDeckId: deckId,
@@ -194,11 +277,19 @@ export function registerMissionRoutes(app, {
             selectedForkOptionId,
             lastRunAt: now,
             lastRunSucceeded: false,
-            lastRunSummary: evaluation.summary,
-            lastRunFailureReasons: evaluation.results.filter((result) => !result.met).map((result) => result.detail),
+            lastRunSummary: failureRisk ? `${evaluation.summary} ${failureRisk.summary}` : evaluation.summary,
+            lastRunFailureReasons: failureRisk ? [...failureReasons, failureRisk.detail] : failureReasons,
             updatedAt: now,
           };
           tx.set(missionRef, updatedMission, { merge: true });
+          if (failureRisk) {
+            tx.set(deckRef, failureRisk.updatedDeck, { merge: true });
+            tx.set(
+              adminDb.collection('users').doc(caller.uid).collection('cards').doc(failureRisk.affectedCard.id),
+              failureRisk.affectedCard,
+              { merge: true },
+            );
+          }
           return {
             mission: updatedMission,
             evaluation,

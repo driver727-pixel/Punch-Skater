@@ -576,13 +576,25 @@ function getRequirementTarget(requirement: MissionRequirement): number {
   return requirement.count ?? 0;
 }
 
+function isMissionCardReady(card: DeckPayload["cards"][number], nowMs = Date.now()): boolean {
+  const maintenance = card.maintenance;
+  if (!maintenance || maintenance.state === "active") return true;
+  if (!maintenance.repairEndsAt) return false;
+  const repairEndsMs = Date.parse(maintenance.repairEndsAt);
+  return Number.isFinite(repairEndsMs) && repairEndsMs <= nowMs;
+}
+
+function getMissionReadyCards(deck: DeckPayload, nowMs = Date.now()): DeckPayload["cards"] {
+  return deck.cards.filter((card) => isMissionCardReady(card, nowMs));
+}
+
 function getCardsMatchingDistrictAccess(
-  deck: DeckPayload,
+  cards: DeckPayload["cards"],
   district: District,
   weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>>,
 ): number {
   const weather = weatherByDistrict[district] ?? null;
-  return deck.cards.filter((card) =>
+  return cards.filter((card) =>
     isDistrictAccessibleWithBoardType(
       district,
       weather,
@@ -673,11 +685,12 @@ export function evaluateMissionDeck(
   weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>> = {},
   selectedForkOptionId?: string | null,
 ): MissionDeckEvaluation {
+  const readyCards = getMissionReadyCards(deck);
   const selectedOption = getMissionForkOption(mission, selectedForkOptionId);
   const results = getMissionEffectiveRequirements(mission, selectedForkOptionId).map((requirement) => {
     switch (requirement.type) {
       case "min_cards": {
-        const current = deck.cards.length;
+        const current = readyCards.length;
         return buildRequirementResult(
           requirement,
           current,
@@ -686,7 +699,7 @@ export function evaluateMissionDeck(
       }
       case "district_access": {
         const district = requirement.district ?? mission.district;
-        const current = getCardsMatchingDistrictAccess(deck, district, weatherByDistrict);
+        const current = getCardsMatchingDistrictAccess(readyCards, district, weatherByDistrict);
         return buildRequirementResult(
           requirement,
           current,
@@ -695,7 +708,7 @@ export function evaluateMissionDeck(
       }
       case "wheel_type": {
         const allowedWheelTypes = requirement.wheelTypes ?? [];
-        const current = deck.cards.filter((card) => allowedWheelTypes.includes(card.board.config.wheels)).length;
+        const current = readyCards.filter((card) => allowedWheelTypes.includes(card.board.config.wheels)).length;
         return buildRequirementResult(
           requirement,
           current,
@@ -703,7 +716,7 @@ export function evaluateMissionDeck(
         );
       }
       case "archetype": {
-        const current = deck.cards.filter((card) => card.prompts.archetype === requirement.archetype).length;
+        const current = readyCards.filter((card) => card.prompts.archetype === requirement.archetype).length;
         return buildRequirementResult(
           requirement,
           current,
@@ -711,7 +724,7 @@ export function evaluateMissionDeck(
         );
       }
       case "faction": {
-        const current = deck.cards.filter((card) => card.identity?.crew === requirement.faction).length;
+        const current = readyCards.filter((card) => card.identity?.crew === requirement.faction).length;
         return buildRequirementResult(
           requirement,
           current,
@@ -720,7 +733,7 @@ export function evaluateMissionDeck(
       }
       case "stat_total": {
         const stat = requirement.stat ?? "speed";
-        const current = deck.cards.reduce((sum, card) => sum + card.stats[stat], 0);
+        const current = readyCards.reduce((sum, card) => sum + card.stats[stat], 0);
         return buildRequirementResult(
           requirement,
           current,
@@ -729,7 +742,7 @@ export function evaluateMissionDeck(
       }
       case "district_card": {
         const district = requirement.district ?? mission.district;
-        const current = deck.cards.filter((card) => card.prompts.district === district).length;
+        const current = readyCards.filter((card) => card.prompts.district === district).length;
         return buildRequirementResult(
           requirement,
           current,
