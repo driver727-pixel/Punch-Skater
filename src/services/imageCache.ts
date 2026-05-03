@@ -19,11 +19,8 @@ const COLLECTION = "imageCache";
 
 /** Generation metadata stored alongside a cached image URL. */
 export interface CacheEntryMeta {
-  /** The text prompt used to generate this image. */
   prompt?: string;
-  /** Layer type: "background" | "character" | "frame" | "board-img". */
   layer?: string;
-  /** The seed string passed to the generator. */
   seed?: string;
 }
 
@@ -33,9 +30,6 @@ export interface CacheEntry {
   id: string;
   imageUrl: string;
   createdAt: Timestamp | null;
-  prompt?: string;
-  layer?: string;
-  seed?: string;
 }
 
 /**
@@ -71,8 +65,7 @@ export async function getCachedImage(cacheKey: string): Promise<string | null> {
 }
 
 /**
- * Stores a generated image URL in the cache under the given key, along with
- * optional generation metadata (prompt, layer, seed).
+ * Stores a generated image URL in the cache under the given key.
  * Errors are swallowed so a write failure never breaks the UI.
  * The Firestore security rule allows `create` but not `update`, so this is
  * effectively a write-once store — concurrent writes for the same key are
@@ -81,9 +74,10 @@ export async function getCachedImage(cacheKey: string): Promise<string | null> {
 export async function setCachedImage(
   cacheKey: string,
   imageUrl: string,
-  meta?: CacheEntryMeta,
+  _meta?: CacheEntryMeta,
 ): Promise<void> {
   if (!db || !auth?.currentUser) return;
+  void _meta;
   try {
     const ref = doc(db, COLLECTION, encodeKey(cacheKey));
     // Avoid a doomed write when another user has already populated this
@@ -93,9 +87,6 @@ export async function setCachedImage(
     const data: Record<string, unknown> = {
       imageUrl,
       createdAt: serverTimestamp(),
-      ...(meta?.prompt ? { prompt: meta.prompt } : {}),
-      ...(meta?.layer  ? { layer:  meta.layer  } : {}),
-      ...(meta?.seed   ? { seed:   meta.seed   } : {}),
     };
     await setDoc(ref, data, { merge: false });
   } catch (err) {
@@ -133,17 +124,11 @@ export async function listCachedImages(
     const data = d.data() as {
       imageUrl?: string;
       createdAt?: Timestamp;
-      prompt?: string;
-      layer?: string;
-      seed?: string;
     };
     return {
       id: d.id,
       imageUrl: data.imageUrl ?? "",
       createdAt: data.createdAt ?? null,
-      prompt: data.prompt,
-      layer: data.layer,
-      seed: data.seed,
     };
   });
 

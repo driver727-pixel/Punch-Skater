@@ -108,34 +108,60 @@ const TIER_KEY = "skpd_tier";
 const EMAIL_KEY = "skpd_email";
 const CHECKOUT_SESSION_KEY = "skpd_checkout_session_id";
 
+function readSessionValue(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionValue(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+    localStorage.removeItem(key);
+  } catch {
+    /* noop */
+  }
+}
+
+function clearSessionValue(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  } catch {
+    /* noop */
+  }
+}
+
 export function loadTier(): TierLevel {
-  const stored = localStorage.getItem(TIER_KEY);
+  const stored = readSessionValue(TIER_KEY);
   if (stored === "tier2" || stored === "tier3") return stored;
   return "free";
 }
 
 export function saveTier(level: TierLevel): void {
-  localStorage.setItem(TIER_KEY, level);
+  writeSessionValue(TIER_KEY, level);
 }
 
 export function loadEmail(): string {
-  return localStorage.getItem(EMAIL_KEY) ?? "";
+  return readSessionValue(EMAIL_KEY) ?? "";
 }
 
 export function saveEmail(email: string): void {
-  localStorage.setItem(EMAIL_KEY, email);
+  writeSessionValue(EMAIL_KEY, email);
 }
 
 export function loadCheckoutSessionId(): string | null {
-  return localStorage.getItem(CHECKOUT_SESSION_KEY);
+  return readSessionValue(CHECKOUT_SESSION_KEY);
 }
 
 export function saveCheckoutSessionId(sessionId: string): void {
-  localStorage.setItem(CHECKOUT_SESSION_KEY, sessionId);
+  writeSessionValue(CHECKOUT_SESSION_KEY, sessionId);
 }
 
 export function clearCheckoutSessionId(): void {
-  localStorage.removeItem(CHECKOUT_SESSION_KEY);
+  clearSessionValue(CHECKOUT_SESSION_KEY);
 }
 
 export function loadFreeForgeReadyAt(): number | null {
@@ -149,7 +175,7 @@ export function saveFreeForgeReadyAt(value: number): void {
 }
 
 export function clearAccount(): void {
-  localStorage.removeItem(TIER_KEY);
-  localStorage.removeItem(EMAIL_KEY);
-  localStorage.removeItem(CHECKOUT_SESSION_KEY);
+  clearSessionValue(TIER_KEY);
+  clearSessionValue(EMAIL_KEY);
+  clearSessionValue(CHECKOUT_SESSION_KEY);
 }

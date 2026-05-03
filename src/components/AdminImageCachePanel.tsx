@@ -2,13 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { type DocumentSnapshot } from "firebase/firestore";
 import { deleteCachedImage, listCachedImages, type CacheEntry } from "../services/imageCache";
 
-const LAYER_LABELS: Record<string, string> = {
-  background: "🌆 Background",
-  character: "🧍 Character",
-  frame: "🖼 Frame",
-  "board-img": "🛹 Board",
-};
-
 function formatDate(ts: { seconds: number } | null): string {
   if (!ts) return "—";
   return new Date(ts.seconds * 1000).toLocaleString();
@@ -109,26 +102,9 @@ export function AdminImageCachePanel() {
               ) : (
                 <div className="admin-cache-thumb admin-cache-thumb--missing">?</div>
               )}
-              {entry.layer && (
-                <span className="admin-cache-layer-badge">
-                  {LAYER_LABELS[entry.layer] ?? entry.layer}
-                </span>
-              )}
             </div>
             <div className="admin-cache-info">
               <div className="admin-cache-key" title={entry.id}>{entry.id}</div>
-              {entry.seed && (
-                <div className="admin-cache-meta">
-                  <span className="admin-cache-meta-label">Seed</span>
-                  <span className="admin-cache-meta-value" title={entry.seed}>{entry.seed}</span>
-                </div>
-              )}
-              {entry.prompt && (
-                <details className="admin-cache-prompt-details">
-                  <summary className="admin-cache-prompt-summary">Prompt</summary>
-                  <p className="admin-cache-prompt-text">{entry.prompt}</p>
-                </details>
-              )}
               <div className="admin-cache-meta">
                 <span className="admin-cache-meta-label">Cached</span>
                 <span className="admin-cache-meta-value">{formatDate(entry.createdAt as { seconds: number } | null)}</span>

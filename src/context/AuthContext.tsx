@@ -34,6 +34,7 @@ import { syncReferralCredits } from "../services/referrals";
 import { syncPlayerRewards, type PlayerRewardsSyncResult } from "../services/playerRewards";
 import { parseCraftlinguaProfile } from "../lib/languageIngestion";
 import type { CraftlinguaEnvelope, CraftlinguaLink } from "../lib/types";
+import { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } from "../lib/passwordRules";
 
 interface UserProfile {
   uid: string;
@@ -74,6 +75,10 @@ const googleProvider = new GoogleAuthProvider();
 const AUTH_SYNC_API_URL = resolveApiUrl(
   import.meta.env.VITE_AUTH_SYNC_API_URL as string | undefined,
   "/api/auth/sync-session",
+);
+const ACCOUNT_DELETE_API_URL = resolveApiUrl(
+  import.meta.env.VITE_ACCOUNT_DELETE_API_URL as string | undefined,
+  "/api/account/delete",
 );
 
 export { RecaptchaVerifier };
@@ -280,6 +285,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string) => {
     if (!auth) throw createAuthUnavailableError();
+    if (!isStrongPassword(password)) {
+      throw new Error(PASSWORD_REQUIREMENTS_MESSAGE);
+    }
     await createUserWithEmailAndPassword(auth, email, password);
   }, []);
 
@@ -322,6 +330,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const changePassword = useCallback(
     async (currentPassword: string, newPassword: string) => {
       if (!auth || !auth.currentUser) throw createAuthUnavailableError();
+      if (!isStrongPassword(newPassword)) {
+        throw new Error(PASSWORD_REQUIREMENTS_MESSAGE);
+      }
       const u = auth.currentUser;
       if (!u.email) throw new Error("Password change is only available for email/password accounts.");
       const credential = EmailAuthProvider.credential(u.email, currentPassword);
@@ -350,7 +361,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const credential = EmailAuthProvider.credential(u.email, currentPassword);
         await reauthenticateWithCredential(u, credential);
       }
-      await deleteUser(u);
+      const idToken = await u.getIdToken(true);
+      const response = await fetch(ACCOUNT_DELETE_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(typeof payload.error === "string" ? payload.error : "Failed to delete account.");
+      }
+      await deleteUser(u).catch(() => {
+        /* server-side deletion may already have removed the auth record */
+      });
     },
     []
   );
