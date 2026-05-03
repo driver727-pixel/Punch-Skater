@@ -32,17 +32,33 @@ async function parseResponse<T>(response: Response, fallbackMessage: string): Pr
   return payload as T;
 }
 
+async function fetchMissionJson<T>(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  fallbackMessage: string,
+): Promise<T> {
+  try {
+    const response = await fetch(input, init);
+    return parseResponse<T>(response, fallbackMessage);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Failed to fetch") {
+      throw new Error("Failed to reach the missions service.");
+    }
+    throw error;
+  }
+}
+
 export async function getMissionBoard(uid: string, userEmail?: string | null): Promise<MissionBoardPayload> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
     return { missions: [], progression: { missionXp: 0, missionOzzies: 0 } };
   }
   const idToken = await getIdToken();
   const response = await fetch(MISSION_BOARD_API_URL, {
+  return fetchMissionJson<MissionBoardPayload>(MISSION_BOARD_API_URL, {
     headers: {
       Authorization: `Bearer ${idToken}`,
     },
-  });
-  return parseResponse<MissionBoardPayload>(response, "Failed to load mission board.");
+  }, "Failed to load mission board.");
 }
 
 export async function runMission(
@@ -56,15 +72,14 @@ export async function runMission(
     throw new Error("Missions are not enabled.");
   }
   const idToken = await getIdToken();
-  const response = await fetch(MISSION_RUN_API_URL, {
+  return fetchMissionJson<MissionRunResponse>(MISSION_RUN_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${idToken}`,
     },
     body: JSON.stringify({ missionId, deckId, forkOptionId }),
-  });
-  return parseResponse<MissionRunResponse>(response, "Failed to resolve mission.");
+  }, "Failed to resolve mission.");
 }
 
 export async function trackMissionEvent(): Promise<void> {

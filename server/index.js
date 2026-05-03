@@ -62,6 +62,7 @@ const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const DEFAULT_ALLOWED_APP_ORIGINS = [
   'https://punchskater.com',
+  'https://www.punchskater.com',
   'https://driver727-pixel.github.io',
   'http://localhost:5173',
 ];

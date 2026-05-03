@@ -495,7 +495,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     <section className="mission-panel mission-selector-panel" aria-label="Mission board">
       <div className="mission-selector-panel__header">
         <div>
-          <div className="mission-selector-panel__title">Daily ritual</div>
+          <div className="mission-selector-panel__title">Missions</div>
           <p className="mission-selector-panel__summary">
             Collect your streak, check today&apos;s contracts, and launch the right crew before the board resets.
           </p>
