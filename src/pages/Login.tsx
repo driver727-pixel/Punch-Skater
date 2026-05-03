@@ -8,7 +8,7 @@ export function Login() {
   const { signIn, signUp, signInWithGoogle, sendPasswordReset, signInWithPhone } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string })?.from ?? "/";
+  const from = (location.state as { from?: string })?.from ?? "/missions";
   const isAuthUnavailable = !auth;
 
   const [mode, setMode] = useState<"signin" | "signup" | "phone">("signin");

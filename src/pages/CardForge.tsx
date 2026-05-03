@@ -33,6 +33,7 @@ export function CardForge() {
     forging,
     forgeClassOptions,
     freeCardUsed,
+    freeForgeReadyAt,
     generated,
     generateCredits,
     handleClose3D,
@@ -124,6 +125,7 @@ export function CardForge() {
           faceCharacters={FACE_CHARACTERS}
           forging={forging}
           freeCardUsed={freeCardUsed}
+          freeForgeReadyAt={freeForgeReadyAt}
           genders={GENDERS}
           generateCredits={generateCredits}
           generated={generated}

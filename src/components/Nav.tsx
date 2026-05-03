@@ -99,7 +99,7 @@ export function Nav() {
       )}
       {isEnabled("MISSIONS", user) && (
         <NavLink to="/missions" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Missions
+          Daily Ritual
         </NavLink>
       )}
       <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>

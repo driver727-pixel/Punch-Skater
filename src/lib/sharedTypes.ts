@@ -201,12 +201,31 @@ export interface MissionBoardProgression {
 }
 
 /**
+ * Weekly mission-board flavor and soft reward modifier.
+ * @sprint 4 @owner gamma
+ */
+export interface MissionBoardTheme {
+  id: string;
+  label: string;
+  summary: string;
+  featuredDistricts?: District[];
+  rewardXpBonus?: number;
+  rewardOzziesBonus?: number;
+}
+
+/**
  * API payload returned when loading the mission board.
  * @sprint 2 @owner gamma
  */
 export interface MissionBoardPayload {
   missions: MissionBoardEntry[];
   progression: MissionBoardProgression;
+  /** @sprint 4 @owner gamma — Stable YYYY-MM-DD key for today's mission board. */
+  boardDateKey?: string;
+  /** @sprint 4 @owner gamma — ISO timestamp for the next daily mission reset. */
+  dailyResetAt?: string;
+  /** @sprint 4 @owner gamma — Weekly layer that flavors the current mission cycle. */
+  weeklyTheme?: MissionBoardTheme;
 }
 
 /**

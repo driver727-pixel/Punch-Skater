@@ -1,9 +1,8 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import {
-  createMissionBoardEntries,
+  createDailyMissionBoardPayload,
   evaluateMissionDeck,
   getMissionEffectiveRewards,
-  MISSION_BOARD_DEFINITIONS,
 } from '../lib/missions.js';
 
 const COLLECTION = 'missions';
@@ -73,7 +72,8 @@ export function registerMissionRoutes(app, {
         .filter((entry) => entry?.system === SYSTEM && entry?.schemaVersion === SCHEMA_VERSION);
 
       const now = new Date().toISOString();
-      const desiredEntries = createMissionBoardEntries(caller.uid, now);
+      const dailyBoard = createDailyMissionBoardPayload(caller.uid, now);
+      const desiredEntries = dailyBoard.missions;
       const existingById = new Map(existingBoardEntries.map((entry) => [entry.id, entry]));
       const missingEntries = desiredEntries.filter((entry) => !existingById.has(entry.id));
       const definitionUpdates = desiredEntries
@@ -102,6 +102,9 @@ export function registerMissionRoutes(app, {
           ...entry,
         }))),
         progression: getProgression(profileSnap.data()),
+        boardDateKey: dailyBoard.boardDateKey,
+        dailyResetAt: dailyBoard.dailyResetAt,
+        weeklyTheme: dailyBoard.weeklyTheme,
       });
     } catch (error) {
       console.error('Mission board load error:', error);

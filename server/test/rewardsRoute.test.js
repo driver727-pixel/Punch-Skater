@@ -205,12 +205,15 @@ test('player reward sync grants first signup card and continuing daily streak', 
   assert.equal(res.body.signupBonusCardId, 'signup-card-1');
   assert.deepEqual(res.body.dailyReward, {
     claimed: true,
+    claimedToday: true,
     currentStreak: 2,
     longestStreak: 2,
     totalClaims: 2,
     lastClaimDate: toDateKey(),
     rewardXp: 40,
     rewardOzzies: 16,
+    nextRewardXp: 50,
+    nextRewardOzzies: 20,
   });
   assert.deepEqual(res.body.progression, { missionXp: 50, missionOzzies: 21 });
   assert.ok(adminDb.lastTransaction.sets.some((write) => write.path === 'users/user-1/cards/signup-card-1'));
@@ -243,12 +246,15 @@ test('player reward sync is idempotent after signup and same-day reward are alre
   assert.equal(res.body.signupBonusCardId, 'existing-card');
   assert.deepEqual(res.body.dailyReward, {
     claimed: false,
+    claimedToday: true,
     currentStreak: 3,
     longestStreak: 4,
     totalClaims: 9,
     lastClaimDate: today,
     rewardXp: 0,
     rewardOzzies: 0,
+    nextRewardXp: 60,
+    nextRewardOzzies: 24,
   });
   assert.deepEqual(res.body.progression, { missionXp: 99, missionOzzies: 77 });
   assert.deepEqual(adminDb.lastTransaction.sets, []);

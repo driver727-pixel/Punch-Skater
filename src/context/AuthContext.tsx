@@ -200,11 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       syncReferralCredits(u.uid).catch(() => {/* non-fatal */});
       syncPlayerRewards(u)
         .then((result) => {
-          setPlayerRewards(
-            result.signupBonusGranted || result.dailyReward?.claimed
-              ? result
-              : null,
-          );
+          setPlayerRewards(result);
           setUserProfile((prev) => prev ? {
             ...prev,
             missionXp: result.progression.missionXp,

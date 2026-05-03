@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMissionBoardEntries, evaluateMissionDeck, getMissionEffectiveRewards } from '../lib/missions.js';
+import {
+  createDailyMissionBoardPayload,
+  createMissionBoardEntries,
+  evaluateMissionDeck,
+  getMissionEffectiveRewards,
+  getWeeklyMissionTheme,
+} from '../lib/missions.js';
 
 function buildCard(overrides = {}) {
   return {
@@ -36,6 +42,23 @@ test('createMissionBoardEntries seeds one entry per mission definition', () => {
   assert.equal(missions[0].uid, 'user-123');
   assert.equal(missions[0].system, 'mission_board');
   assert.equal(missions[0].schemaVersion, 2);
+});
+
+test('createDailyMissionBoardPayload returns a stable daily subset and cadence metadata', () => {
+  const first = createDailyMissionBoardPayload('user-123', '2026-04-26T12:00:00.000Z');
+  const second = createDailyMissionBoardPayload('user-123', '2026-04-26T19:15:00.000Z');
+  assert.equal(first.boardDateKey, '2026-04-26');
+  assert.equal(first.dailyResetAt, '2026-04-27T00:00:00.000Z');
+  assert.equal(first.missions.length, 4);
+  assert.deepEqual(first.missions.map((entry) => entry.id), second.missions.map((entry) => entry.id));
+});
+
+test('weekly mission themes rotate and softly boost featured districts', () => {
+  const theme = getWeeklyMissionTheme('2026-04-26T12:00:00.000Z');
+  const payload = createDailyMissionBoardPayload('user-123', '2026-04-26T12:00:00.000Z');
+  assert.ok(theme.featuredDistricts.length > 0);
+  assert.equal(payload.weeklyTheme.id, theme.id);
+  assert.ok(payload.missions.some((entry) => theme.featuredDistricts.includes(entry.district)));
 });
 
 test('evaluateMissionDeck passes an eligible deck for the Grid Trace contract', () => {

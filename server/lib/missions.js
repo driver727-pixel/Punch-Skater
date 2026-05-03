@@ -19,6 +19,68 @@ const DISTRICT_WHEEL_ACCESS_RULES = {
   },
 };
 
+export const DAILY_MISSION_BOARD_COUNT = 4;
+
+const WEEKLY_MISSION_THEMES = [
+  {
+    id: 'breaker-week',
+    label: 'Breaker Week',
+    summary: 'Batteryville and Forest crews are paying extra for decks that can take punishment and keep freight moving.',
+    featuredDistricts: ['Batteryville', 'The Forest'],
+    rewardXpBonus: 20,
+    rewardOzziesBonus: 12,
+  },
+  {
+    id: 'ghost-lights',
+    label: 'Ghost Lights',
+    summary: 'Nightshade and Airaway are leaning on stealth routes, clean wheels, and quiet checkpoint runs.',
+    featuredDistricts: ['Nightshade', 'Airaway'],
+    rewardXpBonus: 18,
+    rewardOzziesBonus: 10,
+  },
+  {
+    id: 'open-territory',
+    label: 'Open Territory',
+    summary: 'Glass City and The Grid are flooding the map with fast exchange jobs and monitored courier traces.',
+    featuredDistricts: ['Glass City', 'The Grid'],
+    rewardXpBonus: 15,
+    rewardOzziesBonus: 14,
+  },
+];
+
+function toMissionDateKey(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  return date.toISOString().slice(0, 10);
+}
+
+function getNextMissionResetAt(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  return new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate() + 1,
+    0,
+    0,
+    0,
+    0,
+  )).toISOString();
+}
+
+function hashString(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+export function getWeeklyMissionTheme(now = new Date().toISOString()) {
+  const date = now instanceof Date ? now : new Date(now);
+  const weekIndex = Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / (7 * 86_400_000));
+  return WEEKLY_MISSION_THEMES[weekIndex % WEEKLY_MISSION_THEMES.length];
+}
+
 export const MISSION_BOARD_DEFINITIONS = [
   {
     definitionId: "batteryville-breaker-yard",
@@ -518,9 +580,22 @@ export function getMissionEffectiveRequirements(mission, selectedForkOptionId = 
   return [...(mission?.requirements ?? []), ...(selectedOption?.requirements ?? [])];
 }
 
-export function createMissionBoardEntries(uid, now = new Date().toISOString()) {
-  return MISSION_BOARD_DEFINITIONS.map((definition) => ({
-    id: `${uid}_${definition.definitionId}`,
+function applyWeeklyThemeToDefinition(definition, theme) {
+  const isFeatured = theme.featuredDistricts.includes(definition.district);
+  if (!isFeatured) {
+    return definition;
+  }
+  return {
+    ...definition,
+    rewardXp: definition.rewardXp + theme.rewardXpBonus,
+    rewardOzzies: definition.rewardOzzies + theme.rewardOzziesBonus,
+    tagline: `${definition.tagline} ${theme.label} bonus live today.`,
+  };
+}
+
+function createMissionEntry(uid, definition, now, id) {
+  return {
+    id,
     uid,
     system: 'mission_board',
     schemaVersion: 2,
@@ -530,7 +605,38 @@ export function createMissionBoardEntries(uid, now = new Date().toISOString()) {
     createdAt: now,
     updatedAt: now,
     ...definition,
-  }));
+  };
+}
+
+export function createMissionBoardEntries(uid, now = new Date().toISOString()) {
+  return MISSION_BOARD_DEFINITIONS.map((definition) => (
+    createMissionEntry(uid, definition, now, `${uid}_${definition.definitionId}`)
+  ));
+}
+
+export function createDailyMissionBoardPayload(uid, now = new Date().toISOString()) {
+  const boardDateKey = toMissionDateKey(now);
+  const dailyResetAt = getNextMissionResetAt(now);
+  const weeklyTheme = getWeeklyMissionTheme(now);
+  const featuredDefinitions = MISSION_BOARD_DEFINITIONS
+    .filter((definition) => weeklyTheme.featuredDistricts.includes(definition.district))
+    .sort((a, b) => hashString(`${uid}|${boardDateKey}|featured|${a.definitionId}`) - hashString(`${uid}|${boardDateKey}|featured|${b.definitionId}`));
+  const remainingDefinitions = MISSION_BOARD_DEFINITIONS
+    .filter((definition) => !weeklyTheme.featuredDistricts.includes(definition.district))
+    .sort((a, b) => hashString(`${uid}|${boardDateKey}|rest|${a.definitionId}`) - hashString(`${uid}|${boardDateKey}|rest|${b.definitionId}`));
+  const selectedDefinitions = [...featuredDefinitions, ...remainingDefinitions]
+    .slice(0, DAILY_MISSION_BOARD_COUNT)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((definition) => applyWeeklyThemeToDefinition(definition, weeklyTheme));
+
+  return {
+    boardDateKey,
+    dailyResetAt,
+    weeklyTheme,
+    missions: selectedDefinitions.map((definition) => (
+      createMissionEntry(uid, definition, now, `${uid}_${boardDateKey}_${definition.definitionId}`)
+    )),
+  };
 }
 
 export function evaluateMissionDeck(deck, mission, weatherPayload = null, selectedForkOptionId = null) {
