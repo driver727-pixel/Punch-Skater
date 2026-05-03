@@ -437,7 +437,7 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
 
 export interface FactionLoreEntry {
   name: Faction;
-  districts: string[];
+  districts: WorldLocation[];
   tagline: string;
   description: string;
 }

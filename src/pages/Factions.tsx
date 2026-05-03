@@ -3,6 +3,7 @@ import { FACTION_LORE } from "../lib/lore";
 import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { useFactionImages } from "../hooks/useFactionImages";
 import { factionSlug } from "../lib/factionSlug";
+import { DistrictBadge } from "../components/DistrictBadge";
 
 export function Factions() {
   const { discoveredFactions } = useFactionDiscovery();
@@ -62,11 +63,15 @@ export function Factions() {
                       }
                     >
                       <div className="lore-faction-img-overlay" />
-                      <div className="lore-faction-content">
-                        <div className="lore-faction-header">
-                          <span className="lore-faction-name">{faction.name}</span>
-                          <span className="lore-faction-districts">{faction.districts.join(" · ")}</span>
-                        </div>
+                        <div className="lore-faction-content">
+                          <div className="lore-faction-header">
+                            <span className="lore-faction-name">{faction.name}</span>
+                            <div className="lore-faction-districts">
+                              {faction.districts.map((district) => (
+                                <DistrictBadge key={`${faction.name}-${district}`} location={district} size="sm" />
+                              ))}
+                            </div>
+                          </div>
                         <p className="lore-tagline lore-tagline--sm">"{faction.tagline}"</p>
                         <div
                           id={detailsId}

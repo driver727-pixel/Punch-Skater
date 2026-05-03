@@ -3,6 +3,7 @@ import type { BoardConfig } from "../lib/boardBuilder";
 import { DISTRICT_LORE } from "../lib/lore";
 import type { District, RoadCorridor, WorldLocation } from "../lib/types";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
+import { DistrictBadge } from "./DistrictBadge";
 import {
   DISTRICT_WEATHER_LOCATIONS,
   getDistrictAccessBlockReason,
@@ -519,7 +520,7 @@ export function GeoAtlas({
                         aria-pressed={selectedDistrict === district.name || activeInteractionDistrict === district.name}
                         aria-label={detailText}
                       >
-                        <span className="geo-atlas__district-dot" aria-hidden="true" />
+                        <DistrictBadge location={district.name} size="sm" showLabel={false} decorative />
                         <span className="geo-atlas__district-name">{district.name}</span>
                       </button>
                     );
@@ -527,7 +528,7 @@ export function GeoAtlas({
 
                   return (
                     <div key={district.name} {...commonProps} aria-label={detailText}>
-                      <span className="geo-atlas__district-dot" aria-hidden="true" />
+                      <DistrictBadge location={district.name} size="sm" showLabel={false} decorative />
                       <span className="geo-atlas__district-name">{district.name}</span>
                     </div>
                   );
