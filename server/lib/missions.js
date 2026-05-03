@@ -66,6 +66,10 @@ function getNextMissionResetAt(value = new Date()) {
   )).toISOString();
 }
 
+/**
+ * Stable FNV-1a hash used to deterministically shuffle daily mission boards
+ * without storing extra ordering state server-side.
+ */
 function hashString(value) {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -585,11 +589,12 @@ function applyWeeklyThemeToDefinition(definition, theme) {
   if (!isFeatured) {
     return definition;
   }
+  const trimmedTagline = definition.tagline.trimEnd();
   return {
     ...definition,
     rewardXp: definition.rewardXp + theme.rewardXpBonus,
     rewardOzzies: definition.rewardOzzies + theme.rewardOzziesBonus,
-    tagline: `${definition.tagline.trimEnd()}${definition.tagline.trimEnd().endsWith(".") ? "" : "."} ${theme.label} bonus live today.`,
+    tagline: `${trimmedTagline}${trimmedTagline.endsWith(".") ? "" : "."} ${theme.label} bonus live today.`,
   };
 }
 

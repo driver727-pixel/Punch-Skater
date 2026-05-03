@@ -34,10 +34,7 @@ function ThemeApplier() {
 function PlayerRewardBanner() {
   const { playerRewards } = useAuth();
   const [dismissed, setDismissed] = useState(false);
-  const rewardKey = [
-    playerRewards?.signupBonusGranted ? "signup" : "",
-    playerRewards?.dailyReward?.claimed ? playerRewards.dailyReward.lastClaimDate : "",
-  ].join("|");
+  const rewardKey = `${playerRewards?.signupBonusGranted ? "signup:1" : "signup:0"};claim:${playerRewards?.dailyReward?.claimed ? playerRewards.dailyReward.lastClaimDate : "none"}`;
 
   useEffect(() => {
     setDismissed(false);

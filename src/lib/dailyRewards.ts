@@ -30,6 +30,10 @@ export function formatDurationClock(totalMs: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+/**
+ * Returns the remaining milliseconds until a future target.
+ * Accepts either an epoch timestamp number or an ISO-8601 string.
+ */
 export function getRemainingDurationMs(targetAt?: string | number | null, nowMs: number = Date.now()): number {
   if (targetAt == null) return 0;
   const targetMs = typeof targetAt === "number" ? targetAt : new Date(targetAt).getTime();

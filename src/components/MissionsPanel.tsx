@@ -377,7 +377,8 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   }, [dailyResetAt, lastResetRefreshAt, nowMs]);
 
   useEffect(() => {
-    if ((!selectedMissionId || !missions.some((mission) => mission.id === selectedMissionId)) && missions.length > 0) {
+    const isSelectedMissionInvalid = !selectedMissionId || !missions.some((mission) => mission.id === selectedMissionId);
+    if (isSelectedMissionInvalid && missions.length > 0) {
       setSelectedMissionId(missions[0].id);
     }
   }, [missions, selectedMissionId]);
