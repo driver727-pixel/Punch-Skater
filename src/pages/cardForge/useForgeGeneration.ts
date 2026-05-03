@@ -120,6 +120,20 @@ export function useForgeGeneration() {
     }
   }, [prompts.rarity, selectedForgeRarity]);
 
+  const refreshCraftlinguaFront = useCallback(async (card: CardPayload) => {
+    const nextFront = await buildCraftlinguaFlavorFields({
+      card,
+      linkedLanguage,
+      profile,
+      useCraftlingua,
+    });
+    setGenerated((current) => (
+      current && current.id === card.id
+        ? { ...current, front: nextFront }
+        : current
+    ));
+  }, [linkedLanguage, profile, useCraftlingua]);
+
   useEffect(() => {
     if (!generated) return;
     const syncKey = [
@@ -180,20 +194,6 @@ export function useForgeGeneration() {
       style: resolveArchetypeStyle(archetype, current.style),
     }));
   }, []);
-
-  const refreshCraftlinguaFront = useCallback(async (card: CardPayload) => {
-    const nextFront = await buildCraftlinguaFlavorFields({
-      card,
-      linkedLanguage,
-      profile,
-      useCraftlingua,
-    });
-    setGenerated((current) => (
-      current && current.id === card.id
-        ? { ...current, front: nextFront }
-        : current
-    ));
-  }, [linkedLanguage, profile, useCraftlingua]);
 
   const handleForge = useCallback(() => {
     if (!canForge) {
