@@ -33,6 +33,7 @@ import {
 import {
   buildPurchasedTierUpdate,
   buildPendingPurchaseUpdate,
+  buildSubscriptionEntitlementUpdate,
   normalizePaidTier,
   resolveHigherPaidTier,
 } from './lib/payments.js';
@@ -273,13 +274,31 @@ const buildFalImageRequest = createFalImageRequestBuilder({
 // updating prices only requires editing that one file.
 const ALLOWED_PRICE_IDS = new Set(
   Object.values(tierPricing)
-    .map((t) => t.stripePriceId)
+    .flatMap((t) => [t.stripePriceId, t.stripeAnnualPriceId])
     .filter(Boolean),
 );
 
 function resolveTierFromPriceId(priceId) {
   for (const [tier, config] of Object.entries(tierPricing)) {
-    if (config.stripePriceId === priceId) return tier;
+    if (tier === 'seasonPass') continue;
+    if (config.stripePriceId === priceId || config.stripeAnnualPriceId === priceId) return tier;
+  }
+  return null;
+}
+
+function resolveCheckoutModeFromPriceId(priceId) {
+  for (const config of Object.values(tierPricing)) {
+    if (config.stripePriceId === priceId || config.stripeAnnualPriceId === priceId) {
+      return config.checkoutMode === 'subscription' ? 'subscription' : 'payment';
+    }
+  }
+  return null;
+}
+
+function resolveBillingPeriodFromPriceId(priceId) {
+  for (const config of Object.values(tierPricing)) {
+    if (config.stripeAnnualPriceId && config.stripeAnnualPriceId === priceId) return 'annual';
+    if (config.stripePriceId === priceId) return 'monthly';
   }
   return null;
 }
@@ -464,7 +483,17 @@ function pruneBoardImageJobs(now = Date.now()) {
   }
 }
 
-async function syncPurchasedTier({ tier, email, sessionId }) {
+async function syncPurchasedTier({
+  tier,
+  email,
+  sessionId,
+  checkoutMode,
+  stripeCustomerId,
+  stripeSubscriptionId,
+  subscriptionStatus,
+  currentPeriodEnd,
+  billingPeriod,
+}) {
   if (!adminDb) return;
   const normalizedTier = normalizePaidTier(tier);
   if (!normalizedTier) return;
@@ -495,6 +524,12 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
       emailLower: normalizedEmail,
       tier: normalizedTier,
       sessionId,
+      checkoutMode,
+      stripeCustomerId,
+      stripeSubscriptionId,
+      subscriptionStatus,
+      currentPeriodEnd,
+      billingPeriod,
     }, FieldValue.serverTimestamp());
     if (pendingUpdate) {
       batch.set(pendingPurchaseRef, pendingUpdate, { merge: true });
@@ -508,6 +543,12 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
       tier: normalizedTier,
       emailLower: normalizedEmail,
       sessionId,
+      checkoutMode,
+      stripeCustomerId,
+      stripeSubscriptionId,
+      subscriptionStatus,
+      currentPeriodEnd,
+      billingPeriod,
     }, FieldValue.serverTimestamp());
     if (!nextData) return;
     batch.set(docSnap.ref, nextData, { merge: true });
@@ -518,6 +559,12 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
     emailLower: normalizedEmail,
     tier: normalizedTier,
     sessionId,
+    checkoutMode,
+    stripeCustomerId,
+    stripeSubscriptionId,
+    subscriptionStatus,
+    currentPeriodEnd,
+    billingPeriod,
   }, FieldValue.serverTimestamp());
   if (pendingUpdate) {
     batch.set(pendingPurchaseRef, pendingUpdate, { merge: true });
@@ -542,12 +589,38 @@ async function applyPendingPurchasedTierToProfile(uid, email) {
     tier: pendingPurchase?.tier,
     emailLower: normalizedEmail,
     sessionId: pendingPurchase?.lastCheckoutSessionId,
+    checkoutMode: pendingPurchase?.checkoutMode,
+    stripeCustomerId: pendingPurchase?.stripeCustomerId,
+    stripeSubscriptionId: pendingPurchase?.stripeSubscriptionId,
+    subscriptionStatus: pendingPurchase?.subscriptionStatus,
+    currentPeriodEnd: pendingPurchase?.currentPeriodEnd,
+    billingPeriod: pendingPurchase?.billingPeriod,
   }, FieldValue.serverTimestamp());
   if (!nextData) return;
 
   const batch = adminDb.batch();
   batch.set(adminDb.collection('userProfiles').doc(uid), nextData, { merge: true });
   batch.delete(pendingPurchaseRef);
+  await batch.commit();
+}
+
+async function syncSubscriptionEntitlement(subscription) {
+  if (!adminDb || !subscription?.stripeSubscriptionId) return;
+  const profileSnap = await adminDb.collection('userProfiles')
+    .where('stripeSubscriptionId', '==', subscription.stripeSubscriptionId)
+    .limit(25)
+    .get();
+  if (profileSnap.empty) return;
+
+  const batch = adminDb.batch();
+  profileSnap.docs.forEach((docSnap) => {
+    const nextData = buildSubscriptionEntitlementUpdate(
+      docSnap.data(),
+      subscription,
+      FieldValue.serverTimestamp(),
+    );
+    batch.set(docSnap.ref, nextData, { merge: true });
+  });
   await batch.commit();
 }
 
@@ -574,7 +647,10 @@ registerPaymentRoutes(app, {
   stripeWebhookSecret,
   checkoutRateLimit,
   resolveTierFromPriceId,
+  resolveCheckoutModeFromPriceId,
+  resolveBillingPeriodFromPriceId,
   syncPurchasedTier,
+  syncSubscriptionEntitlement,
   isAllowedRedirectUrl,
   normalizeEmail,
   timingSafeEmailMatches,

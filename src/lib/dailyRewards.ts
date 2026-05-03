@@ -1,5 +1,5 @@
 export const DAILY_REWARD_STREAK_CAP = 7;
-export const FREE_FORGE_COOLDOWN_MS = 8 * 60 * 60 * 1000;
+export const FREE_FORGE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 export interface DailyRewardAmounts {
   xp: number;

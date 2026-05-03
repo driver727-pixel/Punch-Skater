@@ -41,9 +41,11 @@ export function TermsOfService() {
       <section className="credits-section">
         <h2 className="credits-heading">Paid Tiers</h2>
         <p className="legal-body">
-          Punch Skater offers optional paid tiers (Street Creator and Deck Master) that unlock
-          additional features. Payments are processed by Stripe and are subject to Stripe's terms.
-          All purchases are final. See the Refund Policy section below.
+          Punch Skater offers optional subscriptions (Street Creator and Deck Master) and seasonal
+          digital passes that unlock creator tools, collection capacity, cosmetic rewards, and
+          forge-credit allowances. Payments are processed by Stripe and are subject to Stripe's
+          terms. Subscription access remains available while the subscription is active. All
+          purchases are final. See the Refund Policy section below.
         </p>
       </section>
 
