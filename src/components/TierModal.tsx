@@ -41,12 +41,12 @@ export function TierModal({ onClose }: TierModalProps) {
       return;
     }
     const isSeasonPassCheckout = signupStep === "seasonPass";
-    const selectedTier = isSeasonPassCheckout ? null : TIERS[signupStep];
+    const selectedTier = signupStep !== "seasonPass" ? TIERS[signupStep] : null;
     const selectedPriceId = isSeasonPassCheckout
       ? SEASON_PASS.stripePriceId
       : billingPeriod === "annual"
-        ? selectedTier.stripeAnnualPriceId
-        : selectedTier.stripePriceId;
+        ? selectedTier?.stripeAnnualPriceId
+        : selectedTier?.stripePriceId;
     if (!selectedPriceId) {
       setError("This billing option is not configured yet.");
       return;
@@ -91,6 +91,7 @@ export function TierModal({ onClose }: TierModalProps) {
   };
 
   const tierOrder: TierLevel[] = ["free", "tier2", "tier3"];
+  const signupTier = signupStep && signupStep !== "seasonPass" ? TIERS[signupStep] : null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -159,29 +160,29 @@ export function TierModal({ onClose }: TierModalProps) {
           <div className="tier-signup">
             <button className="btn-outline tier-back" onClick={() => setSignupStep(null)}>← Back</button>
             <h3 className="tier-signup-title">
-              {signupStep === "seasonPass" ? `Buy ${SEASON_PASS.name}` : `Sign up for ${TIERS[signupStep].name}`}
+              {signupStep === "seasonPass" ? `Buy ${SEASON_PASS.name}` : `Sign up for ${signupTier?.name ?? ""}`}
             </h3>
             <p className="tier-signup-desc">
               {signupStep === "seasonPass"
                 ? "Enter your email to start your Season Pass purchase."
                 : "Enter your email to link your subscription. After payment you'll be redirected back with your tier activated."}
             </p>
-            {signupStep !== "seasonPass" && (
+            {signupTier && (
               <div className="tier-billing-toggle" role="group" aria-label="Billing period">
                 <button
                   type="button"
                   className={`btn-outline btn-sm${billingPeriod === "monthly" ? " tier-billing-toggle--active" : ""}`}
                   onClick={() => setBillingPeriod("monthly")}
                 >
-                  Monthly · {TIERS[signupStep].price}
+                  Monthly · {signupTier.price}
                 </button>
                 <button
                   type="button"
                   className={`btn-outline btn-sm${billingPeriod === "annual" ? " tier-billing-toggle--active" : ""}`}
                   onClick={() => setBillingPeriod("annual")}
-                  disabled={!TIERS[signupStep].stripeAnnualPriceId}
+                  disabled={!signupTier.stripeAnnualPriceId}
                 >
-                  Annual · {TIERS[signupStep].annualPrice ?? "Coming Soon"}
+                  Annual · {signupTier.annualPrice ?? "Coming Soon"}
                 </button>
               </div>
             )}
@@ -201,8 +202,8 @@ export function TierModal({ onClose }: TierModalProps) {
                   signupStep === "seasonPass"
                     ? SEASON_PASS.price
                     : billingPeriod === "annual"
-                      ? TIERS[signupStep].annualPrice ?? TIERS[signupStep].price
-                      : TIERS[signupStep].price
+                      ? signupTier?.annualPrice ?? signupTier?.price ?? ""
+                      : signupTier?.price ?? ""
                 }`}
             </button>
           </div>
