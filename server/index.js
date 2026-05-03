@@ -44,6 +44,7 @@ import { registerImageRoutes } from './routes/images.js';
 import { registerImportRoutes } from './routes/import.js';
 import { registerMissionRoutes } from './routes/missions.js';
 import { registerPaymentRoutes } from './routes/payments.js';
+import { registerBattlePassRoutes } from './battlePass.js';
 import { registerRewardRoutes } from './routes/rewards.js';
 import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
 import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
@@ -211,6 +212,13 @@ const battleRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 30,
   message: { error: 'Too many battle requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const battlePassRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: 'Too many battle pass requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -769,6 +777,13 @@ registerBattleRoutes(app, {
   createBattleCardSnapshot,
   resolveBattleWithEffects,
   randomUUID,
+  FieldValue,
+});
+
+registerBattlePassRoutes(app, {
+  adminDb,
+  battlePassRateLimit,
+  authenticateFirebaseUser,
   FieldValue,
 });
 

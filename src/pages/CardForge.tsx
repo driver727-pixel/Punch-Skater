@@ -1,3 +1,4 @@
+import { BattlePassPanel } from "../components/BattlePassPanel";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
@@ -14,6 +15,7 @@ import {
   SKIN_TONES,
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
+import { useBattlePass } from "../hooks/useBattlePass";
 import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
@@ -73,6 +75,7 @@ export function CardForge() {
     tierCanSave,
     viewing3D,
   } = useCardForgeController();
+  const battlePass = useBattlePass();
 
   return (
     <div className="page">
@@ -162,6 +165,8 @@ export function CardForge() {
           onCharacterPlacementChange={setCharacterPlacement}
         />
       </div>
+
+      <BattlePassPanel battlePass={battlePass} />
 
       <ForgeResultOverlays
         card={generated}
