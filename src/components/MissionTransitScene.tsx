@@ -25,16 +25,37 @@ interface Point {
 }
 
 const BASE_TRACK: Point[] = [
-  { x: 10, y: 52 },
-  { x: 24, y: 49 },
-  { x: 39, y: 42 },
-  { x: 56, y: 34 },
+  { x: 8, y: 54 },
+  { x: 18, y: 52 },
+  { x: 28, y: 50 },
+  { x: 39, y: 45 },
+  { x: 49, y: 40 },
+  { x: 56, y: 36 },
 ];
 
 const FORK_BRANCHES: Point[][] = [
-  [{ x: 56, y: 34 }, { x: 71, y: 20 }, { x: 86, y: 17 }],
-  [{ x: 56, y: 34 }, { x: 74, y: 34 }, { x: 88, y: 38 }],
-  [{ x: 56, y: 34 }, { x: 70, y: 47 }, { x: 83, y: 52 }],
+  [{ x: 56, y: 36 }, { x: 65, y: 31 }, { x: 74, y: 24 }, { x: 88, y: 18 }],
+  [{ x: 56, y: 36 }, { x: 67, y: 36 }, { x: 77, y: 36 }, { x: 88, y: 39 }],
+  [{ x: 56, y: 36 }, { x: 66, y: 41 }, { x: 75, y: 47 }, { x: 86, y: 53 }],
+];
+
+const SIDE_STREETS: Point[][] = [
+  [{ x: 14, y: 20 }, { x: 29, y: 20 }],
+  [{ x: 32, y: 18 }, { x: 47, y: 18 }],
+  [{ x: 49, y: 20 }, { x: 63, y: 20 }],
+  [{ x: 69, y: 20 }, { x: 92, y: 20 }],
+  [{ x: 18, y: 61 }, { x: 33, y: 61 }],
+  [{ x: 61, y: 61 }, { x: 78, y: 61 }],
+];
+
+const TRACK_NODES: Array<{ x: number; y: number; variant?: "hub" | "locale" | "minor" }> = [
+  { x: 8, y: 54, variant: "minor" },
+  { x: 28, y: 50, variant: "minor" },
+  { x: 49, y: 40, variant: "minor" },
+  { x: 56, y: 36, variant: "hub" },
+  { x: 88, y: 18, variant: "locale" },
+  { x: 88, y: 39, variant: "locale" },
+  { x: 86, y: 53, variant: "locale" },
 ];
 
 const BLOCKS: Array<{ x: number; y: number; width: number; height: number }> = [
@@ -161,32 +182,52 @@ export function MissionTransitScene({
         </div>
       </div>
 
-      <div className="mission-transit__map" aria-label={`${locale} operation map`}>
-        <div className="mission-transit__grid" aria-hidden="true" />
-        <svg className="mission-transit__svg" viewBox="0 0 100 64" preserveAspectRatio="none" aria-hidden="true">
-          {BLOCKS.map((block) => (
-            <rect
-              key={`${block.x}-${block.y}`}
+        <div className="mission-transit__map" aria-label={`${locale} operation map`}>
+          <div className="mission-transit__glow mission-transit__glow--top" aria-hidden="true" />
+          <div className="mission-transit__glow mission-transit__glow--bottom" aria-hidden="true" />
+          <div className="mission-transit__grid" aria-hidden="true" />
+          <svg className="mission-transit__svg" viewBox="0 0 100 64" preserveAspectRatio="none" aria-hidden="true">
+            {SIDE_STREETS.map((road, index) => (
+              <path
+                key={`${missionId}-road-${index}`}
+                className="mission-transit__road"
+                d={getPath(road)}
+              />
+            ))}
+            {BLOCKS.map((block) => (
+              <rect
+                key={`${block.x}-${block.y}`}
               className="mission-transit__block"
               x={block.x}
               y={block.y}
               width={block.width}
               height={block.height}
               rx="2"
-            />
-          ))}
-          <path className="mission-transit__rail mission-transit__rail--base" d={getPath(BASE_TRACK)} />
-          {fork?.options.map((option, index) => (
+              />
+            ))}
+            <path className="mission-transit__rail mission-transit__rail--base" d={getPath(BASE_TRACK)} />
+            {fork?.options.map((option, index) => (
             <path
               key={`${missionId}-${option.id}-branch`}
               className={`mission-transit__rail${index === selectedBranchIndex ? " mission-transit__rail--active" : ""}`}
-              d={getPath(FORK_BRANCHES[index] ?? FORK_BRANCHES[0])}
-            />
-          ))}
-          <circle className="mission-transit__hub" cx="56" cy="34" r="2.2" />
-          <circle className="mission-transit__hub mission-transit__hub--locale" cx="88" cy="38" r="2.4" />
-          <path className="mission-transit__scanline" d="M 4 18 H 96" />
-        </svg>
+                d={getPath(FORK_BRANCHES[index] ?? FORK_BRANCHES[0])}
+              />
+            ))}
+            {TRACK_NODES.map((node, index) => (
+              <circle
+                key={`${missionId}-node-${index}`}
+                className={[
+                  "mission-transit__hub",
+                  node.variant === "locale" ? "mission-transit__hub--locale" : "",
+                  node.variant === "minor" ? "mission-transit__hub--minor" : "",
+                ].filter(Boolean).join(" ")}
+                cx={node.x}
+                cy={node.y}
+                r={node.variant === "hub" ? 2.2 : node.variant === "locale" ? 2 : 1.2}
+              />
+            ))}
+            <path className="mission-transit__scanline" d="M 4 18 H 96" />
+          </svg>
 
         <div className="mission-transit__labels" aria-hidden="true">
           <span className="mission-transit__label mission-transit__label--depot">Depot spine</span>
@@ -219,8 +260,12 @@ export function MissionTransitScene({
         >
           <div className="mission-transit__deck-car">
             <span className="mission-transit__deck-glow" />
-            <span className="mission-transit__deck-name">{selectedDeckName ?? "Courier deck"}</span>
-            <span className="mission-transit__deck-route">{routeLabel}</span>
+            <span className="mission-transit__deck-light" />
+            <span className="mission-transit__deck-copy">
+              <span className="mission-transit__deck-name">{selectedDeckName ?? "Courier deck"}</span>
+              <span className="mission-transit__deck-route">{routeLabel}</span>
+            </span>
+            <span className="mission-transit__deck-signal" />
           </div>
         </div>
       </div>

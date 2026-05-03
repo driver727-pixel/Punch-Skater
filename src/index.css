@@ -8625,11 +8625,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   padding: 14px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(0,0,0,0.18);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)),
+    rgba(0,0,0,0.18);
   color: var(--text);
   cursor: pointer;
   text-align: left;
@@ -8720,6 +8722,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-selector-card__name {
   font-size: 14px;
+  line-height: 1.35;
 }
 .mission-selector-card__operation {
   font-size: 11px;
@@ -8728,14 +8731,56 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--mission-accent, var(--accent));
 }
 .mission-selector-card__tagline {
+  margin: 0;
   color: var(--text-dim);
   font-size: 12px;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.mission-selector-card__tagline--detail {
+  margin-top: 6px;
+  -webkit-line-clamp: unset;
 }
 .mission-selector-card__badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.mission-selector-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mission-selector-card__stats--detail {
+  margin-top: 10px;
+}
+.mission-selector-card__stat {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mission-selector-card__stat--reward {
+  color: #fff0a1;
+  border-color: rgba(255,221,0,0.28);
+  background: rgba(255,221,0,0.08);
+}
+.mission-selector-card__hint {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .mission-selector-card__badge {
   display: inline-flex;
@@ -9070,7 +9115,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border: 1px solid rgba(255,255,255,0.08);
   background:
     radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 42%),
-    linear-gradient(180deg, rgba(5,10,16,0.84), rgba(2,4,8,0.96));
+    linear-gradient(180deg, rgba(9,16,26,0.96), rgba(2,6,12,0.98));
+}
+.mission-transit__map::before,
+.mission-transit__map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mission-transit__map::before {
+  background:
+    linear-gradient(120deg, rgba(255,255,255,0.05), transparent 34%),
+    linear-gradient(180deg, transparent, rgba(0,0,0,0.34));
+}
+.mission-transit__map::after {
+  background: radial-gradient(circle at center, transparent 48%, rgba(0,0,0,0.38) 100%);
 }
 .mission-transit__grid {
   position: absolute;
@@ -9081,40 +9141,72 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background-size: 44px 44px;
   mask-image: radial-gradient(circle at center, #000 64%, transparent 100%);
 }
+.mission-transit__glow {
+  position: absolute;
+  width: 40%;
+  height: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(48px);
+  opacity: 0.3;
+}
+.mission-transit__glow--top {
+  top: -12%;
+  left: -8%;
+  background: var(--mission-glow, rgba(0,255,136,0.16));
+}
+.mission-transit__glow--bottom {
+  right: -8%;
+  bottom: -18%;
+  background: rgba(0,204,255,0.18);
+}
 .mission-transit__svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
+.mission-transit__road {
+  fill: none;
+  stroke: rgba(255,214,111,0.75);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  stroke-dasharray: 6 8;
+  opacity: 0.8;
+}
 .mission-transit__block {
-  fill: rgba(255,255,255,0.04);
-  stroke: rgba(255,255,255,0.08);
-  stroke-width: 0.4;
+  fill: rgba(255,255,255,0.03);
+  stroke: rgba(255,255,255,0.1);
+  stroke-width: 0.5;
 }
 .mission-transit__rail {
   fill: none;
-  stroke: rgba(255,255,255,0.2);
-  stroke-width: 1.6;
+  stroke: rgba(255,255,255,0.18);
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
   filter: drop-shadow(0 0 8px var(--mission-glow, rgba(0,255,136,0.2)));
 }
 .mission-transit__rail--base {
-  stroke: rgba(255,255,255,0.26);
+  stroke: rgba(255,255,255,0.22);
 }
 .mission-transit__rail--active {
   stroke: var(--mission-accent, var(--accent));
-  stroke-width: 2.2;
+  stroke-width: 2.8;
 }
 .mission-transit__hub {
-  fill: rgba(255,255,255,0.24);
-  stroke: rgba(255,255,255,0.35);
+  fill: rgba(255,255,255,0.28);
+  stroke: rgba(255,255,255,0.45);
   stroke-width: 0.8;
+}
+.mission-transit__hub--minor {
+  fill: rgba(255,255,255,0.16);
+  stroke: rgba(255,255,255,0.22);
+  stroke-width: 0.5;
 }
 .mission-transit__hub--locale {
   fill: var(--mission-accent, var(--accent));
-  stroke: rgba(255,255,255,0.7);
+  stroke: rgba(255,255,255,0.72);
 }
 .mission-transit__scanline {
   fill: none;
@@ -9136,24 +9228,24 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   padding: 5px 8px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(4,8,16,0.86);
+  background: rgba(4,8,16,0.82);
   color: var(--text-dim);
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 .mission-transit__label--depot {
-  left: 8%;
+  left: 7%;
   top: 76%;
 }
 .mission-transit__label--fork {
   left: 49%;
-  top: 49%;
+  top: 50%;
 }
 .mission-transit__label--locale {
   right: 6%;
-  top: 56%;
+  top: 58%;
   color: var(--mission-accent, var(--accent));
 }
 .mission-transit__branch-label {
@@ -9173,32 +9265,57 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-transit__deck-car {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 120px;
-  padding: 10px 12px;
-  border-radius: 16px;
+  align-items: center;
+  gap: 10px;
+  min-width: 138px;
+  padding: 9px 12px;
+  border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.16);
   background:
-    linear-gradient(145deg, rgba(255,255,255,0.12), rgba(0,0,0,0.5)),
+    linear-gradient(145deg, rgba(255,255,255,0.14), rgba(0,0,0,0.38)),
     rgba(4,8,16,0.92);
   box-shadow:
-    0 8px 24px rgba(0,0,0,0.35),
+    0 10px 24px rgba(0,0,0,0.32),
     0 0 24px var(--mission-glow, rgba(0,255,136,0.18));
-  transform: translate(-50%, -50%) rotateX(70deg) rotateY(14deg);
+  transform: translate(-50%, -50%);
 }
 .mission-transit__deck-glow {
   position: absolute;
-  inset: auto 10% -12px;
-  height: 10px;
+  inset: auto 14% -10px;
+  height: 8px;
   border-radius: 999px;
   background: var(--mission-glow, rgba(0,255,136,0.2));
-  filter: blur(10px);
+  filter: blur(12px);
+}
+.mission-transit__deck-light,
+.mission-transit__deck-signal {
+  position: relative;
+  z-index: 1;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.mission-transit__deck-light {
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(180deg, #ffe9a2, #ffc94d);
+  box-shadow: 0 0 12px rgba(255,201,77,0.5);
+}
+.mission-transit__deck-signal {
+  width: 8px;
+  height: 8px;
+  background: rgba(255,255,255,0.58);
+}
+.mission-transit__deck-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .mission-transit__deck-name,
 .mission-transit__deck-route {
-  position: relative;
-  z-index: 1;
+  display: block;
 }
 .mission-transit__deck-name {
   color: var(--text);
@@ -9206,6 +9323,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mission-transit__deck-route {
   color: var(--mission-accent, var(--accent));
@@ -9215,7 +9335,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-intel-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -9683,8 +9803,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     min-height: 280px;
   }
   .mission-transit__deck-car {
-    min-width: 104px;
-    padding: 9px 10px;
+    min-width: 116px;
+    padding: 8px 10px;
   }
   .mission-transit__branch-label {
     max-width: 120px;
@@ -9699,7 +9819,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
   .mission-selector-card {
     padding: 12px;
-    gap: 6px;
+    gap: 8px;
   }
   .mission-selector-card__name {
     font-size: 13px;

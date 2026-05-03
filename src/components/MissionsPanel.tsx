@@ -427,9 +427,8 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     return [
-      "Pick a route first. Fork choices can add new deck requirements before the run will unlock.",
-      "Every requirement below must pass at the same time. One red check is enough to block Launch Run.",
       `${selectedMission.district} access right now: ${getMissionDistrictAccessSummary(selectedMission, selectedDistrictWeather)}.`,
+      "Pick a route first. Fork choices can add new deck requirements before the run will unlock.",
       selectedEvaluation?.eligible
         ? "This deck clears the checks, so Launch Run will go live."
         : `Current blocker: ${selectedEvaluation?.summary ?? "Choose a deck to see what is blocking the run."}`,
@@ -492,6 +491,8 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
           <div className="mission-selector-grid">
             {missions.map((mission) => {
               const presentation = getMissionPresentation(mission);
+              const primaryRequirement = mission.requirements[0];
+              const secondaryRequirement = mission.requirements[1];
               return (
                 <button
                   key={mission.id}
@@ -523,16 +524,18 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   <span className="mission-selector-card__operation">{presentation.operation}</span>
                   <strong className="mission-selector-card__name">{mission.title}</strong>
                   <p className="mission-selector-card__tagline">{mission.tagline}</p>
-                  <div className="mission-selector-card__badges">
-                    <span className="mission-selector-card__badge tag--ozzies">+{mission.rewardOzzies} Oz</span>
-                    <span className="mission-selector-card__badge">+{mission.rewardXp} XP</span>
-                    <span className="mission-selector-card__badge">{presentation.rewardFocus[0]}</span>
-                    {mission.requirements.slice(0, 2).map((requirement) => (
-                      <span key={`${mission.id}-${requirement.label}`} className="mission-selector-card__badge">
-                        {getMissionRequirementBadge(requirement)}
-                      </span>
-                    ))}
+                  <div className="mission-selector-card__stats" aria-label="Mission rewards and requirements">
+                    <span className="mission-selector-card__stat mission-selector-card__stat--reward">+{mission.rewardOzzies} Oz</span>
+                    <span className="mission-selector-card__stat">+{mission.rewardXp} XP</span>
+                    <span className="mission-selector-card__stat">{mission.requirements.length} checks</span>
                   </div>
+                  {(primaryRequirement || secondaryRequirement) && (
+                    <p className="mission-selector-card__hint">
+                      {primaryRequirement ? getMissionRequirementBadge(primaryRequirement) : null}
+                      {primaryRequirement && secondaryRequirement ? " · " : null}
+                      {secondaryRequirement ? getMissionRequirementBadge(secondaryRequirement) : null}
+                    </p>
+                  )}
                 </button>
               );
             })}
@@ -544,7 +547,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 <div>
                   <div className="mission-selector-card__district">{selectedMission.district}</div>
                   <h3 className="mission-selector-card__name">{selectedMission.title}</h3>
-                  <p className="mission-selector-card__tagline">{selectedMission.description}</p>
+                  <p className="mission-selector-card__tagline mission-selector-card__tagline--detail">
+                    {selectedMission.tagline}
+                  </p>
+                  <div className="mission-selector-card__stats mission-selector-card__stats--detail">
+                    <span className="mission-selector-card__stat mission-selector-card__stat--reward">+{selectedRewards.rewardOzzies} Oz</span>
+                    <span className="mission-selector-card__stat">+{selectedRewards.rewardXp} XP</span>
+                    <span className={selectedOutcomeBadgeClass}>{selectedOutcomeLabel}</span>
+                  </div>
                 </div>
               </div>
 
@@ -802,11 +812,11 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 </article>
                 <article className="mission-intel-card">
                   <span className="mission-intel-card__label">How to unlock this run</span>
-                  <ul className="mission-intel-list">
-                    {selectedLaunchTips.map((tip, index) => (
-                      <li key={`${selectedMission.id}-tip-${index}`}>{tip}</li>
-                    ))}
-                  </ul>
+                    <ul className="mission-intel-list">
+                      {selectedLaunchTips.slice(0, 3).map((tip, index) => (
+                        <li key={`${selectedMission.id}-tip-${index}`}>{tip}</li>
+                      ))}
+                    </ul>
                   <p className="mission-intel-card__quote">
                     Launch Run only enables when your selected deck passes every active check.
                   </p>
