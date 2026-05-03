@@ -21,7 +21,94 @@ type MissionTemplate = Omit<
   | "updatedAt"
 >;
 
-export const MISSION_BOARD_DEFINITIONS: MissionTemplate[] = [
+const RELAXED_MISSION_MIN_CARDS = 5;
+const BASE_STAT_REDUCTION = 4;
+const FORK_STAT_REDUCTION = 2;
+
+function pluralize(count: number, singular: string, customPlural = `${singular}s`): string {
+  return count === 1 ? singular : customPlural;
+}
+
+function capitalize(value: string | undefined): string {
+  if (!value) return "";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function buildMissionRequirementLabel(requirement: MissionRequirement): string {
+  const count = requirement.count ?? 0;
+  switch (requirement.type) {
+    case "min_cards":
+      return `Bring at least ${count} cards for the run.`;
+    case "district_access":
+      return `At least ${count} ${pluralize(count, "courier")} can enter ${requirement.district}.`;
+    case "wheel_type":
+      return `Run at least ${count} ${pluralize(count, "courier")} with ${(requirement.wheelTypes ?? []).join(" / ")} wheels.`;
+    case "archetype":
+      return `Include ${count} ${requirement.archetype} ${pluralize(count, "courier")}.`;
+    case "faction":
+      return `Include ${count} ${requirement.faction} ${pluralize(count, "courier")}.`;
+    case "stat_total":
+      return `Reach ${count} total ${capitalize(requirement.stat)} across the deck.`;
+    case "district_card":
+      return `Include ${count} ${requirement.district} ${pluralize(count, "local")} in the deck.`;
+    default:
+      throw new Error(`Unknown mission requirement type: ${(requirement as { type?: string }).type}`);
+  }
+}
+
+function relaxMissionRequirement(
+  requirement: MissionRequirement,
+  {
+    specialistFloor,
+    statReduction,
+  }: {
+    specialistFloor: number;
+    statReduction: number;
+  },
+): MissionRequirement | null {
+  const count = requirement.count ?? 0;
+  let nextCount = count;
+  switch (requirement.type) {
+    case "min_cards":
+      nextCount = Math.min(count, RELAXED_MISSION_MIN_CARDS);
+      break;
+    case "district_access":
+    case "wheel_type":
+      nextCount = Math.max(1, count - 1);
+      break;
+    case "district_card":
+    case "archetype":
+    case "faction":
+      nextCount = Math.max(specialistFloor, count - 1);
+      break;
+    case "stat_total":
+      nextCount = Math.max(1, count - statReduction);
+      break;
+    default:
+      throw new Error(`Unknown mission requirement type: ${(requirement as { type?: string }).type}`);
+  }
+
+  if (nextCount <= 0) return null;
+  const relaxedRequirement = { ...requirement, count: nextCount };
+  return {
+    ...relaxedRequirement,
+    label: buildMissionRequirementLabel(relaxedRequirement),
+  };
+}
+
+function relaxMissionRequirements(
+  requirements: MissionRequirement[],
+  options: {
+    specialistFloor: number;
+    statReduction: number;
+  },
+): MissionRequirement[] {
+  return requirements
+    .map((requirement) => relaxMissionRequirement(requirement, options))
+    .filter((requirement): requirement is MissionRequirement => requirement !== null);
+}
+
+const BASE_MISSION_BOARD_DEFINITIONS: MissionTemplate[] = [
   {
     definitionId: "batteryville-breaker-yard",
     sortOrder: 0,
@@ -465,6 +552,26 @@ export const MISSION_BOARD_DEFINITIONS: MissionTemplate[] = [
   },
 ];
 
+export const MISSION_BOARD_DEFINITIONS: MissionTemplate[] = BASE_MISSION_BOARD_DEFINITIONS.map((definition) => ({
+  ...definition,
+  requirements: relaxMissionRequirements(definition.requirements, {
+    specialistFloor: 0,
+    statReduction: BASE_STAT_REDUCTION,
+  }),
+  fork: definition.fork
+    ? {
+      ...definition.fork,
+      options: definition.fork.options.map((option) => ({
+        ...option,
+        requirements: relaxMissionRequirements(option.requirements ?? [], {
+          specialistFloor: 1,
+          statReduction: FORK_STAT_REDUCTION,
+        }),
+      })),
+    }
+    : definition.fork,
+}));
+
 function getRequirementTarget(requirement: MissionRequirement): number {
   return requirement.count ?? 0;
 }
@@ -536,8 +643,9 @@ export function getMissionForkOption(
 ): MissionForkOption | null {
   const options = mission.fork?.options ?? [];
   if (options.length === 0) return null;
-  const resolvedId = selectedForkOptionId ?? mission.selectedForkOptionId ?? options[0]?.id;
-  return options.find((option) => option.id === resolvedId) ?? options[0] ?? null;
+  const resolvedId = selectedForkOptionId ?? mission.selectedForkOptionId ?? null;
+  if (!resolvedId) return null;
+  return options.find((option) => option.id === resolvedId) ?? null;
 }
 
 export function getMissionEffectiveRewards(

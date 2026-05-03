@@ -293,7 +293,7 @@ function getRequirementTip(
     : "the required wheel setup";
   switch (result.requirement.type) {
     case "min_cards":
-      return "Mission decks need all six slots filled before the run can launch.";
+      return "Mission decks need at least five filled slots before the run can launch.";
     case "district_access":
       return weather?.accessRule
         ? `${currentAccessSummary} Weather is adding a board-type lock on top of the normal wheel rules.`
@@ -390,7 +390,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
 
   useEffect(() => {
     const mission = missions.find((entry) => entry.id === selectedMissionId) ?? missions[0] ?? null;
-    setSelectedForkOptionId(mission?.selectedForkOptionId ?? mission?.fork?.options[0]?.id ?? null);
+    setSelectedForkOptionId(mission?.selectedForkOptionId ?? null);
   }, [missions, selectedMissionId]);
 
   const selectedMission = useMemo(

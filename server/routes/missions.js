@@ -170,7 +170,7 @@ export function registerMissionRoutes(app, {
         }
 
         const deck = deckSnap.data();
-        const selectedForkOptionId = requestedForkOptionId || mission.selectedForkOptionId || mission.fork?.options?.[0]?.id || null;
+        const selectedForkOptionId = requestedForkOptionId || mission.selectedForkOptionId || null;
         const evaluation = evaluateMissionDeck(deck, mission, weatherPayload, selectedForkOptionId);
         const rewards = getMissionEffectiveRewards(mission, selectedForkOptionId);
         const profile = profileSnap.exists ? profileSnap.data() : {};
