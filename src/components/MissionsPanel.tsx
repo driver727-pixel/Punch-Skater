@@ -688,7 +688,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           <span
                             className={`mission-result__badge ${evaluation.eligible ? "mission-result__badge--success" : "mission-result__badge--fail"}`}
                           >
-                            {evaluation.eligible ? "Ready" : "At risk"}
+                            {evaluation.eligible ? "Clean" : "At risk"}
                           </span>
                         </button>
                       );

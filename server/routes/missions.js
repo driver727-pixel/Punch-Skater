@@ -96,7 +96,7 @@ function buildMissionFailureRisk(mission, deck, now) {
     label: 'Mission fallout',
   };
   const repairMinutes = Number(riskedCard?.maintenance?.repairMinutes) || DEFAULT_FAILURE_LOCK_MINUTES;
-  const lockMinutes = Math.max(5, Math.min(DEFAULT_FAILURE_LOCK_MINUTES, repairMinutes));
+  const lockMinutes = Math.min(Math.max(repairMinutes, 5), DEFAULT_FAILURE_LOCK_MINUTES);
   const recoveryAt = new Date(nowMs + lockMinutes * 60_000).toISOString();
   const cardName = typeof riskedCard?.identity?.name === 'string' && riskedCard.identity.name.trim()
     ? riskedCard.identity.name.trim()
