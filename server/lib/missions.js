@@ -629,6 +629,14 @@ function buildWeatherMap(weatherPayload) {
   return Object.fromEntries((weatherPayload?.districts ?? []).map((entry) => [entry.district, entry]));
 }
 
+function isMissionCardReady(card, nowMs = Date.now()) {
+  const maintenance = card?.maintenance;
+  if (!maintenance || maintenance.state === 'active') return true;
+  if (!maintenance.repairEndsAt) return false;
+  const repairEndsMs = Date.parse(maintenance.repairEndsAt);
+  return Number.isFinite(repairEndsMs) && repairEndsMs <= nowMs;
+}
+
 function canCardAccessDistrict(card, district, weatherByDistrict) {
   const wheelType = card?.board?.config?.wheels;
   const boardType = card?.board?.config?.boardType;
@@ -741,7 +749,7 @@ export function createDailyMissionBoardPayload(uid, now = new Date().toISOString
 
 export function evaluateMissionDeck(deck, mission, weatherPayload = null, selectedForkOptionId = null) {
   const weatherByDistrict = buildWeatherMap(weatherPayload);
-  const cards = Array.isArray(deck?.cards) ? deck.cards : [];
+  const cards = Array.isArray(deck?.cards) ? deck.cards.filter((card) => isMissionCardReady(card)) : [];
   const selectedOption = getMissionForkOption(mission, selectedForkOptionId);
   const results = getMissionEffectiveRequirements(mission, selectedForkOptionId).map((requirement) => {
     switch (requirement.type) {
