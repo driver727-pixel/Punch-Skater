@@ -93,7 +93,9 @@ export function buildPendingPurchaseUpdate(currentData, purchase, updatedAt) {
   };
 
   if (shouldPersistPurchaseDetails(currentData?.tier, purchase?.tier)) {
-    addOptionalPurchaseFields(nextData, purchase);
+    if (purchase?.sessionId) {
+      nextData.lastCheckoutSessionId = purchase.sessionId;
+    }
   }
 
   return nextData;
