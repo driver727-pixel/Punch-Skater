@@ -937,9 +937,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   : getMissionPresentation(missionResult.mission).failureLabel}
               </h3>
                 <p className="mission-selector-card__tagline">
-                  {missionResult.rewardGranted
-                    ? missionResult.mission.lastRunSummary ?? missionResult.evaluation.summary
-                    : missionResult.mission.lastRunSummary ?? missionResult.evaluation.summary}
+                  {missionResult.mission.lastRunSummary ?? missionResult.evaluation.summary}
                 </p>
               </div>
             <div className="mission-result__rewards">
