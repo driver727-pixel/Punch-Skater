@@ -92,9 +92,6 @@ export function TierModal({ onClose }: TierModalProps) {
 
   const tierOrder: TierLevel[] = ["free", "tier2", "tier3"];
   const signupTier = signupStep && signupStep !== "seasonPass" ? TIERS[signupStep] : null;
-  if (signupStep && signupStep !== "seasonPass" && !signupTier) {
-    return null;
-  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
