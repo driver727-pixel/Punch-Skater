@@ -2409,7 +2409,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* ===== Tier Cards (inside modal) ===== */
 .tier-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
 @media (max-width: 680px) { .tier-cards { grid-template-columns: 1fr; } }
@@ -2426,6 +2426,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .tier-card--active { border-color: var(--accent2); }
 .tier-card--featured { border-color: var(--purple); }
+.tier-card--season { border-color: rgba(255, 204, 0, 0.42); }
 
 .tier-badge {
   position: absolute;
@@ -2443,6 +2444,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .tier-name { font-size: 15px; font-weight: bold; color: var(--text); letter-spacing: 1px; }
 .tier-price { font-size: 18px; color: var(--accent); font-weight: bold; margin-bottom: 4px; }
+.tier-annual-price { font-size: 12px; color: var(--text-dim); margin-top: -4px; }
 .tier-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 
 .tier-features {
@@ -2479,6 +2481,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .tier-back { align-self: flex-start; font-size: 12px; }
 .tier-signup-title { font-size: 16px; color: var(--accent); letter-spacing: 1px; }
 .tier-signup-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+.tier-billing-toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+.tier-billing-toggle--active { border-color: var(--accent); color: var(--accent); }
 .tier-error { font-size: 12px; color: var(--danger); }
 
 /* ===== Share Modal ===== */

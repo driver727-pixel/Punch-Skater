@@ -365,7 +365,7 @@ export function ForgeControlsPanel({
           {freeForgeRemainingMs > 0
             ? `Your next free forge unlocks in ${formatDurationClock(freeForgeRemainingMs)}.`
             : freeCardUsed
-              ? "Your 8-hour free forge is ready."
+              ? "Your daily free forge is ready."
               : "Your first free forge is ready right now."}
         </p>
       )}

@@ -12,6 +12,7 @@ import {
   type LocalBattlePassState,
 } from "../lib/battlePass";
 import { isEnabled } from "../lib/featureFlags";
+import { useTier } from "../context/TierContext";
 
 export interface BattlePassHookState {
   enabled: boolean;
@@ -32,11 +33,16 @@ export interface BattlePassHookState {
 
 export function useBattlePass(): BattlePassHookState {
   const enabled = isEnabled("BATTLE_PASS");
+  const { tier } = useTier();
   const [state, setState] = useState<LocalBattlePassState>(loadBattlePassState);
 
   const seasonId = getCurrentSeasonId();
   const bounds = useMemo(() => getSeasonBounds(seasonId), [seasonId]);
-  const xpProgress = useMemo(() => getXpProgress(state), [state]);
+  const effectiveState = useMemo(
+    () => (tier === "tier3" ? { ...state, isPremium: true } : state),
+    [state, tier],
+  );
+  const xpProgress = useMemo(() => getXpProgress(effectiveState), [effectiveState]);
 
   const addXp = useCallback((amount: number) => {
     setState((prev) => addXpToPass(prev, amount));
@@ -47,8 +53,12 @@ export function useBattlePass(): BattlePassHookState {
   }, []);
 
   const claimPremiumReward = useCallback((tier: number) => {
-    setState((prev) => claimReward(prev, tier, true));
-  }, []);
+    setState((prev) => claimReward(
+      tier === "tier3" ? { ...prev, isPremium: true } : prev,
+      tier,
+      true,
+    ));
+  }, [tier]);
 
   const isRewardClaimed = useCallback(
     (tier: number, premium: boolean) => {
@@ -61,22 +71,22 @@ export function useBattlePass(): BattlePassHookState {
 
   const isRewardAvailable = useCallback(
     (tier: number, premium: boolean) => {
-      if (tier > state.tier) return false;
-      if (premium && !state.isPremium) return false;
+      if (tier > effectiveState.tier) return false;
+      if (premium && !effectiveState.isPremium) return false;
       return !(premium
-        ? state.claimedPremiumRewards.includes(tier)
-        : state.claimedFreeRewards.includes(tier));
+        ? effectiveState.claimedPremiumRewards.includes(tier)
+        : effectiveState.claimedFreeRewards.includes(tier));
     },
-    [state],
+    [effectiveState],
   );
 
   return {
     enabled,
-    state,
+    state: effectiveState,
     seasonId,
     seasonName: `Season ${seasonId}`,
     seasonEndsAt: bounds.endsAt,
-    tier: state.tier,
+    tier: effectiveState.tier,
     maxTier: BATTLE_PASS_MAX_TIER,
     xpProgress,
     tiers: BATTLE_PASS_TIERS,

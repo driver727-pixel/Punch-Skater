@@ -42,29 +42,30 @@ test.describe('Tier modal', () => {
     await openTierModal(page);
     const freeCard = page.locator('.tier-card').filter({ hasText: 'Free Rider' });
     await expect(
-      freeCard.locator('.tier-features li').filter({ hasText: /^✓ Create 1 free player card$/ }),
+      freeCard.locator('.tier-features li').filter({ hasText: /^✓ Create 1 starter player card$/ }),
     ).toBeVisible();
+    await expect(freeCard).toContainText(/1 free forge every 24 hours/i);
     await expect(freeCard).toContainText(/download or screenshot cards to share/i);
     await expect(freeCard).toContainText(/referral credits:/i);
     await expect(freeCard).not.toContainText(/share cards via link/i);
     await expect(freeCard).not.toContainText(/✓ 1 free player card/i);
   });
 
-  test('tier2 card shows $5 one-time price', async ({ page }) => {
+  test('tier2 card shows monthly subscription price', async ({ page }) => {
     await openTierModal(page);
     await expect(
       page.locator('.tier-card', {
         has: page.locator('.tier-name', { hasText: 'Street Creator' }),
       }).locator('.tier-price'),
-    ).toContainText('$5 one-time');
+    ).toContainText('$4.99/mo');
   });
 
-  test('tier3 card shows $10 one-time price and BEST VALUE badge', async ({ page }) => {
+  test('tier3 card shows monthly subscription price and BEST VALUE badge', async ({ page }) => {
     await openTierModal(page);
     const featuredCard = page.locator('.tier-card', {
       has: page.locator('.tier-name', { hasText: 'Deck Master' }),
     });
-    await expect(featuredCard.locator('.tier-price')).toContainText('$10 one-time');
+    await expect(featuredCard.locator('.tier-price')).toContainText('$9.99/mo');
     await expect(featuredCard.getByText('BEST VALUE')).toBeVisible();
   });
 
@@ -82,21 +83,21 @@ test.describe('Tier modal', () => {
 
   test('tier2 upgrade flow shows email input', async ({ page }) => {
     await openTierModal(page);
-    await page.getByRole('button', { name: /upgrade.*\$5/i }).click();
+    await page.getByRole('button', { name: /subscribe.*\$4\.99/i }).click();
     await expect(page.getByPlaceholder(/your@email\.com/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /continue to payment/i })).toBeVisible();
   });
 
   test('tier3 upgrade flow shows email input', async ({ page }) => {
     await openTierModal(page);
-    await page.getByRole('button', { name: /upgrade.*\$10/i }).click();
+    await page.getByRole('button', { name: /subscribe.*\$9\.99/i }).click();
     await expect(page.getByPlaceholder(/your@email\.com/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /continue to payment/i })).toBeVisible();
   });
 
   test('upgrade flow shows error for invalid email', async ({ page }) => {
     await openTierModal(page);
-    await page.getByRole('button', { name: /upgrade.*\$5/i }).click();
+    await page.getByRole('button', { name: /subscribe.*\$4\.99/i }).click();
     await page.getByPlaceholder(/your@email\.com/i).fill('not-an-email');
     await page.getByRole('button', { name: /continue to payment/i }).click();
     await expect(page.getByText(/valid email/i)).toBeVisible();
@@ -104,7 +105,7 @@ test.describe('Tier modal', () => {
 
   test('back button returns to tier list from email step', async ({ page }) => {
     await openTierModal(page);
-    await page.getByRole('button', { name: /upgrade.*\$5/i }).click();
+    await page.getByRole('button', { name: /subscribe.*\$4\.99/i }).click();
     await expect(page.getByRole('button', { name: /← back/i })).toBeVisible();
     await page.getByRole('button', { name: /← back/i }).click();
     await expect(page.locator('.tier-cards .tier-name', { hasText: 'Street Creator' })).toBeVisible();

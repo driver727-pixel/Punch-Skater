@@ -5,12 +5,27 @@ export function registerPaymentRoutes(app, {
   stripeWebhookSecret,
   checkoutRateLimit,
   resolveTierFromPriceId,
+  resolveCheckoutModeFromPriceId,
+  resolveBillingPeriodFromPriceId,
   syncPurchasedTier,
+  syncSubscriptionEntitlement,
   isAllowedRedirectUrl,
   normalizeEmail,
   timingSafeEmailMatches,
   sendCheckoutVerificationFailure,
 }) {
+  function timestampToIso(seconds) {
+    return Number.isFinite(seconds) && seconds > 0
+      ? new Date(seconds * 1000).toISOString()
+      : undefined;
+  }
+
+  function getStripeId(value) {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    return typeof value.id === 'string' ? value.id : '';
+  }
+
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '256kb' }), async (req, res) => {
     if (!stripe || !stripeWebhookSecret) {
       res.status(503).json({ error: 'Stripe webhook handling is not configured.' });
@@ -36,10 +51,14 @@ export function registerPaymentRoutes(app, {
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         let paidTier = resolveTierFromPriceId(session.metadata?.priceId);
+        let checkoutMode = resolveCheckoutModeFromPriceId(session.metadata?.priceId);
+        let billingPeriod = resolveBillingPeriodFromPriceId(session.metadata?.priceId);
         if (!paidTier) {
           const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
           const fallbackPriceId = lineItems.data[0]?.price?.id ?? '';
           paidTier = resolveTierFromPriceId(fallbackPriceId);
+          checkoutMode = resolveCheckoutModeFromPriceId(fallbackPriceId);
+          billingPeriod = resolveBillingPeriodFromPriceId(fallbackPriceId);
         }
         const customerEmail = typeof session.customer_details?.email === 'string'
           ? session.customer_details.email
@@ -47,10 +66,60 @@ export function registerPaymentRoutes(app, {
             ? session.customer_email
             : '';
         if (paidTier && session.payment_status === 'paid') {
+          let subscription = null;
+          const stripeSubscriptionId = getStripeId(session.subscription);
+          if (checkoutMode === 'subscription' && stripeSubscriptionId) {
+            subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+          }
           await syncPurchasedTier({
             tier: paidTier,
             email: customerEmail,
             sessionId: session.id,
+            checkoutMode,
+            stripeCustomerId: getStripeId(session.customer),
+            stripeSubscriptionId,
+            subscriptionStatus: subscription?.status,
+            currentPeriodEnd: timestampToIso(subscription?.current_period_end),
+            billingPeriod,
+          });
+        }
+      } else if (
+        event.type === 'customer.subscription.updated' ||
+        event.type === 'customer.subscription.deleted'
+      ) {
+        const subscription = event.data.object;
+        const priceId = subscription.items?.data?.[0]?.price?.id ?? '';
+        const paidTier = resolveTierFromPriceId(priceId);
+        if (!paidTier) {
+          res.json({ received: true });
+          return;
+        }
+        await syncSubscriptionEntitlement({
+          tier: paidTier,
+          status: subscription.status,
+          stripeCustomerId: getStripeId(subscription.customer),
+          stripeSubscriptionId: subscription.id,
+          currentPeriodEnd: timestampToIso(subscription.current_period_end),
+          billingPeriod: resolveBillingPeriodFromPriceId(priceId),
+        });
+      } else if (event.type === 'invoice.paid') {
+        const invoice = event.data.object;
+        const stripeSubscriptionId = getStripeId(invoice.subscription);
+        if (stripeSubscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+          const priceId = subscription.items?.data?.[0]?.price?.id ?? '';
+          const paidTier = resolveTierFromPriceId(priceId);
+          if (!paidTier) {
+            res.json({ received: true });
+            return;
+          }
+          await syncSubscriptionEntitlement({
+            tier: paidTier,
+            status: subscription.status,
+            stripeCustomerId: getStripeId(subscription.customer),
+            stripeSubscriptionId: subscription.id,
+            currentPeriodEnd: timestampToIso(subscription.current_period_end),
+            billingPeriod: resolveBillingPeriodFromPriceId(priceId),
           });
         }
       }
@@ -71,9 +140,15 @@ export function registerPaymentRoutes(app, {
     const { priceId, successUrl, cancelUrl, email } = req.body ?? {};
     const normalizedEmail = normalizeEmail(email);
     const paidTier = resolveTierFromPriceId(priceId);
+    const checkoutMode = resolveCheckoutModeFromPriceId(priceId);
+    const billingPeriod = resolveBillingPeriodFromPriceId(priceId);
 
-    if (!priceId || typeof priceId !== 'string' || !paidTier) {
+    if (!priceId || typeof priceId !== 'string' || !paidTier || !checkoutMode) {
       res.status(400).json({ error: 'Invalid or unsupported price ID.' });
+      return;
+    }
+    if (!billingPeriod) {
+      res.status(400).json({ error: 'Billing period is not configured for this price ID.' });
       return;
     }
 
@@ -85,13 +160,18 @@ export function registerPaymentRoutes(app, {
     try {
       const session = await stripe.checkout.sessions.create({
         line_items: [{ price: priceId, quantity: 1 }],
-        mode: 'payment',
+        mode: checkoutMode,
+        ...(checkoutMode === 'subscription'
+          ? { subscription_data: { metadata: { priceId, paidTier, billingPeriod } } }
+          : {}),
         ...(typeof email === 'string' && email.trim()
           ? { customer_email: email.trim() }
           : {}),
         metadata: {
           priceId,
           paidTier,
+          checkoutMode,
+          billingPeriod,
           ...(normalizedEmail ? { emailLower: normalizedEmail } : {}),
         },
         success_url: successUrl,
@@ -126,6 +206,8 @@ export function registerPaymentRoutes(app, {
       const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
       const priceId = lineItems.data[0]?.price?.id;
       const paidTier = resolveTierFromPriceId(priceId);
+      const checkoutMode = resolveCheckoutModeFromPriceId(priceId);
+      const billingPeriod = resolveBillingPeriodFromPriceId(priceId);
       const sessionEmail = (session.customer_details?.email ?? session.customer_email ?? '').trim().toLowerCase();
 
       if (
@@ -146,10 +228,21 @@ export function registerPaymentRoutes(app, {
         return;
       }
 
+      let subscription = null;
+      const stripeSubscriptionId = getStripeId(session.subscription);
+      if (checkoutMode === 'subscription' && stripeSubscriptionId) {
+        subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+      }
       await syncPurchasedTier({
         tier: paidTier,
         email: sessionEmail,
         sessionId,
+        checkoutMode,
+        stripeCustomerId: getStripeId(session.customer),
+        stripeSubscriptionId,
+        subscriptionStatus: subscription?.status,
+        currentPeriodEnd: timestampToIso(subscription?.current_period_end),
+        billingPeriod,
       });
       res.json({
         tier: paidTier,
