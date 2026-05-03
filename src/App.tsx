@@ -45,12 +45,14 @@ function PlayerRewardBanner() {
 
   if (!playerRewards || dismissed) return null;
   if (!playerRewards.signupBonusGranted && !playerRewards.dailyReward?.claimed) return null;
+  const nextRewardXp = playerRewards.dailyReward?.nextRewardXp ?? 0;
+  const nextRewardOzzies = playerRewards.dailyReward?.nextRewardOzzies ?? 0;
   const updates = [
     playerRewards.signupBonusGranted ? "🎁 Rare signup bonus added." : "",
     playerRewards.dailyReward?.claimed
       ? `🔥 ${playerRewards.dailyReward.currentStreak}-day streak claimed for +${playerRewards.dailyReward.rewardXp} XP and +${playerRewards.dailyReward.rewardOzzies} Ozzies.`
       : "",
-    `Next login reward: +${playerRewards.dailyReward.nextRewardXp} XP and +${playerRewards.dailyReward.nextRewardOzzies} Ozzies.`,
+    `Next login reward: +${nextRewardXp} XP and +${nextRewardOzzies} Ozzies.`,
   ].filter(Boolean).join(" ");
 
   return (

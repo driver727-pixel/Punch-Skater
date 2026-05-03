@@ -591,10 +591,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       {getMissionStateLabel(mission)}
                     </span>
                   </div>
-                  <span className="mission-selector-card__operation">
-                    {presentation.operation}
-                    {weeklyTheme?.featuredDistricts?.includes(mission.district) ? " · Featured this week" : ""}
-                  </span>
+                  <span className="mission-selector-card__operation">{presentation.operation}</span>
                   <strong className="mission-selector-card__name">{mission.title}</strong>
                   <p className="mission-selector-card__tagline">{mission.tagline}</p>
                   <div className="mission-selector-card__stats" aria-label="Mission rewards and requirements">
