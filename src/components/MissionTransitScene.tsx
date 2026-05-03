@@ -12,6 +12,7 @@ interface MissionTransitSceneProps {
   sceneTags: string[];
   selectedDeckName?: string | null;
   routeLabel: string;
+  revealForkIntel?: boolean;
   fork?: MissionFork;
   selectedForkOption?: MissionForkOption | null;
   controlledBy: string;
@@ -122,6 +123,7 @@ export function MissionTransitScene({
   sceneTags,
   selectedDeckName,
   routeLabel,
+  revealForkIntel = false,
   fork,
   selectedForkOption,
   controlledBy,
@@ -231,7 +233,7 @@ export function MissionTransitScene({
 
         <div className="mission-transit__labels" aria-hidden="true">
           <span className="mission-transit__label mission-transit__label--depot">Depot spine</span>
-          <span className="mission-transit__label mission-transit__label--fork">Decision fork</span>
+          <span className="mission-transit__label mission-transit__label--fork">Blind fork</span>
           <span className="mission-transit__label mission-transit__label--locale">
             {glyph} {locale}
           </span>
@@ -244,7 +246,7 @@ export function MissionTransitScene({
                 top: `${(FORK_BRANCHES[index] ?? FORK_BRANCHES[0])[2].y}%`,
               }}
             >
-              {option.label}
+              {revealForkIntel ? option.label : `Route ${index + 1}`}
             </span>
           ))}
         </div>

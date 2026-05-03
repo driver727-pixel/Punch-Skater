@@ -233,6 +233,10 @@ function getMissionPresentation(mission: MissionBoardEntry | null): MissionPrese
   return MISSION_PRESENTATIONS[mission.definitionId] ?? DEFAULT_PRESENTATION;
 }
 
+function hasMissionRunRevealed(mission: MissionBoardEntry | null): boolean {
+  return Boolean(mission?.lastRunAt || mission?.status === "completed");
+}
+
 function getMissionThemeStyle(district: District): CSSProperties {
   const theme = DISTRICT_THEMES[district];
   return {
@@ -425,6 +429,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     () => (selectedMission ? getMissionEffectiveRewards(selectedMission, selectedForkOptionId) : { rewardXp: 0, rewardOzzies: 0 }),
     [selectedForkOptionId, selectedMission],
   );
+  const selectedResultRevealed = hasMissionRunRevealed(selectedMission);
   const selectedPresentation = useMemo(() => getMissionPresentation(selectedMission), [selectedMission]);
   const selectedDistrictLore = useMemo(
     () => (selectedMission ? DISTRICT_LORE_BY_NAME.get(selectedMission.district) ?? null : null),
@@ -441,7 +446,11 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   );
   const selectedDeckCardCount = selectedDeck?.cards.length ?? 0;
   const selectedDeckReadyCount = selectedEvaluation?.eligibleCardCount ?? 0;
-  const selectedRouteLabel = selectedForkOption?.label ?? "Main line";
+  const selectedRouteLabel = selectedResultRevealed
+    ? selectedForkOption?.label ?? "Main line"
+    : selectedForkOption
+      ? "Blind route armed"
+      : "Main line";
   const streakState = playerRewards?.dailyReward ?? null;
   const nextStreakReward = streakState
     ? { xp: streakState.nextRewardXp, ozzies: streakState.nextRewardOzzies }
@@ -450,24 +459,28 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     () => formatDurationClock(getRemainingDurationMs(dailyResetAt, nowMs)),
     [dailyResetAt, nowMs],
   );
-  const selectedOutcomeLabel = selectedMission?.status === "completed"
-    ? "Route Cleared"
-    : selectedEvaluation?.eligible
-      ? "Deck Ready"
-      : "Needs work";
-  const selectedOutcomeBadgeClass = selectedMission?.status === "completed" || selectedEvaluation?.eligible
-    ? "mission-result__badge mission-result__badge--success"
-    : "mission-result__badge mission-result__badge--fail";
+  const selectedOutcomeLabel = !selectedResultRevealed
+    ? "Intel Hidden"
+    : selectedMission?.status === "completed"
+      ? "Route Cleared"
+      : selectedEvaluation?.eligible
+        ? "Deck Ready"
+        : "Needs work";
+  const selectedOutcomeBadgeClass = !selectedResultRevealed
+    ? "mission-result__badge mission-result__badge--mystery"
+    : selectedMission?.status === "completed" || selectedEvaluation?.eligible
+      ? "mission-result__badge mission-result__badge--success"
+      : "mission-result__badge mission-result__badge--fail";
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     return [
       `${selectedMission.district} access right now: ${getMissionDistrictAccessSummary(selectedMission, selectedDistrictWeather)}.`,
       selectedEvaluation?.eligible
-        ? "This deck clears the active checks, so a clean clear is on the table."
-        : "Launch Run still works even if this deck misses checks, but a failed push can sideline one courier for a short injury, breakdown, or arrest timeout.",
+        ? "This deck looks hot enough to take the contract, but the payout and final result stay hidden until the run resolves."
+        : "Launch Run still works on a risky deck. Failure can sideline one courier for a short injury, breakdown, or arrest timeout.",
       selectedForkOption
-        ? `Optional route locked: ${selectedForkOption.label}.`
-        : "Route forks stay optional and sit after the launch stage.",
+        ? `Blind route armed: ${selectedForkOption.label}.`
+        : "Blind forks are optional gambles. Pick one for a secret modifier, or stay on the main line.",
     ];
   }, [selectedDistrictWeather, selectedEvaluation, selectedForkOption, selectedMission]);
 
@@ -562,6 +575,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
           <div className="mission-selector-grid">
             {missions.map((mission) => {
               const presentation = getMissionPresentation(mission);
+              const missionRevealed = hasMissionRunRevealed(mission);
               const primaryRequirement = mission.requirements[0];
               const secondaryRequirement = mission.requirements[1];
               return (
@@ -598,16 +612,25 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   <strong className="mission-selector-card__name">{mission.title}</strong>
                   <p className="mission-selector-card__tagline">{mission.tagline}</p>
                   <div className="mission-selector-card__stats" aria-label="Mission rewards and requirements">
-                    <span className="mission-selector-card__stat mission-selector-card__stat--reward">+{mission.rewardOzzies} Oz</span>
-                    <span className="mission-selector-card__stat">+{mission.rewardXp} XP</span>
-                    <span className="mission-selector-card__stat">{mission.requirements.length} checks</span>
+                    <span className="mission-selector-card__stat mission-selector-card__stat--reward">
+                      {missionRevealed ? `+${mission.rewardOzzies} Oz` : "Mystery Oz"}
+                    </span>
+                    <span className="mission-selector-card__stat">
+                      {missionRevealed ? `+${mission.rewardXp} XP` : "Hidden XP"}
+                    </span>
+                    <span className="mission-selector-card__stat">
+                      {missionRevealed ? `${mission.requirements.length} checks` : "Blind run"}
+                    </span>
                   </div>
-                  {(primaryRequirement || secondaryRequirement) && (
+                  {missionRevealed && (primaryRequirement || secondaryRequirement) && (
                     <p className="mission-selector-card__hint">
                       {primaryRequirement ? getMissionRequirementBadge(primaryRequirement) : null}
                       {primaryRequirement && secondaryRequirement ? " · " : null}
                       {secondaryRequirement ? getMissionRequirementBadge(secondaryRequirement) : null}
                     </p>
+                  )}
+                  {!missionRevealed && (
+                    <p className="mission-selector-card__hint">Payout and route checks reveal after launch</p>
                   )}
                 </button>
               );
@@ -626,8 +649,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     {selectedMission.tagline}
                   </p>
                   <div className="mission-selector-card__stats mission-selector-card__stats--detail">
-                    <span className="mission-selector-card__stat mission-selector-card__stat--reward">+{selectedRewards.rewardOzzies} Oz</span>
-                    <span className="mission-selector-card__stat">+{selectedRewards.rewardXp} XP</span>
+                    <span className="mission-selector-card__stat mission-selector-card__stat--reward">
+                      {selectedResultRevealed ? `+${selectedRewards.rewardOzzies} Oz` : "Mystery Oz"}
+                    </span>
+                    <span className="mission-selector-card__stat">
+                      {selectedResultRevealed ? `+${selectedRewards.rewardXp} XP` : "Hidden XP"}
+                    </span>
                     <span className={selectedOutcomeBadgeClass}>{selectedOutcomeLabel}</span>
                   </div>
                 </div>
@@ -646,6 +673,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 sceneTags={selectedPresentation.sceneTags}
                 selectedDeckName={selectedDeck?.name ?? selectedMission.selectedDeckName}
                 routeLabel={selectedRouteLabel}
+                revealForkIntel={selectedResultRevealed}
                 fork={selectedMission.fork}
                 selectedForkOption={selectedForkOption}
                 controlledBy={selectedLocaleLore?.controlledBy ?? selectedDistrictLore?.controlledBy ?? "Courier crews"}
@@ -696,13 +724,77 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </div>
                 </section>
 
+                {selectedMission.fork && (
+                  <section className="mission-stage mission-panel mission-fork">
+                    <div className="mission-stage__header">
+                      <div>
+                        <span className="mission-stage__eyebrow">Blind route gamble</span>
+                        <h4 className="mission-stage__title">Choose a fork, not a checklist</h4>
+                        <p className="mission-stage__summary">
+                          Optional routes are secret modifiers. Pick one for a hidden payout twist, or stay on the main line and reveal everything after the run.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mission-fork__header">
+                      <span className="mission-fork__badge">{selectedMission.fork.badge}</span>
+                      <p className="mission-fork__prompt">{selectedMission.fork.prompt}</p>
+                    </div>
+                    <div className="mission-fork__options">
+                      <button
+                        type="button"
+                        className={`mission-fork__option${!selectedForkOption ? " mission-fork__option--active" : ""}`}
+                        onClick={() => setSelectedForkOptionId(null)}
+                        aria-pressed={!selectedForkOption}
+                      >
+                        <span className="mission-fork__option-label">Main line</span>
+                        <span className="mission-fork__option-meta">Safer known route</span>
+                        <span className="mission-fork__option-desc">Skip the side bet and run the contract without an extra hidden modifier.</span>
+                      </button>
+                      {selectedMission.fork.options.map((option, index) => (
+                        <button
+                          key={`${selectedMission.id}-${option.id}`}
+                          type="button"
+                          className={`mission-fork__option${selectedForkOption?.id === option.id ? " mission-fork__option--active" : ""}`}
+                          onClick={() => setSelectedForkOptionId(option.id)}
+                          aria-pressed={selectedForkOption?.id === option.id}
+                        >
+                          <span className="mission-fork__option-label">
+                            {selectedResultRevealed ? option.label : `Mystery route ${index + 1}`}
+                          </span>
+                          <span className="mission-fork__option-meta">
+                            {selectedResultRevealed
+                              ? option.rewardOzziesDelta && option.rewardXpDelta
+                                ? "Split reward route"
+                                : option.rewardOzziesDelta
+                                  ? "Cash pressure route"
+                                  : "XP pressure route"
+                              : "Hidden risk / reward"}
+                          </span>
+                          <span className="mission-fork__option-desc">
+                            {selectedResultRevealed
+                              ? option.description
+                              : "The fixer won't say what this branch pays or demands until your crew comes back."}
+                          </span>
+                          {selectedResultRevealed && (option.rewardXpDelta || option.rewardOzziesDelta) && (
+                            <span className="mission-fork__option-desc">
+                              {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
+                              {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
+                              {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <section className="mission-stage mission-panel">
                   <div className="mission-stage__header">
                     <div>
                       <span className="mission-stage__eyebrow">Launch stage</span>
-                      <h4 className="mission-stage__title">Launch the run when you are ready</h4>
+                      <h4 className="mission-stage__title">Send the crew and reveal the pull</h4>
                       <p className="mission-stage__summary">
-                        Launch is always available once you pick a deck. Clearing every active check is how you win and avoid a short downtime hit.
+                        Launch is always available once you pick a deck. Rewards, checks, and route consequences stay hidden until the run resolves.
                       </p>
                     </div>
                     <div className="mission-stage__actions">
@@ -724,6 +816,33 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     </div>
                   </div>
 
+                  {!selectedResultRevealed && (
+                    <div className="mission-mystery-grid">
+                      <article className="mission-mystery-card mission-mystery-card--jackpot">
+                        <span className="mission-mystery-card__label">Mystery payout</span>
+                        <strong className="mission-mystery-card__value">??? Oz · ??? XP</strong>
+                        <p>Clear the route to crack the stash. Side forks can juice the payout or make the crew sweat.</p>
+                      </article>
+                      <article className="mission-mystery-card">
+                        <span className="mission-mystery-card__label">Crew read</span>
+                        <strong className="mission-mystery-card__value">
+                          {selectedEvaluation?.eligible ? "Good odds" : "High risk"}
+                        </strong>
+                        <p>
+                          {selectedEvaluation?.eligible
+                            ? "Your deck has the right shape, but the exact checks stay behind the curtain."
+                            : "You can still send it. A miss may sideline one card for maintenance."}
+                        </p>
+                      </article>
+                      <article className="mission-mystery-card">
+                        <span className="mission-mystery-card__label">Route intel</span>
+                        <strong className="mission-mystery-card__value">{selectedRouteLabel}</strong>
+                        <p>District weather and fork pressure are baked into the run, then revealed in the result screen.</p>
+                      </article>
+                    </div>
+                  )}
+
+                  {selectedResultRevealed && (
                   <div className="mission-outcome-grid">
                     <article className="mission-outcome-card">
                       <div className="mission-result">
@@ -809,8 +928,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       </div>
                     </article>
                   </div>
+                  )}
 
-                  {selectedEvaluation && !selectedEvaluation.eligible && (
+                  {selectedResultRevealed && selectedEvaluation && !selectedEvaluation.eligible && (
                     <p className="mission-warning">{selectedEvaluation.summary}</p>
                   )}
                   {selectedMission.lastRunSummary && (
@@ -818,51 +938,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   )}
                 </section>
 
-                {selectedMission.fork && (
-                  <section className="mission-stage mission-panel mission-fork">
-                    <div className="mission-stage__header">
-                      <div>
-                        <span className="mission-stage__eyebrow">Optional route fork</span>
-                        <h4 className="mission-stage__title">Push the main line or add more pressure</h4>
-                        <p className="mission-stage__summary">
-                          These route choices stay optional and only change the run if you decide to lock one in.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mission-fork__header">
-                      <span className="mission-fork__badge">{selectedMission.fork.badge}</span>
-                      <p className="mission-fork__prompt">{selectedMission.fork.prompt}</p>
-                    </div>
-                    <div className="mission-fork__options">
-                      {selectedMission.fork.options.map((option) => (
-                        <button
-                          key={`${selectedMission.id}-${option.id}`}
-                          type="button"
-                          className={`mission-fork__option${selectedForkOption?.id === option.id ? " mission-fork__option--active" : ""}`}
-                          onClick={() => setSelectedForkOptionId(option.id)}
-                          aria-pressed={selectedForkOption?.id === option.id}
-                        >
-                          <span className="mission-fork__option-label">{option.label}</span>
-                          <span className="mission-fork__option-meta">
-                            {option.rewardOzziesDelta && option.rewardXpDelta
-                              ? "Split reward route"
-                              : option.rewardOzziesDelta
-                                ? "Cash pressure route"
-                                : "XP pressure route"}
-                          </span>
-                          <span className="mission-fork__option-desc">{option.description}</span>
-                          {(option.rewardXpDelta || option.rewardOzziesDelta) && (
-                            <span className="mission-fork__option-desc">
-                              {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
-                              {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
-                              {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                )}
               </div>
 
               <div className="mission-intel-grid">
@@ -874,25 +949,35 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </p>
                 </article>
                 <article className="mission-intel-card">
-                  <span className="mission-intel-card__label">Reward profile</span>
+                  <span className="mission-intel-card__label">{selectedResultRevealed ? "Reward profile" : "Black-box payout"}</span>
                   <ul className="mission-intel-list">
-                    {selectedPresentation.rewardFocus.map((item) => (
-                      <li key={`${selectedMission.id}-${item}`}>{item}</li>
-                    ))}
+                    {selectedResultRevealed
+                      ? selectedPresentation.rewardFocus.map((item) => (
+                        <li key={`${selectedMission.id}-${item}`}>{item}</li>
+                      ))
+                      : [
+                        "Payout odds stay hidden until the run resolves",
+                        "Blind forks can add secret XP, Ozzies, or pressure",
+                        "The result modal reveals what the deck actually earned",
+                      ].map((item) => (
+                        <li key={`${selectedMission.id}-${item}`}>{item}</li>
+                      ))}
                   </ul>
                   <p className="mission-intel-card__quote">
                     Atmosphere: {selectedDistrictLore?.atmosphere ?? selectedMission.tagline}
                   </p>
                 </article>
                 <article className="mission-intel-card">
-                  <span className="mission-intel-card__label">How to unlock this run</span>
+                  <span className="mission-intel-card__label">{selectedResultRevealed ? "Run breakdown" : "Pre-run rumors"}</span>
                     <ul className="mission-intel-list">
                       {selectedLaunchTips.slice(0, 3).map((tip, index) => (
                         <li key={`${selectedMission.id}-tip-${index}`}>{tip}</li>
                       ))}
                     </ul>
                   <p className="mission-intel-card__quote">
-                    Launch Run stays live after deck pick. Passing every active check is still how you clear the contract and avoid downtime.
+                    {selectedResultRevealed
+                      ? "The curtain is open now. Use the breakdown to tune the next deck."
+                      : "Launch Run stays live after deck pick. The exact win/loss math reveals only after play."}
                   </p>
                 </article>
               </div>

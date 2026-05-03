@@ -8873,8 +8873,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(210px, 0.48fr) minmax(0, 1.52fr);
+  gap: 14px;
 }
 .mission-atlas .geo-atlas__panel + .geo-atlas__panel {
   display: none;
@@ -8983,16 +8983,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-selector-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 .mission-selector-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding: 14px;
-  border-radius: 14px;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.08);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)),
@@ -9005,8 +9005,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-selector-card__scene {
   position: relative;
   width: 100%;
-  height: 72px;
-  border-radius: 12px;
+  height: 42px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.08);
   background:
@@ -9022,15 +9022,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   animation: mission-scanline 4s linear infinite;
 }
 .mission-selector-card__scene span:nth-child(1) {
-  bottom: 14px;
+  bottom: 10px;
 }
 .mission-selector-card__scene span:nth-child(2) {
-  bottom: 30px;
+  bottom: 20px;
   opacity: 0.35;
   animation-delay: 0.8s;
 }
 .mission-selector-card__scene span:nth-child(3) {
-  bottom: 46px;
+  bottom: 30px;
   opacity: 0.5;
   animation-delay: 1.6s;
 }
@@ -9088,7 +9088,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--accent);
 }
 .mission-selector-card__name {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.35;
 }
 .mission-selector-card__operation {
@@ -9100,8 +9100,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-selector-card__tagline {
   margin: 0;
   color: var(--text-dim);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -9127,12 +9127,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-selector-card__stat {
   display: inline-flex;
   align-items: center;
-  padding: 5px 9px;
+  padding: 4px 7px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -9477,7 +9477,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-transit__map {
   position: relative;
   overflow: hidden;
-  min-height: 320px;
+  min-height: clamp(420px, 46vw, 640px);
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.08);
   background:
@@ -9917,6 +9917,66 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background: rgba(255,68,102,0.14);
   color: var(--danger);
 }
+.mission-result__badge--mystery {
+  border: 1px solid rgba(255,221,0,0.28);
+  background: linear-gradient(135deg, rgba(255,221,0,0.16), rgba(212,144,255,0.14));
+  color: #ffe58a;
+}
+.mission-mystery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.mission-mystery-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 150px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background:
+    radial-gradient(circle at top, var(--mission-glow, rgba(0,255,136,0.18)), transparent 56%),
+    rgba(0,0,0,0.22);
+}
+.mission-mystery-card::after {
+  content: "?";
+  position: absolute;
+  right: 12px;
+  bottom: -18px;
+  color: rgba(255,255,255,0.05);
+  font-size: 96px;
+  font-weight: 900;
+  line-height: 1;
+}
+.mission-mystery-card--jackpot {
+  border-color: rgba(255,221,0,0.34);
+  background:
+    radial-gradient(circle at top, rgba(255,221,0,0.18), transparent 58%),
+    rgba(0,0,0,0.24);
+}
+.mission-mystery-card__label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mission-accent, var(--accent));
+}
+.mission-mystery-card__value {
+  position: relative;
+  z-index: 1;
+  font-size: 20px;
+  color: #fff4a8;
+  letter-spacing: 0.04em;
+}
+.mission-mystery-card p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
 .mission-result-panel {
   position: relative;
   overflow: hidden;
@@ -10162,6 +10222,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .mission-cinematic,
   .mission-transit__header,
   .mission-intel-grid,
+  .mission-mystery-grid,
   .mission-outcome-grid,
   .mission-result-popup__grid {
     grid-template-columns: 1fr;
