@@ -140,7 +140,7 @@ export async function buildCraftlinguaFlavorFields({
 }): Promise<CardPayload["front"]> {
   const flavorTextEnglish = card.front.flavorTextEnglish ?? card.front.flavorText ?? "";
   if (!flavorTextEnglish || !HIGH_RARITY_TIERS.has(card.prompts.rarity)) {
-    const { flavorTextConlang: _ftc, craftlingua: _cl, ...restFront } = card.front;
+    const { flavorTextConlang: _unusedFlavorTextConlang, craftlingua: _unusedCraftlingua, ...restFront } = card.front;
     return {
       ...restFront,
       flavorText: flavorTextEnglish,
@@ -200,7 +200,7 @@ export async function buildCraftlinguaFlavorFields({
     const fallback = linkedLanguage
       ? getCraftlinguaDistrictLanguageByShareCode(linkedLanguage.shareCode)
       : fallbackDistrict;
-    const { flavorTextConlang: _ftc, craftlingua: _cl, ...restFront } = card.front;
+    const { flavorTextConlang: _unusedFlavorTextConlang, craftlingua: _unusedCraftlingua, ...restFront } = card.front;
     return {
       ...restFront,
       flavorText: flavorTextEnglish,
