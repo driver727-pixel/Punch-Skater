@@ -18,7 +18,12 @@
  * full pot is credited to the winning card's owner. On decline/cancel the
  * challenger is refunded.
  */
-import { createRaceCardSnapshot, resolveRace, RACE_TICK_MS } from '../lib/race.js';
+import {
+  createRaceCardSnapshot,
+  resolveRace,
+  RACE_TICK_MS,
+  STANDARD_RACE_WINNER_OZZIES,
+} from '../lib/race.js';
 import rateLimit from 'express-rate-limit';
 
 // CodeQL-visible fallback rate limiter. The injected `raceRateLimit` is the
@@ -438,10 +443,13 @@ export function registerRaceRoutes(app, {
         tx.set(adminDb.collection(RACES_COLLECTION).doc(raceId), race);
 
         // Settle the pot. Wagers were already escrowed from both players.
-        // Pay 2× wager to the winner; refund both on a draw.
+        // Pay 2× wager plus the standard win prize to the winner; refund both on a draw.
         if (raw.winnerSide && ch.ozzyWager > 0) {
           tx.set(adminDb.collection(PROFILE_COLLECTION).doc(winnerUid),
-            { ozzies: FieldValue.increment(ch.ozzyWager * 2), updatedAt: nowIso() }, { merge: true });
+            { ozzies: FieldValue.increment((ch.ozzyWager * 2) + STANDARD_RACE_WINNER_OZZIES), updatedAt: nowIso() }, { merge: true });
+        } else if (raw.winnerSide) {
+          tx.set(adminDb.collection(PROFILE_COLLECTION).doc(winnerUid),
+            { ozzies: FieldValue.increment(STANDARD_RACE_WINNER_OZZIES), updatedAt: nowIso() }, { merge: true });
         } else if (!raw.winnerSide && ch.ozzyWager > 0) {
           // Refund both.
           tx.set(adminDb.collection(PROFILE_COLLECTION).doc(ch.challengerUid),
@@ -471,7 +479,7 @@ export function registerRaceRoutes(app, {
               ? (isWinner ? '🏁 You won the race!' : 'Race finished — opponent took the win.')
               : '🏁 Race finished in a draw.',
             body: raw.winnerSide
-              ? (isWinner && ch.ozzyWager > 0 ? `+${ch.ozzyWager * 2} Ozzies awarded.` : '')
+              ? (isWinner ? `+${(ch.ozzyWager * 2) + STANDARD_RACE_WINNER_OZZIES} Ozzies awarded.` : '')
               : 'Wagers refunded.',
             link: `/race/${raceId}`,
             data: { raceId, challengeId: id },

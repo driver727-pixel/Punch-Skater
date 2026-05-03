@@ -32,6 +32,7 @@
 export const RACE_TICK_MS = 50;
 export const RACE_DURATION_MS = 30_000;
 export const TICKS_TOTAL = RACE_DURATION_MS / RACE_TICK_MS; // 600
+export const STANDARD_RACE_WINNER_OZZIES = 25;
 
 /** Maximum lead the leader can hold over the trailing card (in progress units). */
 const MAX_LEAD = 0.18;
@@ -292,7 +293,8 @@ export function simulateRace(challenger, defender, seed) {
 /**
  * Build a fully-settled race result given a simulation outcome.
  * `wager` is the Ozzies the challenger escrowed; the same amount is required
- * from the defender at acceptance time. The pot transfers to the winner.
+ * from the defender at acceptance time. The pot transfers to the winner and
+ * each win grants a standard Ozzy purse.
  */
 export function buildRaceResult(simulation, { challengerStats, defenderStats, wager, raceSeed }) {
   const { challengerFinishTick, defenderFinishTick } = simulation;
@@ -313,14 +315,19 @@ export function buildRaceResult(simulation, { challengerStats, defenderStats, wa
   // `clampWager`) so the resolver remains safe to call from tests/scripts
   // that bypass the HTTP layer.
   const clampedWager = clampInt(wager, 0, 100_000);
+  const winnerPrize = winnerSide ? STANDARD_RACE_WINNER_OZZIES : 0;
   let challengerOzzy = 0;
   let defenderOzzy = 0;
   if (winnerSide === "challenger" && clampedWager > 0) {
-    challengerOzzy = clampedWager;
+    challengerOzzy = clampedWager + winnerPrize;
     defenderOzzy = -clampedWager;
   } else if (winnerSide === "defender" && clampedWager > 0) {
     challengerOzzy = -clampedWager;
-    defenderOzzy = clampedWager;
+    defenderOzzy = clampedWager + winnerPrize;
+  } else if (winnerSide === "challenger") {
+    challengerOzzy = winnerPrize;
+  } else if (winnerSide === "defender") {
+    defenderOzzy = winnerPrize;
   }
   // Draws refund both wagers (handled by caller).
 

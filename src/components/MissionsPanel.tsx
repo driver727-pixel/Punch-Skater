@@ -293,7 +293,7 @@ function getRequirementTip(
     : "the required wheel setup";
   switch (result.requirement.type) {
     case "min_cards":
-      return "Mission decks need all six slots filled before the run can launch.";
+      return "Mission decks need at least five filled slots before the run can launch.";
     case "district_access":
       return weather?.accessRule
         ? `${currentAccessSummary} Weather is adding a board-type lock on top of the normal wheel rules.`

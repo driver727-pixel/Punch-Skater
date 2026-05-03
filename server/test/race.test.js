@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   RACE_DURATION_MS,
   RACE_TICK_MS,
+  STANDARD_RACE_WINNER_OZZIES,
   TICKS_TOTAL,
   buildRaceResult,
   createRaceCardSnapshot,
@@ -93,9 +94,9 @@ test('buildRaceResult transfers wager to the winner', () => {
     raceSeed: 'wager-seed',
   });
   assert.equal(result.winnerSide, 'challenger');
-  assert.equal(result.ozzyTransfer.challenger, 50);
+  assert.equal(result.ozzyTransfer.challenger, 50 + STANDARD_RACE_WINNER_OZZIES);
   assert.equal(result.ozzyTransfer.defender, -50);
-  assert.equal(result.cardDeltas.challenger.ozzies, 50);
+  assert.equal(result.cardDeltas.challenger.ozzies, 50 + STANDARD_RACE_WINNER_OZZIES);
   assert.equal(result.cardDeltas.defender.ozzies, -50);
   assert.ok(result.cardDeltas.challenger.xp > result.cardDeltas.defender.xp);
 });
@@ -122,7 +123,7 @@ test('buildRaceResult handles zero wager (free race)', () => {
     raceSeed: 'free-seed',
   });
   assert.equal(result.winnerSide, 'challenger');
-  assert.equal(result.ozzyTransfer.challenger, 0);
+  assert.equal(result.ozzyTransfer.challenger, STANDARD_RACE_WINNER_OZZIES);
   assert.equal(result.ozzyTransfer.defender, 0);
 });
 
@@ -134,8 +135,8 @@ test('buildRaceResult clamps absurd wager values', () => {
     wager: 9_999_999,
     raceSeed: 'clamp-seed',
   });
-  assert.ok(result.ozzyTransfer.challenger <= 100_000);
-  assert.equal(result.ozzyTransfer.challenger, 100_000);
+  assert.ok(result.ozzyTransfer.challenger <= 100_000 + STANDARD_RACE_WINNER_OZZIES);
+  assert.equal(result.ozzyTransfer.challenger, 100_000 + STANDARD_RACE_WINNER_OZZIES);
 });
 
 test('createRaceCardSnapshot extracts stats from a forged card-shaped object', () => {
