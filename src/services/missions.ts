@@ -22,7 +22,9 @@ async function getIdToken(): Promise<string> {
 
 async function parseResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
   const raw = await response.json().catch(() => null);
-  const payload = raw !== null && typeof raw === "object" ? raw as Record<string, unknown> : {};
+  const payload = raw !== null && typeof raw === "object" && !Array.isArray(raw)
+    ? raw as Record<string, unknown>
+    : {};
   if (!response.ok) {
     throw new Error(
       typeof payload.error === "string"
@@ -30,7 +32,7 @@ async function parseResponse<T>(response: Response, fallbackMessage: string): Pr
         : fallbackMessage,
     );
   }
-  return (raw ?? {}) as T;
+  return (raw !== null && typeof raw === "object" && !Array.isArray(raw) ? raw : {}) as T;
 }
 
 async function fetchMissionJson<T>(
