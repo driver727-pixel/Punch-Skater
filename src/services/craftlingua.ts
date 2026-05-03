@@ -127,6 +127,13 @@ export async function translateCraftlinguaText({
   return readJson<TranslationResponse>(response);
 }
 
+function removeCraftlinguaFlavorFields(front: CardPayload["front"]): CardPayload["front"] {
+  const restFront = { ...front };
+  delete restFront.flavorTextConlang;
+  delete restFront.craftlingua;
+  return restFront;
+}
+
 export async function buildCraftlinguaFlavorFields({
   card,
   linkedLanguage,
@@ -140,7 +147,7 @@ export async function buildCraftlinguaFlavorFields({
 }): Promise<CardPayload["front"]> {
   const flavorTextEnglish = card.front.flavorTextEnglish ?? card.front.flavorText ?? "";
   if (!flavorTextEnglish || !HIGH_RARITY_TIERS.has(card.prompts.rarity)) {
-    const { flavorTextConlang: _unusedFlavorTextConlang, craftlingua: _unusedCraftlingua, ...restFront } = card.front;
+    const restFront = removeCraftlinguaFlavorFields(card.front);
     return {
       ...restFront,
       flavorText: flavorTextEnglish,
@@ -200,7 +207,7 @@ export async function buildCraftlinguaFlavorFields({
     const fallback = linkedLanguage
       ? getCraftlinguaDistrictLanguageByShareCode(linkedLanguage.shareCode)
       : fallbackDistrict;
-    const { flavorTextConlang: _unusedFlavorTextConlang, craftlingua: _unusedCraftlingua, ...restFront } = card.front;
+    const restFront = removeCraftlinguaFlavorFields(card.front);
     return {
       ...restFront,
       flavorText: flavorTextEnglish,
