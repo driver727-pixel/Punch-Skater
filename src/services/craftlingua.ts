@@ -140,12 +140,11 @@ export async function buildCraftlinguaFlavorFields({
 }): Promise<CardPayload["front"]> {
   const flavorTextEnglish = card.front.flavorTextEnglish ?? card.front.flavorText ?? "";
   if (!flavorTextEnglish || !HIGH_RARITY_TIERS.has(card.prompts.rarity)) {
+    const { flavorTextConlang: _ftc, craftlingua: _cl, ...restFront } = card.front;
     return {
-      ...card.front,
+      ...restFront,
       flavorText: flavorTextEnglish,
       flavorTextEnglish,
-      flavorTextConlang: undefined,
-      craftlingua: undefined,
     };
   }
 
@@ -201,20 +200,23 @@ export async function buildCraftlinguaFlavorFields({
     const fallback = linkedLanguage
       ? getCraftlinguaDistrictLanguageByShareCode(linkedLanguage.shareCode)
       : fallbackDistrict;
+    const { flavorTextConlang: _ftc, craftlingua: _cl, ...restFront } = card.front;
     return {
-      ...card.front,
+      ...restFront,
       flavorText: flavorTextEnglish,
       flavorTextEnglish,
-      flavorTextConlang: fallback ? translateToConlang(flavorTextEnglish, fallback.vocabulary ?? []) : undefined,
-      craftlingua: fallback
+      ...(fallback
         ? {
-            shareCode: fallback.shareCode,
-            exploreUrl: fallback.exploreUrl ?? buildCraftlinguaExploreUrl(fallback.shareCode),
-            languageName: fallback.language.name,
-            languageCode: fallback.language.code,
-            source: linkedLanguage ? "profile-link" : "district-default",
+            flavorTextConlang: translateToConlang(flavorTextEnglish, fallback.vocabulary ?? []),
+            craftlingua: {
+              shareCode: fallback.shareCode,
+              exploreUrl: fallback.exploreUrl ?? buildCraftlinguaExploreUrl(fallback.shareCode),
+              languageName: fallback.language.name,
+              languageCode: fallback.language.code,
+              source: linkedLanguage ? "profile-link" : "district-default",
+            },
           }
-        : undefined,
+        : {}),
     };
   }
 }
