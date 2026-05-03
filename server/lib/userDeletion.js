@@ -1,19 +1,19 @@
-export async function deleteCollectionDocs(adminDb, collectionRef, pageSize = 200) {
+export async function deleteCollectionDocs(db, collectionRef, pageSize = 200) {
   while (true) {
     const snap = await collectionRef.limit(pageSize).get();
     if (snap.empty) return;
-    const batch = adminDb.batch();
+    const batch = db.batch();
     snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
     await batch.commit();
     if (snap.size < pageSize) return;
   }
 }
 
-export async function deleteQueryDocs(adminDb, queryRef, pageSize = 200) {
+export async function deleteQueryDocs(db, queryRef, pageSize = 200) {
   while (true) {
     const snap = await queryRef.limit(pageSize).get();
     if (snap.empty) return;
-    const batch = adminDb.batch();
+    const batch = db.batch();
     snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
     await batch.commit();
     if (snap.size < pageSize) return;

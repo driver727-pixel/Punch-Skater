@@ -296,7 +296,7 @@ export function Login() {
                 <input
                   className="input"
                   type={showPassword ? "text" : "password"}
-                    placeholder={mode === "signup" ? `Min. ${PASSWORD_MIN_LENGTH} strong characters` : "Password"}
+                    placeholder={mode === "signup" ? `Min. ${PASSWORD_MIN_LENGTH} chars: upper/lower/number/symbol` : "Password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

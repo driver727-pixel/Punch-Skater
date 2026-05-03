@@ -1,3 +1,13 @@
+import rateLimit from 'express-rate-limit';
+
+const fallbackAccountDeleteRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many account deletion requests — please wait a moment and try again.' },
+});
+
 export function registerAccountRoutes(app, {
   adminAuth,
   adminDb,
@@ -5,9 +15,9 @@ export function registerAccountRoutes(app, {
   authenticateFirebaseUser,
   deleteUserData,
 }) {
-  app.use('/api/account/delete', accountDeleteRateLimit);
+  const limiter = accountDeleteRateLimit ?? fallbackAccountDeleteRateLimit;
 
-  app.post('/api/account/delete', async (req, res) => {
+  app.post('/api/account/delete', limiter, async (req, res) => {
     if (!adminAuth || !adminDb) {
       res.status(503).json({ error: 'Account deletion is not configured on this server.' });
       return;
