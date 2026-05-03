@@ -21,7 +21,8 @@ async function getIdToken(): Promise<string> {
 }
 
 async function parseResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
-  const payload = await response.json().catch(() => ({}));
+  const raw = await response.json().catch(() => null);
+  const payload = raw !== null && typeof raw === "object" ? raw as Record<string, unknown> : {};
   if (!response.ok) {
     throw new Error(
       typeof payload.error === "string"
@@ -29,7 +30,7 @@ async function parseResponse<T>(response: Response, fallbackMessage: string): Pr
         : fallbackMessage,
     );
   }
-  return payload as T;
+  return (raw ?? {}) as T;
 }
 
 async function fetchMissionJson<T>(
@@ -37,15 +38,16 @@ async function fetchMissionJson<T>(
   init: RequestInit,
   fallbackMessage: string,
 ): Promise<T> {
+  let response: Response;
   try {
-    const response = await fetch(input, init);
-    return parseResponse<T>(response, fallbackMessage);
+    response = await fetch(input, init);
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error("Failed to reach the missions service.");
     }
     throw error;
   }
+  return parseResponse<T>(response, fallbackMessage);
 }
 
 export async function getMissionBoard(uid: string, userEmail?: string | null): Promise<MissionBoardPayload> {
