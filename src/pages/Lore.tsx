@@ -6,6 +6,7 @@ import {
   LORE_UPDATES,
 } from "../lib/lore";
 import { GeoAtlas } from "../components/GeoAtlas";
+import { DistrictBadge } from "../components/DistrictBadge";
 import { CODEX_CIPHER_CHALLENGE } from "../lib/craftlingua";
 import { fetchCraftlinguaDistricts } from "../services/craftlingua";
 import type { CraftlinguaDistrictLanguage } from "../lib/types";
@@ -73,7 +74,7 @@ export function Lore() {
           {DISTRICT_LORE.filter((district) => district.kind !== "hidden").map((d) => (
             <div key={d.name} className="lore-card">
               <div className="lore-card-header">
-                <span className="lore-card-name">{d.name}</span>
+                <DistrictBadge location={d.name} size="sm" />
                 <span className="lore-card-control">{d.controlledBy}</span>
               </div>
               <p className="lore-tagline">"{d.tagline}"</p>

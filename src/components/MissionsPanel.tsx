@@ -6,6 +6,7 @@ import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import type { DistrictWeatherSnapshot } from "../lib/districtWeather";
 import { isEnabled } from "../lib/featureFlags";
 import { DISTRICT_LORE } from "../lib/lore";
+import { DistrictBadge } from "./DistrictBadge";
 import {
   evaluateMissionDeck,
   getMissionEffectiveRequirements,
@@ -514,7 +515,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     <span />
                   </div>
                   <div className="mission-selector-card__topline">
-                    <span className="mission-selector-card__district">{mission.district}</span>
+                    <span className="mission-selector-card__district">
+                      <DistrictBadge location={mission.district} size="sm" />
+                    </span>
                     <span
                       className={`mission-selector-card__state${mission.status === "completed" ? "" : " mission-selector-card__state--available"}`}
                     >
@@ -545,7 +548,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
             <div className="mission-panel mission-panel--detail" style={getMissionThemeStyle(selectedMission.district)}>
               <div className="mission-panel__header">
                 <div>
-                  <div className="mission-selector-card__district">{selectedMission.district}</div>
+                  <div className="mission-selector-card__district">
+                    <DistrictBadge location={selectedMission.district} size="sm" />
+                  </div>
                   <h3 className="mission-selector-card__name">{selectedMission.title}</h3>
                   <p className="mission-selector-card__tagline mission-selector-card__tagline--detail">
                     {selectedMission.tagline}
@@ -854,7 +859,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               ×
             </button>
             <div className="mission-result-popup__summary">
-              <span className="mission-selector-card__district">{missionResult.mission.district}</span>
+              <span className="mission-selector-card__district">
+                <DistrictBadge location={missionResult.mission.district} size="sm" />
+              </span>
               <h3 id="mission-result-title" className="mission-selector-card__name">
                 {missionResult.rewardGranted
                   ? getMissionPresentation(missionResult.mission).successLabel

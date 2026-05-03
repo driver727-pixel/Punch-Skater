@@ -3796,6 +3796,123 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
+.district-badge {
+  --district-badge-color: var(--accent);
+  --district-badge-border: rgba(0, 204, 255, 0.32);
+  --district-badge-bg: rgba(5, 12, 20, 0.7);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--district-badge-color);
+}
+
+.district-badge__icon-wrap {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 999px;
+  border: 1px solid var(--district-badge-border);
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 62%), var(--district-badge-bg);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 0 14px rgba(0,0,0,0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.district-badge__icon-wrap svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.district-badge__icon-wrap svg * {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.district-badge__label {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.district-badge--sm {
+  gap: 6px;
+}
+
+.district-badge--sm .district-badge__icon-wrap {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.district-badge--sm .district-badge__icon-wrap svg {
+  width: 14px;
+  height: 14px;
+}
+
+.district-badge--sm .district-badge__label {
+  font-size: 11px;
+}
+
+.district-badge--icon-only {
+  gap: 0;
+}
+
+.district-badge--airaway {
+  --district-badge-color: #7de7ff;
+  --district-badge-border: rgba(125, 231, 255, 0.45);
+  --district-badge-bg: rgba(16, 41, 61, 0.82);
+}
+
+.district-badge--batteryville {
+  --district-badge-color: #ffc94d;
+  --district-badge-border: rgba(255, 201, 77, 0.42);
+  --district-badge-bg: rgba(55, 35, 11, 0.84);
+}
+
+.district-badge--the-grid {
+  --district-badge-color: #7dffb6;
+  --district-badge-border: rgba(125, 255, 182, 0.42);
+  --district-badge-bg: rgba(12, 44, 30, 0.84);
+}
+
+.district-badge--nightshade {
+  --district-badge-color: #d490ff;
+  --district-badge-border: rgba(212, 144, 255, 0.42);
+  --district-badge-bg: rgba(42, 20, 59, 0.84);
+}
+
+.district-badge--the-forest {
+  --district-badge-color: #8cff8a;
+  --district-badge-border: rgba(140, 255, 138, 0.42);
+  --district-badge-bg: rgba(18, 46, 24, 0.84);
+}
+
+.district-badge--glass-city {
+  --district-badge-color: #ffd98f;
+  --district-badge-border: rgba(255, 217, 143, 0.42);
+  --district-badge-bg: rgba(54, 38, 20, 0.84);
+}
+
+.district-badge--the-roads {
+  --district-badge-color: #f2f4ff;
+  --district-badge-border: rgba(242, 244, 255, 0.34);
+  --district-badge-bg: rgba(35, 39, 47, 0.84);
+}
+
+.district-badge--electropolis {
+  --district-badge-color: #ffd766;
+  --district-badge-border: rgba(255, 215, 102, 0.42);
+  --district-badge-bg: rgba(58, 42, 12, 0.84);
+}
+
 .geo-atlas__district--selectable {
   cursor: pointer;
 }
@@ -3825,6 +3942,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
 }
 
+.geo-atlas__district .district-badge__icon-wrap {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 0 12px var(--map-node-glow);
+}
+
+.geo-atlas__district .district-badge__icon-wrap svg {
+  width: 13px;
+  height: 13px;
+}
+
 .geo-atlas__district-dot {
   width: 9px;
   height: 9px;
@@ -3839,10 +3968,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 0 0 16px rgba(0, 255, 136, 0.7);
 }
 
+.geo-atlas__district--available .district-badge__icon-wrap {
+  border-color: rgba(0, 255, 136, 0.72);
+  color: #d8ffe7;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 16px rgba(0, 255, 136, 0.42);
+}
+
 .geo-atlas__district--blocked .geo-atlas__district-dot,
 .geo-atlas__district--restricted .geo-atlas__district-dot {
   background: #ff668d;
   box-shadow: 0 0 16px rgba(255, 102, 141, 0.72);
+}
+
+.geo-atlas__district--blocked .district-badge__icon-wrap,
+.geo-atlas__district--restricted .district-badge__icon-wrap {
+  border-color: rgba(255, 102, 141, 0.72);
+  color: #ffd4de;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 16px rgba(255, 102, 141, 0.34);
 }
 
 .geo-atlas__district--selected {
@@ -4433,9 +4575,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .lore-faction-districts {
-  font-size: 12px;
-  color: var(--accent2);
-  letter-spacing: 1px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* Shared text styles */
@@ -8706,6 +8848,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: flex-start;
 }
 .mission-selector-card__district {
+  display: inline-flex;
+  align-items: center;
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
