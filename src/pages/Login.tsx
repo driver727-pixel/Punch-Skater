@@ -3,7 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth, RecaptchaVerifier } from "../context/AuthContext";
 import { auth, firebaseUnavailableMessage } from "../lib/firebase";
 import type { ConfirmationResult } from "firebase/auth";
-import { isStrongPassword, PASSWORD_MIN_LENGTH, PASSWORD_REQUIREMENTS_MESSAGE } from "../lib/passwordRules";
+import {
+  isStrongPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  PASSWORD_REQUIREMENTS_PLACEHOLDER,
+} from "../lib/passwordRules";
 
 export function Login() {
   const { signIn, signUp, signInWithGoogle, sendPasswordReset, signInWithPhone } = useAuth();
@@ -296,7 +300,7 @@ export function Login() {
                 <input
                   className="input"
                   type={showPassword ? "text" : "password"}
-                    placeholder={mode === "signup" ? `Min. ${PASSWORD_MIN_LENGTH} chars: upper/lower/number/symbol` : "Password"}
+                    placeholder={mode === "signup" ? PASSWORD_REQUIREMENTS_PLACEHOLDER : "Password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

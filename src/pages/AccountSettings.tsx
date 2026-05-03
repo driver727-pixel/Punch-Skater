@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { sfxClick } from "../lib/sfx";
 import { resolveCraftlinguaShareCode } from "../services/craftlingua";
-import { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } from "../lib/passwordRules";
+import {
+  isStrongPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  PASSWORD_REQUIREMENTS_PLACEHOLDER,
+} from "../lib/passwordRules";
 
 export function AccountSettings() {
   const {
@@ -227,7 +231,7 @@ export function AccountSettings() {
                   <input
                     className="input"
                     type={showNew ? "text" : "password"}
-                    placeholder="Use 12+ chars with upper/lower/number/symbol"
+                    placeholder={PASSWORD_REQUIREMENTS_PLACEHOLDER}
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); setPwError(""); setPwSuccess(""); }}
                     required

@@ -74,12 +74,8 @@ export async function getCachedImage(cacheKey: string): Promise<string | null> {
 export async function setCachedImage(
   cacheKey: string,
   imageUrl: string,
-  meta?: CacheEntryMeta,
 ): Promise<void> {
   if (!db || !auth?.currentUser) return;
-  if (meta) {
-    // Shared cache docs intentionally omit prompt/seed metadata.
-  }
   try {
     const ref = doc(db, COLLECTION, encodeKey(cacheKey));
     // Avoid a doomed write when another user has already populated this
