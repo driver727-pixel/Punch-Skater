@@ -53,7 +53,6 @@ export async function getMissionBoard(uid: string, userEmail?: string | null): P
     return { missions: [], progression: { missionXp: 0, missionOzzies: 0 } };
   }
   const idToken = await getIdToken();
-  const response = await fetch(MISSION_BOARD_API_URL, {
   return fetchMissionJson<MissionBoardPayload>(MISSION_BOARD_API_URL, {
     headers: {
       Authorization: `Bearer ${idToken}`,
