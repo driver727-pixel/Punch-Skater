@@ -219,6 +219,9 @@ const battlePassRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 20,
   message: { error: 'Too many battle pass requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
 const raceRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 60,
@@ -781,6 +784,9 @@ registerBattlePassRoutes(app, {
   adminDb,
   battlePassRateLimit,
   authenticateFirebaseUser,
+  FieldValue,
+});
+
 registerRaceRoutes(app, {
   adminDb,
   raceRateLimit,
