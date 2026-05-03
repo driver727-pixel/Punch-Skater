@@ -345,7 +345,7 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                  >
                    <div className="deck-item-preview" aria-hidden="true">
                      {deck.cards.length > 0 ? (
-                       deck.cards.slice(0, 5).map((card, previewIdx, previewCards) => {
+                        deck.cards.slice(0, DECK_CARD_LIMIT).map((card, previewIdx, previewCards) => {
                          const spread = previewIdx - (previewCards.length - 1) / 2;
                          const previewStyle = {
                            "--deck-preview-offset": `${spread * 18}px`,
