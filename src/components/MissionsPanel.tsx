@@ -206,6 +206,8 @@ const DISTRICT_LORE_BY_NAME = new Map(
   DISTRICT_LORE.filter((entry) => entry.kind === "district").map((entry) => [entry.name, entry]),
 );
 const LOCATION_LORE_BY_NAME = new Map(DISTRICT_LORE.map((entry) => [entry.name, entry]));
+const MAIN_ROUTE_LABEL = "Main line";
+const BLIND_ROUTE_LABEL = "Blind route armed";
 
 function formatTimestamp(value?: string): string | null {
   if (!value) return null;
@@ -234,19 +236,40 @@ function getMissionPresentation(mission: MissionBoardEntry | null): MissionPrese
   return MISSION_PRESENTATIONS[mission.definitionId] ?? DEFAULT_PRESENTATION;
 }
 
-function hasMissionRunRevealed(mission: MissionBoardEntry | null): boolean {
+function isMissionResultRevealed(mission: MissionBoardEntry | null): boolean {
   return Boolean(mission?.lastRunAt || mission?.status === "completed");
 }
 
 function getSelectedRouteLabel(selectedForkOption: MissionForkOption | null, resultRevealed: boolean): string {
-  if (!selectedForkOption) return "Main line";
-  return resultRevealed ? selectedForkOption.label : "Blind route armed";
+  if (!selectedForkOption) return MAIN_ROUTE_LABEL;
+  return resultRevealed ? selectedForkOption.label : BLIND_ROUTE_LABEL;
 }
 
 function getForkRewardTypeLabel(option: MissionForkOption): string {
   if (option.rewardOzziesDelta && option.rewardXpDelta) return "Split reward route";
   if (option.rewardOzziesDelta) return "Cash pressure route";
   return "XP pressure route";
+}
+
+function getMissionOutcomeLabel(
+  mission: MissionBoardEntry | null,
+  evaluationEligible: boolean | undefined,
+  resultRevealed: boolean,
+): string {
+  if (!resultRevealed) return "Intel Hidden";
+  if (mission?.status === "completed") return "Route Cleared";
+  if (evaluationEligible) return "Deck Ready";
+  return "Needs work";
+}
+
+function getMissionOutcomeBadgeClass(
+  mission: MissionBoardEntry | null,
+  evaluationEligible: boolean | undefined,
+  resultRevealed: boolean,
+): string {
+  if (!resultRevealed) return "mission-result__badge mission-result__badge--mystery";
+  if (mission?.status === "completed" || evaluationEligible) return "mission-result__badge mission-result__badge--success";
+  return "mission-result__badge mission-result__badge--fail";
 }
 
 function getMissionThemeStyle(district: District): CSSProperties {
@@ -441,7 +464,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     () => (selectedMission ? getMissionEffectiveRewards(selectedMission, selectedForkOptionId) : { rewardXp: 0, rewardOzzies: 0 }),
     [selectedForkOptionId, selectedMission],
   );
-  const selectedResultRevealed = hasMissionRunRevealed(selectedMission);
+  const selectedResultRevealed = isMissionResultRevealed(selectedMission);
   const selectedPresentation = useMemo(() => getMissionPresentation(selectedMission), [selectedMission]);
   const selectedDistrictLore = useMemo(
     () => (selectedMission ? DISTRICT_LORE_BY_NAME.get(selectedMission.district) ?? null : null),
@@ -467,18 +490,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     () => formatDurationClock(getRemainingDurationMs(dailyResetAt, nowMs)),
     [dailyResetAt, nowMs],
   );
-  const selectedOutcomeLabel = !selectedResultRevealed
-    ? "Intel Hidden"
-    : selectedMission?.status === "completed"
-      ? "Route Cleared"
-      : selectedEvaluation?.eligible
-        ? "Deck Ready"
-        : "Needs work";
-  const selectedOutcomeBadgeClass = !selectedResultRevealed
-    ? "mission-result__badge mission-result__badge--mystery"
-    : selectedMission?.status === "completed" || selectedEvaluation?.eligible
-      ? "mission-result__badge mission-result__badge--success"
-      : "mission-result__badge mission-result__badge--fail";
+  const selectedOutcomeLabel = getMissionOutcomeLabel(selectedMission, selectedEvaluation?.eligible, selectedResultRevealed);
+  const selectedOutcomeBadgeClass = getMissionOutcomeBadgeClass(
+    selectedMission,
+    selectedEvaluation?.eligible,
+    selectedResultRevealed,
+  );
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     return [
@@ -487,7 +504,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
         ? "This deck looks hot enough to take the contract, but the payout and final result stay hidden until the run resolves."
         : "Launch Run still works on a risky deck. Failure can sideline one courier for a short injury, breakdown, or arrest timeout.",
       selectedForkOption
-        ? `Blind route armed: ${selectedForkOption.label}.`
+        ? `${BLIND_ROUTE_LABEL}: ${selectedForkOption.label}.`
         : "Blind forks are optional gambles. Pick one for a secret modifier, or stay on the main line.",
     ];
   }, [selectedDistrictWeather, selectedEvaluation, selectedForkOption, selectedMission]);
@@ -583,7 +600,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
           <div className="mission-selector-grid">
             {missions.map((mission) => {
               const presentation = getMissionPresentation(mission);
-              const missionRevealed = hasMissionRunRevealed(mission);
+              const missionRevealed = isMissionResultRevealed(mission);
               const primaryRequirement = mission.requirements[0];
               const secondaryRequirement = mission.requirements[1];
               return (
@@ -754,7 +771,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                         onClick={() => setSelectedForkOptionId(null)}
                         aria-pressed={!selectedForkOption}
                       >
-                        <span className="mission-fork__option-label">Main line</span>
+                        <span className="mission-fork__option-label">{MAIN_ROUTE_LABEL}</span>
                         <span className="mission-fork__option-meta">Safer known route</span>
                         <span className="mission-fork__option-desc">Skip the side bet and run the contract without an extra hidden modifier.</span>
                       </button>
@@ -1039,7 +1056,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               <div className="mission-result__reward-card mission-result__reward-card--ozzies">
                 <span className="mission-result__reward-label">Route</span>
                 <strong className="mission-result__reward-value">
-                  {getMissionForkOption(missionResult.mission, missionResult.mission.selectedForkOptionId)?.label ?? "Main line"}
+                  {getMissionForkOption(missionResult.mission, missionResult.mission.selectedForkOptionId)?.label ?? MAIN_ROUTE_LABEL}
                 </strong>
               </div>
             </div>
