@@ -104,6 +104,10 @@ function buildNotification({ uid, type, title, body, link, data, randomUUID }) {
   };
 }
 
+function getWinnerProfilePrize(wager) {
+  return (wager * 2) + STANDARD_RACE_WINNER_OZZIES;
+}
+
 /**
  * Apply the per-card delta (XP + Ozzies) inside a transaction using a
  * pre-fetched snapshot.  The caller must have already called tx.get() for
@@ -446,7 +450,7 @@ export function registerRaceRoutes(app, {
         // Pay 2× wager plus the standard win prize to the winner; refund both on a draw.
         if (raw.winnerSide && ch.ozzyWager > 0) {
           tx.set(adminDb.collection(PROFILE_COLLECTION).doc(winnerUid),
-            { ozzies: FieldValue.increment((ch.ozzyWager * 2) + STANDARD_RACE_WINNER_OZZIES), updatedAt: nowIso() }, { merge: true });
+            { ozzies: FieldValue.increment(getWinnerProfilePrize(ch.ozzyWager)), updatedAt: nowIso() }, { merge: true });
         } else if (raw.winnerSide) {
           tx.set(adminDb.collection(PROFILE_COLLECTION).doc(winnerUid),
             { ozzies: FieldValue.increment(STANDARD_RACE_WINNER_OZZIES), updatedAt: nowIso() }, { merge: true });
@@ -479,7 +483,7 @@ export function registerRaceRoutes(app, {
               ? (isWinner ? '🏁 You won the race!' : 'Race finished — opponent took the win.')
               : '🏁 Race finished in a draw.',
             body: raw.winnerSide
-              ? (isWinner ? `+${(ch.ozzyWager * 2) + STANDARD_RACE_WINNER_OZZIES} Ozzies awarded.` : '')
+              ? (isWinner ? `+${ch.ozzyWager > 0 ? getWinnerProfilePrize(ch.ozzyWager) : STANDARD_RACE_WINNER_OZZIES} Ozzies awarded.` : '')
               : 'Wagers refunded.',
             link: `/race/${raceId}`,
             data: { raceId, challengeId: id },

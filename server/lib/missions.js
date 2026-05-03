@@ -70,8 +70,8 @@ const RELAXED_MISSION_MIN_CARDS = 5;
 const BASE_STAT_REDUCTION = 4;
 const FORK_STAT_REDUCTION = 2;
 
-function pluralize(count, singular, plural = `${singular}s`) {
-  return count === 1 ? singular : plural;
+function pluralize(count, singular, customPlural = `${singular}s`) {
+  return count === 1 ? singular : customPlural;
 }
 
 function capitalize(value) {
@@ -97,7 +97,7 @@ function buildMissionRequirementLabel(requirement) {
     case 'district_card':
       return `Include ${count} ${requirement.district} ${pluralize(count, 'local')} in the deck.`;
     default:
-      return requirement.label ?? '';
+      throw new Error(`Unknown mission requirement type: ${requirement.type}`);
   }
 }
 
@@ -121,7 +121,7 @@ function relaxMissionRequirement(requirement, { specialistFloor, statReduction }
       nextCount = Math.max(1, count - statReduction);
       break;
     default:
-      break;
+      throw new Error(`Unknown mission requirement type: ${requirement.type}`);
   }
 
   if (nextCount <= 0) return null;

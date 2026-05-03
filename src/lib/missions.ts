@@ -25,8 +25,8 @@ const RELAXED_MISSION_MIN_CARDS = 5;
 const BASE_STAT_REDUCTION = 4;
 const FORK_STAT_REDUCTION = 2;
 
-function pluralize(count: number, singular: string, plural = `${singular}s`): string {
-  return count === 1 ? singular : plural;
+function pluralize(count: number, singular: string, customPlural = `${singular}s`): string {
+  return count === 1 ? singular : customPlural;
 }
 
 function capitalize(value: string | undefined): string {
