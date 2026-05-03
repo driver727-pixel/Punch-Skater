@@ -25,6 +25,7 @@ import {
   CHARACTER_PLACEMENT_SCALE_STEP,
 } from "../../lib/boardPlacement";
 import { LEGENDARY_FORGE_NOTICE, type ForgeClassOption } from "../../lib/cardClassProgression";
+import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
 
@@ -79,6 +80,7 @@ interface ForgeControlsPanelProps {
   faceCharacters: FaceCharacter[];
   forging: boolean;
   freeCardUsed: boolean;
+  freeForgeReadyAt: number | null;
   genders: Gender[];
   generateCredits: number;
   generated: CardPayload | null;
@@ -123,6 +125,7 @@ export function ForgeControlsPanel({
   faceCharacters,
   forging,
   freeCardUsed,
+  freeForgeReadyAt,
   genders,
   generateCredits,
   generated,
@@ -150,6 +153,8 @@ export function ForgeControlsPanel({
   ageGroups,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
+  const freeForgeRemainingMs = getRemainingDurationMs(freeForgeReadyAt);
+  const isFreeForgeCoolingDown = isFreeTier && freeForgeRemainingMs > 0 && generateCredits === 0;
   const selectedClassHint = classOptions.find((option) => option.rarity === prompts.rarity)?.unlockHint
     || `Start with Punch Skaters, then unlock higher classes with XP or Ozzies. ${LEGENDARY_FORGE_NOTICE}`;
 
@@ -340,19 +345,30 @@ export function ForgeControlsPanel({
       <button
         className="btn-primary btn-lg btn-forge"
         onClick={onForge}
-        disabled={forging || isAnyLayerLoading}
+        disabled={forging || isAnyLayerLoading || isFreeForgeCoolingDown}
         data-testid="forge-button"
       >
         {isAnyLayerLoading
           ? "✨ Generating…"
+          : isFreeForgeCoolingDown
+            ? `⚡ FORGE YOUR CARD (ready in ${formatDurationClock(freeForgeRemainingMs)})`
           : !canForge
             ? "🔒 FORGE YOUR CARD — Upgrade to Unlock"
-            : tier === "free" && !freeCardUsed
+          : tier === "free" && !freeCardUsed
               ? "⚡ FORGE YOUR CARD (1 free card)"
               : generateCredits > 0
                 ? `⚡ FORGE YOUR CARD (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
                 : "⚡ FORGE YOUR CARD"}
       </button>
+      {tier === "free" && generateCredits === 0 && (
+        <p className="form-hint">
+          {freeForgeRemainingMs > 0
+            ? `Your next free forge unlocks in ${formatDurationClock(freeForgeRemainingMs)}.`
+            : freeCardUsed
+              ? "Your 8-hour free forge is ready."
+              : "Your first free forge is ready right now."}
+        </p>
+      )}
 
       <ReferralPanel />
 

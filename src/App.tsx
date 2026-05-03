@@ -1,4 +1,4 @@
-import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect } from "react";
+import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
@@ -33,17 +33,36 @@ function ThemeApplier() {
 
 function PlayerRewardBanner() {
   const { playerRewards } = useAuth();
-  if (!playerRewards) return null;
+  const [dismissed, setDismissed] = useState(false);
+  const rewardKey = `${playerRewards?.signupBonusGranted ? "signup:1" : "signup:0"};claim:${playerRewards?.dailyReward?.claimed ? playerRewards.dailyReward.lastClaimDate : "none"}`;
 
-  const message = [
-    playerRewards.signupBonusGranted ? "🎁 Rare signup bonus added to your Collection." : "",
+  useEffect(() => {
+    setDismissed(false);
+  }, [rewardKey]);
+
+  if (!playerRewards || dismissed) return null;
+  if (!playerRewards.signupBonusGranted && !playerRewards.dailyReward?.claimed) return null;
+  const nextRewardXp = playerRewards.dailyReward?.nextRewardXp ?? 0;
+  const nextRewardOzzies = playerRewards.dailyReward?.nextRewardOzzies ?? 0;
+  const updates = [
+    playerRewards.signupBonusGranted ? "🎁 Rare signup bonus added." : "",
     playerRewards.dailyReward?.claimed
-      ? `🔥 ${playerRewards.dailyReward?.currentStreak}-day streak claimed for +${playerRewards.dailyReward?.rewardXp} XP and +${playerRewards.dailyReward?.rewardOzzies} Ozzies.`
+      ? `🔥 ${playerRewards.dailyReward.currentStreak}-day streak claimed for +${playerRewards.dailyReward.rewardXp} XP and +${playerRewards.dailyReward.rewardOzzies} Ozzies.`
       : "",
+    `Next login reward: +${nextRewardXp} XP and +${nextRewardOzzies} Ozzies.`,
   ].filter(Boolean).join(" ");
 
-  if (!message) return null;
-  return <div className="player-reward-banner">{message}</div>;
+  return (
+    <div className="player-reward-banner" role="status" aria-live="polite">
+      <div className="player-reward-banner__copy">
+        <strong>Daily ritual updated.</strong>
+        <span>{updates}</span>
+      </div>
+      <button type="button" className="player-reward-banner__close" onClick={() => setDismissed(true)} aria-label="Dismiss reward update">
+        ×
+      </button>
+    </div>
+  );
 }
 
 const CardForge  = lazy(() => import("./pages/CardForge").then(m => ({ default: m.CardForge })));

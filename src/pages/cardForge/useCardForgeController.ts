@@ -21,7 +21,7 @@ export function useCardForgeController() {
     onBeforeFactionsNavigation: forge.handleCloseFactionReveal,
   });
 
-  return useMemo(() => ({
+    return useMemo(() => ({
     boardConfig: forge.boardConfig,
     boardImageLoading: forge.boardImageLoading,
     boardLayerOrder: forge.boardLayerOrder,
@@ -32,10 +32,11 @@ export function useCardForgeController() {
     clearSavedCard: save.clearSavedCard,
     closeWelcome: navigation.closeWelcome,
     downloading: save.downloading,
-    forging: forge.forging,
-    forgeClassOptions: forge.forgeClassOptions,
-    freeCardUsed: forge.freeCardUsed,
-    generated: forge.generated,
+      forging: forge.forging,
+      forgeClassOptions: forge.forgeClassOptions,
+      freeCardUsed: forge.freeCardUsed,
+      freeForgeReadyAt: forge.freeForgeReadyAt,
+      generated: forge.generated,
     generateCredits: forge.generateCredits,
     handleClose3D: navigation.handleClose3D,
     handleCloseFactionReveal: forge.handleCloseFactionReveal,

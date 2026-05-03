@@ -51,7 +51,17 @@ const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
 const DEFAULT_CHARACTER_BLEND = 1;
 
 export function useForgeGeneration() {
-  const { tier, canForge, generateCredits, consumeCredit, openUpgradeModal, freeCardUsed, markFreeCardUsed } = useTier();
+  const {
+    tier,
+    canForge,
+    generateCredits,
+    consumeCredit,
+    freeForgeReadyAt,
+    openUpgradeModal,
+    freeCardUsed,
+    markFreeCardUsed,
+    startFreeForgeCooldown,
+  } = useTier();
   const { user, userProfile } = useAuth();
   const { linkedLanguage, profile, useCraftlingua } = useLanguage();
   const { hasFaction, unlockFaction } = useFactionDiscovery();
@@ -245,8 +255,11 @@ export function useForgeGeneration() {
       setRevealedFaction(null);
     }
 
-    if (tier === "free" && !freeCardUsed) {
-      markFreeCardUsed();
+    if (tier === "free" && generateCredits === 0) {
+      if (!freeCardUsed) {
+        markFreeCardUsed();
+      }
+      startFreeForgeCooldown();
     } else if (generateCredits > 0) {
       consumeCredit();
     }
@@ -335,19 +348,20 @@ export function useForgeGeneration() {
      canForge,
     consumeCredit,
     freeCardUsed,
-    generateCredits,
-    generateLayer,
-    hasFaction,
-    markFreeCardUsed,
-    openUpgradeModal,
+     generateCredits,
+     generateLayer,
+     hasFaction,
+     markFreeCardUsed,
+     openUpgradeModal,
     prompts,
     resetLayerSession,
      setLayerParams,
      tier,
      unlockFaction,
       user?.uid,
-      selectedForgeRarity,
-      refreshCraftlinguaFront,
+     selectedForgeRarity,
+     startFreeForgeCooldown,
+     refreshCraftlinguaFront,
     ]);
 
   const handleRandomSkater = useCallback(() => {
@@ -515,6 +529,7 @@ export function useForgeGeneration() {
     characterBlend,
     forging,
     freeCardUsed,
+    freeForgeReadyAt,
     generated,
     generateCredits,
     handleCloseFactionReveal,
@@ -554,6 +569,7 @@ export function useForgeGeneration() {
     characterBlend,
     forging,
     freeCardUsed,
+    freeForgeReadyAt,
     generated,
     generateCredits,
     handleCloseFactionReveal,

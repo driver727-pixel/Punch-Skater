@@ -102,6 +102,7 @@ export const TIERS: Record<TierLevel, Tier> = {
 };
 
 export const FREE_CARD_USED_KEY = "skpd_free_card_used";
+export const FREE_FORGE_READY_AT_KEY = "skpd_free_forge_ready_at";
 
 const TIER_KEY = "skpd_tier";
 const EMAIL_KEY = "skpd_email";
@@ -135,6 +136,16 @@ export function saveCheckoutSessionId(sessionId: string): void {
 
 export function clearCheckoutSessionId(): void {
   localStorage.removeItem(CHECKOUT_SESSION_KEY);
+}
+
+export function loadFreeForgeReadyAt(): number | null {
+  const raw = localStorage.getItem(FREE_FORGE_READY_AT_KEY);
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+export function saveFreeForgeReadyAt(value: number): void {
+  localStorage.setItem(FREE_FORGE_READY_AT_KEY, String(value));
 }
 
 export function clearAccount(): void {

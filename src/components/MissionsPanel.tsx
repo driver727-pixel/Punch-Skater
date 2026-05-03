@@ -6,6 +6,7 @@ import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import type { DistrictWeatherSnapshot } from "../lib/districtWeather";
 import { isEnabled } from "../lib/featureFlags";
 import { DISTRICT_LORE } from "../lib/lore";
+import { formatDurationClock, getNextDailyReward, getRemainingDurationMs } from "../lib/dailyRewards";
 import { DistrictBadge } from "./DistrictBadge";
 import {
   evaluateMissionDeck,
@@ -18,6 +19,7 @@ import {
 } from "../lib/missions";
 import type {
   MissionBoardEntry,
+  MissionBoardTheme,
   MissionBoardProgression,
   MissionRequirement,
   MissionRequirementResult,
@@ -312,7 +314,7 @@ function getRequirementTip(
 }
 
 export function MissionsPanel({ uid }: MissionsPanelProps) {
-  const { user } = useAuth();
+  const { user, playerRewards } = useAuth();
   const { decks } = useDecks();
   const { weatherByDistrict } = useDistrictWeather();
   const [missions, setMissions] = useState<MissionBoardEntry[]>([]);
@@ -320,6 +322,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     missionXp: 0,
     missionOzzies: 0,
   });
+  const [boardDateKey, setBoardDateKey] = useState<string>("");
+  const [dailyResetAt, setDailyResetAt] = useState<string>("");
+  const [weeklyTheme, setWeeklyTheme] = useState<MissionBoardTheme | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [lastResetRefreshAt, setLastResetRefreshAt] = useState<string>("");
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [runningMissionId, setRunningMissionId] = useState<string | null>(null);
@@ -338,6 +346,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
         if (cancelled) return;
         setMissions(payload.missions);
         setProgression(payload.progression);
+        setBoardDateKey(payload.boardDateKey ?? "");
+        setDailyResetAt(payload.dailyResetAt ?? "");
+        setWeeklyTheme(payload.weeklyTheme ?? null);
         setSelectedMissionId((current) => current ?? payload.missions[0]?.id ?? null);
       })
       .catch((nextError) => {
@@ -350,10 +361,24 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [uid, user]);
+  }, [refreshNonce, uid, user]);
 
   useEffect(() => {
-    if (!selectedMissionId && missions.length > 0) {
+    const interval = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!dailyResetAt) return;
+    const resetMs = new Date(dailyResetAt).getTime();
+    if (!Number.isFinite(resetMs) || nowMs < resetMs || lastResetRefreshAt === dailyResetAt) return;
+    setLastResetRefreshAt(dailyResetAt);
+    setRefreshNonce((current) => current + 1);
+  }, [dailyResetAt, lastResetRefreshAt, nowMs]);
+
+  useEffect(() => {
+    const isSelectedMissionInvalid = !selectedMissionId || !missions.some((mission) => mission.id === selectedMissionId);
+    if (isSelectedMissionInvalid && missions.length > 0) {
       setSelectedMissionId(missions[0].id);
     }
   }, [missions, selectedMissionId]);
@@ -417,6 +442,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const selectedDeckCardCount = selectedDeck?.cards.length ?? 0;
   const selectedDeckReadyCount = selectedEvaluation?.eligibleCardCount ?? 0;
   const selectedRouteLabel = selectedForkOption?.label ?? "Main line";
+  const streakState = playerRewards?.dailyReward ?? null;
+  const nextStreakReward = streakState
+    ? { xp: streakState.nextRewardXp, ozzies: streakState.nextRewardOzzies }
+    : getNextDailyReward(1, false);
+  const missionResetCountdown = useMemo(
+    () => formatDurationClock(getRemainingDurationMs(dailyResetAt, nowMs)),
+    [dailyResetAt, nowMs],
+  );
   const selectedOutcomeLabel = selectedMission?.status === "completed"
     ? "Route Cleared"
     : selectedEvaluation?.eligible
@@ -462,15 +495,50 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     <section className="mission-panel mission-selector-panel" aria-label="Mission board">
       <div className="mission-selector-panel__header">
         <div>
-          <div className="mission-selector-panel__title">District mission grid</div>
+          <div className="mission-selector-panel__title">Daily ritual</div>
           <p className="mission-selector-panel__summary">
-            Pick a contract, choose a deck, and clear the route with the right cards and wheels.
+            Collect your streak, check today&apos;s contracts, and launch the right crew before the board resets.
           </p>
         </div>
         <div className="mission-selector-card__badges">
           <span className="mission-selector-card__badge">⚡ {progression.missionXp} Mission XP</span>
           <span className="mission-selector-card__badge tag--ozzies">💰 {progression.missionOzzies} Ozzies</span>
         </div>
+      </div>
+
+      <div className="daily-ritual-strip">
+        <article className="daily-ritual-card">
+          <span className="daily-ritual-card__label">Login streak</span>
+          <strong className="daily-ritual-card__value">{streakState?.currentStreak ?? 0} days</strong>
+          <p className="daily-ritual-card__body">
+            {streakState?.claimed
+              ? `Claimed today for +${streakState.rewardXp} XP and +${streakState.rewardOzzies} Ozzies.`
+              : streakState?.claimedToday
+                ? "Already claimed today. Come back after reset for the next hit."
+                : "Sign in to start stacking your daily streak."}
+          </p>
+        </article>
+        <article className="daily-ritual-card">
+          <span className="daily-ritual-card__label">Next reward</span>
+          <strong className="daily-ritual-card__value">+{nextStreakReward.xp} XP · +{nextStreakReward.ozzies} Oz</strong>
+          <p className="daily-ritual-card__body">
+            {streakState?.claimedToday ? "Locked for the next reset." : "Ready on your next sync."}
+          </p>
+        </article>
+        <article className="daily-ritual-card">
+          <span className="daily-ritual-card__label">Today&apos;s board</span>
+          <strong className="daily-ritual-card__value">{missions.length} contracts live</strong>
+          <p className="daily-ritual-card__body">
+            {boardDateKey ? `Board key ${boardDateKey}.` : "Daily board loading."} Resets in {missionResetCountdown}.
+          </p>
+        </article>
+        {weeklyTheme && (
+          <article className="daily-ritual-card daily-ritual-card--theme">
+            <span className="daily-ritual-card__label">Weekly theme</span>
+            <strong className="daily-ritual-card__value">{weeklyTheme.label}</strong>
+            <p className="daily-ritual-card__body">{weeklyTheme.summary}</p>
+          </article>
+        )}
       </div>
 
       {loading && (

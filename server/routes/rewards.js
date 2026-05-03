@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import {
+  buildDailyReward,
   DAILY_STREAK_COLLECTION,
   resolveDailyRewardState,
   toDateKey,
@@ -120,12 +121,15 @@ export function registerRewardRoutes(app, {
           signupBonusCardId,
           dailyReward: {
             claimed: !streakState.claimedToday,
+            claimedToday: true,
             currentStreak: streakState.currentStreak,
             longestStreak: streakState.longestStreak,
             totalClaims: streakState.totalClaims,
             lastClaimDate: streakState.lastClaimDate,
             rewardXp: streakState.reward.xp,
             rewardOzzies: streakState.reward.ozzies,
+            nextRewardXp: buildDailyReward(streakState.currentStreak + 1).xp,
+            nextRewardOzzies: buildDailyReward(streakState.currentStreak + 1).ozzies,
           },
           progression: nextProgression,
         };

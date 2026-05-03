@@ -12,12 +12,15 @@ export interface PlayerRewardsSyncResult {
   signupBonusCardId: string;
   dailyReward: {
     claimed: boolean;
+    claimedToday: boolean;
     currentStreak: number;
     longestStreak: number;
     totalClaims: number;
     lastClaimDate: string;
     rewardXp: number;
     rewardOzzies: number;
+    nextRewardXp: number;
+    nextRewardOzzies: number;
   };
   progression: {
     missionXp: number;
