@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { sfxClick } from "../lib/sfx";
 import { resolveCraftlinguaShareCode } from "../services/craftlingua";
+import {
+  isStrongPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  PASSWORD_REQUIREMENTS_PLACEHOLDER,
+} from "../lib/passwordRules";
 
 export function AccountSettings() {
   const {
@@ -79,8 +84,8 @@ export function AccountSettings() {
     setPwError("");
     setPwSuccess("");
 
-    if (newPassword.length < 6) {
-      setPwError("New password must be at least 6 characters.");
+    if (!isStrongPassword(newPassword)) {
+      setPwError(PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -226,7 +231,7 @@ export function AccountSettings() {
                   <input
                     className="input"
                     type={showNew ? "text" : "password"}
-                    placeholder="Min. 6 characters"
+                    placeholder={PASSWORD_REQUIREMENTS_PLACEHOLDER}
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); setPwError(""); setPwSuccess(""); }}
                     required

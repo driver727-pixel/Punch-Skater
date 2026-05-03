@@ -37,7 +37,9 @@ import {
   resolveHigherPaidTier,
 } from './lib/payments.js';
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
+import { deleteUserData } from './lib/userDeletion.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerAccountRoutes } from './routes/account.js';
 import { registerBattleRoutes } from './routes/battle.js';
 import { registerRaceRoutes } from './routes/race.js';
 import { registerImageRoutes } from './routes/images.js';
@@ -111,9 +113,9 @@ app.use(helmet({
       imgSrc: ["'self'", 'data:', 'https://*.fal.media', 'https://*.firebaseapp.com', 'https://firebasestorage.googleapis.com'],
       manifestSrc: ["'self'"],
       objectSrc: ["'none'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       scriptSrcAttr: ["'none'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      styleSrc: ["'self'", 'https://fonts.googleapis.com'],
       workerSrc: ["'self'", 'blob:'],
       ...(isProduction ? { upgradeInsecureRequests: [] } : {}),
     },
@@ -191,6 +193,13 @@ const adminUserRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 10,
   message: { error: 'Too many admin requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const accountDeleteRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'Too many account deletion requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -708,28 +717,6 @@ async function authenticateAdminRequest(req) {
   return decodedToken;
 }
 
-async function deleteCollectionDocs(collectionRef, pageSize = 200) {
-  while (true) {
-    const snap = await collectionRef.limit(pageSize).get();
-    if (snap.empty) return;
-    const batch = adminDb.batch();
-    snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
-    await batch.commit();
-    if (snap.size < pageSize) return;
-  }
-}
-
-async function deleteQueryDocs(queryRef, pageSize = 200) {
-  while (true) {
-    const snap = await queryRef.limit(pageSize).get();
-    if (snap.empty) return;
-    const batch = adminDb.batch();
-    snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
-    await batch.commit();
-    if (snap.size < pageSize) return;
-  }
-}
-
 registerAdminRoutes(app, {
   adminAuth,
   adminDb,
@@ -742,8 +729,15 @@ registerAdminRoutes(app, {
   isStrongPassword,
   buildUserDisplayName,
   upsertUserLookupRecord,
-  deleteCollectionDocs,
-  deleteQueryDocs,
+  deleteUserData,
+});
+
+registerAccountRoutes(app, {
+  adminAuth,
+  adminDb,
+  accountDeleteRateLimit,
+  authenticateFirebaseUser,
+  deleteUserData,
 });
 
 const districtWeatherService = createDistrictWeatherService();

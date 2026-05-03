@@ -218,10 +218,6 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
   const imageUrl = await pollBoardImageJob(submitData.jobId);
 
   setLocalCachedBoardImage(cacheKey, imageUrl);
-  await setCachedImage(cacheKey, imageUrl, {
-    prompt: buildBoardImagePrompt(config),
-    layer: "board-img",
-    seed: cacheKey,
-  });
+  await setCachedImage(cacheKey, imageUrl);
   return imageUrl;
 }

@@ -10,8 +10,7 @@ export function registerAdminRoutes(app, {
   buildUserDisplayName,
   upsertUserLookupRecord,
   reconcilePurchasedTierForUser,
-  deleteCollectionDocs,
-  deleteQueryDocs,
+  deleteUserData,
 }) {
   app.use('/api/auth/sync-session', authSyncRateLimit);
   app.use('/api/admin/create-user', adminUserRateLimit);
@@ -128,25 +127,7 @@ export function registerAdminRoutes(app, {
     }
 
     try {
-      const userDocRef = adminDb.collection('users').doc(uid);
-      await Promise.all([
-        deleteCollectionDocs(userDocRef.collection('cards')),
-        deleteCollectionDocs(userDocRef.collection('decks')),
-        deleteQueryDocs(adminDb.collection('trades').where('fromUid', '==', uid)),
-        deleteQueryDocs(adminDb.collection('trades').where('toUid', '==', uid)),
-        deleteQueryDocs(adminDb.collection('battleResults').where('challengerUid', '==', uid)),
-        deleteQueryDocs(adminDb.collection('battleResults').where('defenderUid', '==', uid)),
-        deleteQueryDocs(adminDb.collection('referralClaims').where('referrerUid', '==', uid)),
-      ]);
-
-      await Promise.all([
-        userDocRef.delete(),
-        adminDb.collection('userProfiles').doc(uid).delete(),
-        adminDb.collection('userLookup').doc(uid).delete(),
-        adminDb.collection('arena').doc(uid).delete(),
-        adminDb.collection('leaderboard').doc(uid).delete(),
-      ]);
-
+      await deleteUserData({ adminDb, uid });
       await adminAuth.deleteUser(uid);
       res.json({ uid, email: userRecord.email ?? '' });
     } catch (error) {

@@ -3,19 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self'; object-src 'none'; script-src 'self'; style-src 'self'; upgrade-insecure-requests" />
   <title>Payment successful — Punch Skater</title>
-  <style>
-    body { margin: 0; background: #000; color: #fff; font-family: system-ui, sans-serif;
-           display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; }
-    .card { max-width: 420px; padding: 2rem; }
-    h1 { color: #00ff88; font-size: 2rem; margin-bottom: 0.5rem; }
-    p  { color: #aaa; margin-bottom: 1.5rem; }
-    a  { display: inline-block; padding: 0.75rem 1.5rem; background: #00ff88; color: #000;
-         border-radius: 6px; text-decoration: none; font-weight: 700; }
-    a:hover { background: #00cc6a; }
-  </style>
+  <link rel="stylesheet" href="/assets/security/standalone-page.css" />
 </head>
-<body>
+<body data-variant="success">
   <main class="card">
     <h1>Payment successful!</h1>
     <p>Your tier has been activated. Head back to Punch Skater to start forging cards.</p>

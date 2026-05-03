@@ -170,7 +170,7 @@ export function useForgeLayers() {
           console.info(`  → Then register it in src/services/staticAssets.ts`);
         }
 
-        await setCachedImage(cacheKey, finalUrl, { prompt, layer, seed });
+        await setCachedImage(cacheKey, finalUrl);
         const urlKey = `${layer}Url` as const;
         setLayers((current) => ({
           ...current,

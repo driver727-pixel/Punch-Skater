@@ -3,6 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth, RecaptchaVerifier } from "../context/AuthContext";
 import { auth, firebaseUnavailableMessage } from "../lib/firebase";
 import type { ConfirmationResult } from "firebase/auth";
+import {
+  isStrongPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  PASSWORD_REQUIREMENTS_PLACEHOLDER,
+} from "../lib/passwordRules";
 
 export function Login() {
   const { signIn, signUp, signInWithGoogle, sendPasswordReset, signInWithPhone } = useAuth();
@@ -64,8 +69,8 @@ export function Login() {
       setError("Passwords do not match.");
       return;
     }
-    if (mode === "signup" && password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (mode === "signup" && !isStrongPassword(password)) {
+      setError(PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
 
@@ -295,7 +300,7 @@ export function Login() {
                 <input
                   className="input"
                   type={showPassword ? "text" : "password"}
-                  placeholder={mode === "signup" ? "Min. 6 characters" : "Password"}
+                    placeholder={mode === "signup" ? PASSWORD_REQUIREMENTS_PLACEHOLDER : "Password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
