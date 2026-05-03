@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getMysteryRouteLabel } from "../lib/missionUi";
 import type { MissionFork, MissionForkOption } from "../lib/sharedTypes";
 import type { WorldLocation } from "../lib/types";
 
@@ -246,7 +247,7 @@ export function MissionTransitScene({
                 top: `${(FORK_BRANCHES[index] ?? FORK_BRANCHES[0])[2].y}%`,
               }}
             >
-              {revealForkIntel ? option.label : `Route ${index + 1}`}
+              {revealForkIntel ? option.label : getMysteryRouteLabel(index)}
             </span>
           ))}
         </div>

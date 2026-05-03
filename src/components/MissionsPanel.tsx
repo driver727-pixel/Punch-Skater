@@ -7,6 +7,7 @@ import type { DistrictWeatherSnapshot } from "../lib/districtWeather";
 import { isEnabled } from "../lib/featureFlags";
 import { DISTRICT_LORE } from "../lib/lore";
 import { formatDurationClock, getNextDailyReward, getRemainingDurationMs } from "../lib/dailyRewards";
+import { getMysteryRouteLabel } from "../lib/missionUi";
 import { DistrictBadge } from "./DistrictBadge";
 import {
   evaluateMissionDeck,
@@ -237,6 +238,17 @@ function hasMissionRunRevealed(mission: MissionBoardEntry | null): boolean {
   return Boolean(mission?.lastRunAt || mission?.status === "completed");
 }
 
+function getSelectedRouteLabel(selectedForkOption: MissionForkOption | null, resultRevealed: boolean): string {
+  if (!selectedForkOption) return "Main line";
+  return resultRevealed ? selectedForkOption.label : "Blind route armed";
+}
+
+function getForkRewardTypeLabel(option: MissionForkOption): string {
+  if (option.rewardOzziesDelta && option.rewardXpDelta) return "Split reward route";
+  if (option.rewardOzziesDelta) return "Cash pressure route";
+  return "XP pressure route";
+}
+
 function getMissionThemeStyle(district: District): CSSProperties {
   const theme = DISTRICT_THEMES[district];
   return {
@@ -446,11 +458,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   );
   const selectedDeckCardCount = selectedDeck?.cards.length ?? 0;
   const selectedDeckReadyCount = selectedEvaluation?.eligibleCardCount ?? 0;
-  const selectedRouteLabel = selectedResultRevealed
-    ? selectedForkOption?.label ?? "Main line"
-    : selectedForkOption
-      ? "Blind route armed"
-      : "Main line";
+  const selectedRouteLabel = getSelectedRouteLabel(selectedForkOption, selectedResultRevealed);
   const streakState = playerRewards?.dailyReward ?? null;
   const nextStreakReward = streakState
     ? { xp: streakState.nextRewardXp, ozzies: streakState.nextRewardOzzies }
@@ -759,15 +767,11 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           aria-pressed={selectedForkOption?.id === option.id}
                         >
                           <span className="mission-fork__option-label">
-                            {selectedResultRevealed ? option.label : `Mystery route ${index + 1}`}
+                            {selectedResultRevealed ? option.label : getMysteryRouteLabel(index)}
                           </span>
                           <span className="mission-fork__option-meta">
                             {selectedResultRevealed
-                              ? option.rewardOzziesDelta && option.rewardXpDelta
-                                ? "Split reward route"
-                                : option.rewardOzziesDelta
-                                  ? "Cash pressure route"
-                                  : "XP pressure route"
+                              ? getForkRewardTypeLabel(option)
                               : "Hidden risk / reward"}
                           </span>
                           <span className="mission-fork__option-desc">

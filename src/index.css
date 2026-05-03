@@ -9942,14 +9942,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     rgba(0,0,0,0.22);
 }
 .mission-mystery-card::after {
-  content: "?";
+  content: "";
   position: absolute;
   right: 12px;
-  bottom: -18px;
-  color: rgba(255,255,255,0.05);
-  font-size: 96px;
-  font-weight: 900;
-  line-height: 1;
+  bottom: 12px;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.06);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08), transparent 34%),
+    conic-gradient(from 40deg, transparent, rgba(255,221,0,0.16), transparent 58%);
+  filter: blur(0.2px);
 }
 .mission-mystery-card--jackpot {
   border-color: rgba(255,221,0,0.34);
