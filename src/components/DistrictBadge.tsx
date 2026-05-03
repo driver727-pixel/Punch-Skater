@@ -107,7 +107,7 @@ export function DistrictBadge({
     .join(" ");
 
   return (
-    <span className={classes} aria-hidden={decorative || undefined}>
+    <span className={classes} aria-hidden={decorative}>
       <span className="district-badge__icon-wrap">
         <DistrictBadgeIcon location={location} />
       </span>
