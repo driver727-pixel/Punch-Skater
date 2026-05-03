@@ -96,6 +96,33 @@ test('buildPendingPurchaseUpdate stores session metadata for new or upgraded pur
   });
 });
 
+test('buildPendingPurchaseUpdate stores subscription metadata for later account linking', () => {
+  const update = buildPendingPurchaseUpdate({}, {
+    emailLower: 'buyer@example.com',
+    tier: 'tier3',
+    sessionId: 'cs_subscribe',
+    checkoutMode: 'subscription',
+    stripeCustomerId: 'cus_123',
+    stripeSubscriptionId: 'sub_123',
+    subscriptionStatus: 'active',
+    currentPeriodEnd: '2026-06-01T00:00:00.000Z',
+    billingPeriod: 'annual',
+  }, 'timestamp');
+
+  assert.deepEqual(update, {
+    emailLower: 'buyer@example.com',
+    tier: 'tier3',
+    lastCheckoutSessionId: 'cs_subscribe',
+    checkoutMode: 'subscription',
+    stripeCustomerId: 'cus_123',
+    stripeSubscriptionId: 'sub_123',
+    subscriptionStatus: 'active',
+    currentPeriodEnd: '2026-06-01T00:00:00.000Z',
+    billingPeriod: 'annual',
+    updatedAt: 'timestamp',
+  });
+});
+
 test('buildPurchasedTierUpdate stores subscription entitlement metadata and credits', () => {
   const update = buildPurchasedTierUpdate({}, {
     tier: 'tier3',

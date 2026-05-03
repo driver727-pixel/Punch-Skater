@@ -96,6 +96,24 @@ export function buildPendingPurchaseUpdate(currentData, purchase, updatedAt) {
     if (purchase?.sessionId) {
       nextData.lastCheckoutSessionId = purchase.sessionId;
     }
+    if (purchase?.checkoutMode) {
+      nextData.checkoutMode = purchase.checkoutMode;
+    }
+    if (purchase?.stripeCustomerId) {
+      nextData.stripeCustomerId = purchase.stripeCustomerId;
+    }
+    if (purchase?.stripeSubscriptionId) {
+      nextData.stripeSubscriptionId = purchase.stripeSubscriptionId;
+    }
+    if (purchase?.subscriptionStatus) {
+      nextData.subscriptionStatus = purchase.subscriptionStatus;
+    }
+    if (purchase?.currentPeriodEnd) {
+      nextData.currentPeriodEnd = purchase.currentPeriodEnd;
+    }
+    if (purchase?.billingPeriod) {
+      nextData.billingPeriod = purchase.billingPeriod;
+    }
   }
 
   return nextData;
