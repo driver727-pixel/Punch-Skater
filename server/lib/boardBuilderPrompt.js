@@ -39,6 +39,9 @@ export const CRITICAL_SINGLE_ASSEMBLY_CONSTRAINT =
   'offset, or graft extra trucks, axles, wheel pods, motors, or drivetrain ' +
   'assemblies anywhere on the board.';
 
+export const CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT =
+  'CRITICAL: The skateboard uses exactly ONE drivetrain system only. Belt drive boards may show exposed belts, pulleys, rear motor mounts, and external rear motors, but NEVER hub-motor wheel casings. Hub drive boards may show integrated rear hub motors, but NEVER belts, pulleys, external motor mounts, or external motors. Gear drive boards may show enclosed rear gearboxes, but NEVER belts or hub-motor casings. Never hybridize, combine, or mix multiple drivetrain systems on the same board.';
+
 export const MOUNTAINBOARD_LORE_CONSTRAINT =
   'Mountainboards, Mountain Boards, and 4WD boards always have foot straps on ' +
   'top of the deck plus a compact top-mounted battery pack sized so an adult ' +
@@ -53,6 +56,7 @@ const BOARD_IMAGE_BASE_CONCEPT =
   'It has exactly four wheels mounted on front and rear trucks with fixed axles, the wheels aligned in matching pairs and pointing in the same direction as the deck. ' +
   'Never show caster-style pivoting wheels, sideways wheels, or wheels perpendicular to the board. ' +
   'The NOSE is the front tip of the board; the TAIL is the rear. ' +
+  `${CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT} ` +
   'Unless the drivetrain is explicitly 4WD, ALL drive hardware — motors, motor mounts, belts, pulleys, gearboxes, hub-motor casings — belongs exclusively at the TAIL (rear truck). ' +
   'The NOSE truck must have NO motors, NO motor mounts, NO belts, NO pulleys, and NO gearboxes on any non-4WD board. ' +
   'Placing any drive hardware at the nose on a non-4WD board is a critical error that must never happen.';
@@ -80,7 +84,7 @@ export const DRIVETRAIN_IMAGE_DESCRIPTIONS = {
   Hub:
     'It has hub driven rear wheels only, with the motors hidden inside the REAR wheel cores only. ' +
     'There are NO external belts, NO exposed pulleys, NO external motor mounts, and NO external motors anywhere on the board — this is NOT a belt drive. ' +
-    'The NOSE wheels are plain unpowered urethane with no hub-motor casings and no internal motors.',
+    'The NOSE wheels match the selected wheel type but remain plain unpowered wheels with no hub-motor casings and no internal motors.',
   Gear: 'It has gear driven rear wheels only, with sealed enclosed gearboxes on the TAIL truck only; the NOSE truck has no gearboxes and no drive hardware.',
   '4WD': 'It has powered front and rear trucks in a true four-wheel-drive setup with all four wheels driven.',
 };
@@ -89,7 +93,7 @@ export const WHEEL_IMAGE_DESCRIPTIONS = {
   Urethane: 'It has 4 poly-urethane wheels, each 97 mm in diameter, the smallest wheel option and a scale anchor for the skateboard beside an adult rider.',
   Pneumatic:
     'It has 4 large chunky pneumatic all-terrain tires, each 150 mm in diameter, with thick air-filled rubber construction, chunky knobby tread, and tall visible sidewalls. ' +
-    'These tires are clearly inflated rubber — NOT polyurethane, NOT hard plastic, NOT hub-motor shells. The taller stance is clearly visible compared to polyurethane wheels.',
+    'These tires are clearly inflated rubber — NOT polyurethane and NOT hard plastic. The taller stance is clearly visible compared to polyurethane wheels.',
   Rubber: 'It has 4 solid rubber all-terrain wheels, each 175 mm in diameter, with thick puncture-proof sidewalls; these are the largest wheel option and make the board visibly taller beside an adult rider.',
   Cloud: 'It has 4 oversized vapor wheels, each 107 mm in diameter, with a soft semi-transparent cushioned look; they are slightly larger than 97 mm polyurethane wheels but much smaller than 150 mm pneumatic tires.',
 };
@@ -128,6 +132,23 @@ function getMountainboardLoreDescription(config) {
     : '';
 }
 
+function getWheelDrivetrainCompatibilityDescription(config) {
+  const selectedWheelType = config.wheels.toLowerCase();
+
+  switch (config.drivetrain) {
+    case 'Belt':
+      return `The selected ${selectedWheelType} wheels belong to a belt-drive board, so the rear drive comes only from exposed belts and external rear motors and never from hub-motor wheel casings.`;
+    case 'Hub':
+      return `The selected ${selectedWheelType} wheels belong to a hub-drive board, so only the REAR pair contains integrated hub motors while the FRONT pair stays unpowered, and there are no belts, pulleys, or external motors anywhere.`;
+    case 'Gear':
+      return `The selected ${selectedWheelType} wheels belong to a gear-drive board, so the rear drive comes only from enclosed rear gearboxes and never from belts or hub-motor wheel casings.`;
+    case '4WD':
+      return `The selected ${selectedWheelType} wheels belong to a true 4WD board, so all four wheels participate in the single 4WD drivetrain without adding any separate belt-drive or hub-drive-only hardware package.`;
+    default:
+      return '';
+  }
+}
+
 /**
  * Builds the image-generation prompt for the given BoardConfig.
  * Mirrors src/lib/boardBuilderPrompt.ts#buildBoardImagePrompt.
@@ -139,6 +160,9 @@ export function buildBoardImagePrompt(config) {
   const battery = config.battery ?? 'SlimStealth';
   const batteryPreservationClause =
     battery === 'SlimStealth' ? '' : ' and battery form factor';
+  const noseConstraint = config.drivetrain === '4WD'
+    ? ''
+    : `${CRITICAL_NOSE_CONSTRAINT} `;
 
   return (
     `${BOARD_IMAGE_BASE_CONCEPT} ` +
@@ -146,12 +170,13 @@ export function buildBoardImagePrompt(config) {
     `${DRIVETRAIN_IMAGE_DESCRIPTIONS[config.drivetrain] ?? ''} ` +
     `${getMotorImageDescription(config)} ` +
     `${WHEEL_IMAGE_DESCRIPTIONS[config.wheels] ?? ''} ` +
+    `${getWheelDrivetrainCompatibilityDescription(config)} ` +
     `${BATTERY_IMAGE_DESCRIPTIONS[battery] ?? ''} ` +
     `${getMountainboardLoreDescription(config)} ` +
     `Show one fully assembled complete skateboard only. ` +
     `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type and wheel diameter${batteryPreservationClause} with no substitutions. ` +
     `For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD. ` +
-    `${CRITICAL_NOSE_CONSTRAINT} ` +
+    `${noseConstraint}` +
     `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, exactly one skateboard in the image. ` +
     `CRITICAL: Absolutely no text, words, letters, numbers, labels, captions, annotations, callout lines, dimension lines, part names, diagrams, watermarks, or any written characters anywhere in the image or on the skateboard itself.`
   );

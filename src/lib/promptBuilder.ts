@@ -39,7 +39,7 @@ const RARITY_MOOD: Record<string, string> = {
   Apprentice:     "energetic and hopeful",
   Master:         "confident and polished",
   Rare:           "dynamic and striking",
-  Legendary:      "epic, otherworldly, and awe-inspiring",
+  Legendary:      "epic, electrifying, and awe-inspiring",
 };
 
 const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
@@ -81,6 +81,11 @@ export const CRITICAL_NO_EXTRA_LIMBS_CONSTRAINT =
   "CRITICAL: The human figure must have exactly two arms and two legs — " +
   "no extra arms, no duplicate limbs, no third arm, no phantom limb, no floating appendage. " +
   "Any anatomy error producing more than two arms or more than two legs is strictly forbidden.";
+
+export const CRITICAL_HUMAN_CHARACTER_CONSTRAINT =
+  "CRITICAL: Render exactly ONE normal adult human courier only — never a mutant, monster, alien, creature, animal-person, or fantasy being. " +
+  "The face must read as grounded human anatomy with exactly one head, one face, two normal human eyes, two ears, one nose, one mouth, and a natural human jawline. " +
+  "No extra eyes, no duplicated facial features, no split face, no deformed mouth, no monstrous teeth, no snout, no beak, no horns, no antennae, no gills, no scales, no fur, and no non-human skin texture.";
 
 const CHARACTER_LAYER_COMPOSITION_REQUIREMENT =
   "Composition: pulled-back full-body framing with generous headroom, visible boots, and a clear long empty pocket of space beside or in front of the courier for a separate composited asset. Do not push the subject too close to the camera or crop the empty zone.";
@@ -290,7 +295,10 @@ export function buildCharacterPrompt(prompts: CardPrompts): string {
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
 
-  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
+  const characterDesc =
+    `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ` +
+    `They are unmistakably a normal human adult with natural human facial anatomy and ordinary human proportions. ` +
+    `${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
@@ -302,6 +310,8 @@ export function buildCharacterPrompt(prompts: CardPrompts): string {
     `Mood: ${mood}.`,
     `Background: solid neutral medium-gray studio, no scenery or props, full figure head-to-toe with generous margins, centered.`,
     `Adult subject (21+), fully clothed, SFW, LGBTQIA+ inclusive.`,
+    `Grounded human likeness only — believable adult courier, readable eyes, natural nose and mouth, coherent facial structure, no body-horror distortions.`,
+    CRITICAL_HUMAN_CHARACTER_CONSTRAINT,
     CRITICAL_NO_EXTRA_LIMBS_CONSTRAINT,
   );
 }
@@ -437,7 +447,10 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
 
-  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
+  const characterDesc =
+    `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ` +
+    `They are unmistakably a normal human adult with natural human facial anatomy and ordinary human proportions. ` +
+    `${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
@@ -447,5 +460,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     characterDesc,
     `Mood: ${mood}.`,
     `Adult subject (21+), fully clothed, SFW, LGBTQIA+ inclusive.`,
+    `Grounded human likeness only — believable adult courier, readable eyes, natural nose and mouth, coherent facial structure, no body-horror distortions.`,
+    CRITICAL_HUMAN_CHARACTER_CONSTRAINT,
   );
 }

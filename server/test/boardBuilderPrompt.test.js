@@ -15,6 +15,7 @@ import {
   BOARD_IMAGE_CACHE_VERSION,
   CRITICAL_NOSE_CONSTRAINT,
   CRITICAL_SINGLE_ASSEMBLY_CONSTRAINT,
+  CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT,
   DRIVETRAIN_IMAGE_DESCRIPTIONS,
   MOUNTAINBOARD_LORE_CONSTRAINT,
   WHEEL_IMAGE_DESCRIPTIONS,
@@ -51,6 +52,21 @@ for (const drivetrain of ALL_DRIVETRAINS) {
     assert.ok(
       prompt.includes(CRITICAL_SINGLE_ASSEMBLY_CONSTRAINT),
       `Prompt for [${drivetrain}] must contain the single-assembly anti-mutation constraint`,
+    );
+  });
+
+  test(`buildBoardImagePrompt [${drivetrain}] — contains single-drivetrain anti-hybrid constraint`, () => {
+    const prompt = buildBoardImagePrompt({
+      ...BASE_CONFIG,
+      drivetrain,
+      ...(drivetrain === '4WD'
+        ? { boardType: 'Mountain', motor: 'Outrunner', wheels: 'Pneumatic', battery: 'TopPeli' }
+        : {}),
+    });
+
+    assert.ok(
+      prompt.includes(CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT),
+      `Prompt for [${drivetrain}] must contain the single-drivetrain anti-hybrid constraint`,
     );
   });
 }
@@ -122,6 +138,41 @@ test('buildBoardImagePrompt [4WD] — drive hardware described on both nose and 
   );
 });
 
+test('buildBoardImagePrompt [Hub + Pneumatic] — allows hub drive with non-urethane wheels', () => {
+  const prompt = buildBoardImagePrompt({
+    boardType: 'AT',
+    drivetrain: 'Hub',
+    motor: 'Standard',
+    wheels: 'Pneumatic',
+    battery: 'SlimStealth',
+  });
+
+  assert.doesNotMatch(
+    prompt,
+    /plain unpowered urethane/i,
+    'Hub prompt should not force urethane front wheels when another wheel type is selected',
+  );
+  assert.match(
+    prompt,
+    /match the selected wheel type/i,
+    'Hub prompt should preserve the selected wheel type on the unpowered front wheels',
+  );
+});
+
+test('buildBoardImagePrompt [Belt + Urethane] — forbids hub wheel hardware on belt boards', () => {
+  const prompt = buildBoardImagePrompt({
+    ...BASE_CONFIG,
+    drivetrain: 'Belt',
+    wheels: 'Urethane',
+  });
+
+  assert.match(
+    prompt,
+    /never from hub-motor wheel casings/i,
+    'Belt prompt should explicitly forbid hub-motor wheel casings',
+  );
+});
+
 test('buildBoardImagePrompt [Mountain 4WD] — includes mountainboard lore constraints', () => {
   const prompt = buildBoardImagePrompt({
     boardType: 'Mountain',
@@ -134,6 +185,14 @@ test('buildBoardImagePrompt [Mountain 4WD] — includes mountainboard lore const
   assert.ok(
     prompt.includes(MOUNTAINBOARD_LORE_CONSTRAINT),
     'Mountain 4WD prompt must describe foot straps and compact top-mounted battery lore',
+  );
+});
+
+test('WHEEL_IMAGE_DESCRIPTIONS [Pneumatic] — does not ban hub-compatible wheel shells', () => {
+  assert.doesNotMatch(
+    WHEEL_IMAGE_DESCRIPTIONS.Pneumatic,
+    /hub-motor shells/i,
+    'Pneumatic wheel copy should stay compatible with both hub and belt drive builds',
   );
 });
 
@@ -169,13 +228,21 @@ for (const [wheels, diameter] of Object.entries(WHEEL_DIAMETERS)) {
   });
 }
 
-// TODO: buildBoardImagePrompt currently appends CRITICAL_NOSE_CONSTRAINT
-// unconditionally, so 4WD prompts include "On non-4WD boards the nose truck
-// must look identical to a plain unpowered truck".  While the text is
-// conditionally phrased, it is cleaner to omit it for 4WD builds to avoid
-// any ambiguity in the image model.  Fixing this requires a prompt change;
-// track and resolve in a dedicated PR.
-test.todo('buildBoardImagePrompt [4WD] — does not include bare-nose constraint');
+test('buildBoardImagePrompt [4WD] — does not include bare-nose constraint', () => {
+  const prompt = buildBoardImagePrompt({
+    boardType: 'Mountain',
+    drivetrain: '4WD',
+    motor: 'Outrunner',
+    wheels: 'Pneumatic',
+    battery: 'TopPeli',
+  });
+
+  assert.doesNotMatch(
+    prompt,
+    new RegExp(CRITICAL_NOSE_CONSTRAINT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    '4WD prompt should omit the non-4WD bare-nose constraint',
+  );
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // B. Reference-URL count contract
