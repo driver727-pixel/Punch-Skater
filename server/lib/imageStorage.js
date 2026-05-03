@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 const FIREBASE_STORAGE_DOWNLOAD_TIMEOUT_MS = 60_000;
 const FIREBASE_STORAGE_BASE_URL = 'https://firebasestorage.googleapis.com';
+const FIREBASE_STORAGE_CACHE_CONTROL = 'public, max-age=31536000, immutable, no-transform';
 
 /**
  * Returns true when `url` is already a Firebase Storage download URL so we
@@ -66,6 +67,7 @@ export async function persistImageToStorage(adminStorage, sourceUrl, storageBuck
     await file.save(buffer, {
       contentType,
       metadata: {
+        cacheControl: FIREBASE_STORAGE_CACHE_CONTROL,
         // Setting firebaseStorageDownloadTokens generates a stable Firebase
         // client-SDK-compatible download URL for this file.
         metadata: { firebaseStorageDownloadTokens: token },
