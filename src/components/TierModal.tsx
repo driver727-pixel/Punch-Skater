@@ -8,7 +8,7 @@ interface TierModalProps {
   onClose: () => void;
 }
 
-type CheckoutSelection = Exclude<TierLevel, "free"> | "seasonPass";
+type CheckoutTierSelection = Exclude<TierLevel, "free"> | "seasonPass";
 
 const CHECKOUT_API_URL = resolveApiUrl(
   import.meta.env.VITE_CHECKOUT_API_URL as string | undefined,
@@ -18,7 +18,7 @@ const CHECKOUT_API_URL = resolveApiUrl(
 export function TierModal({ onClose }: TierModalProps) {
   const { tier, email, setTier } = useTier();
   const [signupEmail, setSignupEmail] = useState(email);
-  const [signupStep, setSignupStep] = useState<CheckoutSelection | null>(null);
+  const [signupStep, setSignupStep] = useState<CheckoutTierSelection | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<PaidBillingPeriod>("monthly");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -92,6 +92,9 @@ export function TierModal({ onClose }: TierModalProps) {
 
   const tierOrder: TierLevel[] = ["free", "tier2", "tier3"];
   const signupTier = signupStep && signupStep !== "seasonPass" ? TIERS[signupStep] : null;
+  if (signupStep && signupStep !== "seasonPass" && !signupTier) {
+    return null;
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -160,7 +163,7 @@ export function TierModal({ onClose }: TierModalProps) {
           <div className="tier-signup">
             <button className="btn-outline tier-back" onClick={() => setSignupStep(null)}>← Back</button>
             <h3 className="tier-signup-title">
-              {signupStep === "seasonPass" ? `Buy ${SEASON_PASS.name}` : `Sign up for ${signupTier?.name ?? ""}`}
+              {signupStep === "seasonPass" ? `Buy ${SEASON_PASS.name}` : `Sign up for ${signupTier.name}`}
             </h3>
             <p className="tier-signup-desc">
               {signupStep === "seasonPass"
@@ -202,8 +205,8 @@ export function TierModal({ onClose }: TierModalProps) {
                   signupStep === "seasonPass"
                     ? SEASON_PASS.price
                     : billingPeriod === "annual"
-                      ? signupTier?.annualPrice ?? signupTier?.price ?? ""
-                      : signupTier?.price ?? ""
+                      ? signupTier.annualPrice ?? signupTier.price
+                      : signupTier.price
                 }`}
             </button>
           </div>
