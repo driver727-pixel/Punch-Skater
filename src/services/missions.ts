@@ -41,7 +41,7 @@ async function fetchMissionJson<T>(
     const response = await fetch(input, init);
     return parseResponse<T>(response, fallbackMessage);
   } catch (error) {
-    if (error instanceof Error && error.message === "Failed to fetch") {
+    if (error instanceof TypeError) {
       throw new Error("Failed to reach the missions service.");
     }
     throw error;
