@@ -248,5 +248,3 @@ export function registerMissionRoutes(app, {
     }
   });
 }
-
-export { MISSION_BOARD_DEFINITIONS };
