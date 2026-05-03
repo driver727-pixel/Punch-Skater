@@ -589,7 +589,7 @@ function applyWeeklyThemeToDefinition(definition, theme) {
     ...definition,
     rewardXp: definition.rewardXp + theme.rewardXpBonus,
     rewardOzzies: definition.rewardOzzies + theme.rewardOzziesBonus,
-    tagline: `${definition.tagline} ${theme.label} bonus live today.`,
+    tagline: `${definition.tagline.replace(/\s+$/, "")}${definition.tagline.trimEnd().endsWith(".") ? "" : "."} ${theme.label} bonus live today.`,
   };
 }
 
