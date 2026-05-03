@@ -639,8 +639,9 @@ export function getMissionForkOption(
 ): MissionForkOption | null {
   const options = mission.fork?.options ?? [];
   if (options.length === 0) return null;
-  const resolvedId = selectedForkOptionId ?? mission.selectedForkOptionId ?? options[0]?.id;
-  return options.find((option) => option.id === resolvedId) ?? options[0] ?? null;
+  const resolvedId = selectedForkOptionId ?? mission.selectedForkOptionId ?? null;
+  if (!resolvedId) return null;
+  return options.find((option) => option.id === resolvedId) ?? null;
 }
 
 export function getMissionEffectiveRewards(

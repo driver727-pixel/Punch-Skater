@@ -114,13 +114,13 @@ test('evaluateMissionDeck applies selected fork requirements', () => {
     cards: Array.from({ length: 6 }, (_, index) => buildCard({
       prompts: { district: index < 2 ? 'Batteryville' : 'The Grid' },
       board: { config: { boardType: 'Street', wheels: 'Rubber' } },
-      stats: { speed: 4, range: 4, stealth: 4, grit: 5 },
+      stats: { speed: 4, range: 4, stealth: 4, grit: 4 },
     })),
   };
 
   const result = evaluateMissionDeck(deck, mission, null, 'crusher-lane');
   assert.equal(result.eligible, false);
-  assert.match(result.summary, /32 total Grit/i);
+  assert.match(result.summary, /30 total Grit/i);
 });
 
 test('evaluateMissionDeck now lets a generic five-card deck clear the base Grid contract', () => {
