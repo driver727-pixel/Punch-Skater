@@ -195,6 +195,42 @@ test('getMissionEffectiveRewards includes selected fork bonuses', () => {
   assert.deepEqual(rewards, { rewardXp: 220, rewardOzzies: 165 });
 });
 
+test('rainy weather raises mission payout and adds pressure without blocking district access', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'nightshade-tunnel-run');
+  const weatherPayload = {
+    districts: [{
+      district: 'Nightshade',
+      city: 'Perth',
+      state: 'WA',
+      summary: 'Rain',
+      temperatureC: 18,
+      windSpeedKph: 10,
+      rainMm: 2,
+      weatherCode: 61,
+      updatedAt: '2026-05-04T00:00:00.000Z',
+      accessRule: null,
+    }],
+  };
+  const deck = {
+    id: 'deck-rain-1',
+    name: 'Wet Work',
+    cards: Array.from({ length: 5 }, (_, index) => buildCard({
+      prompts: { district: index < 2 ? 'Nightshade' : 'The Grid', archetype: 'Qu111s' },
+      identity: { crew: 'Qu111s' },
+      board: { config: { boardType: 'Street', wheels: 'Cloud' } },
+      stats: { speed: 6, range: 6, stealth: 6, grit: 5 },
+    })),
+  };
+
+  const result = evaluateMissionDeck(deck, mission, weatherPayload);
+  const rewards = getMissionEffectiveRewards(mission, null, weatherPayload);
+
+  assert.equal(result.eligible, true);
+  assert.ok(result.statusEffects?.some((effect) => effect.id === 'rain-slick-route'));
+  assert.equal(result.counterPower, 0);
+  assert.deepEqual(rewards, { rewardXp: 205, rewardOzzies: 120 });
+});
+
 test('evaluateMissionDeck surfaces dynamic hardware effects and live hand metadata', () => {
   const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'airaway-sky-lane');
   const deck = {

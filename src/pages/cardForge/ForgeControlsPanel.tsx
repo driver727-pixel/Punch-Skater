@@ -12,7 +12,6 @@ import type {
   SkinTone,
 } from "../../lib/types";
 import { BoardBuilder } from "../../components/BoardBuilder";
-import { GeoAtlas } from "../../components/GeoAtlas";
 import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
 import { ReferralPanel } from "../../components/ReferralPanel";
 import type { BoardConfig } from "../../lib/boardBuilder";
@@ -207,17 +206,6 @@ export function ForgeControlsPanel({
           ))}
         </div>
       </div>
-
-      <GeoAtlas
-        boardConfig={boardConfig}
-        selectedDistrict={prompts.district ?? null}
-        onDistrictSelect={(d) => {
-          sfxClick();
-          onPromptChange("district", d);
-        }}
-        districtInteractionMode="press"
-        section="australia"
-      />
 
       <LanguageProfilePanel />
 

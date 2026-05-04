@@ -74,6 +74,16 @@ export const HARD_CUTOUT_COUNTER_ID = 'hard-cutout';
 
 const ROUGH_ROUTE_DISTRICTS = new Set(['Batteryville', 'Nightshade', 'The Forest']);
 const CAMERA_HACKER_ARCHETYPES = new Set(['The Knights Technarchy', 'D4rk $pider']);
+const RAIN_MISSION_BONUS = {
+  counterPowerDelta: -1,
+  rewardXpDelta: 15,
+  rewardOzziesDelta: 10,
+};
+const HEAVY_RAIN_MISSION_BONUS = {
+  counterPowerDelta: -2,
+  rewardXpDelta: 30,
+  rewardOzziesDelta: 20,
+};
 
 function getMissionThreatSummary(mission) {
   switch (mission.district) {
@@ -96,6 +106,40 @@ function getMissionThreatSummary(mission) {
 
 function dedupeCounterTags(tags) {
   return [...new Set(tags)];
+}
+
+function normalizeWeatherSummary(summary) {
+  return String(summary ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function getMissionWeatherImpact(weather) {
+  if (!weather) return null;
+  const summary = normalizeWeatherSummary(weather.summary);
+  if (summary === 'heavy rain') {
+    return {
+      id: 'storm-surge',
+      label: 'Storm Surge',
+      summary: `Heavy rain is flooding the route. Live counters lose 2 power, but the contract pays +${HEAVY_RAIN_MISSION_BONUS.rewardXpDelta} XP and +${HEAVY_RAIN_MISSION_BONUS.rewardOzziesDelta} Ozzies.`,
+      counterPowerDelta: HEAVY_RAIN_MISSION_BONUS.counterPowerDelta,
+      rewardXpDelta: HEAVY_RAIN_MISSION_BONUS.rewardXpDelta,
+      rewardOzziesDelta: HEAVY_RAIN_MISSION_BONUS.rewardOzziesDelta,
+      source: 'Heavy rain',
+    };
+  }
+  if (summary === 'rain' || (Number(weather.rainMm) || 0) > 0) {
+    // Prefer the upstream summary, but fall back to the measured rain amount so the
+    // mission layer still reacts if the summary lags behind the latest rainfall value.
+    return {
+      id: 'rain-slick-route',
+      label: 'Rain-Slick Route',
+      summary: `Rain is making the route riskier. Live counters lose 1 power, but the contract pays +${RAIN_MISSION_BONUS.rewardXpDelta} XP and +${RAIN_MISSION_BONUS.rewardOzziesDelta} Ozzies.`,
+      counterPowerDelta: RAIN_MISSION_BONUS.counterPowerDelta,
+      rewardXpDelta: RAIN_MISSION_BONUS.rewardXpDelta,
+      rewardOzziesDelta: RAIN_MISSION_BONUS.rewardOzziesDelta,
+      source: 'Rain',
+    };
+  }
+  return null;
 }
 
 function mapRequirementToCounterTags(requirement) {
@@ -167,6 +211,18 @@ function buildMissionStatusEffects(cards, mission, weather) {
     ? cards.reduce((sum, card) => sum + (Number(card?.stats?.range) || 0), 0) / cards.length
     : 0;
   const effects = [];
+  const weatherImpact = getMissionWeatherImpact(weather);
+
+  if (weatherImpact) {
+    effects.push({
+      id: weatherImpact.id,
+      label: weatherImpact.label,
+      summary: weatherImpact.summary,
+      kind: 'penalty',
+      powerDelta: weatherImpact.counterPowerDelta,
+      source: weatherImpact.source,
+    });
+  }
 
   if (urethaneCount >= 2 && (mission.district === 'Airaway' || mission.district === 'Glass City')) {
     effects.push({
@@ -851,13 +907,9 @@ function isMissionCardReady(card, nowMs = Date.now()) {
 
 function canCardAccessDistrict(card, district, weatherByDistrict) {
   const wheelType = card?.board?.config?.wheels;
-  const boardType = card?.board?.config?.boardType;
+  void weatherByDistrict;
   const allowedWheelTypes = DISTRICT_WHEEL_ACCESS_RULES[district]?.allowedWheelTypes ?? [];
   if (!allowedWheelTypes.includes(wheelType)) {
-    return false;
-  }
-  const weather = weatherByDistrict[district];
-  if (weather?.accessRule && weather.accessRule.requiredBoardType !== boardType) {
     return false;
   }
   return true;
@@ -922,12 +974,16 @@ function getMissionEncounterOption(mission, selectedCounterOptionId = null) {
   return encounter.options.find((option) => option.id === resolvedId) ?? null;
 }
 
-export function getMissionEffectiveRewards(mission, selectedCounterOptionId = null) {
+export function getMissionEffectiveRewards(mission, selectedCounterOptionId = null, weatherPayload = null) {
   const selectedOption = getMissionEncounterOption(mission, selectedCounterOptionId)
     ?? getMissionForkOption(mission, selectedCounterOptionId);
+  const weatherByDistrict = Array.isArray(weatherPayload?.districts)
+    ? buildWeatherMap(weatherPayload)
+    : (weatherPayload ?? {});
+  const weatherImpact = getMissionWeatherImpact(weatherByDistrict[mission.district] ?? null);
   return {
-    rewardXp: (Number(mission?.rewardXp) || 0) + (Number(selectedOption?.rewardXpDelta) || 0),
-    rewardOzzies: (Number(mission?.rewardOzzies) || 0) + (Number(selectedOption?.rewardOzziesDelta) || 0),
+    rewardXp: (Number(mission?.rewardXp) || 0) + (Number(selectedOption?.rewardXpDelta) || 0) + (Number(weatherImpact?.rewardXpDelta) || 0),
+    rewardOzzies: (Number(mission?.rewardOzzies) || 0) + (Number(selectedOption?.rewardOzziesDelta) || 0) + (Number(weatherImpact?.rewardOzziesDelta) || 0),
   };
 }
 

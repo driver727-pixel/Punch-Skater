@@ -1,4 +1,4 @@
-import { getDistrictAccessSummary, isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
+import { isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
 import type {
   MissionActiveRunState,
   MissionBoardEntry,
@@ -34,6 +34,26 @@ export const HARD_CUTOUT_COUNTER_ID = "hard-cutout";
 
 const ROUGH_ROUTE_DISTRICTS = new Set<District>(["Batteryville", "Nightshade", "The Forest"]);
 const CAMERA_HACKER_ARCHETYPES = new Set(["The Knights Technarchy", "D4rk $pider"]);
+const RAIN_MISSION_BONUS = {
+  counterPowerDelta: -1,
+  rewardXpDelta: 15,
+  rewardOzziesDelta: 10,
+};
+const HEAVY_RAIN_MISSION_BONUS = {
+  counterPowerDelta: -2,
+  rewardXpDelta: 30,
+  rewardOzziesDelta: 20,
+};
+
+interface MissionWeatherImpact {
+  id: string;
+  label: string;
+  summary: string;
+  counterPowerDelta: number;
+  rewardXpDelta: number;
+  rewardOzziesDelta: number;
+  source: string;
+}
 
 function getMissionThreatSummary(mission: MissionBoardEntry): string {
   switch (mission.district) {
@@ -56,6 +76,40 @@ function getMissionThreatSummary(mission: MissionBoardEntry): string {
 
 function dedupeCounterTags(tags: MissionCounterTag[]): MissionCounterTag[] {
   return [...new Set(tags)];
+}
+
+function normalizeWeatherSummary(summary: string | null | undefined): string {
+  return String(summary ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function getMissionWeatherImpact(weather: DistrictWeatherSnapshot | null | undefined): MissionWeatherImpact | null {
+  if (!weather) return null;
+  const summary = normalizeWeatherSummary(weather.summary);
+  if (summary === "heavy rain") {
+    return {
+      id: "storm-surge",
+      label: "Storm Surge",
+      summary: `Heavy rain is flooding the route. Live counters lose 2 power, but the contract pays +${HEAVY_RAIN_MISSION_BONUS.rewardXpDelta} XP and +${HEAVY_RAIN_MISSION_BONUS.rewardOzziesDelta} Ozzies.`,
+      counterPowerDelta: HEAVY_RAIN_MISSION_BONUS.counterPowerDelta,
+      rewardXpDelta: HEAVY_RAIN_MISSION_BONUS.rewardXpDelta,
+      rewardOzziesDelta: HEAVY_RAIN_MISSION_BONUS.rewardOzziesDelta,
+      source: "Heavy rain",
+    };
+  }
+  if (summary === "rain" || (weather.rainMm ?? 0) > 0) {
+    // Prefer the upstream summary, but fall back to the measured rain amount so the
+    // mission layer still reacts if the summary lags behind the latest rainfall value.
+    return {
+      id: "rain-slick-route",
+      label: "Rain-Slick Route",
+      summary: `Rain is making the route riskier. Live counters lose 1 power, but the contract pays +${RAIN_MISSION_BONUS.rewardXpDelta} XP and +${RAIN_MISSION_BONUS.rewardOzziesDelta} Ozzies.`,
+      counterPowerDelta: RAIN_MISSION_BONUS.counterPowerDelta,
+      rewardXpDelta: RAIN_MISSION_BONUS.rewardXpDelta,
+      rewardOzziesDelta: RAIN_MISSION_BONUS.rewardOzziesDelta,
+      source: "Rain",
+    };
+  }
+  return null;
 }
 
 function mapRequirementToCounterTags(requirement: MissionRequirement): MissionCounterTag[] {
@@ -145,6 +199,18 @@ function buildMissionStatusEffects(
   const averageRange = cards.length > 0 ? cards.reduce((sum, card) => sum + card.stats.range, 0) / cards.length : 0;
   const hasRegenCapableSetup = hasMissionRegenCapableSetup(cards);
   const effects: MissionStatusEffect[] = [];
+  const weatherImpact = getMissionWeatherImpact(weather);
+
+  if (weatherImpact) {
+    effects.push({
+      id: weatherImpact.id,
+      label: weatherImpact.label,
+      summary: weatherImpact.summary,
+      kind: "penalty",
+      powerDelta: weatherImpact.counterPowerDelta,
+      source: weatherImpact.source,
+    });
+  }
 
   if (urethaneCount >= 2 && (mission.district === "Airaway" || mission.district === "Glass City")) {
     effects.push({
@@ -891,7 +957,13 @@ export function getMissionWeatherSummary(
   mission: MissionBoardEntry,
   weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>>,
 ): string {
-  return getDistrictAccessSummary(mission.district, weatherByDistrict[mission.district] ?? null);
+  const weather = weatherByDistrict[mission.district] ?? null;
+  if (!weather) return "Weather uplink offline. Mission pressure is running at the district's default level.";
+  const weatherImpact = getMissionWeatherImpact(weather);
+  if (!weatherImpact) {
+    return `${weather.summary} over ${weather.city}. Standard risk and standard payout are in effect.`;
+  }
+  return `${weather.summary} over ${weather.city}. ${weatherImpact.summary}`;
 }
 
 export function getMissionForkOption(
@@ -932,12 +1004,14 @@ export function getMissionEncounter(mission: MissionBoardEntry): MissionEncounte
 export function getMissionEffectiveRewards(
   mission: MissionBoardEntry,
   selectedCounterOptionId?: string | null,
+  weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>> = {},
 ): { rewardXp: number; rewardOzzies: number } {
   const selectedOption = getMissionEncounterOption(mission, selectedCounterOptionId)
     ?? getMissionForkOption(mission, selectedCounterOptionId);
+  const weatherImpact = getMissionWeatherImpact(weatherByDistrict[mission.district] ?? null);
   return {
-    rewardXp: mission.rewardXp + (selectedOption?.rewardXpDelta ?? 0),
-    rewardOzzies: mission.rewardOzzies + (selectedOption?.rewardOzziesDelta ?? 0),
+    rewardXp: mission.rewardXp + (selectedOption?.rewardXpDelta ?? 0) + (weatherImpact?.rewardXpDelta ?? 0),
+    rewardOzzies: mission.rewardOzzies + (selectedOption?.rewardOzziesDelta ?? 0) + (weatherImpact?.rewardOzziesDelta ?? 0),
   };
 }
 

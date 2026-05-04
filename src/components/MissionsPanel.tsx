@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useDecks } from "../hooks/useDecks";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import type { DistrictWeatherSnapshot } from "../lib/districtWeather";
+import { getDistrictAccessSummary } from "../lib/districtWeather";
 import { isEnabled } from "../lib/featureFlags";
 import { DISTRICT_LORE } from "../lib/lore";
 import { formatDurationClock, getNextDailyReward, getRemainingDurationMs } from "../lib/dailyRewards";
@@ -304,12 +305,17 @@ function getMissionResultLog(result: MissionRunResponse): string[] {
     option.id === (mission.selectedCounterOptionId ?? mission.activeRun?.selectedCounterOptionId)
   )) ?? null;
   if (result.rewardGranted) {
-    const rewards = mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
+    const rewards = typeof mission.lastRunRewardXp === "number" && typeof mission.lastRunRewardOzzies === "number"
       ? {
-        rewardXp: Math.max(0, mission.rewardXp - 20),
-        rewardOzzies: Math.max(0, mission.rewardOzzies - 20),
+        rewardXp: mission.lastRunRewardXp,
+        rewardOzzies: mission.lastRunRewardOzzies,
       }
-      : getMissionEffectiveRewards(mission, mission.selectedCounterOptionId);
+      : mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
+        ? {
+          rewardXp: Math.max(0, mission.rewardXp - 20),
+          rewardOzzies: Math.max(0, mission.rewardOzzies - 20),
+        }
+        : getMissionEffectiveRewards(mission, mission.selectedCounterOptionId);
     return [
       `${mission.selectedDeckName ?? result.evaluation.deckName} cleared ${mission.title}${counterOption ? ` via ${counterOption.label}` : mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " via a hard cutout" : ""}.`,
       `Banked +${rewards.rewardXp} Mission XP.`,
@@ -339,7 +345,15 @@ function getMissionDistrictAccessSummary(
   mission: MissionBoardEntry,
   weather: DistrictWeatherSnapshot | null,
 ): string {
-  return getMissionWeatherSummary(mission, { [mission.district]: weather });
+  return getDistrictAccessSummary(mission.district, weather);
+}
+
+function getMissionPressureSummary(
+  mission: MissionBoardEntry,
+  weather: DistrictWeatherSnapshot | null,
+  weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>>,
+): string {
+  return `Access: ${getMissionDistrictAccessSummary(mission, weather)}. Weather: ${getMissionWeatherSummary(mission, weatherByDistrict)}`;
 }
 
 function isCounterRequirement(
@@ -372,9 +386,7 @@ function getRequirementTip(
     case "min_cards":
       return "Mission decks need at least five mission-ready cards to clear the contract clean.";
     case "district_access":
-      return weather?.accessRule
-        ? `${currentAccessSummary} Weather is adding a board-type lock on top of the normal wheel rules.`
-        : `${currentAccessSummary} Only couriers whose board setup matches that access rule count here.`;
+      return `${currentAccessSummary} Only couriers whose wheels match that access rule count here.`;
     case "wheel_type":
       return `This checks each courier's equipped wheels. Only ${requiredWheelTypes} count.`;
     case "stat_total":
@@ -502,21 +514,31 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     () => (selectedMission ? weatherByDistrict[selectedMission.district] ?? null : null),
     [selectedMission, weatherByDistrict],
   );
+  const selectedResultRevealed = isMissionResultRevealed(selectedMission);
+  const selectedAwaitingChoice = isMissionAwaitingChoice(selectedMission);
   const selectedRewards = useMemo(
     () => {
       if (!selectedMission) return { rewardXp: 0, rewardOzzies: 0 };
+      if (
+        selectedResultRevealed
+        && typeof selectedMission.lastRunRewardXp === "number"
+        && typeof selectedMission.lastRunRewardOzzies === "number"
+      ) {
+        return {
+          rewardXp: selectedMission.lastRunRewardXp,
+          rewardOzzies: selectedMission.lastRunRewardOzzies,
+        };
+      }
       if (selectedMission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID) {
         return {
           rewardXp: Math.max(0, selectedMission.rewardXp - 20),
           rewardOzzies: Math.max(0, selectedMission.rewardOzzies - 20),
         };
       }
-      return getMissionEffectiveRewards(selectedMission, selectedCounterOptionId);
+      return getMissionEffectiveRewards(selectedMission, selectedCounterOptionId, weatherByDistrict);
     },
-    [selectedCounterOptionId, selectedMission],
+    [selectedCounterOptionId, selectedMission, selectedResultRevealed, weatherByDistrict],
   );
-  const selectedResultRevealed = isMissionResultRevealed(selectedMission);
-  const selectedAwaitingChoice = isMissionAwaitingChoice(selectedMission);
   const selectedPresentation = useMemo(() => getMissionPresentation(selectedMission), [selectedMission]);
   const selectedDistrictLore = useMemo(
     () => (selectedMission ? DISTRICT_LORE_BY_NAME.get(selectedMission.district) ?? null : null),
@@ -559,13 +581,13 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
     return [
-      `${selectedMission.district} access right now: ${getMissionDistrictAccessSummary(selectedMission, selectedDistrictWeather)}.`,
+      `${selectedMission.district} intel — ${getMissionPressureSummary(selectedMission, selectedDistrictWeather, weatherByDistrict)}`,
       selectedEvaluation?.eligible
         ? "This deck can launch clean, but the real tension now comes from the live counter window mid-run."
         : "Launch Run still works on a risky deck. Failure can sideline one courier for a short injury, breakdown, or arrest timeout.",
       ...(statusTips.length > 0 ? statusTips : ["Hardware effects and crew synergies can spike or blunt the live counter power."]),
     ];
-  }, [selectedDistrictWeather, selectedEvaluation, selectedMission]);
+  }, [selectedDistrictWeather, selectedEvaluation, selectedMission, weatherByDistrict]);
 
   const handleRunMission = useCallback(async () => {
     if (!selectedMission || !selectedDeck) return;
@@ -984,13 +1006,13 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       <article className="mission-mystery-card">
                         <span className="mission-mystery-card__label">{selectedAwaitingChoice ? "Hardware pressure" : "Route intel"}</span>
                         <strong className="mission-mystery-card__value">{selectedRouteLabel}</strong>
-                        <p>
-                          {selectedAwaitingChoice
-                            ? (selectedMission.activeRun?.statusEffects?.map((effect) => effect.label).join(" · ")
-                              || "No dynamic status effects are shaping this live window.")
-                            : "District weather, hardware stress, and crew synergy are baked into the run, then revealed in the result screen."}
-                        </p>
-                      </article>
+                          <p>
+                            {selectedAwaitingChoice
+                              ? (selectedMission.activeRun?.statusEffects?.map((effect) => effect.label).join(" · ")
+                                || "No dynamic status effects are shaping this live window.")
+                              : "Weather pressure, hardware stress, and crew synergy are baked into the run, then revealed in the result screen."}
+                          </p>
+                        </article>
                     </div>
                   )}
 
@@ -1016,10 +1038,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
 
                       <div className={`mission-weather${selectedEvaluation && !selectedEvaluation.eligible ? " mission-weather--blocked" : ""}`}>
                         <div className="mission-weather__copy">
-                          <span className="mission-weather__eyebrow">District access</span>
+                          <span className="mission-weather__eyebrow">District pressure</span>
                           <strong className="mission-weather__title">{selectedMission.district}</strong>
                           <p className="mission-weather__body">
-                            Access now: {getMissionWeatherSummary(selectedMission, weatherByDistrict)}.
+                            {getMissionPressureSummary(selectedMission, selectedDistrictWeather, weatherByDistrict)}
                           </p>
                         </div>
                         <span

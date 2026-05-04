@@ -32,12 +32,10 @@ export function resolveWeatherSummary({ rainMm, weatherCode, windSpeedKph, tempe
 }
 
 export function buildWeatherAccessRule(district, city, summary) {
-  if (summary !== 'Heavy rain') return null;
-  return {
-    requiredBoardType: 'Mountain',
-    reason: `Heavy rain over ${city} has turned ${district} into Mountain-board-only territory.`,
-    source: 'heavy-rain',
-  };
+  void district;
+  void city;
+  void summary;
+  return null;
 }
 
 export function buildFallbackDistrictWeatherPayload() {
