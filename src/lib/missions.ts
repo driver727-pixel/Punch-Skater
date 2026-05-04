@@ -142,13 +142,8 @@ function buildMissionStatusEffects(
 ): MissionStatusEffect[] {
   const urethaneCount = cards.filter((card) => card.board.config.wheels === "Urethane").length;
   const roughRouteCount = cards.filter((card) => ["Pneumatic", "Rubber"].includes(card.board.config.wheels)).length;
-  const cloudCount = cards.filter((card) => card.board.config.wheels === "Cloud").length;
   const averageRange = cards.length > 0 ? cards.reduce((sum, card) => sum + card.stats.range, 0) / cards.length : 0;
-  const hasRegenCapableSetup = cloudCount >= 1
-    || cards.some((card) => (
-      (card.board.config.wheels === "Pneumatic" || card.board.config.wheels === "Rubber")
-        && card.stats.speed >= 6
-    ));
+  const hasRegenCapableSetup = hasMissionRegenCapableSetup(cards);
   const effects: MissionStatusEffect[] = [];
 
   if (urethaneCount >= 2 && (mission.district === "Airaway" || mission.district === "Glass City")) {
@@ -208,6 +203,13 @@ function buildMissionStatusEffects(
   }
 
   return effects;
+}
+
+function hasMissionRegenCapableSetup(cards: DeckPayload["cards"]): boolean {
+  return cards.some((card) => (
+    card.board.config.wheels === "Cloud"
+    || ((card.board.config.wheels === "Pneumatic" || card.board.config.wheels === "Rubber") && card.stats.speed >= 6)
+  ));
 }
 
 function buildMissionSynergyTags(cards: DeckPayload["cards"], mission: MissionBoardEntry): MissionCounterTag[] {

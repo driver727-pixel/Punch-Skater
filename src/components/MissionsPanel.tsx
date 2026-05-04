@@ -877,7 +877,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           key={`${selectedMission.id}-${option.id}`}
                           type="button"
                           className={`mission-fork__option${selectedCounterOption?.id === option.id ? " mission-fork__option--active" : ""}`}
-                          onClick={() => selectedAwaitingChoice && option.available && handleResolveEncounter(option.id)}
+                          onClick={() => handleResolveEncounter(option.id)}
                           aria-pressed={selectedCounterOption?.id === option.id}
                           disabled={selectedAwaitingChoice ? !option.available || runningMissionId === selectedMission.id : true}
                         >

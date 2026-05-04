@@ -288,7 +288,7 @@ export function registerMissionRoutes(app, {
             };
           }
           if (requestedChoiceId !== HARD_CUTOUT_COUNTER_ID && !(activeRun.availableCounterOptionIds ?? []).includes(requestedChoiceId)) {
-            throw Object.assign(new Error('That counter is not in your active hand. Take the hard cutout or pick an available response.'), { statusCode: 400 });
+            throw Object.assign(new Error('The selected counter option is not available for your current hand. Take the hard cutout or pick an available response.'), { statusCode: 400 });
           }
 
           const resolution = resolveMissionCounterChoice(mission, activeRun, requestedChoiceId);

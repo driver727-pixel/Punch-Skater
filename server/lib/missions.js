@@ -163,7 +163,6 @@ function getCardCounterTags(card, mission) {
 function buildMissionStatusEffects(cards, mission, weather) {
   const urethaneCount = cards.filter((card) => card?.board?.config?.wheels === 'Urethane').length;
   const roughRouteCount = cards.filter((card) => ['Pneumatic', 'Rubber'].includes(card?.board?.config?.wheels)).length;
-  const cloudCount = cards.filter((card) => card?.board?.config?.wheels === 'Cloud').length;
   const averageRange = cards.length > 0
     ? cards.reduce((sum, card) => sum + (Number(card?.stats?.range) || 0), 0) / cards.length
     : 0;
@@ -213,10 +212,7 @@ function buildMissionStatusEffects(cards, mission, weather) {
       source: 'Thin reserve range',
     });
   }
-  if (cloudCount >= 1 || cards.some((card) => (
-    (card?.board?.config?.wheels === 'Pneumatic' || card?.board?.config?.wheels === 'Rubber')
-      && (Number(card?.stats?.speed) || 0) >= 6
-  ))) {
+  if (hasMissionRegenCapableSetup(cards)) {
     effects.push({
       id: 'regen-braking',
       label: 'Regen Braking',
@@ -229,6 +225,16 @@ function buildMissionStatusEffects(cards, mission, weather) {
   }
 
   return effects;
+}
+
+function hasMissionRegenCapableSetup(cards) {
+  return cards.some((card) => (
+    card?.board?.config?.wheels === 'Cloud'
+    || (
+      (card?.board?.config?.wheels === 'Pneumatic' || card?.board?.config?.wheels === 'Rubber')
+      && (Number(card?.stats?.speed) || 0) >= 6
+    )
+  ));
 }
 
 function buildMissionSynergyTags(cards, mission) {
