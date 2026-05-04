@@ -1,8 +1,12 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import {
+  HARD_CUTOUT_COUNTER_ID,
+  buildMissionActiveRunState,
   createDailyMissionBoardPayload,
   evaluateMissionDeck,
+  getMissionEncounter,
   getMissionEffectiveRewards,
+  resolveMissionCounterChoice,
 } from '../lib/missions.js';
 
 const COLLECTION = 'missions';
@@ -73,6 +77,7 @@ function getMissionDefinitionFields(entry) {
     rewardOzzies: entry.rewardOzzies,
     requirements: entry.requirements,
     fork: entry.fork,
+    encounter: entry.encounter,
   };
 }
 
@@ -209,7 +214,9 @@ export function registerMissionRoutes(app, {
 
     const missionId = typeof req.body?.missionId === 'string' ? req.body.missionId.trim() : '';
     const deckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
-    const requestedForkOptionId = typeof req.body?.forkOptionId === 'string' ? req.body.forkOptionId.trim() : '';
+    const requestedCounterOptionId = typeof req.body?.counterOptionId === 'string' ? req.body.counterOptionId.trim() : '';
+    const legacyForkOptionId = typeof req.body?.forkOptionId === 'string' ? req.body.forkOptionId.trim() : '';
+    const requestedChoiceId = requestedCounterOptionId || legacyForkOptionId;
     if (!missionId || !deckId) {
       res.status(400).json({ error: 'missionId and deckId are required.' });
       return;
@@ -246,17 +253,17 @@ export function registerMissionRoutes(app, {
         if (mission.uid !== caller.uid || mission.system !== SYSTEM || mission.schemaVersion !== SCHEMA_VERSION) {
           throw Object.assign(new Error('Mission not found.'), { statusCode: 404 });
         }
-        if (requestedForkOptionId && !(mission.fork?.options ?? []).some((option) => option.id === requestedForkOptionId)) {
-          throw Object.assign(new Error('Selected mission path is invalid.'), { statusCode: 400 });
+        const encounter = getMissionEncounter(mission);
+        if (requestedChoiceId && requestedChoiceId !== HARD_CUTOUT_COUNTER_ID && !(encounter?.options ?? []).some((option) => option.id === requestedChoiceId)) {
+          throw Object.assign(new Error('Selected live counter is invalid.'), { statusCode: 400 });
         }
 
         const deck = deckSnap.data();
-        const selectedForkOptionId = requestedForkOptionId || mission.selectedForkOptionId || null;
-        const evaluation = evaluateMissionDeck(deck, mission, weatherPayload, selectedForkOptionId);
-        const rewards = getMissionEffectiveRewards(mission, selectedForkOptionId);
+        const evaluation = evaluateMissionDeck(deck, mission, weatherPayload);
         const profile = profileSnap.exists ? profileSnap.data() : {};
         const progression = getProgression(profile);
         const now = new Date().toISOString();
+        const activeRun = mission.activeRun?.phase === 'event' ? mission.activeRun : null;
 
         if (mission.status === 'completed') {
           return {
@@ -267,6 +274,77 @@ export function registerMissionRoutes(app, {
           };
         }
 
+        if (activeRun) {
+          if (activeRun.deckId && activeRun.deckId !== deckId) {
+            throw Object.assign(new Error('Resolve the live event with the deck that launched the run.'), { statusCode: 400 });
+          }
+          if (!requestedChoiceId) {
+            return {
+              mission,
+              evaluation,
+              progression,
+              rewardGranted: false,
+              awaitingChoice: true,
+            };
+          }
+          if (requestedChoiceId !== HARD_CUTOUT_COUNTER_ID && !(activeRun.availableCounterOptionIds ?? []).includes(requestedChoiceId)) {
+            throw Object.assign(new Error('The selected counter option is not available for your current hand. Take the hard cutout or pick an available response.'), { statusCode: 400 });
+          }
+
+          const resolution = resolveMissionCounterChoice(mission, activeRun, requestedChoiceId);
+          const rewards = resolution.hardCutout
+            ? {
+              rewardXp: Math.max(0, mission.rewardXp + resolution.rewardXpDelta),
+              rewardOzzies: Math.max(0, mission.rewardOzzies + resolution.rewardOzziesDelta),
+            }
+            : getMissionEffectiveRewards(mission, resolution.selectedOption?.id ?? null);
+          const nextProgression = {
+            missionXp: progression.missionXp + rewards.rewardXp,
+            missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
+          };
+          const updatedMission = {
+            ...mission,
+            status: 'completed',
+            progress: 1,
+            selectedDeckId: deckId,
+            selectedDeckName: evaluation.deckName,
+            selectedForkOptionId: resolution.selectedOption?.id ?? mission.selectedForkOptionId,
+            selectedCounterOptionId: resolution.selectedOption?.id ?? HARD_CUTOUT_COUNTER_ID,
+            activeRun: {
+              ...activeRun,
+              phase: 'resolved',
+              resolvedAt: now,
+              selectedCounterOptionId: resolution.selectedOption?.id ?? HARD_CUTOUT_COUNTER_ID,
+              summary: resolution.summary,
+            },
+            completedAt: now,
+            lastRunAt: now,
+            lastRunSucceeded: true,
+            lastRunSummary: resolution.summary,
+            lastRunFailureReasons: resolution.hardCutout ? ['Hard cutout: the crew got home, but the payout got clipped.'] : [],
+            lastRunEffects: activeRun.statusEffects ?? evaluation.statusEffects ?? [],
+            updatedAt: now,
+          };
+
+          tx.set(missionRef, updatedMission, { merge: true });
+          tx.set(profileRef, {
+            missionXp: nextProgression.missionXp,
+            missionOzzies: nextProgression.missionOzzies,
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+
+          return {
+            mission: updatedMission,
+            evaluation: evaluateMissionDeck(deck, updatedMission, weatherPayload, resolution.selectedOption?.id ?? null),
+            progression: nextProgression,
+            rewardGranted: true,
+          };
+        }
+
+        if (requestedChoiceId) {
+          throw Object.assign(new Error('Launch the crew before trying to resolve the live event.'), { statusCode: 400 });
+        }
+
         if (!evaluation.eligible) {
           const failureRisk = buildMissionFailureRisk(mission, deck, now);
           const failureReasons = evaluation.results.filter((result) => !result.met).map((result) => result.detail);
@@ -274,11 +352,13 @@ export function registerMissionRoutes(app, {
             ...mission,
             selectedDeckId: deckId,
             selectedDeckName: evaluation.deckName,
-            selectedForkOptionId,
+            selectedCounterOptionId: null,
+            activeRun: null,
             lastRunAt: now,
             lastRunSucceeded: false,
             lastRunSummary: failureRisk ? `${evaluation.summary} ${failureRisk.summary}` : evaluation.summary,
             lastRunFailureReasons: failureRisk ? [...failureReasons, failureRisk.detail] : failureReasons,
+            lastRunEffects: evaluation.statusEffects ?? [],
             updatedAt: now,
           };
           tx.set(missionRef, updatedMission, { merge: true });
@@ -298,37 +378,64 @@ export function registerMissionRoutes(app, {
           };
         }
 
-        const nextProgression = {
-          missionXp: progression.missionXp + rewards.rewardXp,
-          missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
-        };
+        const liveRun = buildMissionActiveRunState(deck, mission, weatherPayload, now);
+        if (!liveRun) {
+          const rewards = getMissionEffectiveRewards(mission);
+          const nextProgression = {
+            missionXp: progression.missionXp + rewards.rewardXp,
+            missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
+          };
+          const updatedMission = {
+            ...mission,
+            status: 'completed',
+            progress: 1,
+            selectedDeckId: deckId,
+            selectedDeckName: evaluation.deckName,
+            selectedCounterOptionId: null,
+            completedAt: now,
+            lastRunAt: now,
+            lastRunSucceeded: true,
+            lastRunSummary: evaluation.summary,
+            lastRunFailureReasons: [],
+            lastRunEffects: evaluation.statusEffects ?? [],
+            updatedAt: now,
+          };
+
+          tx.set(missionRef, updatedMission, { merge: true });
+          tx.set(profileRef, {
+            missionXp: nextProgression.missionXp,
+            missionOzzies: nextProgression.missionOzzies,
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+
+          return {
+            mission: updatedMission,
+            evaluation,
+            progression: nextProgression,
+            rewardGranted: true,
+          };
+        }
+
         const updatedMission = {
           ...mission,
-          status: 'completed',
-          progress: 1,
           selectedDeckId: deckId,
           selectedDeckName: evaluation.deckName,
-          selectedForkOptionId,
-          completedAt: now,
+          selectedCounterOptionId: null,
+          activeRun: liveRun,
           lastRunAt: now,
-          lastRunSucceeded: true,
-          lastRunSummary: evaluation.summary,
+          lastRunSucceeded: false,
+          lastRunSummary: liveRun.summary,
           lastRunFailureReasons: [],
+          lastRunEffects: liveRun.statusEffects ?? evaluation.statusEffects ?? [],
           updatedAt: now,
         };
-
         tx.set(missionRef, updatedMission, { merge: true });
-        tx.set(profileRef, {
-          missionXp: nextProgression.missionXp,
-          missionOzzies: nextProgression.missionOzzies,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
-
         return {
           mission: updatedMission,
           evaluation,
-          progression: nextProgression,
-          rewardGranted: true,
+          progression,
+          rewardGranted: false,
+          awaitingChoice: true,
         };
       });
 

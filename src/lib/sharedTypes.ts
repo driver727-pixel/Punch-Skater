@@ -133,6 +133,92 @@ export interface MissionRequirementResult {
 }
 
 /**
+ * Counter tags used by live mission encounters and deck synergies.
+ * @sprint 5 @owner gamma
+ */
+export type MissionCounterTag =
+  | "mainline_speed"
+  | "rough_route"
+  | "shockproof"
+  | "camera_blind"
+  | "quiet_line"
+  | "long_range"
+  | "heavy_push"
+  | "local_knowledge"
+  | "regen_brake";
+
+/**
+ * Temporary deck modifier generated while a live mission run is active.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionStatusEffect {
+  id: string;
+  label: string;
+  summary: string;
+  kind?: "bonus" | "penalty" | "synergy";
+  stat?: MissionStat;
+  powerDelta?: number;
+  source?: string;
+}
+
+/**
+ * Live counter option shown when a mission encounter interrupts a run.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionEncounterOption {
+  id: string;
+  label: string;
+  description: string;
+  requirements?: MissionRequirement[];
+  requiredTags?: MissionCounterTag[];
+  minimumCounterPower?: number;
+  rewardXpDelta?: number;
+  rewardOzziesDelta?: number;
+  available?: boolean;
+  currentPower?: number;
+  successSummary?: string;
+  failureSummary?: string;
+}
+
+/**
+ * Mid-run encounter that replaces the old pre-launch blind route pick.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionEncounter {
+  id: string;
+  badge: string;
+  prompt: string;
+  threat: string;
+  options: MissionEncounterOption[];
+}
+
+/**
+ * Phase marker for staged mission runs.
+ * @sprint 5 @owner gamma
+ */
+export type MissionRunPhase = "idle" | "event" | "resolved";
+
+/**
+ * Temporary live state persisted while a mission run waits for a counter choice.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionActiveRunState {
+  phase: MissionRunPhase;
+  launchedAt: string;
+  resolvedAt?: string;
+  deckId: string;
+  deckName: string;
+  encounterId?: string;
+  activeCardIds?: string[];
+  synergyTags?: MissionCounterTag[];
+  statusEffects?: MissionStatusEffect[];
+  availableCounterOptionIds?: string[];
+  selectedCounterOptionId?: string;
+  counterPower?: number;
+  summary?: string;
+}
+
+/**
  * Restored fork-path option on a mission board contract.
  * @sprint 3 @owner gamma
  */
@@ -181,14 +267,22 @@ export interface MissionBoardEntry {
   completedAt?: string;
   /** @sprint 3 @owner gamma — Optional fork prompt that changes requirements and rewards. */
   fork?: MissionFork;
+  /** @sprint 5 @owner gamma — Optional live encounter that fires after launch. */
+  encounter?: MissionEncounter;
   selectedDeckId?: string;
   selectedDeckName?: string;
   /** @sprint 3 @owner gamma — Selected fork option used for evaluation and rewards. */
   selectedForkOptionId?: string;
+  /** @sprint 5 @owner gamma — Selected live counter option used to resolve encounter rewards. */
+  selectedCounterOptionId?: string;
+  /** @sprint 5 @owner gamma — Temporary live run state while the mission waits for player agency. */
+  activeRun?: MissionActiveRunState;
   lastRunAt?: string;
   lastRunSucceeded?: boolean;
   lastRunSummary?: string;
   lastRunFailureReasons?: string[];
+  /** @sprint 5 @owner gamma — Dynamic hardware and synergy effects observed during the last run. */
+  lastRunEffects?: MissionStatusEffect[];
 }
 
 /**
@@ -239,6 +333,10 @@ export interface MissionDeckEvaluation {
   eligibleCardCount: number;
   summary: string;
   results: MissionRequirementResult[];
+  statusEffects?: MissionStatusEffect[];
+  synergyTags?: MissionCounterTag[];
+  activeCardIds?: string[];
+  counterPower?: number;
 }
 
 /**
@@ -250,6 +348,7 @@ export interface MissionRunResponse {
   evaluation: MissionDeckEvaluation;
   progression: MissionBoardProgression;
   rewardGranted: boolean;
+  awaitingChoice?: boolean;
 }
 
 // ── Battle Pass (Gamma) ──────────────────────────────────────────────────────
