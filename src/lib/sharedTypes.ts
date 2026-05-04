@@ -283,6 +283,10 @@ export interface MissionBoardEntry {
   lastRunFailureReasons?: string[];
   /** @sprint 5 @owner gamma — Dynamic hardware and synergy effects observed during the last run. */
   lastRunEffects?: MissionStatusEffect[];
+  /** @sprint 6 @owner gamma — Locked mission XP actually awarded on the last resolved run. */
+  lastRunRewardXp?: number;
+  /** @sprint 6 @owner gamma — Locked Ozzy payout actually awarded on the last resolved run. */
+  lastRunRewardOzzies?: number;
 }
 
 /**

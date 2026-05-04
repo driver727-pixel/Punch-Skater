@@ -298,7 +298,7 @@ export function registerMissionRoutes(app, {
               rewardXp: Math.max(0, mission.rewardXp + resolution.rewardXpDelta),
               rewardOzzies: Math.max(0, mission.rewardOzzies + resolution.rewardOzziesDelta),
             }
-            : getMissionEffectiveRewards(mission, resolution.selectedOption?.id ?? null);
+            : getMissionEffectiveRewards(mission, resolution.selectedOption?.id ?? null, weatherPayload);
           const nextProgression = {
             missionXp: progression.missionXp + rewards.rewardXp,
             missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
@@ -324,6 +324,8 @@ export function registerMissionRoutes(app, {
             lastRunSummary: resolution.summary,
             lastRunFailureReasons: resolution.hardCutout ? ['Hard cutout: the crew got home, but the payout got clipped.'] : [],
             lastRunEffects: activeRun.statusEffects ?? evaluation.statusEffects ?? [],
+            lastRunRewardXp: rewards.rewardXp,
+            lastRunRewardOzzies: rewards.rewardOzzies,
             updatedAt: now,
           };
 
@@ -381,7 +383,7 @@ export function registerMissionRoutes(app, {
 
         const liveRun = buildMissionActiveRunState(deck, mission, weatherPayload, now);
         if (!liveRun) {
-          const rewards = getMissionEffectiveRewards(mission);
+          const rewards = getMissionEffectiveRewards(mission, null, weatherPayload);
           const nextProgression = {
             missionXp: progression.missionXp + rewards.rewardXp,
             missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
@@ -399,6 +401,8 @@ export function registerMissionRoutes(app, {
             lastRunSummary: evaluation.summary,
             lastRunFailureReasons: [],
             lastRunEffects: evaluation.statusEffects ?? [],
+            lastRunRewardXp: rewards.rewardXp,
+            lastRunRewardOzzies: rewards.rewardOzzies,
             updatedAt: now,
           };
 

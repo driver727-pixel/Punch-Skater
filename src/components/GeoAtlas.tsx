@@ -190,7 +190,7 @@ function getDistrictWeatherSummary(params: {
     return "Delayed weather uplink is syncing.";
   }
   if (error) {
-    return "Weather uplink offline. District access is staying open until fresh telemetry returns.";
+    return "Weather uplink offline. Mission pressure is holding steady until fresh telemetry returns.";
   }
   return `No live weather seed is active for ${district}.`;
 }
@@ -353,8 +353,8 @@ export function GeoAtlas({
             <>
               <div className="geo-atlas__callout">
                 <p className="geo-atlas__callout-copy">
-                  Delayed real-world weather updates control live district access, so the overmap shows which skateboard
-                  setups can ride each district while the current weather seed is active.
+                  Delayed real-world weather updates now shape mission pressure in the background, while the overmap still
+                  shows which skateboard setups can ride each district.
                 </p>
                 <div className="geo-atlas__callout-meta">
                   <span className="geo-atlas__callout-pill">

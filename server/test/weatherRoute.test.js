@@ -62,16 +62,9 @@ test('resolveWeatherSummary prioritizes rain hazards before wind and heat', () =
   assert.equal(resolveWeatherSummary({ rainMm: null, weatherCode: null, windSpeedKph: null, temperatureC: null }), 'Clear');
 });
 
-test('buildWeatherAccessRule only restricts districts during heavy rain', () => {
+test('buildWeatherAccessRule no longer restricts districts during rain', () => {
   assert.equal(buildWeatherAccessRule('The Grid', 'Canberra', 'Rain'), null);
-  assert.deepEqual(
-    buildWeatherAccessRule('The Forest', 'Hobart', 'Heavy rain'),
-    {
-      requiredBoardType: 'Mountain',
-      reason: 'Heavy rain over Hobart has turned The Forest into Mountain-board-only territory.',
-      source: 'heavy-rain',
-    },
-  );
+  assert.equal(buildWeatherAccessRule('The Forest', 'Hobart', 'Heavy rain'), null);
 });
 
 test('buildFallbackDistrictWeatherPayload returns offline entries for every district', () => {
@@ -257,11 +250,7 @@ test('createDistrictWeatherService returns partial-live payload when one batch e
     assert.equal(payload.districts.length, 8);
     assert.equal(payload.districts.find((district) => district.district === 'Electropolis').source, 'fallback');
     assert.equal(payload.districts.find((district) => district.district === 'Airaway').summary, 'Heavy rain');
-    assert.deepEqual(payload.districts.find((district) => district.district === 'Airaway').accessRule, {
-      requiredBoardType: 'Mountain',
-      reason: 'Heavy rain over Brisbane has turned Airaway into Mountain-board-only territory.',
-      source: 'heavy-rain',
-    });
+    assert.equal(payload.districts.find((district) => district.district === 'Airaway').accessRule, null);
   } finally {
     globalThis.fetch = originalFetch;
     console.error = originalConsoleError;
