@@ -33,7 +33,7 @@ const ACTIVE_HAND_SIZE = 3;
 export const HARD_CUTOUT_COUNTER_ID = "hard-cutout";
 
 const ROUGH_ROUTE_DISTRICTS = new Set<District>(["Batteryville", "Nightshade", "The Forest"]);
-const CAMERA_HACKER_ARCHEYPES = new Set(["The Knights Technarchy", "D4rk $pider"]);
+const CAMERA_HACKER_ARCHETYPES = new Set(["The Knights Technarchy", "D4rk $pider"]);
 
 function getMissionThreatSummary(mission: MissionBoardEntry): string {
   switch (mission.district) {
@@ -126,7 +126,7 @@ function getCardCounterTags(card: DeckPayload["cards"][number], mission: Mission
   if (card.stats.range >= 7) tags.push("long_range");
   if (card.stats.stealth >= 7) tags.push("quiet_line");
   if (card.stats.grit >= 7) tags.push("heavy_push");
-  if (CAMERA_HACKER_ARCHEYPES.has(card.prompts.archetype) || CAMERA_HACKER_ARCHEYPES.has(card.identity.crew)) {
+  if (CAMERA_HACKER_ARCHETYPES.has(card.prompts.archetype) || CAMERA_HACKER_ARCHETYPES.has(card.identity.crew)) {
     tags.push("camera_blind");
   }
   if (card.prompts.district === mission.district) tags.push("local_knowledge");
