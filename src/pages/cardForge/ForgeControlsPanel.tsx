@@ -288,14 +288,14 @@ export function ForgeControlsPanel({
         {isAnyLayerLoading
           ? "✨ Generating…"
           : isFreeForgeCoolingDown
-            ? `⚡ LOCK IT IN (ready in ${formatDurationClock(freeForgeRemainingMs)})`
+            ? `⚡ Forge Card (ready in ${formatDurationClock(freeForgeRemainingMs)})`
           : !canForge
-            ? "🔒 LOCK IT IN — Upgrade to Unlock"
+            ? "🔒 Forge Card — Upgrade to Unlock"
           : tier === "free" && !freeCardUsed
-              ? "⚡ LOCK IT IN (1 free card)"
+              ? "⚡ Forge Card (1 free card)"
               : generateCredits > 0
-                ? `⚡ LOCK IT IN (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
-                : "⚡ LOCK IT IN"}
+                ? `⚡ Forge Card (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
+                : "⚡ Forge Card"}
       </button>
       <p className="form-hint">Every forge starts blind. Most reveals are Punch Skater, but lucky rolls can flash higher-class frames.</p>
       {tier === "free" && generateCredits === 0 && (
