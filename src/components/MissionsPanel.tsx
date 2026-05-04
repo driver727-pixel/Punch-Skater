@@ -386,7 +386,7 @@ function getRequirementTip(
     case "min_cards":
       return "Mission decks need at least five mission-ready cards to clear the contract clean.";
     case "district_access":
-      return `${currentAccessSummary} Only couriers whose wheel setup matches that access rule count here.`;
+      return `${currentAccessSummary} Only couriers whose wheels match that access rule count here.`;
     case "wheel_type":
       return `This checks each courier's equipped wheels. Only ${requiredWheelTypes} count.`;
     case "stat_total":

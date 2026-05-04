@@ -78,9 +78,13 @@ function dedupeCounterTags(tags: MissionCounterTag[]): MissionCounterTag[] {
   return [...new Set(tags)];
 }
 
+function normalizeWeatherSummary(summary: string | null | undefined): string {
+  return String(summary ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 function getMissionWeatherImpact(weather: DistrictWeatherSnapshot | null | undefined): MissionWeatherImpact | null {
   if (!weather) return null;
-  const summary = String(weather.summary ?? "").trim().toLowerCase();
+  const summary = normalizeWeatherSummary(weather.summary);
   if (summary === "heavy rain") {
     return {
       id: "storm-surge",
@@ -93,6 +97,8 @@ function getMissionWeatherImpact(weather: DistrictWeatherSnapshot | null | undef
     };
   }
   if (summary === "rain" || (weather.rainMm ?? 0) > 0) {
+    // Prefer the upstream summary, but fall back to the measured rain amount so the
+    // mission layer still reacts if the summary lags behind the latest rainfall value.
     return {
       id: "rain-slick-route",
       label: "Rain-Slick Route",

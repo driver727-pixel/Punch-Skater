@@ -108,9 +108,13 @@ function dedupeCounterTags(tags) {
   return [...new Set(tags)];
 }
 
+function normalizeWeatherSummary(summary) {
+  return String(summary ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 function getMissionWeatherImpact(weather) {
   if (!weather) return null;
-  const summary = String(weather.summary ?? '').trim().toLowerCase();
+  const summary = normalizeWeatherSummary(weather.summary);
   if (summary === 'heavy rain') {
     return {
       id: 'storm-surge',
@@ -123,6 +127,8 @@ function getMissionWeatherImpact(weather) {
     };
   }
   if (summary === 'rain' || (Number(weather.rainMm) || 0) > 0) {
+    // Prefer the upstream summary, but fall back to the measured rain amount so the
+    // mission layer still reacts if the summary lags behind the latest rainfall value.
     return {
       id: 'rain-slick-route',
       label: 'Rain-Slick Route',
