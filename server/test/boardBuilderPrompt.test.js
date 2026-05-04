@@ -45,7 +45,7 @@ for (const drivetrain of ALL_DRIVETRAINS) {
       ...BASE_CONFIG,
       drivetrain,
       ...(drivetrain === '4WD'
-        ? { boardType: 'Mountain', motor: 'Outrunner', wheels: 'Pneumatic', battery: 'TopPeli' }
+        ? { boardType: 'Mountain', motor: 'Outrunner', wheels: 'Rubber', battery: 'TopPeli' }
         : {}),
     });
 
@@ -60,7 +60,7 @@ for (const drivetrain of ALL_DRIVETRAINS) {
       ...BASE_CONFIG,
       drivetrain,
       ...(drivetrain === '4WD'
-        ? { boardType: 'Mountain', motor: 'Outrunner', wheels: 'Pneumatic', battery: 'TopPeli' }
+        ? { boardType: 'Mountain', motor: 'Outrunner', wheels: 'Rubber', battery: 'TopPeli' }
         : {}),
     });
 
@@ -122,7 +122,7 @@ test('buildBoardImagePrompt [4WD] — drive hardware described on both nose and 
     boardType: 'Mountain',
     drivetrain: '4WD',
     motor: 'Outrunner',
-    wheels: 'Pneumatic',
+    wheels: 'Rubber',
     battery: 'TopPeli',
   });
 
@@ -143,7 +143,7 @@ test('buildBoardImagePrompt [Hub + Pneumatic] — allows hub drive with non-uret
     boardType: 'AT',
     drivetrain: 'Hub',
     motor: 'Standard',
-    wheels: 'Pneumatic',
+    wheels: 'Rubber',
     battery: 'SlimStealth',
   });
 
@@ -184,8 +184,27 @@ test('buildBoardImagePrompt [Mountain 4WD] — includes mountainboard lore const
 
   assert.ok(
     prompt.includes(MOUNTAINBOARD_LORE_CONSTRAINT),
-    'Mountain 4WD prompt must describe foot straps and compact top-mounted battery lore',
+    'Mountain 4WD prompt must describe foot straps, boot bindings, top battery box, gear drives, and solid rubber wheel lore',
   );
+});
+
+test('buildBoardImagePrompt [Mountain 4WD] — forbids belts, hubs, vapor, polyurethane, and pneumatic wheels', () => {
+  const prompt = buildBoardImagePrompt({
+    boardType: 'Mountain',
+    drivetrain: '4WD',
+    motor: 'Outrunner',
+    wheels: 'Rubber',
+    battery: 'TopPeli',
+  });
+
+  assert.match(prompt, /4WD gear-drive drivetrain/i);
+  assert.match(prompt, /all four wheels are powered through enclosed gearboxes/i);
+  assert.match(prompt, /large box-shaped top-mounted battery/i);
+  assert.match(prompt, /foot straps or boot bindings/i);
+  assert.match(prompt, /solid rubber off-road wheels only/i);
+  assert.match(prompt, /no belts/i);
+  assert.match(prompt, /no hub motors|NO hub-motor wheel casings/i);
+  assert.match(prompt, /never vapor wheels, polyurethane wheels, or pneumatic wheels/i);
 });
 
 test('WHEEL_IMAGE_DESCRIPTIONS [Pneumatic] — does not ban hub-compatible wheel shells', () => {
@@ -208,7 +227,7 @@ for (const [wheels, diameter] of Object.entries(WHEEL_DIAMETERS)) {
     const prompt = buildBoardImagePrompt({
       ...BASE_CONFIG,
       drivetrain: wheels === 'Pneumatic' || wheels === 'Rubber' ? '4WD' : 'Belt',
-      boardType: wheels === 'Pneumatic' || wheels === 'Rubber' ? 'Mountain' : 'Street',
+      boardType: wheels === 'Rubber' ? 'Mountain' : 'Street',
       wheels,
     });
 
@@ -233,7 +252,7 @@ test('buildBoardImagePrompt [4WD] — does not include bare-nose constraint', ()
     boardType: 'Mountain',
     drivetrain: '4WD',
     motor: 'Outrunner',
-    wheels: 'Pneumatic',
+    wheels: 'Rubber',
     battery: 'TopPeli',
   });
 
@@ -303,7 +322,7 @@ test('resolveReferenceUrlCategories [TopPeli] — 4th category is battery', () =
     boardType: 'Mountain',
     drivetrain: '4WD',
     motor: 'Outrunner',
-    wheels: 'Pneumatic',
+    wheels: 'Rubber',
     battery: 'TopPeli',
   });
 

@@ -43,11 +43,14 @@ export const CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT =
   'CRITICAL: The skateboard uses exactly ONE drivetrain system only. Belt drive boards may show exposed belts, pulleys, rear motor mounts, and external rear motors, but NEVER hub-motor wheel casings. Hub drive boards may show integrated rear hub motors, but NEVER belts, pulleys, external motor mounts, or external motors. Gear drive boards may show enclosed rear gearboxes, but NEVER belts or hub-motor casings. Never hybridize, combine, or mix multiple drivetrain systems on the same board.';
 
 export const MOUNTAINBOARD_LORE_CONSTRAINT =
-  'Mountainboards, Mountain Boards, and 4WD boards always have foot straps on ' +
-  'top of the deck plus a compact top-mounted battery pack sized so an adult ' +
-  "rider's feet can still fit naturally in the straps. Never omit the foot " +
-  'straps, never make the battery so large that it blocks the stance area, and ' +
-  'do not treat a battery-free deck reference as permission to omit the top battery.';
+  'Mountainboards and Mountain Boards always use a true 4WD gear-drive drivetrain: ' +
+  'all four wheels are powered through enclosed gearboxes, with no belts, no hub ' +
+  'motors, and no separate belt-drive or hub-drive hardware. They always have foot ' +
+  'straps or boot bindings on top of the deck plus a large box-shaped top-mounted ' +
+  "battery pack that leaves room for an adult rider's feet while preserving off-road " +
+  'ground clearance. Mountainboards use solid rubber off-road wheels only — never ' +
+  'vapor wheels, polyurethane wheels, or pneumatic wheels. Never omit the foot ' +
+  'straps, boot bindings, top battery box, 4WD gear drives, or solid rubber wheels.';
 
 const BOARD_IMAGE_BASE_CONCEPT =
   'An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background. ' +
@@ -69,7 +72,7 @@ const BOARD_TYPE_IMAGE_DESCRIPTIONS = {
     'An all-terrain electric skateboard with a rugged top-mount deck. ' +
     'The deck has NO kicktail at the nose or the rear; instead it has a subtle drop-down profile between the front and rear axles for improved handling.',
   Mountain:
-    'A mountain-board style electric skateboard with an aggressive deck built for steep rough terrain. ' +
+    'A mountain-board style electric skateboard with an aggressive deck built for steep rough terrain, visible foot straps or boot bindings, a large box-shaped battery mounted on top of the deck, high ground clearance, and solid rubber off-road wheels. ' +
     'The deck has NO kicktail at the nose or the rear; instead it has a subtle drop-down profile between the front and rear axles.',
   Surf: 'A surf-skate inspired electric skateboard with a wide swallowtail cruiser deck, a prominent upward rear kicktail, and a flowing stance.',
   Slider: 'A slider style electric skateboard built around a low, compact deck for tight technical movement.',
@@ -86,7 +89,7 @@ export const DRIVETRAIN_IMAGE_DESCRIPTIONS = {
     'There are NO external belts, NO exposed pulleys, NO external motor mounts, and NO external motors anywhere on the board — this is NOT a belt drive. ' +
     'The NOSE wheels match the selected wheel type but remain plain unpowered wheels with no hub-motor casings and no internal motors.',
   Gear: 'It has gear driven rear wheels only, with sealed enclosed gearboxes on the TAIL truck only; the NOSE truck has no gearboxes and no drive hardware.',
-  '4WD': 'It has powered front and rear trucks in a true four-wheel-drive setup with all four wheels driven.',
+  '4WD': 'It has powered front and rear trucks in a true four-wheel-drive gear-drive setup, with all four wheels driven through sealed enclosed gearboxes. There are NO belts, NO hub-motor wheel casings, and NO unpowered wheels.',
 };
 
 export const WHEEL_IMAGE_DESCRIPTIONS = {
@@ -94,7 +97,7 @@ export const WHEEL_IMAGE_DESCRIPTIONS = {
   Pneumatic:
     'It has 4 large chunky pneumatic all-terrain tires, each 150 mm in diameter, with thick air-filled rubber construction, chunky knobby tread, and tall visible sidewalls. ' +
     'These tires are clearly inflated rubber — NOT polyurethane and NOT hard plastic. The taller stance is clearly visible compared to polyurethane wheels.',
-  Rubber: 'It has 4 solid rubber all-terrain wheels, each 175 mm in diameter, with thick puncture-proof sidewalls; these are the largest wheel option and make the board visibly taller beside an adult rider.',
+  Rubber: 'It has 4 solid rubber all-terrain wheels, each 175 mm in diameter, with thick puncture-proof sidewalls and deep off-road tread; these are not air-filled pneumatic tires, not polyurethane wheels, and not vapor wheels. These are the largest wheel option and make the board visibly taller beside an adult rider.',
   Cloud: 'It has 4 oversized vapor wheels, each 107 mm in diameter, with a soft semi-transparent cushioned look; they are slightly larger than 97 mm polyurethane wheels but much smaller than 150 mm pneumatic tires.',
 };
 
@@ -127,7 +130,7 @@ function getMotorImageDescription(config) {
 }
 
 function getMountainboardLoreDescription(config) {
-  return config.boardType === 'Mountain' || config.drivetrain === '4WD'
+  return config.boardType === 'Mountain'
     ? MOUNTAINBOARD_LORE_CONSTRAINT
     : '';
 }
@@ -143,7 +146,7 @@ function getWheelDrivetrainCompatibilityDescription(config) {
     case 'Gear':
       return `The selected ${selectedWheelType} wheels belong to a gear-drive board, so the rear drive comes only from enclosed rear gearboxes and never from belts or hub-motor wheel casings.`;
     case '4WD':
-      return `The selected ${selectedWheelType} wheels belong to a true 4WD board, so all four wheels participate in the single 4WD drivetrain without adding any separate belt-drive or hub-drive-only hardware package.`;
+      return `The selected ${selectedWheelType} wheels belong to a true 4WD gear-drive board, so all four wheels participate in the single enclosed gearbox drivetrain without adding any belts, hub motors, or separate hub-drive-only hardware package.`;
     default:
       return '';
   }
