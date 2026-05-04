@@ -2938,7 +2938,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  max-width: 320px;
 }
 .blend-control__label {
   font-size: 12px;
