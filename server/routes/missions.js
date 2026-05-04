@@ -309,7 +309,7 @@ export function registerMissionRoutes(app, {
             progress: 1,
             selectedDeckId: deckId,
             selectedDeckName: evaluation.deckName,
-            selectedForkOptionId: resolution.selectedOption?.id ?? mission.selectedForkOptionId,
+            selectedForkOptionId: resolution.selectedOption?.id ?? mission.selectedForkOptionId ?? null,
             selectedCounterOptionId: resolution.selectedOption?.id ?? HARD_CUTOUT_COUNTER_ID,
             activeRun: {
               ...activeRun,
