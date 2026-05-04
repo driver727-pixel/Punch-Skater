@@ -5868,7 +5868,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .print-back-lower,
   .print-back-trait,
   .print-back-maintenance,
-  .print-back-serial
+  .print-back-serial,
+  .print-back-bio-strip
 ) {
   position: relative;
   z-index: 11;
@@ -6314,6 +6315,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-top: 1px solid #1e1e3a;
   font-size: var(--card-back-body-size);
 }
+/* When nested inside the components column, strip the outer padding so the
+   component container's own padding applies uniformly. */
+.print-back-components .print-back-maintenance {
+  padding-left: 0;
+  padding-right: 0;
+}
 .print-back-maint-label {
   color: var(--card-accent, #00ff88);
   letter-spacing: 0.1em;
@@ -6342,6 +6349,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
   text-shadow: 0 0 4px var(--card-accent, #00ff88), 0 0 8px var(--card-accent, #00ff88);
 }
+/* When nested inside the components column, strip the outer padding. */
+.print-back-components .print-back-serial {
+  padding-left: 0;
+  padding-right: 0;
+}
+.print-back-bio-strip {
+  padding: 1% var(--print-back-safe-inline) 1.5%;
+  border-top: 1px solid #1e1e3a;
+  font-size: var(--card-back-body-size);
+}
 
 .print-card--back.print-card--wrap-frame .print-back-row-label,
 .print-card--back.print-card--wrap-frame .print-back-row-value,
@@ -6349,6 +6366,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-card--back.print-card--wrap-frame .print-back-rarity-label,
 .print-card--back.print-card--wrap-frame .print-back-maintenance,
 .print-card--back.print-card--wrap-frame .print-back-serial,
+.print-card--back.print-card--wrap-frame .print-back-bio-strip,
 .print-card--back.print-card--wrap-frame .print-back-identity-name,
 .print-card--back.print-card--wrap-frame .print-back-identity-meta,
 .print-card--back.print-card--wrap-frame .print-back-identity-bio {
@@ -6418,7 +6436,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-preview-area--forge .print-back-identity-meta,
 .print-preview-area--forge .print-back-identity-bio,
 .print-preview-area--forge .print-back-maintenance,
-.print-preview-area--forge .print-back-serial {
+.print-preview-area--forge .print-back-serial,
+.print-preview-area--forge .print-back-bio-strip {
   font-size: var(--card-back-body-size);
   /* --stat-font-size is set to --card-back-body-size by the .print-card token,
      so overriding --card-back-body-size cascades automatically. */
@@ -6637,6 +6656,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .print-only-card .print-back-trait-label { font-size: 5pt; }
   .print-only-card .print-back-trait-desc { font-size: 5pt; }
   .print-only-card .print-back-maintenance { padding: 3pt 8pt 5pt; font-size: 5pt; }
+  .print-only-card .print-back-components .print-back-maintenance { padding: 3pt 0 5pt; }
+  .print-only-card .print-back-components .print-back-serial { padding: 0 0 4pt; }
+  .print-only-card .print-back-bio-strip { padding: 2pt 8pt 4pt; font-size: 5pt; }
   .print-only-card .print-back-flavor { padding: 2pt 8pt; font-size: 5pt; }
   .print-only-card .print-back-tags   { padding: 2pt 8pt; gap: 2pt; }
   .print-only-card .print-back-tag    { font-size: 4pt; }
