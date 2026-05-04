@@ -1,10 +1,15 @@
 import { getDistrictAccessSummary, isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
 import type {
+  MissionActiveRunState,
   MissionBoardEntry,
+  MissionCounterTag,
   MissionDeckEvaluation,
+  MissionEncounter,
+  MissionEncounterOption,
   MissionForkOption,
   MissionRequirement,
   MissionRequirementResult,
+  MissionStatusEffect,
 } from "./sharedTypes";
 import type { DeckPayload, District } from "./types";
 
@@ -24,6 +29,240 @@ type MissionTemplate = Omit<
 const RELAXED_MISSION_MIN_CARDS = 5;
 const BASE_STAT_REDUCTION = 4;
 const FORK_STAT_REDUCTION = 2;
+const ACTIVE_HAND_SIZE = 3;
+export const HARD_CUTOUT_COUNTER_ID = "hard-cutout";
+
+const ROUGH_ROUTE_DISTRICTS = new Set<District>(["Batteryville", "Nightshade", "The Forest"]);
+const CAMERA_HACKER_ARCHEYPES = new Set(["The Knights Technarchy", "D4rk $pider"]);
+
+function getMissionThreatSummary(mission: MissionBoardEntry): string {
+  switch (mission.district) {
+    case "Airaway":
+      return "Rival Eyes lock the checkpoint glass and force a live counter before the lane seals.";
+    case "Batteryville":
+      return "A yard boss reroutes the freight line and dares the crew to improvise under pressure.";
+    case "The Grid":
+      return "Cascade cameras wake up mid-run and trace the crew unless someone blinds the net.";
+    case "Nightshade":
+      return "Tunnel lookouts catch a shadow of the crew and force a hush-or-heat decision.";
+    case "The Forest":
+      return "The route turns slick and splintered, demanding rough-route control before the bridge gives way.";
+    case "Glass City":
+      return "Broker surveillance floods the exchange, forcing a cutout before the rivals collapse the lane.";
+  }
+}
+
+function dedupeCounterTags(tags: MissionCounterTag[]): MissionCounterTag[] {
+  return [...new Set(tags)];
+}
+
+function mapRequirementToCounterTags(requirement: MissionRequirement): MissionCounterTag[] {
+  switch (requirement.type) {
+    case "wheel_type": {
+      const wheels = requirement.wheelTypes ?? [];
+      const tags: MissionCounterTag[] = [];
+      if (wheels.includes("Urethane")) tags.push("mainline_speed");
+      if (wheels.some((wheel) => wheel === "Pneumatic" || wheel === "Rubber")) tags.push("rough_route", "shockproof");
+      if (wheels.includes("Cloud")) tags.push("regen_brake");
+      return dedupeCounterTags(tags);
+    }
+    case "district_card":
+    case "district_access":
+      return ["local_knowledge"];
+    case "archetype":
+    case "faction":
+      return requirement.archetype === "The Knights Technarchy" || requirement.faction === "The Knights Technarchy"
+        ? ["camera_blind"]
+        : ["quiet_line"];
+    case "stat_total":
+      switch (requirement.stat) {
+        case "speed":
+          return ["mainline_speed"];
+        case "range":
+          return ["long_range"];
+        case "stealth":
+          return ["quiet_line", "camera_blind"];
+        case "grit":
+          return ["heavy_push", "shockproof"];
+        default:
+          return [];
+      }
+    default:
+      return [];
+  }
+}
+
+function inferEncounterOptionTags(option: MissionForkOption): MissionCounterTag[] {
+  return dedupeCounterTags((option.requirements ?? []).flatMap((requirement) => mapRequirementToCounterTags(requirement)));
+}
+
+function inferEncounterOptionPower(option: MissionForkOption): number {
+  const pressure = (option.requirements ?? []).reduce((score, requirement) => {
+    if (requirement.type === "stat_total") return score + 2;
+    if (requirement.type === "wheel_type" || requirement.type === "district_access") return score + 1;
+    return score + 1;
+  }, 1);
+  return Math.max(1, pressure);
+}
+
+function getMissionEncounterOption(
+  mission: MissionBoardEntry,
+  selectedCounterOptionId?: string | null,
+): MissionEncounterOption | null {
+  const encounter = getMissionEncounter(mission);
+  if (!encounter) return null;
+  const resolvedId = selectedCounterOptionId
+    ?? mission.selectedCounterOptionId
+    ?? mission.activeRun?.selectedCounterOptionId
+    ?? mission.selectedForkOptionId
+    ?? null;
+  if (!resolvedId || resolvedId === HARD_CUTOUT_COUNTER_ID) return null;
+  return encounter.options.find((option) => option.id === resolvedId) ?? null;
+}
+
+function getCardCounterTags(card: DeckPayload["cards"][number], mission: MissionBoardEntry): MissionCounterTag[] {
+  const tags: MissionCounterTag[] = [];
+  const wheels = card.board.config.wheels;
+  if (wheels === "Urethane") tags.push("mainline_speed");
+  if (wheels === "Pneumatic" || wheels === "Rubber") tags.push("rough_route", "shockproof");
+  if (wheels === "Cloud") tags.push("regen_brake");
+  if (card.stats.speed >= 7) tags.push("mainline_speed");
+  if (card.stats.range >= 7) tags.push("long_range");
+  if (card.stats.stealth >= 7) tags.push("quiet_line");
+  if (card.stats.grit >= 7) tags.push("heavy_push");
+  if (CAMERA_HACKER_ARCHEYPES.has(card.prompts.archetype) || CAMERA_HACKER_ARCHEYPES.has(card.identity.crew)) {
+    tags.push("camera_blind");
+  }
+  if (card.prompts.district === mission.district) tags.push("local_knowledge");
+  return dedupeCounterTags(tags);
+}
+
+function buildMissionStatusEffects(
+  cards: DeckPayload["cards"],
+  mission: MissionBoardEntry,
+  weather: DistrictWeatherSnapshot | null,
+): MissionStatusEffect[] {
+  const urethaneCount = cards.filter((card) => card.board.config.wheels === "Urethane").length;
+  const roughRouteCount = cards.filter((card) => ["Pneumatic", "Rubber"].includes(card.board.config.wheels)).length;
+  const cloudCount = cards.filter((card) => card.board.config.wheels === "Cloud").length;
+  const averageRange = cards.length > 0 ? cards.reduce((sum, card) => sum + card.stats.range, 0) / cards.length : 0;
+  const effects: MissionStatusEffect[] = [];
+
+  if (urethaneCount >= 2 && (mission.district === "Airaway" || mission.district === "Glass City")) {
+    effects.push({
+      id: "mainline-burst",
+      label: "Mainline Burst",
+      summary: "Street wheels are eating the clean lane and raising the crew's response ceiling.",
+      kind: "bonus",
+      stat: "speed",
+      powerDelta: 2,
+      source: "Urethane wheels",
+    });
+  }
+  if (urethaneCount >= 2 && weather?.rainMm && weather.rainMm >= 2 && ROUGH_ROUTE_DISTRICTS.has(mission.district)) {
+    effects.push({
+      id: "speed-wobbles",
+      label: "Speed Wobbles",
+      summary: "Street wheels are sketchy on wet rough lanes, so late-run counters lose bite.",
+      kind: "penalty",
+      stat: "speed",
+      powerDelta: -2,
+      source: "Rain-soaked access lines",
+    });
+  }
+  if (roughRouteCount >= 2 && ROUGH_ROUTE_DISTRICTS.has(mission.district)) {
+    effects.push({
+      id: "rough-route-traction",
+      label: "Rough-Route Traction",
+      summary: "Heavy wheels keep the deck planted through the ugly lines.",
+      kind: "bonus",
+      stat: "grit",
+      powerDelta: 2,
+      source: "Pneumatic / Rubber wheels",
+    });
+  }
+  if (averageRange <= 5.5) {
+    effects.push({
+      id: "battery-sag",
+      label: "Battery Sag",
+      summary: "The crew is squeezing its pack range, so the final leg hits softer than the launch.",
+      kind: "penalty",
+      stat: "range",
+      powerDelta: -1,
+      source: "Thin reserve range",
+    });
+  }
+  if (cloudCount >= 1 || cards.some((card) => (card.board.config.wheels === "Pneumatic" || card.board.config.wheels === "Rubber") && card.stats.speed >= 6)) {
+    effects.push({
+      id: "regen-braking",
+      label: "Regen Braking",
+      summary: "The crew can claw back momentum mid-run with risky braking lines.",
+      kind: "bonus",
+      stat: "range",
+      powerDelta: 1,
+      source: "Utility wheel setup",
+    });
+  }
+
+  return effects;
+}
+
+function buildMissionSynergyTags(cards: DeckPayload["cards"], mission: MissionBoardEntry): MissionCounterTag[] {
+  const hasCameraBlind = cards.some((card) => getCardCounterTags(card, mission).includes("camera_blind"));
+  const hasHeavyBoard = cards.some((card) => getCardCounterTags(card, mission).some((tag) => tag === "rough_route" || tag === "heavy_push"));
+  const hasQuietLocal = cards.some((card) => getCardCounterTags(card, mission).includes("quiet_line"))
+    && cards.some((card) => getCardCounterTags(card, mission).includes("local_knowledge"));
+  const hasRegenRig = cards.some((card) => getCardCounterTags(card, mission).includes("regen_brake"))
+    && cards.some((card) => getCardCounterTags(card, mission).includes("mainline_speed"));
+  const tags: MissionCounterTag[] = [];
+  if (hasCameraBlind && hasHeavyBoard) tags.push("camera_blind", "heavy_push");
+  if (hasQuietLocal) tags.push("local_knowledge", "quiet_line");
+  if (hasRegenRig) tags.push("regen_brake");
+  return dedupeCounterTags(tags);
+}
+
+function buildMissionActiveCards(cards: DeckPayload["cards"]): DeckPayload["cards"] {
+  return cards.slice(0, ACTIVE_HAND_SIZE);
+}
+
+function getMissionOptionPower(
+  option: MissionEncounterOption,
+  activeCards: DeckPayload["cards"],
+  mission: MissionBoardEntry,
+  statusEffects: MissionStatusEffect[],
+  synergyTags: MissionCounterTag[],
+): number {
+  const requiredTags = option.requiredTags ?? [];
+  const activeTags = activeCards.flatMap((card) => getCardCounterTags(card, mission));
+  const matchingTags = requiredTags.filter((tag) => activeTags.includes(tag) || synergyTags.includes(tag));
+  const effectPower = statusEffects.reduce((sum, effect) => sum + (effect.powerDelta ?? 0), 0);
+  return matchingTags.length + effectPower;
+}
+
+function enrichEncounterOptions(
+  encounter: MissionEncounter,
+  activeCards: DeckPayload["cards"],
+  mission: MissionBoardEntry,
+  statusEffects: MissionStatusEffect[],
+  synergyTags: MissionCounterTag[],
+): MissionEncounter {
+  return {
+    ...encounter,
+    options: encounter.options.map((option) => {
+      const currentPower = getMissionOptionPower(option, activeCards, mission, statusEffects, synergyTags);
+      const requiredTags = option.requiredTags ?? [];
+      const available = requiredTags.every((tag) => (
+        activeCards.some((card) => getCardCounterTags(card, mission).includes(tag)) || synergyTags.includes(tag)
+      )) && currentPower >= (option.minimumCounterPower ?? 1);
+      return {
+        ...option,
+        requiredTags,
+        currentPower,
+        available,
+      };
+    }),
+  };
+}
 
 function pluralize(count: number, singular: string, customPlural = `${singular}s`): string {
   return count === 1 ? singular : customPlural;
@@ -639,6 +878,7 @@ export function getMissionRequirementBadge(requirement: MissionRequirement): str
 }
 
 export function getMissionStateLabel(mission: MissionBoardEntry): string {
+  if (mission.activeRun?.phase === "event") return "Live";
   return mission.status === "completed" ? "Complete" : "Available";
 }
 
@@ -660,11 +900,36 @@ export function getMissionForkOption(
   return options.find((option) => option.id === resolvedId) ?? null;
 }
 
+export function getMissionEncounter(mission: MissionBoardEntry): MissionEncounter | null {
+  if (mission.encounter?.options?.length) return mission.encounter;
+  const fork = mission.fork;
+  if (!fork?.options?.length) return null;
+  return {
+    id: `${mission.definitionId}-live-encounter`,
+    badge: fork.badge,
+    prompt: fork.prompt,
+    threat: getMissionThreatSummary(mission),
+    options: fork.options.map((option) => ({
+      id: option.id,
+      label: option.label,
+      description: option.description,
+      requirements: option.requirements,
+      rewardXpDelta: option.rewardXpDelta,
+      rewardOzziesDelta: option.rewardOzziesDelta,
+      requiredTags: inferEncounterOptionTags(option),
+      minimumCounterPower: inferEncounterOptionPower(option),
+      successSummary: `${option.label} lands clean and turns the pressure back on the district.`,
+      failureSummary: `${option.label} slips, forcing the crew into a hard cutout.`,
+    })),
+  };
+}
+
 export function getMissionEffectiveRewards(
   mission: MissionBoardEntry,
-  selectedForkOptionId?: string | null,
+  selectedCounterOptionId?: string | null,
 ): { rewardXp: number; rewardOzzies: number } {
-  const selectedOption = getMissionForkOption(mission, selectedForkOptionId);
+  const selectedOption = getMissionEncounterOption(mission, selectedCounterOptionId)
+    ?? getMissionForkOption(mission, selectedCounterOptionId);
   return {
     rewardXp: mission.rewardXp + (selectedOption?.rewardXpDelta ?? 0),
     rewardOzzies: mission.rewardOzzies + (selectedOption?.rewardOzziesDelta ?? 0),
@@ -673,21 +938,97 @@ export function getMissionEffectiveRewards(
 
 export function getMissionEffectiveRequirements(
   mission: MissionBoardEntry,
-  selectedForkOptionId?: string | null,
+  selectedCounterOptionId?: string | null,
 ): MissionRequirement[] {
-  const selectedOption = getMissionForkOption(mission, selectedForkOptionId);
+  const selectedOption = getMissionEncounterOption(mission, selectedCounterOptionId)
+    ?? getMissionForkOption(mission, selectedCounterOptionId);
   return [...mission.requirements, ...(selectedOption?.requirements ?? [])];
+}
+
+export function buildMissionActiveRunState(
+  deck: DeckPayload,
+  mission: MissionBoardEntry,
+  weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>> = {},
+  launchedAt = new Date().toISOString(),
+): MissionActiveRunState | null {
+  const encounter = getMissionEncounter(mission);
+  if (!encounter) return null;
+  const readyCards = getMissionReadyCards(deck);
+  const activeCards = buildMissionActiveCards(readyCards);
+  const weather = weatherByDistrict[mission.district] ?? null;
+  const statusEffects = buildMissionStatusEffects(readyCards, mission, weather);
+  const synergyTags = buildMissionSynergyTags(readyCards, mission);
+  const enrichedEncounter = enrichEncounterOptions(encounter, activeCards, mission, statusEffects, synergyTags);
+  return {
+    phase: "event",
+    launchedAt,
+    deckId: deck.id,
+    deckName: deck.name,
+    encounterId: enrichedEncounter.id,
+    activeCardIds: activeCards.map((card) => card.id),
+    synergyTags,
+    statusEffects,
+    availableCounterOptionIds: enrichedEncounter.options.filter((option) => option.available).map((option) => option.id),
+    counterPower: statusEffects.reduce((sum, effect) => sum + (effect.powerDelta ?? 0), 0),
+    summary: enrichedEncounter.threat,
+  };
+}
+
+export function resolveMissionCounterChoice(
+  mission: MissionBoardEntry,
+  activeRun: MissionActiveRunState | null | undefined,
+  counterOptionId?: string | null,
+): {
+  selectedOption: MissionEncounterOption | null;
+  hardCutout: boolean;
+  rewardXpDelta: number;
+  rewardOzziesDelta: number;
+  summary: string;
+} {
+  const encounter = getMissionEncounter(mission);
+  const selectedId = counterOptionId ?? activeRun?.selectedCounterOptionId ?? mission.selectedCounterOptionId ?? null;
+  if (!encounter || !selectedId || selectedId === HARD_CUTOUT_COUNTER_ID) {
+    return {
+      selectedOption: null,
+      hardCutout: true,
+      rewardXpDelta: -20,
+      rewardOzziesDelta: -20,
+      summary: "The crew had to take a hard cutout when the live counter window closed.",
+    };
+  }
+  const selectedOption = encounter.options.find((option) => option.id === selectedId) ?? null;
+  if (!selectedOption) {
+    return {
+      selectedOption: null,
+      hardCutout: true,
+      rewardXpDelta: -20,
+      rewardOzziesDelta: -20,
+      summary: "The live counter fizzled, so the crew escaped through a hard cutout.",
+    };
+  }
+  return {
+    selectedOption,
+    hardCutout: false,
+    rewardXpDelta: selectedOption.rewardXpDelta ?? 0,
+    rewardOzziesDelta: selectedOption.rewardOzziesDelta ?? 0,
+    summary: selectedOption.successSummary ?? `${selectedOption.label} kept the run moving.`,
+  };
 }
 
 export function evaluateMissionDeck(
   deck: DeckPayload,
   mission: MissionBoardEntry,
   weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>> = {},
-  selectedForkOptionId?: string | null,
+  selectedCounterOptionId?: string | null,
 ): MissionDeckEvaluation {
   const readyCards = getMissionReadyCards(deck);
-  const selectedOption = getMissionForkOption(mission, selectedForkOptionId);
-  const results = getMissionEffectiveRequirements(mission, selectedForkOptionId).map((requirement) => {
+  const weather = weatherByDistrict[mission.district] ?? null;
+  const statusEffects = buildMissionStatusEffects(readyCards, mission, weather);
+  const synergyTags = buildMissionSynergyTags(readyCards, mission);
+  const activeCards = buildMissionActiveCards(readyCards);
+  const selectedOption = getMissionEncounterOption(mission, selectedCounterOptionId)
+    ?? getMissionForkOption(mission, selectedCounterOptionId);
+  const results = getMissionEffectiveRequirements(mission, selectedCounterOptionId).map((requirement) => {
     switch (requirement.type) {
       case "min_cards": {
         const current = readyCards.length;
@@ -765,5 +1106,9 @@ export function evaluateMissionDeck(
       ? `${deck.name} can clear the ${mission.title}${selectedOption ? ` via ${selectedOption.label}` : ""}.`
       : firstUnmet?.detail ?? `${deck.name} is missing mission requirements.`,
     results,
+    statusEffects,
+    synergyTags,
+    activeCardIds: activeCards.map((card) => card.id),
+    counterPower: statusEffects.reduce((sum, effect) => sum + (effect.powerDelta ?? 0), 0),
   };
 }

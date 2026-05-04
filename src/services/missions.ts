@@ -68,7 +68,7 @@ export async function runMission(
   uid: string,
   missionId: string,
   deckId: string,
-  forkOptionId?: string | null,
+  counterOptionId?: string | null,
   userEmail?: string | null,
 ): Promise<MissionRunResponse> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
@@ -81,7 +81,7 @@ export async function runMission(
       "Content-Type": "application/json",
       Authorization: `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ missionId, deckId, forkOptionId }),
+    body: JSON.stringify({ missionId, deckId, counterOptionId }),
   }, "Failed to resolve mission.");
 }
 

@@ -1,11 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  HARD_CUTOUT_COUNTER_ID,
+  buildMissionActiveRunState,
   createDailyMissionBoardPayload,
   createMissionBoardEntries,
   evaluateMissionDeck,
+  getMissionEncounter,
   getMissionEffectiveRewards,
   getWeeklyMissionTheme,
+  resolveMissionCounterChoice,
 } from '../lib/missions.js';
 
 function buildCard(overrides = {}) {
@@ -102,6 +106,7 @@ test('evaluateMissionDeck fails when the deck lacks district-ready wheels', () =
 test('mission board entries seed fork choices on restored missions', () => {
   const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'batteryville-breaker-yard');
   assert.equal(mission.fork.badge, 'Fork in the road');
+  assert.equal(mission.encounter.badge, 'Fork in the road');
   assert.equal(mission.fork.options.length, 2);
   assert.equal(mission.fork.options[0].id, 'crusher-lane');
 });
@@ -172,4 +177,95 @@ test('getMissionEffectiveRewards includes selected fork bonuses', () => {
   const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-trace');
   const rewards = getMissionEffectiveRewards(mission, 'data-snatch');
   assert.deepEqual(rewards, { rewardXp: 220, rewardOzzies: 165 });
+});
+
+test('evaluateMissionDeck surfaces dynamic hardware effects and live hand metadata', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'airaway-sky-lane');
+  const deck = {
+    id: 'deck-live-1',
+    name: 'Glass Burners',
+    cards: Array.from({ length: 5 }, (_, index) => buildCard({
+      id: `live-card-${index + 1}`,
+      stats: { speed: 7 + index, range: 5, stealth: 5, grit: 4 },
+      board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+    })),
+  };
+
+  const result = evaluateMissionDeck(deck, mission);
+  assert.equal(result.eligible, true);
+  assert.ok(result.activeCardIds?.length > 0);
+  assert.ok(result.statusEffects?.some((effect) => effect.id === 'mainline-burst'));
+});
+
+test('buildMissionActiveRunState creates a pending live encounter with available counters', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-parent-trace');
+  const deck = {
+    id: 'deck-live-2',
+    name: 'Trace Breakers',
+    cards: [
+      buildCard({
+        id: 'counter-1',
+        prompts: { archetype: 'The Knights Technarchy', district: 'The Grid' },
+        identity: { crew: 'The Knights Technarchy' },
+        stats: { speed: 8, range: 6, stealth: 7, grit: 5 },
+        board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+      }),
+      buildCard({
+        id: 'counter-2',
+        prompts: { archetype: 'Qu111s', district: 'The Grid' },
+        identity: { crew: 'Qu111s' },
+        stats: { speed: 7, range: 7, stealth: 6, grit: 4 },
+      }),
+      ...Array.from({ length: 3 }, (_, index) => buildCard({
+        id: `counter-extra-${index + 1}`,
+        stats: { speed: 6, range: 6, stealth: 5, grit: 5 },
+      })),
+    ],
+  };
+
+  const runState = buildMissionActiveRunState(deck, mission);
+  assert.equal(runState.phase, 'event');
+  assert.equal(runState.activeCardIds.length, 3);
+  assert.ok(runState.availableCounterOptionIds.length > 0);
+  assert.ok(getMissionEncounter(mission).options.length >= 3);
+});
+
+test('resolveMissionCounterChoice returns selected encounter rewards when the hand can answer', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-parent-trace');
+  const deck = {
+    id: 'deck-live-3',
+    name: 'Archive Ghosts',
+    cards: [
+      buildCard({
+        id: 'ghost-1',
+        prompts: { archetype: 'The Knights Technarchy', district: 'Nightshade' },
+        identity: { crew: 'The Knights Technarchy' },
+        stats: { speed: 8, range: 6, stealth: 8, grit: 4 },
+      }),
+      buildCard({
+        id: 'ghost-2',
+        prompts: { archetype: 'Qu111s', district: 'Nightshade' },
+        identity: { crew: 'Qu111s' },
+        stats: { speed: 7, range: 7, stealth: 7, grit: 4 },
+      }),
+      ...Array.from({ length: 3 }, (_, index) => buildCard({
+        id: `ghost-extra-${index + 1}`,
+        stats: { speed: 6, range: 6, stealth: 5, grit: 5 },
+      })),
+    ],
+  };
+
+  const runState = buildMissionActiveRunState(deck, mission);
+  const selectedId = runState.availableCounterOptionIds[0];
+  const resolution = resolveMissionCounterChoice(mission, runState, selectedId);
+  assert.equal(resolution.hardCutout, false);
+  assert.equal(resolution.selectedOption?.id, selectedId);
+});
+
+test('resolveMissionCounterChoice clips rewards for a hard cutout', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'glass-city-exchange');
+  const resolution = resolveMissionCounterChoice(mission, null, HARD_CUTOUT_COUNTER_ID);
+  assert.equal(resolution.hardCutout, true);
+  assert.equal(resolution.rewardXpDelta, -20);
+  assert.equal(resolution.rewardOzziesDelta, -20);
 });

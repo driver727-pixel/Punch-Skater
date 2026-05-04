@@ -10,10 +10,11 @@ import { formatDurationClock, getNextDailyReward, getRemainingDurationMs } from 
 import { getMysteryRouteLabel } from "../lib/missionUi";
 import { DistrictBadge } from "./DistrictBadge";
 import {
+  HARD_CUTOUT_COUNTER_ID,
   evaluateMissionDeck,
+  getMissionEncounter,
   getMissionEffectiveRequirements,
   getMissionEffectiveRewards,
-  getMissionForkOption,
   getMissionRequirementBadge,
   getMissionStateLabel,
   getMissionWeatherSummary,
@@ -22,9 +23,11 @@ import type {
   MissionBoardEntry,
   MissionBoardTheme,
   MissionBoardProgression,
+  MissionEncounterOption,
   MissionRequirement,
   MissionRequirementResult,
   MissionRunResponse,
+  MissionStatusEffect,
 } from "../lib/sharedTypes";
 import type { District, WorldLocation } from "../lib/types";
 import { getMissionBoard, runMission } from "../services/missions";
@@ -206,8 +209,9 @@ const DISTRICT_LORE_BY_NAME = new Map(
   DISTRICT_LORE.filter((entry) => entry.kind === "district").map((entry) => [entry.name, entry]),
 );
 const LOCATION_LORE_BY_NAME = new Map(DISTRICT_LORE.map((entry) => [entry.name, entry]));
-const MAIN_ROUTE_LABEL = "Main line";
-const BLIND_ROUTE_LABEL = "Blind route armed";
+const MAIN_ROUTE_LABEL = "Launch window";
+const LIVE_COUNTER_LABEL = "Live counter pending";
+const HARD_CUTOUT_LABEL = "Hard cutout";
 
 function formatTimestamp(value?: string): string | null {
   if (!value) return null;
@@ -216,8 +220,8 @@ function formatTimestamp(value?: string): string | null {
   return parsed.toLocaleString();
 }
 
-function getDefaultRequirementResults(mission: MissionBoardEntry, selectedForkOptionId?: string | null): MissionRequirementResult[] {
-  return getMissionEffectiveRequirements(mission, selectedForkOptionId).map((requirement) => ({
+function getDefaultRequirementResults(mission: MissionBoardEntry, selectedCounterOptionId?: string | null): MissionRequirementResult[] {
+  return getMissionEffectiveRequirements(mission, selectedCounterOptionId).map((requirement) => ({
     requirement,
     met: false,
     current: 0,
@@ -237,15 +241,26 @@ function getMissionPresentation(mission: MissionBoardEntry | null): MissionPrese
 }
 
 function isMissionResultRevealed(mission: MissionBoardEntry | null): boolean {
+  if (mission?.activeRun?.phase === "event") return false;
   return Boolean(mission?.lastRunAt || mission?.status === "completed");
 }
 
-function getSelectedRouteLabel(selectedForkOption: MissionForkOption | null, resultRevealed: boolean): string {
-  if (!selectedForkOption) return MAIN_ROUTE_LABEL;
-  return resultRevealed ? selectedForkOption.label : BLIND_ROUTE_LABEL;
+function isMissionAwaitingChoice(mission: MissionBoardEntry | null): boolean {
+  return mission?.activeRun?.phase === "event";
 }
 
-function getForkRewardTypeLabel(option: MissionForkOption): string {
+function getSelectedRouteLabel(
+  mission: MissionBoardEntry | null,
+  selectedCounterOption: MissionEncounterOption | null,
+  resultRevealed: boolean,
+): string {
+  if (mission?.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID) return HARD_CUTOUT_LABEL;
+  if (isMissionAwaitingChoice(mission)) return LIVE_COUNTER_LABEL;
+  if (!selectedCounterOption) return MAIN_ROUTE_LABEL;
+  return resultRevealed ? selectedCounterOption.label : LIVE_COUNTER_LABEL;
+}
+
+function getEncounterRewardTypeLabel(option: MissionEncounterOption): string {
   if (option.rewardOzziesDelta && option.rewardXpDelta) return "Split reward route";
   if (option.rewardOzziesDelta) return "Cash pressure route";
   return "XP pressure route";
@@ -256,6 +271,7 @@ function getMissionOutcomeLabel(
   evaluationEligible: boolean | undefined,
   resultRevealed: boolean,
 ): string {
+  if (mission?.activeRun?.phase === "event") return "Live Event";
   if (!resultRevealed) return "Intel Hidden";
   if (mission?.status === "completed") return "Route Cleared";
   if (evaluationEligible) return "Deck Ready";
@@ -267,6 +283,7 @@ function getMissionOutcomeBadgeClass(
   evaluationEligible: boolean | undefined,
   resultRevealed: boolean,
 ): string {
+  if (mission?.activeRun?.phase === "event") return "mission-result__badge mission-result__badge--mystery";
   if (!resultRevealed) return "mission-result__badge mission-result__badge--mystery";
   if (mission?.status === "completed" || evaluationEligible) return "mission-result__badge mission-result__badge--success";
   return "mission-result__badge mission-result__badge--fail";
@@ -283,18 +300,39 @@ function getMissionThemeStyle(district: District): CSSProperties {
 
 function getMissionResultLog(result: MissionRunResponse): string[] {
   const mission = result.mission;
-  const forkOption = getMissionForkOption(mission, mission.selectedForkOptionId);
+  const counterOption = getMissionEncounter(mission)?.options.find((option) => (
+    option.id === (mission.selectedCounterOptionId ?? mission.activeRun?.selectedCounterOptionId)
+  )) ?? null;
   if (result.rewardGranted) {
-    const rewards = getMissionEffectiveRewards(mission, mission.selectedForkOptionId);
+    const rewards = mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
+      ? {
+        rewardXp: Math.max(0, mission.rewardXp - 20),
+        rewardOzzies: Math.max(0, mission.rewardOzzies - 20),
+      }
+      : getMissionEffectiveRewards(mission, mission.selectedCounterOptionId);
     return [
-      `${mission.selectedDeckName ?? result.evaluation.deckName} cleared ${mission.title}${forkOption ? ` via ${forkOption.label}` : ""}.`,
+      `${mission.selectedDeckName ?? result.evaluation.deckName} cleared ${mission.title}${counterOption ? ` via ${counterOption.label}` : mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " via a hard cutout" : ""}.`,
       `Banked +${rewards.rewardXp} Mission XP.`,
       `Pulled +${rewards.rewardOzzies} Ozzies out of ${mission.district}.`,
+      ...(mission.lastRunEffects ?? []).map((effect) => `${effect.label}: ${effect.summary}`),
     ];
   }
   return mission.lastRunFailureReasons?.length
     ? mission.lastRunFailureReasons
     : result.evaluation.results.filter((entry) => !entry.met).map((entry) => entry.detail);
+}
+
+function getCounterOptionCopy(option: MissionEncounterOption): string {
+  if (option.requiredTags?.length) {
+    return `Needs ${option.requiredTags.join(" · ")}.`;
+  }
+  return option.description;
+}
+
+function formatStatusEffect(effect: MissionStatusEffect): string {
+  const power = effect.powerDelta ?? 0;
+  const powerLabel = power === 0 ? "" : ` (${power > 0 ? "+" : ""}${power} power)`;
+  return `${effect.label}${powerLabel} — ${effect.summary}`;
 }
 
 function getMissionDistrictAccessSummary(
@@ -304,13 +342,13 @@ function getMissionDistrictAccessSummary(
   return getMissionWeatherSummary(mission, { [mission.district]: weather });
 }
 
-function isForkRequirement(
+function isCounterRequirement(
   requirement: MissionRequirement,
-  selectedForkOptionId: string | null,
+  selectedCounterOptionId: string | null,
   mission: MissionBoardEntry,
 ): boolean {
-  const selectedForkOption = getMissionForkOption(mission, selectedForkOptionId);
-  return (selectedForkOption?.requirements ?? []).some((entry) => (
+  const selectedCounterOption = getMissionEncounter(mission)?.options.find((option) => option.id === selectedCounterOptionId) ?? null;
+  return (selectedCounterOption?.requirements ?? []).some((entry) => (
     entry.type === requirement.type
       && entry.label === requirement.label
       && entry.count === requirement.count
@@ -372,7 +410,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [runningMissionId, setRunningMissionId] = useState<string | null>(null);
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
-  const [selectedForkOptionId, setSelectedForkOptionId] = useState<string | null>(null);
+  const [selectedCounterOptionId, setSelectedCounterOptionId] = useState<string | null>(null);
   const [missionResult, setMissionResult] = useState<MissionRunResponse | null>(null);
 
   useEffect(() => {
@@ -429,7 +467,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
 
   useEffect(() => {
     const mission = missions.find((entry) => entry.id === selectedMissionId) ?? missions[0] ?? null;
-    setSelectedForkOptionId(mission?.selectedForkOptionId ?? null);
+    setSelectedCounterOptionId(mission?.selectedCounterOptionId ?? mission?.activeRun?.selectedCounterOptionId ?? null);
   }, [missions, selectedMissionId]);
 
   const selectedMission = useMemo(
@@ -442,29 +480,43 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   );
   const deckEvaluations = useMemo(
     () => selectedMission
-      ? decks.map((deck) => evaluateMissionDeck(deck, selectedMission, weatherByDistrict, selectedForkOptionId))
+      ? decks.map((deck) => evaluateMissionDeck(deck, selectedMission, weatherByDistrict, isMissionResultRevealed(selectedMission) ? selectedCounterOptionId : null))
       : [],
-    [decks, selectedForkOptionId, selectedMission, weatherByDistrict],
+    [decks, selectedCounterOptionId, selectedMission, weatherByDistrict],
   );
   const selectedEvaluation = useMemo(
     () => selectedMission && selectedDeck
-      ? evaluateMissionDeck(selectedDeck, selectedMission, weatherByDistrict, selectedForkOptionId)
+      ? evaluateMissionDeck(selectedDeck, selectedMission, weatherByDistrict, isMissionResultRevealed(selectedMission) ? selectedCounterOptionId : null)
       : null,
-    [selectedDeck, selectedForkOptionId, selectedMission, weatherByDistrict],
+    [selectedDeck, selectedCounterOptionId, selectedMission, weatherByDistrict],
   );
-  const selectedForkOption = useMemo(
-    () => (selectedMission ? getMissionForkOption(selectedMission, selectedForkOptionId) : null),
-    [selectedForkOptionId, selectedMission],
+  const selectedEncounter = useMemo(
+    () => (selectedMission ? getMissionEncounter(selectedMission) : null),
+    [selectedMission],
+  );
+  const selectedCounterOption = useMemo(
+    () => selectedEncounter?.options.find((option) => option.id === selectedCounterOptionId) ?? null,
+    [selectedCounterOptionId, selectedEncounter],
   );
   const selectedDistrictWeather = useMemo(
     () => (selectedMission ? weatherByDistrict[selectedMission.district] ?? null : null),
     [selectedMission, weatherByDistrict],
   );
   const selectedRewards = useMemo(
-    () => (selectedMission ? getMissionEffectiveRewards(selectedMission, selectedForkOptionId) : { rewardXp: 0, rewardOzzies: 0 }),
-    [selectedForkOptionId, selectedMission],
+    () => {
+      if (!selectedMission) return { rewardXp: 0, rewardOzzies: 0 };
+      if (selectedMission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID) {
+        return {
+          rewardXp: Math.max(0, selectedMission.rewardXp - 20),
+          rewardOzzies: Math.max(0, selectedMission.rewardOzzies - 20),
+        };
+      }
+      return getMissionEffectiveRewards(selectedMission, selectedCounterOptionId);
+    },
+    [selectedCounterOptionId, selectedMission],
   );
   const selectedResultRevealed = isMissionResultRevealed(selectedMission);
+  const selectedAwaitingChoice = isMissionAwaitingChoice(selectedMission);
   const selectedPresentation = useMemo(() => getMissionPresentation(selectedMission), [selectedMission]);
   const selectedDistrictLore = useMemo(
     () => (selectedMission ? DISTRICT_LORE_BY_NAME.get(selectedMission.district) ?? null : null),
@@ -481,7 +533,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   );
   const selectedDeckCardCount = selectedDeck?.cards.length ?? 0;
   const selectedDeckReadyCount = selectedEvaluation?.eligibleCardCount ?? 0;
-  const selectedRouteLabel = getSelectedRouteLabel(selectedForkOption, selectedResultRevealed);
+  const selectedRouteLabel = getSelectedRouteLabel(selectedMission, selectedCounterOption, selectedResultRevealed);
+  const selectedActiveCards = useMemo(() => {
+    if (!selectedDeck || !selectedMission?.activeRun?.activeCardIds?.length) return [];
+    const cardsById = new Map(selectedDeck.cards.map((card) => [card.id, card]));
+    return selectedMission.activeRun.activeCardIds
+      .map((cardId) => cardsById.get(cardId))
+      .filter(Boolean) as typeof selectedDeck.cards;
+  }, [selectedDeck, selectedMission]);
   const streakState = playerRewards?.dailyReward ?? null;
   const nextStreakReward = streakState
     ? { xp: streakState.nextRewardXp, ozzies: streakState.nextRewardOzzies }
@@ -498,36 +557,59 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   );
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
+    const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
     return [
       `${selectedMission.district} access right now: ${getMissionDistrictAccessSummary(selectedMission, selectedDistrictWeather)}.`,
       selectedEvaluation?.eligible
-        ? "This deck looks hot enough to take the contract, but the payout and final result stay hidden until the run resolves."
+        ? "This deck can launch clean, but the real tension now comes from the live counter window mid-run."
         : "Launch Run still works on a risky deck. Failure can sideline one courier for a short injury, breakdown, or arrest timeout.",
-      selectedForkOption
-        ? `${BLIND_ROUTE_LABEL}: ${selectedForkOption.label}.`
-        : "Blind forks are optional gambles. Pick one for a secret modifier, or stay on the main line.",
+      ...(statusTips.length > 0 ? statusTips : ["Hardware effects and crew synergies can spike or blunt the live counter power."]),
     ];
-  }, [selectedDistrictWeather, selectedEvaluation, selectedForkOption, selectedMission]);
+  }, [selectedDistrictWeather, selectedEvaluation, selectedMission]);
 
   const handleRunMission = useCallback(async () => {
     if (!selectedMission || !selectedDeck) return;
     setRunningMissionId(selectedMission.id);
     setError(null);
     try {
-      const result = await runMission(uid, selectedMission.id, selectedDeck.id, selectedForkOptionId, user?.email);
+      const result = await runMission(uid, selectedMission.id, selectedDeck.id, null, user?.email);
       setMissions((current) => current.map((mission) => (
         mission.id === result.mission.id ? result.mission : mission
       )));
       setProgression(result.progression);
       setSelectedDeckId(result.mission.selectedDeckId ?? selectedDeck.id);
-      setSelectedForkOptionId(result.mission.selectedForkOptionId ?? selectedForkOptionId);
-      setMissionResult(result);
+      setSelectedCounterOptionId(result.mission.selectedCounterOptionId ?? null);
+      if (result.awaitingChoice) {
+        setMissionResult(null);
+      } else {
+        setMissionResult(result);
+      }
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Failed to resolve mission.");
     } finally {
       setRunningMissionId(null);
     }
-  }, [selectedDeck, selectedForkOptionId, selectedMission, uid, user]);
+  }, [selectedDeck, selectedMission, uid, user]);
+
+  const handleResolveEncounter = useCallback(async (counterOptionId: string) => {
+    if (!selectedMission || !selectedDeck) return;
+    setRunningMissionId(selectedMission.id);
+    setError(null);
+    try {
+      const result = await runMission(uid, selectedMission.id, selectedDeck.id, counterOptionId, user?.email);
+      setMissions((current) => current.map((mission) => (
+        mission.id === result.mission.id ? result.mission : mission
+      )));
+      setProgression(result.progression);
+      setSelectedDeckId(result.mission.selectedDeckId ?? selectedDeck.id);
+      setSelectedCounterOptionId(result.mission.selectedCounterOptionId ?? counterOptionId);
+      if (!result.awaitingChoice) setMissionResult(result);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "Failed to resolve mission.");
+    } finally {
+      setRunningMissionId(null);
+    }
+  }, [selectedDeck, selectedMission, uid, user]);
 
   if (!isEnabled("MISSIONS", user)) return null;
 
@@ -690,7 +772,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 locale={selectedLocale ?? selectedMission.district}
                 localeSummary={
                   selectedPresentation.localeSummary
-                  ?? `${selectedLocale ?? selectedMission.district} is running a local courier map with live forks and relay pressure.`
+                  ?? `${selectedLocale ?? selectedMission.district} is running a local courier map with live counters and relay pressure.`
                 }
                 sceneEyebrow={selectedPresentation.operation}
                 sceneTitle={selectedPresentation.patron}
@@ -700,7 +782,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 routeLabel={selectedRouteLabel}
                 revealForkIntel={selectedResultRevealed}
                 fork={selectedMission.fork}
-                selectedForkOption={selectedForkOption}
+                selectedForkOption={null}
                 controlledBy={selectedLocaleLore?.controlledBy ?? selectedDistrictLore?.controlledBy ?? "Courier crews"}
                 crewPressure={selectedLocaleLore?.crews.slice(0, 2).join(" · ") ?? selectedMission.district}
                 glyph={DISTRICT_THEMES[selectedMission.district].glyph}
@@ -713,7 +795,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       <span className="mission-stage__eyebrow">Deck selection</span>
                       <h4 className="mission-stage__title">Pick the crew taking the run</h4>
                       <p className="mission-stage__summary">
-                        Lock in a deck first. The launch stage comes next, and the route fork stays optional after that.
+                        Lock in a deck first. Launching now creates a live counter window instead of a hidden pre-run fork.
                       </p>
                     </div>
                     <div className="mission-deck-focus">
@@ -749,54 +831,75 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </div>
                 </section>
 
-                {selectedMission.fork && (
+                {selectedEncounter && (
                   <section className="mission-stage mission-panel mission-fork">
                     <div className="mission-stage__header">
                       <div>
-                        <span className="mission-stage__eyebrow">Blind route gamble</span>
-                        <h4 className="mission-stage__title">Choose a fork, not a checklist</h4>
+                        <span className="mission-stage__eyebrow">Live event</span>
+                        <h4 className="mission-stage__title">Counter the district pressure mid-run</h4>
                         <p className="mission-stage__summary">
-                          Optional routes are secret modifiers. Pick one for a hidden payout twist, or stay on the main line and reveal everything after the run.
+                          Launch first, then answer the interruption with the cards currently in hand. If the hand comes up cold, take the hard cutout and clip the payout.
                         </p>
                       </div>
                     </div>
                     <div className="mission-fork__header">
-                      <span className="mission-fork__badge">{selectedMission.fork.badge}</span>
-                      <p className="mission-fork__prompt">{selectedMission.fork.prompt}</p>
+                      <span className="mission-fork__badge">{selectedEncounter.badge}</span>
+                      <p className="mission-fork__prompt">
+                        {selectedAwaitingChoice
+                          ? selectedMission.activeRun?.summary ?? selectedEncounter.threat
+                          : selectedEncounter.prompt}
+                      </p>
                     </div>
+                    {selectedAwaitingChoice && (
+                      <>
+                        <div className="mission-intel-tags">
+                          {selectedActiveCards.map((card) => (
+                            <span key={`${selectedMission.id}-${card.id}`} className="mission-intel-tag">
+                              {card.identity.name}
+                            </span>
+                          ))}
+                          {selectedActiveCards.length === 0 && (
+                            <span className="mission-intel-tag">No active hand revealed</span>
+                          )}
+                        </div>
+                        {(selectedMission.activeRun?.statusEffects?.length ?? 0) > 0 && (
+                          <ul className="mission-intel-list">
+                            {(selectedMission.activeRun?.statusEffects ?? []).map((effect) => (
+                              <li key={`${selectedMission.id}-${effect.id}`}>{formatStatusEffect(effect)}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    )}
                     <div className="mission-fork__options">
-                      <button
-                        type="button"
-                        className={`mission-fork__option${!selectedForkOption ? " mission-fork__option--active" : ""}`}
-                        onClick={() => setSelectedForkOptionId(null)}
-                        aria-pressed={!selectedForkOption}
-                      >
-                        <span className="mission-fork__option-label">{MAIN_ROUTE_LABEL}</span>
-                        <span className="mission-fork__option-meta">Safer known route</span>
-                        <span className="mission-fork__option-desc">Skip the side bet and run the contract without an extra hidden modifier.</span>
-                      </button>
-                      {selectedMission.fork.options.map((option, index) => (
+                      {selectedEncounter.options.map((option, index) => (
                         <button
                           key={`${selectedMission.id}-${option.id}`}
                           type="button"
-                          className={`mission-fork__option${selectedForkOption?.id === option.id ? " mission-fork__option--active" : ""}`}
-                          onClick={() => setSelectedForkOptionId(option.id)}
-                          aria-pressed={selectedForkOption?.id === option.id}
+                          className={`mission-fork__option${selectedCounterOption?.id === option.id ? " mission-fork__option--active" : ""}`}
+                          onClick={() => selectedAwaitingChoice && option.available && handleResolveEncounter(option.id)}
+                          aria-pressed={selectedCounterOption?.id === option.id}
+                          disabled={selectedAwaitingChoice ? !option.available || runningMissionId === selectedMission.id : true}
                         >
                           <span className="mission-fork__option-label">
-                            {selectedResultRevealed ? option.label : getMysteryRouteLabel(index)}
+                            {selectedAwaitingChoice ? option.label : getMysteryRouteLabel(index)}
                           </span>
                           <span className="mission-fork__option-meta">
-                            {selectedResultRevealed
-                              ? getForkRewardTypeLabel(option)
-                              : "Hidden risk / reward"}
+                            {selectedAwaitingChoice
+                              ? `${getEncounterRewardTypeLabel(option)} · ${option.available ? "Active hand can answer" : "Hand comes up short"}`
+                              : "Launch to reveal response window"}
                           </span>
                           <span className="mission-fork__option-desc">
-                            {selectedResultRevealed
+                            {selectedAwaitingChoice
                               ? option.description
-                              : "The fixer won't say what this branch pays or demands until your crew comes back."}
+                              : "The fixer will only show the live answer once the run is already moving."}
                           </span>
-                          {selectedResultRevealed && (option.rewardXpDelta || option.rewardOzziesDelta) && (
+                          {(selectedAwaitingChoice || selectedResultRevealed) && (
+                            <span className="mission-fork__option-desc">
+                              {getCounterOptionCopy(option)}
+                            </span>
+                          )}
+                          {(selectedAwaitingChoice || selectedResultRevealed) && (option.rewardXpDelta || option.rewardOzziesDelta) && (
                             <span className="mission-fork__option-desc">
                               {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
                               {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
@@ -805,6 +908,18 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           )}
                         </button>
                       ))}
+                      {selectedAwaitingChoice && (
+                        <button
+                          type="button"
+                          className="mission-fork__option"
+                          onClick={() => handleResolveEncounter(HARD_CUTOUT_COUNTER_ID)}
+                          disabled={runningMissionId === selectedMission.id}
+                        >
+                          <span className="mission-fork__option-label">{HARD_CUTOUT_LABEL}</span>
+                          <span className="mission-fork__option-meta">Always available emergency exit</span>
+                          <span className="mission-fork__option-desc">Get the crew home with clipped rewards when the active hand cannot answer the event clean.</span>
+                        </button>
+                      )}
                     </div>
                   </section>
                 )}
@@ -813,9 +928,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   <div className="mission-stage__header">
                     <div>
                       <span className="mission-stage__eyebrow">Launch stage</span>
-                      <h4 className="mission-stage__title">Send the crew and reveal the pull</h4>
+                      <h4 className="mission-stage__title">Send the crew and wait for the interruption</h4>
                       <p className="mission-stage__summary">
-                        Launch is always available once you pick a deck. Rewards, checks, and route consequences stay hidden until the run resolves.
+                        Launch only checks the baseline contract. The real call happens when the district throws a live event at the crew.
                       </p>
                     </div>
                     <div className="mission-stage__actions">
@@ -825,14 +940,17 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                         disabled={
                           runningMissionId === selectedMission.id ||
                           selectedMission.status === "completed" ||
-                          !selectedDeck
+                          !selectedDeck ||
+                          selectedAwaitingChoice
                         }
                       >
                         {selectedMission.status === "completed"
                           ? "Mission Cleared"
                           : runningMissionId === selectedMission.id
                             ? "Running…"
-                            : "Launch Run"}
+                            : selectedAwaitingChoice
+                              ? "Awaiting Counter"
+                              : "Launch Run"}
                       </button>
                     </div>
                   </div>
@@ -840,25 +958,38 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   {!selectedResultRevealed && (
                     <div className="mission-mystery-grid">
                       <article className="mission-mystery-card mission-mystery-card--jackpot">
-                        <span className="mission-mystery-card__label">Mystery payout</span>
-                        <strong className="mission-mystery-card__value">??? Oz · ??? XP</strong>
-                        <p>Clear the route to crack the stash. Side forks can juice the payout or make the crew sweat.</p>
-                      </article>
-                      <article className="mission-mystery-card">
-                        <span className="mission-mystery-card__label">Crew read</span>
-                        <strong className="mission-mystery-card__value">
-                          {selectedEvaluation?.eligible ? "Good odds" : "High risk"}
-                        </strong>
+                        <span className="mission-mystery-card__label">{selectedAwaitingChoice ? "Live event" : "Mystery payout"}</span>
+                        <strong className="mission-mystery-card__value">{selectedAwaitingChoice ? LIVE_COUNTER_LABEL : "??? Oz · ??? XP"}</strong>
                         <p>
-                          {selectedEvaluation?.eligible
-                            ? "Your deck has the right shape, but the exact checks stay behind the curtain."
-                            : "You can still send it. A miss may sideline one card for maintenance."}
+                          {selectedAwaitingChoice
+                            ? selectedMission.activeRun?.summary ?? "The district has interrupted the run and wants an answer now."
+                            : "Clear the route to crack the stash. The encounter choice can spike the payout or force a cutout."}
                         </p>
                       </article>
                       <article className="mission-mystery-card">
-                        <span className="mission-mystery-card__label">Route intel</span>
+                        <span className="mission-mystery-card__label">{selectedAwaitingChoice ? "Active hand" : "Crew read"}</span>
+                        <strong className="mission-mystery-card__value">
+                          {selectedAwaitingChoice
+                            ? `${selectedActiveCards.length} cards live`
+                            : selectedEvaluation?.eligible ? "Good odds" : "High risk"}
+                        </strong>
+                        <p>
+                          {selectedAwaitingChoice
+                            ? (selectedActiveCards.map((card) => card.identity.name).join(" · ") || "No revealed couriers in hand.")
+                            : selectedEvaluation?.eligible
+                              ? "Your deck has the right shape, but the district still gets one live chance to swing the run."
+                              : "You can still send it. A miss may sideline one card for maintenance."}
+                        </p>
+                      </article>
+                      <article className="mission-mystery-card">
+                        <span className="mission-mystery-card__label">{selectedAwaitingChoice ? "Hardware pressure" : "Route intel"}</span>
                         <strong className="mission-mystery-card__value">{selectedRouteLabel}</strong>
-                        <p>District weather and fork pressure are baked into the run, then revealed in the result screen.</p>
+                        <p>
+                          {selectedAwaitingChoice
+                            ? (selectedMission.activeRun?.statusEffects?.map((effect) => effect.label).join(" · ")
+                              || "No dynamic status effects are shaping this live window.")
+                            : "District weather, hardware stress, and crew synergy are baked into the run, then revealed in the result screen."}
+                        </p>
                       </article>
                     </div>
                   )}
@@ -905,9 +1036,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           <span className="mission-stat-label">Selected deck</span>
                           <span className="mission-stat-value">{selectedDeck?.name ?? "No deck selected"}</span>
                         </div>
-                        {selectedForkOption && (
+                        {(selectedCounterOption || selectedMission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID) && (
                           <div className="mission-stat-row">
-                            <span className="mission-stat-label">Chosen route</span>
+                            <span className="mission-stat-label">Counter used</span>
                             <span className="mission-stat-value">{selectedRouteLabel}</span>
                           </div>
                         )}
@@ -924,7 +1055,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       </div>
 
                       <div className="mission-checks">
-                        {(selectedEvaluation?.results ?? getDefaultRequirementResults(selectedMission, selectedForkOptionId)).map((result) => (
+                        {(selectedEvaluation?.results ?? getDefaultRequirementResults(selectedMission, selectedCounterOptionId)).map((result) => (
                           <article
                             key={`${selectedMission.id}-${result.requirement.label}`}
                             className={`mission-check-card${result.met ? " mission-check-card--met" : " mission-check-card--blocked"}`}
@@ -938,7 +1069,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                               </span>
                             </div>
                             <span className="mission-check-card__meta">
-                              {isForkRequirement(result.requirement, selectedForkOptionId, selectedMission) ? "Selected route check" : "Base contract check"}
+                              {isCounterRequirement(result.requirement, selectedCounterOptionId, selectedMission) ? "Live counter check" : "Base contract check"}
                             </span>
                             <p className="mission-check-card__detail">{result.detail}</p>
                             <p className="mission-check-card__tip">
@@ -978,7 +1109,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       ))
                       : [
                         "Payout odds stay hidden until the run resolves",
-                        "Blind forks can add secret XP, Ozzies, or pressure",
+                        "Live counters can add extra XP, Ozzies, or force a clipped cutout",
                         "The result modal reveals what the deck actually earned",
                       ].map((item) => (
                         <li key={`${selectedMission.id}-${item}`}>{item}</li>
@@ -1056,7 +1187,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               <div className="mission-result__reward-card mission-result__reward-card--ozzies">
                 <span className="mission-result__reward-label">Route</span>
                 <strong className="mission-result__reward-value">
-                  {getMissionForkOption(missionResult.mission, missionResult.mission.selectedForkOptionId)?.label ?? MAIN_ROUTE_LABEL}
+                  {missionResult.mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
+                    ? HARD_CUTOUT_LABEL
+                    : getMissionEncounter(missionResult.mission)?.options.find((option) => option.id === missionResult.mission.selectedCounterOptionId)?.label
+                      ?? MAIN_ROUTE_LABEL}
                 </strong>
               </div>
             </div>
