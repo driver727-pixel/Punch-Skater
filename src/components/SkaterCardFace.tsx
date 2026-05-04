@@ -435,24 +435,7 @@ function CardBack({
               )
             )}
           </div>
-          {editable ? (
-            <textarea
-              className="card-bio-input print-back-identity-bio-input"
-              value={flavorText}
-              onChange={(e) => onBioChange?.(e.target.value)}
-              placeholder="Bio / flavor text"
-              rows={2}
-            />
-          ) : (
-            <>
-              {flavorText && (
-                <p className="print-back-identity-bio">&ldquo;{flavorText}&rdquo;</p>
-              )}
-              {conlangFlavorText && (
-                <p className="print-back-identity-bio print-back-identity-bio--conlang">{conlangFlavorText}</p>
-              )}
-            </>
-          )}
+
         </div>
 
         <RetroWireframeTunnel />
@@ -505,6 +488,12 @@ function CardBack({
               <span className="print-back-board-val">{value}</span>
             </div>
           ))}
+          <div className="print-back-maintenance">
+            <span className="print-back-maint-label">MAINTENANCE</span>
+            <span className="print-back-maint-state">{card.maintenance.state.replace("_", " ")}</span>
+            <span className="print-back-maint-charge">{card.maintenance.chargePct}%</span>
+          </div>
+          <div className="print-back-serial">{card.identity.serialNumber}</div>
         </div>
 
       <div className="print-back-stats">
@@ -547,13 +536,26 @@ function CardBack({
       </div>
       </div>
 
-      <div className="print-back-maintenance">
-        <span className="print-back-maint-label">MAINTENANCE</span>
-        <span className="print-back-maint-state">{card.maintenance.state.replace("_", " ")}</span>
-        <span className="print-back-maint-charge">{card.maintenance.chargePct}%</span>
+      <div className="print-back-bio-strip">
+        {editable ? (
+          <textarea
+            className="card-bio-input print-back-identity-bio-input"
+            value={flavorText}
+            onChange={(e) => onBioChange?.(e.target.value)}
+            placeholder="Bio / flavor text"
+            rows={2}
+          />
+        ) : (
+          <>
+            {flavorText && (
+              <p className="print-back-identity-bio">&ldquo;{flavorText}&rdquo;</p>
+            )}
+            {conlangFlavorText && (
+              <p className="print-back-identity-bio print-back-identity-bio--conlang">{conlangFlavorText}</p>
+            )}
+          </>
+        )}
       </div>
-
-      <div className="print-back-serial">{card.identity.serialNumber}</div>
 
       {backFrameUrl && (
         <img
