@@ -183,10 +183,11 @@ export function registerMissionRoutes(app, {
 
       const profileSnap = await adminDb.collection(PROFILE_COLLECTION).doc(caller.uid).get();
       res.json({
-        missions: sortMissionBoardEntries(desiredEntries.map((entry) => ({
-          ...(existingById.get(entry.id) ?? {}),
-          ...entry,
-        }))),
+        missions: sortMissionBoardEntries(desiredEntries.map((entry) => {
+          const existing = existingById.get(entry.id);
+          if (!existing) return entry;
+          return { ...existing, ...getMissionDefinitionFields(entry) };
+        })),
         progression: getProgression(profileSnap.data()),
         boardDateKey: dailyBoard.boardDateKey,
         dailyResetAt: dailyBoard.dailyResetAt,
