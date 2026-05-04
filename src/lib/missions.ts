@@ -1,4 +1,4 @@
-import { getDistrictAccessSummary, isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
+import { isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
 import type {
   MissionActiveRunState,
   MissionBoardEntry,
