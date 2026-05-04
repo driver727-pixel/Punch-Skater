@@ -26,9 +26,8 @@ import type {
   Faction,
 } from "../../lib/types";
 import {
-  getForgeClassOptions,
-  normalizeForgeRarity,
-  type ForgeClassOption,
+  promoteCardClass,
+  rollForgeRarity,
 } from "../../lib/cardClassProgression";
 import { createCharacterLayerValidator, useForgeLayers } from "./useForgeLayers";
 import {
@@ -62,7 +61,7 @@ export function useForgeGeneration() {
     markFreeCardUsed,
     startFreeForgeCooldown,
   } = useTier();
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const { linkedLanguage, profile, useCraftlingua } = useLanguage();
   const { hasFaction, unlockFaction } = useFactionDiscovery();
   const sessionOwnerKey = user?.uid ?? "guest";
@@ -92,24 +91,6 @@ export function useForgeGeneration() {
     setLayerParams,
     setLayers,
   } = useForgeLayers();
-  const forgeClassOptions = useMemo<ForgeClassOption[]>(
-    () => getForgeClassOptions({
-      missionXp: userProfile?.missionXp ?? 0,
-      missionOzzies: userProfile?.missionOzzies ?? 0,
-    }),
-    [userProfile?.missionOzzies, userProfile?.missionXp],
-  );
-  const availableForgeRarities = useMemo(
-    () => forgeClassOptions.map((option) => option.rarity),
-    [forgeClassOptions],
-  );
-  const selectedForgeRarity = useMemo(
-    () => normalizeForgeRarity(prompts.rarity, {
-      missionXp: userProfile?.missionXp ?? 0,
-      missionOzzies: userProfile?.missionOzzies ?? 0,
-    }),
-    [prompts.rarity, userProfile?.missionOzzies, userProfile?.missionXp],
-  );
   const boardPlacement = useMemo(() => {
     if (!generated) return null;
     const scene = resolveBoardPoseScene(generated.characterSeed);
@@ -123,12 +104,6 @@ export function useForgeGeneration() {
     () => resolveBoardLayerOrder(generated?.board.layerOrder),
     [generated?.board.layerOrder],
   );
-
-  useEffect(() => {
-    if (prompts.rarity !== selectedForgeRarity) {
-      setPrompts((current) => ({ ...current, rarity: selectedForgeRarity }));
-    }
-  }, [prompts.rarity, selectedForgeRarity]);
 
   const refreshCraftlinguaFront = useCallback(async (card: CardPayload) => {
     const nextFront = await buildCraftlinguaFlavorFields({
@@ -214,10 +189,11 @@ export function useForgeGeneration() {
 
     const controller = replaceAbortController();
     const { signal } = controller;
+    const rolledRarity = rollForgeRarity(crypto.getRandomValues(new Uint32Array(1))[0] / 0x100000000);
 
     const forgePrompts = {
       ...prompts,
-      rarity: selectedForgeRarity,
+      rarity: rolledRarity,
       style: resolveArchetypeStyle(prompts.archetype, prompts.style),
     };
     const displayArchetype = getForgeArchetypeLabel(forgePrompts.archetype);
@@ -232,16 +208,17 @@ export function useForgeGeneration() {
       displayArchetype,
       secretFaction,
     );
+    const promotedCard = promoteCardClass(card);
 
     // ── Board stats & forge state (now inside buildForgedCard, but keep for board image) ─────
-    const boardPoseScene = resolveBoardPoseScene(card.characterSeed);
+    const boardPoseScene = resolveBoardPoseScene(promotedCard.characterSeed);
     const cardWithBoard = {
-      ...card,
-      characterPlacement: normalizeCharacterPlacement(card.characterPlacement),
+      ...promotedCard,
+      characterPlacement: normalizeCharacterPlacement(promotedCard.characterPlacement),
       board: {
-        ...card.board,
-        layerOrder: resolveBoardLayerOrder(card.board.layerOrder),
-        placement: normalizeBoardPlacement(boardPoseScene.key, card.board.placement),
+        ...promotedCard.board,
+        layerOrder: resolveBoardLayerOrder(promotedCard.board.layerOrder),
+        placement: normalizeBoardPlacement(boardPoseScene.key, promotedCard.board.placement),
       },
     };
     setGenerated(cardWithBoard);
@@ -296,11 +273,11 @@ export function useForgeGeneration() {
 
     const backgroundPrompt = buildBackgroundPrompt(forgePrompts.district);
     const characterPrompt = buildCharacterPrompt(forgePrompts);
-    const framePrompt = buildFramePrompt(forgePrompts.rarity);
-    const backgroundKey = `bg::${card.backgroundSeed}`;
+    const framePrompt = buildFramePrompt(promotedCard.prompts.rarity);
+    const backgroundKey = `bg::${promotedCard.backgroundSeed}`;
     const charImageSeed = buildCharacterSeed(forgePrompts);
     const characterKey = `char::${CHARACTER_CACHE_VERSION}::${charImageSeed}`;
-    const frameKey = `frame::${card.frameSeed}`;
+    const frameKey = `frame::${promotedCard.frameSeed}`;
     const charPostProcess = async (url: string) => (await removeBackground(url)).imageUrl;
     const validateCharacterLayer = createCharacterLayerValidator(CHARACTER_MIN_DIMENSIONS);
     const characterAttempts = CHARACTER_SEED_VARIANTS.map((variant) => ({
@@ -309,7 +286,7 @@ export function useForgeGeneration() {
     }));
 
     setLayerParams({
-      background: { key: backgroundKey, prompt: backgroundPrompt, seed: card.backgroundSeed },
+      background: { key: backgroundKey, prompt: backgroundPrompt, seed: promotedCard.backgroundSeed },
       character: {
         key: characterKey,
         prompt: characterPrompt,
@@ -322,12 +299,12 @@ export function useForgeGeneration() {
       frame: {
         key: frameKey,
         prompt: framePrompt,
-        seed: card.frameSeed,
+        seed: promotedCard.frameSeed,
         generationOptions: { loras: [] },
       },
     });
 
-    generateLayer("background", backgroundKey, backgroundPrompt, card.backgroundSeed, signal);
+    generateLayer("background", backgroundKey, backgroundPrompt, promotedCard.backgroundSeed, signal);
     generateLayer(
       "character",
       characterKey,
@@ -339,7 +316,7 @@ export function useForgeGeneration() {
       CHARACTER_GENERATION_OPTIONS,
       characterAttempts,
     );
-    generateLayer("frame", frameKey, framePrompt, card.frameSeed, signal);
+    generateLayer("frame", frameKey, framePrompt, promotedCard.frameSeed, signal);
 
     setForging(false);
   }, [
@@ -359,16 +336,15 @@ export function useForgeGeneration() {
      tier,
      unlockFaction,
       user?.uid,
-     selectedForgeRarity,
-     startFreeForgeCooldown,
-     refreshCraftlinguaFront,
-    ]);
+      startFreeForgeCooldown,
+      refreshCraftlinguaFront,
+     ]);
 
   const handleRandomSkater = useCallback(() => {
     sfxClick();
-    setPrompts((current) => buildRandomizedPrompts(current, ARCHETYPE_VALUES, availableForgeRarities));
+    setPrompts((current) => buildRandomizedPrompts(current, ARCHETYPE_VALUES));
     setBoardConfig((current) => buildRandomizedBoardConfig(current));
-  }, [availableForgeRarities]);
+  }, []);
 
    const handlePreviewUpdate = useCallback((updates: { name?: string; age?: string; flavorText?: string }) => {
      setGenerated((current) => {
@@ -545,7 +521,6 @@ export function useForgeGeneration() {
     patchIdentity,
     patchStats,
     prompts,
-    forgeClassOptions,
     revealedFaction,
     setArchetype,
     setBoardConfig,
@@ -585,7 +560,6 @@ export function useForgeGeneration() {
     patchIdentity,
     patchStats,
     prompts,
-    forgeClassOptions,
     revealedFaction,
     setArchetype,
     setBoardConfig,

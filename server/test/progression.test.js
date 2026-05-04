@@ -13,6 +13,7 @@ import {
   computeCrewXp,
   computeLeaderboardScore,
 } from '../lib/progression.js';
+import { promoteCardClass, resolveGameplayCardRarity } from '../lib/cardClassProgression.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -141,4 +142,41 @@ test('computeLeaderboardScore does not let XP dominate (maxed card)', () => {
   // One maxed card: 100,000,000 XP → contributes only 10,000 to score
   const score = computeLeaderboardScore(0, 0, MAX_CARD_XP);
   assert.equal(score, MAX_CARD_XP / 10_000); // 10,000
+});
+
+test('resolveGameplayCardRarity promotes cards through Apprentice, Master, and Rare thresholds', () => {
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 150, ozzies: 20 }), 'Apprentice');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 400, ozzies: 20 }), 'Master');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 950, ozzies: 20 }), 'Rare');
+});
+
+test('promoteCardClass preserves earned reward tiers and refreshes class metadata', () => {
+  const card = promoteCardClass({
+    prompts: { rarity: 'Punch Skater' },
+    class: { rarity: 'Punch Skater', multiplier: 1, badgeLabel: 'Punch Skater' },
+    xp: 950,
+    ozzies: 20,
+    maintenance: { state: 'repairing', chargePct: 10, repairMinutes: 15, fastTrackCreditCost: 25 },
+  });
+
+  assert.equal(card.prompts.rarity, 'Rare');
+  assert.equal(card.class.rarity, 'Rare');
+  assert.equal(card.class.multiplier, 1.5);
+  assert.equal(card.class.badgeLabel, 'Rare');
+  assert.equal(card.maintenance.state, 'active');
+  assert.equal(card.maintenance.repairMinutes, 90);
+  assert.equal(card.maintenance.fastTrackCreditCost, 250);
+});
+
+test('promoteCardClass never downgrades Legendary reward cards', () => {
+  const card = promoteCardClass({
+    prompts: { rarity: 'Legendary' },
+    class: { rarity: 'Legendary', multiplier: 2, badgeLabel: 'Legendary' },
+    xp: 10,
+    ozzies: 10,
+    maintenance: { state: 'active', chargePct: 100, repairMinutes: 240, fastTrackCreditCost: 500 },
+  });
+
+  assert.equal(card.prompts.rarity, 'Legendary');
+  assert.equal(card.class.rarity, 'Legendary');
 });

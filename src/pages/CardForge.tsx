@@ -31,7 +31,6 @@ export function CardForge() {
     closeWelcome,
     downloading,
     forging,
-    forgeClassOptions,
     freeCardUsed,
     freeForgeReadyAt,
     generated,
@@ -82,7 +81,7 @@ export function CardForge() {
     <div className="page">
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <h1 className="page-title">CARD FORGE</h1>
-      <p className="page-sub">Configure your Sk8r and forge a unique card</p>
+      <p className="page-sub">Configure your Sk8r, lock it in, and reveal a surprise class card</p>
 
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
 
@@ -119,7 +118,6 @@ export function CardForge() {
           boardScale={boardPlacement?.scale ?? 1}
           canForge={canForge}
           canSaveToCollection={tierCanSave}
-          classOptions={forgeClassOptions}
           districts={DISTRICTS}
           downloading={downloading}
           faceCharacters={FACE_CHARACTERS}

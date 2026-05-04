@@ -24,6 +24,7 @@ import {
   RACE_TICK_MS,
   STANDARD_RACE_WINNER_OZZIES,
 } from '../lib/race.js';
+import { promoteCardClass } from '../lib/cardClassProgression.js';
 import rateLimit from 'express-rate-limit';
 
 // CodeQL-visible fallback rate limiter. The injected `raceRateLimit` is the
@@ -124,7 +125,7 @@ function applyCardDelta(tx, cardRef, cardSnap, delta, statBoost) {
     const cur = Number(card.stats[statBoost.stat] ?? 5);
     nextCard.stats = { ...card.stats, [statBoost.stat]: Math.min(10, cur + statBoost.amount) };
   }
-  tx.set(cardRef, nextCard);
+  tx.set(cardRef, promoteCardClass(nextCard));
 }
 
 export function registerRaceRoutes(app, {

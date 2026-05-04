@@ -31,15 +31,15 @@ export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
         <div className="forge-welcome__grid">
           <div className="forge-welcome__item">
             <h3>What</h3>
-            <p>Forge Punch Skater cards, claim a Rare signup bonus, and build toward stronger classes as your crew earns XP and Ozzies.</p>
+            <p>Forge blind pulls, claim a Rare signup bonus, and build toward stronger classes through races, missions, streaks, and house rewards.</p>
           </div>
           <div className="forge-welcome__item">
             <h3>How</h3>
-            <p>Start with Punch Skater class cards only, then unlock Apprentice, Master, and Rare forging over time. Legendary cards stay off the table.</p>
+            <p>Most reveals land on Punch Skater, with rarer hits climbing through Apprentice, Master, and Rare. Legendary stays reward-only.</p>
           </div>
           <div className="forge-welcome__item">
             <h3>Why</h3>
-            <p>Build the right deck for each district mission, bring your best lineup into the Battle Arena, and trade for the cards that complete your next big strategy.</p>
+            <p>Hidden class reveals keep every forge spicy, push deck diversity, and make the cards you win, trade, or earn feel worth chasing.</p>
           </div>
         </div>
         <div className="forge-welcome__actions">
