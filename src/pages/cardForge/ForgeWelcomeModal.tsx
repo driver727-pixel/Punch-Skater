@@ -3,6 +3,14 @@ interface ForgeWelcomeModalProps {
   onClose: () => void;
 }
 
+const RARITY_TIERS = [
+  { label: "Punch Skater", chance: "82%", note: "most common" },
+  { label: "Apprentice",   chance: "12%", note: "uncommon pull" },
+  { label: "Master",       chance: "4%",  note: "rare pull" },
+  { label: "Rare",         chance: "2%",  note: "ultra-rare pull" },
+  { label: "Legendary",    chance: "—",   note: "reward-only" },
+] as const;
+
 export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
   if (!open) return null;
 
@@ -35,12 +43,24 @@ export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
           </div>
           <div className="forge-welcome__item">
             <h3>How</h3>
-            <p>Most reveals land on Punch Skater, with rarer hits climbing through Apprentice, Master, and Rare. Legendary stays reward-only.</p>
+            <p>Every forge is a blind pull — the class stays hidden until the card resolves. Hit the Forge button and find out what you won.</p>
           </div>
           <div className="forge-welcome__item">
             <h3>Why</h3>
             <p>Hidden class reveals keep every forge spicy, push deck diversity, and make the cards you win, trade, or earn feel worth chasing.</p>
           </div>
+        </div>
+        <div className="forge-welcome__odds">
+          <h3 className="forge-welcome__odds-title">Class Odds</h3>
+          <ul className="forge-welcome__odds-list">
+            {RARITY_TIERS.map((tier) => (
+              <li key={tier.label} className="forge-welcome__odds-row">
+                <span className="forge-welcome__odds-label">{tier.label}</span>
+                <span className="forge-welcome__odds-chance">{tier.chance}</span>
+                <span className="forge-welcome__odds-note">{tier.note}</span>
+              </li>
+            ))}
+          </ul>
         </div>
         <div className="forge-welcome__actions">
           <button
