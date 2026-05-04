@@ -24,7 +24,11 @@ import {
   CHARACTER_PLACEMENT_MIN_SCALE,
   CHARACTER_PLACEMENT_SCALE_STEP,
 } from "../../lib/boardPlacement";
-import { LEGENDARY_FORGE_NOTICE, type ForgeClassOption } from "../../lib/cardClassProgression";
+import {
+  FORGE_CLASS_ODDS_SUMMARY,
+  FORGE_CLASS_REVEAL_NOTICE,
+  FORGE_RARITY_ROLLS,
+} from "../../lib/cardClassProgression";
 import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
@@ -74,7 +78,6 @@ interface ForgeControlsPanelProps {
   canSaveToCollection: boolean;
   characterRotation: number;
   characterScale: number;
-  classOptions: ForgeClassOption[];
   districts: District[];
   downloading: boolean;
   faceCharacters: FaceCharacter[];
@@ -119,7 +122,6 @@ export function ForgeControlsPanel({
   canSaveToCollection,
   characterRotation,
   characterScale,
-  classOptions,
   districts,
   downloading,
   faceCharacters,
@@ -155,8 +157,6 @@ export function ForgeControlsPanel({
   const isFreeTier = tier === "free";
   const freeForgeRemainingMs = getRemainingDurationMs(freeForgeReadyAt);
   const isFreeForgeCoolingDown = isFreeTier && freeForgeRemainingMs > 0 && generateCredits === 0;
-  const selectedClassHint = classOptions.find((option) => option.rarity === prompts.rarity)?.unlockHint
-    || `Start with Punch Skaters, then unlock higher classes with XP or Ozzies. ${LEGENDARY_FORGE_NOTICE}`;
 
   return (
     <div className="forge-form">
@@ -182,19 +182,16 @@ export function ForgeControlsPanel({
       </div>
 
       <div className="form-group">
-        <label>Class</label>
+        <label>Class Roll</label>
         <div className="pill-group">
-          {classOptions.map((option) => (
-            <PillButton
-              key={option.rarity}
-              active={prompts.rarity === option.rarity}
-              label={option.unlocked ? option.rarity : `${option.rarity} 🔒`}
-              disabled={!option.unlocked}
-              onClick={() => onPromptChange("rarity", option.rarity)}
-            />
+          {FORGE_RARITY_ROLLS.map((roll) => (
+            <span key={roll.rarity} className="pill" aria-hidden="true">
+              {roll.rarity} · {roll.label}
+            </span>
           ))}
         </div>
-        <p className="form-hint">{selectedClassHint}</p>
+        <p className="form-hint">{FORGE_CLASS_ODDS_SUMMARY}</p>
+        <p className="form-hint">{FORGE_CLASS_REVEAL_NOTICE}</p>
       </div>
 
       <div className="form-group">
@@ -351,15 +348,16 @@ export function ForgeControlsPanel({
         {isAnyLayerLoading
           ? "✨ Generating…"
           : isFreeForgeCoolingDown
-            ? `⚡ FORGE YOUR CARD (ready in ${formatDurationClock(freeForgeRemainingMs)})`
+            ? `⚡ LOCK IT IN (ready in ${formatDurationClock(freeForgeRemainingMs)})`
           : !canForge
-            ? "🔒 FORGE YOUR CARD — Upgrade to Unlock"
+            ? "🔒 LOCK IT IN — Upgrade to Unlock"
           : tier === "free" && !freeCardUsed
-              ? "⚡ FORGE YOUR CARD (1 free card)"
+              ? "⚡ LOCK IT IN (1 free card)"
               : generateCredits > 0
-                ? `⚡ FORGE YOUR CARD (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
-                : "⚡ FORGE YOUR CARD"}
+                ? `⚡ LOCK IT IN (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
+                : "⚡ LOCK IT IN"}
       </button>
+      <p className="form-hint">Every forge starts blind. Most reveals are Punch Skater, but lucky rolls can flash higher-class frames.</p>
       {tier === "free" && generateCredits === 0 && (
         <p className="form-hint">
           {freeForgeRemainingMs > 0

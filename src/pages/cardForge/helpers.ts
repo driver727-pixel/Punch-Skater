@@ -9,7 +9,6 @@ import {
   DISTRICTS,
   GENDERS,
   HAIR_LENGTHS,
-  RARITIES,
   SKIN_TONES,
   FACE_CHARACTERS,
 } from "./constants";
@@ -17,14 +16,13 @@ import {
 export function buildRandomizedPrompts(
   prompts: CardPrompts,
   archetypeValues: readonly CardPrompts["archetype"][],
-  availableRarities: readonly CardPrompts["rarity"][],
 ) {
   const archetype = getRandomItemExcluding(archetypeValues, prompts.archetype);
   return {
     ...prompts,
     archetype,
     style: resolveArchetypeStyle(archetype, prompts.style),
-    rarity: getRandomItemExcluding(availableRarities.length > 0 ? availableRarities : RARITIES, prompts.rarity),
+    rarity: prompts.rarity,
     district: getRandomItemExcluding(DISTRICTS, prompts.district),
     accentColor: getRandomItemExcluding(ACCENT_PRESETS, prompts.accentColor),
     gender: getRandomItemExcluding(GENDERS, prompts.gender),

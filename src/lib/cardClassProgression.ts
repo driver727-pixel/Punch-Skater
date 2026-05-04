@@ -1,5 +1,7 @@
 import { DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import { buildForgedCard } from "./skaterBoardSynthesis";
+import { createDefaultMaintenance } from "./cardMaintenance";
+import { getClassBadgeLabel, getClassMultiplier } from "./classScaling";
 import { createSeededRandom } from "./prng";
 import type {
   AgeGroup,
@@ -32,6 +34,12 @@ export interface ForgeClassOption {
   unlockHint: string | null;
 }
 
+export interface ForgeRarityRoll {
+  rarity: Exclude<Rarity, "Legendary">;
+  weight: number;
+  label: string;
+}
+
 interface ClassUnlockRule {
   rarity: ForgeClassOption["rarity"];
   minXp: number;
@@ -61,6 +69,21 @@ const FACE_CHARACTERS: FaceCharacter[] = ["Conventional", "Attractive", "Weather
 const ACCENT_PRESETS = ["#00ff88", "#00ccff", "#3366ff", "#ff4444", "#ffaa00", "#8b5cf6", "#ff66cc"];
 
 export const LEGENDARY_FORGE_NOTICE = "Legendary cards are not forgeable.";
+export const FORGE_RARITY_ROLLS: readonly ForgeRarityRoll[] = [
+  { rarity: "Punch Skater", weight: 82, label: "most common" },
+  { rarity: "Apprentice", weight: 12, label: "uncommon pull" },
+  { rarity: "Master", weight: 4, label: "rare pull" },
+  { rarity: "Rare", weight: 2, label: "ultra-rare pull" },
+] as const;
+export const FORGE_CLASS_REVEAL_NOTICE = "Class stays hidden until the forge resolves.";
+export const FORGE_CLASS_ODDS_SUMMARY =
+  "Most forge rolls land Punch Skater. Apprentice drops more often than Master, and Rare is the hardest forge hit. Legendary stays reward-only.";
+
+interface CardPromotionRule {
+  rarity: Exclude<Rarity, "Legendary">;
+  minXp: number;
+  minOzzies: number;
+}
 
 /**
  * Forge-class unlock rules.
@@ -82,6 +105,12 @@ export const FORGE_CLASS_RULES: readonly ClassUnlockRule[] = [
   { rarity: "Master",       minXp: 220, minOzzies: 110, minDeckPower: 2_500 },
   { rarity: "Rare",         minXp: 480, minOzzies: 240, minDeckPower: 5_000 },
 ] as const;
+export const CARD_CLASS_PROMOTION_RULES: readonly CardPromotionRule[] = [
+  { rarity: "Punch Skater", minXp: 0, minOzzies: 0 },
+  { rarity: "Apprentice", minXp: 120, minOzzies: 90 },
+  { rarity: "Master", minXp: 360, minOzzies: 220 },
+  { rarity: "Rare", minXp: 900, minOzzies: 500 },
+] as const;
 
 function normalizeProgressionValue(value: number | undefined): number {
   return Math.max(0, Number(value) || 0);
@@ -89,6 +118,10 @@ function normalizeProgressionValue(value: number | undefined): number {
 
 function getUnlockRule(rarity: ForgeClassOption["rarity"]): ClassUnlockRule {
   return FORGE_CLASS_RULES.find((rule) => rule.rarity === rarity) ?? FORGE_CLASS_RULES[0];
+}
+
+function getPromotionRarityOrder(rarity: Rarity | undefined): number {
+  return CARD_CLASS_PROMOTION_RULES.findIndex((rule) => rule.rarity === rarity);
 }
 
 export function isForgeClassUnlocked(
@@ -122,6 +155,54 @@ export function normalizeForgeRarity(
   }
   const unlockedOptions = getForgeClassOptions(progression).filter((option) => option.unlocked);
   return unlockedOptions[unlockedOptions.length - 1]?.rarity ?? "Punch Skater";
+}
+
+export function rollForgeRarity(normRng: number): ForgeClassOption["rarity"] {
+  const totalWeight = FORGE_RARITY_ROLLS.reduce((sum, roll) => sum + roll.weight, 0);
+  const normalized = Math.max(0, Math.min(Number.isFinite(normRng) ? normRng : 0, 0.999999999999));
+  let cursor = normalized * totalWeight;
+  for (const roll of FORGE_RARITY_ROLLS) {
+    cursor -= roll.weight;
+    if (cursor < 0) return roll.rarity;
+  }
+  return FORGE_RARITY_ROLLS[FORGE_RARITY_ROLLS.length - 1]?.rarity ?? "Punch Skater";
+}
+
+export function resolveGameplayCardRarity(card: Pick<CardPayload, "xp" | "ozzies" | "prompts" | "class">): Rarity {
+  const currentRarity = card.class?.rarity ?? card.prompts?.rarity ?? "Punch Skater";
+  if (currentRarity === "Legendary") {
+    return currentRarity;
+  }
+  const xp = normalizeProgressionValue(card.xp);
+  const ozzies = normalizeProgressionValue(card.ozzies);
+  const currentIndex = Math.max(0, getPromotionRarityOrder(currentRarity));
+  const earnedRarity = CARD_CLASS_PROMOTION_RULES.reduce<Exclude<Rarity, "Legendary">>((highest, rule) => (
+    xp >= rule.minXp && ozzies >= rule.minOzzies ? rule.rarity : highest
+  ), "Punch Skater");
+  const earnedIndex = Math.max(0, getPromotionRarityOrder(earnedRarity));
+  return CARD_CLASS_PROMOTION_RULES[Math.max(currentIndex, earnedIndex)]?.rarity ?? currentRarity;
+}
+
+export function promoteCardClass(card: CardPayload): CardPayload {
+  const nextRarity = resolveGameplayCardRarity(card);
+  const currentRarity = card.class?.rarity ?? card.prompts.rarity;
+  if (nextRarity === currentRarity) {
+    return card;
+  }
+  return {
+    ...card,
+    frameSeed: nextRarity,
+    prompts: {
+      ...card.prompts,
+      rarity: nextRarity,
+    },
+    class: {
+      rarity: nextRarity,
+      multiplier: getClassMultiplier(nextRarity),
+      badgeLabel: getClassBadgeLabel(nextRarity),
+    },
+    maintenance: createDefaultMaintenance(nextRarity),
+  };
 }
 
 function pick<T>(rng: ReturnType<typeof createSeededRandom>, values: readonly T[]): T {
