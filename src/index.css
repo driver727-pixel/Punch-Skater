@@ -121,8 +121,10 @@ body::after {
   max-width: min(1200px, 95vw);
   margin: 0 auto;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
   padding: 12px 18px;
   box-sizing: border-box;
 }
@@ -131,6 +133,7 @@ body::after {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   padding: 6px 12px;
   border: 1px solid transparent;
@@ -182,7 +185,7 @@ body::after {
   flex: 0 0 var(--nav-neon-map-width);
   width: var(--nav-neon-map-width);
   overflow: hidden;
-  align-self: center;
+  align-self: stretch;
 }
 
 .nav-neon-map .geo-atlas__panel {
@@ -192,13 +195,14 @@ body::after {
   padding: 0;
   box-shadow: none;
   gap: 0;
+  height: 100%;
 }
 
 .nav-neon-map .geo-atlas__panel-head { display: none; }
 
 .nav-neon-map .geo-atlas__map {
-  height: auto;
-  aspect-ratio: 5 / 3;
+  height: 100%;
+  aspect-ratio: auto;
   border-radius: 5px;
 }
 
@@ -226,7 +230,13 @@ body::after {
   .nav-neon-map { display: none; }
 }
 
-.nav-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.nav-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  flex: 1 1 380px;
+  align-self: stretch;
+}
 .nav-link {
   --nav-soda-face: rgba(91, 74, 118, 0.9);
   --nav-soda-face-deep: rgba(45, 31, 62, 0.98);
@@ -239,12 +249,14 @@ body::after {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 18px;
-  min-height: 40px;
+  width: 100%;
+  min-height: 100%;
+  padding: 10px 14px;
   color: var(--nav-soda-ink);
   text-decoration: none;
   font-size: 15px;
   letter-spacing: 1.5px;
+  text-align: center;
   border: 3px solid var(--nav-soda-bezel);
   border-radius: 8px;
   clip-path: polygon(
@@ -2125,7 +2137,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 * { scrollbar-color: var(--accent) var(--bg); scrollbar-width: thin; }
 
 /* ===== Nav Right ===== */
-.nav-right { display: flex; align-items: center; gap: 8px; }
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
 .nav-logout {
   padding: 6px 14px;
   font-size: 13px;
@@ -2281,6 +2298,21 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 @media (min-width: 769px) {
   .nav-mobile-menu { display: none; }
   .nav-hamburger { display: none; }
+  .nav-brand,
+  .nav-neon-map,
+  .nav-links {
+    min-height: 168px;
+  }
+  .nav-brand {
+    flex: 0 0 clamp(150px, 14vw, 180px);
+  }
+  .nav-neon-map {
+    --nav-neon-map-width: clamp(260px, 25vw, 340px);
+  }
+  .nav-links {
+    grid-auto-rows: 1fr;
+    min-width: min(100%, 420px);
+  }
 }
 
 
