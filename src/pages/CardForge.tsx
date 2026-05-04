@@ -37,6 +37,7 @@ export function CardForge() {
     generateCredits,
     handleClose3D,
     handleCloseFactionReveal,
+    handleCloseRarityReveal,
     handleClosePrint,
     handleCollectionNavigation,
     handleDownloadJpg,
@@ -57,6 +58,7 @@ export function CardForge() {
     printing,
     prompts,
     revealedFaction,
+    revealedRarity,
     saveError,
     savedCard,
     saving,
@@ -175,6 +177,7 @@ export function CardForge() {
         isFirstCard={isFirstCard}
         layers={layers}
         onCloseFactionReveal={handleCloseFactionReveal}
+        onCloseRarityReveal={handleCloseRarityReveal}
         onClosePrint={handleClosePrint}
         onCloseViewer3D={handleClose3D}
         onGoToCollection={handleCollectionNavigation}
@@ -182,6 +185,7 @@ export function CardForge() {
         onOpenFactions={handleOpenFactions}
         printing={printing}
         revealedFaction={revealedFaction}
+        revealedRarity={revealedRarity}
         savedCard={savedCard}
         viewing3D={viewing3D}
       />

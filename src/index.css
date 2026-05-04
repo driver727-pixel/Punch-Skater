@@ -994,6 +994,61 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   justify-content: flex-end;
 }
 
+.forge-welcome__odds {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.forge-welcome__odds-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+
+.forge-welcome__odds-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.forge-welcome__odds-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+.forge-welcome__odds-label {
+  font-weight: bold;
+  color: var(--text);
+  flex: 1;
+}
+
+.forge-welcome__odds-chance {
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  color: var(--accent);
+  min-width: 36px;
+  text-align: right;
+}
+
+.forge-welcome__odds-note {
+  color: var(--text-dim);
+  font-size: 11px;
+  min-width: 100px;
+  text-align: right;
+}
+
 .forge-randomize-button {
   width: auto;
   max-width: 100%;
@@ -2084,6 +2139,73 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .save-celebrate-modal--reveal {
   border-color: rgba(168, 85, 247, 0.75);
   box-shadow: 0 0 44px rgba(168, 85, 247, 0.24);
+}
+
+/* Rarity reveal overlay — per-class colour theming */
+.save-celebrate-modal--rarity-punch-skater {
+  border-color: #00ff88;
+  box-shadow: 8px 8px 0 rgba(0, 255, 136, 0.3), 0 0 60px rgba(0, 255, 136, 0.2);
+}
+.save-celebrate-modal--rarity-apprentice {
+  border-color: #00ccff;
+  box-shadow: 8px 8px 0 rgba(0, 204, 255, 0.3), 0 0 60px rgba(0, 204, 255, 0.2);
+}
+.save-celebrate-modal--rarity-master {
+  border-color: #ff8800;
+  box-shadow: 8px 8px 0 rgba(255, 136, 0, 0.3), 0 0 60px rgba(255, 136, 0, 0.25);
+}
+.save-celebrate-modal--rarity-rare {
+  border-color: #ff00cc;
+  box-shadow: 8px 8px 0 rgba(255, 0, 204, 0.3), 0 0 60px rgba(255, 0, 204, 0.3);
+}
+.save-celebrate-modal--rarity-legendary {
+  border-color: #ffd700;
+  box-shadow: 8px 8px 0 rgba(255, 215, 0, 0.3), 0 0 60px rgba(255, 215, 0, 0.3);
+}
+
+.rarity-reveal-emoji {
+  animation: rarity-reveal-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes rarity-reveal-bounce {
+  0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.rarity-reveal-badge {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  animation: celebrate-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+.save-celebrate-modal--rarity-punch-skater .rarity-reveal-badge,
+.save-celebrate-modal--rarity-punch-skater .rarity-reveal-title {
+  color: #00ff88;
+  text-shadow: 0 0 16px rgba(0, 255, 136, 0.7);
+}
+.save-celebrate-modal--rarity-apprentice .rarity-reveal-badge,
+.save-celebrate-modal--rarity-apprentice .rarity-reveal-title {
+  color: #00ccff;
+  text-shadow: 0 0 16px rgba(0, 204, 255, 0.7);
+}
+.save-celebrate-modal--rarity-master .rarity-reveal-badge,
+.save-celebrate-modal--rarity-master .rarity-reveal-title {
+  color: #ff8800;
+  text-shadow: 0 0 16px rgba(255, 136, 0, 0.7);
+}
+.save-celebrate-modal--rarity-rare .rarity-reveal-badge,
+.save-celebrate-modal--rarity-rare .rarity-reveal-title {
+  color: #ff00cc;
+  text-shadow: 0 0 16px rgba(255, 0, 204, 0.8);
+}
+.save-celebrate-modal--rarity-legendary .rarity-reveal-badge,
+.save-celebrate-modal--rarity-legendary .rarity-reveal-title {
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.9), 0 0 40px rgba(255, 215, 0, 0.5);
 }
 
 @keyframes celebrate-pop-in {

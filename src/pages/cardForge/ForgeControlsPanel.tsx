@@ -13,11 +13,6 @@ import { BoardBuilder } from "../../components/BoardBuilder";
 import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
 import { ReferralPanel } from "../../components/ReferralPanel";
 import type { BoardConfig } from "../../lib/boardBuilder";
-import {
-  FORGE_CLASS_ODDS_SUMMARY,
-  FORGE_CLASS_REVEAL_NOTICE,
-  FORGE_RARITY_ROLLS,
-} from "../../lib/cardClassProgression";
 import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
@@ -130,19 +125,6 @@ export function ForgeControlsPanel({
           ))}
         </div>
         <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
-      </div>
-
-      <div className="form-group">
-        <label>Class Roll</label>
-        <div className="pill-group">
-          {FORGE_RARITY_ROLLS.map((roll) => (
-            <span key={roll.rarity} className="pill" aria-hidden="true">
-              {roll.rarity} · {roll.label}
-            </span>
-          ))}
-        </div>
-        <p className="form-hint">{FORGE_CLASS_ODDS_SUMMARY}</p>
-        <p className="form-hint">{FORGE_CLASS_REVEAL_NOTICE}</p>
       </div>
 
       <div className="form-group">
@@ -297,7 +279,6 @@ export function ForgeControlsPanel({
                 ? `⚡ Forge Card (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
                 : "⚡ Forge Card"}
       </button>
-      <p className="form-hint">Every forge starts blind. Most reveals are Punch Skater, but lucky rolls can flash higher-class frames.</p>
       {tier === "free" && generateCredits === 0 && (
         <p className="form-hint">
           {freeForgeRemainingMs > 0

@@ -24,6 +24,7 @@ import type {
   CharacterPlacement,
   CompositeLayerOrder,
   Faction,
+  Rarity,
 } from "../../lib/types";
 import {
   promoteCardClass,
@@ -79,6 +80,7 @@ export function useForgeGeneration() {
   const [forging, setForging] = useState(false);
   const [boardImageLoading, setBoardImageLoading] = useState(false);
   const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
+  const [revealedRarity, setRevealedRarity] = useState<Rarity | null>(null);
   const {
     abortGeneration,
     generateLayer,
@@ -143,6 +145,7 @@ export function useForgeGeneration() {
     setForging(false);
     setBoardImageLoading(false);
     setRevealedFaction(null);
+    setRevealedRarity(null);
     setLayers({
       loading: { background: false, character: false, frame: false },
       errors: [],
@@ -224,6 +227,7 @@ export function useForgeGeneration() {
     setGenerated(cardWithBoard);
     void refreshCraftlinguaFront(cardWithBoard);
     setForging(true);
+    setRevealedRarity(cardWithBoard.class.rarity);
     if (secretFaction) {
       const isNew = !hasFaction(secretFaction);
       unlockFaction(secretFaction);
@@ -495,6 +499,10 @@ export function useForgeGeneration() {
     setRevealedFaction(null);
   }, []);
 
+  const handleCloseRarityReveal = useCallback(() => {
+    setRevealedRarity(null);
+  }, []);
+
   return useMemo(() => ({
     boardConfig,
     boardImageLoading,
@@ -509,6 +517,7 @@ export function useForgeGeneration() {
     generated,
     generateCredits,
     handleCloseFactionReveal,
+    handleCloseRarityReveal,
     handleForge,
     handleLayerError,
     handlePreviewUpdate,
@@ -522,6 +531,7 @@ export function useForgeGeneration() {
     patchStats,
     prompts,
     revealedFaction,
+    revealedRarity,
     setArchetype,
     setBoardConfig,
     setBoardLayerOrder,
@@ -548,6 +558,7 @@ export function useForgeGeneration() {
     generated,
     generateCredits,
     handleCloseFactionReveal,
+    handleCloseRarityReveal,
     handleForge,
     handleLayerError,
     handlePreviewUpdate,
@@ -561,6 +572,7 @@ export function useForgeGeneration() {
     patchStats,
     prompts,
     revealedFaction,
+    revealedRarity,
     setArchetype,
     setBoardConfig,
     setBoardLayerOrder,
