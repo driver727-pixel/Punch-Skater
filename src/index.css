@@ -5934,6 +5934,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 0.22em;
   -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
 }
 
 .print-back-hero-overlay {
@@ -6047,7 +6048,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: #fff;
   letter-spacing: 0.3px;
   line-height: 1.1;
-  word-break: break-word;
+  overflow-wrap: break-word;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
