@@ -42,6 +42,7 @@ import {
   resolveBoardLayerOrder,
 } from "../lib/boardPlacement";
 import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
+import { RetroWireframeTunnel } from "./RetroWireframeTunnel";
 
 // ── Rarity colour map used on the card-back header ───────────────────────────
 
@@ -453,6 +454,7 @@ function CardBack({
       </div>
 
       <div className="print-back-hero">
+        <RetroWireframeTunnel />
         <div className="print-back-board">
           {card.board.imageUrl && !boardImageFailed ? (
             <img
