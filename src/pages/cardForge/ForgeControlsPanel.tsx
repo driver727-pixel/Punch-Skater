@@ -2,9 +2,7 @@ import type {
   AgeGroup,
   Archetype,
   BodyType,
-  CardPayload,
   CardPrompts,
-  CompositeLayerOrder,
   District,
   FaceCharacter,
   Gender,
@@ -15,14 +13,6 @@ import { BoardBuilder } from "../../components/BoardBuilder";
 import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
 import { ReferralPanel } from "../../components/ReferralPanel";
 import type { BoardConfig } from "../../lib/boardBuilder";
-import {
-  BOARD_PLACEMENT_MAX_SCALE,
-  BOARD_PLACEMENT_MIN_SCALE,
-  BOARD_PLACEMENT_SCALE_STEP,
-  CHARACTER_PLACEMENT_MAX_SCALE,
-  CHARACTER_PLACEMENT_MIN_SCALE,
-  CHARACTER_PLACEMENT_SCALE_STEP,
-} from "../../lib/boardPlacement";
 import {
   FORGE_CLASS_ODDS_SUMMARY,
   FORGE_CLASS_REVEAL_NOTICE,
@@ -70,41 +60,22 @@ interface ForgeControlsPanelProps {
   accentPresets: string[];
   bodyTypes: BodyType[];
   boardConfig: BoardConfig;
-  boardLayerOrder: CompositeLayerOrder;
-  boardRotation: number;
-  boardScale: number;
   canForge: boolean;
-  canSaveToCollection: boolean;
-  characterRotation: number;
-  characterScale: number;
   districts: District[];
-  downloading: boolean;
   faceCharacters: FaceCharacter[];
   forging: boolean;
   freeCardUsed: boolean;
   freeForgeReadyAt: number | null;
   genders: Gender[];
   generateCredits: number;
-  generated: CardPayload | null;
   hairLengths: HairLength[];
   isAnyLayerLoading: boolean;
   onArchetypeChange: (archetype: Archetype) => void;
-  onBoardLayerOrderChange: (value: CompositeLayerOrder) => void;
-  onBoardRotationChange: (value: number) => void;
   onBoardConfigChange: (config: BoardConfig) => void;
-  onBoardScaleChange: (value: number) => void;
-  onCharacterRotationChange: (value: number) => void;
-  onCharacterScaleChange: (value: number) => void;
-  onDownloadJpg: () => void;
   onForge: () => void;
-  onOpen3D: () => void;
-  onOpenPrint: () => void;
   onOpenUpgradeModal: () => void;
   onPromptChange: <K extends keyof CardPrompts>(key: K, value: CardPrompts[K]) => void;
-  onSaveToCollection: () => void;
   prompts: CardPrompts;
-  saveError: string | null;
-  saving: boolean;
   skinTones: SkinTone[];
   tier: string;
   ageGroups: AgeGroup[];
@@ -114,41 +85,22 @@ export function ForgeControlsPanel({
   accentPresets,
   bodyTypes,
   boardConfig,
-  boardLayerOrder,
-  boardRotation,
-  boardScale,
   canForge,
-  canSaveToCollection,
-  characterRotation,
-  characterScale,
   districts,
-  downloading,
   faceCharacters,
   forging,
   freeCardUsed,
   freeForgeReadyAt,
   genders,
   generateCredits,
-  generated,
   hairLengths,
   isAnyLayerLoading,
   onArchetypeChange,
-  onBoardLayerOrderChange,
-  onBoardRotationChange,
   onBoardConfigChange,
-  onBoardScaleChange,
-  onCharacterRotationChange,
-  onCharacterScaleChange,
-  onDownloadJpg,
   onForge,
-  onOpen3D,
-  onOpenPrint,
   onOpenUpgradeModal,
   onPromptChange,
-  onSaveToCollection,
   prompts,
-  saveError,
-  saving,
   skinTones,
   tier,
   ageGroups,
@@ -358,130 +310,7 @@ export function ForgeControlsPanel({
 
       <ReferralPanel />
 
-      {generated && (
-        <div className="forge-generated-actions">
-          <div className="blend-control">
-            <label className="blend-control__label">
-              <span>Skateboard Size</span>
-              <span>{Math.round(boardScale * 100)}%</span>
-            </label>
-            <input
-              type="range"
-              className="range-slider"
-              min={BOARD_PLACEMENT_MIN_SCALE}
-              max={BOARD_PLACEMENT_MAX_SCALE}
-              step={BOARD_PLACEMENT_SCALE_STEP}
-              value={boardScale}
-              onChange={(event) => onBoardScaleChange(Number(event.target.value))}
-              aria-label="Skateboard size"
-            />
-          </div>
-          <div className="blend-control">
-            <label className="blend-control__label">
-              <span>Skateboard Rotation</span>
-              <span>{Math.round(boardRotation)}°</span>
-            </label>
-            <input
-              type="range"
-              className="range-slider"
-              min={-180}
-              max={180}
-              step={1}
-              value={boardRotation}
-              onChange={(event) => onBoardRotationChange(Number(event.target.value))}
-              aria-label="Skateboard rotation"
-            />
-          </div>
-          <div className="blend-control">
-            <label className="blend-control__label">
-              <span>Character Size</span>
-              <span>{Math.round(characterScale * 100)}%</span>
-            </label>
-            <input
-              type="range"
-              className="range-slider"
-              min={CHARACTER_PLACEMENT_MIN_SCALE}
-              max={CHARACTER_PLACEMENT_MAX_SCALE}
-              step={CHARACTER_PLACEMENT_SCALE_STEP}
-              value={characterScale}
-              onChange={(event) => onCharacterScaleChange(Number(event.target.value))}
-              aria-label="Character size"
-            />
-          </div>
-          <div className="blend-control">
-            <label className="blend-control__label">
-              <span>Character Rotation</span>
-              <span>{Math.round(characterRotation)}°</span>
-            </label>
-            <input
-              type="range"
-              className="range-slider"
-              min={-180}
-              max={180}
-              step={1}
-              value={characterRotation}
-              onChange={(event) => onCharacterRotationChange(Number(event.target.value))}
-              aria-label="Character rotation"
-            />
-          </div>
-          <div className="blend-control">
-            <label className="blend-control__label">
-              <span>Skateboard Layer</span>
-              <span>{boardLayerOrder === "behind-character" ? "Behind Character" : "In Front"}</span>
-            </label>
-            <input
-              type="range"
-              className="range-slider"
-              min={0}
-              max={1}
-              step={1}
-              value={boardLayerOrder === "behind-character" ? 0 : 1}
-              onChange={(event) => onBoardLayerOrderChange(Number(event.target.value) === 0 ? "behind-character" : "in-front")}
-              aria-label="Skateboard layer"
-            />
-            <p className="form-hint">
-              Drag the board or character on the card face to place them before saving. On mobile, use one finger to move and two fingers to pinch or rotate.
-            </p>
-          </div>
-          <div className="forge-generated-buttons">
-            <button className="btn-outline btn-3d" onClick={onOpen3D} title="View card in 3D">
-              ◈ 3D
-            </button>
-            <button className="btn-outline" onClick={onOpenPrint} title="Print this card">
-              🖨 Print
-            </button>
-            {canSaveToCollection ? (
-              <button
-                className="btn-primary"
-                onClick={onSaveToCollection}
-                disabled={saving}
-                title="Save card to your Collection"
-              >
-                {saving ? "💾 Saving…" : "💾 Save to Collection"}
-              </button>
-            ) : (
-              <button
-                className="btn-outline"
-                onClick={onOpenUpgradeModal}
-                title="Upgrade to save cards to your Collection"
-              >
-                🔒 Save to Collection
-              </button>
-            )}
-            <button
-              className="btn-outline"
-              onClick={onDownloadJpg}
-              disabled={downloading || isAnyLayerLoading}
-              title="Download composed card as JPG"
-            >
-              {downloading ? "⏳ Saving…" : "⬇ Download JPG"}
-            </button>
-          </div>
-          {saveError && (
-            <p className="forge-image-error" role="alert">{saveError}</p>
-          )}
-        </div>
-      )}
+
     </div>
   );
 }
