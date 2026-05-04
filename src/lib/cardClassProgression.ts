@@ -177,7 +177,7 @@ export function resolveGameplayCardRarity(card: Pick<CardPayload, "xp" | "ozzies
   const ozzies = normalizeProgressionValue(card.ozzies);
   const currentIndex = Math.max(0, getPromotionRarityOrder(currentRarity));
   const earnedRarity = CARD_CLASS_PROMOTION_RULES.reduce<Exclude<Rarity, "Legendary">>((highest, rule) => (
-    xp >= rule.minXp || ozzies >= rule.minOzzies ? rule.rarity : highest
+    xp >= rule.minXp && ozzies >= rule.minOzzies ? rule.rarity : highest
   ), "Punch Skater");
   const earnedIndex = Math.max(0, getPromotionRarityOrder(earnedRarity));
   return CARD_CLASS_PROMOTION_RULES[Math.max(currentIndex, earnedIndex)]?.rarity ?? currentRarity;

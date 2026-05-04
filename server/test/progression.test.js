@@ -145,9 +145,9 @@ test('computeLeaderboardScore does not let XP dominate (maxed card)', () => {
 });
 
 test('resolveGameplayCardRarity promotes cards through Apprentice, Master, and Rare thresholds', () => {
-  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 150, ozzies: 20 }), 'Apprentice');
-  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 400, ozzies: 20 }), 'Master');
-  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 950, ozzies: 20 }), 'Rare');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 150, ozzies: 95 }), 'Apprentice');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 400, ozzies: 240 }), 'Master');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 950, ozzies: 520 }), 'Rare');
 });
 
 test('promoteCardClass preserves earned reward tiers and refreshes class metadata', () => {
@@ -155,7 +155,7 @@ test('promoteCardClass preserves earned reward tiers and refreshes class metadat
     prompts: { rarity: 'Punch Skater' },
     class: { rarity: 'Punch Skater', multiplier: 1, badgeLabel: 'Punch Skater' },
     xp: 950,
-    ozzies: 20,
+    ozzies: 520,
     maintenance: { state: 'repairing', chargePct: 10, repairMinutes: 15, fastTrackCreditCost: 25 },
   });
 

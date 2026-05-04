@@ -357,7 +357,7 @@ export function ForgeControlsPanel({
                 ? `⚡ LOCK IT IN (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
                 : "⚡ LOCK IT IN"}
       </button>
-      <p className="form-hint">Every forge starts blind. Most reveals are Punch Skater, but hot streaks can flash higher-class frames.</p>
+      <p className="form-hint">Every forge starts blind. Most reveals are Punch Skater, but lucky rolls can flash higher-class frames.</p>
       {tier === "free" && generateCredits === 0 && (
         <p className="form-hint">
           {freeForgeRemainingMs > 0

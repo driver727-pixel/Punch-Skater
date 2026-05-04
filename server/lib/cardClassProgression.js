@@ -52,7 +52,7 @@ export function resolveGameplayCardRarity(card) {
   const ozzies = normalizeValue(card?.ozzies);
   const currentIndex = Math.max(0, getPromotionRarityOrder(currentRarity));
   const earnedRarity = CARD_CLASS_PROMOTION_RULES.reduce((highest, rule) => (
-    xp >= rule.minXp || ozzies >= rule.minOzzies ? rule.rarity : highest
+    xp >= rule.minXp && ozzies >= rule.minOzzies ? rule.rarity : highest
   ), 'Punch Skater');
   const earnedIndex = Math.max(0, getPromotionRarityOrder(earnedRarity));
   return CARD_CLASS_PROMOTION_RULES[Math.max(currentIndex, earnedIndex)]?.rarity ?? currentRarity;
