@@ -97,12 +97,8 @@ function inferEncounterOptionTags(option: MissionForkOption): MissionCounterTag[
 }
 
 function inferEncounterOptionPower(option: MissionForkOption): number {
-  const pressure = (option.requirements ?? []).reduce((score, requirement) => {
-    if (requirement.type === "stat_total") return score + 2;
-    if (requirement.type === "wheel_type" || requirement.type === "district_access") return score + 1;
-    return score + 1;
-  }, 1);
-  return Math.max(1, pressure);
+  const requirementCount = option.requirements?.length ?? 0;
+  return Math.max(1, 1 + Math.floor(requirementCount / 2));
 }
 
 function getMissionEncounterOption(
