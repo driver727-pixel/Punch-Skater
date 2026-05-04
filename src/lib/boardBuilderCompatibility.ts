@@ -35,11 +35,8 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       }
       break;
     case "Mountain":
-      if (normalizedConfig.wheels === "Urethane") {
-        errors.push({ component: "wheels", message: "Mountain board cannot use Poly (Urethane) wheels." });
-      }
-      if (normalizedConfig.wheels === "Cloud") {
-        errors.push({ component: "wheels", message: "Mountain board cannot use Vapor Wheels." });
+      if (normalizedConfig.wheels !== "Rubber") {
+        errors.push({ component: "wheels", message: "Mountain board must use solid rubber wheels." });
       }
       if (!isTopMount) {
         errors.push({ component: "battery", message: "Mountain board must use a top-mounted battery." });
@@ -106,7 +103,7 @@ export function getAllowedComponents(boardType: BoardType): AllowedBoardComponen
       return {
         drivetrains: ["4WD"],
         motors: ["Outrunner"],
-        wheels: ["Pneumatic", "Rubber"],
+        wheels: ["Rubber"],
         batteries: topMountBatteries,
       };
     case "Surf":
