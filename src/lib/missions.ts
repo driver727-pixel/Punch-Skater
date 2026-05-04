@@ -49,6 +49,8 @@ function getMissionThreatSummary(mission: MissionBoardEntry): string {
       return "The route turns slick and splintered, demanding rough-route control before the bridge gives way.";
     case "Glass City":
       return "Broker surveillance floods the exchange, forcing a cutout before the rivals collapse the lane.";
+    default:
+      return "The district throws a live problem at the crew the second the run starts to feel safe.";
   }
 }
 
@@ -142,6 +144,11 @@ function buildMissionStatusEffects(
   const roughRouteCount = cards.filter((card) => ["Pneumatic", "Rubber"].includes(card.board.config.wheels)).length;
   const cloudCount = cards.filter((card) => card.board.config.wheels === "Cloud").length;
   const averageRange = cards.length > 0 ? cards.reduce((sum, card) => sum + card.stats.range, 0) / cards.length : 0;
+  const hasRegenCapableSetup = cloudCount >= 1
+    || cards.some((card) => (
+      (card.board.config.wheels === "Pneumatic" || card.board.config.wheels === "Rubber")
+        && card.stats.speed >= 6
+    ));
   const effects: MissionStatusEffect[] = [];
 
   if (urethaneCount >= 2 && (mission.district === "Airaway" || mission.district === "Glass City")) {
@@ -188,7 +195,7 @@ function buildMissionStatusEffects(
       source: "Thin reserve range",
     });
   }
-  if (cloudCount >= 1 || cards.some((card) => (card.board.config.wheels === "Pneumatic" || card.board.config.wheels === "Rubber") && card.stats.speed >= 6)) {
+  if (hasRegenCapableSetup) {
     effects.push({
       id: "regen-braking",
       label: "Regen Braking",

@@ -322,7 +322,7 @@ function getMissionResultLog(result: MissionRunResponse): string[] {
     : result.evaluation.results.filter((entry) => !entry.met).map((entry) => entry.detail);
 }
 
-function getCounterOptionCopy(option: MissionEncounterOption): string {
+function getCounterOptionRequirementText(option: MissionEncounterOption): string {
   if (option.requiredTags?.length) {
     return `Needs ${option.requiredTags.join(" · ")}.`;
   }
@@ -896,7 +896,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           </span>
                           {(selectedAwaitingChoice || selectedResultRevealed) && (
                             <span className="mission-fork__option-desc">
-                              {getCounterOptionCopy(option)}
+                              {getCounterOptionRequirementText(option)}
                             </span>
                           )}
                           {(selectedAwaitingChoice || selectedResultRevealed) && (option.rewardXpDelta || option.rewardOzziesDelta) && (
