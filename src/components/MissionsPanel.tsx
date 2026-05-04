@@ -348,6 +348,14 @@ function getMissionDistrictAccessSummary(
   return getDistrictAccessSummary(mission.district, weather);
 }
 
+function getMissionPressureSummary(
+  mission: MissionBoardEntry,
+  weather: DistrictWeatherSnapshot | null,
+  weatherByDistrict: Partial<Record<District, DistrictWeatherSnapshot | null>>,
+): string {
+  return `Access: ${getMissionDistrictAccessSummary(mission, weather)}. Weather: ${getMissionWeatherSummary(mission, weatherByDistrict)}`;
+}
+
 function isCounterRequirement(
   requirement: MissionRequirement,
   selectedCounterOptionId: string | null,
@@ -573,7 +581,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
     return [
-      `${selectedMission.district} access: ${getMissionDistrictAccessSummary(selectedMission, selectedDistrictWeather)}. ${getMissionWeatherSummary(selectedMission, weatherByDistrict)}`,
+      `${selectedMission.district} intel — ${getMissionPressureSummary(selectedMission, selectedDistrictWeather, weatherByDistrict)}`,
       selectedEvaluation?.eligible
         ? "This deck can launch clean, but the real tension now comes from the live counter window mid-run."
         : "Launch Run still works on a risky deck. Failure can sideline one courier for a short injury, breakdown, or arrest timeout.",
@@ -1033,7 +1041,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           <span className="mission-weather__eyebrow">District pressure</span>
                           <strong className="mission-weather__title">{selectedMission.district}</strong>
                           <p className="mission-weather__body">
-                            Access: {getMissionDistrictAccessSummary(selectedMission, selectedDistrictWeather)}. Weather: {getMissionWeatherSummary(selectedMission, weatherByDistrict)}
+                            {getMissionPressureSummary(selectedMission, selectedDistrictWeather, weatherByDistrict)}
                           </p>
                         </div>
                         <span

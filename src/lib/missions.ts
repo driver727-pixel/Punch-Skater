@@ -80,7 +80,7 @@ function dedupeCounterTags(tags: MissionCounterTag[]): MissionCounterTag[] {
 
 function getMissionWeatherImpact(weather: DistrictWeatherSnapshot | null | undefined): MissionWeatherImpact | null {
   if (!weather) return null;
-  const summary = weather.summary.trim().toLowerCase();
+  const summary = String(weather.summary ?? "").trim().toLowerCase();
   if (summary === "heavy rain") {
     return {
       id: "storm-surge",
