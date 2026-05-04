@@ -64,6 +64,22 @@ test('createDailyMissionBoardPayload returns a stable daily subset and cadence m
   assert.deepEqual(first.missions.map((entry) => entry.id), second.missions.map((entry) => entry.id));
 });
 
+test('getMissionEncounter never produces encounter options with undefined reward deltas', () => {
+  const missions = createMissionBoardEntries('user-123', '2026-04-26T00:00:00.000Z');
+  for (const mission of missions) {
+    const encounter = getMissionEncounter(mission);
+    if (!encounter) continue;
+    for (const option of encounter.options) {
+      if ('rewardXpDelta' in option) {
+        assert.equal(typeof option.rewardXpDelta, 'number', `${mission.definitionId}/${option.id} rewardXpDelta must be a number when present`);
+      }
+      if ('rewardOzziesDelta' in option) {
+        assert.equal(typeof option.rewardOzziesDelta, 'number', `${mission.definitionId}/${option.id} rewardOzziesDelta must be a number when present`);
+      }
+    }
+  }
+});
+
 test('weekly mission themes rotate and softly boost featured districts', () => {
   const theme = getWeeklyMissionTheme('2026-04-26T12:00:00.000Z');
   const payload = createDailyMissionBoardPayload('user-123', '2026-04-26T12:00:00.000Z');
