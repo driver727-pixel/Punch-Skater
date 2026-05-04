@@ -2938,7 +2938,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  max-width: 320px;
 }
 .blend-control__label {
   font-size: 12px;
@@ -5865,8 +5864,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-card--back :where(
   .print-back-header,
   .print-back-header-slim,
-  .print-back-identity,
-  .print-back-info,
   .print-back-stats,
   .print-back-lower,
   .print-back-trait,
@@ -5883,18 +5880,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --print-back-spinner-width: 24%;
   --print-back-spinner-max: 72px;
   position: relative;
-  height: 38%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   background:
     radial-gradient(circle at center, rgba(0,255,136,0.12) 0%, rgba(0,255,136,0) 52%),
     linear-gradient(180deg, #101022 0%, #090912 100%);
   border-top: 1px solid #1e1e3a;
   border-bottom: 1px solid #1e1e3a;
-  flex-shrink: 0;
 }
 .print-back-board {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5931,16 +5929,36 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .retro-wireframe-tunnel__lines {
   filter: drop-shadow(0 0 1.5px rgba(0, 232, 200, 0.75));
 }
+/* Top identity overlay — skater name, class/role, bio above the board image */
+.print-back-hero-identity {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: 3% var(--print-back-safe-inline) 6%;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 8, 22, 0.97) 0%,
+    rgba(8, 8, 22, 0.85) 55%,
+    transparent 100%
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 0.22em;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+}
 
 .print-back-hero-overlay {
   position: absolute;
   inset: auto 0 0;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4em 0.9em;
-  padding: 0.75em 0.9em 0.85em;
-  background: linear-gradient(180deg, rgba(8, 8, 16, 0) 0%, rgba(8, 8, 16, 0.88) 35%, rgba(8, 8, 16, 0.96) 100%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  padding: 5% var(--print-back-safe-inline) 3%;
+  background: linear-gradient(180deg, transparent 0%, rgba(8, 8, 16, 0.85) 40%, rgba(8, 8, 16, 0.97) 100%);
 }
 .print-back-board-row {
   display: grid;
@@ -5956,8 +5974,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 1em;
 }
 .print-back-board-key {
-  color: #8e8ed0;
+  color: var(--card-accent, #00ff88);
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 0 4px var(--card-accent, #00ff88), 0 0 8px var(--card-accent, #00ff88);
 }
 .print-back-board-val {
   color: #f0f0ff;
@@ -5965,6 +5985,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-shadow: 0 0 4px color-mix(in srgb, var(--card-accent, #00ff88) 40%, transparent 60%);
 }
 .print-back-board-placeholder {
   width: 100%;
@@ -5997,6 +6018,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   font-size: 6px;
   overflow: hidden;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
   --print-back-safe-inline: 12%;
   --print-back-inner-inline: 3%;
   --print-back-stat-label-width: 7ch;
@@ -6038,9 +6061,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: #fff;
   letter-spacing: 0.3px;
   line-height: 1.1;
-  white-space: nowrap;
+  overflow-wrap: break-word;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-shadow: 0 0 6px var(--card-accent, #00ff88), 0 0 14px var(--card-accent, #00ff88);
 }
 .print-back-identity-name-input {
   font-size: var(--card-back-name-size, 8px) !important;
@@ -6062,12 +6088,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .print-back-identity-badge,
 .print-back-identity-tuned {
-  color: #ffca73;
+  color: var(--card-accent, #00ff88);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  text-shadow: 0 0 5px var(--card-accent, #00ff88), 0 0 10px var(--card-accent, #00ff88);
 }
 .print-back-identity-role {
-  color: #b0b0d8;
+  color: var(--card-accent, #00ff88);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 5px var(--card-accent, #00ff88), 0 0 10px var(--card-accent, #00ff88);
 }
 .print-back-identity-age {
   color: rgba(255,255,255,0.6);
@@ -6095,7 +6125,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-back-identity-bio,
 .print-back-identity-bio-input {
   font-size: var(--card-back-body-size);
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.85);
   font-style: italic;
   margin: 0;
   line-height: 1.3;
@@ -6103,6 +6133,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  text-shadow: 0 0 5px color-mix(in srgb, var(--card-accent, #00ff88) 55%, transparent 45%);
 }
 .print-back-identity-bio-input {
   font-style: italic;
@@ -6177,9 +6208,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   line-height: 1.2;
 }
 .print-back-row-label {
-  color: #8e8ed0;
+  color: var(--card-accent, #00ff88);
   font-size: var(--card-back-body-size);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 5px var(--card-accent, #00ff88), 0 0 10px var(--card-accent, #00ff88);
 }
 .print-back-row-value {
   color: #f0f0ff;
@@ -6189,6 +6222,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-shadow: 0 0 4px color-mix(in srgb, var(--card-accent, #00ff88) 45%, transparent 55%);
 }
 
 .print-back-stats {
@@ -6203,12 +6237,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .print-back-stats .stat-label {
   font-size: var(--stat-font-size);
   width: var(--print-back-stat-label-width);
-  color: #ffca73;
+  color: var(--card-accent, #00ff88);
+  text-shadow: 0 0 4px var(--card-accent, #00ff88), 0 0 8px var(--card-accent, #00ff88);
 }
 .print-back-stats .stat-value {
   font-size: var(--stat-font-size);
   width: 2ch;
   color: #fff5d9;
+  text-shadow: 0 0 4px color-mix(in srgb, var(--card-accent, #00ff88) 50%, transparent 50%);
 }
 .print-back-stats .stat-track {
   height: max(2px, calc(var(--stat-font-size) * 0.28));
@@ -6279,8 +6315,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: var(--card-back-body-size);
 }
 .print-back-maint-label {
-  color: #7070a0;
-  letter-spacing: 0.08em;
+  color: var(--card-accent, #00ff88);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 4px var(--card-accent, #00ff88), 0 0 8px var(--card-accent, #00ff88);
 }
 .print-back-maint-state {
   color: #f0f0ff;
@@ -6289,16 +6327,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-shadow: 0 0 4px color-mix(in srgb, var(--card-accent, #00ff88) 40%, transparent 60%);
 }
 .print-back-maint-charge {
-  color: #ffca73;
+  color: var(--card-accent, #00ff88);
   font-weight: bold;
+  text-shadow: 0 0 5px var(--card-accent, #00ff88), 0 0 10px var(--card-accent, #00ff88);
 }
 .print-back-serial {
   padding: 0 var(--print-back-safe-inline) 1.5%;
   font-size: var(--card-back-small-size);
-  color: #7070a0;
-  letter-spacing: 0.08em;
+  color: var(--card-accent, #00ff88);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 4px var(--card-accent, #00ff88), 0 0 8px var(--card-accent, #00ff88);
 }
 
 .print-card--back.print-card--wrap-frame .print-back-row-label,
@@ -6575,13 +6617,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .print-only-card .print-back-identity-meta { font-size: 5pt; }
   .print-only-card .print-back-identity-bio  { font-size: 5pt; }
   .print-only-card .print-back-hero   {
-    height: 30%;
+    flex: 1 1 auto;
+    min-height: 0;
   }
+  .print-only-card .print-back-hero-identity { padding: 3pt 8pt 5pt; gap: 1.5pt; }
   .print-only-card .print-back-board  { inset: 0; }
   .print-only-card .print-back-lower  { /* inherits grid layout */ }
   .print-only-card .print-back-components { padding: 4pt 6pt 5pt; gap: 2pt; }
   .print-only-card .print-back-board-row { font-size: 5pt; }
   .print-only-card .print-back-info   { gap: 2pt; padding: 6pt 8pt 2pt; }
+  .print-only-card .print-back-hero-overlay { gap: 2pt; padding: 4pt 8pt 3pt; }
   .print-only-card .print-back-row-label { font-size: 5pt; }
   .print-only-card .print-back-row-value { font-size: 5pt; }
   .print-only-card .print-back-stats  { gap: 2pt; padding: 2pt 6pt 5pt; }

@@ -402,59 +402,61 @@ function CardBack({
 
   return (
     <>
-      <div className="print-back-identity">
-        {editable ? (
-          <input
-            className="card-name-input print-back-identity-name-input"
-            value={card.identity.name}
-            onChange={(e) => onNameChange?.(e.target.value)}
-            placeholder="Name"
-          />
-        ) : (
-          <span className="print-back-identity-name">{card.identity.name}</span>
-        )}
-        <div className="print-back-identity-meta">
-          {!hasBuiltInDesignator && <span className="print-back-identity-badge">{card.class.badgeLabel}</span>}
-          <span className="print-back-identity-role">{card.role.label}</span>
-          {card.board.tuned && <span className="print-back-identity-tuned">⚡ TUNED</span>}
-          {card.identity.age && (
-            editable ? (
-              <label className="print-back-identity-age-field">
-                <span className="print-back-identity-age-label">AGE</span>
-                <input
-                  className="card-age-input print-back-identity-age-input"
-                  value={card.identity.age ?? ""}
-                  onChange={(e) => onAgeChange?.(e.target.value)}
-                  placeholder="Age"
-                />
-              </label>
-            ) : (
-              <span className="print-back-identity-age">{card.identity.age}</span>
-            )
+      <div className="print-back-hero">
+        {/* ── Top identity overlay (fills the space above the board image) ── */}
+        <div className="print-back-hero-identity">
+          {editable ? (
+            <input
+              className="card-name-input print-back-identity-name-input"
+              value={card.identity.name}
+              onChange={(e) => onNameChange?.(e.target.value)}
+              placeholder="Name"
+            />
+          ) : (
+            <span className="print-back-identity-name">{card.identity.name}</span>
+          )}
+          <div className="print-back-identity-meta">
+            {!hasBuiltInDesignator && <span className="print-back-identity-badge">{card.class.badgeLabel}</span>}
+            <span className="print-back-identity-role">{card.role.label}</span>
+            {card.board.tuned && <span className="print-back-identity-tuned">⚡ TUNED</span>}
+            {card.identity.age && (
+              editable ? (
+                <label className="print-back-identity-age-field">
+                  <span className="print-back-identity-age-label">AGE</span>
+                  <input
+                    className="card-age-input print-back-identity-age-input"
+                    value={card.identity.age ?? ""}
+                    onChange={(e) => onAgeChange?.(e.target.value)}
+                    placeholder="Age"
+                  />
+                </label>
+              ) : (
+                <span className="print-back-identity-age">{card.identity.age}</span>
+              )
+            )}
+          </div>
+          {editable ? (
+            <textarea
+              className="card-bio-input print-back-identity-bio-input"
+              value={flavorText}
+              onChange={(e) => onBioChange?.(e.target.value)}
+              placeholder="Bio / flavor text"
+              rows={2}
+            />
+          ) : (
+            <>
+              {flavorText && (
+                <p className="print-back-identity-bio">&ldquo;{flavorText}&rdquo;</p>
+              )}
+              {conlangFlavorText && (
+                <p className="print-back-identity-bio print-back-identity-bio--conlang">{conlangFlavorText}</p>
+              )}
+            </>
           )}
         </div>
-        {editable ? (
-          <textarea
-            className="card-bio-input print-back-identity-bio-input"
-            value={flavorText}
-            onChange={(e) => onBioChange?.(e.target.value)}
-            placeholder="Bio / flavor text"
-            rows={2}
-          />
-        ) : (
-          <>
-            {flavorText && (
-              <p className="print-back-identity-bio">&ldquo;{flavorText}&rdquo;</p>
-            )}
-            {conlangFlavorText && (
-              <p className="print-back-identity-bio print-back-identity-bio--conlang">{conlangFlavorText}</p>
-            )}
-          </>
-        )}
-      </div>
 
-      <div className="print-back-hero">
         <RetroWireframeTunnel />
+        {/* ── Board image ── */}
         <div className="print-back-board">
           {card.board.imageUrl && !boardImageFailed ? (
             <img
@@ -482,15 +484,16 @@ function CardBack({
             <div className="print-back-board-placeholder">🛹</div>
           )}
         </div>
-      </div>
 
-      <div className="print-back-info">
-        {backInfoRows.map(([label, value]) => (
-          <div key={label} className="print-back-row">
-            <span className="print-back-row-label">{label}</span>
-            <span className="print-back-row-value">{value}</span>
-          </div>
-        ))}
+        {/* ── Bottom info overlay (fills the space below the board image) ── */}
+        <div className="print-back-hero-overlay">
+          {backInfoRows.map(([label, value]) => (
+            <div key={label} className="print-back-row">
+              <span className="print-back-row-label">{label}</span>
+              <span className="print-back-row-value">{value}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="print-back-lower">
