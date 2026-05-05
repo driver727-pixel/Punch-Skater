@@ -20,6 +20,15 @@ contraband, medicine, or relics by hand.
 The City follows a simple brutal rule: **data on a thumb drive beats data on a server**.
 Digital networks are too easy to hack, intercept, poison, or surveil. Physical delivery is trust.
 
+## Australian Jousting Doctrine
+In the Australian theatre, **Punch Skaters did not evolve around firearms as standard weapons**.
+Guns exist, but they are treated as extreme-circumstance tools rather than everyday kit.
+
+Instead, Australian Punch Skaters evolved around **jousting on Esk8**. They fight, perform, and
+settle prize disputes with **cyber lances and shields**. Jousting is battle doctrine, street
+spectacle, and prize fighting culture all at once — a core public fact of the setting rather than
+an obscure subculture note.
+
 ## The Roads
 **The Roads** are no longer treated as a standard district. They are a corridor gameplay layer:
 Nullarbor-like straightaways, freight arteries, underpasses, and weather-beaten transit routes where
@@ -33,6 +42,7 @@ hijackings, raids, and route events erupt between destination hubs.
 - Scratch talks; corps walk.
 - Airaway is not for you — unless you've got a contractor pass or nerve.
 - Data on a thumb drive beats data on a server.
+- Australian Punch Skaters do not rely on firearms except in extreme circumstances — cyber lances and shields define battle, entertainment, and prize fighting.
 - A Punch Skater owes nothing to nobody. Until they owe everything.
 
 ## Major Power Blocs
