@@ -89,7 +89,9 @@ export const WORLD_LORE = {
     "(Esk8) are the dominant transport — cheaper than flying cars and perfect for decayed " +
     "roads. The Skater Courier is the most valuable information mule in the city, fought " +
     "over by every faction. Information — stored on thumb drives to dodge hackers — is the " +
-    "most precious commodity in this world.",
+    "most precious commodity in this world. In the Australian theatre, Punch Skaters " +
+    "evolved without firearms as a standard weapon culture; they fight, perform, and " +
+    "settle prize disputes through high-speed jousts using cyber lances and shields.",
   factions: [
     "United Corporations of America (UCA)",
     "Qu111s (Quills)",
@@ -113,6 +115,7 @@ export const WORLD_LORE = {
     "Scratch talks; corps walk.",
     "Airaway is not for you — unless you've got a contractor pass or nerve.",
     "Data on a thumb drive beats data on a server.",
+    "Australian Punch Skaters do not rely on firearms except in extreme circumstances — cyber lances and shields define battle, entertainment, and prize fighting.",
     "A Punch Skater owes nothing to nobody. Until they owe everything.",
   ],
 };
@@ -607,6 +610,18 @@ export interface LoreUpdateEntry {
 }
 
 export const LORE_UPDATES: LoreUpdateEntry[] = [
+  {
+    changedAt: "2026-05",
+    title: "Australian jousting doctrine entered the Codex",
+    summary:
+      "Punch Skaters in the Australian theatre now explicitly operate without firearms as " +
+      "standard kit, favoring cyber lances and shields in combat, spectacle, and prize fights.",
+    highlights: [
+      "Jousting is now core public knowledge of the Punch Skater universe.",
+      "Firearms remain rare and reserved for extreme circumstances.",
+      "Cyber lances and shields define Australian Punch Skater battle culture.",
+    ],
+  },
   {
     changedAt: "2026-04",
     title: "Australian theatre dossiers consolidated",

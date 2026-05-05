@@ -11582,8 +11582,24 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
  * Race Arena (deck-vs-deck → courier race system)
  * ────────────────────────────────────────────────────────────────────────── */
 
-.race-arena-page { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
-.race-arena-header { margin-bottom: 1.25rem; }
+.race-arena-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(5, 6, 14, 0.5) 0%, rgba(9, 6, 18, 0.82) 42%, rgba(6, 8, 16, 0.92) 100%),
+    url("https://github.com/user-attachments/assets/12727906-ce63-4097-be05-f54e29a9d3a8") center / cover no-repeat;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+}
+.race-arena-header {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(11, 10, 20, 0.7);
+  backdrop-filter: blur(3px);
+}
 .race-arena-header h1 { margin: 0 0 0.25rem; }
 .race-arena-subtitle { margin: 0 0 0.5rem; opacity: 0.85; }
 .race-arena-self {
@@ -11593,7 +11609,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .race-arena-balance { margin-left: auto; font-weight: 600; }
 
-.race-arena-tabs { display: flex; gap: 0.5rem; margin: 0.75rem 0 1rem; }
+.race-arena-tabs {
+  display: flex; gap: 0.5rem; margin: 0.75rem 0 1rem;
+  padding: 0.5rem;
+  border-radius: 14px;
+  background: rgba(11, 10, 20, 0.56);
+  width: fit-content;
+}
 .race-arena-message {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.5rem 0.75rem; margin-bottom: 0.75rem;
@@ -11643,6 +11665,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .race-wager-value { font-size: 0.9rem; opacity: 0.9; }
 
 .race-hub { display: flex; flex-direction: column; gap: 1.25rem; }
+.race-hub-block {
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  background: rgba(10, 10, 20, 0.7);
+  backdrop-filter: blur(3px);
+}
 .race-hub-block h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
 .race-hub-row {
   display: flex; gap: 1rem; align-items: center; justify-content: space-between;
