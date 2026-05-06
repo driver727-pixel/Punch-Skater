@@ -612,6 +612,19 @@ export interface LoreUpdateEntry {
 export const LORE_UPDATES: LoreUpdateEntry[] = [
   {
     changedAt: "2026-05",
+    title: "First wave of named district rivals entered the Codex",
+    summary:
+      "Five district rivals — Jax Voltage, Mina Chrome, Rook Wraith, Vex Static, and Nova Saint — " +
+      "now anchor the Phase 4 boss-joust ladders, each with a faction, signature tactic, card reward, " +
+      "and Codex unlock dossier.",
+    highlights: [
+      "Batteryville, Airaway, Nightshade, The Grid, and Glass City each have a named boss rival.",
+      "Every rival ships a boss-tier joust card, signature tactic, and a Rare or Legendary card reward.",
+      "The Forest is intentionally held as a future Wooders rival slot.",
+    ],
+  },
+  {
+    changedAt: "2026-05",
     title: "Australian jousting doctrine entered the Codex",
     summary:
       "Punch Skaters in the Australian theatre now explicitly operate without firearms as " +

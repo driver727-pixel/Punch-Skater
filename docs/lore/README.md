@@ -13,6 +13,7 @@ site, design docs, and future content all speak with one voice.
 | [districts.md](./districts.md) | District dossiers, corridor framing, and classified reveal notes |
 | [archetypes.md](./archetypes.md) | The ten live courier archetypes used by the forge |
 | [factions.md](./factions.md) | Public faction canon and the discovery-driven dossier model |
+| [rivals.md](./rivals.md) | First-wave named district rivals, their tactics, rewards, and Codex unlocks |
 | [CHANGELOG.md](./CHANGELOG.md) | Short log of lore revisions that should be mirrored in the Codex |
 
 ## Canonical Sources

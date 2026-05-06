@@ -3,6 +3,17 @@
 Track narrative-facing changes here whenever canon, localization, or Codex presentation shifts.
 Mirror each entry in `LORE_UPDATES` inside `src/lib/lore.ts` so the in-app Codex stays in sync.
 
+## 2026-05
+
+### First wave of named district rivals
+- Introduced the first five named district rivals: Jax Voltage (Batteryville),
+  Mina Chrome (Airaway), Rook Wraith (Nightshade), Vex Static (The Grid),
+  and Nova Saint (Glass City).
+- Catalogued each rival's faction, personality, signature joust tactic,
+  card reward, and Codex unlock under `docs/lore/rivals.md` and the
+  structured catalogue in `src/lib/rivals.ts` / `server/lib/rivals.js`.
+- Held The Forest as a future rival slot for the Wooders.
+
 ## 2026-04
 
 ### Australian theatre dossiers consolidated
