@@ -15,7 +15,7 @@
 | `userProfiles` | Top-level | `uid` | Owner + admin read; validated create/update |
 | `userLookup` | Top-level | `uid` | Any authed read; owner create/update |
 | `imageCache` | Top-level | `cacheKey` (layer+seed hash) | Public read; authed create; no update; admin delete |
-| `trades` | Top-level | `tradeId` | Participant + pending-browse read; offerer create; recipient/offerer update |
+| `trades` | Top-level | `tradeId` | Participant + pending-browse read; server create; recipient/offerer update |
 | `referralClaims` | Top-level | `{referrerUid}_{visitorKey}` | Referrer read; anyone create (no self-referral); immutable |
 | `arena` | Top-level | `uid` | Any authed read; owner write/delete |
 | `battleResults` | Top-level | `resultId` | Participant read; server-only write |
@@ -219,7 +219,7 @@ Peer-to-peer card trades and Community Market listings.
   toEmail: string,
   offeredCardId?: string,
   offeredCard: CardPayload,     // embedded snapshot
-  estimatedValue?: number,      // client-estimated earned value, never currency
+  estimatedValue?: number,      // server-estimated earned value, never currency
   valueBand?: "starter" | "rising" | "prime" | "elite" | "grail",
   economyVersion?: "fair-trade-v1",
   senderReputation?: {
@@ -245,7 +245,7 @@ Peer-to-peer card trades and Community Market listings.
 }
 ```
 
-Trade economy metadata is informational and card-only: estimated values are derived from rarity, earned XP/Ozzies, stats, joust profile, board tuning, and maintenance state. They must not be displayed as cash prices or used to sell power.
+Trade creation is server-authored: clients submit offer intent, the server snapshots the stored card, and it computes `estimatedValue`, `valueBand`, `senderReputation`, and `fairPlay`. The metadata is informational and card-only: estimated values are derived from rarity, earned XP/Ozzies, stats, joust profile, board tuning, and maintenance state. They must not be displayed as cash prices or used to sell power.
 
 ### `referralClaims/{referrerUid}_{visitorKey}`
 
