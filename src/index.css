@@ -1418,6 +1418,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-wrap: wrap;
   gap: 8px;
 }
+.forge-reroll-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 .empty-preview {
   display: flex;
@@ -2942,6 +2947,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background: rgba(255,255,255,0.04);
   line-height: 1.5;
 }
+.forge-image-notice--success {
+  border-color: rgba(0,255,136,0.28);
+  background: rgba(0,255,136,0.09);
+  color: var(--accent);
+}
+.forge-image-notice--error {
+  border-color: rgba(255,68,68,0.28);
+  background: rgba(255,68,68,0.09);
+  color: var(--danger);
+}
 .forge-image-notice code {
   font-family: monospace;
   background: rgba(255,255,255,0.08);
@@ -3267,6 +3282,25 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 4px;
   margin-bottom: 8px;
+}
+.forge-image-error-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,68,68,0.24);
+  border-radius: 6px;
+  background: rgba(255,68,68,0.08);
+}
+.forge-image-error-card strong {
+  color: #ffd2d2;
+  font-size: 13px;
+}
+.forge-image-error-hint {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* Reused generated-card control shell; currently hosts the board size slider. */

@@ -275,6 +275,17 @@ wagers, race resolution, or leaderboard scoring.
 | Lore | Codex chapters, district rumors, and faction dossiers | Cosmetic only |
 | Reroll tokens | Limited non-power rerolls | Capped and restricted to cosmetic rerolls |
 
+### Cosmetic reroll actions
+
+- **Character reroll** — costs 1 token and refreshes only the courier portrait.
+- **Board reroll** — costs 1 token and refreshes only the skateboard artwork.
+- **Full reroll** — costs 2 tokens and refreshes both portrait and skateboard art.
+
+These rerolls are spend-only conveniences for the live forge. They do **not**
+change stats, Deck Power, rarity, identity, or mission/battle outcomes. The
+server validates token spend before the forge UI bypasses cached art so paid AI
+usage stays gated behind authenticated, capped account balances.
+
 ### Milestone tracks
 
 - Total unique collection count: 5, 10, 25, 50, and 100 unique cards.
@@ -299,6 +310,8 @@ included, and the score does not improve competitive battle or race outcomes.
 Claimed rewards live on `userProfiles/{uid}.collectionRewards`; idempotent claim
 receipts live at `users/{uid}/rewardClaims/{milestoneId}`. Claims are validated
 by server routes so clients can preview progress but cannot mint rewards.
+Cosmetic reroll spends are also server-validated through
+`POST /api/collection-rewards/reroll`.
 
 ---
 
@@ -317,3 +330,5 @@ by server routes so clients can preview progress but cannot mint rewards.
 | Mission templates | `src/lib/missions.ts` |
 | Progression server tests | `server/test/progression.test.js` |
 | Collection reward catalogue/evaluator | `src/lib/collectionRewards.ts` · `server/lib/collectionRewards.js` |
+| Reward routes + reroll spend | `src/services/collectionRewards.ts` · `server/routes/rewards.js` |
+| Forge reroll recovery UI | `src/pages/cardForge/useForgeGeneration.ts` · `src/pages/cardForge/ForgePreviewPanel.tsx` |

@@ -24,6 +24,12 @@ export interface LayerGenParams {
   generationOptions?: ImageGenOptions;
 }
 
+interface LayerGenerationResult {
+  ok: boolean;
+  url?: string;
+  error?: string;
+}
+
 const INITIAL_LAYER_STATE: LayerState = {
   loading: { background: false, character: false, frame: false },
   errors: [],
@@ -86,8 +92,15 @@ export function useForgeLayers() {
       generationOptions?: ImageGenOptions,
       attempts?: Array<{ seed: string; generationOptions?: ImageGenOptions }>,
       skipCache = false,
-    ) => {
+    ): Promise<LayerGenerationResult> => {
       setLayers((current) => ({ ...current, loading: { ...current.loading, [layer]: true } }));
+      const finishAborted = (): LayerGenerationResult => {
+        setLayers((current) => ({
+          ...current,
+          loading: { ...current.loading, [layer]: false },
+        }));
+        return { ok: false, error: "Generation cancelled." };
+      };
       try {
         if (!skipCache) {
           const staticUrl =
@@ -98,18 +111,18 @@ export function useForgeLayers() {
                 : null;
 
           if (staticUrl) {
-            if (signal.aborted) return;
+            if (signal.aborted) return finishAborted();
             const urlKey = `${layer}Url` as const;
             setLayers((current) => ({
               ...current,
               [urlKey]: staticUrl,
               loading: { ...current.loading, [layer]: false },
             }));
-            return;
+            return { ok: true, url: staticUrl };
           }
 
           const cached = await getCachedImage(cacheKey);
-          if (signal.aborted) return;
+          if (signal.aborted) return finishAborted();
           if (cached) {
             const urlKey = `${layer}Url` as const;
             setLayers((current) => ({
@@ -117,7 +130,7 @@ export function useForgeLayers() {
               [urlKey]: cached,
               loading: { ...current.loading, [layer]: false },
             }));
-            return;
+            return { ok: true, url: cached };
           }
         }
 
@@ -137,16 +150,16 @@ export function useForgeLayers() {
         for (const attempt of seedAttempts) {
           try {
             const result = await generateImage(prompt, attempt.seed, attempt.generationOptions ?? generationOptions);
-            if (signal.aborted) return;
+            if (signal.aborted) return finishAborted();
 
             let candidateUrl = result.imageUrl;
             if (postProcess) {
               candidateUrl = await postProcess(candidateUrl);
-              if (signal.aborted) return;
+              if (signal.aborted) return finishAborted();
             }
             if (validateResult) {
               await validateResult(candidateUrl);
-              if (signal.aborted) return;
+              if (signal.aborted) return finishAborted();
             }
 
             finalUrl = candidateUrl;
@@ -177,14 +190,16 @@ export function useForgeLayers() {
           [urlKey]: finalUrl,
           loading: { ...current.loading, [layer]: false },
         }));
+        return { ok: true, url: finalUrl };
       } catch (error) {
-        if (signal.aborted) return;
+        if (signal.aborted) return finishAborted();
         const message = error instanceof Error ? error.message : String(error);
         setLayers((current) => ({
           ...current,
           loading: { ...current.loading, [layer]: false },
           errors: [...current.errors, `${layer}: ${message}`],
         }));
+        return { ok: false, error: message };
       }
     },
     [],

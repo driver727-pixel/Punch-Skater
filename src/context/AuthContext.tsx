@@ -45,6 +45,9 @@ interface UserProfile {
   missionOzzies?: number;
   /** Account-level Ozzy balance — escrow currency for race wagers. */
   ozzies?: number;
+  collectionRewards?: {
+    rerollTokens: number;
+  };
   craftlinguaLink?: CraftlinguaLink | null;
   craftlinguaProfile?: CraftlinguaEnvelope | null;
   craftlinguaEnabled?: boolean;
@@ -93,6 +96,14 @@ function getProfileString(value: unknown): string | undefined {
 
 function getProfileBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
+}
+
+function getCollectionRewards(value: unknown): UserProfile["collectionRewards"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { rerollTokens: 0 };
+  const candidate = value as { rerollTokens?: unknown };
+  return {
+    rerollTokens: Math.max(0, Number(candidate.rerollTokens) || 0),
+  };
 }
 
 function getCraftlinguaLink(value: unknown): CraftlinguaLink | null {
@@ -233,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAdmin: adminClaim,
           missionXp: 0,
           missionOzzies: 0,
+          collectionRewards: { rerollTokens: 0 },
           craftlinguaLink: null,
           craftlinguaProfile: null,
           craftlinguaEnabled: false,
@@ -257,6 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAdmin: adminClaim,
           missionXp: typeof data.missionXp === "number" ? data.missionXp : 0,
           missionOzzies: typeof data.missionOzzies === "number" ? data.missionOzzies : 0,
+          collectionRewards: getCollectionRewards(data.collectionRewards),
           craftlinguaLink: getCraftlinguaLink(data.craftlinguaLink),
           craftlinguaProfile,
           craftlinguaEnabled: getProfileBoolean(data.craftlinguaEnabled) ?? false,
@@ -270,6 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAdmin: adminClaim,
           missionXp: 0,
           missionOzzies: 0,
+          collectionRewards: { rerollTokens: 0 },
           craftlinguaLink: null,
           craftlinguaProfile: null,
           craftlinguaEnabled: false,

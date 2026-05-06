@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buildCharacterSeed, generateCard } from "../../lib/generator";
+import { generateCard } from "../../lib/generator";
 import {
   applyFactionBranding,
   FORGE_ARCHETYPE_OPTIONS,
@@ -16,6 +16,10 @@ import { useTier } from "../../context/TierContext";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useFactionDiscovery } from "../../hooks/useFactionDiscovery";
+import {
+  COLLECTION_REROLL_ACTION_BY_ID,
+  type CollectionRerollActionId,
+} from "../../lib/collectionRewards";
 import type {
   Archetype,
   BoardPlacement,
@@ -30,7 +34,7 @@ import {
   promoteCardClass,
   rollForgeRarity,
 } from "../../lib/cardClassProgression";
-import { createCharacterLayerValidator, useForgeLayers } from "./useForgeLayers";
+import { createCharacterLayerValidator, type ForgeLayer, useForgeLayers } from "./useForgeLayers";
 import {
   CHARACTER_CACHE_VERSION,
   CHARACTER_GENERATION_OPTIONS,
@@ -46,9 +50,27 @@ import {
   resolveBoardLayerOrder,
 } from "../../lib/boardPlacement";
 import { buildCraftlinguaFlavorFields } from "../../services/craftlingua";
+import { spendCollectionReroll } from "../../services/collectionRewards";
 
 const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
 const DEFAULT_CHARACTER_BLEND = 1;
+const CHARACTER_LAYER_VALIDATOR = createCharacterLayerValidator(CHARACTER_MIN_DIMENSIONS);
+
+function buildVariationKey(actionId: CollectionRerollActionId): string {
+  return `${actionId}:${Date.now()}:${crypto.randomUUID()}`;
+}
+
+function formatTokenCount(count: number): string {
+  return `${count} token${count === 1 ? "" : "s"}`;
+}
+
+function buildCharacterAttempts(baseSeed: string, variationKey?: string) {
+  const variantSeed = variationKey ? `${baseSeed}|reroll|${variationKey}` : baseSeed;
+  return CHARACTER_SEED_VARIANTS.map((variant) => ({
+    seed: `${variantSeed}|${variant}`,
+    generationOptions: CHARACTER_GENERATION_OPTIONS,
+  }));
+}
 
 export function useForgeGeneration() {
   const {
@@ -62,7 +84,7 @@ export function useForgeGeneration() {
     markFreeCardUsed,
     startFreeForgeCooldown,
   } = useTier();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { linkedLanguage, profile, useCraftlingua } = useLanguage();
   const { hasFaction, unlockFaction } = useFactionDiscovery();
   const sessionOwnerKey = user?.uid ?? "guest";
@@ -79,6 +101,11 @@ export function useForgeGeneration() {
   const [characterBlend, setCharacterBlend] = useState(() => loadForgeSession(sessionOwnerKey)?.characterBlend ?? DEFAULT_CHARACTER_BLEND);
   const [forging, setForging] = useState(false);
   const [boardImageLoading, setBoardImageLoading] = useState(false);
+  const [boardError, setBoardError] = useState("");
+  const [rerollTokens, setRerollTokens] = useState(0);
+  const [rerollingActionId, setRerollingActionId] = useState<CollectionRerollActionId | null>(null);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
   const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
   const [revealedRarity, setRevealedRarity] = useState<Rarity | null>(null);
   const {
@@ -107,6 +134,10 @@ export function useForgeGeneration() {
     [generated?.board.layerOrder],
   );
 
+  useEffect(() => {
+    setRerollTokens(userProfile?.collectionRewards?.rerollTokens ?? 0);
+  }, [userProfile?.collectionRewards?.rerollTokens, user?.uid]);
+
   const refreshCraftlinguaFront = useCallback(async (card: CardPayload) => {
     const nextFront = await buildCraftlinguaFlavorFields({
       card,
@@ -120,6 +151,80 @@ export function useForgeGeneration() {
         : current
     ));
   }, [linkedLanguage, profile, useCraftlingua]);
+
+  const clearRecoveryIssues = useCallback((layersToClear: ForgeLayer[] = [], clearBoardIssue = false) => {
+    setRecoveryError("");
+    setRecoveryMessage("");
+    if (clearBoardIssue) setBoardError("");
+    if (layersToClear.length === 0) return;
+    setLayers((current) => ({
+      ...current,
+      errors: current.errors.filter((error) => !layersToClear.some((layer) => error.startsWith(`${layer}:`))),
+    }));
+  }, [setLayers]);
+
+  const buildForgeLayerParams = useCallback((card: CardPayload, variationKey?: string) => {
+    const backgroundPrompt = buildBackgroundPrompt(card.prompts.district);
+    const characterPrompt = buildCharacterPrompt(card.prompts);
+    const framePrompt = buildFramePrompt(card.prompts.rarity);
+    const characterKey = `char::${CHARACTER_CACHE_VERSION}::${card.characterSeed}`;
+
+    return {
+      background: {
+        key: `bg::${card.backgroundSeed}`,
+        prompt: backgroundPrompt,
+        seed: card.backgroundSeed,
+      },
+      character: {
+        key: characterKey,
+        prompt: characterPrompt,
+        seed: card.characterSeed,
+        attempts: buildCharacterAttempts(card.characterSeed, variationKey),
+        postProcess: async (url: string) => (await removeBackground(url)).imageUrl,
+        validateResult: CHARACTER_LAYER_VALIDATOR,
+        generationOptions: CHARACTER_GENERATION_OPTIONS,
+      },
+      frame: {
+        key: `frame::${card.frameSeed}`,
+        prompt: framePrompt,
+        seed: card.frameSeed,
+        generationOptions: { loras: [] },
+      },
+    };
+  }, []);
+
+  const runBoardGeneration = useCallback(async (
+    config = boardConfig,
+    signal?: AbortSignal,
+    options?: Parameters<typeof generateGouacheBoard>[1],
+  ) => {
+    setBoardImageLoading(true);
+    setBoardError("");
+    try {
+      const boardImageUrl = await generateGouacheBoard(config, options);
+      if (signal?.aborted) return false;
+      let finalBoardUrl = boardImageUrl;
+      try {
+        finalBoardUrl = (await removeBackground(boardImageUrl)).imageUrl;
+      } catch (bgError) {
+        console.warn("Board background removal failed, using original image:", bgError);
+      }
+      if (signal?.aborted) return false;
+      setGenerated((current) => current ? {
+        ...current,
+        board: { ...current.board, imageUrl: finalBoardUrl },
+      } : current);
+      return true;
+    } catch (error) {
+      if (signal?.aborted) return false;
+      const message = error instanceof Error ? error.message : "Board image generation failed.";
+      console.warn("Board image generation failed:", error);
+      setBoardError(message);
+      return false;
+    } finally {
+      if (!signal?.aborted) setBoardImageLoading(false);
+    }
+  }, [boardConfig]);
 
   useEffect(() => {
     if (!generated) return;
@@ -144,6 +249,10 @@ export function useForgeGeneration() {
     setCharacterBlend(session?.characterBlend ?? DEFAULT_CHARACTER_BLEND);
     setForging(false);
     setBoardImageLoading(false);
+    setBoardError("");
+    setRecoveryMessage("");
+    setRecoveryError("");
+    setRerollingActionId(null);
     setRevealedFaction(null);
     setRevealedRarity(null);
     setLayers({
@@ -246,103 +355,144 @@ export function useForgeGeneration() {
     }
 
     resetLayerSession();
+    clearRecoveryIssues(["background", "character", "frame"], true);
 
-    (async () => {
-      setBoardImageLoading(true);
-      try {
-        const boardImageUrl = await generateGouacheBoard(boardConfig);
-        if (signal.aborted) return;
-        let finalBoardUrl = boardImageUrl;
-        try {
-          finalBoardUrl = (await removeBackground(boardImageUrl)).imageUrl;
-        } catch (bgError) {
-          console.warn("Board background removal failed, using original image:", bgError);
-        }
-        if (signal.aborted) return;
-        setGenerated((current) => current ? {
-          ...current,
-          board: { ...current.board, imageUrl: finalBoardUrl },
-        } : current);
-      } catch (error) {
-        console.warn("Board image generation failed:", error);
-      } finally {
-        if (!signal.aborted) setBoardImageLoading(false);
-      }
-    })();
+    void runBoardGeneration(boardConfig, signal);
 
     if (!isImageGenConfigured) {
       setForging(false);
       return;
     }
 
-    const backgroundPrompt = buildBackgroundPrompt(forgePrompts.district);
-    const characterPrompt = buildCharacterPrompt(forgePrompts);
-    const framePrompt = buildFramePrompt(promotedCard.prompts.rarity);
-    const backgroundKey = `bg::${promotedCard.backgroundSeed}`;
-    const charImageSeed = buildCharacterSeed(forgePrompts);
-    const characterKey = `char::${CHARACTER_CACHE_VERSION}::${charImageSeed}`;
-    const frameKey = `frame::${promotedCard.frameSeed}`;
-    const charPostProcess = async (url: string) => (await removeBackground(url)).imageUrl;
-    const validateCharacterLayer = createCharacterLayerValidator(CHARACTER_MIN_DIMENSIONS);
-    const characterAttempts = CHARACTER_SEED_VARIANTS.map((variant) => ({
-      seed: `${charImageSeed}|${variant}`,
-      generationOptions: CHARACTER_GENERATION_OPTIONS,
-    }));
+    const layerParams = buildForgeLayerParams(cardWithBoard);
+    setLayerParams(layerParams);
 
-    setLayerParams({
-      background: { key: backgroundKey, prompt: backgroundPrompt, seed: promotedCard.backgroundSeed },
-      character: {
-        key: characterKey,
-        prompt: characterPrompt,
-        seed: charImageSeed,
-        attempts: characterAttempts,
-        postProcess: charPostProcess,
-        validateResult: validateCharacterLayer,
-        generationOptions: CHARACTER_GENERATION_OPTIONS,
-      },
-      frame: {
-        key: frameKey,
-        prompt: framePrompt,
-        seed: promotedCard.frameSeed,
-        generationOptions: { loras: [] },
-      },
-    });
-
-    generateLayer("background", backgroundKey, backgroundPrompt, promotedCard.backgroundSeed, signal);
+    generateLayer("background", layerParams.background.key, layerParams.background.prompt, layerParams.background.seed, signal);
     generateLayer(
       "character",
-      characterKey,
-      characterPrompt,
-      charImageSeed,
+      layerParams.character.key,
+      layerParams.character.prompt,
+      layerParams.character.seed,
       signal,
-      charPostProcess,
-      validateCharacterLayer,
-      CHARACTER_GENERATION_OPTIONS,
-      characterAttempts,
+      layerParams.character.postProcess,
+      layerParams.character.validateResult,
+      layerParams.character.generationOptions,
+      layerParams.character.attempts,
     );
-    generateLayer("frame", frameKey, framePrompt, promotedCard.frameSeed, signal);
+    generateLayer("frame", layerParams.frame.key, layerParams.frame.prompt, layerParams.frame.seed, signal);
 
     setForging(false);
   }, [
-     replaceAbortController,
-     boardConfig,
-     canForge,
+    buildForgeLayerParams,
+    boardConfig,
+    canForge,
+    clearRecoveryIssues,
     consumeCredit,
     freeCardUsed,
-     generateCredits,
-     generateLayer,
-     hasFaction,
-     markFreeCardUsed,
-     openUpgradeModal,
+    generateCredits,
+    generateLayer,
+    hasFaction,
+    markFreeCardUsed,
+    openUpgradeModal,
     prompts,
+    refreshCraftlinguaFront,
+    replaceAbortController,
     resetLayerSession,
-     setLayerParams,
-     tier,
-     unlockFaction,
-      user?.uid,
-      startFreeForgeCooldown,
-      refreshCraftlinguaFront,
-     ]);
+    runBoardGeneration,
+    setLayerParams,
+    startFreeForgeCooldown,
+    tier,
+    unlockFaction,
+    user?.uid,
+  ]);
+
+  const handleReroll = useCallback(async (actionId: CollectionRerollActionId) => {
+    const action = COLLECTION_REROLL_ACTION_BY_ID[actionId];
+    if (!action) return;
+    if (!user) {
+      setRecoveryError("Sign in to spend cosmetic reroll tokens.");
+      return;
+    }
+    if (!generated) {
+      setRecoveryError("Forge a card before using cosmetic rerolls.");
+      return;
+    }
+    if (!isImageGenConfigured) {
+      setRecoveryError("AI image generation is not configured on this server.");
+      return;
+    }
+    if (rerollTokens < action.tokenCost) {
+      setRecoveryError(`You need ${formatTokenCount(action.tokenCost)} for ${action.name.toLowerCase()}.`);
+      return;
+    }
+
+    const controller = replaceAbortController();
+    const { signal } = controller;
+    const variationKey = buildVariationKey(actionId);
+    const nextLayerParams = buildForgeLayerParams(generated, variationKey);
+    const layersToClear = action.targets.filter((target): target is ForgeLayer => target === "character");
+
+    setRerollingActionId(actionId);
+    clearRecoveryIssues(layersToClear, action.targets.includes("board"));
+
+    try {
+      const spendResult = await spendCollectionReroll(user, actionId);
+      if (signal.aborted) return;
+      setRerollTokens(spendResult.evaluation.state.rerollTokens);
+      const characterPromise = action.targets.includes("character")
+        ? (() => {
+            setLayerParams(nextLayerParams);
+            return generateLayer(
+              "character",
+              nextLayerParams.character.key,
+              nextLayerParams.character.prompt,
+              nextLayerParams.character.seed,
+              signal,
+              nextLayerParams.character.postProcess,
+              nextLayerParams.character.validateResult,
+              nextLayerParams.character.generationOptions,
+              nextLayerParams.character.attempts,
+              true,
+            );
+          })()
+        : Promise.resolve({ ok: true });
+
+      const results = await Promise.all([
+        characterPromise,
+        action.targets.includes("board")
+          ? runBoardGeneration(boardConfig, signal, { skipCache: true, variationKey })
+          : Promise.resolve(true),
+      ]);
+      if (signal.aborted) return;
+
+      const characterOk = !action.targets.includes("character") || results[0].ok;
+      const boardOk = !action.targets.includes("board") || results[1];
+      if (characterOk && boardOk) {
+        setRecoveryMessage(`${action.name} complete. ${formatTokenCount(spendResult.evaluation.state.rerollTokens)} remaining.`);
+        return;
+      }
+
+      setRecoveryError(
+        `Spent ${formatTokenCount(action.tokenCost)}, but part of the reroll failed. Your previous art stays in place for any layer that did not finish.`,
+      );
+    } catch (error) {
+      if (signal.aborted) return;
+      setRecoveryError(error instanceof Error ? error.message : "Failed to spend cosmetic reroll tokens.");
+    } finally {
+      if (!signal.aborted) setRerollingActionId(null);
+    }
+  }, [
+    boardConfig,
+    buildForgeLayerParams,
+    clearRecoveryIssues,
+    generateLayer,
+    generated,
+    replaceAbortController,
+    rerollTokens,
+    runBoardGeneration,
+    setLayerParams,
+    user,
+  ]);
 
   const handleRandomSkater = useCallback(() => {
     sfxClick();
@@ -504,6 +654,7 @@ export function useForgeGeneration() {
   }, []);
 
   return useMemo(() => ({
+    boardError,
     boardConfig,
     boardImageLoading,
     boardLayerOrder,
@@ -522,6 +673,7 @@ export function useForgeGeneration() {
     handleLayerError,
     handlePreviewUpdate,
     handleRandomSkater,
+    handleReroll,
     hasAnyLayerUrl,
     isAnyLayerLoading,
     layers,
@@ -530,8 +682,12 @@ export function useForgeGeneration() {
     patchIdentity,
     patchStats,
     prompts,
+    recoveryError,
+    recoveryMessage,
     revealedFaction,
     revealedRarity,
+    rerollTokens,
+    rerollingActionId,
     setArchetype,
     setBoardConfig,
     setBoardLayerOrder,
@@ -545,6 +701,7 @@ export function useForgeGeneration() {
     setPrompt,
     tier,
   }), [
+    boardError,
     boardConfig,
     boardImageLoading,
     boardLayerOrder,
@@ -563,6 +720,7 @@ export function useForgeGeneration() {
     handleLayerError,
     handlePreviewUpdate,
     handleRandomSkater,
+    handleReroll,
     hasAnyLayerUrl,
     isAnyLayerLoading,
     layers,
@@ -571,8 +729,12 @@ export function useForgeGeneration() {
     patchIdentity,
     patchStats,
     prompts,
+    recoveryError,
+    recoveryMessage,
     revealedFaction,
     revealedRarity,
+    rerollTokens,
+    rerollingActionId,
     setArchetype,
     setBoardConfig,
     setBoardLayerOrder,

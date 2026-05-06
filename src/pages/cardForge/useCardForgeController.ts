@@ -22,6 +22,7 @@ export function useCardForgeController() {
   });
 
     return useMemo(() => ({
+    boardError: forge.boardError,
     boardConfig: forge.boardConfig,
     boardImageLoading: forge.boardImageLoading,
     boardLayerOrder: forge.boardLayerOrder,
@@ -50,6 +51,7 @@ export function useCardForgeController() {
     handleOpenPrint: navigation.handleOpenPrint,
     handlePreviewUpdate: forge.handlePreviewUpdate,
     handleRandomSkater: forge.handleRandomSkater,
+    handleReroll: forge.handleReroll,
     handleReopenWelcome: navigation.handleReopenWelcome,
     handleSaveToCollection: save.handleSaveToCollection,
     hasAnyLayerUrl: forge.hasAnyLayerUrl,
@@ -60,10 +62,14 @@ export function useCardForgeController() {
     patchGeneratedCard: forge.patchGeneratedCard,
     patchIdentity: forge.patchIdentity,
     patchStats: forge.patchStats,
+    recoveryError: forge.recoveryError,
+    recoveryMessage: forge.recoveryMessage,
     printing: navigation.printing,
     prompts: forge.prompts,
     revealedFaction: forge.revealedFaction,
     revealedRarity: forge.revealedRarity,
+    rerollTokens: forge.rerollTokens,
+    rerollingActionId: forge.rerollingActionId,
     saveError: save.saveError,
     savedCard: save.savedCard,
     saving: save.saving,

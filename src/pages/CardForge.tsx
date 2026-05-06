@@ -20,6 +20,7 @@ import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
   const {
+    boardError,
     boardConfig,
     boardImageLoading,
     boardLayerOrder,
@@ -46,6 +47,7 @@ export function CardForge() {
     handleOpenFactions,
     handleOpenPrint,
     handleRandomSkater,
+    handleReroll,
     handleReopenWelcome,
     handleSaveToCollection,
     isAnyLayerLoading,
@@ -57,8 +59,12 @@ export function CardForge() {
     patchStats,
     printing,
     prompts,
+    recoveryError,
+    recoveryMessage,
     revealedFaction,
     revealedRarity,
+    rerollTokens,
+    rerollingActionId,
     saveError,
     savedCard,
     saving,
@@ -136,6 +142,7 @@ export function CardForge() {
         />
 
         <ForgePreviewPanel
+          boardError={boardError}
           boardImageLoading={boardImageLoading}
           boardLayerOrder={boardLayerOrder}
           boardRotation={boardPlacement?.rotationDeg ?? 0}
@@ -160,10 +167,15 @@ export function CardForge() {
           onOpen3D={handleOpen3D}
           onOpenPrint={handleOpenPrint}
           onOpenUpgradeModal={openUpgradeModal}
+          onReroll={handleReroll}
           onSaveToCollection={handleSaveToCollection}
           patchGeneratedCard={patchGeneratedCard}
           patchIdentity={patchIdentity}
           patchStats={patchStats}
+          recoveryError={recoveryError}
+          recoveryMessage={recoveryMessage}
+          rerollTokens={rerollTokens}
+          rerollingActionId={rerollingActionId}
           saveError={saveError}
           saving={saving}
         />
