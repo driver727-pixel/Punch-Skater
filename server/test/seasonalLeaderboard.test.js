@@ -49,3 +49,26 @@ test('leaderboard deck summary applies capped synergy', () => {
 test('seasonal cooldown is four hours', () => {
   assert.equal(SEASONAL_SUBMISSION_COOLDOWN_HOURS, 4);
 });
+
+test('non-numeric card stats do not poison deck score with NaN', () => {
+  const cards = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) =>
+    makeCard(id, 'Courier', { speed: 'oops', range: null, stealth: undefined, grit: 10 }),
+  );
+  const summary = buildLeaderboardDeckSummary(cards);
+  assert.ok(Number.isFinite(summary.deckPower), 'deckPower must be finite');
+  assert.ok(Number.isFinite(summary.strongestStatTotal), 'strongestStatTotal must be finite');
+  assert.equal(summary.strongestStat, 'grit');
+  assert.equal(summary.strongestStatTotal, 60);
+  assert.ok(Number.isFinite(computeSeasonalRankScore(summary.deckPower)));
+  assert.ok(
+    Number.isFinite(
+      computeLifetimeLeaderboardScore({ deckPower: summary.deckPower, crewOzzies: NaN, crewXp: 'bad' }),
+    ),
+  );
+});
+
+test('non-finite deckPower input clamps to zero rank score', () => {
+  assert.equal(computeSeasonalRankScore(NaN), 0);
+  assert.equal(computeSeasonalRankScore(Infinity), 0);
+  assert.equal(computeSeasonalRankScore(-5), 0);
+});

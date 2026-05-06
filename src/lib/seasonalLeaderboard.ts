@@ -42,6 +42,7 @@ export const SEASONAL_FAIR_PLAY_RULES = [
 ] as const;
 
 export function computeSeasonalRankScore(deckPower: number): number {
+  if (!Number.isFinite(deckPower)) return 0;
   return Math.max(0, Math.round(deckPower));
 }
 
