@@ -59,6 +59,11 @@ const STYLE_SHIELD_TYPES: Record<string, string> = {
   Olympic: "mirror",
 };
 
+const RARITY_HYPE_BONUS: Record<string, number> = {
+  Rare: 1,
+  Legendary: 2,
+};
+
 export const JOUST_TRAIT_SUMMARIES: Record<string, string> = {
   "Boost Charge": "+1 Lance when Boost wins the read.",
   "Street Parry": "+1 Shield on tight Counter lines.",
@@ -158,7 +163,7 @@ export function deriveJoustProfile(card: CardPayload): JoustCardProfile {
       + (batteryBonus >= 8 ? 1 : 0)
       + (wheelGrip >= 30 ? 1 : 0),
   );
-  const rarityHypeBonus = card.prompts.rarity === "Legendary" ? 2 : card.prompts.rarity === "Rare" ? 1 : 0;
+  const rarityHypeBonus = RARITY_HYPE_BONUS[card.prompts.rarity] ?? 0;
   const hype = clampJoustStat(
     (card.stats.speed + card.stats.stealth + card.stats.range) / 3
       + (STYLE_HYPE_BONUS[card.prompts.style] ?? 0)
