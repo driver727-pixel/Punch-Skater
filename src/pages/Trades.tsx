@@ -23,6 +23,7 @@ import {
   SEASONAL_FAIR_PLAY_RULES,
   SEASONAL_REWARD_TIERS,
 } from "../lib/seasonalLeaderboard";
+import { estimateCardTradeValue, formatTradeValue, getTradeValueBand } from "../lib/tradeEconomy";
 import { sfxSuccess, sfxRemove, sfxClick } from "../lib/sfx";
 
 type Tab = "inbox" | "outbox" | "market" | "leaderboard";
@@ -140,6 +141,10 @@ export function Trades() {
         tx.set(toCardRef, currentOfferedCard);
         tx.update(tradeRef, {
           status: "accepted",
+          confirmations: {
+            ...(currentTrade.confirmations ?? {}),
+            recipient: ["estimated-value-reviewed", "sender-reputation-reviewed", "card-only-trade"],
+          },
           updatedAt: new Date().toISOString(),
         });
       });
@@ -225,12 +230,33 @@ export function Trades() {
     cancelled: "var(--text-dim)",
   };
 
+  const getEstimatedTradeValue = (trade: TradePayload) => trade.estimatedValue ?? estimateCardTradeValue(trade.offeredCard);
+
+  const renderTradeEconomyDetails = (trade: TradePayload) => {
+    const estimatedValue = getEstimatedTradeValue(trade);
+    const valueBand = trade.valueBand ?? getTradeValueBand(estimatedValue);
+    const reputation = trade.senderReputation;
+    return (
+      <div className="trade-economy-details">
+        <span className={`trade-value-pill trade-value-pill--${valueBand}`}>
+          {formatTradeValue(estimatedValue)} · {valueBand}
+        </span>
+        <span className="trade-reputation-chip">
+          {reputation ? `${reputation.label} · ${reputation.score}/100` : "New trader · reputation building"}
+        </span>
+        {(trade.fairPlay?.flags ?? []).map((flag) => (
+          <span key={flag} className="trade-fairplay-flag">{flag}</span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Trades</h1>
-          <p className="page-sub">Send, receive, and manage direct card offers with other players.</p>
+          <p className="page-sub">Send, receive, and manage fair card-only offers with estimated values and trader reputation.</p>
         </div>
         <div className="page-header-actions">
           <button className="btn-outline" onClick={() => setRefreshKey((k) => k + 1)} aria-label="Refresh trades">
@@ -259,6 +285,11 @@ export function Trades() {
           <span className="trade-summary-label">Resolved</span>
           <strong className="trade-summary-value">{resolvedOutboxCount}</strong>
           <span className="trade-summary-note">Accepted, declined, or cancelled offers</span>
+        </div>
+        <div className="trade-summary-card trade-summary-card--fair">
+          <span className="trade-summary-label">Fair economy</span>
+          <strong className="trade-summary-value">0¢</strong>
+          <span className="trade-summary-note">No real-money trades, no pay-to-win boosts, and card value is estimated from earned play.</span>
         </div>
       </div>
 
@@ -305,6 +336,7 @@ export function Trades() {
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
                     <div className="trade-from">From: <strong>{trade.fromEmail}</strong></div>
+                    {renderTradeEconomyDetails(trade)}
                   </div>
                   <div className="trade-actions-row">
                     <button
@@ -345,6 +377,7 @@ export function Trades() {
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
                     <div className="trade-from">To: <strong>{trade.toEmail}</strong></div>
+                    {renderTradeEconomyDetails(trade)}
                   </div>
                   <div className="trade-actions-row">
                     <span
@@ -395,6 +428,7 @@ export function Trades() {
                     <div className="trade-card-sub">
                       {getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}
                     </div>
+                    {renderTradeEconomyDetails(trade)}
                     <div className="market-card-district">
                       {trade.offeredCard.prompts.district}
                     </div>

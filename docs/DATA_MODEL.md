@@ -219,11 +219,33 @@ Peer-to-peer card trades and Community Market listings.
   toEmail: string,
   offeredCardId?: string,
   offeredCard: CardPayload,     // embedded snapshot
+  estimatedValue?: number,      // client-estimated earned value, never currency
+  valueBand?: "starter" | "rising" | "prime" | "elite" | "grail",
+  economyVersion?: "fair-trade-v1",
+  senderReputation?: {
+    score: number,              // 0-100 completion/cancellation signal
+    label: string,
+    completedTrades: number,
+    acceptedTrades: number,
+    cancelledTrades: number,
+    pendingOffers: number,
+    updatedAt: string,
+  },
+  fairPlay?: {
+    flags: string[],            // value/maintenance warnings shown before confirmation
+    reviewedAt: string,
+  },
+  confirmations?: {
+    sender: string[],           // sender fair-trade checklist receipts
+    recipient?: string[],       // recipient review receipts on accept
+  },
   status: "pending" | "accepted" | "declined" | "cancelled",
   createdAt: string,
   updatedAt: string,
 }
 ```
+
+Trade economy metadata is informational and card-only: estimated values are derived from rarity, earned XP/Ozzies, stats, joust profile, board tuning, and maintenance state. They must not be displayed as cash prices or used to sell power.
 
 ### `referralClaims/{referrerUid}_{visitorKey}`
 

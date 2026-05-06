@@ -604,6 +604,18 @@ export interface LeaderboardEntry {
 
 // ── Trade payload ─────────────────────────────────────────────────────────────
 
+export type TradeValueBand = "starter" | "rising" | "prime" | "elite" | "grail";
+
+export interface TradeReputationSnapshot {
+  score: number;
+  label: string;
+  completedTrades: number;
+  acceptedTrades: number;
+  cancelledTrades: number;
+  pendingOffers: number;
+  updatedAt: string;
+}
+
 export interface TradePayload {
   id: string;
   fromUid: string;
@@ -612,6 +624,18 @@ export interface TradePayload {
   toEmail: string;
   offeredCardId?: string;
   offeredCard: CardPayload;
+  estimatedValue?: number;
+  valueBand?: TradeValueBand;
+  economyVersion?: string;
+  senderReputation?: TradeReputationSnapshot;
+  fairPlay?: {
+    flags: string[];
+    reviewedAt: string;
+  };
+  confirmations?: {
+    sender: string[];
+    recipient?: string[];
+  };
   status: "pending" | "accepted" | "declined" | "cancelled";
   createdAt: string;
   updatedAt: string;

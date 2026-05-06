@@ -88,6 +88,53 @@ service cloud.firestore {
     // only the recipient can update status (accept/decline),
     // and the offerer can cancel a pending trade.
     match /trades/{tradeId} {
+      function validTradeCreate() {
+        return request.resource.data.keys().hasAll([
+            'id', 'fromUid', 'fromEmail', 'toUid', 'toEmail', 'offeredCard',
+            'status', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.keys().hasOnly([
+            'id', 'fromUid', 'fromEmail', 'toUid', 'toEmail', 'offeredCardId',
+            'offeredCard', 'estimatedValue', 'valueBand', 'economyVersion',
+            'senderReputation', 'fairPlay', 'confirmations', 'status',
+            'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.id == tradeId
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.toUid is string
+          && request.resource.data.toUid != request.auth.uid
+          && request.resource.data.fromEmail is string
+          && request.resource.data.toEmail is string
+          && request.resource.data.offeredCard is map
+          && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt is string
+          && request.resource.data.updatedAt == request.resource.data.createdAt
+          && (!request.resource.data.keys().hasAny(['offeredCardId'])
+            || request.resource.data.offeredCardId is string)
+          && (!request.resource.data.keys().hasAny(['estimatedValue'])
+            || (request.resource.data.estimatedValue is number
+              && request.resource.data.estimatedValue >= 0
+              // Must match MAX_ESTIMATED_TRADE_VALUE in src/lib/tradeEconomy.ts.
+              && request.resource.data.estimatedValue <= 100000))
+          && (!request.resource.data.keys().hasAny(['valueBand'])
+            || request.resource.data.valueBand in ['starter', 'rising', 'prime', 'elite', 'grail'])
+          && (!request.resource.data.keys().hasAny(['economyVersion'])
+            || request.resource.data.economyVersion == 'fair-trade-v1')
+          && (!request.resource.data.keys().hasAny(['confirmations'])
+            || request.resource.data.confirmations is map);
+      }
+
+      function validTradeStatusUpdate(nextStatus) {
+        return resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'updatedAt', 'confirmations'
+          ])
+          && request.resource.data.status == nextStatus
+          && request.resource.data.updatedAt is string
+          && (!request.resource.data.keys().hasAny(['confirmations'])
+            || request.resource.data.confirmations is map);
+      }
+
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.fromUid ||
         request.auth.uid == resource.data.toUid ||
@@ -95,14 +142,17 @@ service cloud.firestore {
         resource.data.status == 'pending'
       );
       allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.fromUid;
+        && validTradeCreate();
       allow update: if request.auth != null && (
         // Recipient accepts/declines
-        request.auth.uid == resource.data.toUid ||
+        (request.auth.uid == resource.data.toUid
+          && (validTradeStatusUpdate('accepted') || validTradeStatusUpdate('declined'))) ||
         // Offerer cancels while still pending
         (request.auth.uid == resource.data.fromUid
-          && resource.data.status == 'pending')
+          && validTradeStatusUpdate('cancelled'))
       );
+      // Trades cannot be deleted so accepted, declined, and cancelled offers retain an audit trail.
+      allow delete: if false;
     }
     // ── Referral Claims ──────────────────────────────────────────────────────
     // Written by any visitor who arrives via a referral link.
