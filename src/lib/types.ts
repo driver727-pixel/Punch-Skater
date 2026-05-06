@@ -462,6 +462,65 @@ export interface Race {
   createdAt: string;
 }
 
+// ── Jousting Lite ─────────────────────────────────────────────────────────────
+
+export type JoustTactic = "charge" | "guard" | "feint" | "counter" | "boost" | "trickStrike";
+
+export type JoustDifficulty = "easy" | "standard" | "hard" | "boss";
+
+export type JoustOutcome = "win" | "loss" | "draw";
+
+export interface JoustCardSnapshot {
+  id: string;
+  name: string;
+  archetype?: Archetype;
+  crew?: Faction;
+  district?: District;
+  stats: ForgedCardStats;
+  joust: JoustCardProfile;
+}
+
+export interface JoustModifierBreakdown {
+  source: string;
+  amount: number;
+  target: "attack" | "defense" | "speed";
+}
+
+export interface JoustTacticProfile {
+  id: JoustTactic;
+  label: string;
+  flavor: string;
+  beats: JoustTactic[];
+}
+
+export interface JoustResolutionBreakdown {
+  attack: number;
+  defense: number;
+  advantage: number;
+  speedTieBreak: number;
+  randomRoll: number;
+  strike: number;
+  playerModifiers: JoustModifierBreakdown[];
+  rivalModifiers: JoustModifierBreakdown[];
+}
+
+export interface JoustResolution {
+  seed: string;
+  difficulty: JoustDifficulty;
+  player: JoustCardSnapshot;
+  rival: JoustCardSnapshot;
+  playerTactic: JoustTactic;
+  rivalTactic: JoustTactic;
+  strike: number;
+  outcome: JoustOutcome;
+  narration: string;
+  breakdown: JoustResolutionBreakdown;
+  rewardHints: {
+    styleMultiplier: number;
+    difficultyMultiplier: number;
+  };
+}
+
 // ── Notifications ────────────────────────────────────────────────────────────
 
 export type NotificationType =
