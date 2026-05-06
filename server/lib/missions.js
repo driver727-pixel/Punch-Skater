@@ -1098,7 +1098,7 @@ function resolveMissionJoust(mission, deck, activeRun, playerTactic = null) {
     playerCardId: resolution.player.id,
     playerName: resolution.player.name,
     rivalName: resolution.rival.name,
-    ...(progressionAward ? { rivalId: progressionAward.rivalId } : {}),
+    ...(config.rivalId ? { rivalId: config.rivalId } : {}),
     playerTactic: resolution.playerTactic,
     rivalTactic: resolution.rivalTactic,
     difficulty: resolution.difficulty,
