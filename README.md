@@ -6,7 +6,7 @@ A cyberpunk electric-skate card game built with React, TypeScript, Vite, Firebas
 
 Create your skater. Build your crew. Win the joust. Rule the neon streets.
 
-Punch Skater is a collectible card game set in the Sk8r Punk universe, built around forging cyberpunk electric-skate warriors, assembling a 6-card Crew, winning mission jousts, beating district rivals, and climbing seasonal neon leaderboards.
+Punch Skater is a collectible card game set in the Sk8rpunk universe, built around forging cyberpunk electric-skate warriors, assembling a 6-card Crew, winning mission jousts, beating district rivals, and climbing seasonal neon leaderboards.
 
 - **What** — Forge skater cards with joust-ready identities, grow your collection, and choose your best 6 cards as your active **Crew**.
 - **How** — Start with a bonus Rare card on signup, then earn more through missions, joust encounters, battles, trades, daily rewards, weekly heat, and seasonal progression.
@@ -14,7 +14,7 @@ Punch Skater is a collectible card game set in the Sk8r Punk universe, built aro
 
 ### Core game loop
 
-> Forge → Crew → Mission / Race / Joust → Reward → Upgrade / Trade → Unlock → Flex
+> Forge → Crew → Mission / Joust → Reward → Upgrade / Trade → Unlock → Flex
 
 ### Progression at a glance
 
