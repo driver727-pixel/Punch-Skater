@@ -953,9 +953,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-shadow: 0 0 18px rgba(141, 255, 92, 0.18);
 }
 
+.forge-welcome__tagline {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: clamp(14px, 2vw, 18px);
+  letter-spacing: 1px;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+}
+
 .forge-welcome__lede {
   max-width: 78ch;
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   color: var(--text);
   line-height: 1.6;
 }
@@ -986,6 +995,61 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--text-dim);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.forge-welcome__loop-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.forge-welcome__loop {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forge-welcome__loop-step {
+  display: grid;
+  grid-template-columns: 20px 22px auto 1fr;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(7, 12, 18, 0.48);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.forge-welcome__loop-num {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-align: right;
+}
+
+.forge-welcome__loop-icon {
+  font-size: 14px;
+  text-align: center;
+}
+
+.forge-welcome__loop-label {
+  color: var(--text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.forge-welcome__loop-desc {
+  color: var(--text-dim);
+  line-height: 1.45;
 }
 
 .forge-welcome__actions {
@@ -8755,6 +8819,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .forge-welcome__title {
     font-size: clamp(24px, 8vw, 30px);
+  }
+
+  .forge-welcome__loop-step {
+    grid-template-columns: 20px 22px 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .forge-welcome__loop-desc {
+    grid-column: 3 / -1;
+    grid-row: 2;
   }
 
   .forge-welcome__actions {
