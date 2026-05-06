@@ -1,4 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore';
+import rateLimit from 'express-rate-limit';
 import {
   ACTIVE_LEADERBOARD_SEASON,
   SEASONAL_SUBMISSION_COOLDOWN_MS,
@@ -17,6 +18,14 @@ const USERS_COLLECTION = 'users';
 const PROFILES_COLLECTION = 'userProfiles';
 const LIFETIME_LEADERBOARD_COLLECTION = 'leaderboard';
 const SEASONS_COLLECTION = 'leaderboardSeasons';
+
+const routeLocalLeaderboardRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many leaderboard submissions — please wait a moment and try again.' },
+});
 
 function buildUserDisplayName(caller, profile) {
   const profileName = typeof profile?.displayName === 'string' ? profile.displayName.trim() : '';
@@ -48,7 +57,7 @@ export function registerLeaderboardRoutes(app, {
   leaderboardRateLimit,
   authenticateFirebaseUser,
 }) {
-  app.post('/api/leaderboard/submit', leaderboardRateLimit, async (req, res) => {
+  app.post('/api/leaderboard/submit', routeLocalLeaderboardRateLimit, leaderboardRateLimit, async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Leaderboard submission is not configured on this server.' });
       return;

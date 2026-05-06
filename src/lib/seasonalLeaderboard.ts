@@ -1,5 +1,3 @@
-import type { LeaderboardEntry } from "./types";
-
 export const ACTIVE_LEADERBOARD_SEASON = {
   id: "season-2026-neon-thaw",
   label: "Neon Thaw",
@@ -45,10 +43,6 @@ export const SEASONAL_FAIR_PLAY_RULES = [
 
 export function computeSeasonalRankScore(deckPower: number): number {
   return Math.max(0, Math.round(deckPower));
-}
-
-export function computeLifetimeLeaderboardScore(entry: LeaderboardEntry): number {
-  return Math.max(0, Math.round(entry.leaderboardScore ?? entry.deckPower + (entry.crewOzzies ?? entry.ozzies ?? 0) + (entry.crewXp ?? 0) / 10_000));
 }
 
 export function resolveSeasonalRewardTierIds(rank: number, entrantCount: number): SeasonalRewardTierId[] {
