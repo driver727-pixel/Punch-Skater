@@ -78,6 +78,8 @@ Owner-only sub-collection. Each document mirrors `CardPayload` from `src/lib/typ
     },
     traits: string[],
   },
+  // UI note: rangeNm is still stored on stats, but the card back now surfaces it
+  // inside the compact joust header instead of as its own standalone stat bar.
   visuals: {
     helmetStyle: string,
     jacketStyle: string,
