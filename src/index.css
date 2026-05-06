@@ -1008,7 +1008,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .forge-welcome__loop {
   list-style: none;
-  margin: 0 0 4px;
+  margin: 0 0 20px;
   padding: 0;
   display: flex;
   flex-direction: column;
