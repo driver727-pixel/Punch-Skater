@@ -62,6 +62,13 @@ function getProgression(profile) {
   return {
     missionXp: Number(profile?.missionXp) || 0,
     missionOzzies: Number(profile?.missionOzzies) || 0,
+    districtReputation: Number(profile?.districtReputation) || 0,
+    defeatedRivalIds: Array.isArray(profile?.defeatedRivalIds)
+      ? profile.defeatedRivalIds.filter((value) => typeof value === 'string')
+      : [],
+    codexUnlockIds: Array.isArray(profile?.codexUnlockIds)
+      ? profile.codexUnlockIds.filter((value) => typeof value === 'string')
+      : [],
   };
 }
 
@@ -322,6 +329,14 @@ export function registerMissionRoutes(app, {
           const nextProgression = {
             missionXp: progression.missionXp + rewards.rewardXp,
             missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
+            districtReputation:
+              progression.districtReputation + (resolution.joustResult?.districtReputationDelta ?? 0),
+            defeatedRivalIds: resolution.joustResult?.rivalId
+              ? [...new Set([...progression.defeatedRivalIds, resolution.joustResult.rivalId])]
+              : progression.defeatedRivalIds,
+            codexUnlockIds: resolution.joustResult?.loreUnlockIds?.length
+              ? [...new Set([...progression.codexUnlockIds, ...resolution.joustResult.loreUnlockIds])]
+              : progression.codexUnlockIds,
           };
           const updatedMission = {
             ...mission,
@@ -355,6 +370,9 @@ export function registerMissionRoutes(app, {
           tx.set(profileRef, {
             missionXp: nextProgression.missionXp,
             missionOzzies: nextProgression.missionOzzies,
+            districtReputation: nextProgression.districtReputation,
+            defeatedRivalIds: nextProgression.defeatedRivalIds,
+            codexUnlockIds: nextProgression.codexUnlockIds,
             updatedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
 
@@ -410,6 +428,9 @@ export function registerMissionRoutes(app, {
           const nextProgression = {
             missionXp: progression.missionXp + rewards.rewardXp,
             missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
+            districtReputation: progression.districtReputation,
+            defeatedRivalIds: progression.defeatedRivalIds,
+            codexUnlockIds: progression.codexUnlockIds,
           };
           const updatedMission = {
             ...mission,
@@ -434,6 +455,9 @@ export function registerMissionRoutes(app, {
           tx.set(profileRef, {
             missionXp: nextProgression.missionXp,
             missionOzzies: nextProgression.missionOzzies,
+            districtReputation: nextProgression.districtReputation,
+            defeatedRivalIds: nextProgression.defeatedRivalIds,
+            codexUnlockIds: nextProgression.codexUnlockIds,
             updatedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
 

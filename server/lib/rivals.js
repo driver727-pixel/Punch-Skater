@@ -58,6 +58,17 @@ export const DISTRICT_RIVALS = [
       loss: 'Jax slaps the rail and grins. "Told ya. Full noise beats half-measures every time."',
       draw: 'Jax shrugs at the sparks. "Knife-edge. Run it back when you\'ve got a real cell."',
     },
+    missionHook: {
+      missionDefinitionIds: ['batteryville-breaker-yard', 'batteryville-switchyard-uprising'],
+      label: 'Jax Voltage joust',
+      intro: 'Jax Voltage boots onto the breaker lane, sparks flying. "Send it, mate. Freight only moves if you do."',
+      summary: 'Beat Jax Voltage in the breaker lane for a named-rival payout and Batteryville bragging rights.',
+      difficulty: 'standard',
+    },
+    progressionHook: {
+      districtReputationDelta: 40,
+      codexEntryIds: ['codex-rival-jax-voltage'],
+    },
   },
   {
     id: 'airaway-mina-chrome',
@@ -110,6 +121,17 @@ export const DISTRICT_RIVALS = [
       win: 'Mina nods once, all business. "Recorded. Cleanest pass on the ledger this quarter."',
       loss: 'Mina holsters the lance. "Filed under \'expected outcome\'. Try the appeals process."',
       draw: 'Mina arches an eyebrow. "A draw on a checkpoint. The auditors will love that one."',
+    },
+    missionHook: {
+      missionDefinitionIds: ['airaway-sky-lane', 'airaway-coldchain-pass'],
+      label: 'Mina Chrome checkpoint joust',
+      intro: 'Mina Chrome locks the glass gate and levels a magnetic shield. "Compliance check. Hold the line, mate."',
+      summary: 'Clear Mina Chrome\'s checkpoint joust for extra Airaway cred and a cleaner route out.',
+      difficulty: 'standard',
+    },
+    progressionHook: {
+      districtReputationDelta: 40,
+      codexEntryIds: ['codex-rival-mina-chrome'],
     },
   },
   {
@@ -164,6 +186,17 @@ export const DISTRICT_RIVALS = [
       loss: 'Rook is already gone. The reply lands a second later: "Showpony."',
       draw: 'Rook taps their lance against yours. "Even split. The lane keeps the difference."',
     },
+    missionHook: {
+      missionDefinitionIds: ['nightshade-tunnel-run', 'nightshade-moonrise-echo'],
+      label: 'Rook Wraith tunnel joust',
+      intro: 'Rook Wraith slips out of the tunnel glare and taps the rail. "You don\'t see the lane till I want you to."',
+      summary: 'Beat Rook Wraith in the tunnel mouth to leave Nightshade with extra hush money and lore.',
+      difficulty: 'standard',
+    },
+    progressionHook: {
+      districtReputationDelta: 40,
+      codexEntryIds: ['codex-rival-rook-wraith'],
+    },
   },
   {
     id: 'grid-vex-static',
@@ -216,6 +249,17 @@ export const DISTRICT_RIVALS = [
       win: 'Vex blinks slowly. "Huh. The trace cleared you. Lucky day."',
       loss: 'Vex is already filing the footage. "Counter, archived. Try a different pattern next time."',
       draw: 'Vex tilts their head. "Stalemate logged. The Grid will get curious about that one."',
+    },
+    missionHook: {
+      missionDefinitionIds: ['grid-trace', 'grid-parent-trace'],
+      label: 'Vex Static trace joust',
+      intro: 'Vex Static hijacks the live feed and glides into the trace lane. "Cameras are mine. Have a crack."',
+      summary: 'Take Vex Static on in a live trace joust for extra archive value and Grid standing.',
+      difficulty: 'hard',
+    },
+    progressionHook: {
+      districtReputationDelta: 40,
+      codexEntryIds: ['codex-rival-vex-static'],
     },
   },
   {
@@ -270,6 +314,17 @@ export const DISTRICT_RIVALS = [
       loss: 'Nova throws the crowd a wink. "Roll the replay. That\'s the one."',
       draw: 'Nova laughs at the screens. "Cliffhanger ending. The advertisers will love it."',
     },
+    missionHook: {
+      missionDefinitionIds: ['glass-city-exchange'],
+      label: 'Nova Saint broker joust',
+      intro: 'Nova Saint skates into the exchange halo with the cameras already live. "Big crowd tonight. Showpony?"',
+      summary: 'Beat Nova Saint in the open lane for extra Glass City cash and a fresh Codex hook.',
+      difficulty: 'standard',
+    },
+    progressionHook: {
+      districtReputationDelta: 40,
+      codexEntryIds: ['codex-rival-nova-saint'],
+    },
   },
 ];
 
@@ -277,6 +332,43 @@ export function getDistrictRival(id) {
   return DISTRICT_RIVALS.find((rival) => rival.id === id);
 }
 
+export function getDistrictRivalByDistrict(district) {
+  return DISTRICT_RIVALS.find((rival) => rival.district === district);
+}
+
 export function getDistrictRivalsByDistrict(district) {
   return DISTRICT_RIVALS.filter((rival) => rival.district === district);
+}
+
+export function getDistrictRivalMissionHook(district) {
+  const rival = getDistrictRivalByDistrict(district);
+  if (!rival) return null;
+  return {
+    ...rival.missionHook,
+    rivalId: rival.id,
+    rivalCard: rival.signatureCard,
+  };
+}
+
+export function createDistrictRivalBattleCardSnapshot(rivalOrId) {
+  const rival = typeof rivalOrId === 'string' ? getDistrictRival(rivalOrId) : rivalOrId;
+  if (!rival) return undefined;
+  return {
+    id: rival.signatureCard.id,
+    archetype: rival.signatureCard.archetype,
+    stats: { ...rival.signatureCard.stats },
+  };
+}
+
+export function getDistrictRivalProgressionAward(rivalOrId, outcome = 'win') {
+  if (outcome !== 'win') return null;
+  const rival = typeof rivalOrId === 'string' ? getDistrictRival(rivalOrId) : rivalOrId;
+  if (!rival) return null;
+  return {
+    rivalId: rival.id,
+    district: rival.district,
+    cardRewardId: rival.cardReward.id,
+    codexEntryIds: [...rival.progressionHook.codexEntryIds],
+    districtReputationDelta: rival.progressionHook.districtReputationDelta,
+  };
 }

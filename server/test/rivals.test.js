@@ -1,14 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  createDistrictRivalBattleCardSnapshot,
   DISTRICT_RIVALS,
   getDistrictRival,
+  getDistrictRivalByDistrict,
+  getDistrictRivalMissionHook,
+  getDistrictRivalProgressionAward,
   getDistrictRivalsByDistrict,
 } from '../lib/rivals.js';
 import { JOUST_DIFFICULTIES, resolveJoust } from '../lib/joust.js';
 
 const VALID_TACTICS = new Set(['charge', 'guard', 'feint', 'counter', 'boost', 'trickStrike']);
 const VALID_DIFFICULTIES = new Set(Object.keys(JOUST_DIFFICULTIES));
+const VALID_MISSION_DIFFICULTIES = new Set(['easy', 'standard', 'hard']);
 const VALID_RARITIES = new Set(['Rare', 'Legendary']);
 const VALID_DISTRICTS = new Set([
   'Airaway',
@@ -94,6 +99,11 @@ test('every rival entry is well-formed and uses canonical enums', () => {
     assert.ok(VALID_RARITIES.has(rival.cardReward.rarity));
     assert.equal(typeof rival.codexUnlock.title, 'string');
     assert.ok(rival.codexUnlock.summary.length > 40);
+    assert.ok(rival.missionHook.missionDefinitionIds.length > 0, `${rival.name} needs mission hook ids`);
+    assert.ok(VALID_MISSION_DIFFICULTIES.has(rival.missionHook.difficulty), `${rival.name} mission difficulty should stay pre-boss`);
+    assert.ok(rival.missionHook.intro.length > 20);
+    assert.ok(rival.progressionHook.districtReputationDelta > 0);
+    assert.deepEqual(rival.progressionHook.codexEntryIds, [rival.codexUnlock.id]);
 
     for (const line of [
       rival.dialogue.intro,
@@ -139,6 +149,7 @@ test('every signature card is statted to win its rival\'s signature tactic head-
 test('lookups by id and by district return the expected rivals', () => {
   assert.equal(getDistrictRival('grid-vex-static').name, 'Vex Static');
   assert.equal(getDistrictRival('does-not-exist'), undefined);
+  assert.equal(getDistrictRivalByDistrict('Batteryville').name, 'Jax Voltage');
 
   const nightshade = getDistrictRivalsByDistrict('Nightshade');
   assert.equal(nightshade.length, 1);
@@ -146,4 +157,29 @@ test('lookups by id and by district return the expected rivals', () => {
 
   // The Forest is intentionally a future expansion slot in this batch.
   assert.equal(getDistrictRivalsByDistrict('The Forest').length, 0);
+});
+
+test('named district rivals expose mission hooks, battle snapshots, and first-win progression awards', () => {
+  const airawayHook = getDistrictRivalMissionHook('Airaway');
+  assert.equal(airawayHook.rivalId, 'airaway-mina-chrome');
+  assert.equal(airawayHook.rivalCard.name, 'Mina Chrome');
+  assert.equal(airawayHook.difficulty, 'standard');
+
+  const battleSnapshot = createDistrictRivalBattleCardSnapshot('grid-vex-static');
+  assert.deepEqual(battleSnapshot, {
+    id: 'rival-card-vex-static',
+    archetype: 'D4rk $pider',
+    stats: { speed: 7, range: 8, rangeNm: 8, stealth: 8, grit: 6 },
+  });
+
+  const winAward = getDistrictRivalProgressionAward('nightshade-rook-wraith', 'win');
+  assert.deepEqual(winAward, {
+    rivalId: 'nightshade-rook-wraith',
+    district: 'Nightshade',
+    cardRewardId: 'card-reward-wraith-shortcut',
+    codexEntryIds: ['codex-rival-rook-wraith'],
+    districtReputationDelta: 40,
+  });
+  assert.equal(getDistrictRivalProgressionAward('nightshade-rook-wraith', 'loss'), null);
+  assert.equal(getDistrictRivalMissionHook('The Forest'), null);
 });
