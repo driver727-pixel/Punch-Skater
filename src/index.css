@@ -1648,6 +1648,157 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
 }
 .collection-toolbar { margin-bottom: 16px; }
+.collection-rewards-panel {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at top left, rgba(0, 255, 136, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(8, 8, 24, 0.95), rgba(18, 10, 36, 0.88));
+  box-shadow: 0 0 24px rgba(0, 255, 136, 0.08);
+}
+.collection-rewards-header {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.collection-rewards-header h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.collection-rewards-header .eyebrow {
+  margin: 0 0 4px;
+  color: var(--accent2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.collection-rewards-header p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.collection-rewards-score {
+  min-width: 180px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  text-align: right;
+}
+.collection-rewards-score span,
+.collection-rewards-score small {
+  display: block;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.collection-rewards-score strong {
+  display: block;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1;
+}
+.collection-rewards-stats,
+.collection-rewards-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.collection-rewards-stats span {
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.24);
+  font-size: 12px;
+}
+.collection-rewards-stats strong { color: var(--accent); }
+.collection-rewards-message {
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.collection-rewards-message--ok { color: var(--accent); }
+.collection-rewards-message--error { color: var(--danger); }
+.collection-rewards-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.collection-reward-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(3, 6, 18, 0.82);
+}
+.collection-reward-card--claimable {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.16);
+}
+.collection-reward-card--owned { border-color: rgba(0, 204, 255, 0.6); }
+.collection-reward-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+.collection-reward-card__top strong {
+  display: block;
+  color: var(--text);
+}
+.collection-reward-card__top span,
+.collection-reward-card p {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.collection-reward-card p { margin: 0; line-height: 1.4; }
+.collection-reward-card__status {
+  white-space: nowrap;
+  color: var(--accent) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.collection-reward-progress {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.collection-reward-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.collection-reward-card__rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.collection-reward-chip {
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+.collection-reward-chip--reroll_token { border-color: rgba(255, 196, 76, 0.5); color: #ffd66f; }
 .collection-search-row {
   display: flex;
   gap: 8px;
