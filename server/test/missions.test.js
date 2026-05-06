@@ -38,6 +38,7 @@ function buildCard(overrides = {}) {
         ...overrides.board?.config,
       },
     },
+    ...(overrides.joust ? { joust: overrides.joust } : {}),
     maintenance: {
       state: 'active',
       chargePct: 100,
@@ -69,6 +70,7 @@ test('getMissionEncounter never produces encounter options with undefined reward
   for (const mission of missions) {
     const encounter = getMissionEncounter(mission);
     if (!encounter) continue;
+    assert.ok(encounter.options.some((option) => option.encounterType === 'joust'));
     for (const option of encounter.options) {
       if ('rewardXpDelta' in option) {
         assert.equal(typeof option.rewardXpDelta, 'number', `${mission.definitionId}/${option.id} rewardXpDelta must be a number when present`);
@@ -309,15 +311,54 @@ test('resolveMissionCounterChoice returns selected encounter rewards when the ha
 
   const runState = buildMissionActiveRunState(deck, mission);
   const selectedId = runState.availableCounterOptionIds[0];
-  const resolution = resolveMissionCounterChoice(mission, runState, selectedId);
+  const resolution = resolveMissionCounterChoice(mission, deck, runState, selectedId);
   assert.equal(resolution.hardCutout, false);
   assert.equal(resolution.selectedOption?.id, selectedId);
 });
 
 test('resolveMissionCounterChoice clips rewards for a hard cutout', () => {
   const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'glass-city-exchange');
-  const resolution = resolveMissionCounterChoice(mission, null, HARD_CUTOUT_COUNTER_ID);
+  const resolution = resolveMissionCounterChoice(mission, { id: 'deck-cutout', name: 'Cutout', cards: [] }, null, HARD_CUTOUT_COUNTER_ID);
   assert.equal(resolution.hardCutout, true);
   assert.equal(resolution.rewardXpDelta, -20);
   assert.equal(resolution.rewardOzziesDelta, -20);
+});
+
+test('resolveMissionCounterChoice can settle a district joust with tactic-selected bonus rewards', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'nightshade-moonrise-echo');
+  const deck = {
+    id: 'deck-joust-1',
+    name: 'Moonrise Duelists',
+    cards: [
+      buildCard({
+        id: 'duelist-1',
+        name: 'Skids Flash',
+        identity: { name: 'Skids Flash', crew: 'Qu111s' },
+        prompts: { archetype: 'Qu111s', district: 'Nightshade' },
+        stats: { speed: 8, range: 6, stealth: 8, grit: 5 },
+        board: { config: { boardType: 'Street', wheels: 'Cloud' } },
+        joust: { lance: 8, shield: 6, hype: 8, traits: ['Neon Flourish'] },
+      }),
+      buildCard({
+        id: 'duelist-2',
+        prompts: { archetype: 'The Knights Technarchy', district: 'Nightshade' },
+        identity: { crew: 'The Knights Technarchy' },
+        stats: { speed: 7, range: 7, stealth: 7, grit: 5 },
+      }),
+      ...Array.from({ length: 3 }, (_, index) => buildCard({
+        id: `duelist-extra-${index + 1}`,
+        stats: { speed: 6, range: 6, stealth: 5, grit: 5 },
+      })),
+    ],
+  };
+
+  const runState = buildMissionActiveRunState(deck, mission);
+  const resolution = resolveMissionCounterChoice(mission, deck, runState, 'district-joust', 'trickStrike');
+
+  assert.equal(resolution.hardCutout, false);
+  assert.equal(resolution.selectedOption?.encounterType, 'joust');
+  assert.equal(resolution.joustResult?.playerTactic, 'trickStrike');
+  assert.ok(['win', 'draw', 'loss'].includes(resolution.joustResult?.outcome));
+  assert.equal(resolution.rewardXpDelta, resolution.joustResult?.rewardXpBonus ?? 0);
+  assert.equal(resolution.rewardOzziesDelta, resolution.joustResult?.rewardOzziesBonus ?? 0);
 });

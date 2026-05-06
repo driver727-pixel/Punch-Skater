@@ -1,4 +1,5 @@
 import { isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
+import { getAvailableJoustTactics, resolveJoust, selectDefaultJoustRider } from "./joust";
 import type {
   MissionActiveRunState,
   MissionBoardEntry,
@@ -7,11 +8,12 @@ import type {
   MissionEncounter,
   MissionEncounterOption,
   MissionForkOption,
+  MissionJoustResult,
   MissionRequirement,
   MissionRequirementResult,
   MissionStatusEffect,
 } from "./sharedTypes";
-import type { DeckPayload, District } from "./types";
+import type { DeckPayload, District, JoustCardSnapshot, JoustDifficulty, JoustTactic } from "./types";
 
 type MissionTemplate = Omit<
   MissionBoardEntry,
@@ -31,6 +33,17 @@ const BASE_STAT_REDUCTION = 4;
 const FORK_STAT_REDUCTION = 2;
 const ACTIVE_HAND_SIZE = 3;
 export const HARD_CUTOUT_COUNTER_ID = "hard-cutout";
+const MISSION_JOUST_OPTION_ID = "district-joust";
+const MISSION_JOUST_BASE_REWARDS = {
+  win: { rewardXpDelta: 24, rewardOzziesDelta: 18 },
+  draw: { rewardXpDelta: 10, rewardOzziesDelta: 8 },
+  loss: { rewardXpDelta: 0, rewardOzziesDelta: 0 },
+} as const;
+/** Keep the first mission-joust rollout on the standard band unless a district explicitly opts into more pressure. */
+const DEFAULT_MISSION_JOUST_DIFFICULTY: JoustDifficulty = "standard";
+const MISSION_JOUST_SEED_FALLBACK = "mission-joust";
+const MISSION_JOUST_TACTIC_FALLBACK: JoustTactic = "charge";
+const MISSION_JOUST_SELECTION_FALLBACK = "auto";
 
 const ROUGH_ROUTE_DISTRICTS = new Set<District>(["Batteryville", "Nightshade", "The Forest"]);
 const CAMERA_HACKER_ARCHETYPES = new Set(["The Knights Technarchy", "D4rk $pider"]);
@@ -55,6 +68,168 @@ interface MissionWeatherImpact {
   source: string;
 }
 
+interface MissionJoustRivalConfig {
+  label: string;
+  intro: string;
+  summary: string;
+  difficulty?: JoustDifficulty;
+  rival: Omit<JoustCardSnapshot, "id"> & { id?: string };
+}
+
+const MISSION_JOUST_RIVALS: Record<District, MissionJoustRivalConfig> = {
+  Airaway: {
+    label: "Checkpoint joust",
+    intro: "A checkpoint marshal drops a lance gate across the glass lane and demands a clean pass.",
+    summary: "Beat the checkpoint marshal in a clean joust for a little extra pay on the way out.",
+    rival: {
+      id: "airaway-checkpoint-marshal",
+      name: "Marshal Prism",
+      archetype: "The Team",
+      crew: "The Team",
+      district: "Airaway",
+      stats: { speed: 7, range: 6, rangeNm: 6, stealth: 5, grit: 6 },
+      joust: {
+        lance: 7,
+        shield: 7,
+        hype: 6,
+        gear: {
+          boardType: "Street",
+          lanceType: "kinetic",
+          shieldType: "riot",
+          armorTag: "glass marshal shell",
+        },
+        traits: ["Street Parry"],
+      },
+    },
+  },
+  Batteryville: {
+    label: "Scrapyard joust",
+    intro: "A breaker-yard bruiser kicks off the live route with a grinder-lane challenge.",
+    summary: "Throw down in the breaker lane for a small bonus if your rider can hold the line.",
+    rival: {
+      id: "batteryville-yard-bruiser",
+      name: "Weld Jack",
+      archetype: "The Static Pack",
+      crew: "The Static Pack",
+      district: "Batteryville",
+      stats: { speed: 6, range: 5, rangeNm: 5, stealth: 4, grit: 8 },
+      joust: {
+        lance: 8,
+        shield: 7,
+        hype: 5,
+        gear: {
+          boardType: "Street",
+          lanceType: "kinetic",
+          shieldType: "riot",
+          armorTag: "yard crusher plate",
+        },
+        traits: ["Heavy Lance"],
+      },
+    },
+  },
+  "The Grid": {
+    label: "Trace joust",
+    intro: "A Cascade trace rider lights up the lane and tries to pin the crew in a public duel.",
+    summary: "Take the trace rider on directly for a small archive bonus if your read is good enough.",
+    difficulty: "hard",
+    rival: {
+      id: "grid-trace-rider",
+      name: "Audit Saint",
+      archetype: "The Knights Technarchy",
+      crew: "The Knights Technarchy",
+      district: "The Grid",
+      stats: { speed: 7, range: 7, rangeNm: 7, stealth: 6, grit: 6 },
+      joust: {
+        lance: 7,
+        shield: 8,
+        hype: 7,
+        gear: {
+          boardType: "Street",
+          lanceType: "kinetic",
+          shieldType: "riot",
+          armorTag: "trace audit shell",
+        },
+        traits: ["Magnetic Guard"],
+      },
+    },
+  },
+  Nightshade: {
+    label: "Tunnel joust",
+    intro: "A Murk lookout swings into the tunnel mouth and asks for a winner-takes-passage duel.",
+    summary: "Win the tunnel joust to leave with a little extra hush money and rep.",
+    rival: {
+      id: "nightshade-tunnel-lookout",
+      name: "Velvet Fuse",
+      archetype: "D4rk $pider",
+      crew: "D4rk $pider",
+      district: "Nightshade",
+      stats: { speed: 7, range: 6, rangeNm: 6, stealth: 7, grit: 5 },
+      joust: {
+        lance: 7,
+        shield: 6,
+        hype: 8,
+        gear: {
+          boardType: "Street",
+          lanceType: "kinetic",
+          shieldType: "riot",
+          armorTag: "murk shimmer wrap",
+        },
+        traits: ["Neon Flourish"],
+      },
+    },
+  },
+  "The Forest": {
+    label: "Rootline joust",
+    intro: "A root bridge guide blocks the mudline and insists on a balance-first duel for passage.",
+    summary: "Clear the bridge guide in a quick joust for a little extra gratitude from the route.",
+    rival: {
+      id: "forest-rootline-guide",
+      name: "Knot Runner",
+      archetype: "Wooders",
+      crew: "Wooders",
+      district: "The Forest",
+      stats: { speed: 6, range: 5, rangeNm: 5, stealth: 5, grit: 8 },
+      joust: {
+        lance: 6,
+        shield: 8,
+        hype: 6,
+        gear: {
+          boardType: "Street",
+          lanceType: "kinetic",
+          shieldType: "riot",
+          armorTag: "root-guard barkplate",
+        },
+        traits: ["Riot Shield"],
+      },
+    },
+  },
+  "Glass City": {
+    label: "Broker joust",
+    intro: "A mirror broker sends a show rider into the open lane to make the handoff public.",
+    summary: "Beat the broker's rider for a little extra cash and bragging rights.",
+    rival: {
+      id: "glass-city-broker-rider",
+      name: "Halo Vane",
+      archetype: "The Team",
+      crew: "The Team",
+      district: "Glass City",
+      stats: { speed: 8, range: 6, rangeNm: 6, stealth: 6, grit: 5 },
+      joust: {
+        lance: 7,
+        shield: 6,
+        hype: 8,
+        gear: {
+          boardType: "Street",
+          lanceType: "kinetic",
+          shieldType: "riot",
+          armorTag: "mirror-polish shell",
+        },
+        traits: ["Boost Charge"],
+      },
+    },
+  },
+};
+
 function getMissionThreatSummary(mission: MissionBoardEntry): string {
   switch (mission.district) {
     case "Airaway":
@@ -72,6 +247,89 @@ function getMissionThreatSummary(mission: MissionBoardEntry): string {
     default:
       return "The district throws a live problem at the crew the second the run starts to feel safe.";
   }
+}
+
+function getMissionJoustConfig(mission: MissionBoardEntry): MissionJoustRivalConfig {
+  return MISSION_JOUST_RIVALS[mission.district];
+}
+
+function buildMissionJoustOption(mission: MissionBoardEntry): MissionEncounterOption {
+  const config = getMissionJoustConfig(mission);
+  return {
+    id: MISSION_JOUST_OPTION_ID,
+    label: config.label,
+    description: config.summary,
+    encounterType: "joust",
+    joustDifficulty: config.difficulty ?? DEFAULT_MISSION_JOUST_DIFFICULTY,
+    joustPrompt: config.intro,
+    minimumCounterPower: 0,
+    successSummary: `${config.label} cracked open a bonus lane for the crew.`,
+    failureSummary: `${config.label} came up short, so the crew settled for the base contract only.`,
+  };
+}
+
+function getMissionJoustOption(
+  mission: MissionBoardEntry,
+  selectedCounterOptionId?: string | null,
+): MissionEncounterOption | null {
+  const option = getMissionEncounterOption(mission, selectedCounterOptionId);
+  return option?.encounterType === "joust" ? option : null;
+}
+
+function getMissionActiveJoustRider(
+  deck: DeckPayload,
+  activeRun: MissionActiveRunState | null | undefined,
+) {
+  const activeIds = new Set(activeRun?.activeCardIds ?? []);
+  const activeCards = activeIds.size > 0
+    ? getMissionReadyCards(deck).filter((card) => activeIds.has(card.id))
+    : [];
+  if (activeCards.length === 0) return null;
+  return selectDefaultJoustRider(activeCards);
+}
+
+export function getMissionJoustTactics(
+  deck: DeckPayload,
+  activeRun: MissionActiveRunState | null | undefined,
+): JoustTactic[] {
+  const rider = getMissionActiveJoustRider(deck, activeRun);
+  return rider ? getAvailableJoustTactics(rider) : [];
+}
+
+function getMissionJoustRewards(result: { outcome: MissionJoustResult["outcome"] }) {
+  return MISSION_JOUST_BASE_REWARDS[result.outcome];
+}
+
+function resolveMissionJoust(
+  mission: MissionBoardEntry,
+  deck: DeckPayload,
+  activeRun: MissionActiveRunState | null | undefined,
+  playerTactic?: JoustTactic | null,
+): MissionJoustResult | null {
+  const rider = getMissionActiveJoustRider(deck, activeRun);
+  const option = getMissionJoustOption(mission, MISSION_JOUST_OPTION_ID);
+  if (!rider || !option) return null;
+  const config = getMissionJoustConfig(mission);
+  const [defaultTactic = MISSION_JOUST_TACTIC_FALLBACK] = getAvailableJoustTactics(rider);
+  const resolution = resolveJoust(rider, config.rival, {
+    playerTactic: playerTactic ?? defaultTactic,
+    difficulty: option.joustDifficulty ?? DEFAULT_MISSION_JOUST_DIFFICULTY,
+    seed: `${mission.id}:${activeRun?.launchedAt ?? MISSION_JOUST_SEED_FALLBACK}:${rider.id}:${playerTactic ?? MISSION_JOUST_SELECTION_FALLBACK}`,
+  });
+  const rewards = getMissionJoustRewards(resolution);
+  return {
+    playerCardId: resolution.player.id,
+    playerName: resolution.player.name,
+    rivalName: resolution.rival.name,
+    playerTactic: resolution.playerTactic,
+    rivalTactic: resolution.rivalTactic,
+    difficulty: resolution.difficulty,
+    outcome: resolution.outcome,
+    strike: resolution.strike,
+    narration: resolution.narration,
+    rewardXpBonus: rewards.rewardXpDelta,
+    rewardOzziesBonus: rewards.rewardOzziesDelta,
+  };
 }
 
 function dedupeCounterTags(tags: MissionCounterTag[]): MissionCounterTag[] {
@@ -322,9 +580,11 @@ function enrichEncounterOptions(
     options: encounter.options.map((option) => {
       const currentPower = getMissionOptionPower(option, activeCards, mission, statusEffects, synergyTags);
       const requiredTags = option.requiredTags ?? [];
-      const available = requiredTags.every((tag) => (
-        activeCards.some((card) => getCardCounterTags(card, mission).includes(tag)) || synergyTags.includes(tag)
-      )) && currentPower >= (option.minimumCounterPower ?? 1);
+      const available = option.encounterType === "joust"
+        ? activeCards.length > 0
+        : requiredTags.every((tag) => (
+          activeCards.some((card) => getCardCounterTags(card, mission).includes(tag)) || synergyTags.includes(tag)
+        )) && currentPower >= (option.minimumCounterPower ?? 1);
       return {
         ...option,
         requiredTags,
@@ -986,18 +1246,22 @@ export function getMissionEncounter(mission: MissionBoardEntry): MissionEncounte
     badge: fork.badge,
     prompt: fork.prompt,
     threat: getMissionThreatSummary(mission),
-    options: fork.options.map((option) => ({
-      id: option.id,
-      label: option.label,
-      description: option.description,
-      requirements: option.requirements,
-      ...(option.rewardXpDelta !== undefined && { rewardXpDelta: option.rewardXpDelta }),
-      ...(option.rewardOzziesDelta !== undefined && { rewardOzziesDelta: option.rewardOzziesDelta }),
-      requiredTags: inferEncounterOptionTags(option),
-      minimumCounterPower: inferEncounterOptionPower(option),
-      successSummary: `${option.label} lands clean and turns the pressure back on the district.`,
-      failureSummary: `${option.label} slips, forcing the crew into a hard cutout.`,
-    })),
+    options: [
+      ...fork.options.map((option) => ({
+        id: option.id,
+        label: option.label,
+        description: option.description,
+        encounterType: "counter" as const,
+        requirements: option.requirements,
+        ...(option.rewardXpDelta !== undefined && { rewardXpDelta: option.rewardXpDelta }),
+        ...(option.rewardOzziesDelta !== undefined && { rewardOzziesDelta: option.rewardOzziesDelta }),
+        requiredTags: inferEncounterOptionTags(option),
+        minimumCounterPower: inferEncounterOptionPower(option),
+        successSummary: `${option.label} lands clean and turns the pressure back on the district.`,
+        failureSummary: `${option.label} slips, forcing the crew into a hard cutout.`,
+      })),
+      buildMissionJoustOption(mission),
+    ],
   };
 }
 
@@ -1055,14 +1319,17 @@ export function buildMissionActiveRunState(
 
 export function resolveMissionCounterChoice(
   mission: MissionBoardEntry,
+  deck: DeckPayload,
   activeRun: MissionActiveRunState | null | undefined,
   counterOptionId?: string | null,
+  playerTactic?: JoustTactic | null,
 ): {
   selectedOption: MissionEncounterOption | null;
   hardCutout: boolean;
   rewardXpDelta: number;
   rewardOzziesDelta: number;
   summary: string;
+  joustResult: MissionJoustResult | null;
 } {
   const encounter = getMissionEncounter(mission);
   const selectedId = counterOptionId ?? activeRun?.selectedCounterOptionId ?? mission.selectedCounterOptionId ?? null;
@@ -1073,6 +1340,7 @@ export function resolveMissionCounterChoice(
       rewardXpDelta: -20,
       rewardOzziesDelta: -20,
       summary: "The crew had to take a hard cutout when the live counter window closed.",
+      joustResult: null,
     };
   }
   const selectedOption = encounter.options.find((option) => option.id === selectedId) ?? null;
@@ -1083,6 +1351,19 @@ export function resolveMissionCounterChoice(
       rewardXpDelta: -20,
       rewardOzziesDelta: -20,
       summary: "The live counter fizzled, so the crew escaped through a hard cutout.",
+      joustResult: null,
+    };
+  }
+  if (selectedOption.encounterType === "joust") {
+    const joustResult = resolveMissionJoust(mission, deck, activeRun, playerTactic);
+    const rewards = joustResult ? getMissionJoustRewards(joustResult) : MISSION_JOUST_BASE_REWARDS.loss;
+    return {
+      selectedOption,
+      hardCutout: false,
+      rewardXpDelta: rewards.rewardXpDelta,
+      rewardOzziesDelta: rewards.rewardOzziesDelta,
+      summary: joustResult?.narration ?? `${selectedOption.label} settled into a cautious draw.`,
+      joustResult,
     };
   }
   return {
@@ -1091,6 +1372,7 @@ export function resolveMissionCounterChoice(
     rewardXpDelta: selectedOption.rewardXpDelta ?? 0,
     rewardOzziesDelta: selectedOption.rewardOzziesDelta ?? 0,
     summary: selectedOption.successSummary ?? `${selectedOption.label} kept the run moving.`,
+    joustResult: null,
   };
 }
 

@@ -16,6 +16,7 @@ import {
   getMissionEncounter,
   getMissionEffectiveRequirements,
   getMissionEffectiveRewards,
+  getMissionJoustTactics,
   getMissionRequirementBadge,
   getMissionStateLabel,
   getMissionWeatherSummary,
@@ -25,12 +26,13 @@ import type {
   MissionBoardTheme,
   MissionBoardProgression,
   MissionEncounterOption,
+  MissionJoustResult,
   MissionRequirement,
   MissionRequirementResult,
   MissionRunResponse,
   MissionStatusEffect,
 } from "../lib/sharedTypes";
-import type { District, WorldLocation } from "../lib/types";
+import type { District, JoustTactic, WorldLocation } from "../lib/types";
 import { getMissionBoard, runMission } from "../services/missions";
 
 interface MissionsPanelProps {
@@ -236,6 +238,12 @@ function formatForkRewardDelta(delta?: number): string | null {
   return delta > 0 ? `+${delta}` : `${delta}`;
 }
 
+function formatJoustTacticLabel(tactic: JoustTactic): string {
+  return tactic
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (value) => value.toUpperCase());
+}
+
 function getMissionPresentation(mission: MissionBoardEntry | null): MissionPresentation {
   if (!mission) return DEFAULT_PRESENTATION;
   return MISSION_PRESENTATIONS[mission.definitionId] ?? DEFAULT_PRESENTATION;
@@ -262,6 +270,7 @@ function getSelectedRouteLabel(
 }
 
 function getEncounterRewardTypeLabel(option: MissionEncounterOption): string {
+  if (option.encounterType === "joust") return "Joust bonus route";
   if (option.rewardOzziesDelta && option.rewardXpDelta) return "Split reward route";
   if (option.rewardOzziesDelta) return "Cash pressure route";
   return "XP pressure route";
@@ -304,6 +313,7 @@ function getMissionResultLog(result: MissionRunResponse): string[] {
   const counterOption = getMissionEncounter(mission)?.options.find((option) => (
     option.id === (mission.selectedCounterOptionId ?? mission.activeRun?.selectedCounterOptionId)
   )) ?? null;
+  const joustResult = mission.lastRunJoustResult ?? null;
   if (result.rewardGranted) {
     const rewards = typeof mission.lastRunRewardXp === "number" && typeof mission.lastRunRewardOzzies === "number"
       ? {
@@ -320,6 +330,12 @@ function getMissionResultLog(result: MissionRunResponse): string[] {
       `${mission.selectedDeckName ?? result.evaluation.deckName} cleared ${mission.title}${counterOption ? ` via ${counterOption.label}` : mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " via a hard cutout" : ""}.`,
       `Banked +${rewards.rewardXp} Mission XP.`,
       `Pulled +${rewards.rewardOzzies} Ozzies out of ${mission.district}.`,
+      ...(joustResult
+        ? [
+          `${joustResult.playerName} called the district joust and ${joustResult.outcome === "win" ? "won" : joustResult.outcome === "draw" ? "drew" : "lost"} against ${joustResult.rivalName}.`,
+          `${formatJoustTacticLabel(joustResult.playerTactic)} into ${formatJoustTacticLabel(joustResult.rivalTactic)} — ${joustResult.narration}`,
+        ]
+        : []),
       ...(mission.lastRunEffects ?? []).map((effect) => `${effect.label}: ${effect.summary}`),
     ];
   }
@@ -329,10 +345,19 @@ function getMissionResultLog(result: MissionRunResponse): string[] {
 }
 
 function getCounterOptionRequirementText(option: MissionEncounterOption): string {
+  if (option.encounterType === "joust") {
+    return option.joustPrompt ?? option.description;
+  }
   if (option.requiredTags?.length) {
     return `Needs ${option.requiredTags.join(" · ")}.`;
   }
   return option.description;
+}
+
+function getJoustOutcomeLabel(result: MissionJoustResult): string {
+  if (result.outcome === "win") return "Joust won";
+  if (result.outcome === "draw") return "Joust drawn";
+  return "Joust lost";
 }
 
 function formatStatusEffect(effect: MissionStatusEffect): string {
@@ -423,6 +448,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
   const [selectedCounterOptionId, setSelectedCounterOptionId] = useState<string | null>(null);
+  const [selectedJoustTactic, setSelectedJoustTactic] = useState<JoustTactic | null>(null);
   const [missionResult, setMissionResult] = useState<MissionRunResponse | null>(null);
 
   useEffect(() => {
@@ -563,6 +589,25 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       .map((cardId) => cardsById.get(cardId))
       .filter(Boolean) as typeof selectedDeck.cards;
   }, [selectedDeck, selectedMission]);
+  const selectedJoustOption = useMemo(
+    () => selectedEncounter?.options.find((option) => option.encounterType === "joust") ?? null,
+    [selectedEncounter],
+  );
+  const availableJoustTactics = useMemo(
+    () => (selectedDeck && selectedMission?.activeRun ? getMissionJoustTactics(selectedDeck, selectedMission.activeRun) : []),
+    [selectedDeck, selectedMission],
+  );
+  useEffect(() => {
+    if (availableJoustTactics.length === 0) {
+      setSelectedJoustTactic(null);
+      return;
+    }
+    setSelectedJoustTactic((current) => (
+      current && availableJoustTactics.includes(current)
+        ? current
+        : availableJoustTactics[0]
+    ));
+  }, [availableJoustTactics]);
   const streakState = playerRewards?.dailyReward ?? null;
   const nextStreakReward = streakState
     ? { xp: streakState.nextRewardXp, ozzies: streakState.nextRewardOzzies }
@@ -594,7 +639,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     setRunningMissionId(selectedMission.id);
     setError(null);
     try {
-      const result = await runMission(uid, selectedMission.id, selectedDeck.id, null, user?.email);
+      const result = await runMission(uid, selectedMission.id, selectedDeck.id, null, null, user?.email);
       setMissions((current) => current.map((mission) => (
         mission.id === result.mission.id ? result.mission : mission
       )));
@@ -613,12 +658,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     }
   }, [selectedDeck, selectedMission, uid, user]);
 
-  const handleResolveEncounter = useCallback(async (counterOptionId: string) => {
+  const handleResolveEncounter = useCallback(async (counterOptionId: string, joustTactic?: JoustTactic | null) => {
     if (!selectedMission || !selectedDeck) return;
     setRunningMissionId(selectedMission.id);
     setError(null);
     try {
-      const result = await runMission(uid, selectedMission.id, selectedDeck.id, counterOptionId, user?.email);
+      const result = await runMission(uid, selectedMission.id, selectedDeck.id, counterOptionId, joustTactic ?? null, user?.email);
       setMissions((current) => current.map((mission) => (
         mission.id === result.mission.id ? result.mission : mission
       )));
@@ -891,6 +936,29 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                             ))}
                           </ul>
                         )}
+                        {selectedJoustOption && availableJoustTactics.length > 0 && (
+                          <div className="mission-joust-picker">
+                            <div>
+                              <span className="mission-stage__eyebrow">Joust tactic</span>
+                              <p className="mission-fork__prompt">
+                                {getCounterOptionRequirementText(selectedJoustOption)}
+                              </p>
+                            </div>
+                            <div className="mission-intel-tags" role="group" aria-label="Joust tactic selection">
+                              {availableJoustTactics.map((tactic) => (
+                                <button
+                                  key={`${selectedMission.id}-joust-${tactic}`}
+                                  type="button"
+                                  className={`mission-intel-tag mission-intel-tag--button${selectedJoustTactic === tactic ? " mission-intel-tag--active" : ""}`}
+                                  onClick={() => setSelectedJoustTactic(tactic)}
+                                  aria-pressed={selectedJoustTactic === tactic}
+                                >
+                                  {formatJoustTacticLabel(tactic)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                     <div className="mission-fork__options">
@@ -899,18 +967,26 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           key={`${selectedMission.id}-${option.id}`}
                           type="button"
                           className={`mission-fork__option${selectedCounterOption?.id === option.id ? " mission-fork__option--active" : ""}`}
-                          onClick={() => handleResolveEncounter(option.id)}
+                          onClick={() => handleResolveEncounter(
+                            option.id,
+                            option.encounterType === "joust" ? selectedJoustTactic : null,
+                          )}
                           aria-pressed={selectedCounterOption?.id === option.id}
-                          disabled={selectedAwaitingChoice ? !option.available || runningMissionId === selectedMission.id : true}
+                          disabled={
+                            selectedAwaitingChoice
+                              ? !option.available
+                                || runningMissionId === selectedMission.id
+                              : true
+                          }
                         >
                           <span className="mission-fork__option-label">
                             {selectedAwaitingChoice ? option.label : getMysteryRouteLabel(index)}
                           </span>
-                          <span className="mission-fork__option-meta">
-                            {selectedAwaitingChoice
-                              ? `${getEncounterRewardTypeLabel(option)} · ${option.available ? "Active hand can answer" : "Hand comes up short"}`
-                              : "Launch to reveal response window"}
-                          </span>
+                            <span className="mission-fork__option-meta">
+                              {selectedAwaitingChoice
+                                ? `${getEncounterRewardTypeLabel(option)} · ${option.available ? option.encounterType === "joust" ? "Rider ready" : "Active hand can answer" : "Hand comes up short"}`
+                                : "Launch to reveal response window"}
+                            </span>
                           <span className="mission-fork__option-desc">
                             {selectedAwaitingChoice
                               ? option.description
@@ -1062,6 +1138,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           <div className="mission-stat-row">
                             <span className="mission-stat-label">Counter used</span>
                             <span className="mission-stat-value">{selectedRouteLabel}</span>
+                          </div>
+                        )}
+                        {selectedMission.lastRunJoustResult && (
+                          <div className="mission-stat-row">
+                            <span className="mission-stat-label">Joust</span>
+                            <span className="mission-stat-value">{getJoustOutcomeLabel(selectedMission.lastRunJoustResult)}</span>
                           </div>
                         )}
                         <div className="mission-stat-row">
@@ -1225,6 +1307,36 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   ))}
                 </ul>
               </div>
+              {missionResult.mission.lastRunJoustResult && (
+                <div className="mission-result-popup__panel">
+                  <span className="mission-result-popup__eyebrow">District joust</span>
+                  <div className="mission-stats">
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Outcome</span>
+                      <span className="mission-stat-value">{getJoustOutcomeLabel(missionResult.mission.lastRunJoustResult)}</span>
+                    </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Matchup</span>
+                      <span className="mission-stat-value">
+                        {missionResult.mission.lastRunJoustResult.playerName} vs {missionResult.mission.lastRunJoustResult.rivalName}
+                      </span>
+                    </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Tactics</span>
+                      <span className="mission-stat-value">
+                        {formatJoustTacticLabel(missionResult.mission.lastRunJoustResult.playerTactic)} / {formatJoustTacticLabel(missionResult.mission.lastRunJoustResult.rivalTactic)}
+                      </span>
+                    </div>
+                    <div className="mission-stat-row">
+                      <span className="mission-stat-label">Bonus</span>
+                      <span className="mission-stat-value">
+                        +{missionResult.mission.lastRunJoustResult.rewardXpBonus} XP · +{missionResult.mission.lastRunJoustResult.rewardOzziesBonus} Oz
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mission-intel-card__quote">{missionResult.mission.lastRunJoustResult.narration}</p>
+                </div>
+              )}
               <div className="mission-result-popup__panel">
                 <span className="mission-result-popup__eyebrow">Why players chase it</span>
                 <ul className="mission-intel-list">

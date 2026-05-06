@@ -4,6 +4,7 @@ import {
   buildMissionActiveRunState,
   createDailyMissionBoardPayload,
   evaluateMissionDeck,
+  getMissionJoustTactics,
   getMissionEncounter,
   getMissionEffectiveRewards,
   resolveMissionCounterChoice,
@@ -216,6 +217,7 @@ export function registerMissionRoutes(app, {
     const missionId = typeof req.body?.missionId === 'string' ? req.body.missionId.trim() : '';
     const deckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
     const requestedCounterOptionId = typeof req.body?.counterOptionId === 'string' ? req.body.counterOptionId.trim() : '';
+    const requestedJoustTactic = typeof req.body?.joustTactic === 'string' ? req.body.joustTactic.trim() : '';
     const legacyForkOptionId = typeof req.body?.forkOptionId === 'string' ? req.body.forkOptionId.trim() : '';
     const requestedChoiceId = requestedCounterOptionId || legacyForkOptionId;
     if (!missionId || !deckId) {
@@ -292,7 +294,25 @@ export function registerMissionRoutes(app, {
             throw Object.assign(new Error('The selected counter option is not available for your current hand. Take the hard cutout or pick an available response.'), { statusCode: 400 });
           }
 
-          const resolution = resolveMissionCounterChoice(mission, activeRun, requestedChoiceId);
+          const selectedEncounterOption = encounter?.options?.find((option) => option.id === requestedChoiceId) ?? null;
+          const availableJoustTactics = selectedEncounterOption?.encounterType === 'joust'
+            ? getMissionJoustTactics(deck, activeRun)
+            : [];
+          if (
+            selectedEncounterOption?.encounterType === 'joust'
+            && requestedJoustTactic
+            && !availableJoustTactics.includes(requestedJoustTactic)
+          ) {
+            throw Object.assign(new Error('The selected joust tactic is not available for your current rider.'), { statusCode: 400 });
+          }
+
+          const resolution = resolveMissionCounterChoice(
+            mission,
+            deck,
+            activeRun,
+            requestedChoiceId,
+            requestedJoustTactic || availableJoustTactics[0] || null,
+          );
           const rewards = resolution.hardCutout
             ? {
               rewardXp: Math.max(0, mission.rewardXp + resolution.rewardXpDelta),
@@ -316,6 +336,7 @@ export function registerMissionRoutes(app, {
               phase: 'resolved',
               resolvedAt: now,
               selectedCounterOptionId: resolution.selectedOption?.id ?? HARD_CUTOUT_COUNTER_ID,
+              selectedJoustTactic: resolution.joustResult?.playerTactic ?? null,
               summary: resolution.summary,
             },
             completedAt: now,
@@ -326,6 +347,7 @@ export function registerMissionRoutes(app, {
             lastRunEffects: activeRun.statusEffects ?? evaluation.statusEffects ?? [],
             lastRunRewardXp: rewards.rewardXp,
             lastRunRewardOzzies: rewards.rewardOzzies,
+            lastRunJoustResult: resolution.joustResult,
             updatedAt: now,
           };
 
@@ -362,6 +384,7 @@ export function registerMissionRoutes(app, {
             lastRunSummary: failureRisk ? `${evaluation.summary} ${failureRisk.summary}` : evaluation.summary,
             lastRunFailureReasons: failureRisk ? [...failureReasons, failureRisk.detail] : failureReasons,
             lastRunEffects: evaluation.statusEffects ?? [],
+            lastRunJoustResult: null,
             updatedAt: now,
           };
           tx.set(missionRef, updatedMission, { merge: true });
@@ -403,6 +426,7 @@ export function registerMissionRoutes(app, {
             lastRunEffects: evaluation.statusEffects ?? [],
             lastRunRewardXp: rewards.rewardXp,
             lastRunRewardOzzies: rewards.rewardOzzies,
+            lastRunJoustResult: null,
             updatedAt: now,
           };
 
@@ -425,15 +449,16 @@ export function registerMissionRoutes(app, {
           ...mission,
           selectedDeckId: deckId,
           selectedDeckName: evaluation.deckName,
-          selectedCounterOptionId: null,
-          activeRun: liveRun,
-          lastRunAt: now,
-          lastRunSucceeded: false,
-          lastRunSummary: liveRun.summary,
-          lastRunFailureReasons: [],
-          lastRunEffects: liveRun.statusEffects ?? evaluation.statusEffects ?? [],
-          updatedAt: now,
-        };
+            selectedCounterOptionId: null,
+            activeRun: liveRun,
+            lastRunAt: now,
+            lastRunSucceeded: false,
+            lastRunSummary: liveRun.summary,
+            lastRunFailureReasons: [],
+            lastRunEffects: liveRun.statusEffects ?? evaluation.statusEffects ?? [],
+            lastRunJoustResult: null,
+            updatedAt: now,
+          };
         tx.set(missionRef, updatedMission, { merge: true });
         return {
           mission: updatedMission,
