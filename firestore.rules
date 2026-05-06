@@ -151,6 +151,7 @@ service cloud.firestore {
         (request.auth.uid == resource.data.fromUid
           && validTradeStatusUpdate('cancelled'))
       );
+      // Trades cannot be deleted so accepted, declined, and cancelled offers retain an audit trail.
       allow delete: if false;
     }
     // ── Referral Claims ──────────────────────────────────────────────────────
