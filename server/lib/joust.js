@@ -109,7 +109,7 @@ function hasCardPayloadShape(card) {
   return Boolean(card && typeof card === 'object' && card.prompts && card.board && card.stats);
 }
 
-function getFallbackJoustProfile(card, stats) {
+function normalizeJoustProfile(card, stats) {
   const raw = card?.joust ?? null;
   return {
     lance: clampJoustStat(raw?.lance ?? (stats.speed + stats.grit) / 2),
@@ -136,7 +136,7 @@ export function createJoustCardSnapshot(card) {
     stealth: clampJoustStat(rawStats?.stealth, 5),
     grit: clampJoustStat(rawStats?.grit, 5),
   };
-  const joust = getFallbackJoustProfile(card, stats);
+  const joust = normalizeJoustProfile(card, stats);
   return {
     id: typeof card?.id === 'string' ? card.id : 'unknown-joust-card',
     name: hasCardPayloadShape(card)
@@ -282,7 +282,7 @@ function buildPressure(card, tactic, modifiers) {
   const traitBonus = applyTraitModifiers(card, tactic, modifiers);
   return {
     attack: card.joust.lance + attackBase + support + traitBonus.attack,
-    speedDelta: traitBonus.speed ?? 0,
+    speedDelta: traitBonus.speed,
   };
 }
 
@@ -295,7 +295,7 @@ function buildGuard(card, tactic, modifiers) {
   const traitBonus = applyTraitModifiers(card, tactic, modifiers);
   return {
     defense: card.joust.shield + defenseBase + support + traitBonus.defense,
-    speedDelta: traitBonus.speed ?? 0,
+    speedDelta: traitBonus.speed,
   };
 }
 
