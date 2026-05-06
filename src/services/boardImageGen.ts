@@ -125,6 +125,11 @@ function isBoardImagePollStatus(value: unknown): value is BoardImagePollStatus {
   return s === "pending" || s === "completed" || s === "failed";
 }
 
+interface GenerateBoardImageOptions {
+  skipCache?: boolean;
+  variationKey?: string;
+}
+
 async function pollBoardImageJob(jobId: string): Promise<string> {
   const headers = await buildAuthorizedJsonHeaders();
   const started = Date.now();
@@ -171,18 +176,20 @@ async function pollBoardImageJob(jobId: string): Promise<string> {
   }
 }
 
-export async function generateGouacheBoard(config: BoardConfig): Promise<string> {
+export async function generateGouacheBoard(config: BoardConfig, options: GenerateBoardImageOptions = {}): Promise<string> {
   const imageUrls = getResolvedBoardReferenceUrls(config);
   const cacheKey = buildBoardImageCacheKey(config, imageUrls);
-  const cachedLocal = getLocalCachedBoardImage(cacheKey);
-  if (cachedLocal) {
-    return cachedLocal;
-  }
+  if (!options.skipCache) {
+    const cachedLocal = getLocalCachedBoardImage(cacheKey);
+    if (cachedLocal) {
+      return cachedLocal;
+    }
 
-  const cachedRemote = await getCachedImage(cacheKey);
-  if (cachedRemote) {
-    setLocalCachedBoardImage(cacheKey, cachedRemote);
-    return cachedRemote;
+    const cachedRemote = await getCachedImage(cacheKey);
+    if (cachedRemote) {
+      setLocalCachedBoardImage(cacheKey, cachedRemote);
+      return cachedRemote;
+    }
   }
 
   // Submit the job — server returns immediately with a jobId so the
@@ -191,7 +198,9 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
     method: "POST",
     headers: await buildAuthorizedJsonHeaders(),
     body: JSON.stringify({
-      prompt: buildBoardImagePrompt(config),
+      prompt: options.variationKey
+        ? `${buildBoardImagePrompt(config)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references while choosing a different composition.`
+        : buildBoardImagePrompt(config),
       imageUrls,
     }),
   });
@@ -217,7 +226,9 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
   // Poll until the job completes (or times out).
   const imageUrl = await pollBoardImageJob(submitData.jobId);
 
-  setLocalCachedBoardImage(cacheKey, imageUrl);
-  await setCachedImage(cacheKey, imageUrl);
+  if (!options.skipCache) {
+    setLocalCachedBoardImage(cacheKey, imageUrl);
+    await setCachedImage(cacheKey, imageUrl);
+  }
   return imageUrl;
 }

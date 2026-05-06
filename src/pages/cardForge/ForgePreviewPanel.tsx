@@ -2,6 +2,10 @@ import { useCallback } from "react";
 import { PrintedCardPreviewPair } from "../../components/PrintedCardFaces";
 import { CardContainer } from "../../components/CardContainer";
 import { buildCardVars } from "../../lib/cardVars";
+import {
+  COLLECTION_REROLL_ACTIONS,
+  type CollectionRerollActionId,
+} from "../../lib/collectionRewards";
 import type { BoardPlacement, CardPayload, CharacterPlacement, CompositeLayerOrder } from "../../lib/types";
 import type { LayerState } from "./useForgeLayers";
 import {
@@ -13,7 +17,26 @@ import {
   CHARACTER_PLACEMENT_SCALE_STEP,
 } from "../../lib/boardPlacement";
 
+function getForgeIssueLabel(error: string): string {
+  const normalized = error.toLowerCase();
+  if (normalized.includes("sign in")) return "Sign in required";
+  if (normalized.includes("too many image requests") || normalized.includes("too many status requests")) return "Image queue cooling down";
+  if (normalized.includes("timed out")) return "Generation took too long";
+  if (normalized.includes("not configured")) return "Image service unavailable";
+  return "Generation hiccup";
+}
+
+function getForgeIssueHint(error: string): string {
+  const normalized = error.toLowerCase();
+  if (normalized.includes("sign in")) return "Sign back in, then try the reroll again.";
+  if (normalized.includes("too many image requests") || normalized.includes("too many status requests")) return "Wait a moment before retrying so the paid queue stays controlled.";
+  if (normalized.includes("timed out")) return "Keep the current art or retry a smaller reroll when the queue is calmer.";
+  if (normalized.includes("not configured")) return "The current card is still usable; the art pipeline just is not available right now.";
+  return "Your current art stays in place until a reroll finishes successfully.";
+}
+
 interface ForgePreviewPanelProps {
+  boardError: string;
   boardImageLoading: boolean;
   boardLayerOrder: CompositeLayerOrder;
   boardRotation: number;
@@ -38,15 +61,21 @@ interface ForgePreviewPanelProps {
   onOpen3D: () => void;
   onOpenPrint: () => void;
   onOpenUpgradeModal: () => void;
+  onReroll: (actionId: CollectionRerollActionId) => void;
   onSaveToCollection: () => void;
   patchGeneratedCard: (updates: Partial<CardPayload>) => void;
   patchIdentity: (updates: Partial<CardPayload["identity"]>) => void;
   patchStats: (updates: Partial<CardPayload["stats"]>) => void;
+  recoveryError: string;
+  recoveryMessage: string;
+  rerollTokens: number;
+  rerollingActionId: CollectionRerollActionId | null;
   saveError: string | null;
   saving: boolean;
 }
 
 export function ForgePreviewPanel({
+  boardError,
   boardImageLoading,
   boardLayerOrder,
   boardRotation,
@@ -71,14 +100,21 @@ export function ForgePreviewPanel({
   onOpen3D,
   onOpenPrint,
   onOpenUpgradeModal,
+  onReroll,
   onSaveToCollection,
   patchGeneratedCard,
   patchIdentity,
   patchStats,
+  recoveryError,
+  recoveryMessage,
+  rerollTokens,
+  rerollingActionId,
   saveError,
   saving,
 }: ForgePreviewPanelProps) {
   const cardVars = buildCardVars(card, "editor");
+  const issueMessages = [...layers.errors, ...(boardError ? [`board: ${boardError}`] : [])];
+  const rerollButtonsDisabled = !card || !isImageGenConfigured || isAnyLayerLoading || boardImageLoading || saving;
 
   const handleNameChange = useCallback(
     (name: string) => patchIdentity({ name }),
@@ -105,10 +141,14 @@ export function ForgePreviewPanel({
       {card ? (
         <div className="forge-card-wrapper">
           <div className="forge-preview-stack">
-            {layers.errors.length > 0 && (
+            {issueMessages.length > 0 && (
               <div className="forge-image-errors">
-                {layers.errors.map((error, index) => (
-                  <p key={index} className="forge-image-error">{error}</p>
+                {issueMessages.map((error, index) => (
+                  <div key={`${error}-${index}`} className="forge-image-error-card" role="alert">
+                    <strong>{getForgeIssueLabel(error)}</strong>
+                    <p className="forge-image-error">{error}</p>
+                    <p className="forge-image-error-hint">{getForgeIssueHint(error)}</p>
+                  </div>
                 ))}
               </div>
             )}
@@ -119,6 +159,12 @@ export function ForgePreviewPanel({
                 <code>VITE_IMAGE_API_URL</code> in your <code>.env</code> to
                 enable Fal.ai layered artwork.
               </p>
+            )}
+            {recoveryMessage && (
+              <p className="forge-image-notice forge-image-notice--success" role="status">{recoveryMessage}</p>
+            )}
+            {recoveryError && (
+              <p className="forge-image-notice forge-image-notice--error" role="alert">{recoveryError}</p>
             )}
 
             <section className="forge-preview-section">
@@ -147,6 +193,37 @@ export function ForgePreviewPanel({
             </section>
 
             <div className="forge-generated-actions">
+              <div className="blend-control">
+                <label className="blend-control__label">
+                  <span>Cosmetic Rerolls</span>
+                  <span>{rerollTokens} token{rerollTokens === 1 ? "" : "s"}</span>
+                </label>
+                <p className="form-hint">
+                  Partial rerolls keep the rest of the card intact. Full reroll refreshes character + board art together.
+                </p>
+                <div className="forge-reroll-buttons">
+                  {COLLECTION_REROLL_ACTIONS.map((action) => {
+                    const disabled = rerollButtonsDisabled || rerollTokens < action.tokenCost;
+                    return (
+                      <button
+                        key={action.id}
+                        type="button"
+                        className="btn-outline"
+                        disabled={disabled}
+                        onClick={() => onReroll(action.id)}
+                        title={action.description}
+                      >
+                        {rerollingActionId === action.id
+                          ? `⏳ ${action.name}…`
+                          : `${action.name} (${action.tokenCost})`}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="form-hint form-hint--secondary">
+                  Earn more reroll tokens from Collection Rewards. Tokens only cover cosmetic image refreshes.
+                </p>
+              </div>
               <div className="blend-control">
                 <label className="blend-control__label">
                   <span>Skateboard Size</span>
@@ -258,7 +335,7 @@ export function ForgePreviewPanel({
                 <button
                   className="btn-outline"
                   onClick={onDownloadJpg}
-                  disabled={downloading || isAnyLayerLoading}
+                  disabled={downloading || isAnyLayerLoading || boardImageLoading}
                   title="Download composed card as JPG"
                 >
                   {downloading ? "⏳ Saving…" : "⬇ Download JPG"}

@@ -80,8 +80,44 @@ export interface CollectionRewardEvaluation {
   milestones: CollectionMilestoneProgress[];
 }
 
+export type CollectionRerollActionId = "character" | "board" | "full";
+
+export interface CollectionRerollActionDefinition {
+  id: CollectionRerollActionId;
+  name: string;
+  description: string;
+  tokenCost: number;
+  targets: Array<"character" | "board">;
+}
+
 export const COLLECTION_REWARD_SCHEMA_VERSION = 1;
 export const COLLECTION_REROLL_TOKEN_CAP = 10;
+export const COLLECTION_REROLL_ACTIONS: CollectionRerollActionDefinition[] = [
+  {
+    id: "character",
+    name: "Character reroll",
+    description: "Refresh the courier portrait only.",
+    tokenCost: 1,
+    targets: ["character"],
+  },
+  {
+    id: "board",
+    name: "Board reroll",
+    description: "Refresh the skateboard artwork only.",
+    tokenCost: 1,
+    targets: ["board"],
+  },
+  {
+    id: "full",
+    name: "Full reroll",
+    description: "Refresh both the courier portrait and skateboard artwork.",
+    tokenCost: 2,
+    targets: ["character", "board"],
+  },
+];
+export const COLLECTION_REROLL_ACTION_BY_ID = Object.fromEntries(
+  COLLECTION_REROLL_ACTIONS.map((action) => [action.id, action]),
+) as Record<CollectionRerollActionId, CollectionRerollActionDefinition>;
 
 export const COLLECTION_REWARD_FACTIONS: Faction[] = [
   "United Corporations of America (UCA)",
@@ -351,4 +387,37 @@ export function applyCollectionMilestoneClaim(
   }
 
   return { state: next, rewards, alreadyClaimed: false };
+}
+
+export function spendCollectionRerollTokens(
+  stateInput: Partial<CollectionRewardsState> | null | undefined,
+  actionId: CollectionRerollActionId,
+): {
+  state: CollectionRewardsState;
+  action: CollectionRerollActionDefinition | null;
+  spent: boolean;
+  error?: string;
+} {
+  const state = normalizeCollectionRewardsState(stateInput);
+  const action = COLLECTION_REROLL_ACTION_BY_ID[actionId];
+  if (!action) {
+    return { state, action: null, spent: false, error: "Unknown cosmetic reroll action." };
+  }
+  if (state.rerollTokens < action.tokenCost) {
+    return {
+      state,
+      action,
+      spent: false,
+      error: `You need ${action.tokenCost} reroll token${action.tokenCost === 1 ? "" : "s"} for ${action.name.toLowerCase()}.`,
+    };
+  }
+
+  return {
+    state: normalizeCollectionRewardsState({
+      ...state,
+      rerollTokens: state.rerollTokens - action.tokenCost,
+    }),
+    action,
+    spent: true,
+  };
 }

@@ -401,3 +401,58 @@ test('collection reward claim is idempotent and stores account-level rewards', a
   assert.equal(duplicateRes.body.alreadyClaimed, true);
   assert.deepEqual(duplicateDb.lastTransaction.sets, []);
 });
+
+test('collection reroll spend rejects unknown actions', async () => {
+  const adminDb = makeAdminDb({
+    'userProfiles/user-1': makeSnapshot({ collectionRewards: { rerollTokens: 3 } }),
+    'dailyStreaks/user-1': makeSnapshot({}),
+    'users/user-1/cards': makeQuerySnapshot([]),
+  });
+  const { getRoute } = registerHarnessRoute({ adminDb });
+
+  const res = await invokeRoute(getRoute('/api/collection-rewards/reroll'), {
+    body: { actionId: 'not-real' },
+  });
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.body, { error: 'Unknown cosmetic reroll action.' });
+  assert.equal(adminDb.lastTransaction, null);
+});
+
+test('collection reroll spend enforces token balance', async () => {
+  const adminDb = makeAdminDb({
+    'userProfiles/user-1': makeSnapshot({ collectionRewards: { rerollTokens: 1 } }),
+    'dailyStreaks/user-1': makeSnapshot({}),
+    'users/user-1/cards': makeQuerySnapshot([]),
+  });
+  const { getRoute } = registerHarnessRoute({ adminDb });
+
+  const res = await invokeRoute(getRoute('/api/collection-rewards/reroll'), {
+    body: { actionId: 'full' },
+  });
+
+  assert.equal(res.statusCode, 409);
+  assert.deepEqual(res.body, { error: 'You need 2 reroll tokens for full reroll.' });
+  assert.deepEqual(adminDb.lastTransaction.sets, []);
+});
+
+test('collection reroll spend decrements tokens and returns updated evaluation', async () => {
+  const cards = Array.from({ length: 5 }, (_, index) => createRewardCard(index));
+  const adminDb = makeAdminDb({
+    'userProfiles/user-1': makeSnapshot({ collectionRewards: { rerollTokens: 3, badgeIds: [], titleIds: [], frameIds: [], loreIds: [], claimedMilestoneIds: [] } }),
+    'dailyStreaks/user-1': makeSnapshot({}),
+    'users/user-1/cards': makeQuerySnapshot(cards),
+  });
+  const { getRoute } = registerHarnessRoute({ adminDb });
+
+  const res = await invokeRoute(getRoute('/api/collection-rewards/reroll'), {
+    body: { actionId: 'board' },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.action.id, 'board');
+  assert.equal(res.body.evaluation.state.rerollTokens, 2);
+  const profileWrite = adminDb.lastTransaction.sets.find((write) => write.path === 'userProfiles/user-1');
+  assert.ok(profileWrite);
+  assert.equal(profileWrite.data.collectionRewards.rerollTokens, 2);
+});

@@ -6,12 +6,14 @@ import {
   toDateKey,
 } from '../dailyRewards.js';
 import {
+  COLLECTION_REROLL_ACTION_BY_ID,
   COLLECTION_MILESTONES,
   COLLECTION_REWARD_SCHEMA_VERSION,
   applyCollectionMilestoneClaim,
   defaultCollectionActivityStats,
   evaluateCollectionRewards,
   normalizeCollectionRewardsState,
+  spendCollectionRerollTokens,
 } from '../lib/collectionRewards.js';
 
 const PROFILE_COLLECTION = 'userProfiles';
@@ -278,6 +280,63 @@ export function registerRewardRoutes(app, {
     } catch (error) {
       console.error('Collection reward claim error:', error);
       res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to claim collection reward.' });
+    }
+  });
+
+  // lgtm[js/missing-rate-limiting] rewardRateLimit is applied before authentication and route handling.
+  app.post('/api/collection-rewards/reroll', rewardRateLimit, authenticateRewardCaller, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Collection rewards are not configured on this server.' });
+      return;
+    }
+
+    const actionId = typeof req.body?.actionId === 'string' ? req.body.actionId.trim() : '';
+    const action = COLLECTION_REROLL_ACTION_BY_ID[actionId];
+    if (!action) {
+      res.status(400).json({ error: 'Unknown cosmetic reroll action.' });
+      return;
+    }
+
+    try {
+      const caller = req.caller;
+      const [profileSnap, streakSnap, cards] = await Promise.all([
+        adminDb.collection(PROFILE_COLLECTION).doc(caller.uid).get(),
+        adminDb.collection(DAILY_STREAK_COLLECTION).doc(caller.uid).get(),
+        readUserCards(adminDb, caller.uid),
+      ]);
+      const profile = profileSnap.exists ? profileSnap.data() : {};
+      const streak = streakSnap.exists ? streakSnap.data() : {};
+      const activity = getCollectionActivityStats(profile, streak);
+
+      const result = await adminDb.runTransaction(async (tx) => {
+        const profileRef = adminDb.collection(PROFILE_COLLECTION).doc(caller.uid);
+        const nextProfileSnap = await tx.get(profileRef);
+        const nextProfile = nextProfileSnap.exists ? nextProfileSnap.data() : {};
+        const spend = spendCollectionRerollTokens(nextProfile?.collectionRewards, actionId);
+
+        if (!spend.spent) {
+          throw Object.assign(new Error(spend.error ?? 'Failed to spend reroll token.'), { statusCode: 409 });
+        }
+
+        tx.set(profileRef, {
+          collectionRewards: spend.state,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        return {
+          action: spend.action,
+          state: spend.state,
+        };
+      });
+
+      res.status(200).json({
+        schemaVersion: COLLECTION_REWARD_SCHEMA_VERSION,
+        action: result.action,
+        evaluation: evaluateCollectionRewards(cards, result.state, activity),
+      });
+    } catch (error) {
+      console.error('Collection reward reroll spend error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to spend cosmetic reroll tokens.' });
     }
   });
 }
