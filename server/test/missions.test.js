@@ -358,7 +358,59 @@ test('resolveMissionCounterChoice can settle a district joust with tactic-select
   assert.equal(resolution.hardCutout, false);
   assert.equal(resolution.selectedOption?.encounterType, 'joust');
   assert.equal(resolution.joustResult?.playerTactic, 'trickStrike');
+  assert.equal(resolution.joustResult?.rivalId, 'nightshade-rook-wraith');
+  assert.equal(resolution.joustResult?.rivalName, 'Rook Wraith');
   assert.ok(['win', 'draw', 'loss'].includes(resolution.joustResult?.outcome));
   assert.equal(resolution.rewardXpDelta, resolution.joustResult?.rewardXpBonus ?? 0);
   assert.equal(resolution.rewardOzziesDelta, resolution.joustResult?.rewardOzziesBonus ?? 0);
+});
+
+test('mission encounters pull named rival data for first-wave districts', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-parent-trace');
+  const encounter = getMissionEncounter(mission);
+  const joustOption = encounter.options.find((option) => option.id === 'district-joust');
+  assert.equal(joustOption?.label, 'Vex Static trace joust');
+  assert.match(joustOption?.description ?? '', /Vex Static/i);
+});
+
+test('district rival progression awards only unlock on mission-joust wins', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-parent-trace');
+  const deck = {
+    id: 'deck-joust-2',
+    name: 'Trace Winners',
+    cards: [
+      buildCard({
+        id: 'winner-1',
+        name: 'Trace Burner',
+        identity: { name: 'Trace Burner', crew: 'The Knights Technarchy' },
+        prompts: { archetype: 'The Knights Technarchy', district: 'The Grid' },
+        stats: { speed: 9, range: 8, stealth: 8, grit: 6 },
+        board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+        joust: {
+          lance: 9,
+          shield: 8,
+          hype: 8,
+          gear: { boardType: 'Street', lanceType: 'kinetic', shieldType: 'riot', armorTag: 'trace shell' },
+          traits: ['Street Parry', 'Magnetic Guard'],
+        },
+      }),
+      ...Array.from({ length: 4 }, (_, index) => buildCard({
+        id: `winner-extra-${index + 1}`,
+        stats: { speed: 6, range: 6, stealth: 5, grit: 5 },
+      })),
+    ],
+  };
+
+  const runState = buildMissionActiveRunState(deck, mission);
+  const resolution = resolveMissionCounterChoice(mission, deck, runState, 'district-joust', 'counter');
+  assert.equal(resolution.joustResult?.rivalId, 'grid-vex-static');
+  if (resolution.joustResult?.outcome === 'win') {
+    assert.deepEqual(resolution.joustResult.loreUnlockIds, ['codex-rival-vex-static']);
+    assert.equal(resolution.joustResult.cardRewardId, 'card-reward-static-trace');
+    assert.equal(resolution.joustResult.districtReputationDelta, 40);
+  } else {
+    assert.equal(resolution.joustResult?.loreUnlockIds, undefined);
+    assert.equal(resolution.joustResult?.cardRewardId, undefined);
+    assert.equal(resolution.joustResult?.districtReputationDelta, undefined);
+  }
 });

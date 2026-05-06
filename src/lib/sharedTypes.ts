@@ -202,6 +202,8 @@ export interface MissionJoustResult {
   playerCardId: string;
   playerName: string;
   rivalName: string;
+  /** @sprint 6 @owner gamma — Optional named district rival id when the duel maps to the rival catalogue. */
+  rivalId?: string;
   playerTactic: JoustTactic;
   rivalTactic: JoustTactic;
   difficulty: JoustDifficulty;
@@ -210,6 +212,12 @@ export interface MissionJoustResult {
   narration: string;
   rewardXpBonus: number;
   rewardOzziesBonus: number;
+  /** @sprint 6 @owner gamma — Codex unlock ids emitted by a named-rival win. */
+  loreUnlockIds?: string[];
+  /** @sprint 6 @owner gamma — Stable card reward id emitted by a named-rival win. */
+  cardRewardId?: string;
+  /** @sprint 6 @owner gamma — Named-rival district reputation gained on victory. */
+  districtReputationDelta?: number;
 }
 
 /**
@@ -331,6 +339,12 @@ export interface MissionBoardEntry {
 export interface MissionBoardProgression {
   missionXp: number;
   missionOzzies: number;
+  /** @sprint 6 @owner gamma — Total district reputation banked from named rival wins. */
+  districtReputation?: number;
+  /** @sprint 6 @owner gamma — Stable rival ids already defeated by this account. */
+  defeatedRivalIds?: string[];
+  /** @sprint 6 @owner gamma — Stable Codex ids unlocked through rival progression. */
+  codexUnlockIds?: string[];
 }
 
 /**

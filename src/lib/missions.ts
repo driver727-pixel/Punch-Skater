@@ -1,5 +1,9 @@
 import { isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
 import { getAvailableJoustTactics, resolveJoust, selectDefaultJoustRider } from "./joust";
+import {
+  getDistrictRivalMissionHook,
+  getDistrictRivalProgressionAward,
+} from "./rivals";
 import type {
   MissionActiveRunState,
   MissionBoardEntry,
@@ -73,111 +77,11 @@ interface MissionJoustRivalConfig {
   intro: string;
   summary: string;
   difficulty?: JoustDifficulty;
+  rivalId?: string;
   rival: Omit<JoustCardSnapshot, "id"> & { id?: string };
 }
 
-const MISSION_JOUST_RIVALS: Record<District, MissionJoustRivalConfig> = {
-  Airaway: {
-    label: "Checkpoint joust",
-    intro: "A checkpoint marshal drops a lance gate across the glass lane and demands a clean pass.",
-    summary: "Beat the checkpoint marshal in a clean joust for a little extra pay on the way out.",
-    rival: {
-      id: "airaway-checkpoint-marshal",
-      name: "Marshal Prism",
-      archetype: "The Team",
-      crew: "The Team",
-      district: "Airaway",
-      stats: { speed: 7, range: 6, rangeNm: 6, stealth: 5, grit: 6 },
-      joust: {
-        lance: 7,
-        shield: 7,
-        hype: 6,
-        gear: {
-          boardType: "Street",
-          lanceType: "kinetic",
-          shieldType: "riot",
-          armorTag: "glass marshal shell",
-        },
-        traits: ["Street Parry"],
-      },
-    },
-  },
-  Batteryville: {
-    label: "Scrapyard joust",
-    intro: "A breaker-yard bruiser kicks off the live route with a grinder-lane challenge.",
-    summary: "Throw down in the breaker lane for a small bonus if your rider can hold the line.",
-    rival: {
-      id: "batteryville-yard-bruiser",
-      name: "Weld Jack",
-      archetype: "The Static Pack",
-      crew: "The Static Pack",
-      district: "Batteryville",
-      stats: { speed: 6, range: 5, rangeNm: 5, stealth: 4, grit: 8 },
-      joust: {
-        lance: 8,
-        shield: 7,
-        hype: 5,
-        gear: {
-          boardType: "Street",
-          lanceType: "kinetic",
-          shieldType: "riot",
-          armorTag: "yard crusher plate",
-        },
-        traits: ["Heavy Lance"],
-      },
-    },
-  },
-  "The Grid": {
-    label: "Trace joust",
-    intro: "A Cascade trace rider lights up the lane and tries to pin the crew in a public duel.",
-    summary: "Take the trace rider on directly for a small archive bonus if your read is good enough.",
-    difficulty: "hard",
-    rival: {
-      id: "grid-trace-rider",
-      name: "Audit Saint",
-      archetype: "The Knights Technarchy",
-      crew: "The Knights Technarchy",
-      district: "The Grid",
-      stats: { speed: 7, range: 7, rangeNm: 7, stealth: 6, grit: 6 },
-      joust: {
-        lance: 7,
-        shield: 8,
-        hype: 7,
-        gear: {
-          boardType: "Street",
-          lanceType: "kinetic",
-          shieldType: "riot",
-          armorTag: "trace audit shell",
-        },
-        traits: ["Magnetic Guard"],
-      },
-    },
-  },
-  Nightshade: {
-    label: "Tunnel joust",
-    intro: "A Murk lookout swings into the tunnel mouth and asks for a winner-takes-passage duel.",
-    summary: "Win the tunnel joust to leave with a little extra hush money and rep.",
-    rival: {
-      id: "nightshade-tunnel-lookout",
-      name: "Velvet Fuse",
-      archetype: "D4rk $pider",
-      crew: "D4rk $pider",
-      district: "Nightshade",
-      stats: { speed: 7, range: 6, rangeNm: 6, stealth: 7, grit: 5 },
-      joust: {
-        lance: 7,
-        shield: 6,
-        hype: 8,
-        gear: {
-          boardType: "Street",
-          lanceType: "kinetic",
-          shieldType: "riot",
-          armorTag: "murk shimmer wrap",
-        },
-        traits: ["Neon Flourish"],
-      },
-    },
-  },
+const MISSION_JOUST_RIVAL_FALLBACKS: Partial<Record<District, MissionJoustRivalConfig>> = {
   "The Forest": {
     label: "Rootline joust",
     intro: "A root bridge guide blocks the mudline and insists on a balance-first duel for passage.",
@@ -203,31 +107,6 @@ const MISSION_JOUST_RIVALS: Record<District, MissionJoustRivalConfig> = {
       },
     },
   },
-  "Glass City": {
-    label: "Broker joust",
-    intro: "A mirror broker sends a show rider into the open lane to make the handoff public.",
-    summary: "Beat the broker's rider for a little extra cash and bragging rights.",
-    rival: {
-      id: "glass-city-broker-rider",
-      name: "Halo Vane",
-      archetype: "The Team",
-      crew: "The Team",
-      district: "Glass City",
-      stats: { speed: 8, range: 6, rangeNm: 6, stealth: 6, grit: 5 },
-      joust: {
-        lance: 7,
-        shield: 6,
-        hype: 8,
-        gear: {
-          boardType: "Street",
-          lanceType: "kinetic",
-          shieldType: "riot",
-          armorTag: "mirror-polish shell",
-        },
-        traits: ["Boost Charge"],
-      },
-    },
-  },
 };
 
 function getMissionThreatSummary(mission: MissionBoardEntry): string {
@@ -250,7 +129,18 @@ function getMissionThreatSummary(mission: MissionBoardEntry): string {
 }
 
 function getMissionJoustConfig(mission: MissionBoardEntry): MissionJoustRivalConfig {
-  return MISSION_JOUST_RIVALS[mission.district];
+  const rivalHook = getDistrictRivalMissionHook(mission.district);
+  if (rivalHook) {
+    return {
+      label: rivalHook.label,
+      intro: rivalHook.intro,
+      summary: rivalHook.summary,
+      difficulty: rivalHook.difficulty,
+      rivalId: rivalHook.rivalId,
+      rival: rivalHook.rivalCard,
+    };
+  }
+  return MISSION_JOUST_RIVAL_FALLBACKS[mission.district]!;
 }
 
 function buildMissionJoustOption(mission: MissionBoardEntry): MissionEncounterOption {
@@ -317,10 +207,14 @@ function resolveMissionJoust(
     seed: `${mission.id}:${activeRun?.launchedAt ?? MISSION_JOUST_SEED_FALLBACK}:${rider.id}:${playerTactic ?? MISSION_JOUST_SELECTION_FALLBACK}`,
   });
   const rewards = getMissionJoustRewards(resolution);
+  const progressionAward = config.rivalId
+    ? getDistrictRivalProgressionAward(config.rivalId, resolution.outcome)
+    : null;
   return {
     playerCardId: resolution.player.id,
     playerName: resolution.player.name,
     rivalName: resolution.rival.name,
+    ...(config.rivalId ? { rivalId: config.rivalId } : {}),
     playerTactic: resolution.playerTactic,
     rivalTactic: resolution.rivalTactic,
     difficulty: resolution.difficulty,
@@ -329,6 +223,13 @@ function resolveMissionJoust(
     narration: resolution.narration,
     rewardXpBonus: rewards.rewardXpDelta,
     rewardOzziesBonus: rewards.rewardOzziesDelta,
+    ...(progressionAward
+      ? {
+        loreUnlockIds: progressionAward.codexEntryIds,
+        cardRewardId: progressionAward.cardRewardId,
+        districtReputationDelta: progressionAward.districtReputationDelta,
+      }
+      : {}),
   };
 }
 
