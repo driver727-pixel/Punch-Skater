@@ -83,7 +83,7 @@ export function CardForge() {
     <div className="page">
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <h1 className="page-title">CARD FORGE</h1>
-      <p className="page-sub">Configure your Sk8r, lock it in, and reveal a surprise class card</p>
+      <p className="page-sub">Forge your skater — then build a 6-card crew, run missions, win jousts, and climb the neon leaderboard</p>
 
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
 
