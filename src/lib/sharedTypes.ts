@@ -179,6 +179,7 @@ export interface MissionEncounterOption {
   id: string;
   label: string;
   description: string;
+  /** @sprint 6 @owner gamma — `counter` uses tag/power checks, while `joust` resolves through jousting-lite with a tactic pick. */
   encounterType?: "counter" | "joust";
   requirements?: MissionRequirement[];
   requiredTags?: MissionCounterTag[];

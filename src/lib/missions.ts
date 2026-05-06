@@ -39,7 +39,11 @@ const MISSION_JOUST_BASE_REWARDS = {
   draw: { rewardXpDelta: 10, rewardOzziesDelta: 8 },
   loss: { rewardXpDelta: 0, rewardOzziesDelta: 0 },
 } as const;
+/** Keep the first mission-joust rollout on the standard band unless a district explicitly opts into more pressure. */
 const DEFAULT_MISSION_JOUST_DIFFICULTY: JoustDifficulty = "standard";
+const MISSION_JOUST_SEED_FALLBACK = "mission-joust";
+const MISSION_JOUST_TACTIC_FALLBACK: JoustTactic = "charge";
+const MISSION_JOUST_SELECTION_FALLBACK = "auto";
 
 const ROUGH_ROUTE_DISTRICTS = new Set<District>(["Batteryville", "Nightshade", "The Forest"]);
 const CAMERA_HACKER_ARCHETYPES = new Set(["The Knights Technarchy", "D4rk $pider"]);
@@ -307,9 +311,9 @@ function resolveMissionJoust(
   if (!rider || !option) return null;
   const config = getMissionJoustConfig(mission);
   const resolution = resolveJoust(rider, config.rival, {
-    playerTactic: playerTactic ?? getAvailableJoustTactics(rider)[0] ?? "charge",
+    playerTactic: playerTactic ?? getAvailableJoustTactics(rider)[0] ?? MISSION_JOUST_TACTIC_FALLBACK,
     difficulty: option.joustDifficulty ?? DEFAULT_MISSION_JOUST_DIFFICULTY,
-    seed: `${mission.id}:${activeRun?.launchedAt ?? "mission-joust"}:${rider.id}:${playerTactic ?? "auto"}`,
+    seed: `${mission.id}:${activeRun?.launchedAt ?? MISSION_JOUST_SEED_FALLBACK}:${rider.id}:${playerTactic ?? MISSION_JOUST_SELECTION_FALLBACK}`,
   });
   const rewards = getMissionJoustRewards(resolution);
   return {
