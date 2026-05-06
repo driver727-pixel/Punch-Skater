@@ -29,7 +29,7 @@ interface DifficultyConfig {
   rewardMultiplier: number;
 }
 
-const TACTIC_ORDER: JoustTactic[] = ["charge", "guard", "feint", "counter", "boost", "trickStrike"];
+const ALL_TACTICS: JoustTactic[] = ["charge", "guard", "feint", "counter", "boost", "trickStrike"];
 const FEINT_STEALTH_MIN = 6;
 const BOOST_SPEED_MIN = 7;
 const SUPPORT_BONUS_DIVISOR = 2;
@@ -83,7 +83,7 @@ const TACTICS: Record<JoustTactic, TacticConfig> = {
   },
 };
 
-export const JOUST_TACTICS: JoustTacticProfile[] = TACTIC_ORDER.map((id) => ({
+export const JOUST_TACTICS: JoustTacticProfile[] = ALL_TACTICS.map((id) => ({
   id,
   label: TACTICS[id].label,
   flavor: TACTICS[id].flavor,
@@ -247,7 +247,7 @@ function applyTraitModifiers(
 }
 
 function getAvailableTactics(card: JoustCardSnapshot): JoustTactic[] {
-  return TACTIC_ORDER.filter((tactic) => {
+  return ALL_TACTICS.filter((tactic) => {
     if (tactic === "feint") return card.stats.stealth >= FEINT_STEALTH_MIN;
     if (tactic === "boost") return card.stats.speed >= BOOST_SPEED_MIN;
     return true;
@@ -328,15 +328,15 @@ function predictStrike(
   const playerModifiers: JoustModifierBreakdown[] = [];
   const rivalModifiers: JoustModifierBreakdown[] = [];
   const attack = buildPressure(player, playerTactic, playerModifiers);
-  const rivalGuard = buildGuard(rival, rivalTactic, rivalModifiers);
+  const defense = buildGuard(rival, rivalTactic, rivalModifiers);
   const advantage = getTacticAdvantage(playerTactic, rivalTactic);
   const playerSpeed = player.stats.speed + attack.speedDelta;
-  const rivalSpeed = rival.stats.speed + rivalGuard.speedDelta;
+  const rivalSpeed = rival.stats.speed + defense.speedDelta;
   const speedTieBreak = playerSpeed > rivalSpeed ? 1 : 0;
-  const strike = attack.attack - rivalGuard.defense + advantage + speedTieBreak + randomRoll;
+  const strike = attack.attack - defense.defense + advantage + speedTieBreak + randomRoll;
   return {
     attack: attack.attack,
-    defense: rivalGuard.defense,
+    defense: defense.defense,
     advantage,
     speedTieBreak,
     strike,
@@ -371,7 +371,7 @@ function resolveRivalJoustTacticForSnapshots(
       tactic,
       strike: predictStrike(player, rival, resolvedPlayerTactic, tactic, 0).strike,
     }))
-    .sort((left, right) => left.strike - right.strike || TACTIC_ORDER.indexOf(left.tactic) - TACTIC_ORDER.indexOf(right.tactic));
+    .sort((left, right) => left.strike - right.strike || ALL_TACTICS.indexOf(left.tactic) - ALL_TACTICS.indexOf(right.tactic));
   const shortlist = ranked.slice(0, Math.max(1, Math.min(JOUST_DIFFICULTIES[difficulty].aiPickCount, ranked.length)));
   const rng = createSeededRandom(`${seed}::rival-tactic`);
   return shortlist[rng.range(0, shortlist.length - 1)].tactic;

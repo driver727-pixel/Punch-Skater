@@ -1,4 +1,4 @@
-const TACTIC_ORDER = ['charge', 'guard', 'feint', 'counter', 'boost', 'trickStrike'];
+const ALL_TACTICS = ['charge', 'guard', 'feint', 'counter', 'boost', 'trickStrike'];
 const FEINT_STEALTH_MIN = 6;
 const BOOST_SPEED_MIN = 7;
 const SUPPORT_BONUS_DIVISOR = 2;
@@ -52,7 +52,7 @@ const TACTICS = {
   },
 };
 
-export const JOUST_TACTICS = TACTIC_ORDER.map((id) => ({
+export const JOUST_TACTICS = ALL_TACTICS.map((id) => ({
   id,
   label: TACTICS[id].label,
   flavor: TACTICS[id].flavor,
@@ -236,7 +236,7 @@ function applyTraitModifiers(card, tactic, modifiers) {
 }
 
 function getAvailableTactics(card) {
-  return TACTIC_ORDER.filter((tactic) => {
+  return ALL_TACTICS.filter((tactic) => {
     if (tactic === 'feint') return card.stats.stealth >= FEINT_STEALTH_MIN;
     if (tactic === 'boost') return card.stats.speed >= BOOST_SPEED_MIN;
     return true;
@@ -340,7 +340,7 @@ function resolveRivalJoustTacticForSnapshots(player, rival, playerTactic, seed, 
       tactic,
       strike: predictStrike(player, rival, resolvedPlayerTactic, tactic, 0).strike,
     }))
-    .sort((left, right) => left.strike - right.strike || TACTIC_ORDER.indexOf(left.tactic) - TACTIC_ORDER.indexOf(right.tactic));
+    .sort((left, right) => left.strike - right.strike || ALL_TACTICS.indexOf(left.tactic) - ALL_TACTICS.indexOf(right.tactic));
   const shortlist = ranked.slice(0, Math.max(1, Math.min(JOUST_DIFFICULTIES[difficulty].aiPickCount, ranked.length)));
   const rng = createSeededRandom(`${seed}::rival-tactic`);
   return shortlist[rng.range(0, shortlist.length - 1)].tactic;
