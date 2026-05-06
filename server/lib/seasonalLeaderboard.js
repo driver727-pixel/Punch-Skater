@@ -42,6 +42,17 @@ export const SEASONAL_FAIR_PLAY_RULES = [
 const STAT_KEYS = ['speed', 'range', 'stealth', 'grit'];
 const CREW_SIZE = 6;
 
+// Decks (and embedded card snapshots) are user-writable per firestore.rules,
+// so a malformed or hostile entry can ship non-numeric or non-finite stats.
+// We coerce defensively so a single bad value cannot poison the whole deck
+// score with NaN (which would then persist as `null` in Firestore and break
+// the seasonal rank query).
+function toFiniteNonNegative(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return num;
+}
+
 function getCardArchetype(card) {
   return card?.prompts?.archetype ?? card?.archetype ?? 'Unknown';
 }
@@ -67,7 +78,7 @@ function getSynergyMultiplier(cards) {
 export function computeDeckScore(cards) {
   if (!Array.isArray(cards) || cards.length === 0) return 0;
   const raw = cards.reduce(
-    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + Number(card?.stats?.[key] ?? 0), 0),
+    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + toFiniteNonNegative(card?.stats?.[key]), 0),
     0,
   );
   return Math.round(raw * getSynergyMultiplier(cards));
@@ -76,19 +87,19 @@ export function computeDeckScore(cards) {
 export function computeDeckWorth(cards) {
   if (!Array.isArray(cards)) return 0;
   return cards.reduce(
-    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + Number(card?.stats?.[key] ?? 0), 0),
+    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + toFiniteNonNegative(card?.stats?.[key]), 0),
     0,
   );
 }
 
 export function computeCrewOzzies(cards) {
   if (!Array.isArray(cards)) return 0;
-  return cards.reduce((sum, card) => sum + Math.max(0, Number(card?.ozzies ?? 0)), 0);
+  return cards.reduce((sum, card) => sum + toFiniteNonNegative(card?.ozzies), 0);
 }
 
 export function computeCrewXp(cards) {
   if (!Array.isArray(cards)) return 0;
-  return cards.reduce((sum, card) => sum + Math.max(0, Number(card?.xp ?? 0)), 0);
+  return cards.reduce((sum, card) => sum + toFiniteNonNegative(card?.xp), 0);
 }
 
 export function buildLeaderboardDeckSummary(cards) {
@@ -105,7 +116,7 @@ export function buildLeaderboardDeckSummary(cards) {
   const statTotals = Object.fromEntries(STAT_KEYS.map((key) => [key, 0]));
   for (const card of cards) {
     for (const key of STAT_KEYS) {
-      statTotals[key] += Number(card?.stats?.[key] ?? 0);
+      statTotals[key] += toFiniteNonNegative(card?.stats?.[key]);
     }
   }
   const strongestStat = STAT_KEYS.reduce((best, key) => (statTotals[key] > statTotals[best] ? key : best), STAT_KEYS[0]);
@@ -124,11 +135,18 @@ export function buildLeaderboardDeckSummary(cards) {
 }
 
 export function computeSeasonalRankScore(deckPower) {
-  return Math.max(0, Math.round(deckPower));
+  return Math.max(0, Math.round(toFiniteNonNegative(deckPower)));
 }
 
 export function computeLifetimeLeaderboardScore({ deckPower, crewOzzies = 0, crewXp = 0 }) {
-  return Math.max(0, Math.round(deckPower + crewOzzies + crewXp / 10_000));
+  return Math.max(
+    0,
+    Math.round(
+      toFiniteNonNegative(deckPower)
+        + toFiniteNonNegative(crewOzzies)
+        + toFiniteNonNegative(crewXp) / 10_000,
+    ),
+  );
 }
 
 export function resolveSeasonalRewardTierIds(rank, entrantCount) {

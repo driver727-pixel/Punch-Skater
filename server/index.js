@@ -50,6 +50,7 @@ import { registerPaymentRoutes } from './routes/payments.js';
 import { registerBattlePassRoutes } from './battlePass.js';
 import { registerLeaderboardRoutes } from './routes/leaderboard.js';
 import { registerRewardRoutes } from './routes/rewards.js';
+import { registerTradeRoutes } from './routes/trades.js';
 import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
 import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
 
@@ -252,6 +253,13 @@ const rewardRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 30,
   message: { error: 'Too many reward requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const tradeRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many trade requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -847,6 +855,13 @@ registerRewardRoutes(app, {
   adminDb,
   rewardRateLimit,
   authenticateFirebaseUser,
+});
+
+registerTradeRoutes(app, {
+  adminDb,
+  tradeRateLimit,
+  authenticateFirebaseUser,
+  randomUUID,
 });
 
 registerBattleRoutes(app, {

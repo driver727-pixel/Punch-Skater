@@ -4,8 +4,6 @@ import {
   query,
   where,
   getDocs,
-  doc,
-  setDoc,
 } from "firebase/firestore";
 import type { CardPayload, TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
@@ -15,12 +13,11 @@ import {
   createTradeReputationSnapshot,
   estimateCardTradeValue,
   formatTradeValue,
-  getSendAbusePreventionMessages,
   getTradeFairnessFlags,
   getTradeValueBand,
   MAX_PENDING_OUTGOING_OFFERS,
-  TRADE_ECONOMY_VERSION,
 } from "../lib/tradeEconomy";
+import { createTradeOffer } from "../services/trades";
 
 interface TradeModalProps {
   cards: CardPayload[];
@@ -103,79 +100,11 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
     setLoading(true);
     setError("");
     try {
-      // Look up recipient by email
-      const snap = await getDocs(
-        query(collection(db, "userLookup"), where("emailLower", "==", email))
-      );
-      if (snap.empty) {
-        setError("No account found with that email address.");
-        return;
-      }
-      const recipientProfile = snap.docs[0].data();
-      const abuseMessages = getSendAbusePreventionMessages(pendingTrades, recipientProfile.uid, selectedCard.id);
-      if (abuseMessages.length > 0) {
-        setError(abuseMessages[0]);
-        return;
-      }
-      const estimatedValue = estimateCardTradeValue(selectedCard);
-      const fairPlayFlags = getTradeFairnessFlags(selectedCard, estimatedValue);
-      const createdAt = new Date().toISOString();
-      const reputationSnapshot = createTradeReputationSnapshot(sentTrades, user.uid, createdAt);
-      const valueBand = getTradeValueBand(estimatedValue);
-      const tradeId = `trade-${Date.now()}`;
-      await setDoc(doc(db, "trades", tradeId), {
-        id: tradeId,
-        fromUid: user.uid,
-        fromEmail: user.email ?? "",
-        toUid: recipientProfile.uid,
-        toEmail: email,
+      const response = await createTradeOffer(user, {
         offeredCardId: selectedCard.id,
-        offeredCard: selectedCard,
-        estimatedValue,
-        valueBand,
-        economyVersion: TRADE_ECONOMY_VERSION,
-        senderReputation: reputationSnapshot,
-        fairPlay: {
-          flags: fairPlayFlags,
-          reviewedAt: createdAt,
-        },
-        confirmations: {
-          sender: [
-            "no-real-money",
-            "estimated-value-reviewed",
-            "recipient-verified",
-          ],
-        },
-        status: "pending",
-        createdAt,
-        updatedAt: createdAt,
+        recipientEmail: email,
       });
-      setSentTrades((current) => [
-        ...current,
-        {
-          id: tradeId,
-          fromUid: user.uid,
-          fromEmail: user.email ?? "",
-          toUid: recipientProfile.uid,
-          toEmail: email,
-          offeredCardId: selectedCard.id,
-          offeredCard: selectedCard,
-          estimatedValue,
-          valueBand,
-          economyVersion: TRADE_ECONOMY_VERSION,
-          senderReputation: reputationSnapshot,
-          fairPlay: {
-            flags: fairPlayFlags,
-            reviewedAt: createdAt,
-          },
-          confirmations: {
-            sender: ["no-real-money", "estimated-value-reviewed", "recipient-verified"],
-          },
-          status: "pending",
-          createdAt,
-          updatedAt: createdAt,
-        },
-      ]);
+      setSentTrades((current) => [...current, response.trade]);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send trade offer.");

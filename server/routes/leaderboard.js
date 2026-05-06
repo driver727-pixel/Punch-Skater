@@ -37,8 +37,15 @@ function buildUserDisplayName(caller, profile) {
 }
 
 function parseSubmittedAt(entry) {
-  if (typeof entry?.submittedAt === 'string') return Date.parse(entry.submittedAt);
-  if (typeof entry?.updatedAt === 'string') return Date.parse(entry.updatedAt);
+  const candidates = [entry?.submittedAt, entry?.updatedAt];
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const parsed = Date.parse(candidate);
+    // Date.parse returns NaN for malformed strings; falling back to 0 keeps
+    // downstream cooldown comparisons safe (NaN comparisons would silently
+    // bypass the throttle).
+    if (Number.isFinite(parsed)) return parsed;
+  }
   return 0;
 }
 
