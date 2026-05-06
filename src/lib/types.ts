@@ -109,6 +109,21 @@ export interface ForgedCardStats {
   grit: number;
 }
 
+export interface JoustGearIdentity {
+  boardType: string;
+  lanceType: string;
+  shieldType: string;
+  armorTag: string;
+}
+
+export interface JoustCardProfile {
+  lance: number;
+  shield: number;
+  hype: number;
+  gear: JoustGearIdentity;
+  traits: string[];
+}
+
 export interface ForgedBoardComponents {
   boardType: string;
   drivetrain: string;
@@ -190,6 +205,8 @@ export interface CardPayload {
   variance: ForgedVarianceData;
 
   stats: ForgedCardStats;
+
+  joust?: JoustCardProfile;
 
   board: ForgedBoardData;
 

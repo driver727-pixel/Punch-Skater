@@ -42,6 +42,7 @@ import {
   resolveBoardLayerOrder,
 } from "../lib/boardPlacement";
 import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
+import { formatJoustGearLabel, JOUST_TRAIT_SUMMARIES, normalizeJoustProfile } from "../lib/jousting";
 import { RetroWireframeTunnel } from "./RetroWireframeTunnel";
 
 // ── Rarity colour map used on the card-back header ───────────────────────────
@@ -399,6 +400,21 @@ function CardBack({
     { icon: wh?.icon ?? "⚫",  label: "WHEELS",  value: wh?.label ?? card.board.components.wheels },
     { icon: ba?.icon ?? "🔋",  label: "BATTERY", value: ba?.label ?? card.board.components.battery },
   ];
+  const joust = normalizeJoustProfile(card);
+  const joustStats = [
+    { label: "Lance", value: joust.lance },
+    { label: "Shield", value: joust.shield },
+    { label: "Hype", value: joust.hype },
+  ];
+  const joustTags = [
+    { label: formatJoustGearLabel(joust.gear.lanceType, "Lance"), title: "Primary joust weapon profile." },
+    { label: formatJoustGearLabel(joust.gear.shieldType, "Shield"), title: "Primary joust guard profile." },
+    { label: formatJoustGearLabel(joust.gear.armorTag), title: "Armor and style silhouette for joust identity." },
+    ...joust.traits.map((trait) => ({
+      label: trait,
+      title: JOUST_TRAIT_SUMMARIES[trait] ?? trait,
+    })),
+  ];
 
   return (
     <>
@@ -527,13 +543,35 @@ function CardBack({
             <StatBar label={CARD_STAT_LABELS.range.label}   value={card.stats.range}   color={accent} tooltip={CARD_STAT_LABELS.range.tooltip} />
             <StatBar label={CARD_STAT_LABELS.stealth.label} value={card.stats.stealth} color={accent} tooltip={CARD_STAT_LABELS.stealth.tooltip} />
             <StatBar label={CARD_STAT_LABELS.grit.label}    value={card.stats.grit}    color={accent} tooltip={CARD_STAT_LABELS.grit.tooltip} />
-            <div className="stat-bar stat-rangeNm">
-              <span className="stat-label" title={CARD_STAT_LABELS.rangeNm.tooltip}>{CARD_STAT_LABELS.rangeNm.label}</span>
-              <span className="stat-value">{card.stats.rangeNm} nm</span>
+            <div className="print-back-joust" aria-label="Joust profile">
+              <div className="print-back-joust-header">
+                <span className="print-back-joust-title">Joust Ready</span>
+                <span className="print-back-joust-range" title={CARD_STAT_LABELS.rangeNm.tooltip}>{card.stats.rangeNm} nm</span>
+              </div>
+              <div className="print-back-joust-stats">
+                {joustStats.map(({ label, value }) => (
+                  <div key={label} className="print-back-joust-stat">
+                    <span className="print-back-joust-stat-label">{label}</span>
+                    <span className="print-back-joust-stat-value">{value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         )}
       </div>
+      </div>
+
+      <div className="print-back-tags print-back-tags--joust">
+        {joustTags.map(({ label, title }) => (
+          <span
+            key={label}
+            className="print-back-tag print-back-tag--joust"
+            title={title}
+          >
+            {label}
+          </span>
+        ))}
       </div>
 
       <div className="print-back-bio-strip">
