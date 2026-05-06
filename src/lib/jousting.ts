@@ -97,7 +97,8 @@ export function formatJoustGearLabel(type: string, suffix?: string): string {
 function getBoardTypeLabel(card: CardPayload): string {
   return BOARD_TYPE_OPTIONS.find((option) => option.value === card.board.config.boardType)?.label
     ?? card.board.components.boardType
-    ?? card.board.config.boardType;
+    ?? card.board.config.boardType
+    ?? "Street";
 }
 
 function deriveLanceType(card: CardPayload): string {
