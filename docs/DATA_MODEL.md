@@ -11,6 +11,7 @@
 |---|---|---|---|
 | `users/{uid}/cards` | Sub-collection | `cardId` | Owner read/write |
 | `users/{uid}/decks` | Sub-collection | `deckId` | Owner read/write |
+| `users/{uid}/rewardClaims` | Sub-collection | `milestoneId` | Server write; owner read |
 | `userProfiles` | Top-level | `uid` | Owner + admin read; validated create/update |
 | `userLookup` | Top-level | `uid` | Any authed read; owner create/update |
 | `imageCache` | Top-level | `cacheKey` (layer+seed hash) | Public read; authed create; no update; admin delete |
@@ -138,9 +139,19 @@ Private profile. Owner + admin read. Validated field allowlist on create/update.
   emailLower: string,
   displayName: string,
   discoveredFactions: any,      // faction discovery state
+  collectionRewards?: {
+    badgeIds: string[],          // cosmetic achievement markers
+    titleIds: string[],          // profile/display titles
+    frameIds: string[],          // cosmetic frames
+    loreIds: string[],           // unlocked codex/lore entries
+    rerollTokens: number,        // capped cosmetic reroll token balance
+    claimedMilestoneIds: string[],
+  },
   updatedAt: Timestamp,
 }
 ```
+
+`collectionRewards` is server-managed so players cannot mint cosmetics or reroll tokens from client writes.
 
 **Create allowlist:** `uid`, `email`, `emailLower`, `displayName`, `discoveredFactions`, `updatedAt`.
 **Update allowlist:** `email`, `emailLower`, `displayName`, `discoveredFactions`, `updatedAt`.
@@ -155,6 +166,22 @@ Minimal public directory for trade recipient lookup.
   emailLower: string,
   displayName: string,
   updatedAt: Timestamp,
+}
+```
+
+### `users/{uid}/rewardClaims/{claimId}`
+
+Server-authored claim receipts for collection reward milestones. The document ID
+is the claimed milestone ID so claims are naturally idempotent.
+
+```
+{
+  milestoneId: string,
+  rewardIds: string[],
+  rewardTypes: ("badge" | "title" | "frame" | "lore" | "reroll_token")[],
+  source: "collection_rewards",
+  seasonId: string | null,
+  grantedAt: Timestamp,
 }
 ```
 

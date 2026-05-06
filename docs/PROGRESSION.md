@@ -259,6 +259,49 @@ rewards — further incentivising competitive play.
 
 ---
 
+## Collection Rewards
+
+Collection rewards are account-level prestige and earned convenience rewards.
+They deliberately do **not** modify card stats, Deck Power, rarity odds, battle
+wagers, race resolution, or leaderboard scoring.
+
+### Reward categories
+
+| Category | Purpose | Fairness rule |
+|---|---|---|
+| Badges | Achievement markers for collection, faction, district, rarity, and activity milestones | Cosmetic only |
+| Titles | Profile/display labels such as faction archivist or Legendary Scout | Cosmetic only |
+| Frames | Cosmetic card/profile frame unlocks | Cosmetic only |
+| Lore | Codex chapters, district rumors, and faction dossiers | Cosmetic only |
+| Reroll tokens | Limited non-power rerolls | Capped and restricted to cosmetic rerolls |
+
+### Milestone tracks
+
+- Total unique collection count: 5, 10, 25, 50, and 100 unique cards.
+- Faction breadth: 3 cards, 6 cards, and full archetype spread per faction.
+- District breadth: cards from every live district and district set milestones.
+- Rarity discovery: first Apprentice/Master/Rare/Legendary and a cosmetic
+  multiple-Legendary title.
+- Activity milestones: trades, missions, battles, daily streaks, and events.
+
+Major milestones count unique `name + faction + district + rarity` signatures
+so duplicate farming cannot rapidly unlock high-prestige rewards. Duplicates
+only contribute a small diminishing Collection Score volume bonus.
+
+### Collection Score
+
+Collection Score is separate from Deck Power. It rewards completion, breadth,
+owned cosmetics, lore, and limited event participation. Raw stat totals are not
+included, and the score does not improve competitive battle or race outcomes.
+
+### Claim storage
+
+Claimed rewards live on `userProfiles/{uid}.collectionRewards`; idempotent claim
+receipts live at `users/{uid}/rewardClaims/{milestoneId}`. Claims are validated
+by server routes so clients can preview progress but cannot mint rewards.
+
+---
+
 ## Code Locations
 
 | Concern | File |
@@ -273,3 +316,4 @@ rewards — further incentivising competitive play.
 | Mission risk/reward types | `src/lib/sharedTypes.ts` |
 | Mission templates | `src/lib/missions.ts` |
 | Progression server tests | `server/test/progression.test.js` |
+| Collection reward catalogue/evaluator | `src/lib/collectionRewards.ts` · `server/lib/collectionRewards.js` |
