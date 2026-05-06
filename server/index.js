@@ -48,6 +48,7 @@ import { registerImportRoutes } from './routes/import.js';
 import { registerMissionRoutes } from './routes/missions.js';
 import { registerPaymentRoutes } from './routes/payments.js';
 import { registerBattlePassRoutes } from './battlePass.js';
+import { registerLeaderboardRoutes } from './routes/leaderboard.js';
 import { registerRewardRoutes } from './routes/rewards.js';
 import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
 import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
@@ -237,6 +238,13 @@ const raceRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 60,
   message: { error: 'Too many race requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const leaderboardRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 12,
+  message: { error: 'Too many leaderboard submissions — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -864,6 +872,12 @@ registerRaceRoutes(app, {
   authenticateFirebaseUser,
   randomUUID,
   FieldValue,
+});
+
+registerLeaderboardRoutes(app, {
+  adminDb,
+  leaderboardRateLimit,
+  authenticateFirebaseUser,
 });
 
 registerImageRoutes(app, {

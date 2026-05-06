@@ -552,6 +552,10 @@ export interface NotificationItem {
 export interface LeaderboardEntry {
   uid: string;
   displayName: string;
+  /** Server-managed season id when this entry is part of a seasonal table. */
+  seasonId?: string;
+  /** Saved deck id used to recompute the public entry. */
+  deckId?: string;
   /** Player-facing name for the active 6-card Crew/deck. */
   deckName: string;
   cardCount: number;
@@ -580,6 +584,17 @@ export interface LeaderboardEntry {
    *   Deck Power + Crew Ozzies + (Crew XP / 10,000) + district reputation
    */
   leaderboardScore?: number;
+  /**
+   * Seasonal rank score intentionally excludes lifetime XP/Ozzies so new or
+   * returning players can compete on the active Crew submitted this season.
+   */
+  seasonalRankScore?: number;
+  /** Cosmetic/status reward tiers currently projected for the entry. */
+  projectedRewardTierIds?: string[];
+  fairPlay?: {
+    status: "eligible" | "review";
+    flags: string[];
+  };
   strongestStat: StatKey;
   strongestStatTotal: number;
   synergyBonusPct: number;

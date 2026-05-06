@@ -216,9 +216,9 @@ This rule prevents infinite power escalation and is defined in
 
 ---
 
-## Leaderboard
+## Lifetime Leaderboard
 
-The leaderboard ranks players' active Crews on a **combined score**:
+The lifetime leaderboard ranks players' active Crews on a **combined score**:
 
 ```
 Leaderboard Score = Deck Power + Crew Ozzies + (Crew XP / 10,000) + district reputation
@@ -227,20 +227,51 @@ Leaderboard Score = Deck Power + Crew Ozzies + (Crew XP / 10,000) + district rep
 Crew XP is divided by 10,000 so a fully maxed card (100,000,000 XP) contributes
 only 10,000 to the score — preventing XP from dominating.
 
-### Leaderboard categories
+Lifetime progress is permanent context: it celebrates collection growth and
+long-term Crew history, but it is not the seasonal rank tiebreaker.
+
+### Lifetime categories
 
 | Category | Field | Description |
 |---|---|---|
-| Combined | `leaderboardScore` | Weighted composite (primary ranking) |
+| Combined | `leaderboardScore` | Weighted lifetime composite |
 | Deck Power | `deckPower` | Raw Crew stat strength |
 | Crew Ozzies | `crewOzzies` | Total Ozzy value of the active 6-card Crew |
 | Crew XP | `crewXp` | Total XP earned by all Crew cards |
 | Legacy worth | `ozzies` | Backward-compatible stat-based worth |
 
-### Leaderboard rewards
+## Seasonal Leaderboard
 
-Top accounts on the leaderboard receive bonus cards, Ozzies, and special
-rewards — further incentivising competitive play.
+Seasonal rank is reset each season and uses a separate score:
+
+```
+Seasonal Rank Score = submitted Crew Deck Power
+```
+
+The seasonal score deliberately excludes lifetime Crew XP and lifetime Ozzies so
+new, returning, and veteran players compete on their current 6-card Crew rather
+than accumulated account age.  Seasonal entries still show lifetime score as
+context, and the lifetime leaderboard remains permanent.
+
+### Seasonal reward categories
+
+| Reward category | Requirement | Reward philosophy |
+|---|---|---|
+| Season Crew | Submit one eligible 6-card Crew | Cosmetic badge; no power |
+| Top Half | Finish in the top 50% of eligible entrants | Profile title |
+| Top 10% | Finish in the top 10% of eligible entrants | Cosmetic frame |
+| Season Champion | Finish rank #1 | Legendary cosmetic title |
+
+### Anti-abuse protections
+
+- Clients submit only a `deckId`; the server reads the authenticated player's
+  saved deck and recomputes every public score.
+- Seasonal entries require exactly 6 unique cards.
+- Direct Firestore writes to lifetime and seasonal leaderboard documents are
+  blocked for clients.
+- Seasonal refreshes have a 4-hour cooldown plus API rate limiting.
+- Seasonal rewards are cosmetic/status-first, preventing rank rewards from
+  compounding into pay-to-win power.
 
 ---
 
