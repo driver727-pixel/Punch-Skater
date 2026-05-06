@@ -38,6 +38,10 @@ const RARITY_ORDER: Record<Rarity, number> = {
 };
 const UNKNOWN_RARITY_ORDER = 5;
 
+function formatCollectionRewardMeta(track: string, seasonal?: boolean): string {
+  return seasonal ? `${track} · seasonal` : track;
+}
+
 export function Collection() {
   const { user } = useAuth();
   const { cards, removeCard, addCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
@@ -448,7 +452,7 @@ export function Collection() {
               <div className="collection-rewards-score">
                 <span>Collection Score</span>
                 <strong>{rewardEvaluation.score}</strong>
-                <small>{rewardEvaluation.uniqueCardCount} unique · {rewardEvaluation.duplicateVolumeScore} duplicate volume</small>
+                <small>{rewardEvaluation.uniqueCardCount} unique  ·  {rewardEvaluation.duplicateVolumeScore} duplicate volume</small>
               </div>
             </div>
 
@@ -487,7 +491,7 @@ export function Collection() {
                   <div className="collection-reward-card__top">
                     <div>
                       <strong>{entry.milestone.name}</strong>
-                      <span>{entry.milestone.track}{entry.milestone.seasonal ? " · seasonal" : ""}</span>
+                      <span>{formatCollectionRewardMeta(entry.milestone.track, entry.milestone.seasonal)}</span>
                     </div>
                     <span className="collection-reward-card__status">
                       {entry.claimed ? "Owned" : entry.eligible ? "Claimable" : `${entry.percent}%`}
