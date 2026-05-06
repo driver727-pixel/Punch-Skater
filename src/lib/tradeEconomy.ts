@@ -5,6 +5,17 @@ export const MAX_PENDING_OUTGOING_OFFERS = 5;
 export const MAX_PENDING_OFFERS_TO_RECIPIENT = 2;
 export const TRADE_SEND_COOLDOWN_MS = 30_000;
 export const MAX_ESTIMATED_TRADE_VALUE = 100_000;
+// Earned XP/Ozzies influence trades but are capped so old collections do not
+// dominate the card economy or create pay-to-win pricing pressure.
+const MAX_OZZY_TRADE_VALUE = 420;
+const MAX_XP_TRADE_VALUE = 280;
+const XP_TO_VALUE_DIVISOR = 10_000;
+const OZZY_TO_VALUE_DIVISOR = 25;
+const JOUST_STAT_MULTIPLIER = 5;
+const JOUST_TRAIT_VALUE = 10;
+const TUNED_BOARD_VALUE = 45;
+const IMPOUNDED_MAINTENANCE_PENALTY = 90;
+const IN_SHOP_MAINTENANCE_PENALTY = 35;
 // Start neutral-positive so new traders are not punished, then reward completed
 // accepted trades more strongly than declined/cancelled/pending offers penalize.
 const REPUTATION_BASE_SCORE = 55;
@@ -25,14 +36,19 @@ export function estimateCardTradeValue(card: CardPayload): number {
   const stats = (card.stats.speed ?? 0) + (card.stats.range ?? 0) + (card.stats.stealth ?? 0) + (card.stats.grit ?? 0);
   const rarityValue = RARITY_VALUES[card.prompts.rarity] ?? 200;
   const statValue = stats * 6;
-  const ozzyValue = Math.min(420, Math.max(0, card.ozzies ?? 0) / 25);
-  const xpValue = Math.min(280, Math.max(0, card.xp ?? 0) / 10_000);
+  const ozzyValue = Math.min(MAX_OZZY_TRADE_VALUE, Math.max(0, card.ozzies ?? 0) / OZZY_TO_VALUE_DIVISOR);
+  const xpValue = Math.min(MAX_XP_TRADE_VALUE, Math.max(0, card.xp ?? 0) / XP_TO_VALUE_DIVISOR);
   const joustValue = card.joust
-    ? (card.joust.lance + card.joust.shield + card.joust.hype) * 5 + card.joust.traits.length * 10
+    ? (card.joust.lance + card.joust.shield + card.joust.hype) * JOUST_STAT_MULTIPLIER +
+      card.joust.traits.length * JOUST_TRAIT_VALUE
     : 0;
-  const boardValue = card.board?.tuned ? 45 : 0;
+  const boardValue = card.board?.tuned ? TUNED_BOARD_VALUE : 0;
   const maintenancePenalty =
-    card.maintenance?.state === "impounded" ? 90 : card.maintenance?.state === "in_shop" ? 35 : 0;
+    card.maintenance?.state === "impounded"
+      ? IMPOUNDED_MAINTENANCE_PENALTY
+      : card.maintenance?.state === "in_shop"
+        ? IN_SHOP_MAINTENANCE_PENALTY
+        : 0;
 
   return Math.min(
     MAX_ESTIMATED_TRADE_VALUE,
