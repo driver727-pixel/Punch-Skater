@@ -152,6 +152,8 @@ Private profile. Owner + admin read. Validated field allowlist on create/update.
 ```
 
 `collectionRewards` is server-managed so players cannot mint cosmetics or reroll tokens from client writes.
+Cosmetic reroll token spend is also server-validated via
+`POST /api/collection-rewards/reroll` before the forge UI triggers paid bypass-cache rerolls.
 
 **Create allowlist:** `uid`, `email`, `emailLower`, `displayName`, `discoveredFactions`, `updatedAt`.
 **Update allowlist:** `email`, `emailLower`, `displayName`, `discoveredFactions`, `updatedAt`.
@@ -184,6 +186,10 @@ is the claimed milestone ID so claims are naturally idempotent.
   grantedAt: Timestamp,
 }
 ```
+
+The forge consumes reroll token balance from `userProfiles/{uid}.collectionRewards`
+for three authenticated cosmetic actions: `character` (1 token), `board`
+(1 token), and `full` (2 tokens for portrait + board together).
 
 ### `imageCache/{cacheKey}`
 
