@@ -2,11 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerRewardRoutes } from '../routes/rewards.js';
 import { toDateKey } from '../dailyRewards.js';
+import {
+  COLLECTION_REWARD_CATALOG,
+  COLLECTION_REROLL_TOKEN_CAP,
+  evaluateCollectionRewards,
+} from '../lib/collectionRewards.js';
 
 function createAppHarness() {
   const routes = [];
   return {
     routes,
+    get(path, ...handlers) {
+      routes.push({ method: 'GET', path, handlers });
+    },
     post(path, ...handlers) {
       routes.push({ method: 'POST', path, handlers });
     },
@@ -55,20 +63,31 @@ function makeSnapshot(data) {
   };
 }
 
-function makeDocRef(path) {
+function makeQuerySnapshot(docs = []) {
+  return {
+    docs: docs.map((data, index) => ({
+      id: data?.id ?? `doc-${index}`,
+      data: () => data,
+    })),
+  };
+}
+
+function makeDocRef(path, snapshotMap) {
   return {
     path,
+    get: async () => snapshotMap.get(path) ?? makeSnapshot(undefined),
     collection(name) {
-      return makeCollectionRef(`${path}/${name}`);
+      return makeCollectionRef(`${path}/${name}`, snapshotMap);
     },
   };
 }
 
-function makeCollectionRef(path) {
+function makeCollectionRef(path, snapshotMap) {
   return {
     path,
+    get: async () => snapshotMap.get(path) ?? makeQuerySnapshot([]),
     doc(id) {
-      return makeDocRef(`${path}/${id}`);
+      return makeDocRef(`${path}/${id}`, snapshotMap);
     },
   };
 }
@@ -78,7 +97,7 @@ function makeAdminDb(snapshots = {}) {
   const adminDb = {
     lastTransaction: null,
     collection(name) {
-      return makeCollectionRef(name);
+      return makeCollectionRef(name, snapshotMap);
     },
     async runTransaction(callback) {
       const tx = {
@@ -104,6 +123,32 @@ function createRareSignupCard(overrides = {}) {
   };
 }
 
+function createRewardCard(index, overrides = {}) {
+  const rarity = overrides.rarity ?? 'Rare';
+  return {
+    id: `card-${index}`,
+    identity: {
+      name: `Skater ${index}`,
+      crew: 'Punch Skaters',
+      serialNumber: `PS-${index}`,
+      ...overrides.identity,
+    },
+    prompts: {
+      rarity,
+      archetype: 'The Team',
+      district: 'Airaway',
+      ...overrides.prompts,
+    },
+    class: {
+      rarity,
+      badgeLabel: rarity,
+      multiplier: 1,
+      ...overrides.class,
+    },
+    stats: overrides.stats ?? { speed: 10, range: 10, rangeNm: 10, stealth: 10, grit: 10 },
+  };
+}
+
 function registerHarnessRoute(options) {
   const app = createAppHarness();
   let rateLimitCalls = 0;
@@ -115,9 +160,12 @@ function registerHarnessRoute(options) {
     authenticateFirebaseUser: async () => ({ uid: 'user-1' }),
     ...options,
   });
-  assert.equal(app.routes.length, 1);
-  assert.equal(app.routes[0].path, '/api/player-rewards/sync');
-  return { route: app.routes[0], getRateLimitCalls: () => rateLimitCalls };
+  return {
+    app,
+    route: app.routes.find((route) => route.path === '/api/player-rewards/sync'),
+    getRoute: (path) => app.routes.find((route) => route.path === path),
+    getRateLimitCalls: () => rateLimitCalls,
+  };
 }
 
 test('player reward sync returns 503 when adminDb is unavailable', async () => {
@@ -258,4 +306,98 @@ test('player reward sync is idempotent after signup and same-day reward are alre
   });
   assert.deepEqual(res.body.progression, { missionXp: 99, missionOzzies: 77 });
   assert.deepEqual(adminDb.lastTransaction.sets, []);
+});
+
+test('collection reward catalogue never grants combat power', () => {
+  const forbiddenKinds = new Set(['stat_boost', 'deck_power', 'rarity_upgrade', 'legendary_access', 'battle_advantage']);
+  for (const reward of COLLECTION_REWARD_CATALOG) {
+    assert.equal(forbiddenKinds.has(reward.kind), false, `${reward.id} should not grant combat power`);
+    if (reward.kind === 'reroll_token') {
+      assert.equal(reward.safetyTier, 'controlled');
+      continue;
+    }
+    assert.equal(reward.safetyTier, 'safe');
+  }
+
+  const capped = evaluateCollectionRewards(
+    Array.from({ length: 12 }, (_, index) => createRewardCard(index)),
+    { rerollTokens: 999, claimedMilestoneIds: [], badgeIds: [], titleIds: [], frameIds: [], loreIds: [] },
+  );
+  assert.equal(capped.state.rerollTokens, COLLECTION_REROLL_TOKEN_CAP);
+});
+
+test('collection reward preview evaluates unique cards without changing stat power', async () => {
+  const cards = Array.from({ length: 5 }, (_, index) => createRewardCard(index));
+  const adminDb = makeAdminDb({
+    'userProfiles/user-1': makeSnapshot({ collectionRewards: {} }),
+    'dailyStreaks/user-1': makeSnapshot({ currentStreak: 1 }),
+    'users/user-1/cards': makeQuerySnapshot(cards),
+  });
+  const { getRoute } = registerHarnessRoute({ adminDb });
+
+  const res = await invokeRoute(getRoute('/api/collection-rewards'));
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.evaluation.uniqueCardCount, 5);
+  const starter = res.body.evaluation.milestones.find((entry) => entry.milestone.id === 'collection-unique-5');
+  assert.equal(starter.eligible, true);
+  assert.deepEqual(cards.map((card) => card.stats.speed), [10, 10, 10, 10, 10]);
+});
+
+test('collection reward claim rejects incomplete milestones', async () => {
+  const cards = Array.from({ length: 4 }, (_, index) => createRewardCard(index));
+  const adminDb = makeAdminDb({
+    'userProfiles/user-1': makeSnapshot({ collectionRewards: {} }),
+    'dailyStreaks/user-1': makeSnapshot({}),
+    'users/user-1/cards': makeQuerySnapshot(cards),
+  });
+  const { getRoute } = registerHarnessRoute({ adminDb });
+
+  const res = await invokeRoute(getRoute('/api/collection-rewards/claim'), {
+    body: { milestoneId: 'collection-unique-5' },
+  });
+
+  assert.equal(res.statusCode, 403);
+  assert.deepEqual(res.body, { error: 'Collection reward milestone is not complete yet.' });
+  assert.equal(adminDb.lastTransaction, null);
+});
+
+test('collection reward claim is idempotent and stores account-level rewards', async () => {
+  const cards = Array.from({ length: 5 }, (_, index) => createRewardCard(index));
+  const adminDb = makeAdminDb({
+    'userProfiles/user-1': makeSnapshot({ collectionRewards: {} }),
+    'dailyStreaks/user-1': makeSnapshot({}),
+    'users/user-1/cards': makeQuerySnapshot(cards),
+  });
+  const { getRoute } = registerHarnessRoute({ adminDb });
+
+  const res = await invokeRoute(getRoute('/api/collection-rewards/claim'), {
+    body: { milestoneId: 'collection-unique-5' },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.claimed, true);
+  assert.equal(res.body.rewards[0].kind, 'badge');
+  const profileWrite = adminDb.lastTransaction.sets.find((write) => write.path === 'userProfiles/user-1');
+  const claimWrite = adminDb.lastTransaction.sets.find((write) => write.path === 'users/user-1/rewardClaims/collection-unique-5');
+  assert.ok(profileWrite);
+  assert.ok(claimWrite);
+  assert.deepEqual(profileWrite.data.collectionRewards.badgeIds, ['badge-starter-stack']);
+  assert.deepEqual(profileWrite.data.collectionRewards.claimedMilestoneIds, ['collection-unique-5']);
+  assert.equal(claimWrite.data.source, 'collection_rewards');
+
+  const duplicateDb = makeAdminDb({
+    'userProfiles/user-1': makeSnapshot({ collectionRewards: profileWrite.data.collectionRewards }),
+    'dailyStreaks/user-1': makeSnapshot({}),
+    'users/user-1/cards': makeQuerySnapshot(cards),
+  });
+  const { getRoute: getDuplicateRoute } = registerHarnessRoute({ adminDb: duplicateDb });
+  const duplicateRes = await invokeRoute(getDuplicateRoute('/api/collection-rewards/claim'), {
+    body: { milestoneId: 'collection-unique-5' },
+  });
+
+  assert.equal(duplicateRes.statusCode, 200);
+  assert.equal(duplicateRes.body.claimed, false);
+  assert.equal(duplicateRes.body.alreadyClaimed, true);
+  assert.deepEqual(duplicateDb.lastTransaction.sets, []);
 });
