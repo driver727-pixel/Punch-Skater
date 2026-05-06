@@ -29,19 +29,19 @@ async function invokeRoute(route, { body = {} } = {}) {
     },
   };
 
-  for (let index = 0; index < route.handlers.length && !res.ended;) {
-    const handler = route.handlers[index];
+  for (let handlerIndex = 0; handlerIndex < route.handlers.length && !res.ended;) {
+    const handler = route.handlers[handlerIndex];
     if (handler.length >= 3) {
       let nextCalled = false;
       await handler(req, res, () => {
         nextCalled = true;
       });
       if (!nextCalled) break;
-      index += 1;
+      handlerIndex += 1;
       continue;
     }
     await handler(req, res);
-    index += 1;
+    handlerIndex += 1;
   }
 
   return res;

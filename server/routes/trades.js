@@ -70,6 +70,7 @@ export function registerTradeRoutes(app, {
     }
   }
 
+  // lgtm[js/missing-rate-limiting] tradeRateLimit is applied before authentication and route handling.
   app.post('/api/trades', tradeRateLimit, authenticateTradeCaller, async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Trades are not configured on this server.' });
