@@ -114,6 +114,7 @@ service cloud.firestore {
           && (!request.resource.data.keys().hasAny(['estimatedValue'])
             || (request.resource.data.estimatedValue is number
               && request.resource.data.estimatedValue >= 0
+              // Must match MAX_ESTIMATED_TRADE_VALUE in src/lib/tradeEconomy.ts.
               && request.resource.data.estimatedValue <= 100000))
           && (!request.resource.data.keys().hasAny(['valueBand'])
             || request.resource.data.valueBand in ['starter', 'rising', 'prime', 'elite', 'grail'])

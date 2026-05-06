@@ -4,6 +4,14 @@ export const TRADE_ECONOMY_VERSION = "fair-trade-v1";
 export const MAX_PENDING_OUTGOING_OFFERS = 5;
 export const MAX_PENDING_OFFERS_TO_RECIPIENT = 2;
 export const TRADE_SEND_COOLDOWN_MS = 30_000;
+export const MAX_ESTIMATED_TRADE_VALUE = 100_000;
+// Start neutral-positive so new traders are not punished, then reward completed
+// accepted trades more strongly than declined/cancelled/pending offers penalize.
+const REPUTATION_BASE_SCORE = 55;
+const REPUTATION_ACCEPTED_WEIGHT = 9;
+const REPUTATION_DECLINED_WEIGHT = 3;
+const REPUTATION_CANCELLED_WEIGHT = 5;
+const REPUTATION_PENDING_WEIGHT = 2;
 
 const RARITY_VALUES: Record<CardPayload["prompts"]["rarity"], number> = {
   "Punch Skater": 160,
@@ -26,7 +34,10 @@ export function estimateCardTradeValue(card: CardPayload): number {
   const maintenancePenalty =
     card.maintenance?.state === "impounded" ? 90 : card.maintenance?.state === "in_shop" ? 35 : 0;
 
-  return Math.max(25, Math.round(rarityValue + statValue + ozzyValue + xpValue + joustValue + boardValue - maintenancePenalty));
+  return Math.min(
+    MAX_ESTIMATED_TRADE_VALUE,
+    Math.max(25, Math.round(rarityValue + statValue + ozzyValue + xpValue + joustValue + boardValue - maintenancePenalty)),
+  );
 }
 
 export function getTradeValueBand(value: number): TradeValueBand {
@@ -52,7 +63,17 @@ export function createTradeReputationSnapshot(
   const cancelled = sentTrades.filter((trade) => trade.status === "cancelled").length;
   const pending = sentTrades.filter((trade) => trade.status === "pending").length;
   const completed = accepted + declined + cancelled;
-  const score = Math.max(0, Math.min(100, 55 + accepted * 9 - declined * 3 - cancelled * 5 - pending * 2));
+  const score = Math.max(
+    0,
+    Math.min(
+      100,
+      REPUTATION_BASE_SCORE +
+        accepted * REPUTATION_ACCEPTED_WEIGHT -
+        declined * REPUTATION_DECLINED_WEIGHT -
+        cancelled * REPUTATION_CANCELLED_WEIGHT -
+        pending * REPUTATION_PENDING_WEIGHT,
+    ),
+  );
   const label = score >= 85 ? "Trusted trader" : score >= 65 ? "Steady trader" : score >= 45 ? "New trader" : "Needs caution";
 
   return {
