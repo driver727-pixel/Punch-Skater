@@ -431,11 +431,10 @@ export function useForgeGeneration() {
       const spendResult = await spendCollectionReroll(user, actionId);
       if (signal.aborted) return;
       setRerollTokens(spendResult.evaluation.state.rerollTokens);
-
-      const results = await Promise.all([
-        action.targets.includes("character")
-          ? (setLayerParams(nextLayerParams),
-            generateLayer(
+      const characterPromise = action.targets.includes("character")
+        ? (() => {
+            setLayerParams(nextLayerParams);
+            return generateLayer(
               "character",
               nextLayerParams.character.key,
               nextLayerParams.character.prompt,
@@ -446,8 +445,12 @@ export function useForgeGeneration() {
               nextLayerParams.character.generationOptions,
               nextLayerParams.character.attempts,
               true,
-            ))
-          : Promise.resolve({ ok: true as const }),
+            );
+          })()
+        : Promise.resolve({ ok: true as const });
+
+      const results = await Promise.all([
+        characterPromise,
         action.targets.includes("board")
           ? runBoardGeneration(boardConfig, signal, { skipCache: true, variationKey })
           : Promise.resolve(true),

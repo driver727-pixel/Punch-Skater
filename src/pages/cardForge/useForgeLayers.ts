@@ -115,9 +115,9 @@ export function useForgeLayers() {
             const urlKey = `${layer}Url` as const;
             setLayers((current) => ({
               ...current,
-                [urlKey]: staticUrl,
-                loading: { ...current.loading, [layer]: false },
-              }));
+              [urlKey]: staticUrl,
+              loading: { ...current.loading, [layer]: false },
+            }));
             return { ok: true, url: staticUrl };
           }
 
@@ -125,11 +125,11 @@ export function useForgeLayers() {
           if (signal.aborted) return finishAborted();
           if (cached) {
             const urlKey = `${layer}Url` as const;
-              setLayers((current) => ({
-                ...current,
-                [urlKey]: cached,
-                loading: { ...current.loading, [layer]: false },
-              }));
+            setLayers((current) => ({
+              ...current,
+              [urlKey]: cached,
+              loading: { ...current.loading, [layer]: false },
+            }));
             return { ok: true, url: cached };
           }
         }
