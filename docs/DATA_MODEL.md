@@ -19,7 +19,8 @@
 | `referralClaims` | Top-level | `{referrerUid}_{visitorKey}` | Referrer read; anyone create (no self-referral); immutable |
 | `arena` | Top-level | `uid` | Any authed read; owner write/delete |
 | `battleResults` | Top-level | `resultId` | Participant read; server-only write |
-| `leaderboard` | Top-level | `uid` | Any authed read; owner write |
+| `leaderboard` | Top-level | `uid` | Any authed read; server write |
+| `leaderboardSeasons/{seasonId}/entries` | Sub-collection | `uid` | Any authed read; server write |
 | `factionImages` | Top-level | `factionKey` (slug) | Public read; admin write/delete |
 
 ---
@@ -283,14 +284,15 @@ Server-written battle outcomes. Participant read only.
 }
 ```
 
-### `leaderboard/{uid}` — LeaderboardEntry
+### `leaderboard/{uid}` — Lifetime LeaderboardEntry
 
-Public leaderboard. Owner write. Ordered by `deckPower` DESC, `ozzies` DESC.
+Public lifetime leaderboard. Server write. Ordered by `leaderboardScore`/`deckPower` for display.
 
 ```
 {
   uid: string,
   displayName: string,
+  deckId?: string,
   deckName: string,             // player-facing Crew name
   cardCount: number,
   deckPower: number,            // Deck Power = sum of all stat Points across active 6-card Crew
@@ -307,6 +309,48 @@ Public leaderboard. Owner write. Ordered by `deckPower` DESC, `ozzies` DESC.
 ```
 
 See `docs/PROGRESSION.md` for the full leaderboard scoring formula.
+
+### `leaderboardSeasons/{seasonId}/entries/{uid}` — Seasonal LeaderboardEntry
+
+Public seasonal leaderboard. Server write. Seasonal rank is intentionally
+separated from lifetime progress: `seasonalRankScore` uses the submitted
+Crew's current `deckPower`, while lifetime XP/Ozzies remain on
+`leaderboard/{uid}` and as context fields on the seasonal entry.
+
+```
+{
+  uid: string,
+  seasonId: string,
+  seasonLabel: string,
+  displayName: string,
+  deckId: string,
+  deckName: string,
+  cardCount: 6,
+  deckPower: number,
+  ozzies: number,                // legacy stat-based worth
+  crewOzzies: number,            // lifetime context; not seasonal rank
+  crewXp: number,                // lifetime context; not seasonal rank
+  leaderboardScore: number,      // lifetime score snapshot
+  seasonalRankScore: number,     // deckPower only
+  strongestStat: StatKey,
+  strongestStatTotal: number,
+  synergyBonusPct: number,
+  archetypeHint: string,
+  projectedRewardTierIds: string[],
+  fairPlay: {
+    status: "eligible" | "review",
+    flags: string[],
+  },
+  submittedAt: string,
+  updatedAt: string,
+}
+```
+
+Anti-abuse protections: clients submit only `deckId` to
+`POST /api/leaderboard/submit`; the server authenticates the caller, reads the
+owner's saved deck, requires exactly 6 unique cards, recomputes all scores,
+enforces a 4-hour seasonal refresh cooldown, and writes both lifetime and
+seasonal documents with Admin credentials.
 
 ### `factionImages/{factionKey}`
 
@@ -327,6 +371,7 @@ Faction background images. Public read, admin write.
 |---|---|---|
 | `trades` | `status` ASC, `createdAt` DESC | COLLECTION |
 | `leaderboard` | `deckPower` DESC, `ozzies` DESC | COLLECTION |
+| `leaderboardSeasons/*/entries` | `seasonId` ASC, `seasonalRankScore` DESC, `deckPower` DESC | COLLECTION |
 
 ---
 

@@ -178,11 +178,25 @@ service cloud.firestore {
     }
 
     // ── Leaderboard ──────────────────────────────────────────────────────────
-    // Public leaderboard entries keyed by uid.
-    // Any signed-in user may read all entries; only the owner can write their own.
+    // Public lifetime leaderboard entries keyed by uid.
+    // Any signed-in user may read all entries; writes are server-only so scores
+    // are recomputed from saved decks instead of trusting client payloads.
     match /leaderboard/{uid} {
       allow read:  if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    // Seasonal leaderboard entries are also server-authored.  Season metadata
+    // and entries are readable by signed-in players, but clients cannot mint
+    // ranks, bypass cooldowns, or submit scores for another uid.
+    match /leaderboardSeasons/{seasonId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+
+      match /entries/{uid} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if false;
+      }
     }
     // ── Faction images ───────────────────────────────────────────────────────
     // Stores the uploaded background image URL for each faction (keyed by
