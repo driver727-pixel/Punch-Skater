@@ -17,10 +17,15 @@ import {
   CHARACTER_PLACEMENT_SCALE_STEP,
 } from "../../lib/boardPlacement";
 
+const FORGE_RATE_LIMIT_PATTERNS = [
+  "too many image requests",
+  "too many status requests",
+];
+
 function getForgeIssueLabel(error: string): string {
   const normalized = error.toLowerCase();
   if (normalized.includes("sign in")) return "Sign in required";
-  if (normalized.includes("too many image requests") || normalized.includes("too many status requests")) return "Image queue cooling down";
+  if (FORGE_RATE_LIMIT_PATTERNS.some((pattern) => normalized.includes(pattern))) return "Image queue cooling down";
   if (normalized.includes("timed out")) return "Generation took too long";
   if (normalized.includes("not configured")) return "Image service unavailable";
   return "Generation hiccup";
@@ -29,7 +34,7 @@ function getForgeIssueLabel(error: string): string {
 function getForgeIssueHint(error: string): string {
   const normalized = error.toLowerCase();
   if (normalized.includes("sign in")) return "Sign back in, then try the reroll again.";
-  if (normalized.includes("too many image requests") || normalized.includes("too many status requests")) return "Wait a moment before retrying so the paid queue stays controlled.";
+  if (FORGE_RATE_LIMIT_PATTERNS.some((pattern) => normalized.includes(pattern))) return "Wait a moment before retrying so the paid queue stays controlled.";
   if (normalized.includes("timed out")) return "Keep the current art or retry a smaller reroll when the queue is calmer.";
   if (normalized.includes("not configured")) return "The current card is still usable; the art pipeline just is not available right now.";
   return "Your current art stays in place until a reroll finishes successfully.";

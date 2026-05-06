@@ -56,6 +56,14 @@ const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
 const DEFAULT_CHARACTER_BLEND = 1;
 const CHARACTER_LAYER_VALIDATOR = createCharacterLayerValidator(CHARACTER_MIN_DIMENSIONS);
 
+function buildVariationKey(actionId: CollectionRerollActionId): string {
+  return `${actionId}:${Date.now()}:${crypto.randomUUID()}`;
+}
+
+function formatTokenCount(count: number): string {
+  return `${count} token${count === 1 ? "" : "s"}`;
+}
+
 function buildCharacterAttempts(baseSeed: string, variationKey?: string) {
   const variantSeed = variationKey ? `${baseSeed}|reroll|${variationKey}` : baseSeed;
   return CHARACTER_SEED_VARIANTS.map((variant) => ({
@@ -414,13 +422,13 @@ export function useForgeGeneration() {
       return;
     }
     if (rerollTokens < action.tokenCost) {
-      setRecoveryError(`You need ${action.tokenCost} reroll token${action.tokenCost === 1 ? "" : "s"} for ${action.name.toLowerCase()}.`);
+      setRecoveryError(`You need ${formatTokenCount(action.tokenCost)} for ${action.name.toLowerCase()}.`);
       return;
     }
 
     const controller = replaceAbortController();
     const { signal } = controller;
-    const variationKey = `${actionId}:${Date.now()}:${crypto.randomUUID()}`;
+    const variationKey = buildVariationKey(actionId);
     const nextLayerParams = buildForgeLayerParams(generated, variationKey);
     const layersToClear = action.targets.filter((target): target is ForgeLayer => target === "character");
 
@@ -460,12 +468,12 @@ export function useForgeGeneration() {
       const characterOk = !action.targets.includes("character") || results[0].ok;
       const boardOk = !action.targets.includes("board") || results[1];
       if (characterOk && boardOk) {
-        setRecoveryMessage(`${action.name} complete. ${spendResult.evaluation.state.rerollTokens} token${spendResult.evaluation.state.rerollTokens === 1 ? "" : "s"} remaining.`);
+        setRecoveryMessage(`${action.name} complete. ${formatTokenCount(spendResult.evaluation.state.rerollTokens)} remaining.`);
         return;
       }
 
       setRecoveryError(
-        `Spent ${action.tokenCost} reroll token${action.tokenCost === 1 ? "" : "s"}, but part of the reroll failed. Your previous art stays in place for any layer that did not finish.`,
+        `Spent ${formatTokenCount(action.tokenCost)}, but part of the reroll failed. Your previous art stays in place for any layer that did not finish.`,
       );
     } catch (error) {
       if (signal.aborted) return;

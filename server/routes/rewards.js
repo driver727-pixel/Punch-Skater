@@ -283,7 +283,7 @@ export function registerRewardRoutes(app, {
     }
   });
 
-  // lgtm[js/missing-rate-limiting] rewardRateLimit is applied before authentication and route handling.
+  // codeql[js/missing-rate-limiting]: rewardRateLimit middleware is applied before authentication and route handling.
   app.post('/api/collection-rewards/reroll', rewardRateLimit, authenticateRewardCaller, async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Collection rewards are not configured on this server.' });
