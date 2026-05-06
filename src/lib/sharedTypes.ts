@@ -8,7 +8,17 @@
  *  4. Every addition must include a JSDoc comment with the sprint and owner.
  */
 
-import type { Archetype, CardPayload, District, Faction, ForgedCardStats, WheelType } from "./types";
+import type {
+  Archetype,
+  CardPayload,
+  District,
+  Faction,
+  ForgedCardStats,
+  JoustDifficulty,
+  JoustOutcome,
+  JoustTactic,
+  WheelType,
+} from "./types";
 
 // ── Daily Streaks (Gamma) ────────────────────────────────────────────────────
 
@@ -169,15 +179,36 @@ export interface MissionEncounterOption {
   id: string;
   label: string;
   description: string;
+  encounterType?: "counter" | "joust";
   requirements?: MissionRequirement[];
   requiredTags?: MissionCounterTag[];
   minimumCounterPower?: number;
   rewardXpDelta?: number;
   rewardOzziesDelta?: number;
+  joustDifficulty?: JoustDifficulty;
+  joustPrompt?: string;
   available?: boolean;
   currentPower?: number;
   successSummary?: string;
   failureSummary?: string;
+}
+
+/**
+ * Stored jousting-lite resolution for a mission encounter.
+ * @sprint 6 @owner gamma
+ */
+export interface MissionJoustResult {
+  playerCardId: string;
+  playerName: string;
+  rivalName: string;
+  playerTactic: JoustTactic;
+  rivalTactic: JoustTactic;
+  difficulty: JoustDifficulty;
+  outcome: JoustOutcome;
+  strike: number;
+  narration: string;
+  rewardXpBonus: number;
+  rewardOzziesBonus: number;
 }
 
 /**
@@ -214,6 +245,7 @@ export interface MissionActiveRunState {
   statusEffects?: MissionStatusEffect[];
   availableCounterOptionIds?: string[];
   selectedCounterOptionId?: string;
+  selectedJoustTactic?: JoustTactic | null;
   counterPower?: number;
   summary?: string;
 }
@@ -287,6 +319,8 @@ export interface MissionBoardEntry {
   lastRunRewardXp?: number;
   /** @sprint 6 @owner gamma — Locked Ozzy payout actually awarded on the last resolved run. */
   lastRunRewardOzzies?: number;
+  /** @sprint 6 @owner gamma — Optional jousting-lite result for runs that escalated into a duel. */
+  lastRunJoustResult?: MissionJoustResult | null;
 }
 
 /**
