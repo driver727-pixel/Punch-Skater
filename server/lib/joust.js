@@ -185,6 +185,7 @@ function pushModifier(modifiers, target, source, amount) {
 function applyTraitModifiers(card, tactic, modifiers) {
   let attack = 0;
   let defense = 0;
+  let speed = 0;
 
   for (const trait of card.joust.traits) {
     switch (trait) {
@@ -211,6 +212,7 @@ function applyTraitModifiers(card, tactic, modifiers) {
           attack += 2;
           pushModifier(modifiers, 'attack', trait, 2);
         }
+        speed -= 1;
         pushModifier(modifiers, 'speed', `${trait} drag`, -1);
         break;
       case 'Riot Shield':
@@ -230,7 +232,7 @@ function applyTraitModifiers(card, tactic, modifiers) {
     }
   }
 
-  return { attack, defense };
+  return { attack, defense, speed };
 }
 
 function getAvailableTactics(card) {
@@ -278,7 +280,10 @@ function buildPressure(card, tactic, modifiers) {
   pushModifier(modifiers, 'attack', `${config.label} lane`, attackBase);
   pushModifier(modifiers, 'attack', `${config.label} support`, support);
   const traitBonus = applyTraitModifiers(card, tactic, modifiers);
-  return card.joust.lance + attackBase + support + traitBonus.attack;
+  return {
+    attack: card.joust.lance + attackBase + support + traitBonus.attack,
+    speedDelta: traitBonus.speed ?? 0,
+  };
 }
 
 function buildGuard(card, tactic, modifiers) {
@@ -288,7 +293,10 @@ function buildGuard(card, tactic, modifiers) {
   pushModifier(modifiers, 'defense', `${config.label} shell`, defenseBase);
   pushModifier(modifiers, 'defense', `${config.label} support`, support);
   const traitBonus = applyTraitModifiers(card, tactic, modifiers);
-  return card.joust.shield + defenseBase + support + traitBonus.defense;
+  return {
+    defense: card.joust.shield + defenseBase + support + traitBonus.defense,
+    speedDelta: traitBonus.speed ?? 0,
+  };
 }
 
 function predictStrike(player, rival, playerTactic, rivalTactic, randomRoll) {
@@ -297,13 +305,13 @@ function predictStrike(player, rival, playerTactic, rivalTactic, randomRoll) {
   const attack = buildPressure(player, playerTactic, playerModifiers);
   const defense = buildGuard(rival, rivalTactic, rivalModifiers);
   const advantage = getTacticAdvantage(playerTactic, rivalTactic);
-  const playerSpeed = player.stats.speed + playerModifiers.filter((modifier) => modifier.target === 'speed').reduce((sum, modifier) => sum + modifier.amount, 0);
-  const rivalSpeed = rival.stats.speed + rivalModifiers.filter((modifier) => modifier.target === 'speed').reduce((sum, modifier) => sum + modifier.amount, 0);
+  const playerSpeed = player.stats.speed + attack.speedDelta;
+  const rivalSpeed = rival.stats.speed + defense.speedDelta;
   const speedTieBreak = playerSpeed > rivalSpeed ? 1 : 0;
-  const strike = attack - defense + advantage + speedTieBreak + randomRoll;
+  const strike = attack.attack - defense.defense + advantage + speedTieBreak + randomRoll;
   return {
-    attack,
-    defense,
+    attack: attack.attack,
+    defense: defense.defense,
     advantage,
     speedTieBreak,
     strike,
@@ -324,9 +332,7 @@ export function selectDefaultJoustRider(cards) {
     ))[0];
 }
 
-export function resolveRivalJoustTactic(playerCard, rivalCard, playerTactic, seed, difficulty = 'standard') {
-  const player = createJoustCardSnapshot(playerCard);
-  const rival = applyDifficulty(createJoustCardSnapshot(rivalCard), difficulty);
+function resolveRivalJoustTacticForSnapshots(player, rival, playerTactic, seed, difficulty) {
   const resolvedPlayerTactic = normalizeSelectedTactic(player, playerTactic);
   const available = getAvailableTactics(rival);
   const ranked = available
@@ -338,6 +344,12 @@ export function resolveRivalJoustTactic(playerCard, rivalCard, playerTactic, see
   const shortlist = ranked.slice(0, Math.max(1, Math.min(JOUST_DIFFICULTIES[difficulty].aiPickCount, ranked.length)));
   const rng = createSeededRandom(`${seed}::rival-tactic`);
   return shortlist[rng.range(0, shortlist.length - 1)].tactic;
+}
+
+export function resolveRivalJoustTactic(playerCard, rivalCard, playerTactic, seed, difficulty = 'standard') {
+  const player = createJoustCardSnapshot(playerCard);
+  const rival = applyDifficulty(createJoustCardSnapshot(rivalCard), difficulty);
+  return resolveRivalJoustTacticForSnapshots(player, rival, playerTactic, seed, difficulty);
 }
 
 function buildNarration({ outcome, strike, player, rival }) {
@@ -369,7 +381,7 @@ export function resolveJoust(
   const resolvedPlayerTactic = normalizeSelectedTactic(player, playerTactic);
   const resolvedRivalTactic = rivalTactic
     ? normalizeSelectedTactic(rival, rivalTactic)
-    : resolveRivalJoustTactic(player, rival, resolvedPlayerTactic, seed, 'standard');
+    : resolveRivalJoustTacticForSnapshots(player, rival, resolvedPlayerTactic, seed, difficulty);
   const rng = createSeededRandom(`${seed}::strike`);
   const randomRoll = rng.range(-1, 1);
   const breakdown = predictStrike(player, rival, resolvedPlayerTactic, resolvedRivalTactic, randomRoll);

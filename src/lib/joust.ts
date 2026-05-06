@@ -284,24 +284,38 @@ function getTacticAdvantage(playerTactic: JoustTactic, rivalTactic: JoustTactic)
   return 0;
 }
 
-function buildPressure(card: JoustCardSnapshot, tactic: JoustTactic, modifiers: JoustModifierBreakdown[]): number {
+function buildPressure(
+  card: JoustCardSnapshot,
+  tactic: JoustTactic,
+  modifiers: JoustModifierBreakdown[],
+): { attack: number; speedDelta: number } {
   const config = TACTICS[tactic];
   const attackBase = config.attackBase ?? 0;
   const support = buildSupportBonus(card, config.attackStats);
   pushModifier(modifiers, "attack", `${config.label} lane`, attackBase);
   pushModifier(modifiers, "attack", `${config.label} support`, support);
   const traitBonus = applyTraitModifiers(card, tactic, modifiers);
-  return card.joust.lance + attackBase + support + traitBonus.attack;
+  return {
+    attack: card.joust.lance + attackBase + support + traitBonus.attack,
+    speedDelta: traitBonus.speed,
+  };
 }
 
-function buildGuard(card: JoustCardSnapshot, tactic: JoustTactic, modifiers: JoustModifierBreakdown[]): number {
+function buildGuard(
+  card: JoustCardSnapshot,
+  tactic: JoustTactic,
+  modifiers: JoustModifierBreakdown[],
+): { defense: number; speedDelta: number } {
   const config = TACTICS[tactic];
   const defenseBase = config.defenseBase ?? 0;
   const support = buildSupportBonus(card, config.defenseStats);
   pushModifier(modifiers, "defense", `${config.label} shell`, defenseBase);
   pushModifier(modifiers, "defense", `${config.label} support`, support);
   const traitBonus = applyTraitModifiers(card, tactic, modifiers);
-  return card.joust.shield + defenseBase + support + traitBonus.defense;
+  return {
+    defense: card.joust.shield + defenseBase + support + traitBonus.defense,
+    speedDelta: traitBonus.speed,
+  };
 }
 
 function predictStrike(
@@ -316,13 +330,13 @@ function predictStrike(
   const attack = buildPressure(player, playerTactic, playerModifiers);
   const rivalGuard = buildGuard(rival, rivalTactic, rivalModifiers);
   const advantage = getTacticAdvantage(playerTactic, rivalTactic);
-  const playerSpeed = player.stats.speed + playerModifiers.filter((modifier) => modifier.target === "speed").reduce((sum, modifier) => sum + modifier.amount, 0);
-  const rivalSpeed = rival.stats.speed + rivalModifiers.filter((modifier) => modifier.target === "speed").reduce((sum, modifier) => sum + modifier.amount, 0);
+  const playerSpeed = player.stats.speed + attack.speedDelta;
+  const rivalSpeed = rival.stats.speed + rivalGuard.speedDelta;
   const speedTieBreak = playerSpeed > rivalSpeed ? 1 : 0;
-  const strike = attack - rivalGuard + advantage + speedTieBreak + randomRoll;
+  const strike = attack.attack - rivalGuard.defense + advantage + speedTieBreak + randomRoll;
   return {
-    attack,
-    defense: rivalGuard,
+    attack: attack.attack,
+    defense: rivalGuard.defense,
     advantage,
     speedTieBreak,
     strike,
@@ -347,6 +361,8 @@ function resolveRivalJoustTacticForSnapshots(
   player: JoustCardSnapshot,
   rival: JoustCardSnapshot,
   playerTactic: JoustTactic,
+  seed: string,
+  difficulty: JoustDifficulty,
 ): JoustTactic {
   const resolvedPlayerTactic = normalizeSelectedTactic(player, playerTactic);
   const available = getAvailableTactics(rival);
@@ -356,7 +372,9 @@ function resolveRivalJoustTacticForSnapshots(
       strike: predictStrike(player, rival, resolvedPlayerTactic, tactic, 0).strike,
     }))
     .sort((left, right) => left.strike - right.strike || TACTIC_ORDER.indexOf(left.tactic) - TACTIC_ORDER.indexOf(right.tactic));
-  return ranked[0].tactic;
+  const shortlist = ranked.slice(0, Math.max(1, Math.min(JOUST_DIFFICULTIES[difficulty].aiPickCount, ranked.length)));
+  const rng = createSeededRandom(`${seed}::rival-tactic`);
+  return shortlist[rng.range(0, shortlist.length - 1)].tactic;
 }
 
 export function resolveRivalJoustTactic(
@@ -368,18 +386,7 @@ export function resolveRivalJoustTactic(
 ): JoustTactic {
   const player = createJoustCardSnapshot(playerCard);
   const rival = applyDifficulty(createJoustCardSnapshot(rivalCard), difficulty);
-  const rankedBest = resolveRivalJoustTacticForSnapshots(player, rival, playerTactic);
-  const available = getAvailableTactics(rival);
-  const ranked = available
-    .map((tactic) => ({
-      tactic,
-      strike: predictStrike(player, rival, normalizeSelectedTactic(player, playerTactic), tactic, 0).strike,
-    }))
-    .sort((left, right) => left.strike - right.strike || TACTIC_ORDER.indexOf(left.tactic) - TACTIC_ORDER.indexOf(right.tactic));
-  const config = JOUST_DIFFICULTIES[difficulty];
-  const shortlist = ranked.slice(0, Math.max(1, Math.min(config.aiPickCount, ranked.length)));
-  const rng = createSeededRandom(`${seed}::rival-tactic`);
-  return shortlist.length === 1 ? rankedBest : shortlist[rng.range(0, shortlist.length - 1)].tactic;
+  return resolveRivalJoustTacticForSnapshots(player, rival, playerTactic, seed, difficulty);
 }
 
 function buildNarration(result: {
@@ -422,18 +429,7 @@ export function resolveJoust(
   const resolvedPlayerTactic = normalizeSelectedTactic(player, playerTactic);
   const resolvedRivalTactic = rivalTactic
     ? normalizeSelectedTactic(rival, rivalTactic)
-    : (() => {
-      const available = getAvailableTactics(rival);
-      const ranked = available
-        .map((tactic) => ({
-          tactic,
-          strike: predictStrike(player, rival, resolvedPlayerTactic, tactic, 0).strike,
-        }))
-        .sort((left, right) => left.strike - right.strike || TACTIC_ORDER.indexOf(left.tactic) - TACTIC_ORDER.indexOf(right.tactic));
-      const shortlist = ranked.slice(0, Math.max(1, Math.min(JOUST_DIFFICULTIES[difficulty].aiPickCount, ranked.length)));
-      const aiRng = createSeededRandom(`${seed}::rival-tactic`);
-      return shortlist[aiRng.range(0, shortlist.length - 1)].tactic;
-    })();
+    : resolveRivalJoustTacticForSnapshots(player, rival, resolvedPlayerTactic, seed, difficulty);
   const rng = createSeededRandom(`${seed}::strike`);
   const randomRoll = rng.range(-1, 1);
   const breakdown = predictStrike(player, rival, resolvedPlayerTactic, resolvedRivalTactic, randomRoll);
