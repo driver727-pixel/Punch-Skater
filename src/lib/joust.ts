@@ -347,7 +347,6 @@ function resolveRivalJoustTacticForSnapshots(
   player: JoustCardSnapshot,
   rival: JoustCardSnapshot,
   playerTactic: JoustTactic,
-  seed: string,
 ): JoustTactic {
   const resolvedPlayerTactic = normalizeSelectedTactic(player, playerTactic);
   const available = getAvailableTactics(rival);
@@ -369,7 +368,7 @@ export function resolveRivalJoustTactic(
 ): JoustTactic {
   const player = createJoustCardSnapshot(playerCard);
   const rival = applyDifficulty(createJoustCardSnapshot(rivalCard), difficulty);
-  const rankedBest = resolveRivalJoustTacticForSnapshots(player, rival, playerTactic, seed);
+  const rankedBest = resolveRivalJoustTacticForSnapshots(player, rival, playerTactic);
   const available = getAvailableTactics(rival);
   const ranked = available
     .map((tactic) => ({
