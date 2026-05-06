@@ -35,8 +35,8 @@ export const COLLECTION_REWARD_DISTRICTS = ['Airaway', 'Batteryville', 'The Grid
 export const COLLECTION_REWARD_RARITIES = ['Punch Skater', 'Apprentice', 'Master', 'Rare', 'Legendary'];
 
 export const COLLECTION_REWARDS = [
-  { id: 'badge-starter-stack', kind: 'badge', safetyTier: 'safe', name: 'Starter Stack', description: 'Collected five unique Punch Skaters.' },
-  { id: 'title-crew-curator', kind: 'title', safetyTier: 'safe', name: 'Crew Curator', description: 'Collected ten unique Punch Skaters.' },
+  { id: 'badge-starter-stack', kind: 'badge', safetyTier: 'safe', name: 'Starter Stack', description: 'Collected five unique cards.' },
+  { id: 'title-crew-curator', kind: 'title', safetyTier: 'safe', name: 'Crew Curator', description: 'Collected ten unique cards.' },
   { id: 'frame-archive-neon', kind: 'frame', safetyTier: 'safe', name: 'Archive Neon Frame', description: 'Cosmetic frame for a broad 25-card archive.', value: 'archive-neon' },
   { id: 'lore-codex-street-archive', kind: 'lore', safetyTier: 'safe', name: 'Street Archive Codex', description: 'A lore chapter on underground card collectors.' },
   { id: 'badge-century-archive', kind: 'badge', safetyTier: 'safe', name: 'Century Archive', description: 'Prestige badge for 100 unique cards.' },
