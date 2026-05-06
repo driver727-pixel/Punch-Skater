@@ -174,6 +174,7 @@ export function registerRewardRoutes(app, {
     }
   });
 
+  // lgtm[js/missing-rate-limiting] rewardRateLimit is applied before authentication and route handling.
   app.get('/api/collection-rewards', rewardRateLimit, authenticateRewardCaller, async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Collection rewards are not configured on this server.' });
@@ -196,6 +197,7 @@ export function registerRewardRoutes(app, {
     }
   });
 
+  // lgtm[js/missing-rate-limiting] rewardRateLimit is applied before authentication and route handling.
   app.post('/api/collection-rewards/claim', rewardRateLimit, authenticateRewardCaller, async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Collection rewards are not configured on this server.' });

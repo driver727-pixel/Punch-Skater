@@ -500,7 +500,7 @@ export function Collection() {
                   <div className="collection-reward-card__rewards">
                     {entry.rewards.map((reward) => (
                       <span key={reward.id} className={`collection-reward-chip collection-reward-chip--${reward.kind}`}>
-                        {reward.kind.replace("_", " ")} · {reward.name}
+                        {reward.kind.replace(/_/g, " ")} · {reward.name}
                       </span>
                     ))}
                   </div>
