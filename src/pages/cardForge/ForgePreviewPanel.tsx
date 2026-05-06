@@ -149,7 +149,7 @@ export function ForgePreviewPanel({
             {issueMessages.length > 0 && (
               <div className="forge-image-errors">
                 {issueMessages.map((error, index) => (
-                  <div key={`${error}-${index}`} className="forge-image-error-card" role="alert">
+                  <div key={index} className="forge-image-error-card" role="alert">
                     <strong>{getForgeIssueLabel(error)}</strong>
                     <p className="forge-image-error">{error}</p>
                     <p className="forge-image-error-hint">{getForgeIssueHint(error)}</p>

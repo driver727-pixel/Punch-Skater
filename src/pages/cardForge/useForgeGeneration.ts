@@ -455,7 +455,7 @@ export function useForgeGeneration() {
               true,
             );
           })()
-        : Promise.resolve({ ok: true as const });
+        : Promise.resolve({ ok: true });
 
       const results = await Promise.all([
         characterPromise,
