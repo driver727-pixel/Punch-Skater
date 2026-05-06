@@ -1,5 +1,6 @@
 import type { CardPayload, Style } from "./types";
 import { resolveCoverIdentityStyle } from "./coverIdentity";
+import { normalizeJoustProfile } from "./jousting";
 
 const LEGACY_STYLE_REMAP: Record<string, string> = {
   Chef: "Street",
@@ -51,17 +52,23 @@ export function normalizeCardPayload(card: CardPayload): CardPayload {
   const style = resolveArchetypeStyle(card.prompts?.archetype, rawStyle);
   const flavorText = card.front?.flavorText;
   const flavorTextEnglish = card.front?.flavorTextEnglish;
-  const nextFront =
-    flavorText && !flavorTextEnglish
-      ? { ...card.front, flavorTextEnglish: flavorText }
-      : !flavorText && flavorTextEnglish
-        ? { ...card.front, flavorText: flavorTextEnglish }
-        : card.front;
-  const frontChanged = nextFront !== card.front;
-  if (style === rawStyle && !frontChanged) return card;
-  return {
+  const normalizedCard = style === rawStyle ? card : {
     ...card,
     prompts: { ...card.prompts, style },
+  };
+  const joust = normalizeJoustProfile(normalizedCard);
+  const nextFront =
+    flavorText && !flavorTextEnglish
+      ? { ...normalizedCard.front, flavorTextEnglish: flavorText }
+      : !flavorText && flavorTextEnglish
+        ? { ...normalizedCard.front, flavorText: flavorTextEnglish }
+        : normalizedCard.front;
+  const frontChanged = nextFront !== normalizedCard.front;
+  const joustChanged = normalizedCard.joust !== joust;
+  if (normalizedCard === card && !frontChanged && !joustChanged) return card;
+  return {
+    ...normalizedCard,
+    joust,
     ...(frontChanged ? { front: nextFront } : {}),
   };
 }

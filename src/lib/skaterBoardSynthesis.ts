@@ -17,6 +17,7 @@ import { getClassMultiplier, getClassBadgeLabel } from "./classScaling";
 import { createDefaultMaintenance } from "./cardMaintenance";
 import { resolveArchetypeStyle } from "./styles";
 import { assignBaseOzzies } from "./progression";
+import { deriveJoustProfile } from "./jousting";
 import type { CardPayload, CardPrompts, ForgedBoardComponents, ForgedRoleData, ForgedVarianceData } from "./types";
 import type { BoardConfig } from "./boardBuilderTypes";
 
@@ -174,7 +175,7 @@ export function buildForgedCard({ prompts, boardConfig, idNonce }: BuildForgedCa
   const accessProfile = boardLoadout.accessProfile;
 
   // ── Assemble payload ───────────────────────────────────────────────────────
-  return {
+  const card: CardPayload = {
     id,
     version: "2.0.0",
     createdAt: new Date().toISOString(),
@@ -242,6 +243,9 @@ export function buildForgedCard({ prompts, boardConfig, idNonce }: BuildForgedCa
     xp:     0,
     ozzies,
   };
+
+  card.joust = deriveJoustProfile(card);
+  return card;
 }
 
 // ── Board component label helpers ────────────────────────────────────────────

@@ -61,19 +61,27 @@ Owner-only sub-collection. Each document mirrors `CardPayload` from `src/lib/typ
   },
   stats: {
     speed: number,
+    range: number,
+    rangeNm: number,
     stealth: number,
-    tech: number,
     grit: number,
-    rep: number,
   },
-  traits: {
-    passiveTrait: { name: string, description: string },
-    activeAbility: { name: string, description: string },
-    personalityTags: string[],
+  joust?: {
+    lance: number,
+    shield: number,
+    hype: number,
+    gear: {
+      boardType: string,
+      lanceType: string,
+      shieldType: string,
+      armorTag: string,
+    },
+    traits: string[],
   },
+  // UI note: rangeNm is still stored on stats, but the card back now surfaces it
+  // inside the compact joust header instead of as its own standalone stat bar.
   visuals: {
     helmetStyle: string,
-    boardStyle: string,
     jacketStyle: string,
     colorScheme: string,
     accentColor: string,
