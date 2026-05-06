@@ -976,7 +976,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                             selectedAwaitingChoice
                               ? !option.available
                                 || runningMissionId === selectedMission.id
-                                || (option.encounterType === "joust" && availableJoustTactics.length > 0 && !selectedJoustTactic)
                               : true
                           }
                         >

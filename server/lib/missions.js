@@ -1195,8 +1195,9 @@ function resolveMissionJoust(mission, deck, activeRun, playerTactic = null) {
   const option = getMissionJoustOption(mission, MISSION_JOUST_OPTION_ID);
   if (!rider || !option) return null;
   const config = getMissionJoustConfig(mission);
+  const [defaultTactic = MISSION_JOUST_TACTIC_FALLBACK] = getAvailableJoustTactics(rider);
   const resolution = resolveJoust(rider, config.rival, {
-    playerTactic: playerTactic ?? getAvailableJoustTactics(rider)[0] ?? MISSION_JOUST_TACTIC_FALLBACK,
+    playerTactic: playerTactic ?? defaultTactic,
     difficulty: option.joustDifficulty ?? DEFAULT_MISSION_JOUST_DIFFICULTY,
     seed: `${mission.id}:${activeRun?.launchedAt ?? MISSION_JOUST_SEED_FALLBACK}:${rider.id}:${playerTactic ?? MISSION_JOUST_SELECTION_FALLBACK}`,
   });
