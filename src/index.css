@@ -10002,12 +10002,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(0,0,0,0.28);
 }
+.mission-runner-card:active {
+  transform: translateY(0);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 0 20px var(--mission-glow, rgba(0,255,136,0.24));
+}
 .mission-runner-card--active {
   border-color: var(--accent);
   background:
     radial-gradient(ellipse at top left, rgba(0,255,136,0.1), transparent 52%),
     linear-gradient(160deg, rgba(0,255,136,0.05), rgba(0,0,0,0.22));
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.14);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 0 0 1px rgba(0,255,136,0.26),
+    0 0 24px rgba(0,255,136,0.2);
 }
 .mission-panel--detail {
   scroll-margin-top: 88px;
@@ -10046,6 +10053,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(0,0,0,0.18);
   color: var(--text-dim);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
 .mission-step--active {
   border-color: var(--mission-accent, rgba(0,255,136,0.45));
@@ -10057,6 +10065,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-step--complete {
   border-color: rgba(0,255,136,0.24);
+}
+.mission-step--progressed {
+  animation: mission-step-progress 0.85s ease;
 }
 .mission-step__number {
   flex: 0 0 auto;
@@ -10123,6 +10134,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-launch-button {
   min-width: 180px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 22px var(--mission-glow, rgba(0,255,136,0.18));
+}
+.mission-launch-button:focus-visible,
+.mission-launch-button:active:not(:disabled) {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.12) inset,
+    0 0 0 2px color-mix(in srgb, var(--mission-accent, #00ff88) 48%, transparent),
+    0 0 28px var(--mission-glow, rgba(0,255,136,0.22));
 }
 .mission-deck-focus {
   min-width: min(100%, 240px);
@@ -10356,6 +10374,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font: inherit;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.mission-intel-tag--button:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 0 1px rgba(255,200,50,0.2), 0 0 10px rgba(255,200,50,0.2);
 }
 .mission-intel-tag--active {
   border-color: rgba(255,200,50,0.5);
@@ -10830,6 +10852,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(0,0,0,0.24);
 }
+.mission-fork__option:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 1px rgba(255,200,50,0.32), 0 0 18px rgba(255,200,50,0.2);
+}
 .mission-fork__option:disabled {
   cursor: not-allowed;
   opacity: 0.52;
@@ -10841,6 +10867,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     radial-gradient(ellipse at top left, rgba(255,200,50,0.18), transparent 54%),
     linear-gradient(160deg, rgba(255,200,50,0.12), rgba(0,0,0,0.18));
   box-shadow: 0 0 0 1px rgba(255,200,50,0.18), 0 0 16px rgba(255,200,50,0.12);
+}
+.mission-fork__option--pending {
+  animation: mission-option-pending 0.9s ease-in-out infinite alternate;
 }
 .mission-fork__option-label {
   font-size: 13px;
@@ -10858,6 +10887,27 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 12px;
   color: var(--text-dim);
   line-height: 1.5;
+}
+@keyframes mission-step-progress {
+  0% {
+    transform: translateY(4px) scale(0.985);
+    box-shadow: 0 0 0 0 rgba(255,255,255,0);
+  }
+  35% {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--mission-accent, #00ff88) 36%, transparent), 0 0 22px var(--mission-glow, rgba(0,255,136,0.22));
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes mission-option-pending {
+  from {
+    box-shadow: 0 0 0 1px rgba(255,200,50,0.22), 0 0 12px rgba(255,200,50,0.16);
+  }
+  to {
+    box-shadow: 0 0 0 1px rgba(255,200,50,0.42), 0 0 22px rgba(255,200,50,0.24);
+  }
 }
 @media (max-width: 800px) {
   .mission-panel__header {
