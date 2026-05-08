@@ -1,4 +1,4 @@
-import { normalizeBoardConfig } from "./boardBuilderCompatibility";
+import { enforceCompatibility, normalizeBoardConfig } from "./boardBuilderCompatibility";
 import type { BatteryType, BoardConfig, BoardType, Drivetrain, WheelType } from "./boardBuilderTypes";
 
 export const CRITICAL_SINGLE_ASSEMBLY_CONSTRAINT =
@@ -52,7 +52,7 @@ const DRIVETRAIN_IMAGE_DESCRIPTIONS: Record<Drivetrain, string> = {
 const WHEEL_IMAGE_DESCRIPTIONS: Record<WheelType, string> = {
   Urethane: "It has 4 poly-urethane wheels, each 97 mm in diameter, the smallest wheel option and a scale anchor for the skateboard beside an adult rider.",
   Pneumatic:
-    "It has 4 large chunky pneumatic all-terrain tires, each 150 mm in diameter, with thick air-filled rubber construction, chunky knobby tread, and tall visible sidewalls. " +
+    "It has 4 oversized pneumatic all-terrain tires, each 150 mm in diameter, with thick air-filled rubber construction, chunky knobby tread, and tall visible sidewalls. " +
     "These tires are clearly inflated rubber — NOT polyurethane and NOT hard plastic. The taller stance is clearly visible compared to polyurethane wheels.",
   Rubber: "It has 4 solid rubber all-terrain wheels, each 175 mm in diameter, with thick puncture-proof sidewalls and deep off-road tread; these are not air-filled pneumatic tires, not polyurethane wheels, and not vapor wheels. These are the largest wheel option and make the board visibly taller beside an adult rider.",
   Cloud: "It has 4 oversized vapor wheels, each 107 mm in diameter, with a soft semi-transparent cushioned look; they are slightly larger than 97 mm polyurethane wheels but much smaller than 150 mm pneumatic tires.",
@@ -118,7 +118,7 @@ function getWheelDrivetrainCompatibilityDescription(config: BoardConfig): string
 }
 
 export function buildBoardImagePrompt(config: BoardConfig): string {
-  const normalizedConfig = normalizeBoardConfig(config);
+  const normalizedConfig = enforceCompatibility(normalizeBoardConfig(config));
   const batteryPreservationClause =
     normalizedConfig.battery === "SlimStealth"
       ? ""

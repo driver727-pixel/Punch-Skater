@@ -42,6 +42,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs including w
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.webp',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.webp',
     'https://punchskater.com/assets/boards/battery/peli.webp',
+    'https://punchskater.com/assets/boards/motor/6354-motor.webp',
   ]);
 
   assert.deepEqual(urls, [
@@ -49,6 +50,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs including w
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.webp',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.webp',
     'https://punchskater.com/assets/boards/battery/peli.webp',
+    'https://punchskater.com/assets/boards/motor/6354-motor.webp',
   ]);
 });
 
@@ -58,6 +60,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with png ex
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
     'https://punchskater.com/assets/boards/battery/slim-battery.png',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png',
   ]);
 
   assert.deepEqual(urls, [
@@ -65,6 +68,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with png ex
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
     'https://punchskater.com/assets/boards/battery/slim-battery.png',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png',
   ]);
 });
 
@@ -74,6 +78,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with versio
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/battery/slim-battery.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png?v=2026-04-20',
   ]);
 
   assert.deepEqual(urls, [
@@ -81,6 +86,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with versio
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/battery/slim-battery.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png?v=2026-04-20',
   ]);
 });
 
@@ -91,33 +97,37 @@ test('normalizeBoardReferenceUrls rejects non-canonical origins and paths', () =
       'https://punchskater.com/assets/boards/drivetrain/gear-drive.webp',
       'https://punchskater.com/assets/boards/wheels/cloud-wheels.webp',
       'https://punchskater.com/assets/boards/battery/peli.webp',
+      'https://punchskater.com/assets/boards/motor/6354-motor.webp',
     ]),
     null,
   );
 });
 
-test('normalizeBoardReferenceUrls accepts motor URL as fourth reference (SlimStealth battery case)', () => {
+test('normalizeBoardReferenceUrls accepts battery and motor URLs as the fourth and fifth references', () => {
   const urls = normalizeBoardReferenceUrls([
     'https://punchskater.com/assets/boards/deck/street.png',
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
-    'https://punchskater.com/assets/boards/motor/6354-motor.png',
+    'https://punchskater.com/assets/boards/battery/top-mount-battery.png',
+    'https://punchskater.com/assets/boards/motor/6396-motor.png',
   ]);
 
   assert.deepEqual(urls, [
     'https://punchskater.com/assets/boards/deck/street.png',
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
-    'https://punchskater.com/assets/boards/motor/6354-motor.png',
+    'https://punchskater.com/assets/boards/battery/top-mount-battery.png',
+    'https://punchskater.com/assets/boards/motor/6396-motor.png',
   ]);
 });
 
-test('normalizeBoardReferenceUrls rejects fewer than four URLs', () => {
+test('normalizeBoardReferenceUrls rejects fewer than five URLs', () => {
   assert.equal(
     normalizeBoardReferenceUrls([
       'https://punchskater.com/assets/boards/deck/street.png',
       'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
       'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+      'https://punchskater.com/assets/boards/battery/slim-battery.png',
     ]),
     null,
   );

@@ -100,7 +100,7 @@ export function registerImageRoutes(app, {
       const caller = await authenticateFirebaseUser(req);
       const { prompt, imageUrls } = sanitizeBoardImageBody(req.body);
       if (!prompt || !imageUrls) {
-        res.status(400).json({ error: 'A prompt and exactly four Punch Skater board image URLs are required.' });
+        res.status(400).json({ error: 'A prompt and exactly five Punch Skater board image URLs are required.' });
         return;
       }
 

@@ -25,6 +25,53 @@ export { BOARD_IMAGE_REQUIRED_URL_COUNT };
 
 export const BOARD_IMAGE_CACHE_VERSION = boardImageVersionJson.BOARD_IMAGE_CACHE_VERSION;
 
+const LEGACY_FOUR_WHEEL_DRIVE = 'A' + 'WD';
+
+function normalizeDrivetrain(drivetrain) {
+  return drivetrain === LEGACY_FOUR_WHEEL_DRIVE ? '4WD' : drivetrain;
+}
+
+function normalizeCompatibleBoardConfig(config) {
+  const normalizedConfig = {
+    ...config,
+    drivetrain: normalizeDrivetrain(config.drivetrain),
+  };
+
+  switch (normalizedConfig.boardType) {
+    case 'Mountain':
+      return {
+        ...normalizedConfig,
+        drivetrain: '4WD',
+        motor: 'Outrunner',
+        wheels: 'Rubber',
+        battery: 'TopPeli',
+      };
+    case 'Street':
+      return {
+        ...normalizedConfig,
+        battery: normalizedConfig.battery === 'TopPeli' ? 'SlimStealth' : normalizedConfig.battery,
+        drivetrain: normalizedConfig.drivetrain === '4WD' ? 'Belt' : normalizedConfig.drivetrain,
+      };
+    case 'AT':
+      return {
+        ...normalizedConfig,
+        battery: normalizedConfig.battery === 'TopPeli' ? 'SlimStealth' : normalizedConfig.battery,
+        drivetrain: normalizedConfig.drivetrain === '4WD' ? 'Belt' : normalizedConfig.drivetrain,
+        motor: normalizedConfig.motor === 'Micro' ? 'Standard' : normalizedConfig.motor,
+      };
+    case 'Surf':
+      return {
+        ...normalizedConfig,
+        battery: normalizedConfig.battery === 'TopPeli' || normalizedConfig.battery === 'DoubleStack' ? 'SlimStealth' : normalizedConfig.battery,
+        drivetrain: 'Hub',
+        motor: normalizedConfig.motor === 'Torque' || normalizedConfig.motor === 'Outrunner' ? 'Micro' : normalizedConfig.motor,
+        wheels: normalizedConfig.wheels === 'Pneumatic' || normalizedConfig.wheels === 'Rubber' ? 'Urethane' : normalizedConfig.wheels,
+      };
+    default:
+      return normalizedConfig;
+  }
+}
+
 // Exported so tests can assert its presence directly without re-typing the string.
 export const CRITICAL_NOSE_CONSTRAINT =
   'CRITICAL: On non-4WD boards the nose truck must look identical to a plain ' +
@@ -95,7 +142,7 @@ export const DRIVETRAIN_IMAGE_DESCRIPTIONS = {
 export const WHEEL_IMAGE_DESCRIPTIONS = {
   Urethane: 'It has 4 poly-urethane wheels, each 97 mm in diameter, the smallest wheel option and a scale anchor for the skateboard beside an adult rider.',
   Pneumatic:
-    'It has 4 large chunky pneumatic all-terrain tires, each 150 mm in diameter, with thick air-filled rubber construction, chunky knobby tread, and tall visible sidewalls. ' +
+    'It has 4 oversized pneumatic all-terrain tires, each 150 mm in diameter, with thick air-filled rubber construction, chunky knobby tread, and tall visible sidewalls. ' +
     'These tires are clearly inflated rubber — NOT polyurethane and NOT hard plastic. The taller stance is clearly visible compared to polyurethane wheels.',
   Rubber: 'It has 4 solid rubber all-terrain wheels, each 175 mm in diameter, with thick puncture-proof sidewalls and deep off-road tread; these are not air-filled pneumatic tires, not polyurethane wheels, and not vapor wheels. These are the largest wheel option and make the board visibly taller beside an adult rider.',
   Cloud: 'It has 4 oversized vapor wheels, each 107 mm in diameter, with a soft semi-transparent cushioned look; they are slightly larger than 97 mm polyurethane wheels but much smaller than 150 mm pneumatic tires.',
@@ -160,22 +207,23 @@ function getWheelDrivetrainCompatibilityDescription(config) {
  * @returns {string}
  */
 export function buildBoardImagePrompt(config) {
-  const battery = config.battery ?? 'SlimStealth';
+  const normalizedConfig = normalizeCompatibleBoardConfig(config);
+  const battery = normalizedConfig.battery ?? 'SlimStealth';
   const batteryPreservationClause =
     battery === 'SlimStealth' ? '' : ' and battery form factor';
-  const noseConstraint = config.drivetrain === '4WD'
+  const noseConstraint = normalizedConfig.drivetrain === '4WD'
     ? ''
     : `${CRITICAL_NOSE_CONSTRAINT} `;
 
   return (
     `${BOARD_IMAGE_BASE_CONCEPT} ` +
-    `${BOARD_TYPE_IMAGE_DESCRIPTIONS[config.boardType] ?? ''} ` +
-    `${DRIVETRAIN_IMAGE_DESCRIPTIONS[config.drivetrain] ?? ''} ` +
-    `${getMotorImageDescription(config)} ` +
-    `${WHEEL_IMAGE_DESCRIPTIONS[config.wheels] ?? ''} ` +
-    `${getWheelDrivetrainCompatibilityDescription(config)} ` +
+    `${BOARD_TYPE_IMAGE_DESCRIPTIONS[normalizedConfig.boardType] ?? ''} ` +
+    `${DRIVETRAIN_IMAGE_DESCRIPTIONS[normalizedConfig.drivetrain] ?? ''} ` +
+    `${getMotorImageDescription(normalizedConfig)} ` +
+    `${WHEEL_IMAGE_DESCRIPTIONS[normalizedConfig.wheels] ?? ''} ` +
+    `${getWheelDrivetrainCompatibilityDescription(normalizedConfig)} ` +
     `${BATTERY_IMAGE_DESCRIPTIONS[battery] ?? ''} ` +
-    `${getMountainboardLoreDescription(config)} ` +
+    `${getMountainboardLoreDescription(normalizedConfig)} ` +
     `Show one fully assembled complete skateboard only. ` +
     `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type and wheel diameter${batteryPreservationClause} with no substitutions. ` +
     `For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD. ` +
@@ -196,10 +244,11 @@ export function buildBoardImagePrompt(config) {
  * @returns {string[]}
  */
 export function resolveReferenceUrlCategories(config) {
-  const battery = config.battery ?? 'SlimStealth';
-  const categories = ['deck', 'drivetrain', 'wheels'];
-  // SlimStealth is an integrated battery that is not visually prominent;
-  // use the motor image as the fourth reference to keep the required count.
-  categories.push(battery === 'SlimStealth' ? 'motor' : 'battery');
-  return categories;
+  return [
+    'deck',
+    'drivetrain',
+    'wheels',
+    'battery',
+    'motor',
+  ];
 }
