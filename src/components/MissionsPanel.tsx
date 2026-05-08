@@ -283,6 +283,11 @@ function getEncounterRewardTypeLabel(option: MissionEncounterOption): string {
   return "XP pressure route";
 }
 
+function getEncounterOptionStatusLabel(option: MissionEncounterOption): string {
+  if (!option.available) return "Unavailable";
+  return option.encounterType === "joust" ? "Ready" : "Available";
+}
+
 function getMissionOutcomeLabel(
   mission: MissionBoardEntry | null,
   evaluationEligible: boolean | undefined,
@@ -666,6 +671,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     selectedEvaluation?.eligible,
     selectedResultRevealed,
   );
+  const isStep1Complete = Boolean(selectedDeck) || selectedResultRevealed || selectedAwaitingChoice;
+  const isStep2Active = Boolean(selectedDeck) && !selectedAwaitingChoice && !selectedResultRevealed;
+  const isStep2Complete = selectedResultRevealed || selectedAwaitingChoice;
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
@@ -909,14 +917,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               />
 
               <ol className="mission-steps" aria-label="Mission steps">
-                <li className={getMissionStepClass(!selectedDeck, Boolean(selectedDeck) || selectedResultRevealed || selectedAwaitingChoice)}>
+                <li className={getMissionStepClass(!selectedDeck, isStep1Complete)}>
                   <span className="mission-step__number">1</span>
                   <span className="mission-step__copy">
                     <strong>Pick a deck</strong>
                     <small>{selectedDeck ? selectedDeck.name : "Choose who goes"}</small>
                   </span>
                 </li>
-                <li className={getMissionStepClass(Boolean(selectedDeck) && !selectedAwaitingChoice && !selectedResultRevealed, selectedResultRevealed || selectedAwaitingChoice)}>
+                <li className={getMissionStepClass(isStep2Active, isStep2Complete)}>
                   <span className="mission-step__number">2</span>
                   <span className="mission-step__copy">
                     <strong>Launch run</strong>
@@ -1214,7 +1222,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           <span className="mission-fork__option-label">{option.label}</span>
                           <span className="mission-fork__option-meta">
                             {selectedAwaitingChoice
-                              ? `${getEncounterRewardTypeLabel(option)} · ${option.available ? option.encounterType === "joust" ? "Ready" : "Available" : "Unavailable"}`
+                              ? `${getEncounterRewardTypeLabel(option)} · ${getEncounterOptionStatusLabel(option)}`
                               : getEncounterRewardTypeLabel(option)}
                           </span>
                           <span className="mission-fork__option-desc">{option.description}</span>
