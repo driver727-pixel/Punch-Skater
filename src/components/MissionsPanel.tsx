@@ -366,6 +366,11 @@ function formatStatusEffect(effect: MissionStatusEffect): string {
   return `${effect.label}${powerLabel} — ${effect.summary}`;
 }
 
+function getCheckBarPercent(current: number, needed: number, met: boolean): number {
+  if (needed > 0) return Math.min(100, (current / needed) * 100);
+  return met ? 100 : 0;
+}
+
 function getMissionDistrictAccessSummary(
   mission: MissionBoardEntry,
   weather: DistrictWeatherSnapshot | null,
@@ -1178,7 +1183,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                             <div className="mission-check-card__bar" aria-hidden="true">
                               <div
                                 className={`mission-check-card__bar-fill${result.met ? "" : " mission-check-card__bar-fill--blocked"}`}
-                                style={{ width: `${result.needed > 0 ? Math.min(100, (result.current / result.needed) * 100) : (result.met ? 100 : 0)}%` }}
+                                style={{ width: `${getCheckBarPercent(result.current, result.needed, result.met)}%` }}
                               />
                             </div>
                             <span className="mission-check-card__meta">
