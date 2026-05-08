@@ -1,6 +1,7 @@
 import type { WorldLocation } from "../lib/types";
 
 interface MissionTransitSceneProps {
+  missionId: string;
   locale: WorldLocation;
   localeSummary: string;
   sceneEyebrow: string;
@@ -12,6 +13,7 @@ interface MissionTransitSceneProps {
 }
 
 export function MissionTransitScene({
+  missionId,
   locale,
   localeSummary,
   sceneEyebrow,
@@ -21,6 +23,8 @@ export function MissionTransitScene({
   controlledBy,
   crewPressure,
 }: MissionTransitSceneProps) {
+  const uniqueSceneTags = [...new Set(sceneTags)];
+
   return (
     <section className="mission-transit mission-panel">
       <div className="mission-transit__header">
@@ -29,8 +33,8 @@ export function MissionTransitScene({
           <h4 className="mission-stage__title">{sceneTitle}</h4>
           <p className="mission-stage__summary">{sceneBody}</p>
           <div className="mission-intel-tags">
-            {sceneTags.map((tag, index) => (
-              <span key={`${tag}-${index}`} className="mission-intel-tag">{tag}</span>
+            {uniqueSceneTags.map((tag) => (
+              <span key={`${missionId}-${tag}`} className="mission-intel-tag">{tag}</span>
             ))}
           </div>
         </div>

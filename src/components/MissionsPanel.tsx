@@ -863,6 +863,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               </div>
 
               <MissionTransitScene
+                missionId={selectedMission.id}
                 locale={selectedLocale ?? selectedMission.district}
                 localeSummary={
                   selectedPresentation.localeSummary
