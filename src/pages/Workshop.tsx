@@ -139,7 +139,7 @@ export function Workshop() {
       setMessage(`${selectedCard.identity.name} took the new board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`);
 
       const boardImageUrl = await generateGouacheBoard(selectedBoard.config);
-      const artPatchedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
+      const artPatchedCard = reforgeCardBoard(reforgedCard, selectedBoard.config, {
         boardImageUrl,
       });
       updateCard(artPatchedCard);

@@ -7,11 +7,15 @@ import type { CardPayload, WorkshopBoardPayload } from "./types";
 
 export const WORKSHOP_REFORGE_FEE_OZZIES = 25;
 
+function normalizeOzzies(value: number | undefined): number {
+  return Math.max(0, value ?? 0);
+}
+
 export function createWorkshopBoard(config: BoardConfig, sourceCardId?: string): WorkshopBoardPayload {
   const normalizedConfig = normalizeBoardConfig(config);
   const now = new Date().toISOString();
   return {
-    id: `workshop-board-${crypto.randomUUID()}`,
+    id: crypto.randomUUID(),
     createdAt: now,
     updatedAt: now,
     label: getBoardSummary(normalizedConfig),
@@ -37,8 +41,8 @@ export function reforgeCardBoard(
     boardConfig: normalizedBoardConfig,
     idNonce: card.id,
   });
-  const currentOzzies = Math.max(0, card.ozzies ?? 0);
-  const feeOzzies = Math.max(0, options.feeOzzies ?? 0);
+  const currentOzzies = normalizeOzzies(card.ozzies);
+  const feeOzzies = normalizeOzzies(options.feeOzzies);
   const updatedCard = normalizeCardPayload({
     ...card,
     stats: forged.stats,
