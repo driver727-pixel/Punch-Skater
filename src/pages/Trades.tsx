@@ -11,7 +11,7 @@ import {
 import type { TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import { CardArt } from "../components/CardArt";
+import { CardThumbnail } from "../components/CardThumbnail";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { TradeModal } from "../components/TradeModal";
 import { useCollection } from "../hooks/useCollection";
@@ -331,7 +331,7 @@ export function Trades() {
             <div className="trades-list">
               {inbox.map((trade) => (
                 <div key={trade.id} className="trade-item">
-                  <CardArt card={trade.offeredCard} width={80} height={112} />
+                  <CardThumbnail card={trade.offeredCard} width={80} height={112} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
@@ -372,7 +372,7 @@ export function Trades() {
             <div className="trades-list">
               {outbox.map((trade) => (
                 <div key={trade.id} className="trade-item">
-                  <CardArt card={trade.offeredCard} width={80} height={112} />
+                  <CardThumbnail card={trade.offeredCard} width={80} height={112} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
@@ -421,7 +421,7 @@ export function Trades() {
               {market.map((trade) => (
                 <div key={trade.id} className="market-card">
                   <div className="market-card-art">
-                    <CardArt card={trade.offeredCard} width={100} height={140} />
+                    <CardThumbnail card={trade.offeredCard} width={100} height={140} />
                   </div>
                   <div className="market-card-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
