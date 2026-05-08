@@ -669,7 +669,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       const presentation = getMissionPresentation(mission);
       const eligible = missionEligibilityByMissionId.get(mission.id);
       const tone: GeoAtlasMarker["tone"] = mission.status === "completed"
-        ? "available"
+        ? "completed"
         : eligible === false
           ? "blocked"
           : undefined;

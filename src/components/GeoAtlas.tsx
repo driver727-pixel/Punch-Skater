@@ -18,7 +18,7 @@ export interface GeoAtlasMarker {
   label: string;
   title?: string;
   active?: boolean;
-  tone?: "available" | "blocked";
+  tone?: "available" | "blocked" | "completed";
   offsetX?: number;
   offsetY?: number;
   onClick?: () => void;
