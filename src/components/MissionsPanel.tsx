@@ -873,14 +873,8 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 sceneTitle={selectedPresentation.patron}
                 sceneBody={selectedPresentation.stakes}
                 sceneTags={selectedPresentation.sceneTags}
-                selectedDeckName={selectedDeck?.name ?? selectedMission.selectedDeckName}
-                routeLabel={selectedRouteLabel}
-                revealForkIntel={selectedResultRevealed}
-                fork={selectedMission.fork}
-                selectedForkOption={null}
                 controlledBy={selectedLocaleLore?.controlledBy ?? selectedDistrictLore?.controlledBy ?? "Courier crews"}
                 crewPressure={selectedLocaleLore?.crews.slice(0, 2).join(" · ") ?? selectedMission.district}
-                glyph={DISTRICT_THEMES[selectedMission.district].glyph}
               />
 
               <div className="mission-flow">
