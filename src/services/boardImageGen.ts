@@ -1,6 +1,6 @@
 import { resolveApiUrl } from "../lib/apiUrls";
 import type { BoardConfig } from "../lib/boardBuilder";
-import { normalizeBoardConfig } from "../lib/boardBuilder";
+import { enforceCompatibility, normalizeBoardConfig } from "../lib/boardBuilder";
 import boardImageVersionJson from "../lib/boardImageVersion.json";
 import { buildBoardImagePrompt } from "../lib/boardBuilderPrompt";
 import { getCategoryImages, getMatchingCategoryImages } from "../lib/boardCategoryImages";
@@ -49,20 +49,14 @@ type BoardImageCategoryValue = {
 };
 
 function getResolvedBoardReferenceUrls(config: BoardConfig): string[] {
-  const normalizedConfig = normalizeBoardConfig(config);
+  const normalizedConfig = enforceCompatibility(normalizeBoardConfig(config));
   const selections: BoardImageCategoryValue[] = [
     { category: "deck", value: normalizedConfig.boardType },
     { category: "drivetrain", value: normalizedConfig.drivetrain },
     { category: "wheels", value: normalizedConfig.wheels },
+    { category: "battery", value: normalizedConfig.battery },
+    { category: "motor", value: normalizedConfig.motor },
   ];
-  if (normalizedConfig.battery !== "SlimStealth") {
-    selections.push({ category: "battery", value: normalizedConfig.battery });
-  } else {
-    // SlimStealth is an integrated battery that is not visually prominent,
-    // so use the motor image as the fourth reference to keep the required
-    // count of four URLs the server expects.
-    selections.push({ category: "motor", value: normalizedConfig.motor });
-  }
 
   return selections.map(({ category, value }) => {
     const matchingImage = getMatchingCategoryImages(category, value)[0] ?? null;
@@ -81,7 +75,7 @@ function toCacheToken(value: string): string {
 }
 
 function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string[]): string {
-  const normalizedConfig = normalizeBoardConfig(config);
+  const normalizedConfig = enforceCompatibility(normalizeBoardConfig(config));
   return [
     "board-img",
     BOARD_IMAGE_CACHE_VERSION,
@@ -177,8 +171,9 @@ async function pollBoardImageJob(jobId: string): Promise<string> {
 }
 
 export async function generateGouacheBoard(config: BoardConfig, options: GenerateBoardImageOptions = {}): Promise<string> {
-  const imageUrls = getResolvedBoardReferenceUrls(config);
-  const cacheKey = buildBoardImageCacheKey(config, imageUrls);
+  const resolvedConfig = enforceCompatibility(normalizeBoardConfig(config));
+  const imageUrls = getResolvedBoardReferenceUrls(resolvedConfig);
+  const cacheKey = buildBoardImageCacheKey(resolvedConfig, imageUrls);
   if (!options.skipCache) {
     const cachedLocal = getLocalCachedBoardImage(cacheKey);
     if (cachedLocal) {
@@ -199,8 +194,8 @@ export async function generateGouacheBoard(config: BoardConfig, options: Generat
     headers: await buildAuthorizedJsonHeaders(),
     body: JSON.stringify({
       prompt: options.variationKey
-        ? `${buildBoardImagePrompt(config)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references while choosing a different composition.`
-        : buildBoardImagePrompt(config),
+        ? `${buildBoardImagePrompt(resolvedConfig)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references while choosing a different composition.`
+        : buildBoardImagePrompt(resolvedConfig),
       imageUrls,
     }),
   });

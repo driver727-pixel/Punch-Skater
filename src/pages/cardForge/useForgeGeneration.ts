@@ -7,6 +7,7 @@ import {
   resolveSecretFaction,
 } from "../../lib/factionDiscovery";
 import { DEFAULT_BOARD_CONFIG } from "../../components/BoardBuilder";
+import { enforceCompatibility, normalizeBoardConfig } from "../../lib/boardBuilder";
 import { resolveArchetypeStyle } from "../../lib/styles";
 import { sfxClick, sfxSuccessPing } from "../../lib/sfx";
 import { removeBackground, isImageGenConfigured } from "../../services/imageGen";
@@ -42,7 +43,7 @@ import {
   CHARACTER_SEED_VARIANTS,
 } from "./constants";
 import { applyPreviewUpdates, buildRandomizedBoardConfig, buildRandomizedPrompts } from "./helpers";
-import { loadForgeSession, saveForgeSession } from "../../services/forgeSessionCache";
+import { loadForgeSession, saveForgeSession, type ForgeSessionData } from "../../services/forgeSessionCache";
 import { resolveBoardPoseScene } from "../../lib/boardPoseScenes";
 import {
   normalizeBoardPlacement,
@@ -58,6 +59,14 @@ const CHARACTER_LAYER_VALIDATOR = createCharacterLayerValidator(CHARACTER_MIN_DI
 
 function buildVariationKey(actionId: CollectionRerollActionId): string {
   return `${actionId}:${Date.now()}:${crypto.randomUUID()}`;
+}
+
+function getSavedBoardConfig(session: ForgeSessionData | null) {
+  if (!session?.card?.board?.config) return DEFAULT_BOARD_CONFIG;
+  return enforceCompatibility(normalizeBoardConfig({
+    ...DEFAULT_BOARD_CONFIG,
+    ...session.card.board.config,
+  }));
 }
 
 function formatTokenCount(count: number): string {
@@ -96,7 +105,7 @@ export function useForgeGeneration() {
     gender: "Non-binary", ageGroup: "Adult", bodyType: "Athletic",
     hairLength: "Short", skinTone: "Medium", faceCharacter: "Conventional",
   });
-  const [boardConfig, setBoardConfig] = useState(DEFAULT_BOARD_CONFIG);
+  const [boardConfig, setBoardConfig] = useState(() => getSavedBoardConfig(loadForgeSession(sessionOwnerKey)));
   const [generated, setGenerated] = useState<CardPayload | null>(() => loadForgeSession(sessionOwnerKey)?.card ?? null);
   const [characterBlend, setCharacterBlend] = useState(() => loadForgeSession(sessionOwnerKey)?.characterBlend ?? DEFAULT_CHARACTER_BLEND);
   const [forging, setForging] = useState(false);
@@ -245,6 +254,7 @@ export function useForgeGeneration() {
     abortGeneration();
     skipNextSessionPersistRef.current = true;
     const session = loadForgeSession(sessionOwnerKey);
+    setBoardConfig(getSavedBoardConfig(session));
     setGenerated(session?.card ?? null);
     setCharacterBlend(session?.characterBlend ?? DEFAULT_CHARACTER_BLEND);
     setForging(false);

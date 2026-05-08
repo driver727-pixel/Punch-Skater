@@ -186,6 +186,16 @@ test('buildBoardImagePrompt [Mountain 4WD] — includes mountainboard lore const
     prompt.includes(MOUNTAINBOARD_LORE_CONSTRAINT),
     'Mountain 4WD prompt must describe foot straps, boot bindings, top battery box, gear drives, and solid rubber wheel lore',
   );
+  assert.doesNotMatch(
+    prompt,
+    /oversized pneumatic all-terrain tires/i,
+    'Mountain prompt should enforce rubber wheels instead of preserving incompatible pneumatic wheel copy',
+  );
+  assert.match(
+    prompt,
+    /solid rubber all-terrain wheels/i,
+    'Mountain prompt should rewrite incompatible stale wheel selections to solid rubber',
+  );
 });
 
 test('buildBoardImagePrompt [Mountain 4WD] — forbids belts, hubs, vapor, polyurethane, and pneumatic wheels', () => {
@@ -267,12 +277,12 @@ test('buildBoardImagePrompt [4WD] — does not include bare-nose constraint', ()
 // B. Reference-URL count contract
 // ─────────────────────────────────────────────────────────────────────────────
 
-test('BOARD_IMAGE_REQUIRED_URL_COUNT equals 4', () => {
-  assert.equal(BOARD_IMAGE_REQUIRED_URL_COUNT, 4);
+test('BOARD_IMAGE_REQUIRED_URL_COUNT equals 5', () => {
+  assert.equal(BOARD_IMAGE_REQUIRED_URL_COUNT, 5);
 });
 
 // B.1 – Every battery option must produce exactly BOARD_IMAGE_REQUIRED_URL_COUNT
-//        category entries (guards against the SlimStealth regression in PR #366).
+//        category entries.
 const BATTERY_TYPES = ['SlimStealth', 'DoubleStack', 'TopPeli'];
 
 for (const battery of BATTERY_TYPES) {
@@ -293,7 +303,7 @@ for (const battery of BATTERY_TYPES) {
   });
 }
 
-test('resolveReferenceUrlCategories [SlimStealth] — 4th category is motor, not battery', () => {
+test('resolveReferenceUrlCategories [SlimStealth] — 4th and 5th categories are battery and motor', () => {
   const categories = resolveReferenceUrlCategories({
     boardType: 'Street',
     drivetrain: 'Belt',
@@ -302,10 +312,10 @@ test('resolveReferenceUrlCategories [SlimStealth] — 4th category is motor, not
     battery: 'SlimStealth',
   });
 
-  assert.equal(categories[3], 'motor');
+  assert.deepEqual(categories.slice(3), ['battery', 'motor']);
 });
 
-test('resolveReferenceUrlCategories [DoubleStack] — 4th category is battery', () => {
+test('resolveReferenceUrlCategories [DoubleStack] — 4th and 5th categories are battery and motor', () => {
   const categories = resolveReferenceUrlCategories({
     boardType: 'Street',
     drivetrain: 'Belt',
@@ -314,10 +324,10 @@ test('resolveReferenceUrlCategories [DoubleStack] — 4th category is battery', 
     battery: 'DoubleStack',
   });
 
-  assert.equal(categories[3], 'battery');
+  assert.deepEqual(categories.slice(3), ['battery', 'motor']);
 });
 
-test('resolveReferenceUrlCategories [TopPeli] — 4th category is battery', () => {
+test('resolveReferenceUrlCategories [TopPeli] — 4th and 5th categories are battery and motor', () => {
   const categories = resolveReferenceUrlCategories({
     boardType: 'Mountain',
     drivetrain: '4WD',
@@ -326,7 +336,7 @@ test('resolveReferenceUrlCategories [TopPeli] — 4th category is battery', () =
     battery: 'TopPeli',
   });
 
-  assert.equal(categories[3], 'battery');
+  assert.deepEqual(categories.slice(3), ['battery', 'motor']);
 });
 
 // B.2 – The server's normalizeBoardReferenceUrls enforces the same count.
@@ -336,37 +346,40 @@ test('normalizeBoardReferenceUrls accepts exactly BOARD_IMAGE_REQUIRED_URL_COUNT
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
     'https://punchskater.com/assets/boards/battery/slim-battery.png',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png',
   ];
 
   assert.equal(validUrls.length, BOARD_IMAGE_REQUIRED_URL_COUNT);
-  assert.notEqual(normalizeBoardReferenceUrls(validUrls), null, 'should accept exactly 4 URLs');
+  assert.notEqual(normalizeBoardReferenceUrls(validUrls), null, 'should accept exactly 5 URLs');
 });
 
 test('normalizeBoardReferenceUrls rejects URL arrays shorter than BOARD_IMAGE_REQUIRED_URL_COUNT', () => {
-  const threeUrls = [
+  const fourUrls = [
     'https://punchskater.com/assets/boards/deck/street.png',
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    'https://punchskater.com/assets/boards/battery/slim-battery.png',
   ];
 
   assert.equal(
-    threeUrls.length,
+    fourUrls.length,
     BOARD_IMAGE_REQUIRED_URL_COUNT - 1,
     'sanity: fixture has one fewer than the required count',
   );
-  assert.equal(normalizeBoardReferenceUrls(threeUrls), null, 'should reject 3 URLs');
+  assert.equal(normalizeBoardReferenceUrls(fourUrls), null, 'should reject 4 URLs');
 });
 
-test('normalizeBoardReferenceUrls accepts motor URL as 4th reference (SlimStealth battery path)', () => {
+test('normalizeBoardReferenceUrls accepts battery and motor as the 4th and 5th references', () => {
   const urls = [
     'https://punchskater.com/assets/boards/deck/street.png',
     'https://punchskater.com/assets/boards/drivetrain/belt-drive.png',
     'https://punchskater.com/assets/boards/wheels/poly-wheels.png',
-    'https://punchskater.com/assets/boards/motor/6354-motor.png',
+    'https://punchskater.com/assets/boards/battery/top-mount-battery.png',
+    'https://punchskater.com/assets/boards/motor/6396-motor.png',
   ];
 
   assert.equal(urls.length, BOARD_IMAGE_REQUIRED_URL_COUNT);
-  assert.notEqual(normalizeBoardReferenceUrls(urls), null, 'should accept motor as 4th URL');
+  assert.notEqual(normalizeBoardReferenceUrls(urls), null, 'should accept battery and motor references');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

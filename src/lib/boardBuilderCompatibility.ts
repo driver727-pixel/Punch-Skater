@@ -6,7 +6,9 @@ import type {
   CompatibilityError,
 } from "./boardBuilderTypes";
 
-const LEGACY_FOUR_WHEEL_DRIVE = "A" + "WD";
+// Older saved cards used "AWD" before the UI and prompt stack standardized on
+// "4WD"; keep normalizing it until legacy saved board configs disappear.
+const LEGACY_FOUR_WHEEL_DRIVE = "AWD";
 
 function normalizeDrivetrain(drivetrain: string) {
   return drivetrain === LEGACY_FOUR_WHEEL_DRIVE ? "4WD" : drivetrain;
