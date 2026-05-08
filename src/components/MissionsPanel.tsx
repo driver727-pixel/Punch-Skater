@@ -366,6 +366,11 @@ function formatStatusEffect(effect: MissionStatusEffect): string {
   return `${effect.label}${powerLabel} — ${effect.summary}`;
 }
 
+function getCheckBarPercent(current: number, needed: number, met: boolean): number {
+  if (needed > 0) return Math.min(100, (current / needed) * 100);
+  return met ? 100 : 0;
+}
+
 function getMissionDistrictAccessSummary(
   mission: MissionBoardEntry,
   weather: DistrictWeatherSnapshot | null,
@@ -771,6 +776,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     <span />
                     <span />
                     <span />
+                    <span className="mission-selector-card__scene-glyph">
+                      {DISTRICT_THEMES[mission.district].glyph}
+                    </span>
                   </div>
                   <div className="mission-selector-card__topline">
                     <span className="mission-selector-card__district">
@@ -1171,6 +1179,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                               <span className="mission-check-card__progress">
                                 {result.current}/{result.needed}
                               </span>
+                            </div>
+                            <div className="mission-check-card__bar" aria-hidden="true">
+                              <div
+                                className={`mission-check-card__bar-fill${result.met ? "" : " mission-check-card__bar-fill--blocked"}`}
+                                style={{ width: `${getCheckBarPercent(result.current, result.needed, result.met)}%` }}
+                              />
                             </div>
                             <span className="mission-check-card__meta">
                               {isCounterRequirement(result.requirement, selectedCounterOptionId, selectedMission) ? "Live counter check" : "Base contract check"}
