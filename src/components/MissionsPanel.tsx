@@ -909,14 +909,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               />
 
               <ol className="mission-steps" aria-label="Mission steps">
-                <li className={getMissionStepClass(!selectedAwaitingChoice && !selectedResultRevealed, selectedResultRevealed || selectedAwaitingChoice)}>
+                <li className={getMissionStepClass(!selectedDeck, Boolean(selectedDeck) || selectedResultRevealed || selectedAwaitingChoice)}>
                   <span className="mission-step__number">1</span>
                   <span className="mission-step__copy">
                     <strong>Pick a deck</strong>
                     <small>{selectedDeck ? selectedDeck.name : "Choose who goes"}</small>
                   </span>
                 </li>
-                <li className={getMissionStepClass(!selectedAwaitingChoice && !selectedResultRevealed, selectedResultRevealed || selectedAwaitingChoice)}>
+                <li className={getMissionStepClass(Boolean(selectedDeck) && !selectedAwaitingChoice && !selectedResultRevealed, selectedResultRevealed || selectedAwaitingChoice)}>
                   <span className="mission-step__number">2</span>
                   <span className="mission-step__copy">
                     <strong>Launch run</strong>
