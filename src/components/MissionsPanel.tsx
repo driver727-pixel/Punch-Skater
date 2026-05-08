@@ -284,7 +284,7 @@ function getEncounterRewardTypeLabel(option: MissionEncounterOption): string {
 }
 
 function getEncounterOptionStatusLabel(option: MissionEncounterOption): string {
-  if (!option.available) return "Unavailable";
+  if (!option.available) return "Requirements not met";
   return option.encounterType === "joust" ? "Ready" : "Available";
 }
 
@@ -1184,7 +1184,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                         {selectedJoustOption && availableJoustTactics.length > 0 && (
                           <div className="mission-joust-picker">
                             <div>
-                              <span className="mission-stage__eyebrow">Pick tactic</span>
+                              <span className="mission-stage__eyebrow">Pick joust tactic</span>
                               <p className="mission-fork__prompt">
                                 {getCounterOptionRequirementText(selectedJoustOption)}
                               </p>
