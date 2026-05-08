@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { MissionTransitScene } from "./MissionTransitScene";
+import { GeoAtlas } from "./GeoAtlas";
+import type { GeoAtlasMarker } from "./GeoAtlas";
 import { useAuth } from "../context/AuthContext";
 import { useDecks } from "../hooks/useDecks";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
@@ -17,8 +19,6 @@ import {
   getMissionEffectiveRequirements,
   getMissionEffectiveRewards,
   getMissionJoustTactics,
-  getMissionRequirementBadge,
-  getMissionStateLabel,
   getMissionWeatherSummary,
 } from "../lib/missions";
 import type {
@@ -89,6 +89,14 @@ const DISTRICT_THEMES: Record<District, { accent: string; accentSoft: string; gl
     glyph: "◈",
   },
 };
+
+/** Pixel offsets applied to mission map markers that share the same district, so pins don't overlap. */
+const SAME_DISTRICT_OFFSETS: Array<{ x: number; y: number }> = [
+  { x: -12, y: -8 },
+  { x: 12, y: -8 },
+  { x: -12, y: 12 },
+  { x: 12, y: 12 },
+];
 
 const DEFAULT_PRESENTATION: MissionPresentation = {
   operation: "Underground contract",
@@ -639,6 +647,46 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     ];
   }, [selectedDistrictWeather, selectedEvaluation, selectedMission, weatherByDistrict]);
 
+  const missionEligibilityByMissionId = useMemo((): Map<string, boolean> => {
+    if (!selectedDeck) return new Map();
+    return new Map(missions.map((mission) => [
+      mission.id,
+      evaluateMissionDeck(selectedDeck, mission, weatherByDistrict, null).eligible,
+    ]));
+  }, [missions, selectedDeck, weatherByDistrict]);
+
+  const missionDistricts = useMemo(
+    (): WorldLocation[] => missions.map((m) => m.district),
+    [missions],
+  );
+
+  const missionMarkers = useMemo((): GeoAtlasMarker[] => {
+    const seenDistricts = new Map<string, number>();
+    return missions.map((mission) => {
+      const seen = seenDistricts.get(mission.district) ?? 0;
+      seenDistricts.set(mission.district, seen + 1);
+      const offset = SAME_DISTRICT_OFFSETS[seen] ?? { x: 0, y: 0 };
+      const presentation = getMissionPresentation(mission);
+      const eligible = missionEligibilityByMissionId.get(mission.id);
+      const tone: GeoAtlasMarker["tone"] = mission.status === "completed"
+        ? "available"
+        : eligible === false
+          ? "blocked"
+          : undefined;
+      return {
+        id: mission.id,
+        district: mission.district,
+        label: presentation.operation,
+        title: mission.title,
+        active: mission.id === selectedMissionId,
+        tone,
+        offsetX: offset.x,
+        offsetY: offset.y,
+        onClick: () => setSelectedMissionId(mission.id),
+      };
+    });
+  }, [missions, selectedMissionId, missionEligibilityByMissionId]);
+
   const handleRunMission = useCallback(async () => {
     if (!selectedMission || !selectedDeck) return;
     setRunningMissionId(selectedMission.id);
@@ -751,72 +799,44 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
 
       {!loading && !error && missions.length > 0 && (
         <div className="mission-grid">
-          <div className="mission-selector-grid">
-            {missions.map((mission) => {
-              const presentation = getMissionPresentation(mission);
-              const missionRevealed = isMissionResultRevealed(mission);
-              const primaryRequirement = mission.requirements[0];
-              const secondaryRequirement = mission.requirements[1];
-              return (
-                <button
-                  key={mission.id}
-                  type="button"
-                  className={[
-                    "mission-selector-card",
-                    selectedMission?.id === mission.id ? "mission-selector-card--active" : "",
-                    mission.status === "completed" ? "mission-selector-card--completed" : "",
-                  ].filter(Boolean).join(" ")}
-                  style={getMissionThemeStyle(mission.district)}
-                  onClick={() => setSelectedMissionId(mission.id)}
-                >
-                  {mission.status === "completed" && (
-                    <span className="mission-selector-card__check" aria-hidden="true">✓</span>
-                  )}
-                  <div className="mission-selector-card__scene" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                    <span className="mission-selector-card__scene-glyph">
-                      {DISTRICT_THEMES[mission.district].glyph}
+          <div className="mission-atlas-layout">
+            <div className="mission-atlas">
+              <GeoAtlas
+                section="australia"
+                defaultAustraliaExpanded
+                markers={missionMarkers}
+                selectedDistrict={selectedMission?.district ?? null}
+                focusDistricts={missionDistricts}
+                showMarkerLabels="active"
+              />
+            </div>
+            <div className="mission-operation-grid">
+              {missions.map((mission) => {
+                const presentation = getMissionPresentation(mission);
+                const eligible = missionEligibilityByMissionId.get(mission.id);
+                return (
+                  <button
+                    key={mission.id}
+                    type="button"
+                    className={[
+                      "mission-operation-button",
+                      selectedMission?.id === mission.id ? "mission-operation-button--active" : "",
+                      mission.status === "completed" ? "mission-operation-button--completed" : "",
+                      eligible === false && mission.status !== "completed" ? "mission-operation-button--blocked" : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => setSelectedMissionId(mission.id)}
+                  >
+                    <span className="mission-operation-button__label">
+                      <DistrictBadge location={mission.district} size="sm" showLabel={false} decorative />
+                      {presentation.operation}
                     </span>
-                  </div>
-                  <div className="mission-selector-card__topline">
-                    <span className="mission-selector-card__district">
-                      <DistrictBadge location={mission.district} size="sm" />
+                    <span className="mission-operation-button__status">
+                      {mission.status === "completed" ? "✓" : DISTRICT_THEMES[mission.district].glyph}
                     </span>
-                    <span
-                      className={`mission-selector-card__state${mission.status === "completed" ? "" : " mission-selector-card__state--available"}`}
-                    >
-                      {getMissionStateLabel(mission)}
-                    </span>
-                  </div>
-                  <span className="mission-selector-card__operation">{presentation.operation}</span>
-                  <strong className="mission-selector-card__name">{mission.title}</strong>
-                  <p className="mission-selector-card__tagline">{mission.tagline}</p>
-                  <div className="mission-selector-card__stats" aria-label="Mission rewards and requirements">
-                    <span className="mission-selector-card__stat mission-selector-card__stat--reward">
-                      {missionRevealed ? `+${mission.rewardOzzies} Oz` : "Mystery Oz"}
-                    </span>
-                    <span className="mission-selector-card__stat">
-                      {missionRevealed ? `+${mission.rewardXp} XP` : "Hidden XP"}
-                    </span>
-                    <span className="mission-selector-card__stat">
-                      {missionRevealed ? `${mission.requirements.length} checks` : "Blind run"}
-                    </span>
-                  </div>
-                  {missionRevealed && (primaryRequirement || secondaryRequirement) && (
-                    <p className="mission-selector-card__hint">
-                      {primaryRequirement ? getMissionRequirementBadge(primaryRequirement) : null}
-                      {primaryRequirement && secondaryRequirement ? " · " : null}
-                      {secondaryRequirement ? getMissionRequirementBadge(secondaryRequirement) : null}
-                    </p>
-                  )}
-                  {!missionRevealed && (
-                    <p className="mission-selector-card__hint">Payout and route checks reveal after launch</p>
-                  )}
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {selectedMission && (
