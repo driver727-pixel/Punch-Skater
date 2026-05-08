@@ -221,6 +221,22 @@ export interface MissionJoustResult {
 }
 
 /**
+ * Persisted per-card maintenance fallout emitted when a mission resolves.
+ * @sprint 6 @owner gamma
+ */
+export interface MissionCardOutcome {
+  cardId: string;
+  cardName: string;
+  outcomeKind: "repair" | "impound" | "offline";
+  maintenanceState: "in_shop" | "impounded";
+  recapDisposition: "lag" | "drop" | "offline";
+  label: string;
+  summary: string;
+  detail: string;
+  repairEndsAt?: string;
+}
+
+/**
  * Mid-run encounter that replaces the old pre-launch blind route pick.
  * @sprint 5 @owner gamma
  */
@@ -330,6 +346,8 @@ export interface MissionBoardEntry {
   lastRunRewardOzzies?: number;
   /** @sprint 6 @owner gamma — Optional jousting-lite result for runs that escalated into a duel. */
   lastRunJoustResult?: MissionJoustResult | null;
+  /** @sprint 6 @owner gamma — Persisted card-level maintenance fallout from the last resolved run. */
+  lastRunCardOutcomes?: MissionCardOutcome[];
 }
 
 /**

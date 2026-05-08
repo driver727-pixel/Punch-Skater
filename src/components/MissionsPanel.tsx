@@ -344,6 +344,7 @@ function getMissionResultLog(result: MissionRunResponse): string[] {
           `${formatJoustTacticLabel(joustResult.playerTactic)} into ${formatJoustTacticLabel(joustResult.rivalTactic)} — ${joustResult.narration}`,
         ]
         : []),
+      ...(mission.lastRunCardOutcomes ?? []).map((outcome) => outcome.summary),
       ...(mission.lastRunEffects ?? []).map((effect) => `${effect.label}: ${effect.summary}`),
     ];
   }
@@ -1363,6 +1364,16 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     </div>
                   </div>
                   <p className="mission-intel-card__quote">{missionResult.mission.lastRunJoustResult.narration}</p>
+                </div>
+              )}
+              {(missionResult.mission.lastRunCardOutcomes?.length ?? 0) > 0 && (
+                <div className="mission-result-popup__panel">
+                  <span className="mission-result-popup__eyebrow">Maintenance fallout</span>
+                  <ul className="mission-intel-list">
+                    {(missionResult.mission.lastRunCardOutcomes ?? []).map((outcome) => (
+                      <li key={`${missionResult.mission.id}-${outcome.cardId}-${outcome.label}`}>{outcome.detail}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
               <div className="mission-result-popup__panel">
