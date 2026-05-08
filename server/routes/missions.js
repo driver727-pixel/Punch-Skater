@@ -226,7 +226,7 @@ export function registerMissionRoutes(app, {
           ? await districtWeatherService.getDistrictWeatherPayload()
           : null;
       } catch (error) {
-        console.warn('Mission board using stale/no weather payload:', error);
+        console.warn('Mission board proceeding without live weather payload:', error);
       }
 
       const [missionSnap, deckSnap, profileSnap] = await Promise.all([

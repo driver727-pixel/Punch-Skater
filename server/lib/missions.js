@@ -1259,8 +1259,9 @@ function hasPlayableMissionForDecks(missions, decks, weatherPayload = null) {
 }
 
 function pickFallbackMissionReplacementIndex(definitions, featuredDistricts) {
+  const featuredDistrictList = Array.isArray(featuredDistricts) ? featuredDistricts : [];
   for (let index = definitions.length - 1; index >= 0; index -= 1) {
-    if (!featuredDistricts.includes(definitions[index].district)) {
+    if (!featuredDistrictList.includes(definitions[index].district)) {
       return index;
     }
   }
