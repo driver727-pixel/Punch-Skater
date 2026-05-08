@@ -18,34 +18,46 @@ const DEFAULT_FAILURE_LOCK_MINUTES = 15;
 
 const MISSION_FAILURE_CONSEQUENCES = {
   Airaway: {
+    kind: 'repair',
     state: 'in_shop',
     summary: 'took an injury timeout',
     label: 'Injury timeout',
+    recapDisposition: 'lag',
   },
   Batteryville: {
+    kind: 'repair',
     state: 'in_shop',
     summary: 'is stuck in a breakdown repair',
     label: 'Breakdown repair',
+    recapDisposition: 'lag',
   },
   'The Grid': {
-    state: 'impounded',
-    summary: 'got hit with a trace arrest',
-    label: 'Trace arrest',
+    kind: 'offline',
+    state: 'in_shop',
+    summary: 'was hacked offline on the trace',
+    label: 'Trace hack',
+    recapDisposition: 'offline',
   },
   Nightshade: {
+    kind: 'impound',
     state: 'impounded',
     summary: 'was impounded in the Murk',
     label: 'Impound hold',
+    recapDisposition: 'drop',
   },
   'The Forest': {
+    kind: 'repair',
     state: 'in_shop',
     summary: 'needs rough-route repairs',
     label: 'Rough-route repair',
+    recapDisposition: 'lag',
   },
   'Glass City': {
+    kind: 'impound',
     state: 'impounded',
     summary: 'was arrested at the exchange',
     label: 'Exchange arrest',
+    recapDisposition: 'drop',
   },
 };
 
@@ -97,43 +109,91 @@ function isMissionCardReady(card, nowMs = Date.now()) {
   return Number.isFinite(repairEndsMs) && repairEndsMs <= nowMs;
 }
 
-function buildMissionFailureRisk(mission, deck, now) {
-  const cards = Array.isArray(deck?.cards) ? deck.cards : [];
-  const nowMs = Date.parse(now);
-  const riskedCard = cards.find((card) => isMissionCardReady(card, nowMs));
-  if (!riskedCard?.id) return null;
-
-  const consequence = MISSION_FAILURE_CONSEQUENCES[mission?.district] ?? {
+function getMissionFailureConsequence(mission) {
+  return MISSION_FAILURE_CONSEQUENCES[mission?.district] ?? {
+    kind: 'repair',
     state: 'in_shop',
     summary: 'needs repairs after the wipeout',
     label: 'Mission fallout',
+    recapDisposition: 'lag',
   };
+}
+
+function getMissionOutcomeCardName(card) {
+  return typeof card?.identity?.name === 'string' && card.identity.name.trim()
+    ? card.identity.name.trim()
+    : 'One courier';
+}
+
+export function buildMissionCardOutcomeUpdate(mission, deck, now, options = {}) {
+  const cards = Array.isArray(deck?.cards) ? deck.cards : [];
+  const nowMs = Date.parse(now);
+  const activeCardIds = new Set(Array.isArray(options.activeCardIds) ? options.activeCardIds : []);
+  const candidateCardId = typeof options.cardId === 'string' && options.cardId.trim() ? options.cardId.trim() : null;
+  const preferredCard = candidateCardId
+    ? cards.find((card) => card?.id === candidateCardId)
+    : null;
+  const activeCard = activeCardIds.size > 0
+    ? cards.find((card) => activeCardIds.has(card?.id) && isMissionCardReady(card, nowMs))
+    : null;
+  const riskedCard = preferredCard
+    ?? activeCard
+    ?? cards.find((card) => isMissionCardReady(card, nowMs));
+  if (!riskedCard?.id) return null;
+
+  const consequence = getMissionFailureConsequence(mission);
   const repairMinutes = Number(riskedCard?.maintenance?.repairMinutes) || DEFAULT_FAILURE_LOCK_MINUTES;
   const lockMinutes = Math.min(Math.max(repairMinutes, 5), DEFAULT_FAILURE_LOCK_MINUTES);
   const recoveryAt = new Date(nowMs + lockMinutes * 60_000).toISOString();
-  const cardName = typeof riskedCard?.identity?.name === 'string' && riskedCard.identity.name.trim()
-    ? riskedCard.identity.name.trim()
-    : 'One courier';
+  const cardName = getMissionOutcomeCardName(riskedCard);
   const affectedCard = {
     ...riskedCard,
     maintenance: {
       ...(riskedCard.maintenance ?? {}),
       state: consequence.state,
+      chargePct: consequence.kind === 'offline' ? 0 : (riskedCard?.maintenance?.chargePct ?? 100),
       repairMinutes: lockMinutes,
       repairEndsAt: recoveryAt,
     },
   };
+  const summary = `${cardName} ${consequence.summary} for the next ${lockMinutes} minutes.`;
+  const detail = `${consequence.label}: ${cardName} is unavailable for the next ${lockMinutes} minutes.`;
 
   return {
     affectedCard,
-    summary: `${cardName} ${consequence.summary} for the next ${lockMinutes} minutes.`,
-    detail: `${consequence.label}: ${cardName} is unavailable for the next ${lockMinutes} minutes.`,
+    summary,
+    detail,
+    outcomes: [{
+      cardId: affectedCard.id,
+      cardName,
+      outcomeKind: consequence.kind,
+      maintenanceState: consequence.state,
+      recapDisposition: consequence.recapDisposition,
+      label: consequence.label,
+      summary,
+      detail,
+      repairEndsAt: recoveryAt,
+    }],
     updatedDeck: {
       ...deck,
       cards: cards.map((card) => (card?.id === affectedCard.id ? affectedCard : card)),
       updatedAt: now,
     },
   };
+}
+
+export function buildMissionFailureRisk(mission, deck, now) {
+  return buildMissionCardOutcomeUpdate(mission, deck, now);
+}
+
+export function buildMissionResolutionRisk(mission, deck, activeRun, resolution, now) {
+  const negativeResolution = resolution?.hardCutout
+    || (resolution?.joustResult && resolution.joustResult.outcome !== 'win');
+  if (!negativeResolution) return null;
+  return buildMissionCardOutcomeUpdate(mission, deck, now, {
+    cardId: resolution?.joustResult?.playerCardId ?? null,
+    activeCardIds: activeRun?.activeCardIds ?? [],
+  });
 }
 
 export function registerMissionRoutes(app, {
@@ -338,6 +398,8 @@ export function registerMissionRoutes(app, {
               ? [...new Set([...progression.codexUnlockIds, ...resolution.joustResult.loreUnlockIds])]
               : progression.codexUnlockIds,
           };
+          const resolutionRisk = buildMissionResolutionRisk(mission, deck, activeRun, resolution, now);
+          const resolvedDeck = resolutionRisk?.updatedDeck ?? deck;
           const updatedMission = {
             ...mission,
             status: 'completed',
@@ -360,6 +422,7 @@ export function registerMissionRoutes(app, {
             lastRunSummary: resolution.summary,
             lastRunFailureReasons: resolution.hardCutout ? ['Hard cutout: the crew got home, but the payout got clipped.'] : [],
             lastRunEffects: activeRun.statusEffects ?? evaluation.statusEffects ?? [],
+            lastRunCardOutcomes: resolutionRisk?.outcomes ?? [],
             lastRunRewardXp: rewards.rewardXp,
             lastRunRewardOzzies: rewards.rewardOzzies,
             lastRunJoustResult: resolution.joustResult,
@@ -375,10 +438,18 @@ export function registerMissionRoutes(app, {
             codexUnlockIds: nextProgression.codexUnlockIds,
             updatedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
+          if (resolutionRisk) {
+            tx.set(deckRef, resolvedDeck, { merge: true });
+            tx.set(
+              adminDb.collection('users').doc(caller.uid).collection('cards').doc(resolutionRisk.affectedCard.id),
+              resolutionRisk.affectedCard,
+              { merge: true },
+            );
+          }
 
           return {
             mission: updatedMission,
-            evaluation: evaluateMissionDeck(deck, updatedMission, weatherPayload, resolution.selectedOption?.id ?? null),
+            evaluation: evaluateMissionDeck(resolvedDeck, updatedMission, weatherPayload, resolution.selectedOption?.id ?? null),
             progression: nextProgression,
             rewardGranted: true,
           };
@@ -402,6 +473,7 @@ export function registerMissionRoutes(app, {
             lastRunSummary: failureRisk ? `${evaluation.summary} ${failureRisk.summary}` : evaluation.summary,
             lastRunFailureReasons: failureRisk ? [...failureReasons, failureRisk.detail] : failureReasons,
             lastRunEffects: evaluation.statusEffects ?? [],
+            lastRunCardOutcomes: failureRisk?.outcomes ?? [],
             lastRunJoustResult: null,
             updatedAt: now,
           };
@@ -445,6 +517,7 @@ export function registerMissionRoutes(app, {
             lastRunSummary: evaluation.summary,
             lastRunFailureReasons: [],
             lastRunEffects: evaluation.statusEffects ?? [],
+            lastRunCardOutcomes: [],
             lastRunRewardXp: rewards.rewardXp,
             lastRunRewardOzzies: rewards.rewardOzzies,
             lastRunJoustResult: null,
@@ -480,6 +553,7 @@ export function registerMissionRoutes(app, {
             lastRunSummary: liveRun.summary,
             lastRunFailureReasons: [],
             lastRunEffects: liveRun.statusEffects ?? evaluation.statusEffects ?? [],
+            lastRunCardOutcomes: [],
             lastRunJoustResult: null,
             updatedAt: now,
           };
