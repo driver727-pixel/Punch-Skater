@@ -8,7 +8,7 @@ import {
 import type { CardPayload, TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import { CardArt } from "./CardArt";
+import { CardThumbnail } from "./CardThumbnail";
 import {
   createTradeReputationSnapshot,
   estimateCardTradeValue,
@@ -158,7 +158,7 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
                 disabled={pendingOfferCardIds.includes(card.id)}
                 title={pendingOfferCardIds.includes(card.id) ? "This card already has a pending offer." : `Offer ${card.identity.name}`}
               >
-                <CardArt card={card} width={80} height={56} />
+                <CardThumbnail card={card} width={80} height={56} />
                 <span className="trade-pick-name">{card.identity.name}</span>
                 {pendingOfferCardIds.includes(card.id) && (
                   <span className="trade-pick-status">Pending offer</span>
