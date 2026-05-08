@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { MissionTransitScene } from "./MissionTransitScene";
 import { GeoAtlas } from "./GeoAtlas";
 import type { GeoAtlasMarker } from "./GeoAtlas";
@@ -325,11 +325,12 @@ function getMissionThemeStyle(district: District): CSSProperties {
   } as CSSProperties;
 }
 
-function getMissionStepClass(active: boolean, complete: boolean): string {
+function getMissionStepClass(active: boolean, complete: boolean, progressed: boolean): string {
   return [
     "mission-step",
     active ? "mission-step--active" : "",
     complete ? "mission-step--complete" : "",
+    progressed ? "mission-step--progressed" : "",
   ].filter(Boolean).join(" ");
 }
 
@@ -479,7 +480,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
   const [selectedCounterOptionId, setSelectedCounterOptionId] = useState<string | null>(null);
+  const [pendingCounterOptionId, setPendingCounterOptionId] = useState<string | null>(null);
   const [selectedJoustTactic, setSelectedJoustTactic] = useState<JoustTactic | null>(null);
+  const [progressedStep, setProgressedStep] = useState<number | null>(null);
   const [missionResult, setMissionResult] = useState<MissionRunResponse | null>(null);
 
   useEffect(() => {
@@ -564,6 +567,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   useEffect(() => {
     const mission = missions.find((entry) => entry.id === selectedMissionId) ?? missions[0] ?? null;
     setSelectedCounterOptionId(mission?.selectedCounterOptionId ?? mission?.activeRun?.selectedCounterOptionId ?? null);
+    setPendingCounterOptionId(null);
   }, [missions, selectedMissionId]);
 
   const selectedDeck = useMemo(
@@ -679,6 +683,19 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const isStep1Complete = Boolean(selectedDeck) || selectedResultRevealed || selectedAwaitingChoice;
   const isStep2Active = Boolean(selectedDeck) && !selectedAwaitingChoice && !selectedResultRevealed;
   const isStep2Complete = selectedResultRevealed || selectedAwaitingChoice;
+  const activeMissionStep = selectedAwaitingChoice || selectedResultRevealed
+    ? 3
+    : selectedDeck
+      ? 2
+      : 1;
+  const previousMissionStepRef = useRef(activeMissionStep);
+  useEffect(() => {
+    if (activeMissionStep === previousMissionStepRef.current) return;
+    setProgressedStep(activeMissionStep);
+    previousMissionStepRef.current = activeMissionStep;
+    const timeoutId = window.setTimeout(() => setProgressedStep(null), 850);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeMissionStep]);
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
@@ -758,6 +775,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const handleResolveEncounter = useCallback(async (counterOptionId: string, joustTactic?: JoustTactic | null) => {
     if (!selectedMission || !selectedDeck) return;
     setRunningMissionId(selectedMission.id);
+    setPendingCounterOptionId(counterOptionId);
     setError(null);
     try {
       const result = await runMission(uid, selectedMission.id, selectedDeck.id, counterOptionId, joustTactic ?? null, user?.email);
@@ -772,6 +790,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       setError(nextError instanceof Error ? nextError.message : "Failed to resolve mission.");
     } finally {
       setRunningMissionId(null);
+      setPendingCounterOptionId(null);
     }
   }, [selectedDeck, selectedMission, uid, user]);
 
@@ -922,21 +941,21 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               />
 
               <ol className="mission-steps" aria-label="Mission steps">
-                <li className={getMissionStepClass(!selectedDeck, isStep1Complete)}>
+                <li className={getMissionStepClass(activeMissionStep === 1, isStep1Complete, progressedStep === 1)}>
                   <span className="mission-step__number">1</span>
                   <span className="mission-step__copy">
                     <strong>Pick a deck</strong>
                     <small>{selectedDeck ? selectedDeck.name : "Choose who goes"}</small>
                   </span>
                 </li>
-                <li className={getMissionStepClass(isStep2Active, isStep2Complete)}>
+                <li className={getMissionStepClass(isStep2Active, isStep2Complete, progressedStep === 2)}>
                   <span className="mission-step__number">2</span>
                   <span className="mission-step__copy">
                     <strong>Launch run</strong>
                     <small>Start the mission</small>
                   </span>
                 </li>
-                <li className={getMissionStepClass(selectedAwaitingChoice, selectedResultRevealed)}>
+                <li className={getMissionStepClass(activeMissionStep === 3, selectedResultRevealed, progressedStep === 3)}>
                   <span className="mission-step__number">3</span>
                   <span className="mission-step__copy">
                     <strong>Answer event</strong>
@@ -1211,7 +1230,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                         <button
                           key={`${selectedMission.id}-${option.id}`}
                           type="button"
-                          className={`mission-fork__option${selectedCounterOption?.id === option.id ? " mission-fork__option--active" : ""}`}
+                          className={`mission-fork__option${selectedCounterOption?.id === option.id || pendingCounterOptionId === option.id ? " mission-fork__option--active" : ""}${pendingCounterOptionId === option.id ? " mission-fork__option--pending" : ""}`}
                           onClick={() => handleResolveEncounter(
                             option.id,
                             option.encounterType === "joust" ? selectedJoustTactic : null,
@@ -1244,7 +1263,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       {selectedAwaitingChoice && (
                         <button
                           type="button"
-                          className="mission-fork__option"
+                          className={`mission-fork__option${pendingCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " mission-fork__option--active mission-fork__option--pending" : ""}`}
                           onClick={() => handleResolveEncounter(HARD_CUTOUT_COUNTER_ID)}
                           disabled={runningMissionId === selectedMission.id}
                         >
