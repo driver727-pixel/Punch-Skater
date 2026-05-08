@@ -478,7 +478,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
         setBoardDateKey(payload.boardDateKey ?? "");
         setDailyResetAt(payload.dailyResetAt ?? "");
         setWeeklyTheme(payload.weeklyTheme ?? null);
-        setSelectedMissionId((current) => current ?? payload.missions[0]?.id ?? null);
       })
       .catch((nextError) => {
         if (cancelled) return;
@@ -505,27 +504,51 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     setRefreshNonce((current) => current + 1);
   }, [dailyResetAt, lastResetRefreshAt, nowMs]);
 
+  const recommendedLaunchSelection = useMemo(() => {
+    for (const mission of missions) {
+      const eligibleDeck = decks.find((deck) => evaluateMissionDeck(deck, mission, weatherByDistrict, null).eligible);
+      if (eligibleDeck) {
+        return {
+          missionId: mission.id,
+          deckId: eligibleDeck.id,
+        };
+      }
+    }
+    return {
+      missionId: missions[0]?.id ?? null,
+      deckId: decks[0]?.id ?? null,
+    };
+  }, [decks, missions, weatherByDistrict]);
+
   useEffect(() => {
     const isSelectedMissionInvalid = !selectedMissionId || !missions.some((mission) => mission.id === selectedMissionId);
     if (isSelectedMissionInvalid && missions.length > 0) {
-      setSelectedMissionId(missions[0].id);
+      setSelectedMissionId(recommendedLaunchSelection.missionId ?? missions[0].id);
     }
-  }, [missions, selectedMissionId]);
+  }, [missions, recommendedLaunchSelection.missionId, selectedMissionId]);
+
+  const selectedMission = useMemo(
+    () => missions.find((mission) => mission.id === selectedMissionId) ?? missions[0] ?? null,
+    [missions, selectedMissionId],
+  );
+  const preferredDeckIdForSelectedMission = useMemo(() => {
+    if (!selectedMission) return recommendedLaunchSelection.deckId ?? null;
+    return decks.find((deck) => evaluateMissionDeck(deck, selectedMission, weatherByDistrict, null).eligible)?.id
+      ?? recommendedLaunchSelection.deckId
+      ?? decks[0]?.id
+      ?? null;
+  }, [decks, recommendedLaunchSelection.deckId, selectedMission, weatherByDistrict]);
 
   useEffect(() => {
     if (selectedDeckId && decks.some((deck) => deck.id === selectedDeckId)) return;
-    setSelectedDeckId(decks[0]?.id ?? null);
-  }, [decks, selectedDeckId]);
+    setSelectedDeckId(preferredDeckIdForSelectedMission);
+  }, [decks, preferredDeckIdForSelectedMission, selectedDeckId]);
 
   useEffect(() => {
     const mission = missions.find((entry) => entry.id === selectedMissionId) ?? missions[0] ?? null;
     setSelectedCounterOptionId(mission?.selectedCounterOptionId ?? mission?.activeRun?.selectedCounterOptionId ?? null);
   }, [missions, selectedMissionId]);
 
-  const selectedMission = useMemo(
-    () => missions.find((mission) => mission.id === selectedMissionId) ?? missions[0] ?? null,
-    [missions, selectedMissionId],
-  );
   const selectedDeck = useMemo(
     () => decks.find((deck) => deck.id === selectedDeckId) ?? decks[0] ?? null,
     [decks, selectedDeckId],

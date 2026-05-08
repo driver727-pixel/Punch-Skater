@@ -1249,7 +1249,66 @@ export function createMissionBoardEntries(uid, now = new Date().toISOString()) {
   ));
 }
 
-export function createDailyMissionBoardPayload(uid, now = new Date().toISOString()) {
+function createDailyMissionBoardEntry(uid, boardDateKey, now, definition) {
+  return createMissionEntry(uid, definition, now, `${uid}_${boardDateKey}_${definition.definitionId}`);
+}
+
+function hasPlayableMissionForDecks(missions, decks, weatherPayload = null) {
+  if (!Array.isArray(decks) || decks.length === 0) return false;
+  return missions.some((mission) => decks.some((deck) => evaluateMissionDeck(deck, mission, weatherPayload).eligible));
+}
+
+function pickFallbackMissionReplacementIndex(definitions, featuredDistricts) {
+  const featuredDistrictList = Array.isArray(featuredDistricts) ? featuredDistricts : [];
+  for (let index = definitions.length - 1; index >= 0; index -= 1) {
+    if (!featuredDistrictList.includes(definitions[index].district)) {
+      return index;
+    }
+  }
+  return Math.max(0, definitions.length - 1);
+}
+
+function ensurePlayableDailyMissionDefinitions(
+  uid,
+  boardDateKey,
+  now,
+  weeklyTheme,
+  definitions,
+  decks = [],
+  weatherPayload = null,
+) {
+  if (!Array.isArray(definitions) || definitions.length === 0 || !Array.isArray(decks) || decks.length === 0) {
+    return definitions;
+  }
+
+  const selectedEntries = definitions.map((definition) => (
+    createDailyMissionBoardEntry(uid, boardDateKey, now, definition)
+  ));
+  if (hasPlayableMissionForDecks(selectedEntries, decks, weatherPayload)) {
+    return definitions;
+  }
+
+  const fallbackDefinition = MISSION_BOARD_DEFINITIONS
+    .filter((definition) => !definitions.some((entry) => entry.definitionId === definition.definitionId))
+    .map((definition) => applyWeeklyThemeToDefinition(definition, weeklyTheme))
+    .find((definition) => hasPlayableMissionForDecks([
+      createDailyMissionBoardEntry(uid, boardDateKey, now, definition),
+    ], decks, weatherPayload));
+
+  if (!fallbackDefinition) {
+    return definitions;
+  }
+
+  const nextDefinitions = definitions.slice();
+  nextDefinitions[pickFallbackMissionReplacementIndex(definitions, weeklyTheme?.featuredDistricts)] = fallbackDefinition;
+  return nextDefinitions.sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export function createDailyMissionBoardPayload(uid, now = new Date().toISOString(), options = {}) {
+  const {
+    decks = [],
+    weatherPayload = null,
+  } = options ?? {};
   const boardDateKey = toMissionDateKey(now);
   const dailyResetAt = getNextMissionResetAt(now);
   const weeklyTheme = getWeeklyMissionTheme(now);
@@ -1259,17 +1318,25 @@ export function createDailyMissionBoardPayload(uid, now = new Date().toISOString
   const remainingDefinitions = MISSION_BOARD_DEFINITIONS
     .filter((definition) => !weeklyTheme.featuredDistricts.includes(definition.district))
     .sort((a, b) => hashString(`${uid}|${boardDateKey}|rest|${a.definitionId}`) - hashString(`${uid}|${boardDateKey}|rest|${b.definitionId}`));
-  const selectedDefinitions = [...featuredDefinitions, ...remainingDefinitions]
-    .slice(0, DAILY_MISSION_BOARD_COUNT)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((definition) => applyWeeklyThemeToDefinition(definition, weeklyTheme));
+  const selectedDefinitions = ensurePlayableDailyMissionDefinitions(
+    uid,
+    boardDateKey,
+    now,
+    weeklyTheme,
+    [...featuredDefinitions, ...remainingDefinitions]
+      .slice(0, DAILY_MISSION_BOARD_COUNT)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((definition) => applyWeeklyThemeToDefinition(definition, weeklyTheme)),
+    decks,
+    weatherPayload,
+  );
 
   return {
     boardDateKey,
     dailyResetAt,
     weeklyTheme,
     missions: selectedDefinitions.map((definition) => (
-      createMissionEntry(uid, definition, now, `${uid}_${boardDateKey}_${definition.definitionId}`)
+      createDailyMissionBoardEntry(uid, boardDateKey, now, definition)
     )),
   };
 }

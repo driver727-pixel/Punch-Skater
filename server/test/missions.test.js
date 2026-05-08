@@ -65,6 +65,28 @@ test('createDailyMissionBoardPayload returns a stable daily subset and cadence m
   assert.deepEqual(first.missions.map((entry) => entry.id), second.missions.map((entry) => entry.id));
 });
 
+test('createDailyMissionBoardPayload swaps in a playable contract when the default slice bricks every deck', () => {
+  const genericDeck = {
+    id: 'deck-generic',
+    name: 'Loose Stack',
+    cards: Array.from({ length: 5 }, (_, index) => buildCard({
+      prompts: { archetype: 'Qu111s', district: 'The Grid' },
+      identity: { crew: 'Qu111s' },
+      stats: { speed: 5 + index, range: 4, stealth: 4, grit: 4 },
+      board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+    })),
+  };
+
+  const baselinePayload = createDailyMissionBoardPayload('user-123', '2026-05-08T12:00:00.000Z');
+  assert.equal(baselinePayload.missions.some((entry) => evaluateMissionDeck(genericDeck, entry).eligible), false);
+
+  const rescuedPayload = createDailyMissionBoardPayload('user-123', '2026-05-08T12:00:00.000Z', {
+    decks: [genericDeck],
+  });
+  assert.equal(rescuedPayload.missions.length, 4);
+  assert.equal(rescuedPayload.missions.some((entry) => evaluateMissionDeck(genericDeck, entry).eligible), true);
+});
+
 test('getMissionEncounter never produces encounter options with undefined reward deltas', () => {
   const missions = createMissionBoardEntries('user-123', '2026-04-26T00:00:00.000Z');
   for (const mission of missions) {
