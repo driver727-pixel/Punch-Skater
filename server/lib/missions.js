@@ -1300,7 +1300,7 @@ function ensurePlayableDailyMissionDefinitions(
   }
 
   const nextDefinitions = definitions.slice();
-  nextDefinitions[pickFallbackMissionReplacementIndex(definitions, weeklyTheme.featuredDistricts)] = fallbackDefinition;
+  nextDefinitions[pickFallbackMissionReplacementIndex(definitions, weeklyTheme?.featuredDistricts)] = fallbackDefinition;
   return nextDefinitions.sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
