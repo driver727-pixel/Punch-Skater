@@ -29,8 +29,8 @@ export function MissionTransitScene({
           <h4 className="mission-stage__title">{sceneTitle}</h4>
           <p className="mission-stage__summary">{sceneBody}</p>
           <div className="mission-intel-tags">
-            {sceneTags.map((tag) => (
-              <span key={tag} className="mission-intel-tag">{tag}</span>
+            {sceneTags.map((tag, index) => (
+              <span key={`${tag}-${index}`} className="mission-intel-tag">{tag}</span>
             ))}
           </div>
         </div>
