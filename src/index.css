@@ -9445,26 +9445,34 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  background:
+    radial-gradient(ellipse at top left, rgba(0,255,136,0.08), transparent 56%),
+    linear-gradient(135deg, rgba(255,255,255,0.04), rgba(0,0,0,0.22));
+  border: 1px solid rgba(0,255,136,0.14);
+  border-radius: 14px;
   cursor: pointer;
   color: inherit;
   width: 100%;
   text-align: left;
+  box-shadow: 0 2px 24px rgba(0,255,136,0.04), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 .mission-selector-panel__header:hover {
-  border-color: rgba(0,204,255,0.25);
-  background: rgba(0,204,255,0.05);
+  border-color: rgba(0,255,136,0.28);
+  background:
+    radial-gradient(ellipse at top left, rgba(0,255,136,0.12), transparent 56%),
+    linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.22));
+  box-shadow: 0 4px 28px rgba(0,255,136,0.08), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .mission-selector-panel__title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--accent);
+  text-shadow: 0 0 14px rgba(0,255,136,0.5);
 }
 .mission-selector-panel__summary {
   margin: 4px 0 0;
@@ -9479,37 +9487,67 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 18px;
 }
 .daily-ritual-card {
-  border: 1px solid rgba(125, 255, 182, 0.2);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(125, 255, 182, 0.22);
   border-radius: 18px;
-  padding: 16px;
+  padding: 18px;
   background:
-    linear-gradient(180deg, rgba(125, 255, 182, 0.1), rgba(3, 6, 10, 0.7)),
-    rgba(6, 10, 18, 0.9);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    radial-gradient(circle at top left, rgba(125, 255, 182, 0.14), transparent 52%),
+    linear-gradient(180deg, rgba(125, 255, 182, 0.08), rgba(3, 6, 10, 0.75)),
+    rgba(6, 10, 18, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 20px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(125, 255, 182, 0.06) inset;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.daily-ritual-card:hover {
+  border-color: rgba(125, 255, 182, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 6px 24px rgba(0, 0, 0, 0.28),
+    0 0 16px rgba(125, 255, 182, 0.08);
 }
 .daily-ritual-card--theme {
-  border-color: rgba(255, 201, 77, 0.28);
+  border-color: rgba(255, 201, 77, 0.3);
   background:
-    linear-gradient(180deg, rgba(255, 201, 77, 0.12), rgba(3, 6, 10, 0.7)),
-    rgba(6, 10, 18, 0.9);
+    radial-gradient(circle at top left, rgba(255, 201, 77, 0.16), transparent 52%),
+    linear-gradient(180deg, rgba(255, 201, 77, 0.1), rgba(3, 6, 10, 0.75)),
+    rgba(6, 10, 18, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 20px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(255, 201, 77, 0.08) inset;
+}
+.daily-ritual-card--theme:hover {
+  border-color: rgba(255, 201, 77, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 6px 24px rgba(0, 0, 0, 0.28),
+    0 0 16px rgba(255, 201, 77, 0.1);
 }
 .daily-ritual-card__label {
   display: block;
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(220, 255, 240, 0.7);
+  color: rgba(180, 255, 220, 0.65);
 }
 .daily-ritual-card__value {
   display: block;
-  margin-top: 8px;
-  font-size: 20px;
-  color: #f5fff8;
+  margin-top: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #f0fff5;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 16px rgba(125, 255, 182, 0.35);
 }
 .daily-ritual-card__body {
   margin: 8px 0 0;
-  color: rgba(225, 235, 242, 0.82);
-  line-height: 1.45;
+  color: rgba(220, 232, 240, 0.78);
+  line-height: 1.5;
+  font-size: 12px;
 }
 .mission-grid {
   display: grid;
@@ -9631,27 +9669,34 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)),
+    linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.22) 100%),
     rgba(0,0,0,0.18);
   color: var(--text);
   cursor: pointer;
   text-align: left;
   overflow: hidden;
+  transition: transform 0.12s ease, border-color 0.15s, box-shadow 0.15s;
+}
+.mission-selector-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 12px rgba(0,204,255,0.08);
 }
 .mission-selector-card__scene {
   position: relative;
   width: 100%;
-  height: 42px;
+  height: 56px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
   background:
-    radial-gradient(circle at top left, var(--mission-glow, rgba(0,255,136,0.22)), transparent 56%),
-    linear-gradient(135deg, var(--mission-accent-soft, rgba(0,255,136,0.18)), rgba(3,6,10,0.18));
+    radial-gradient(ellipse at 30% 60%, var(--mission-glow, rgba(0,255,136,0.28)), transparent 52%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,204,255,0.1), transparent 44%),
+    linear-gradient(135deg, var(--mission-accent-soft, rgba(0,255,136,0.16)), rgba(3,6,10,0.18));
 }
 .mission-selector-card__scene span {
   position: absolute;
@@ -9660,6 +9705,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background: linear-gradient(90deg, transparent, var(--mission-accent, var(--accent)), transparent);
   opacity: 0.6;
   animation: mission-scanline 4s linear infinite;
+}
+.mission-selector-card__scene-glyph {
+  position: absolute !important;
+  inset: auto !important;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  height: auto !important;
+  width: auto !important;
+  background: none !important;
+  animation: none !important;
+  font-size: 22px;
+  color: var(--mission-accent, var(--accent));
+  opacity: 0.45;
+  text-shadow: 0 0 14px var(--mission-glow, rgba(0,255,136,0.5));
+  pointer-events: none;
+  line-height: 1;
 }
 .mission-selector-card__scene span:nth-child(1) {
   bottom: 10px;
@@ -9678,12 +9740,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-color: rgba(255,68,102,0.24);
 }
 .mission-selector-card--active {
-  border-color: rgba(0,255,136,0.38);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.12);
+  border-color: var(--mission-accent, rgba(0,255,136,0.5));
+  background:
+    radial-gradient(ellipse at top left, var(--mission-glow, rgba(0,255,136,0.14)), transparent 56%),
+    linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.22) 100%),
+    rgba(0,0,0,0.18);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06) inset,
+    0 0 24px var(--mission-glow, rgba(0,255,136,0.14)),
+    0 4px 16px rgba(0,0,0,0.28);
+  transform: translateY(-1px);
 }
 .mission-selector-card--completed {
-  border-color: rgba(0,255,136,0.28);
-  background: rgba(0,255,136,0.04);
+  border-color: rgba(0,255,136,0.3);
+  background:
+    radial-gradient(ellipse at top right, rgba(0,255,136,0.08), transparent 52%),
+    linear-gradient(160deg, rgba(0,255,136,0.04), rgba(0,0,0,0.22));
 }
 .mission-selector-card__check {
   position: absolute;
@@ -9733,9 +9805,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-selector-card__operation {
   font-size: 11px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--mission-accent, var(--accent));
+  text-shadow: 0 0 10px var(--mission-glow, rgba(0,255,136,0.4));
 }
 .mission-selector-card__tagline {
   margin: 0;
@@ -9830,18 +9903,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 12px;
+  padding: 14px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
+  transition: border-color 0.15s;
 }
 .mission-check-card--met {
-  border-color: rgba(0,255,136,0.16);
-  background: rgba(0,255,136,0.05);
+  border-color: rgba(0,255,136,0.2);
+  background:
+    radial-gradient(ellipse at top left, rgba(0,255,136,0.08), transparent 56%),
+    rgba(0,255,136,0.03);
 }
 .mission-check-card--blocked {
-  border-color: rgba(255,68,102,0.24);
-  background: rgba(255,68,102,0.08);
+  border-color: rgba(255,68,102,0.28);
+  background:
+    radial-gradient(ellipse at top left, rgba(255,68,102,0.1), transparent 56%),
+    rgba(255,68,102,0.05);
 }
 .mission-check-card__header {
   display: flex;
@@ -9863,6 +9941,24 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--text);
   font-size: 12px;
   font-weight: 700;
+}
+.mission-check-card__bar {
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08);
+  margin: 2px 0;
+}
+.mission-check-card__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mission-accent, var(--accent)), var(--accent2));
+  box-shadow: 0 0 8px var(--mission-glow, rgba(0,255,136,0.4));
+  transition: width 0.4s ease;
+}
+.mission-check-card__bar-fill--blocked {
+  background: linear-gradient(90deg, rgba(255,68,102,0.8), rgba(255,68,102,0.5));
+  box-shadow: 0 0 6px rgba(255,68,102,0.3);
 }
 .mission-check-card__meta {
   font-size: 11px;
@@ -9887,19 +9983,34 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
-  background: rgba(0,0,0,0.18);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.04), rgba(0,0,0,0.22));
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 14px;
-  padding: 10px;
+  padding: 12px;
   color: var(--text);
   cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+.mission-runner-card:hover {
+  border-color: rgba(255,255,255,0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
 }
 .mission-runner-card--active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.12);
+  background:
+    radial-gradient(ellipse at top left, rgba(0,255,136,0.1), transparent 52%),
+    linear-gradient(160deg, rgba(0,255,136,0.05), rgba(0,0,0,0.22));
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 20px rgba(0,255,136,0.14);
 }
 .mission-panel--detail {
   scroll-margin-top: 88px;
+  border-color: rgba(255,255,255,0.1);
+  border-top: 3px solid var(--mission-accent, rgba(0,255,136,0.6));
+  background:
+    radial-gradient(ellipse at top, var(--mission-glow, rgba(0,255,136,0.1)), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
 }
 .mission-panel__actions {
   display: flex;
@@ -10088,10 +10199,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 16px;
   margin-bottom: 12px;
   border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
   background:
-    radial-gradient(circle at top left, var(--mission-glow, rgba(0,255,136,0.22)), transparent 52%),
-    linear-gradient(135deg, rgba(255,255,255,0.04), rgba(0,0,0,0.26));
+    radial-gradient(ellipse at top left, var(--mission-glow, rgba(0,255,136,0.18)), transparent 46%),
+    radial-gradient(ellipse at bottom right, rgba(0,204,255,0.08), transparent 46%),
+    linear-gradient(160deg, rgba(255,255,255,0.05), rgba(0,0,0,0.28));
 }
 .mission-transit__header {
   display: grid;
@@ -10348,10 +10460,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-intel-card {
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
   background:
-    linear-gradient(180deg, var(--mission-accent-soft, rgba(0,255,136,0.12)), rgba(0,0,0,0.2));
-  padding: 14px;
+    radial-gradient(ellipse at top left, var(--mission-accent-soft, rgba(0,255,136,0.12)), transparent 54%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.22));
+  padding: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.mission-intel-card:hover {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.24);
 }
 .mission-intel-card p {
   margin: 0;
@@ -10362,14 +10480,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: inline-flex;
   margin-bottom: 10px;
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--mission-accent, var(--accent));
+  text-shadow: 0 0 10px var(--mission-glow, rgba(0,255,136,0.4));
 }
 .mission-intel-card__quote {
-  margin-top: 12px !important;
+  margin-top: 14px !important;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
   color: var(--text);
   font-style: italic;
+  font-size: 12px;
+  line-height: 1.6;
 }
 .mission-intel-tags {
   display: flex;
@@ -10420,10 +10543,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px;
+  padding: 16px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(0,0,0,0.16);
+  border: 1px solid rgba(255,255,255,0.1);
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.04), rgba(0,0,0,0.22));
 }
 .mission-result {
   display: flex;
@@ -10589,13 +10713,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 150px;
-  padding: 16px;
+  min-height: 160px;
+  padding: 18px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.12);
   background:
-    radial-gradient(circle at top, var(--mission-glow, rgba(0,255,136,0.18)), transparent 56%),
-    rgba(0,0,0,0.22);
+    radial-gradient(ellipse at top left, var(--mission-glow, rgba(0,255,136,0.2)), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(0,204,255,0.08), transparent 50%),
+    rgba(0,0,0,0.24);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.mission-mystery-card:hover {
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
 }
 .mission-mystery-card::after {
   content: "";
@@ -10649,7 +10779,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(5, 5, 14, 0.9);
+  background: rgba(5, 5, 14, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .mission-result-popup {
   width: min(720px, 100%);
@@ -10768,8 +10900,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 /* ── Fork in the road ─────────────────────────────────────────────── */
 .mission-fork {
-  border-color: rgba(255,200,50,0.28);
-  background: rgba(255,200,50,0.05);
+  border-color: rgba(255,200,50,0.32);
+  background:
+    radial-gradient(ellipse at top left, rgba(255,200,50,0.1), transparent 52%),
+    rgba(255,200,50,0.04);
 }
 .mission-fork__header {
   display: flex;
@@ -10780,13 +10914,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-fork__badge {
   display: inline-flex;
   align-self: flex-start;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  background: rgba(255,200,50,0.18);
+  letter-spacing: 0.1em;
+  background: rgba(255,200,50,0.2);
+  border: 1px solid rgba(255,200,50,0.35);
   color: #ffc832;
+  text-shadow: 0 0 10px rgba(255,200,50,0.5);
+  box-shadow: 0 0 12px rgba(255,200,50,0.12);
 }
 .mission-fork__prompt {
   margin: 0;
@@ -10804,37 +10941,45 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 6px;
   padding: 14px;
-  border: 1px solid rgba(255,200,50,0.22);
+  border: 1px solid rgba(255,200,50,0.24);
   border-radius: 14px;
-  background: rgba(255,200,50,0.06);
+  background:
+    linear-gradient(160deg, rgba(255,200,50,0.06), rgba(0,0,0,0.18));
   color: var(--text);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s, box-shadow 0.15s;
 }
 .mission-fork__option:hover {
-  border-color: rgba(255,200,50,0.5);
-  background: rgba(255,200,50,0.12);
+  border-color: rgba(255,200,50,0.52);
+  background:
+    linear-gradient(160deg, rgba(255,200,50,0.12), rgba(0,0,0,0.18));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.24);
 }
 .mission-fork__option:disabled {
   cursor: not-allowed;
-  opacity: 0.58;
+  opacity: 0.52;
+  transform: none;
 }
 .mission-fork__option--active {
   border-color: rgba(255,200,50,0.72);
-  background: rgba(255,200,50,0.18);
-  box-shadow: 0 0 0 1px rgba(255,200,50,0.18);
+  background:
+    radial-gradient(ellipse at top left, rgba(255,200,50,0.18), transparent 54%),
+    linear-gradient(160deg, rgba(255,200,50,0.12), rgba(0,0,0,0.18));
+  box-shadow: 0 0 0 1px rgba(255,200,50,0.18), 0 0 16px rgba(255,200,50,0.12);
 }
 .mission-fork__option-label {
   font-size: 13px;
   letter-spacing: 0.04em;
   color: #ffc832;
+  text-shadow: 0 0 8px rgba(255,200,50,0.4);
 }
 .mission-fork__option-meta {
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(255,200,50,0.92);
+  color: rgba(255,200,50,0.88);
 }
 .mission-fork__option-desc {
   font-size: 12px;
@@ -11664,9 +11809,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 /* ===== Mission Selector Card — hover neon ===== */
-.mission-selector-card:hover {
+.mission-selector-card:not(.mission-selector-card--active):hover {
   border-color: rgba(0,204,255,0.3);
-  box-shadow: 0 0 12px rgba(0,204,255,0.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 12px rgba(0,204,255,0.1);
 }
 
 /* ===== Login Tab Active — neon underline accent ===== */

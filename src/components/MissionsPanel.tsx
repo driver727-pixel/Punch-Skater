@@ -771,6 +771,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     <span />
                     <span />
                     <span />
+                    <span className="mission-selector-card__scene-glyph">
+                      {DISTRICT_THEMES[mission.district].glyph}
+                    </span>
                   </div>
                   <div className="mission-selector-card__topline">
                     <span className="mission-selector-card__district">
@@ -1171,6 +1174,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                               <span className="mission-check-card__progress">
                                 {result.current}/{result.needed}
                               </span>
+                            </div>
+                            <div className="mission-check-card__bar" aria-hidden="true">
+                              <div
+                                className={`mission-check-card__bar-fill${result.met ? "" : " mission-check-card__bar-fill--blocked"}`}
+                                style={{ width: `${result.needed > 0 ? Math.min(100, (result.current / result.needed) * 100) : (result.met ? 100 : 0)}%` }}
+                              />
                             </div>
                             <span className="mission-check-card__meta">
                               {isCounterRequirement(result.requirement, selectedCounterOptionId, selectedMission) ? "Live counter check" : "Base contract check"}
