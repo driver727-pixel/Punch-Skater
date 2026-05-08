@@ -62,21 +62,21 @@ export function useWorkshopBoards() {
     lastSavedBoardsRef.current = boards;
   }, [boards, uid]);
 
-  const saveBoard = useCallback((board: WorkshopBoardPayload) => {
+  const saveBoard = useCallback(async (board: WorkshopBoardPayload) => {
     if (uid) {
-      setDoc(doc(db, "users", uid, "workshopBoards", board.id), board).catch(console.error);
+      await setDoc(doc(db, "users", uid, "workshopBoards", board.id), board);
       return;
     }
     setBoards((prev) => sortBoards([...prev.filter((entry) => entry.id !== board.id), board]));
   }, [uid]);
 
-  const addBoard = useCallback((board: WorkshopBoardPayload) => {
-    saveBoard(board);
+  const addBoard = useCallback(async (board: WorkshopBoardPayload) => {
+    await saveBoard(board);
   }, [saveBoard]);
 
-  const removeBoard = useCallback((boardId: string) => {
+  const removeBoard = useCallback(async (boardId: string) => {
     if (uid) {
-      deleteDoc(doc(db, "users", uid, "workshopBoards", boardId)).catch(console.error);
+      await deleteDoc(doc(db, "users", uid, "workshopBoards", boardId));
       return;
     }
     setBoards((prev) => prev.filter((board) => board.id !== boardId));

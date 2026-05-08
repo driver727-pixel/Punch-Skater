@@ -70,17 +70,19 @@ export function Workshop() {
     setSearchParams(next, { replace: true });
   };
 
-  const handleBenchSave = () => {
+  const handleBenchSave = async () => {
     setSavingBoard(true);
     setError("");
     setMessage("");
     try {
       const board = createWorkshopBoard(boardConfig, selectedCard?.id);
-      addBoard(board);
+      await addBoard(board);
       setSelectedBoardId(board.id);
       updateSearchSelection(board.id);
       sfxSuccess();
       setMessage("Paper-doll board saved to the workshop floor.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Failed to save the board to the workshop.");
     } finally {
       setSavingBoard(false);
     }
@@ -100,12 +102,16 @@ export function Workshop() {
     setError("");
   };
 
-  const handleScrapBoard = () => {
+  const handleScrapBoard = async () => {
     if (!selectedBoard) return;
-    sfxRemove();
-    removeBoard(selectedBoard.id);
-    setMessage("Saved board scrapped from the workshop floor.");
-    setError("");
+    try {
+      sfxRemove();
+      await removeBoard(selectedBoard.id);
+      setMessage("Saved board scrapped from the workshop floor.");
+      setError("");
+    } catch (removeError) {
+      setError(removeError instanceof Error ? removeError.message : "Failed to scrap the saved board.");
+    }
   };
 
   const handleApplyBoard = async () => {
@@ -125,13 +131,13 @@ export function Workshop() {
     const reforgedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
       feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
     });
-    updateCard(reforgedCard);
-    updateCardInDecks(reforgedCard);
-    removeBoard(selectedBoard.id);
-    sfxSuccess();
-    setMessage(`${selectedCard.identity.name} took the new board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`);
-
     try {
+      updateCard(reforgedCard);
+      updateCardInDecks(reforgedCard);
+      await removeBoard(selectedBoard.id);
+      sfxSuccess();
+      setMessage(`${selectedCard.identity.name} took the new board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`);
+
       const boardImageUrl = await generateGouacheBoard(selectedBoard.config);
       const artPatchedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
         feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
@@ -141,10 +147,9 @@ export function Workshop() {
       updateCardInDecks(artPatchedCard);
       setMessage(`${selectedCard.identity.name} took the new board. Stats updated and fresh board art locked in.`);
     } catch (generationError) {
-      setMessage(
-        `${selectedCard.identity.name} took the new board. Stats updated, but fresh board art could not be forged yet.`,
-      );
-      console.warn("[Workshop] Failed to refresh board artwork:", generationError);
+      const detail = generationError instanceof Error ? generationError.message : "Unknown workshop error.";
+      setMessage(`${selectedCard.identity.name} took the new board. Stats updated, but fresh board art could not be forged yet.`);
+      setError(`Workshop follow-up: ${detail}`);
     } finally {
       setApplyingBoardId(null);
     }
