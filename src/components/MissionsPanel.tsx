@@ -288,6 +288,11 @@ function getEncounterOptionStatusLabel(option: MissionEncounterOption): string {
   return option.encounterType === "joust" ? "Ready" : "Available";
 }
 
+function getEncounterOptionMetaText(option: MissionEncounterOption, awaitingChoice: boolean): string {
+  const rewardType = getEncounterRewardTypeLabel(option);
+  return awaitingChoice ? `${rewardType} · ${getEncounterOptionStatusLabel(option)}` : rewardType;
+}
+
 function getMissionOutcomeLabel(
   mission: MissionBoardEntry | null,
   evaluationEligible: boolean | undefined,
@@ -1220,11 +1225,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           }
                         >
                           <span className="mission-fork__option-label">{option.label}</span>
-                          <span className="mission-fork__option-meta">
-                            {selectedAwaitingChoice
-                              ? `${getEncounterRewardTypeLabel(option)} · ${getEncounterOptionStatusLabel(option)}`
-                              : getEncounterRewardTypeLabel(option)}
-                          </span>
+                          <span className="mission-fork__option-meta">{getEncounterOptionMetaText(option, selectedAwaitingChoice)}</span>
                           <span className="mission-fork__option-desc">{option.description}</span>
                           {(selectedAwaitingChoice || selectedResultRevealed) && (
                             <span className="mission-fork__option-desc">
