@@ -227,7 +227,7 @@ body::after {
 }
 
 @media (max-width: 900px) {
-  .nav-neon-map { display: none; }
+  .nav-neon-map.geo-atlas { display: none; }
 }
 
 .nav-links {
