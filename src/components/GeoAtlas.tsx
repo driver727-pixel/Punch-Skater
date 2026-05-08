@@ -18,7 +18,7 @@ export interface GeoAtlasMarker {
   label: string;
   title?: string;
   active?: boolean;
-  tone?: "available" | "blocked";
+  tone?: "available" | "blocked" | "completed";
   offsetX?: number;
   offsetY?: number;
   onClick?: () => void;
@@ -50,6 +50,8 @@ interface GeoAtlasProps {
   focusDistricts?: WorldLocation[];
   focusCorridors?: RoadCorridor[];
   districtInteractionMode?: "hover" | "press";
+  /** When true, the Australia continental map starts expanded instead of collapsed. Defaults to false. */
+  defaultAustraliaExpanded?: boolean;
 }
 
 const PLAYABLE_DISTRICTS: District[] = [
@@ -238,10 +240,11 @@ export function GeoAtlas({
   focusDistricts = [],
   focusCorridors = [],
   districtInteractionMode = "hover",
+  defaultAustraliaExpanded = false,
 }: GeoAtlasProps) {
   const [hoveredDistrict, setHoveredDistrict] = useState<WorldLocation | null>(null);
   const [inspectedDistrict, setInspectedDistrict] = useState<WorldLocation | null>(null);
-  const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(true);
+  const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(!defaultAustraliaExpanded);
   const [isNeonCollapsed, setIsNeonCollapsed] = useState(false);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const activeInteractionDistrict =

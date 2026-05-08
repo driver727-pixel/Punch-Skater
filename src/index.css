@@ -4694,6 +4694,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   filter: drop-shadow(0 0 10px rgba(255, 68, 102, 0.5));
 }
 
+.geo-atlas__marker--completed .geo-atlas__marker-pin {
+  filter: drop-shadow(0 0 12px rgba(0, 204, 255, 0.5));
+  opacity: 0.72;
+}
+
 .geo-atlas__marker-label {
   padding: 4px 8px;
   border-radius: 999px;
