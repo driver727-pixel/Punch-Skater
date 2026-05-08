@@ -10,7 +10,6 @@ import { getDistrictAccessSummary } from "../lib/districtWeather";
 import { isEnabled } from "../lib/featureFlags";
 import { DISTRICT_LORE } from "../lib/lore";
 import { formatDurationClock, getNextDailyReward, getRemainingDurationMs } from "../lib/dailyRewards";
-import { getMysteryRouteLabel } from "../lib/missionUi";
 import { DistrictBadge } from "./DistrictBadge";
 import {
   HARD_CUTOUT_COUNTER_ID,
@@ -284,6 +283,16 @@ function getEncounterRewardTypeLabel(option: MissionEncounterOption): string {
   return "XP pressure route";
 }
 
+function getEncounterOptionStatusLabel(option: MissionEncounterOption): string {
+  if (!option.available) return "Requirements not met";
+  return option.encounterType === "joust" ? "Ready" : "Available";
+}
+
+function getEncounterOptionMetaText(option: MissionEncounterOption, awaitingChoice: boolean): string {
+  const rewardType = getEncounterRewardTypeLabel(option);
+  return awaitingChoice ? `${rewardType} · ${getEncounterOptionStatusLabel(option)}` : rewardType;
+}
+
 function getMissionOutcomeLabel(
   mission: MissionBoardEntry | null,
   evaluationEligible: boolean | undefined,
@@ -314,6 +323,14 @@ function getMissionThemeStyle(district: District): CSSProperties {
     "--mission-accent-soft": theme.accentSoft,
     "--mission-glow": theme.glow,
   } as CSSProperties;
+}
+
+function getMissionStepClass(active: boolean, complete: boolean): string {
+  return [
+    "mission-step",
+    active ? "mission-step--active" : "",
+    complete ? "mission-step--complete" : "",
+  ].filter(Boolean).join(" ");
 }
 
 function getMissionResultLog(result: MissionRunResponse): string[] {
@@ -659,6 +676,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     selectedEvaluation?.eligible,
     selectedResultRevealed,
   );
+  const isStep1Complete = Boolean(selectedDeck) || selectedResultRevealed || selectedAwaitingChoice;
+  const isStep2Active = Boolean(selectedDeck) && !selectedAwaitingChoice && !selectedResultRevealed;
+  const isStep2Complete = selectedResultRevealed || selectedAwaitingChoice;
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
@@ -901,14 +921,38 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 crewPressure={selectedLocaleLore?.crews.slice(0, 2).join(" · ") ?? selectedMission.district}
               />
 
+              <ol className="mission-steps" aria-label="Mission steps">
+                <li className={getMissionStepClass(!selectedDeck, isStep1Complete)}>
+                  <span className="mission-step__number">1</span>
+                  <span className="mission-step__copy">
+                    <strong>Pick a deck</strong>
+                    <small>{selectedDeck ? selectedDeck.name : "Choose who goes"}</small>
+                  </span>
+                </li>
+                <li className={getMissionStepClass(isStep2Active, isStep2Complete)}>
+                  <span className="mission-step__number">2</span>
+                  <span className="mission-step__copy">
+                    <strong>Launch run</strong>
+                    <small>Start the mission</small>
+                  </span>
+                </li>
+                <li className={getMissionStepClass(selectedAwaitingChoice, selectedResultRevealed)}>
+                  <span className="mission-step__number">3</span>
+                  <span className="mission-step__copy">
+                    <strong>Answer event</strong>
+                    <small>{selectedAwaitingChoice ? "Choose below" : selectedResultRevealed ? "Resolved" : "Reveals after launch"}</small>
+                  </span>
+                </li>
+              </ol>
+
               <div className="mission-flow">
                 <section className="mission-stage mission-panel">
                   <div className="mission-stage__header">
                     <div>
-                      <span className="mission-stage__eyebrow">Deck selection</span>
-                      <h4 className="mission-stage__title">Pick the crew taking the run</h4>
+                      <span className="mission-stage__eyebrow">Step 1</span>
+                      <h4 className="mission-stage__title">Pick a deck</h4>
                       <p className="mission-stage__summary">
-                        Lock in a deck first. Launching now creates a live counter window instead of a hidden pre-run fork.
+                        Choose the cards you want to send. Green means safer; red means risky.
                       </p>
                     </div>
                     <div className="mission-deck-focus">
@@ -944,142 +988,18 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </div>
                 </section>
 
-                {selectedEncounter && (
-                  <section className="mission-stage mission-panel mission-fork">
-                    <div className="mission-stage__header">
-                      <div>
-                        <span className="mission-stage__eyebrow">Live event</span>
-                        <h4 className="mission-stage__title">Counter the district pressure mid-run</h4>
-                        <p className="mission-stage__summary">
-                          Launch first, then answer the interruption with the cards currently in hand. If the hand comes up cold, take the hard cutout and clip the payout.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mission-fork__header">
-                      <span className="mission-fork__badge">{selectedEncounter.badge}</span>
-                      <p className="mission-fork__prompt">
-                        {selectedAwaitingChoice
-                          ? selectedMission.activeRun?.summary ?? selectedEncounter.threat
-                          : selectedEncounter.prompt}
-                      </p>
-                    </div>
-                    {selectedAwaitingChoice && (
-                      <>
-                        <div className="mission-intel-tags">
-                          {selectedActiveCards.map((card) => (
-                            <span key={`${selectedMission.id}-${card.id}`} className="mission-intel-tag">
-                              {card.identity.name}
-                            </span>
-                          ))}
-                          {selectedActiveCards.length === 0 && (
-                            <span className="mission-intel-tag">No active hand revealed</span>
-                          )}
-                        </div>
-                        {(selectedMission.activeRun?.statusEffects?.length ?? 0) > 0 && (
-                          <ul className="mission-intel-list">
-                            {(selectedMission.activeRun?.statusEffects ?? []).map((effect) => (
-                              <li key={`${selectedMission.id}-${effect.id}`}>{formatStatusEffect(effect)}</li>
-                            ))}
-                          </ul>
-                        )}
-                        {selectedJoustOption && availableJoustTactics.length > 0 && (
-                          <div className="mission-joust-picker">
-                            <div>
-                              <span className="mission-stage__eyebrow">Joust tactic</span>
-                              <p className="mission-fork__prompt">
-                                {getCounterOptionRequirementText(selectedJoustOption)}
-                              </p>
-                            </div>
-                            <div className="mission-intel-tags" role="group" aria-label="Joust tactic selection">
-                              {availableJoustTactics.map((tactic) => (
-                                <button
-                                  key={`${selectedMission.id}-joust-${tactic}`}
-                                  type="button"
-                                  className={`mission-intel-tag mission-intel-tag--button${selectedJoustTactic === tactic ? " mission-intel-tag--active" : ""}`}
-                                  onClick={() => setSelectedJoustTactic(tactic)}
-                                  aria-pressed={selectedJoustTactic === tactic}
-                                >
-                                  {formatJoustTacticLabel(tactic)}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    <div className="mission-fork__options">
-                      {selectedEncounter.options.map((option, index) => (
-                        <button
-                          key={`${selectedMission.id}-${option.id}`}
-                          type="button"
-                          className={`mission-fork__option${selectedCounterOption?.id === option.id ? " mission-fork__option--active" : ""}`}
-                          onClick={() => handleResolveEncounter(
-                            option.id,
-                            option.encounterType === "joust" ? selectedJoustTactic : null,
-                          )}
-                          aria-pressed={selectedCounterOption?.id === option.id}
-                          disabled={
-                            selectedAwaitingChoice
-                              ? !option.available
-                                || runningMissionId === selectedMission.id
-                              : true
-                          }
-                        >
-                          <span className="mission-fork__option-label">
-                            {selectedAwaitingChoice ? option.label : getMysteryRouteLabel(index)}
-                          </span>
-                            <span className="mission-fork__option-meta">
-                              {selectedAwaitingChoice
-                                ? `${getEncounterRewardTypeLabel(option)} · ${option.available ? option.encounterType === "joust" ? "Rider ready" : "Active hand can answer" : "Hand comes up short"}`
-                                : "Launch to reveal response window"}
-                            </span>
-                          <span className="mission-fork__option-desc">
-                            {selectedAwaitingChoice
-                              ? option.description
-                              : "The fixer will only show the live answer once the run is already moving."}
-                          </span>
-                          {(selectedAwaitingChoice || selectedResultRevealed) && (
-                            <span className="mission-fork__option-desc">
-                              {getCounterOptionRequirementText(option)}
-                            </span>
-                          )}
-                          {(selectedAwaitingChoice || selectedResultRevealed) && (option.rewardXpDelta || option.rewardOzziesDelta) && (
-                            <span className="mission-fork__option-desc">
-                              {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
-                              {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
-                              {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                      {selectedAwaitingChoice && (
-                        <button
-                          type="button"
-                          className="mission-fork__option"
-                          onClick={() => handleResolveEncounter(HARD_CUTOUT_COUNTER_ID)}
-                          disabled={runningMissionId === selectedMission.id}
-                        >
-                          <span className="mission-fork__option-label">{HARD_CUTOUT_LABEL}</span>
-                          <span className="mission-fork__option-meta">Always available emergency exit</span>
-                          <span className="mission-fork__option-desc">Get the crew home with clipped rewards when the active hand cannot answer the event clean.</span>
-                        </button>
-                      )}
-                    </div>
-                  </section>
-                )}
-
                 <section className="mission-stage mission-panel">
                   <div className="mission-stage__header">
                     <div>
-                      <span className="mission-stage__eyebrow">Launch stage</span>
-                      <h4 className="mission-stage__title">Send the crew and wait for the interruption</h4>
+                      <span className="mission-stage__eyebrow">Step 2</span>
+                      <h4 className="mission-stage__title">Launch the run</h4>
                       <p className="mission-stage__summary">
-                        Launch only checks the baseline contract. The real call happens when the district throws a live event at the crew.
+                        Tap the button when the deck looks right. The next choice appears only after launch.
                       </p>
                     </div>
                     <div className="mission-stage__actions">
                       <button
-                        className="btn-primary"
+                        className="btn-primary mission-launch-button"
                         onClick={handleRunMission}
                         disabled={
                           runningMissionId === selectedMission.id ||
@@ -1100,42 +1020,19 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </div>
 
                   {!selectedResultRevealed && (
-                    <div className="mission-mystery-grid">
-                      <article className="mission-mystery-card mission-mystery-card--jackpot">
-                        <span className="mission-mystery-card__label">{selectedAwaitingChoice ? "Live event" : "Mystery payout"}</span>
-                        <strong className="mission-mystery-card__value">{selectedAwaitingChoice ? LIVE_COUNTER_LABEL : "??? Oz · ??? XP"}</strong>
-                        <p>
-                          {selectedAwaitingChoice
-                            ? selectedMission.activeRun?.summary ?? "The district has interrupted the run and wants an answer now."
-                            : "Clear the route to crack the stash. The encounter choice can spike the payout or force a cutout."}
-                        </p>
-                      </article>
-                      <article className="mission-mystery-card">
-                        <span className="mission-mystery-card__label">{selectedAwaitingChoice ? "Active hand" : "Crew read"}</span>
-                        <strong className="mission-mystery-card__value">
-                          {selectedAwaitingChoice
-                            ? `${selectedActiveCards.length} cards live`
-                            : selectedEvaluation?.eligible ? "Good odds" : "High risk"}
-                        </strong>
-                        <p>
-                          {selectedAwaitingChoice
-                            ? (selectedActiveCards.map((card) => card.identity.name).join(" · ") || "No revealed couriers in hand.")
-                            : selectedEvaluation?.eligible
-                              ? "Your deck has the right shape, but the district still gets one live chance to swing the run."
-                              : "You can still send it. A miss may sideline one card for maintenance."}
-                        </p>
-                      </article>
-                      <article className="mission-mystery-card">
-                        <span className="mission-mystery-card__label">{selectedAwaitingChoice ? "Hardware pressure" : "Route intel"}</span>
-                        <strong className="mission-mystery-card__value">{selectedRouteLabel}</strong>
-                          <p>
-                            {selectedAwaitingChoice
-                              ? (selectedMission.activeRun?.statusEffects?.map((effect) => effect.label).join(" · ")
-                                || "No dynamic status effects are shaping this live window.")
-                              : "Weather pressure, hardware stress, and crew synergy are baked into the run, then revealed in the result screen."}
-                          </p>
-                        </article>
-                    </div>
+                    <article className="mission-next-card">
+                      <span className="mission-next-card__label">Next step</span>
+                      <strong className="mission-next-card__value">
+                        {selectedAwaitingChoice ? "Choose a response below" : "Press Launch Run"}
+                      </strong>
+                      <p>
+                        {selectedAwaitingChoice
+                          ? "The mission paused for a live event. Pick one available response to finish."
+                          : selectedEvaluation?.eligible
+                            ? "This deck is ready. Rewards and the live event reveal after you launch."
+                            : "This deck can launch, but it is risky. Pick a stronger deck if you want safer odds."}
+                      </p>
+                    </article>
                   )}
 
                   {selectedResultRevealed && (
@@ -1245,6 +1142,120 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                     <p className="mission-warning">{selectedMission.lastRunSummary}</p>
                   )}
                 </section>
+
+                {selectedEncounter && (selectedAwaitingChoice || selectedResultRevealed) && (
+                  <section className="mission-stage mission-panel mission-fork">
+                    <div className="mission-stage__header">
+                      <div>
+                        <span className="mission-stage__eyebrow">Step 3</span>
+                        <h4 className="mission-stage__title">Answer the live event</h4>
+                        <p className="mission-stage__summary">
+                          Choose one available response. Disabled choices need cards that are not in the revealed hand.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mission-fork__header">
+                      <span className="mission-fork__badge">{selectedEncounter.badge}</span>
+                      <p className="mission-fork__prompt">
+                        {selectedAwaitingChoice
+                          ? selectedMission.activeRun?.summary ?? selectedEncounter.threat
+                          : selectedEncounter.prompt}
+                      </p>
+                    </div>
+                    {selectedAwaitingChoice && (
+                      <>
+                        <div className="mission-intel-tags">
+                          {selectedActiveCards.map((card) => (
+                            <span key={`${selectedMission.id}-${card.id}`} className="mission-intel-tag">
+                              {card.identity.name}
+                            </span>
+                          ))}
+                          {selectedActiveCards.length === 0 && (
+                            <span className="mission-intel-tag">No active hand revealed</span>
+                          )}
+                        </div>
+                        {(selectedMission.activeRun?.statusEffects?.length ?? 0) > 0 && (
+                          <ul className="mission-intel-list">
+                            {(selectedMission.activeRun?.statusEffects ?? []).map((effect) => (
+                              <li key={`${selectedMission.id}-${effect.id}`}>{formatStatusEffect(effect)}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {selectedJoustOption && availableJoustTactics.length > 0 && (
+                          <div className="mission-joust-picker">
+                            <div>
+                              <span className="mission-stage__eyebrow">Pick joust tactic</span>
+                              <p className="mission-fork__prompt">
+                                {getCounterOptionRequirementText(selectedJoustOption)}
+                              </p>
+                            </div>
+                            <div className="mission-intel-tags" role="group" aria-label="Joust tactic selection">
+                              {availableJoustTactics.map((tactic) => (
+                                <button
+                                  key={`${selectedMission.id}-joust-${tactic}`}
+                                  type="button"
+                                  className={`mission-intel-tag mission-intel-tag--button${selectedJoustTactic === tactic ? " mission-intel-tag--active" : ""}`}
+                                  onClick={() => setSelectedJoustTactic(tactic)}
+                                  aria-pressed={selectedJoustTactic === tactic}
+                                >
+                                  {formatJoustTacticLabel(tactic)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className="mission-fork__options">
+                      {selectedEncounter.options.map((option) => (
+                        <button
+                          key={`${selectedMission.id}-${option.id}`}
+                          type="button"
+                          className={`mission-fork__option${selectedCounterOption?.id === option.id ? " mission-fork__option--active" : ""}`}
+                          onClick={() => handleResolveEncounter(
+                            option.id,
+                            option.encounterType === "joust" ? selectedJoustTactic : null,
+                          )}
+                          aria-pressed={selectedCounterOption?.id === option.id}
+                          disabled={
+                            selectedAwaitingChoice
+                              ? !option.available
+                                || runningMissionId === selectedMission.id
+                              : true
+                          }
+                        >
+                          <span className="mission-fork__option-label">{option.label}</span>
+                          <span className="mission-fork__option-meta">{getEncounterOptionMetaText(option, selectedAwaitingChoice)}</span>
+                          <span className="mission-fork__option-desc">{option.description}</span>
+                          {(selectedAwaitingChoice || selectedResultRevealed) && (
+                            <span className="mission-fork__option-desc">
+                              {getCounterOptionRequirementText(option)}
+                            </span>
+                          )}
+                          {(selectedAwaitingChoice || selectedResultRevealed) && (option.rewardXpDelta || option.rewardOzziesDelta) && (
+                            <span className="mission-fork__option-desc">
+                              {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
+                              {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
+                              {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                      {selectedAwaitingChoice && (
+                        <button
+                          type="button"
+                          className="mission-fork__option"
+                          onClick={() => handleResolveEncounter(HARD_CUTOUT_COUNTER_ID)}
+                          disabled={runningMissionId === selectedMission.id}
+                        >
+                          <span className="mission-fork__option-label">Emergency exit</span>
+                          <span className="mission-fork__option-meta">Always available</span>
+                          <span className="mission-fork__option-desc">Finish safely with smaller rewards.</span>
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                )}
 
               </div>
 
