@@ -220,13 +220,27 @@ export function registerMissionRoutes(app, {
     }
 
     try {
-      const missionSnap = await adminDb.collection(COLLECTION).where('uid', '==', caller.uid).get();
+      let weatherPayload = null;
+      try {
+        weatherPayload = districtWeatherService
+          ? await districtWeatherService.getDistrictWeatherPayload()
+          : null;
+      } catch (error) {
+        console.warn('Mission board using stale/no weather payload:', error);
+      }
+
+      const [missionSnap, deckSnap, profileSnap] = await Promise.all([
+        adminDb.collection(COLLECTION).where('uid', '==', caller.uid).get(),
+        adminDb.collection('users').doc(caller.uid).collection('decks').get(),
+        adminDb.collection(PROFILE_COLLECTION).doc(caller.uid).get(),
+      ]);
       const existingBoardEntries = missionSnap.docs
         .map((doc) => doc.data())
         .filter((entry) => entry?.system === SYSTEM && entry?.schemaVersion === SCHEMA_VERSION);
+      const decks = deckSnap.docs.map((doc) => doc.data()).filter(Boolean);
 
       const now = new Date().toISOString();
-      const dailyBoard = createDailyMissionBoardPayload(caller.uid, now);
+      const dailyBoard = createDailyMissionBoardPayload(caller.uid, now, { decks, weatherPayload });
       const desiredEntries = dailyBoard.missions;
       const existingById = new Map(existingBoardEntries.map((entry) => [entry.id, entry]));
       const missingEntries = desiredEntries.filter((entry) => !existingById.has(entry.id));
@@ -249,7 +263,6 @@ export function registerMissionRoutes(app, {
         await batch.commit();
       }
 
-      const profileSnap = await adminDb.collection(PROFILE_COLLECTION).doc(caller.uid).get();
       res.json({
         missions: sortMissionBoardEntries(desiredEntries.map((entry) => {
           const existing = existingById.get(entry.id);
