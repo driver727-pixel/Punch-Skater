@@ -25,7 +25,7 @@ export { BOARD_IMAGE_REQUIRED_URL_COUNT };
 
 export const BOARD_IMAGE_CACHE_VERSION = boardImageVersionJson.BOARD_IMAGE_CACHE_VERSION;
 
-const LEGACY_FOUR_WHEEL_DRIVE = 'A' + 'WD';
+const LEGACY_FOUR_WHEEL_DRIVE = 'AWD';
 
 function normalizeDrivetrain(drivetrain) {
   return drivetrain === LEGACY_FOUR_WHEEL_DRIVE ? '4WD' : drivetrain;

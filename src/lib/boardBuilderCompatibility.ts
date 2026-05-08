@@ -6,7 +6,7 @@ import type {
   CompatibilityError,
 } from "./boardBuilderTypes";
 
-const LEGACY_FOUR_WHEEL_DRIVE = "A" + "WD";
+const LEGACY_FOUR_WHEEL_DRIVE = "AWD";
 
 function normalizeDrivetrain(drivetrain: string) {
   return drivetrain === LEGACY_FOUR_WHEEL_DRIVE ? "4WD" : drivetrain;
