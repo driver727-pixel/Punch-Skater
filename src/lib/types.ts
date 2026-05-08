@@ -262,6 +262,16 @@ export interface CardPayload {
   ozzies?: number;
 }
 
+export interface WorkshopBoardPayload {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  label: string;
+  config: import("./boardBuilder").BoardConfig;
+  loadout: import("./boardBuilder").BoardLoadout;
+  sourceCardId?: string;
+}
+
 // ── Deck payload ──────────────────────────────────────────────────────────────
 
 export interface DeckPayload {

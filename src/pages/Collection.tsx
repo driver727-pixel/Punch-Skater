@@ -749,15 +749,21 @@ export function Collection() {
                 >
                   {downloading ? "⏳ Downloading…" : "⬇ Download"}
                 </button>
-                <button
-                  className="btn-outline btn-sm"
-                  onClick={() => setTradeTarget(selected)}
-                >
-                  🤝 Send Offer
-                </button>
-                {tierData.canEditDecks ? (
-                  <button
-                    className="btn-danger btn-sm"
+                 <button
+                   className="btn-outline btn-sm"
+                   onClick={() => setTradeTarget(selected)}
+                 >
+                   🤝 Send Offer
+                 </button>
+                 <button
+                   className="btn-outline btn-sm"
+                   onClick={() => navigate(`/workshop?card=${selected.id}`)}
+                 >
+                   🛹 Workshop
+                 </button>
+                 {tierData.canEditDecks ? (
+                   <button
+                     className="btn-danger btn-sm"
                     onClick={() => {
                       sfxRemove();
                       removeCardFromAllDecks(selected.id);

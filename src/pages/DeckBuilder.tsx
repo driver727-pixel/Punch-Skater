@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { CSSProperties, DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import type { DeckPayload, CardPayload } from "../lib/types";
 import { useDecks, DECK_CARD_LIMIT } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
+import { useWorkshopBoards } from "../hooks/useWorkshopBoards";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { DeckStatsPanel } from "../components/DeckStatsPanel";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
@@ -41,8 +43,10 @@ function exceedsMovementThreshold(startX: number, startY: number, currentX: numb
 }
 
 export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
+  const navigate = useNavigate();
   const { decks, createDeck, deleteDeck, addCardToDeck, removeCardFromDeck, renameDeck, moveCardInDeck, moveDeck, setPrimaryDeck, setChallengerCard } = useDecks();
   const { cards } = useCollection();
+  const { boards: workshopBoards } = useWorkshopBoards();
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
 
@@ -56,6 +60,7 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
   const [deckDragOver, setDeckDragOver] = useState<number | null>(null);
   const [touchDraggingDeckId, setTouchDraggingDeckId] = useState<string | null>(null);
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
+  const [selectedWorkshopBoardId, setSelectedWorkshopBoardId] = useState("");
   const deckLongPressTimerRef = useRef<number | null>(null);
   const deckTouchStateRef = useRef<DeckTouchState | null>(null);
   const ignoreDeckClickRef = useRef(false);
@@ -72,6 +77,13 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
       setActiveDeck(decks[0]);
     }
   }, [decks, activeDeck]);
+
+  useEffect(() => {
+    if (selectedWorkshopBoardId && workshopBoards.some((board) => board.id === selectedWorkshopBoardId)) {
+      return;
+    }
+    setSelectedWorkshopBoardId(workshopBoards[0]?.id ?? "");
+  }, [selectedWorkshopBoardId, workshopBoards]);
 
   // Keep activeDeck in sync with Firestore updates
   useEffect(() => {
@@ -298,6 +310,40 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
   return (
     <div className={embedded ? undefined : "page"}>
       {!embedded && <h1 className="page-title">My Decks</h1>}
+
+      <section className="garage-workshop-panel">
+        <div>
+          <p className="eyebrow">Garage Workshop</p>
+          <h2>Saved skateboard stash</h2>
+          <p>
+            {workshopBoards.length > 0
+              ? `${workshopBoards.length} paper-doll board${workshopBoards.length === 1 ? "" : "s"} ready for the workshop floor.`
+              : "No spare boards saved yet — open the Workshop to build and stash one."}
+          </p>
+        </div>
+        <div className="garage-workshop-panel__actions">
+          <select
+            className="input garage-workshop-panel__select"
+            value={selectedWorkshopBoardId}
+            onChange={(event) => setSelectedWorkshopBoardId(event.target.value)}
+            disabled={workshopBoards.length === 0}
+          >
+            {workshopBoards.length === 0 && <option value="">No saved boards</option>}
+            {workshopBoards.map((board) => (
+              <option key={board.id} value={board.id}>
+                {board.label}
+              </option>
+            ))}
+          </select>
+          <button
+            className="btn-outline btn-sm"
+            type="button"
+            onClick={() => navigate(selectedWorkshopBoardId ? `/workshop?board=${selectedWorkshopBoardId}` : "/workshop")}
+          >
+            Open Workshop
+          </button>
+        </div>
+      </section>
 
       <div className={tierData.canEditDecks ? "deck-layout" : ""}>
         {/* Sidebar: deck list — only shown for Deck Master (tier3) */}
