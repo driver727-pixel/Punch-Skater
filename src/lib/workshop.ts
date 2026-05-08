@@ -11,7 +11,7 @@ export function createWorkshopBoard(config: BoardConfig, sourceCardId?: string):
   const normalizedConfig = normalizeBoardConfig(config);
   const now = new Date().toISOString();
   return {
-    id: `workshop-${crypto.randomUUID()}`,
+    id: `workshop-board-${crypto.randomUUID()}`,
     createdAt: now,
     updatedAt: now,
     label: getBoardSummary(normalizedConfig),

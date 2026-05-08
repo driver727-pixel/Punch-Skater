@@ -140,7 +140,6 @@ export function Workshop() {
 
       const boardImageUrl = await generateGouacheBoard(selectedBoard.config);
       const artPatchedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
-        feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
         boardImageUrl,
       });
       updateCard(artPatchedCard);
