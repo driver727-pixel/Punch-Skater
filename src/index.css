@@ -4394,11 +4394,28 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .workshop-floor {
   border: 1px solid rgba(0, 255, 136, 0.18);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(8, 8, 24, 0.92), rgba(10, 14, 33, 0.96));
+  background: linear-gradient(180deg, rgba(8, 8, 24, 0.78), rgba(10, 14, 33, 0.82));
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   padding: 18px;
   position: relative;
   overflow: hidden;
+}
+
+/* Full-viewport workshop background video – fixed so it fills the whole screen frame */
+.workshop-page-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.28;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Ensure the workshop page is a positioned ancestor for any relative children */
+.page--workshop {
+  position: relative;
 }
 
 .workshop-floor__bg-video {
@@ -4412,11 +4429,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 0;
 }
 
-.workshop-floor .workshop-panel-heading,
-.workshop-floor .workshop-floor__grid {
-  position: relative;
-  z-index: 1;
-}
+/* The workshop-floor now shows the full-page video through it, so its children
+   no longer need relative z-index lifting (removed legacy z-index stacking). */
 
 .garage-workshop-panel {
   margin-bottom: 18px;
@@ -4550,15 +4564,28 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 16px;
 }
 
+.workshop-floor__drag-hint {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  align-self: center;
+}
+
 .workshop-board-card {
   border: 1px solid rgba(204, 68, 255, 0.22);
-  background: rgba(20, 12, 36, 0.75);
+  background: rgba(10, 6, 22, 0.28);
   border-radius: 18px;
   padding: 12px;
   text-align: left;
   display: grid;
   gap: 10px;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+  cursor: grab;
+}
+
+.workshop-board-card:active {
+  cursor: grabbing;
 }
 
 .workshop-board-card--active {
@@ -4566,8 +4593,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 0 0 0 1px rgba(0, 255, 136, 0.22), 0 16px 34px rgba(0, 0, 0, 0.32);
 }
 
+.workshop-board-card--dragging {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.workshop-board-card--drop-target {
+  border-color: rgba(0, 204, 255, 0.7);
+  box-shadow: 0 0 0 2px rgba(0, 204, 255, 0.35), 0 16px 34px rgba(0, 0, 0, 0.32);
+}
+
 .workshop-board-card__title {
   font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 @media (max-width: 900px) {
@@ -8535,6 +8573,27 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .board-preview-grid--surge {
   animation: board-surge 0.55s ease-out;
+}
+
+/* Paper-doll mode: board component images float freely over the background with no opaque canvas */
+.board-preview-grid--paper-doll {
+  gap: 8px;
+  padding: 8px;
+}
+
+.board-preview-grid--paper-doll .board-preview-grid__canvas {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.board-preview-grid--paper-doll .board-preview-grid__canvas::before,
+.board-preview-grid--paper-doll .board-preview-grid__canvas::after {
+  display: none;
+}
+
+.board-preview-grid--paper-doll .board-preview-grid__legend {
+  display: none;
 }
 
 @keyframes board-surge {

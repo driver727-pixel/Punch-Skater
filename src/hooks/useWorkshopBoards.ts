@@ -6,9 +6,12 @@ import { loadWorkshopBoards, saveWorkshopBoards } from "../lib/storage";
 import type { WorkshopBoardPayload } from "../lib/types";
 
 function sortBoards(boards: WorkshopBoardPayload[]): WorkshopBoardPayload[] {
-  return [...boards].sort((a, b) => (
-    b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)
-  ));
+  return [...boards].sort((a, b) => {
+    const aOrder = a.sortOrder ?? Infinity;
+    const bOrder = b.sortOrder ?? Infinity;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
+  });
 }
 
 function shallowEqualBoardArrays(previous: WorkshopBoardPayload[], next: WorkshopBoardPayload[]): boolean {
@@ -82,10 +85,32 @@ export function useWorkshopBoards() {
     setBoards((prev) => prev.filter((board) => board.id !== boardId));
   }, [uid]);
 
+  const reorderBoards = useCallback(async (orderedIds: string[]) => {
+    setBoards((prev) => {
+      const byId = new Map(prev.map((b) => [b.id, b]));
+      const reordered = orderedIds
+        .map((id, index) => {
+          const board = byId.get(id);
+          return board ? { ...board, sortOrder: index } : null;
+        })
+        .filter((b): b is WorkshopBoardPayload => b !== null);
+      return reordered;
+    });
+    if (uid) {
+      await Promise.all(
+        orderedIds.map((id, index) => {
+          const ref = doc(db, "users", uid, "workshopBoards", id);
+          return setDoc(ref, { sortOrder: index }, { merge: true });
+        }),
+      );
+    }
+  }, [uid]);
+
   return {
     boards,
     addBoard,
     saveBoard,
     removeBoard,
+    reorderBoards,
   };
 }

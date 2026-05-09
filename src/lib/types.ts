@@ -270,6 +270,8 @@ export interface WorkshopBoardPayload {
   config: import("./boardBuilder").BoardConfig;
   loadout: import("./boardBuilder").BoardLoadout;
   sourceCardId?: string;
+  /** Explicit display order on the workshop floor; lower values appear first. */
+  sortOrder?: number;
 }
 
 // ── Deck payload ──────────────────────────────────────────────────────────────

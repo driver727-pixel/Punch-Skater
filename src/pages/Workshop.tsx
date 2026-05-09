@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
 import { BoardPreviewGrid } from "../components/BoardPreviewGrid";
@@ -16,7 +16,7 @@ export function Workshop() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { cards, updateCard } = useCollection();
   const { updateCardInDecks } = useDecks();
-  const { boards, addBoard, removeBoard } = useWorkshopBoards();
+  const { boards, addBoard, removeBoard, reorderBoards } = useWorkshopBoards();
   const [boardConfig, setBoardConfig] = useState(DEFAULT_BOARD_CONFIG);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(searchParams.get("board"));
   const [selectedCardId, setSelectedCardId] = useState(searchParams.get("card") ?? "");
@@ -24,6 +24,8 @@ export function Workshop() {
   const [error, setError] = useState("");
   const [savingBoard, setSavingBoard] = useState(false);
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
+  const [dragBoardId, setDragBoardId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
@@ -154,8 +156,54 @@ export function Workshop() {
     }
   };
 
+  const handleDragStart = (boardId: string) => {
+    setDragBoardId(boardId);
+  };
+
+  const handleDragOver = (event: React.DragEvent, boardId: string) => {
+    event.preventDefault();
+    if (boardId !== dragBoardId) setDropTargetId(boardId);
+  };
+
+  const handleDrop = (event: React.DragEvent, targetBoardId: string) => {
+    event.preventDefault();
+    if (!dragBoardId || dragBoardId === targetBoardId) {
+      setDragBoardId(null);
+      setDropTargetId(null);
+      return;
+    }
+    const currentIds = boards.map((b) => b.id);
+    const fromIndex = currentIds.indexOf(dragBoardId);
+    const toIndex = currentIds.indexOf(targetBoardId);
+    if (fromIndex === -1 || toIndex === -1) {
+      setDragBoardId(null);
+      setDropTargetId(null);
+      return;
+    }
+    const reordered = [...currentIds];
+    reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, dragBoardId);
+    reorderBoards(reordered).catch(() => {});
+    setDragBoardId(null);
+    setDropTargetId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragBoardId(null);
+    setDropTargetId(null);
+  };
+
   return (
-    <div className="page">
+    <div className="page page--workshop">
+      <video
+        className="workshop-page-bg"
+        src="/assets/backgrounds/workshop-bg.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      />
       <div className="page-header">
         <div>
           <h1 className="page-title">Workshop</h1>
@@ -277,34 +325,44 @@ export function Workshop() {
       </div>
 
       <section className="workshop-floor">
-        <video
-          className="workshop-floor__bg-video"
-          src="/assets/backgrounds/workshop-bg.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden="true"
-        />
         <div className="workshop-panel-heading">
           <div>
             <p className="eyebrow">Workshop Floor</p>
             <h2>Paper-doll stash</h2>
           </div>
+          {boards.length > 1 && (
+            <p className="workshop-floor__drag-hint">Drag boards to rearrange</p>
+          )}
         </div>
         <div className="workshop-floor__grid">
           {boards.map((board, index) => {
             const tilt = ((index % 5) - 2) * 3;
             const lift = (index % 3) * 10;
+            const isDragging = dragBoardId === board.id;
+            const isDropTarget = dropTargetId === board.id;
             return (
               <button
                 key={board.id}
                 type="button"
-                className={`workshop-board-card${selectedBoardId === board.id ? " workshop-board-card--active" : ""}`}
+                draggable
+                className={[
+                  "workshop-board-card",
+                  selectedBoardId === board.id ? "workshop-board-card--active" : "",
+                  isDragging ? "workshop-board-card--dragging" : "",
+                  isDropTarget ? "workshop-board-card--drop-target" : "",
+                ].filter(Boolean).join(" ")}
                 style={{ transform: `rotate(${tilt}deg) translateY(${lift}px)` }}
                 onClick={() => handleSelectBoard(board.id)}
+                onDragStart={() => handleDragStart(board.id)}
+                onDragOver={(e) => handleDragOver(e, board.id)}
+                onDrop={(e) => handleDrop(e, board.id)}
+                onDragEnd={handleDragEnd}
               >
-                <BoardPreviewGrid urls={getBoardComponentImageUrls(board.config)} accentColor={selectedBoardId === board.id ? "#9effd4" : "#7e67ff"} />
+                <BoardPreviewGrid
+                  urls={getBoardComponentImageUrls(board.config)}
+                  className="board-preview-grid--paper-doll"
+                  accentColor={selectedBoardId === board.id ? "#9effd4" : "#7e67ff"}
+                />
                 <span className="workshop-board-card__title">{board.label}</span>
                 <span className="workshop-board-card__meta">{board.loadout.accessProfile}</span>
               </button>
