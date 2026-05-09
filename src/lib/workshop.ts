@@ -28,6 +28,7 @@ export function createWorkshopBoard(config: BoardConfig, sourceCardId?: string):
 interface ReforgeCardBoardOptions {
   feeOzzies?: number;
   boardImageUrl?: string;
+  clearBoardImage?: boolean;
 }
 
 export function reforgeCardBoard(
@@ -49,7 +50,7 @@ export function reforgeCardBoard(
     board: {
       ...card.board,
       ...forged.board,
-      imageUrl: options.boardImageUrl ?? card.board.imageUrl,
+      imageUrl: options.boardImageUrl ?? (options.clearBoardImage ? undefined : card.board.imageUrl),
       placement: card.board.placement,
       layerOrder: card.board.layerOrder,
     },

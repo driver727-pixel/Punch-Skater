@@ -11,6 +11,12 @@ import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
 import type { WorkshopBoardPayload } from "../lib/types";
 import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
 import { generateGouacheBoard } from "../services/boardImageGen";
+import { removeBackground } from "../services/imageGen";
+
+async function generateTransparentBoardArt(config: WorkshopBoardPayload["config"]): Promise<string> {
+  const boardImageUrl = await generateGouacheBoard(config);
+  return (await removeBackground(boardImageUrl)).imageUrl;
+}
 
 export function Workshop() {
   const navigate = useNavigate();
@@ -31,9 +37,9 @@ export function Workshop() {
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
     const queryCardId = searchParams.get("card");
-    if (queryBoardId !== selectedBoardId) setSelectedBoardId(queryBoardId);
-    if (queryCardId !== selectedCardId) setSelectedCardId(queryCardId ?? "");
-  }, [searchParams, selectedBoardId, selectedCardId]);
+    setSelectedBoardId(queryBoardId);
+    if (queryCardId !== null) setSelectedCardId(queryCardId);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedCardId && cards[0]) {
@@ -97,7 +103,7 @@ export function Workshop() {
 
     if (savedBoard) {
       const boardToUpdate = savedBoard;
-      generateGouacheBoard(boardToUpdate.config)
+      generateTransparentBoardArt(boardToUpdate.config)
         .then(async (boardImageUrl) => {
           await saveBoard({ ...boardToUpdate, boardImageUrl });
         })
@@ -149,6 +155,7 @@ export function Workshop() {
 
     const reforgedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
       feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
+      clearBoardImage: true,
     });
     try {
       updateCard(reforgedCard);
@@ -157,7 +164,7 @@ export function Workshop() {
       sfxSuccess();
       setMessage(`${selectedCard.identity.name} took the new board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`);
 
-      const boardImageUrl = await generateGouacheBoard(selectedBoard.config);
+      const boardImageUrl = await generateTransparentBoardArt(selectedBoard.config);
       const artPatchedCard = reforgeCardBoard(reforgedCard, selectedBoard.config, {
         boardImageUrl,
       });
@@ -228,8 +235,8 @@ export function Workshop() {
           <h1 className="page-title">Workshop</h1>
           <p className="page-sub">Save bench builds, inspect paper-doll boards, and marry a new skateboard to a forged card.</p>
         </div>
-        <button className="btn-outline" type="button" onClick={() => navigate("/collection?tab=decks")}>
-          ← Back to Garage
+        <button className="btn-outline" type="button" onClick={() => navigate("/")}>
+          ← Back to Card Forge
         </button>
       </div>
 
@@ -308,7 +315,13 @@ export function Workshop() {
             </div>
           )}
 
-          {selectedBoard ? (
+          {boardsLoading ? (
+            <div className="empty-state workshop-empty">
+              <span className="empty-icon">🛹</span>
+              <p>Loading saved boards…</p>
+              <p className="page-sub">The marriage bay is syncing your workshop floor.</p>
+            </div>
+          ) : selectedBoard ? (
             <>
               {selectedBoard.boardImageUrl ? (
                 <div className="workshop-board-art">

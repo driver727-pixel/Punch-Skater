@@ -4607,8 +4607,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: relative;
   width: 100%;
   border-radius: 12px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.5);
+  overflow: visible;
+  background: transparent;
   aspect-ratio: 4 / 3;
 }
 
@@ -4623,8 +4623,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: relative;
   width: 100%;
   border-radius: 10px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.45);
+  overflow: visible;
+  background: transparent;
   aspect-ratio: 4 / 3;
 }
 
