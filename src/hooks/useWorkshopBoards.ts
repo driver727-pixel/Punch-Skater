@@ -76,7 +76,8 @@ export function useWorkshopBoards() {
     }
     setBoards((prev) => {
       const existing = prev.find((entry) => entry.id === board.id);
-      return sortBoards([...prev.filter((entry) => entry.id !== board.id), { ...existing, ...board }]);
+      const nextBoard = existing ? { ...existing, ...board } : board;
+      return sortBoards([...prev.filter((entry) => entry.id !== board.id), nextBoard]);
     });
   }, [uid]);
 
