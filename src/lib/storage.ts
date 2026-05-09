@@ -1,10 +1,12 @@
-import type { CardPayload, DeckPayload } from "./types";
+import type { CardPayload, DeckPayload, WorkshopBoardPayload } from "./types";
 import { normalizeCardPayload } from "./styles";
+import { calculateBoardStats, normalizeBoardConfig } from "./boardBuilder";
 
 const COLLECTION_KEY = "skpd_collection";
 const DECKS_KEY = "skpd_decks";
 const FACTION_DISCOVERIES_KEY = "skpd_faction_discoveries";
 const COMPLETED_MISSIONS_KEY = "skpd_completed_missions";
+const WORKSHOP_BOARDS_KEY = "skpd_workshop_boards";
 
 export function loadCollection(): CardPayload[] {
   try {
@@ -56,6 +58,37 @@ export function loadCompletedMissions(): string[] {
 
 export function saveCompletedMissions(missionIds: string[]): void {
   localStorage.setItem(COMPLETED_MISSIONS_KEY, JSON.stringify(Array.from(new Set(missionIds)).sort()));
+}
+
+function normalizeWorkshopBoard(board: WorkshopBoardPayload): WorkshopBoardPayload {
+  const config = normalizeBoardConfig(board.config);
+  return {
+    ...board,
+    label: typeof board.label === "string" && board.label.trim() ? board.label : "Workshop build",
+    config,
+    loadout: calculateBoardStats(config),
+  };
+}
+
+function compareWorkshopBoards(a: WorkshopBoardPayload, b: WorkshopBoardPayload): number {
+  return b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
+}
+
+export function loadWorkshopBoards(): WorkshopBoardPayload[] {
+  try {
+    const raw = localStorage.getItem(WORKSHOP_BOARDS_KEY);
+    if (!raw) return [];
+    return (JSON.parse(raw) as WorkshopBoardPayload[]).map(normalizeWorkshopBoard).sort(compareWorkshopBoards);
+  } catch {
+    return [];
+  }
+}
+
+export function saveWorkshopBoards(boards: WorkshopBoardPayload[]): void {
+  localStorage.setItem(
+    WORKSHOP_BOARDS_KEY,
+    JSON.stringify(boards.map(normalizeWorkshopBoard).sort(compareWorkshopBoards)),
+  );
 }
 
 export function exportJson(data: unknown, filename: string): void {

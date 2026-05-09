@@ -624,6 +624,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     0 0 24px rgba(0,255,136,0.06);
 }
 
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent2);
+}
+
 /* ===== Pills ===== */
 .form-group { margin-bottom: 12px; }
 .form-group label {
@@ -4377,6 +4385,188 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   stroke-width: 0.45;
   stroke-dasharray: 1.4 1.2;
   stroke-linecap: round;
+}
+
+.garage-workshop-panel,
+.workshop-hero,
+.workshop-bench,
+.workshop-detail,
+.workshop-floor {
+  border: 1px solid rgba(0, 255, 136, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(8, 8, 24, 0.92), rgba(10, 14, 33, 0.96));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 18px;
+}
+
+.garage-workshop-panel {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.garage-workshop-panel h2,
+.workshop-hero h2,
+.workshop-panel-heading h2 {
+  font-size: 22px;
+  margin-top: 4px;
+}
+
+.garage-workshop-panel p,
+.workshop-hero p,
+.workshop-panel-heading p,
+.workshop-detail__meta span,
+.workshop-card-meta span,
+.workshop-board-card__meta {
+  color: #cbd5ff;
+}
+
+.garage-workshop-panel__actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.garage-workshop-panel__select {
+  min-width: min(340px, 70vw);
+}
+
+.workshop-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.workshop-hero__copy {
+  max-width: 720px;
+  display: grid;
+  gap: 8px;
+}
+
+.workshop-hero__meta {
+  display: grid;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.workshop-hero__meta span,
+.workshop-card-meta span {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 204, 255, 0.18);
+  background: rgba(0, 10, 24, 0.5);
+}
+
+.workshop-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.workshop-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.workshop-bench__preview {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 16px;
+  align-items: start;
+}
+
+.workshop-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.workshop-field span {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent2);
+}
+
+.workshop-card-meta,
+.workshop-detail__actions,
+.workshop-detail__meta {
+  display: grid;
+  gap: 10px;
+}
+
+.workshop-card-meta {
+  margin-bottom: 16px;
+}
+
+.workshop-detail__meta {
+  margin: 14px 0;
+}
+
+.workshop-detail__actions {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin-top: 14px;
+}
+
+.workshop-empty {
+  min-height: 320px;
+}
+
+.workshop-floor__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.workshop-board-card {
+  border: 1px solid rgba(204, 68, 255, 0.22);
+  background: rgba(20, 12, 36, 0.75);
+  border-radius: 18px;
+  padding: 12px;
+  text-align: left;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+}
+
+.workshop-board-card--active {
+  border-color: rgba(0, 255, 136, 0.5);
+  box-shadow: 0 0 0 1px rgba(0, 255, 136, 0.22), 0 16px 34px rgba(0, 0, 0, 0.32);
+}
+
+.workshop-board-card__title {
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .garage-workshop-panel,
+  .workshop-hero,
+  .workshop-panel-heading {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .workshop-layout,
+  .workshop-bench__preview {
+    grid-template-columns: 1fr;
+  }
+
+  .garage-workshop-panel__select {
+    min-width: 0;
+  }
 }
 
 .geo-atlas__route-casing {

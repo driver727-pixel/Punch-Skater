@@ -83,6 +83,7 @@ const BattleArena     = lazy(() => import("./pages/BattleArena").then(m => ({ de
 const RaceTrack       = lazy(() => import("./pages/RaceTrack").then(m => ({ default: m.RaceTrack })));
 const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ default: m.FramePreview })));
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
+const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ default: m.Workshop })));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -155,6 +156,9 @@ function App() {
                       } />
                       <Route path="/missions" element={
                         <ProtectedRoute><Missions /></ProtectedRoute>
+                      } />
+                      <Route path="/workshop" element={
+                        <ProtectedRoute><Workshop /></ProtectedRoute>
                       } />
                       <Route path="/admin" element={
                         <AdminRoute><Admin /></AdminRoute>

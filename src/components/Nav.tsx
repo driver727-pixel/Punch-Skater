@@ -102,6 +102,11 @@ export function Nav() {
           Missions
         </NavLink>
       )}
+      {user && (
+        <NavLink to="/workshop" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+          Workshop
+        </NavLink>
+      )}
       <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Codex
       </NavLink>
