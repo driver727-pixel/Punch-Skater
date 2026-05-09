@@ -88,13 +88,16 @@ export function useWorkshopBoards() {
   const reorderBoards = useCallback(async (orderedIds: string[]) => {
     setBoards((prev) => {
       const byId = new Map(prev.map((b) => [b.id, b]));
+      const orderedSet = new Set(orderedIds);
       const reordered = orderedIds
         .map((id, index) => {
           const board = byId.get(id);
           return board ? { ...board, sortOrder: index } : null;
         })
         .filter((b): b is WorkshopBoardPayload => b !== null);
-      return reordered;
+      // Preserve any boards whose IDs were not in orderedIds (append after reordered ones)
+      const trailing = prev.filter((b) => !orderedSet.has(b.id));
+      return [...reordered, ...trailing];
     });
     if (uid) {
       await Promise.all(

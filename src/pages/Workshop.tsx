@@ -183,7 +183,9 @@ export function Workshop() {
     const reordered = [...currentIds];
     reordered.splice(fromIndex, 1);
     reordered.splice(toIndex, 0, dragBoardId);
-    reorderBoards(reordered).catch(() => {});
+    reorderBoards(reordered).catch((reorderError) => {
+      setError(reorderError instanceof Error ? reorderError.message : "Could not save board order.");
+    });
     setDragBoardId(null);
     setDropTargetId(null);
   };
