@@ -8,6 +8,7 @@ import { useDecks } from "../hooks/useDecks";
 import { useWorkshopBoards } from "../hooks/useWorkshopBoards";
 import { calculateBoardStats, getBoardComponentImageUrls, getBoardSummary, normalizeBoardConfig } from "../lib/boardBuilder";
 import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
+import type { WorkshopBoardPayload } from "../lib/types";
 import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
 import { generateGouacheBoard } from "../services/boardImageGen";
 
@@ -16,7 +17,7 @@ export function Workshop() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { cards, updateCard } = useCollection();
   const { updateCardInDecks } = useDecks();
-  const { boards, addBoard, removeBoard, reorderBoards } = useWorkshopBoards();
+  const { boards, isLoading: boardsLoading, addBoard, saveBoard, removeBoard, reorderBoards } = useWorkshopBoards();
   const [boardConfig, setBoardConfig] = useState(DEFAULT_BOARD_CONFIG);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(searchParams.get("board"));
   const [selectedCardId, setSelectedCardId] = useState(searchParams.get("card") ?? "");
@@ -41,6 +42,7 @@ export function Workshop() {
   }, [cards, selectedCardId]);
 
   useEffect(() => {
+    if (boardsLoading) return;
     if (selectedBoardId && boards.some((board) => board.id === selectedBoardId)) {
       return;
     }
@@ -52,7 +54,7 @@ export function Workshop() {
       else next.delete("board");
       return next;
     }, { replace: true });
-  }, [boards, selectedBoardId, setSearchParams]);
+  }, [boards, boardsLoading, selectedBoardId, setSearchParams]);
 
   const selectedBoard = useMemo(
     () => boards.find((board) => board.id === selectedBoardId) ?? null,
@@ -78,9 +80,11 @@ export function Workshop() {
     setSavingBoard(true);
     setError("");
     setMessage("");
+    let savedBoard: WorkshopBoardPayload | null = null;
     try {
       const board = createWorkshopBoard(boardConfig, selectedCard?.id);
       await addBoard(board);
+      savedBoard = board;
       setSelectedBoardId(board.id);
       updateSearchSelection(board.id);
       sfxSuccess();
@@ -89,6 +93,17 @@ export function Workshop() {
       setError(saveError instanceof Error ? saveError.message : "Failed to save the board to the workshop.");
     } finally {
       setSavingBoard(false);
+    }
+
+    if (savedBoard) {
+      const boardToUpdate = savedBoard;
+      generateGouacheBoard(boardToUpdate.config)
+        .then(async (boardImageUrl) => {
+          await saveBoard({ ...boardToUpdate, boardImageUrl });
+        })
+        .catch((artError) => {
+          console.warn("[Workshop] Board art generation failed:", artError instanceof Error ? artError.message : artError);
+        });
     }
   };
 
@@ -295,7 +310,17 @@ export function Workshop() {
 
           {selectedBoard ? (
             <>
-              <BoardPreviewGrid urls={getBoardComponentImageUrls(selectedBoard.config)} accentColor="#ff8ccf" />
+              {selectedBoard.boardImageUrl ? (
+                <div className="workshop-board-art">
+                  <img
+                    src={selectedBoard.boardImageUrl}
+                    alt={selectedBoard.label}
+                    className="workshop-board-art__img"
+                  />
+                </div>
+              ) : (
+                <BoardPreviewGrid urls={getBoardComponentImageUrls(selectedBoard.config)} accentColor="#ff8ccf" />
+              )}
               <div className="workshop-detail__meta">
                 <strong>{selectedBoard.label}</strong>
                 <span>Saved {new Date(selectedBoard.createdAt).toLocaleString()}</span>
@@ -362,11 +387,21 @@ export function Workshop() {
                 onDrop={(e) => handleDrop(e, board.id)}
                 onDragEnd={handleDragEnd}
               >
-                <BoardPreviewGrid
-                  urls={getBoardComponentImageUrls(board.config)}
-                  className="board-preview-grid--paper-doll"
-                  accentColor={selectedBoardId === board.id ? "#9effd4" : "#7e67ff"}
-                />
+                {board.boardImageUrl ? (
+                  <div className="workshop-board-card__art">
+                    <img
+                      src={board.boardImageUrl}
+                      alt={board.label}
+                      className="workshop-board-card__art-img"
+                    />
+                  </div>
+                ) : (
+                  <BoardPreviewGrid
+                    urls={getBoardComponentImageUrls(board.config)}
+                    className="board-preview-grid--paper-doll"
+                    accentColor={selectedBoardId === board.id ? "#9effd4" : "#7e67ff"}
+                  />
+                )}
                 <span className="workshop-board-card__title">{board.label}</span>
                 <span className="workshop-board-card__meta">{board.loadout.accessProfile}</span>
               </button>

@@ -4603,6 +4603,38 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 0 0 0 2px rgba(0, 204, 255, 0.35), 0 16px 34px rgba(0, 0, 0, 0.32);
 }
 
+.workshop-board-art {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.5);
+  aspect-ratio: 4 / 3;
+}
+
+.workshop-board-art__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.workshop-board-card__art {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.45);
+  aspect-ratio: 4 / 3;
+}
+
+.workshop-board-card__art-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 .workshop-board-card__title {
   font-weight: 700;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);

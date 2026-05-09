@@ -25,6 +25,7 @@ export function useWorkshopBoards() {
   const uid = user?.uid ?? null;
 
   const [boards, setBoards] = useState<WorkshopBoardPayload[]>(() => loadWorkshopBoards());
+  const [isLoading, setIsLoading] = useState(() => Boolean(uid));
   const lastSavedBoardsRef = useRef<WorkshopBoardPayload[]>(boards);
   const guestHydratingRef = useRef(!uid);
   const initialGuestBoardsRef = useRef<WorkshopBoardPayload[] | null>(null);
@@ -36,9 +37,11 @@ export function useWorkshopBoards() {
       initialGuestBoardsRef.current = localBoards;
       lastSavedBoardsRef.current = localBoards;
       setBoards(localBoards);
+      setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
     guestHydratingRef.current = false;
     initialGuestBoardsRef.current = null;
     lastSavedBoardsRef.current = [];
@@ -47,6 +50,7 @@ export function useWorkshopBoards() {
     const colRef = collection(db, "users", uid, "workshopBoards");
     const unsub = onSnapshot(colRef, (snap) => {
       setBoards(sortBoards(snap.docs.map((entry) => entry.data() as WorkshopBoardPayload)));
+      setIsLoading(false);
     });
     return unsub;
   }, [uid]);
@@ -111,6 +115,7 @@ export function useWorkshopBoards() {
 
   return {
     boards,
+    isLoading,
     addBoard,
     saveBoard,
     removeBoard,
