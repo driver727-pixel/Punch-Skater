@@ -4397,6 +4397,25 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background: linear-gradient(180deg, rgba(8, 8, 24, 0.92), rgba(10, 14, 33, 0.96));
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.workshop-floor__bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.workshop-floor .workshop-panel-heading,
+.workshop-floor .workshop-floor__grid {
+  position: relative;
+  z-index: 1;
 }
 
 .garage-workshop-panel {

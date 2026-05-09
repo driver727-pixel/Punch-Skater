@@ -277,6 +277,15 @@ export function Workshop() {
       </div>
 
       <section className="workshop-floor">
+        <video
+          className="workshop-floor__bg-video"
+          src="/assets/backgrounds/workshop-bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
+        />
         <div className="workshop-panel-heading">
           <div>
             <p className="eyebrow">Workshop Floor</p>
