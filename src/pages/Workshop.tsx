@@ -101,8 +101,8 @@ export function Workshop() {
         .then(async (boardImageUrl) => {
           await saveBoard({ ...boardToUpdate, boardImageUrl });
         })
-        .catch(() => {
-          // Non-critical: board art generation failed silently
+        .catch((artError) => {
+          console.warn("[Workshop] Board art generation failed:", artError instanceof Error ? artError.message : artError);
         });
     }
   };
