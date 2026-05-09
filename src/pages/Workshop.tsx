@@ -37,7 +37,7 @@ export function Workshop() {
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
     const queryCardId = searchParams.get("card");
-    setSelectedBoardId(queryBoardId);
+    if (queryBoardId !== null) setSelectedBoardId(queryBoardId);
     if (queryCardId !== null) setSelectedCardId(queryCardId);
   }, [searchParams]);
 

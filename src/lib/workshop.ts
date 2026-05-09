@@ -44,13 +44,14 @@ export function reforgeCardBoard(
   });
   const currentOzzies = normalizeOzzies(card.ozzies);
   const feeOzzies = normalizeOzzies(options.feeOzzies);
+  const imageUrl = options.boardImageUrl ?? (options.clearBoardImage ? undefined : card.board.imageUrl);
   const updatedCard = normalizeCardPayload({
     ...card,
     stats: forged.stats,
     board: {
       ...card.board,
       ...forged.board,
-      imageUrl: options.boardImageUrl ?? (options.clearBoardImage ? undefined : card.board.imageUrl),
+      imageUrl,
       placement: card.board.placement,
       layerOrder: card.board.layerOrder,
     },
