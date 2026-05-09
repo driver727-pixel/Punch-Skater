@@ -46,11 +46,13 @@ export function Workshop() {
     }
     const fallbackBoardId = boards[0]?.id ?? null;
     setSelectedBoardId(fallbackBoardId);
-    const next = new URLSearchParams(searchParams);
-    if (fallbackBoardId) next.set("board", fallbackBoardId);
-    else next.delete("board");
-    setSearchParams(next, { replace: true });
-  }, [boards, searchParams, selectedBoardId, setSearchParams]);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (fallbackBoardId) next.set("board", fallbackBoardId);
+      else next.delete("board");
+      return next;
+    }, { replace: true });
+  }, [boards, selectedBoardId, setSearchParams]);
 
   const selectedBoard = useMemo(
     () => boards.find((board) => board.id === selectedBoardId) ?? null,
