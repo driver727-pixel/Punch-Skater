@@ -211,7 +211,7 @@ export function Workshop() {
     }
   };
 
-  const handleGenerateSelectedBoardArt = async () => {
+  const handleGenerateSelectedBoardArt = async (forceIgnoreCache = false) => {
     if (!selectedBoard) return;
     setGeneratingBoardArtId(selectedBoard.id);
     setError("");
@@ -219,7 +219,7 @@ export function Workshop() {
     try {
       const boardImageUrl = await generateTransparentBoardArt(
         selectedBoard.config,
-        ignoreBoardCache ? { skipCache: true } : undefined,
+        forceIgnoreCache || ignoreBoardCache ? { skipCache: true } : undefined,
       );
       await saveBoard({ ...selectedBoard, boardImageUrl, updatedAt: new Date().toISOString() });
       sfxSuccess();
@@ -491,7 +491,7 @@ export function Workshop() {
                 <button
                   className="btn-outline btn-sm"
                   type="button"
-                  onClick={handleGenerateSelectedBoardArt}
+                  onClick={() => void handleGenerateSelectedBoardArt()}
                   disabled={generatingBoardArtId === selectedBoard.id}
                 >
                   {generatingBoardArtId === selectedBoard.id ? "Generating…" : "Generate Board Art"}
@@ -501,7 +501,7 @@ export function Workshop() {
                 <button
                   className="btn-outline btn-sm"
                   type="button"
-                  onClick={handleGenerateSelectedBoardArt}
+                  onClick={() => void handleGenerateSelectedBoardArt(true)}
                   disabled={generatingBoardArtId === selectedBoard.id}
                   title="Admin only — bypasses the per-user board cache for a fresh render."
                 >
