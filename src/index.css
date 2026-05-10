@@ -12537,6 +12537,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.45);
   z-index: 50;
 }
+@media (max-width: 768px) {
+  .notif-popover {
+    position: fixed;
+    top: 4rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    max-width: none;
+  }
+}
 .notif-popover-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.6rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.1);
