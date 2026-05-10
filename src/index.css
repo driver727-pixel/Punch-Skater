@@ -9044,9 +9044,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .skate-stats-panel {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   margin-top: 3px;
-  padding: 3px;
+  padding: 4px;
   background: rgba(0,0,0,0.25);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 2px;
@@ -9054,23 +9054,23 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .skate-stats-title {
   display: block;
-  font-size: 5px;
+  font-size: 8px;
   letter-spacing: 1.5px;
   color: var(--text-dim);
   text-transform: uppercase;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .skate-stat-bar {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 
 .skate-stat-label {
-  font-size: 5px;
+  font-size: 8px;
   color: var(--text-dim);
-  width: 22px;
+  width: 30px;
   letter-spacing: 0.5px;
   flex-shrink: 0;
   text-transform: uppercase;
@@ -9078,8 +9078,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .skate-stat-value {
-  font-size: 5px;
-  width: 6px;
+  font-size: 8px;
+  width: 12px;
   text-align: right;
   flex-shrink: 0;
   color: var(--text);
@@ -9089,7 +9089,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* Outer glass tube */
 .neon-tube {
   flex: 1;
-  height: 3px;
+  height: 5px;
   background: rgba(255,255,255,0.05);
   border-radius: 2px;
   border: 1px solid rgba(255,255,255,0.12);
@@ -9147,7 +9147,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* "⚡ TUNED" badge shown on Critical Forge cards */
 .skate-stats-tuned-badge {
   display: inline-block;
-  font-size: 5px;
+  font-size: 8px;
   font-weight: bold;
   letter-spacing: 0.8px;
   color: #ffc800;
@@ -9159,9 +9159,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .skate-text-stats {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  margin-top: 1px;
-  padding-top: 1px;
+  gap: 2px;
+  margin-top: 2px;
+  padding-top: 2px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -9169,15 +9169,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   align-items: center;
   gap: 3px;
-  font-size: 5px;
+  font-size: 8px;
 }
 
 .skate-text-key {
   color: var(--text-dim);
-  width: 26px;
+  width: 34px;
   letter-spacing: 0.5px;
   flex-shrink: 0;
   text-transform: uppercase;
+  cursor: help;
 }
 
 .skate-text-val {
