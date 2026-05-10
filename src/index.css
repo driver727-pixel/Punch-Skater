@@ -4629,6 +4629,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transition: filter 160ms ease, opacity 160ms ease, border-color 160ms ease;
   touch-action: none;
   user-select: none;
+  will-change: transform;
 }
 
 .workshop-board-card:active {

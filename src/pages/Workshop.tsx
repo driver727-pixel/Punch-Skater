@@ -21,6 +21,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function isValidFloorPlacement(
+  placement: WorkshopBoardPayload["floorPlacement"] | undefined,
+): placement is NonNullable<WorkshopBoardPayload["floorPlacement"]> {
+  return Boolean(placement)
+    && Number.isFinite(placement.x)
+    && Number.isFinite(placement.y);
+}
+
 function getDefaultFloorPlacement(index: number, count: number): { x: number; y: number } {
   const safeCount = Math.max(1, count);
   const columns = Math.min(3, safeCount);
@@ -70,11 +78,11 @@ export function Workshop() {
       boards.forEach((board, index) => {
         const persisted = board.floorPlacement;
         const existing = current[board.id];
-        if (existing) {
+        if (isValidFloorPlacement(existing)) {
           next[board.id] = existing;
           return;
         }
-        if (persisted && Number.isFinite(persisted.x) && Number.isFinite(persisted.y)) {
+        if (isValidFloorPlacement(persisted)) {
           next[board.id] = {
             x: clamp(persisted.x, 0, 1),
             y: clamp(persisted.y, 0, 1),
@@ -422,10 +430,31 @@ export function Workshop() {
                   left: `${placement.x * 100}%`,
                   top: `${placement.y * 100}%`,
                   transform: `translate(-50%, -50%) rotate(${tilt}deg)`,
-                  zIndex: isDragging ? 6 : selectedBoardId === board.id ? 5 : 4,
+                  zIndex: isDragging ? 6 : 4,
                 }}
                 aria-label={`Select ${board.label} with ${board.loadout.accessProfile} access for card binding`}
                 onClick={() => handleSelectBoard(board.id)}
+                onKeyDown={(event) => {
+                  let dx = 0;
+                  let dy = 0;
+                  const step = event.shiftKey ? 0.03 : 0.015;
+                  if (event.key === "ArrowLeft") dx = -step;
+                  if (event.key === "ArrowRight") dx = step;
+                  if (event.key === "ArrowUp") dy = -step;
+                  if (event.key === "ArrowDown") dy = step;
+                  if (dx === 0 && dy === 0) return;
+                  event.preventDefault();
+                  const currentPlacement = boardFloorPositions[board.id] ?? getDefaultFloorPlacement(index, boards.length);
+                  const next = {
+                    x: clamp(currentPlacement.x + dx, 0, 1),
+                    y: clamp(currentPlacement.y + dy, 0, 1),
+                  };
+                  setBoardFloorPositions((current) => ({
+                    ...current,
+                    [board.id]: next,
+                  }));
+                  persistFloorPlacement(board.id, next.x, next.y);
+                }}
                 onPointerDown={(event) => {
                   if (event.button !== 0) return;
                   event.currentTarget.setPointerCapture(event.pointerId);
@@ -434,11 +463,15 @@ export function Workshop() {
                 }}
                 onPointerMove={(event) => handleDragMove(event, board.id)}
                 onPointerUp={(event) => {
-                  event.currentTarget.releasePointerCapture(event.pointerId);
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                  }
                   handleDragEnd(board.id, event.pointerId);
                 }}
                 onPointerCancel={(event) => {
-                  event.currentTarget.releasePointerCapture(event.pointerId);
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                  }
                   handleDragEnd(board.id, event.pointerId);
                 }}
               >
