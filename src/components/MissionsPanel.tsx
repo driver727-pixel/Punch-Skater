@@ -3,7 +3,7 @@ import { MissionTransitScene } from "./MissionTransitScene";
 import { GeoAtlas } from "./GeoAtlas";
 import type { GeoAtlasMarker } from "./GeoAtlas";
 import { useAuth } from "../context/AuthContext";
-import { useDecks } from "../hooks/useDecks";
+import { DECK_CARD_LIMIT, useDecks } from "../hooks/useDecks";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import type { DistrictWeatherSnapshot } from "../lib/districtWeather";
 import { getDistrictAccessSummary } from "../lib/districtWeather";
@@ -33,6 +33,7 @@ import type {
 } from "../lib/sharedTypes";
 import type { District, JoustTactic, WorldLocation } from "../lib/types";
 import { getMissionBoard, runMission } from "../services/missions";
+import { CardThumbnail } from "./CardThumbnail";
 
 interface MissionsPanelProps {
   uid: string;
@@ -96,6 +97,8 @@ const SAME_DISTRICT_OFFSETS: Array<{ x: number; y: number }> = [
   { x: -12, y: 12 },
   { x: 12, y: 12 },
 ];
+const MISSION_DECK_PREVIEW_OFFSET_PER_CARD = 18;
+const MISSION_DECK_PREVIEW_ROTATION_PER_CARD = 6;
 
 const DEFAULT_PRESENTATION: MissionPresentation = {
   operation: "Underground contract",
@@ -574,6 +577,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     () => decks.find((deck) => deck.id === selectedDeckId) ?? decks[0] ?? null,
     [decks, selectedDeckId],
   );
+  const decksById = useMemo(() => new Map(decks.map((deck) => [deck.id, deck])), [decks]);
   const deckEvaluations = useMemo(
     () => selectedMission
       ? decks.map((deck) => evaluateMissionDeck(deck, selectedMission, weatherByDistrict, isMissionResultRevealed(selectedMission) ? selectedCounterOptionId : null))
@@ -984,7 +988,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </div>
                   <div className="mission-runner-grid">
                     {deckEvaluations.map((evaluation) => {
-                      const deck = decks.find((entry) => entry.id === evaluation.deckId);
+                      const evaluatedDeck = decksById.get(evaluation.deckId);
                       return (
                         <button
                           key={evaluation.deckId}
@@ -993,8 +997,23 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           onClick={() => setSelectedDeckId(evaluation.deckId)}
                         >
                           <strong>{evaluation.deckName}</strong>
+                          <div className="deck-item-preview mission-runner-card__preview" aria-hidden="true">
+                            {(evaluatedDeck?.cards ?? []).slice(0, DECK_CARD_LIMIT).map((card, previewIdx, previewCards) => {
+                              const relativePosition = previewIdx - (previewCards.length - 1) / 2;
+                              const previewStyle = {
+                                "--deck-preview-offset": `${relativePosition * MISSION_DECK_PREVIEW_OFFSET_PER_CARD}px`,
+                                "--deck-preview-rotate": `${relativePosition * MISSION_DECK_PREVIEW_ROTATION_PER_CARD}deg`,
+                                zIndex: previewIdx + 1,
+                              } as CSSProperties;
+                              return (
+                                <div key={card.id} className="deck-preview-card" style={previewStyle}>
+                                  <CardThumbnail card={card} width={80} height={112} />
+                                </div>
+                              );
+                            })}
+                          </div>
                           <span className="mission-selector-card__tagline">
-                            {deck?.cards.length ?? 0} cards · {evaluation.eligibleCardCount} mission-ready
+                            {evaluatedDeck?.cards.length ?? 0} cards · {evaluation.eligibleCardCount} mission-ready
                           </span>
                           <span
                             className={`mission-result__badge ${evaluation.eligible ? "mission-result__badge--success" : "mission-result__badge--fail"}`}
