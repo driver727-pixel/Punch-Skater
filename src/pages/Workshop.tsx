@@ -414,12 +414,12 @@ export function Workshop() {
               <p className="eyebrow">Assembly Bench</p>
               <h2>Generate a spare skateboard</h2>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+            <div className="workshop-panel-heading__actions">
               <button className="btn-primary btn-sm" type="button" onClick={handleBenchSave} disabled={savingBoard}>
                 {savingBoard ? "Generating…" : "Generate & Save to Floor"}
               </button>
               {isAdmin && (
-                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                <label className="workshop-admin-toggle">
                   <input
                     type="checkbox"
                     checked={ignoreBoardCache}

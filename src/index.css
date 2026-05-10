@@ -4512,6 +4512,20 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 14px;
 }
 
+.workshop-panel-heading__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.workshop-admin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
 .workshop-bench__preview {
   margin-top: 16px;
   max-width: 360px;
