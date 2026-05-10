@@ -57,12 +57,19 @@ export function Workshop() {
   const [savingBoard, setSavingBoard] = useState(false);
   const [generatingBoardArtId, setGeneratingBoardArtId] = useState<string | null>(null);
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
-  const [dragBoardId, setDragBoardId] = useState<string | null>(null);
+  const [draggingBoardIds, setDraggingBoardIds] = useState<Record<string, true>>({});
   const [boardFloorPositions, setBoardFloorPositions] = useState<Record<string, { x: number; y: number }>>({});
-  const [dragPointerId, setDragPointerId] = useState<number | null>(null);
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
   const keyboardPersistTimersRef = useRef<Record<string, number>>({});
+  const dragSessionsRef = useRef<Record<number, {
+    boardId: string;
+    offsetX: number;
+    offsetY: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  }>>({});
 
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
@@ -174,6 +181,12 @@ export function Workshop() {
     updateSearchSelection(boardId);
   };
 
+  const handleDeselectBoard = () => {
+    sfxClick();
+    setSelectedBoardId(null);
+    updateSearchSelection(null);
+  };
+
   const handleScrapBoard = async () => {
     if (!selectedBoard) return;
     try {
@@ -241,9 +254,27 @@ export function Workshop() {
     }
   };
 
-  const handleDragStart = (boardId: string, pointerId: number) => {
-    setDragBoardId(boardId);
-    setDragPointerId(pointerId);
+  const handleDragStart = (
+    event: React.PointerEvent<HTMLButtonElement>,
+    boardId: string,
+    boardIndex: number,
+  ) => {
+    const stage = floorStageRef.current;
+    if (!stage) return;
+    const bounds = stage.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+    const placement = boardFloorPositions[boardId] ?? getDefaultFloorPlacement(boardIndex, boards.length);
+    const boardCenterX = bounds.left + (placement.x * bounds.width);
+    const boardCenterY = bounds.top + (placement.y * bounds.height);
+    dragSessionsRef.current[event.pointerId] = {
+      boardId,
+      offsetX: event.clientX - boardCenterX,
+      offsetY: event.clientY - boardCenterY,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
+    setDraggingBoardIds((current) => ({ ...current, [boardId]: true }));
   };
 
   const persistFloorPlacement = (boardId: string, x: number, y: number) => {
@@ -270,13 +301,19 @@ export function Workshop() {
   };
 
   const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>, boardId: string) => {
-    if (dragBoardId !== boardId || dragPointerId !== event.pointerId) return;
+    const session = dragSessionsRef.current[event.pointerId];
+    if (!session || session.boardId !== boardId) return;
     const stage = floorStageRef.current;
     if (!stage) return;
     const bounds = stage.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return;
-    const x = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
-    const y = clamp((event.clientY - bounds.top) / bounds.height, 0, 1);
+    const movedX = Math.abs(event.clientX - session.startX);
+    const movedY = Math.abs(event.clientY - session.startY);
+    if (!session.moved && (movedX > 3 || movedY > 3)) {
+      session.moved = true;
+    }
+    const x = clamp((event.clientX - bounds.left - session.offsetX) / bounds.width, 0, 1);
+    const y = clamp((event.clientY - bounds.top - session.offsetY) / bounds.height, 0, 1);
     setBoardFloorPositions((current) => ({
       ...current,
       [boardId]: { x, y },
@@ -284,7 +321,9 @@ export function Workshop() {
   };
 
   const handleDragEnd = (boardId: string, pointerId: number) => {
-    if (dragBoardId !== boardId || dragPointerId !== pointerId) return;
+    const session = dragSessionsRef.current[pointerId];
+    if (!session || session.boardId !== boardId) return;
+    delete dragSessionsRef.current[pointerId];
     const existingTimer = keyboardPersistTimersRef.current[boardId];
     if (typeof existingTimer === "number") {
       window.clearTimeout(existingTimer);
@@ -294,8 +333,14 @@ export function Workshop() {
     if (placement) {
       persistFloorPlacement(boardId, placement.x, placement.y);
     }
-    setDragBoardId(null);
-    setDragPointerId(null);
+    const hasActiveSessionForBoard = Object.values(dragSessionsRef.current).some((entry) => entry.boardId === boardId);
+    if (!hasActiveSessionForBoard) {
+      setDraggingBoardIds((current) => {
+        const next = { ...current };
+        delete next[boardId];
+        return next;
+      });
+    }
   };
 
   return (
@@ -399,6 +444,13 @@ export function Workshop() {
             </div>
             <SkateboardStatsPanel loadout={selectedBoard.loadout} />
             <div className="workshop-detail__actions">
+              <button
+                className="btn-outline btn-sm"
+                type="button"
+                onClick={handleDeselectBoard}
+              >
+                Selection: Off
+              </button>
               {!selectedBoard.boardImageUrl && (
                 <button
                   className="btn-outline btn-sm"
@@ -445,7 +497,7 @@ export function Workshop() {
           )}
           {!boardsLoading && boards.map((board, index) => {
             const tilt = ((index % 5) - 2) * 3;
-            const isDragging = dragBoardId === board.id;
+            const isDragging = Boolean(draggingBoardIds[board.id]);
             const placement = boardFloorPositions[board.id] ?? getDefaultFloorPlacement(index, boards.length);
             return (
               <button
@@ -486,10 +538,10 @@ export function Workshop() {
                   schedulePersistFloorPlacement(board.id, next.x, next.y);
                 }}
                 onPointerDown={(event) => {
-                  if (event.button !== 0) return;
+                  if (event.pointerType === "mouse" && event.button !== 0) return;
                   event.currentTarget.setPointerCapture(event.pointerId);
                   handleSelectBoard(board.id);
-                  handleDragStart(board.id, event.pointerId);
+                  handleDragStart(event, board.id, index);
                 }}
                 onPointerMove={(event) => handleDragMove(event, board.id)}
                 onPointerUp={(event) => {
@@ -511,6 +563,7 @@ export function Workshop() {
                       src={board.boardImageUrl}
                       alt={board.label}
                       className="workshop-board-card__art-img"
+                      draggable={false}
                     />
                   </div>
                 ) : (
