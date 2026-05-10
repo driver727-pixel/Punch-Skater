@@ -41,6 +41,8 @@ interface BoardBuilderProps {
   onSave?: (config: BoardConfig, loadout: BoardLoadout) => void;
   /** Accent background color used in the live board preview. */
   accentColor?: string;
+  /** Show the lock-in power switch used by card forging flows. */
+  showLockIn?: boolean;
 }
 
 // Map each option array into the slim shape ConveyorCarousel expects.
@@ -93,7 +95,7 @@ const BATTERY_ITEMS: CarouselItem[] = BATTERY_OPTIONS.map((o) => ({
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColor }: BoardBuilderProps) {
+export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColor, showLockIn = true }: BoardBuilderProps) {
   // Animation phase flags — toggled in sequence on lock-in
   const [shaking, setShaking]   = useState(false);
   const [locked,  setLocked]    = useState(false);
@@ -155,7 +157,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={DECK_ITEMS}
         selected={value.boardType}
         onSelect={(v) => handleCarouselChange({ ...value, boardType: v as typeof value.boardType })}
-        showAllItems
       />
 
       {/* Belt 2 — Drivetrains (determines Top Speed) */}
@@ -164,7 +165,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredDrivetrainItems}
         selected={value.drivetrain}
         onSelect={(v) => handleCarouselChange({ ...value, drivetrain: v as typeof value.drivetrain })}
-        showAllItems
       />
 
       {/* Belt 3 — Motors (determines Acceleration) */}
@@ -173,7 +173,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredMotorItems}
         selected={value.motor}
         onSelect={(v) => handleCarouselChange({ ...value, motor: v as typeof value.motor })}
-        showAllItems
       />
 
       {/* Belt 4 — Wheels (determines access profile) */}
@@ -182,7 +181,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredWheelItems}
         selected={value.wheels}
         onSelect={(v) => handleCarouselChange({ ...value, wheels: v as typeof value.wheels })}
-        showAllItems
       />
 
       {/* Belt 5 — Batteries (determines Range) */}
@@ -191,7 +189,6 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
         items={filteredBatteryItems}
         selected={value.battery}
         onSelect={(v) => handleCarouselChange({ ...value, battery: v as typeof value.battery })}
-        showAllItems
       />
 
       {/* Compatibility warnings */}
@@ -204,14 +201,16 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
       )}
 
       {/* Finalization — PowerSwitchButton */}
-      <div className="board-builder__lock-row">
-        <PowerSwitchButton onAnimate={handleAnimate} disabled={locked || compatErrors.length > 0} />
-        {locked && (
-          <span className="board-builder__locked-badge" aria-live="polite">
-            ✔ LOCKED IN
-          </span>
-        )}
-      </div>
+      {showLockIn && (
+        <div className="board-builder__lock-row">
+          <PowerSwitchButton onAnimate={handleAnimate} disabled={locked || compatErrors.length > 0} />
+          {locked && (
+            <span className="board-builder__locked-badge" aria-live="polite">
+              ✔ LOCKED IN
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
