@@ -74,11 +74,20 @@ function toCacheToken(value: string): string {
   return value.trim().replace(/([a-z0-9])([A-Z])/g, "$1-$2").replace(/\s+/g, "-").toLowerCase();
 }
 
-function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string[]): string {
+function getBoardImageCacheUserScope(): string {
+  const uid = auth?.currentUser?.uid?.trim();
+  if (!uid) {
+    throw new Error("Sign in to generate board artwork.");
+  }
+  return uid;
+}
+
+function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string[], userScope: string): string {
   const normalizedConfig = enforceCompatibility(normalizeBoardConfig(config));
   return [
     "board-img",
     BOARD_IMAGE_CACHE_VERSION,
+    `user-${userScope}`,
     toCacheToken(normalizedConfig.boardType),
     toCacheToken(normalizedConfig.drivetrain),
     toCacheToken(normalizedConfig.motor),
@@ -173,7 +182,7 @@ async function pollBoardImageJob(jobId: string): Promise<string> {
 export async function generateGouacheBoard(config: BoardConfig, options: GenerateBoardImageOptions = {}): Promise<string> {
   const resolvedConfig = enforceCompatibility(normalizeBoardConfig(config));
   const imageUrls = getResolvedBoardReferenceUrls(resolvedConfig);
-  const cacheKey = buildBoardImageCacheKey(resolvedConfig, imageUrls);
+  const cacheKey = buildBoardImageCacheKey(resolvedConfig, imageUrls, getBoardImageCacheUserScope());
   if (!options.skipCache) {
     const cachedLocal = getLocalCachedBoardImage(cacheKey);
     if (cachedLocal) {

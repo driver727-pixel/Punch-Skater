@@ -52,6 +52,7 @@ interface ForgePreviewPanelProps {
   characterRotation: number;
   characterScale: number;
   downloading: boolean;
+  isAdmin: boolean;
   isAnyLayerLoading: boolean;
   isImageGenConfigured: boolean;
   layers: LayerState;
@@ -63,6 +64,7 @@ interface ForgePreviewPanelProps {
   onCharacterRotationChange: (value: number) => void;
   onCharacterScaleChange: (value: number) => void;
   onDownloadJpg: () => void;
+  onForceRegenerateBoard: () => void;
   onOpen3D: () => void;
   onOpenPrint: () => void;
   onOpenUpgradeModal: () => void;
@@ -91,6 +93,7 @@ export function ForgePreviewPanel({
   characterRotation,
   characterScale,
   downloading,
+  isAdmin,
   isAnyLayerLoading,
   isImageGenConfigured,
   layers,
@@ -102,6 +105,7 @@ export function ForgePreviewPanel({
   onCharacterRotationChange,
   onCharacterScaleChange,
   onDownloadJpg,
+  onForceRegenerateBoard,
   onOpen3D,
   onOpenPrint,
   onOpenUpgradeModal,
@@ -319,6 +323,16 @@ export function ForgePreviewPanel({
                 <button className="btn-outline" onClick={onOpenPrint} title="Print this card">
                   🖨 Print
                 </button>
+                {isAdmin && (
+                  <button
+                    className="btn-outline"
+                    onClick={onForceRegenerateBoard}
+                    disabled={!card || boardImageLoading || saving}
+                    title="Admin only — bypasses the per-user board cache for a fresh render."
+                  >
+                    {boardImageLoading ? "⏳ Regenerating…" : "🛠 Force regenerate (ignore cache)"}
+                  </button>
+                )}
                 {canSaveToCollection ? (
                   <button
                     className="btn-primary"

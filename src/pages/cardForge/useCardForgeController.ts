@@ -5,7 +5,7 @@ import { useForgeNavigation } from "./useForgeNavigation";
 import { useForgeSave } from "./useForgeSave";
 
 export function useCardForgeController() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const forge = useForgeGeneration();
   const save = useForgeSave({
     characterBlend: forge.characterBlend,
@@ -45,6 +45,7 @@ export function useCardForgeController() {
     handleCollectionNavigation: navigation.handleCollectionNavigation,
     handleDownloadJpg: save.handleDownloadJpg,
     handleForge: forge.handleForge,
+    handleForceRegenerateBoard: forge.handleForceRegenerateBoard,
     handleLayerError: forge.handleLayerError,
     handleOpen3D: navigation.handleOpen3D,
     handleOpenFactions: navigation.handleOpenFactions,
@@ -56,6 +57,7 @@ export function useCardForgeController() {
     handleSaveToCollection: save.handleSaveToCollection,
     hasAnyLayerUrl: forge.hasAnyLayerUrl,
     isAnyLayerLoading: forge.isAnyLayerLoading,
+    isAdmin: userProfile?.isAdmin === true,
     isFirstCard: save.isFirstCard,
     layers: forge.layers,
     openUpgradeModal: forge.openUpgradeModal,
@@ -88,5 +90,5 @@ export function useCardForgeController() {
     tier: forge.tier,
     tierCanSave: save.tierCanSave,
     viewing3D: navigation.viewing3D,
-  }), [forge, navigation, save]);
+  }), [forge, navigation, save, userProfile?.isAdmin]);
 }

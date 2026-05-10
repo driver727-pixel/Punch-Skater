@@ -11,9 +11,13 @@ import type { WorkshopBoardPayload } from "../lib/types";
 import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
 import { generateGouacheBoard } from "../services/boardImageGen";
 import { removeBackground } from "../services/imageGen";
+import { useAuth } from "../context/AuthContext";
 
-async function generateTransparentBoardArt(config: WorkshopBoardPayload["config"]): Promise<string> {
-  const boardImageUrl = await generateGouacheBoard(config);
+async function generateTransparentBoardArt(
+  config: WorkshopBoardPayload["config"],
+  options?: Parameters<typeof generateGouacheBoard>[1],
+): Promise<string> {
+  const boardImageUrl = await generateGouacheBoard(config, options);
   return (await removeBackground(boardImageUrl)).imageUrl;
 }
 
@@ -47,10 +51,12 @@ function getDefaultFloorPlacement(index: number, count: number): { x: number; y:
 export function Workshop() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { userProfile } = useAuth();
   const { cards, updateCard } = useCollection();
   const { updateCardInDecks } = useDecks();
   const { boards, isLoading: boardsLoading, addBoard, saveBoard, removeBoard } = useWorkshopBoards();
   const [boardConfig, setBoardConfig] = useState(DEFAULT_BOARD_CONFIG);
+  const [ignoreBoardCache, setIgnoreBoardCache] = useState(false);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(searchParams.get("board"));
   const [selectedCardId, setSelectedCardId] = useState(searchParams.get("card") ?? "");
   const [message, setMessage] = useState("");
@@ -142,6 +148,7 @@ export function Workshop() {
     () => cards.find((card) => card.id === selectedCardId) ?? null,
     [cards, selectedCardId],
   );
+  const isAdmin = userProfile?.isAdmin === true;
   const benchLoadout = useMemo(
     () => calculateBoardStats(normalizeBoardConfig(boardConfig)),
     [boardConfig],
@@ -161,7 +168,10 @@ export function Workshop() {
     try {
       const board = createWorkshopBoard(boardConfig, selectedCard?.id);
       setMessage("Generating transparent skateboard art for the workshop floor…");
-      const boardImageUrl = await generateTransparentBoardArt(board.config);
+      const boardImageUrl = await generateTransparentBoardArt(
+        board.config,
+        ignoreBoardCache ? { skipCache: true } : undefined,
+      );
       const boardWithArt = { ...board, boardImageUrl };
       pendingBoardSelectionRef.current = board.id;
       await addBoard(boardWithArt);
@@ -207,7 +217,10 @@ export function Workshop() {
     setError("");
     setMessage("Generating transparent skateboard art for this saved board…");
     try {
-      const boardImageUrl = await generateTransparentBoardArt(selectedBoard.config);
+      const boardImageUrl = await generateTransparentBoardArt(
+        selectedBoard.config,
+        ignoreBoardCache ? { skipCache: true } : undefined,
+      );
       await saveBoard({ ...selectedBoard, boardImageUrl, updatedAt: new Date().toISOString() });
       sfxSuccess();
       setMessage("Generated skateboard art is now on the workshop floor.");
@@ -401,9 +414,21 @@ export function Workshop() {
               <p className="eyebrow">Assembly Bench</p>
               <h2>Generate a spare skateboard</h2>
             </div>
-            <button className="btn-primary btn-sm" type="button" onClick={handleBenchSave} disabled={savingBoard}>
-              {savingBoard ? "Generating…" : "Generate & Save to Floor"}
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+              <button className="btn-primary btn-sm" type="button" onClick={handleBenchSave} disabled={savingBoard}>
+                {savingBoard ? "Generating…" : "Generate & Save to Floor"}
+              </button>
+              {isAdmin && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                  <input
+                    type="checkbox"
+                    checked={ignoreBoardCache}
+                    onChange={(event) => setIgnoreBoardCache(event.target.checked)}
+                  />
+                  Force regenerate (ignore cache)
+                </label>
+              )}
+            </div>
           </div>
           <BoardBuilder value={boardConfig} onChange={setBoardConfig} showLockIn={false} />
           <div className="workshop-bench__preview">
@@ -470,6 +495,17 @@ export function Workshop() {
                   disabled={generatingBoardArtId === selectedBoard.id}
                 >
                   {generatingBoardArtId === selectedBoard.id ? "Generating…" : "Generate Board Art"}
+                </button>
+              )}
+              {isAdmin && selectedBoard.boardImageUrl && (
+                <button
+                  className="btn-outline btn-sm"
+                  type="button"
+                  onClick={handleGenerateSelectedBoardArt}
+                  disabled={generatingBoardArtId === selectedBoard.id}
+                  title="Admin only — bypasses the per-user board cache for a fresh render."
+                >
+                  {generatingBoardArtId === selectedBoard.id ? "Regenerating…" : "Force regenerate (ignore cache)"}
                 </button>
               )}
               <button className="btn-danger btn-sm" type="button" onClick={handleScrapBoard}>
