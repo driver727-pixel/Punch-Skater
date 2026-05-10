@@ -266,7 +266,7 @@ export function Workshop() {
               <h2>Generate a spare skateboard</h2>
             </div>
             <button className="btn-primary btn-sm" type="button" onClick={handleBenchSave} disabled={savingBoard}>
-              {savingBoard ? "Generating…" : "Generate Board Art + Save to Floor"}
+              {savingBoard ? "Generating…" : "Generate & Save to Floor"}
             </button>
           </div>
           <BoardBuilder value={boardConfig} onChange={setBoardConfig} showLockIn={false} />
@@ -380,7 +380,7 @@ export function Workshop() {
                   isDropTarget ? "workshop-board-card--drop-target" : "",
                 ].filter(Boolean).join(" ")}
                 style={{ transform: `rotate(${tilt}deg) translateY(${lift}px)` }}
-                aria-label={`Select ${board.label} for the marriage bay`}
+                aria-label={`Select ${board.label} for card binding`}
                 title={`${board.label} · ${board.loadout.accessProfile}`}
                 onClick={() => handleSelectBoard(board.id)}
                 onDragStart={() => handleDragStart(board.id)}
