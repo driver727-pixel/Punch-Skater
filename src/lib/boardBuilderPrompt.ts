@@ -8,7 +8,7 @@ export const CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT =
   "CRITICAL: The skateboard uses exactly ONE drivetrain system only. Belt drive boards may show exposed belts, pulleys, rear motor mounts, and external rear motors, but NEVER hub-motor wheel casings. Hub drive boards may show integrated rear hub motors, but NEVER belts, pulleys, external motor mounts, or external motors. Gear drive boards may show enclosed rear gearboxes, but NEVER belts or hub-motor casings. Never hybridize, combine, or mix multiple drivetrain systems on the same board.";
 
 export const MOUNTAINBOARD_LORE_CONSTRAINT =
-  "Mountainboards and Mountain Boards always use a true 4WD gear-drive drivetrain: all four wheels are powered through enclosed gearboxes, with no belts, no hub motors, and no separate belt-drive or hub-drive hardware. They always have foot straps or boot bindings on top of the deck plus a large box-shaped top-mounted battery pack that leaves room for an adult rider's feet while preserving off-road ground clearance. Mountainboards use solid rubber off-road wheels only — never vapor wheels, polyurethane wheels, or pneumatic wheels. Never omit the foot straps, boot bindings, top battery box, 4WD gear drives, or solid rubber wheels.";
+  "Mountainboards and Mountain Boards always use a true 4WD gear-drive drivetrain: all four wheels are powered through enclosed gearboxes, with no belts, no hub motors, and no separate belt-drive or hub-drive hardware. They always have foot straps or boot bindings on top of the deck plus a large box-shaped top-mounted battery pack that leaves room for an adult rider's feet while preserving off-road ground clearance. Mountainboards use solid rubber off-road wheels only — never vapor wheels, polyurethane wheels, or pneumatic wheels. They never use longboard geometry, drop-through layouts, or standard street-skate trucks; they use channel-style mountainboard trucks with visible channel arms and a tall off-road stance. Never omit the foot straps, boot bindings, top battery box, 4WD gear drives, channel-style mountainboard trucks, or solid rubber wheels.";
 
 const BOARD_IMAGE_BASE_CONCEPT =
   "An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background. " +
@@ -32,7 +32,8 @@ const BOARD_TYPE_IMAGE_DESCRIPTIONS: Record<BoardType, string> = {
   Mountain:
     "A mountain-board style electric skateboard with an aggressive thick composite deck built for steep rough terrain, visible foot straps or boot bindings on top of the deck, a large box-shaped battery mounted on top of the deck, high ground clearance, and solid rubber off-road wheels. " +
     "The deck is flat with mild concave for stability — it is NOT a drop-down deck and NOT a longboard cutout, and it has NO kicktail at the nose or the rear. " +
-    "It rides on wide channel-style mountainboard trucks where the four wheels extend out beyond the deck width on each side, giving the board a tall stance with plenty of clearance under the deck for off-road terrain.",
+    "It rides on wide channel-style mountainboard trucks where the four wheels extend out beyond the deck width on each side, giving the board a tall stance with plenty of clearance under the deck for off-road terrain. " +
+    "CRITICAL for Mountain boards: never render standard longboard/skateboard trucks, never render a sleek commuter longboard silhouette, and never hide or remove the foot straps/boot bindings.",
   Surf: "A surf-skate inspired electric skateboard with a wide swallowtail cruiser deck, a prominent upward rear kicktail, and a flowing stance.",
   Slider: "A slider style electric skateboard built around a low, compact deck for tight technical movement.",
 };

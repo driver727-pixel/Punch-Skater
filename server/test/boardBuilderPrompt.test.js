@@ -212,6 +212,8 @@ test('buildBoardImagePrompt [Mountain 4WD] — forbids belts, hubs, vapor, polyu
   assert.match(prompt, /large box-shaped top-mounted battery/i);
   assert.match(prompt, /foot straps or boot bindings/i);
   assert.match(prompt, /solid rubber off-road wheels only/i);
+  assert.match(prompt, /channel-style mountainboard trucks/i);
+  assert.match(prompt, /never render .*longboard/i);
   assert.match(prompt, /no belts/i);
   assert.match(prompt, /no hub motors|NO hub-motor wheel casings/i);
   assert.match(prompt, /never vapor wheels, polyurethane wheels, or pneumatic wheels/i);
