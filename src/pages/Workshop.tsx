@@ -63,7 +63,7 @@ export function Workshop() {
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
   const keyboardPersistTimersRef = useRef<Record<string, number>>({});
-  const suppressBoardClickRef = useRef<string | null>(null);
+  const activeDragCountsRef = useRef<Record<string, number>>({});
   const dragSessionsRef = useRef<Record<number, {
     boardId: string;
     offsetX: number;
@@ -276,6 +276,7 @@ export function Workshop() {
       startY: event.clientY,
       moved: false,
     };
+    activeDragCountsRef.current[boardId] = (activeDragCountsRef.current[boardId] ?? 0) + 1;
     setDraggingBoardIds((current) => {
       const next = new Set(current);
       next.add(boardId);
@@ -339,19 +340,16 @@ export function Workshop() {
     if (placement) {
       persistFloorPlacement(boardId, placement.x, placement.y);
     }
-    let hasActiveSessionForBoard = false;
-    for (const pointerKey in dragSessionsRef.current) {
-      if (dragSessionsRef.current[pointerKey]?.boardId === boardId) {
-        hasActiveSessionForBoard = true;
-        break;
-      }
-    }
-    if (!hasActiveSessionForBoard) {
+    const activeCount = activeDragCountsRef.current[boardId] ?? 0;
+    if (activeCount <= 1) {
+      delete activeDragCountsRef.current[boardId];
       setDraggingBoardIds((current) => {
         const next = new Set(current);
         next.delete(boardId);
         return next;
       });
+    } else {
+      activeDragCountsRef.current[boardId] = activeCount - 1;
     }
     return session.moved;
   };
@@ -528,14 +526,12 @@ export function Workshop() {
                   zIndex: isDragging ? 6 : 4,
                 }}
                 aria-label={`Select ${board.label} with ${board.loadout.accessProfile} access for card binding`}
-                onClick={() => {
-                  if (suppressBoardClickRef.current === board.id) {
-                    suppressBoardClickRef.current = null;
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleSelectBoard(board.id);
                     return;
                   }
-                  handleSelectBoard(board.id);
-                }}
-                onKeyDown={(event) => {
                   let dx = 0;
                   let dy = 0;
                   const step = event.shiftKey ? KEYBOARD_NUDGE_STEP_SHIFT : KEYBOARD_NUDGE_STEP;
@@ -567,13 +563,8 @@ export function Workshop() {
                     event.currentTarget.releasePointerCapture(event.pointerId);
                   }
                   const moved = handleDragEnd(board.id, event.pointerId);
-                  if (moved) {
-                    suppressBoardClickRef.current = board.id;
-                    window.setTimeout(() => {
-                      if (suppressBoardClickRef.current === board.id) {
-                        suppressBoardClickRef.current = null;
-                      }
-                    }, 0);
+                  if (!moved) {
+                    handleSelectBoard(board.id);
                   }
                 }}
                 onPointerCancel={(event) => {
