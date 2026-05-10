@@ -382,7 +382,6 @@ export function Workshop() {
                 ].filter(Boolean).join(" ")}
                 style={{ transform: `rotate(${tilt}deg) translateY(${lift}px)` }}
                 aria-label={`Select ${board.label} with ${board.loadout.accessProfile} access for card binding`}
-                title={`${board.label} · ${board.loadout.accessProfile}`}
                 onClick={() => handleSelectBoard(board.id)}
                 onDragStart={() => handleDragStart(board.id)}
                 onDragOver={(e) => handleDragOver(e, board.id)}

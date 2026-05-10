@@ -4625,7 +4625,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-radius: 24px;
   padding: 8px;
   text-align: center;
-  display: block;
+  display: grid;
+  gap: 0;
   box-shadow: none;
   cursor: grab;
   color: #fff;
