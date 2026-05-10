@@ -54,7 +54,8 @@ export function Workshop() {
       pendingBoardSelectionRef.current = null;
       return;
     }
-    if (!selectedBoardId || pendingBoardSelectionRef.current === selectedBoardId) return;
+    const hasPendingSavedSelection = pendingBoardSelectionRef.current === selectedBoardId;
+    if (!selectedBoardId || hasPendingSavedSelection) return;
     setSelectedBoardId(null);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -380,7 +381,7 @@ export function Workshop() {
                   isDropTarget ? "workshop-board-card--drop-target" : "",
                 ].filter(Boolean).join(" ")}
                 style={{ transform: `rotate(${tilt}deg) translateY(${lift}px)` }}
-                aria-label={`Select ${board.label} for card binding`}
+                aria-label={`Select ${board.label} with ${board.loadout.accessProfile} access for card binding`}
                 title={`${board.label} · ${board.loadout.accessProfile}`}
                 onClick={() => handleSelectBoard(board.id)}
                 onDragStart={() => handleDragStart(board.id)}
