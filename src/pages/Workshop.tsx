@@ -17,12 +17,26 @@ async function generateTransparentBoardArt(config: WorkshopBoardPayload["config"
   return (await removeBackground(boardImageUrl)).imageUrl;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getDefaultFloorPlacement(index: number, count: number): { x: number; y: number } {
+  const safeCount = Math.max(1, count);
+  const columns = Math.min(3, safeCount);
+  const column = index % columns;
+  const row = Math.floor(index / columns);
+  const x = clamp((column + 1) / (columns + 1), 0.12, 0.88);
+  const y = clamp(0.3 + (row * 0.24), 0.22, 0.88);
+  return { x, y };
+}
+
 export function Workshop() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { cards, updateCard } = useCollection();
   const { updateCardInDecks } = useDecks();
-  const { boards, isLoading: boardsLoading, addBoard, saveBoard, removeBoard, reorderBoards } = useWorkshopBoards();
+  const { boards, isLoading: boardsLoading, addBoard, saveBoard, removeBoard } = useWorkshopBoards();
   const [boardConfig, setBoardConfig] = useState(DEFAULT_BOARD_CONFIG);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(searchParams.get("board"));
   const [selectedCardId, setSelectedCardId] = useState(searchParams.get("card") ?? "");
@@ -32,8 +46,10 @@ export function Workshop() {
   const [generatingBoardArtId, setGeneratingBoardArtId] = useState<string | null>(null);
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
   const [dragBoardId, setDragBoardId] = useState<string | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [boardFloorPositions, setBoardFloorPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [dragPointerId, setDragPointerId] = useState<number | null>(null);
   const pendingBoardSelectionRef = useRef<string | null>(null);
+  const floorStageRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
@@ -47,6 +63,29 @@ export function Workshop() {
       setSelectedCardId(cards[0].id);
     }
   }, [cards, selectedCardId]);
+
+  useEffect(() => {
+    setBoardFloorPositions((current) => {
+      const next: Record<string, { x: number; y: number }> = {};
+      boards.forEach((board, index) => {
+        const persisted = board.floorPlacement;
+        const existing = current[board.id];
+        if (existing) {
+          next[board.id] = existing;
+          return;
+        }
+        if (persisted && Number.isFinite(persisted.x) && Number.isFinite(persisted.y)) {
+          next[board.id] = {
+            x: clamp(persisted.x, 0, 1),
+            y: clamp(persisted.y, 0, 1),
+          };
+          return;
+        }
+        next[board.id] = getDefaultFloorPlacement(index, boards.length);
+      });
+      return next;
+    });
+  }, [boards]);
 
   useEffect(() => {
     if (boardsLoading) return;
@@ -180,43 +219,45 @@ export function Workshop() {
     }
   };
 
-  const handleDragStart = (boardId: string) => {
+  const handleDragStart = (boardId: string, pointerId: number) => {
     setDragBoardId(boardId);
+    setDragPointerId(pointerId);
   };
 
-  const handleDragOver = (event: React.DragEvent, boardId: string) => {
-    event.preventDefault();
-    if (boardId !== dragBoardId) setDropTargetId(boardId);
-  };
-
-  const handleDrop = (event: React.DragEvent, targetBoardId: string) => {
-    event.preventDefault();
-    if (!dragBoardId || dragBoardId === targetBoardId) {
-      setDragBoardId(null);
-      setDropTargetId(null);
-      return;
-    }
-    const currentIds = boards.map((b) => b.id);
-    const fromIndex = currentIds.indexOf(dragBoardId);
-    const toIndex = currentIds.indexOf(targetBoardId);
-    if (fromIndex === -1 || toIndex === -1) {
-      setDragBoardId(null);
-      setDropTargetId(null);
-      return;
-    }
-    const reordered = [...currentIds];
-    reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, dragBoardId);
-    reorderBoards(reordered).catch((reorderError) => {
-      setError(reorderError instanceof Error ? reorderError.message : "Could not save board order.");
+  const persistFloorPlacement = (boardId: string, x: number, y: number) => {
+    const board = boards.find((entry) => entry.id === boardId);
+    if (!board) return;
+    saveBoard({
+      ...board,
+      floorPlacement: { x, y },
+      updatedAt: new Date().toISOString(),
+    }).catch((saveError) => {
+      setError(saveError instanceof Error ? saveError.message : "Could not save board placement.");
     });
-    setDragBoardId(null);
-    setDropTargetId(null);
   };
 
-  const handleDragEnd = () => {
+  const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>, boardId: string) => {
+    if (dragBoardId !== boardId || dragPointerId !== event.pointerId) return;
+    const stage = floorStageRef.current;
+    if (!stage) return;
+    const bounds = stage.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+    const x = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
+    const y = clamp((event.clientY - bounds.top) / bounds.height, 0, 1);
+    setBoardFloorPositions((current) => ({
+      ...current,
+      [boardId]: { x, y },
+    }));
+  };
+
+  const handleDragEnd = (boardId: string, pointerId: number) => {
+    if (dragBoardId !== boardId || dragPointerId !== pointerId) return;
+    const placement = boardFloorPositions[boardId];
+    if (placement) {
+      persistFloorPlacement(boardId, placement.x, placement.y);
+    }
     setDragBoardId(null);
-    setDropTargetId(null);
+    setDragPointerId(null);
   };
 
   return (
@@ -346,11 +387,11 @@ export function Workshop() {
         )}
       </div>
 
-      <section className="workshop-floor-stage" aria-label="Saved skateboard paper dolls">
-        {boards.length > 1 && (
-          <p className="workshop-floor__drag-hint">Drag boards to rearrange</p>
+      <section className="workshop-floor-stage" aria-label="Saved skateboard paper dolls" ref={floorStageRef}>
+        {boards.length > 0 && (
+          <p className="workshop-floor__drag-hint">Drag boards anywhere on the floor</p>
         )}
-        <div className="workshop-floor__grid">
+        <div className="workshop-floor__canvas">
           {boardsLoading && (
             <div className="empty-state workshop-empty">
               <span className="empty-icon">🛹</span>
@@ -366,27 +407,40 @@ export function Workshop() {
           )}
           {!boardsLoading && boards.map((board, index) => {
             const tilt = ((index % 5) - 2) * 3;
-            const lift = (index % 3) * 10;
             const isDragging = dragBoardId === board.id;
-            const isDropTarget = dropTargetId === board.id;
+            const placement = boardFloorPositions[board.id] ?? getDefaultFloorPlacement(index, boards.length);
             return (
               <button
                 key={board.id}
                 type="button"
-                draggable
                 className={[
                   "workshop-board-card",
                   selectedBoardId === board.id ? "workshop-board-card--active" : "",
                   isDragging ? "workshop-board-card--dragging" : "",
-                  isDropTarget ? "workshop-board-card--drop-target" : "",
                 ].filter(Boolean).join(" ")}
-                style={{ transform: `rotate(${tilt}deg) translateY(${lift}px)` }}
+                style={{
+                  left: `${placement.x * 100}%`,
+                  top: `${placement.y * 100}%`,
+                  transform: `translate(-50%, -50%) rotate(${tilt}deg)`,
+                  zIndex: isDragging ? 6 : selectedBoardId === board.id ? 5 : 4,
+                }}
                 aria-label={`Select ${board.label} with ${board.loadout.accessProfile} access for card binding`}
                 onClick={() => handleSelectBoard(board.id)}
-                onDragStart={() => handleDragStart(board.id)}
-                onDragOver={(e) => handleDragOver(e, board.id)}
-                onDrop={(e) => handleDrop(e, board.id)}
-                onDragEnd={handleDragEnd}
+                onPointerDown={(event) => {
+                  if (event.button !== 0) return;
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  handleSelectBoard(board.id);
+                  handleDragStart(board.id, event.pointerId);
+                }}
+                onPointerMove={(event) => handleDragMove(event, board.id)}
+                onPointerUp={(event) => {
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+                  handleDragEnd(board.id, event.pointerId);
+                }}
+                onPointerCancel={(event) => {
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+                  handleDragEnd(board.id, event.pointerId);
+                }}
               >
                 {board.boardImageUrl ? (
                   <div className="workshop-board-card__art">

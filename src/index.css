@@ -4589,18 +4589,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: relative;
   min-height: 560px;
   margin-top: 12px;
-  padding: clamp(12px, 3vw, 34px) 0;
+  padding: clamp(16px, 3vw, 36px) 0;
 }
 
-.workshop-floor__grid {
-  min-height: 520px;
-  display: flex;
-  align-items: center;
-  align-content: center;
-  justify-content: center;
-  gap: clamp(20px, 4vw, 72px);
-  flex-wrap: wrap;
-  padding: clamp(22px, 5vw, 64px) 12px;
+.workshop-floor__canvas {
+  position: relative;
+  min-height: 620px;
+  padding: clamp(24px, 5vw, 60px) 10px;
 }
 
 .workshop-floor__drag-hint {
@@ -4618,6 +4613,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .workshop-board-card {
+  position: absolute;
   width: min(34vw, 380px);
   min-width: 220px;
   border: 1px solid transparent;
@@ -4630,7 +4626,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: none;
   cursor: grab;
   color: #fff;
-  transition: filter 160ms ease, opacity 160ms ease, border-color 160ms ease, transform 160ms ease;
+  transition: filter 160ms ease, opacity 160ms ease, border-color 160ms ease;
+  touch-action: none;
+  user-select: none;
 }
 
 .workshop-board-card:active {
