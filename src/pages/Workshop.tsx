@@ -66,6 +66,7 @@ export function Workshop() {
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
   const [draggingBoardIds, setDraggingBoardIds] = useState<Set<string>>(() => new Set());
   const [boardFloorPositions, setBoardFloorPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const workshopIgnoreCacheInputId = "workshop-ignore-board-cache";
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
   const keyboardPersistTimersRef = useRef<Record<string, number>>({});
@@ -421,11 +422,12 @@ export function Workshop() {
               {isAdmin && (
                 <label className="workshop-admin-toggle">
                   <input
+                    id={workshopIgnoreCacheInputId}
                     type="checkbox"
                     checked={ignoreBoardCache}
                     onChange={(event) => setIgnoreBoardCache(event.target.checked)}
                   />
-                  Force regenerate (ignore cache)
+                  <span>Force regenerate (ignore cache)</span>
                 </label>
               )}
             </div>
@@ -504,6 +506,7 @@ export function Workshop() {
                   onClick={() => void handleGenerateSelectedBoardArt(true)}
                   disabled={generatingBoardArtId === selectedBoard.id}
                   title="Admin only — bypasses the per-user board cache for a fresh render."
+                  aria-label="Force regenerate board art and ignore cache"
                 >
                   {generatingBoardArtId === selectedBoard.id ? "⏳ Regenerating…" : "Force regenerate (ignore cache)"}
                 </button>

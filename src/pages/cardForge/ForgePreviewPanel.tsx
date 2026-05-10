@@ -329,6 +329,7 @@ export function ForgePreviewPanel({
                     onClick={onForceRegenerateBoard}
                     disabled={!card || boardImageLoading || saving}
                     title="Admin only — bypasses the per-user board cache for a fresh render."
+                    aria-label="Force regenerate board art and ignore cache"
                   >
                     {boardImageLoading ? "⏳ Regenerating…" : "🛠 Force regenerate (ignore cache)"}
                   </button>
