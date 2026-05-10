@@ -1,12 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
-import { BoardPreviewGrid } from "../components/BoardPreviewGrid";
 import { SkateboardStatsPanel } from "../components/SkateboardStatsPanel";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
 import { useWorkshopBoards } from "../hooks/useWorkshopBoards";
-import { calculateBoardStats, getBoardComponentImageUrls, getBoardSummary, normalizeBoardConfig } from "../lib/boardBuilder";
+import { calculateBoardStats, getBoardSummary, normalizeBoardConfig } from "../lib/boardBuilder";
 import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
 import type { WorkshopBoardPayload } from "../lib/types";
 import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
@@ -34,6 +33,7 @@ export function Workshop() {
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
   const [dragBoardId, setDragBoardId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const pendingBoardSelectionRef = useRef<string | null>(null);
 
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
@@ -51,14 +51,14 @@ export function Workshop() {
   useEffect(() => {
     if (boardsLoading) return;
     if (selectedBoardId && boards.some((board) => board.id === selectedBoardId)) {
+      pendingBoardSelectionRef.current = null;
       return;
     }
-    const fallbackBoardId = boards[0]?.id ?? null;
-    setSelectedBoardId(fallbackBoardId);
+    if (!selectedBoardId || pendingBoardSelectionRef.current === selectedBoardId) return;
+    setSelectedBoardId(null);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (fallbackBoardId) next.set("board", fallbackBoardId);
-      else next.delete("board");
+      next.delete("board");
       return next;
     }, { replace: true });
   }, [boards, boardsLoading, selectedBoardId, setSearchParams]);
@@ -92,12 +92,14 @@ export function Workshop() {
       setMessage("Generating transparent skateboard art for the workshop floor…");
       const boardImageUrl = await generateTransparentBoardArt(board.config);
       const boardWithArt = { ...board, boardImageUrl };
+      pendingBoardSelectionRef.current = board.id;
       await addBoard(boardWithArt);
       setSelectedBoardId(board.id);
       updateSearchSelection(board.id);
       sfxSuccess();
       setMessage("Generated skateboard saved to the workshop floor.");
     } catch (saveError) {
+      pendingBoardSelectionRef.current = null;
       setError(saveError instanceof Error ? saveError.message : "Failed to generate and save the board to the workshop.");
     } finally {
       setSavingBoard(false);
@@ -108,14 +110,6 @@ export function Workshop() {
     sfxClick();
     setSelectedBoardId(boardId);
     updateSearchSelection(boardId);
-  };
-
-  const handleLoadBoardToBench = () => {
-    if (!selectedBoard) return;
-    sfxClick();
-    setBoardConfig(selectedBoard.config);
-    setMessage("Loaded the saved board back onto the assembly bench.");
-    setError("");
   };
 
   const handleScrapBoard = async () => {
@@ -272,127 +266,104 @@ export function Workshop() {
               <h2>Generate a spare skateboard</h2>
             </div>
             <button className="btn-primary btn-sm" type="button" onClick={handleBenchSave} disabled={savingBoard}>
-              {savingBoard ? "Generating…" : "Generate + Save"}
+              {savingBoard ? "Generating…" : "Generate Board Art + Save to Floor"}
             </button>
           </div>
-          <BoardBuilder value={boardConfig} onChange={setBoardConfig} />
+          <BoardBuilder value={boardConfig} onChange={setBoardConfig} showLockIn={false} />
           <div className="workshop-bench__preview">
-            <BoardPreviewGrid
-              urls={getBoardComponentImageUrls(boardConfig)}
-              accentColor="#66d9ff"
-            />
             <SkateboardStatsPanel loadout={benchLoadout} />
           </div>
         </section>
 
-        <section className="workshop-detail">
-          <div className="workshop-panel-heading">
-            <div>
-              <p className="eyebrow">Marriage Bay</p>
-              <h2>{selectedBoard ? "Bind a saved board to a card" : "Choose a saved board"}</h2>
+        {selectedBoard && (
+          <section className="workshop-detail">
+            <div className="workshop-panel-heading">
+              <div>
+                <p className="eyebrow">Marriage Bay</p>
+                <h2>Bind a saved board to a card</h2>
+              </div>
             </div>
-          </div>
 
-          <label className="workshop-field">
-            <span>Card target</span>
-            <select
-              className="input"
-              value={selectedCardId}
-              onChange={(event) => {
-                setSelectedCardId(event.target.value);
-                updateSearchSelection(selectedBoardId, event.target.value);
-              }}
-            >
-              {cards.length === 0 && <option value="">No cards saved</option>}
-              {cards.map((card) => (
-                <option key={card.id} value={card.id}>
-                  {card.identity.name} · {card.prompts.rarity} · {card.board.loadout?.accessProfile ?? card.board.accessProfile}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="workshop-field">
+              <span>Card target</span>
+              <div className="workshop-select">
+                <select
+                  className="input workshop-select__control"
+                  value={selectedCardId}
+                  onChange={(event) => {
+                    setSelectedCardId(event.target.value);
+                    updateSearchSelection(selectedBoardId, event.target.value);
+                  }}
+                >
+                  {cards.length === 0 && <option value="">No cards saved</option>}
+                  {cards.map((card) => (
+                    <option key={card.id} value={card.id}>
+                      {card.identity.name} · {card.prompts.rarity} · {card.board.loadout?.accessProfile ?? card.board.accessProfile}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </label>
 
-          {selectedCard && (
-            <div className="workshop-card-meta">
-              <span>Current board: {getBoardSummary(selectedCard.board.config)}</span>
-              <span>Current access: {selectedCard.board.loadout?.accessProfile ?? selectedCard.board.accessProfile}</span>
-              <span>Available Ozzies: {selectedCard.ozzies ?? 0}</span>
+            {selectedCard && (
+              <div className="workshop-card-meta">
+                <span>Current board: {getBoardSummary(selectedCard.board.config)}</span>
+                <span>Current access: {selectedCard.board.loadout?.accessProfile ?? selectedCard.board.accessProfile}</span>
+                <span>Available Ozzies: {selectedCard.ozzies ?? 0}</span>
+              </div>
+            )}
+
+            <div className="workshop-detail__meta">
+              <strong>{selectedBoard.label}</strong>
+              <span>Saved {new Date(selectedBoard.createdAt).toLocaleString()}</span>
             </div>
-          )}
+            <SkateboardStatsPanel loadout={selectedBoard.loadout} />
+            <div className="workshop-detail__actions">
+              {!selectedBoard.boardImageUrl && (
+                <button
+                  className="btn-outline btn-sm"
+                  type="button"
+                  onClick={handleGenerateSelectedBoardArt}
+                  disabled={generatingBoardArtId === selectedBoard.id}
+                >
+                  {generatingBoardArtId === selectedBoard.id ? "Generating…" : "Generate Board Art"}
+                </button>
+              )}
+              <button className="btn-danger btn-sm" type="button" onClick={handleScrapBoard}>
+                Scrap Build
+              </button>
+              <button
+                className="btn-primary btn-sm"
+                type="button"
+                onClick={handleApplyBoard}
+                disabled={!selectedCard || !selectedBoard.boardImageUrl || applyingBoardId === selectedBoard.id}
+              >
+                {applyingBoardId === selectedBoard.id ? "Marrying…" : `Marry to Card · ${WORKSHOP_REFORGE_FEE_OZZIES} Oz`}
+              </button>
+            </div>
+          </section>
+        )}
+      </div>
 
-          {boardsLoading ? (
+      <section className="workshop-floor-stage" aria-label="Saved skateboard paper dolls">
+        {boards.length > 1 && (
+          <p className="workshop-floor__drag-hint">Drag boards to rearrange</p>
+        )}
+        <div className="workshop-floor__grid">
+          {boardsLoading && (
             <div className="empty-state workshop-empty">
               <span className="empty-icon">🛹</span>
               <p>Loading saved boards…</p>
-              <p className="page-sub">The marriage bay is syncing your workshop floor.</p>
             </div>
-          ) : selectedBoard ? (
-            <>
-              {selectedBoard.boardImageUrl ? (
-                <div className="workshop-board-art">
-                  <img
-                    src={selectedBoard.boardImageUrl}
-                    alt={selectedBoard.label}
-                    className="workshop-board-art__img"
-                  />
-                </div>
-              ) : (
-                <div className="workshop-board-art workshop-board-art--empty">
-                  <span>Transparent skateboard art has not been generated for this saved build yet.</span>
-                  <button
-                    className="btn-primary btn-sm"
-                    type="button"
-                    onClick={handleGenerateSelectedBoardArt}
-                    disabled={generatingBoardArtId === selectedBoard.id}
-                  >
-                    {generatingBoardArtId === selectedBoard.id ? "Generating…" : "Generate Board Art"}
-                  </button>
-                </div>
-              )}
-              <div className="workshop-detail__meta">
-                <strong>{selectedBoard.label}</strong>
-                <span>Saved {new Date(selectedBoard.createdAt).toLocaleString()}</span>
-              </div>
-              <SkateboardStatsPanel loadout={selectedBoard.loadout} />
-              <div className="workshop-detail__actions">
-                <button className="btn-outline btn-sm" type="button" onClick={handleLoadBoardToBench}>
-                  Load to Bench
-                </button>
-                <button className="btn-danger btn-sm" type="button" onClick={handleScrapBoard}>
-                  Scrap Build
-                </button>
-                <button
-                  className="btn-primary btn-sm"
-                  type="button"
-                  onClick={handleApplyBoard}
-                  disabled={!selectedCard || !selectedBoard.boardImageUrl || applyingBoardId === selectedBoard.id}
-                >
-                  {applyingBoardId === selectedBoard.id ? "Marrying…" : `Marry to Card · ${WORKSHOP_REFORGE_FEE_OZZIES} Oz`}
-                </button>
-              </div>
-            </>
-          ) : (
+          )}
+          {!boardsLoading && boards.length === 0 && (
             <div className="empty-state workshop-empty">
               <span className="empty-icon">🛹</span>
               <p>No saved boards yet.</p>
-              <p className="page-sub">Lock one in on the bench and it will land here as a paper-doll spare.</p>
+              <p className="page-sub">Generate one on the bench and it will land directly on the workshop floor.</p>
             </div>
           )}
-        </section>
-      </div>
-
-      <section className="workshop-floor">
-        <div className="workshop-panel-heading">
-          <div>
-            <p className="eyebrow">Workshop Floor</p>
-            <h2>Paper-doll stash</h2>
-          </div>
-          {boards.length > 1 && (
-            <p className="workshop-floor__drag-hint">Drag boards to rearrange</p>
-          )}
-        </div>
-        <div className="workshop-floor__grid">
-          {boards.map((board, index) => {
+          {!boardsLoading && boards.map((board, index) => {
             const tilt = ((index % 5) - 2) * 3;
             const lift = (index % 3) * 10;
             const isDragging = dragBoardId === board.id;
@@ -409,6 +380,8 @@ export function Workshop() {
                   isDropTarget ? "workshop-board-card--drop-target" : "",
                 ].filter(Boolean).join(" ")}
                 style={{ transform: `rotate(${tilt}deg) translateY(${lift}px)` }}
+                aria-label={`Select ${board.label} for the marriage bay`}
+                title={`${board.label} · ${board.loadout.accessProfile}`}
                 onClick={() => handleSelectBoard(board.id)}
                 onDragStart={() => handleDragStart(board.id)}
                 onDragOver={(e) => handleDragOver(e, board.id)}
@@ -428,8 +401,6 @@ export function Workshop() {
                     <span>Generate art</span>
                   </div>
                 )}
-                <span className="workshop-board-card__title">{board.label}</span>
-                <span className="workshop-board-card__meta">{board.loadout.accessProfile}</span>
               </button>
             );
           })}
