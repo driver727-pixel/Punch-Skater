@@ -11084,7 +11084,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  z-index: 1;
+  z-index: 3;
 }
 .mission-result-popup__close:hover,
 .mission-result-popup__close:focus-visible {
@@ -11103,6 +11103,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   position: relative;
   z-index: 1;
   margin-bottom: 16px;
+  padding-right: 56px;
 }
 .mission-result-popup__grid {
   position: relative;
