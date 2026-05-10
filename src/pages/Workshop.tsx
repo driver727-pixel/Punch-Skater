@@ -58,6 +58,7 @@ export function Workshop() {
   const [dragPointerId, setDragPointerId] = useState<number | null>(null);
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
+  const keyboardPersistTimersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
@@ -71,6 +72,15 @@ export function Workshop() {
       setSelectedCardId(cards[0].id);
     }
   }, [cards, selectedCardId]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(keyboardPersistTimersRef.current).forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      keyboardPersistTimersRef.current = {};
+    };
+  }, []);
 
   useEffect(() => {
     setBoardFloorPositions((current) => {
@@ -244,6 +254,17 @@ export function Workshop() {
     });
   };
 
+  const schedulePersistFloorPlacement = (boardId: string, x: number, y: number) => {
+    const existingTimer = keyboardPersistTimersRef.current[boardId];
+    if (typeof existingTimer === "number") {
+      window.clearTimeout(existingTimer);
+    }
+    keyboardPersistTimersRef.current[boardId] = window.setTimeout(() => {
+      persistFloorPlacement(boardId, x, y);
+      delete keyboardPersistTimersRef.current[boardId];
+    }, 220);
+  };
+
   const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>, boardId: string) => {
     if (dragBoardId !== boardId || dragPointerId !== event.pointerId) return;
     const stage = floorStageRef.current;
@@ -260,6 +281,11 @@ export function Workshop() {
 
   const handleDragEnd = (boardId: string, pointerId: number) => {
     if (dragBoardId !== boardId || dragPointerId !== pointerId) return;
+    const existingTimer = keyboardPersistTimersRef.current[boardId];
+    if (typeof existingTimer === "number") {
+      window.clearTimeout(existingTimer);
+      delete keyboardPersistTimersRef.current[boardId];
+    }
     const placement = boardFloorPositions[boardId];
     if (placement) {
       persistFloorPlacement(boardId, placement.x, placement.y);
@@ -453,7 +479,7 @@ export function Workshop() {
                     ...current,
                     [board.id]: next,
                   }));
-                  persistFloorPlacement(board.id, next.x, next.y);
+                  schedulePersistFloorPlacement(board.id, next.x, next.y);
                 }}
                 onPointerDown={(event) => {
                   if (event.button !== 0) return;
