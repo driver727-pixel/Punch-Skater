@@ -21,6 +21,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+const KEYBOARD_PERSIST_DEBOUNCE_MS = 220;
+const KEYBOARD_NUDGE_STEP = 0.015;
+const KEYBOARD_NUDGE_STEP_SHIFT = 0.03;
+
 function isValidFloorPlacement(
   placement: WorkshopBoardPayload["floorPlacement"] | undefined,
 ): placement is NonNullable<WorkshopBoardPayload["floorPlacement"]> {
@@ -262,7 +266,7 @@ export function Workshop() {
     keyboardPersistTimersRef.current[boardId] = window.setTimeout(() => {
       persistFloorPlacement(boardId, x, y);
       delete keyboardPersistTimersRef.current[boardId];
-    }, 220);
+    }, KEYBOARD_PERSIST_DEBOUNCE_MS);
   };
 
   const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>, boardId: string) => {
@@ -463,7 +467,7 @@ export function Workshop() {
                 onKeyDown={(event) => {
                   let dx = 0;
                   let dy = 0;
-                  const step = event.shiftKey ? 0.03 : 0.015;
+                  const step = event.shiftKey ? KEYBOARD_NUDGE_STEP_SHIFT : KEYBOARD_NUDGE_STEP;
                   if (event.key === "ArrowLeft") dx = -step;
                   if (event.key === "ArrowRight") dx = step;
                   if (event.key === "ArrowUp") dy = -step;
