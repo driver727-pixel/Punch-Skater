@@ -30,6 +30,7 @@ export function Workshop() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingBoard, setSavingBoard] = useState(false);
+  const [generatingBoardArtId, setGeneratingBoardArtId] = useState<string | null>(null);
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
   const [dragBoardId, setDragBoardId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -86,30 +87,21 @@ export function Workshop() {
     setSavingBoard(true);
     setError("");
     setMessage("");
-    let savedBoard: WorkshopBoardPayload | null = null;
     try {
       const board = createWorkshopBoard(boardConfig, selectedCard?.id);
-      await addBoard(board);
-      savedBoard = board;
+      setMessage("Generating transparent skateboard art for the workshop floor…");
+      const boardImageUrl = await generateTransparentBoardArt(board.config);
+      const boardWithArt = { ...board, boardImageUrl };
+      await addBoard(boardWithArt);
       setSelectedBoardId(board.id);
       updateSearchSelection(board.id);
       sfxSuccess();
-      setMessage("Paper-doll board saved to the workshop floor.");
+      setMessage("Generated skateboard saved to the workshop floor.");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Failed to save the board to the workshop.");
+      setMessage("");
+      setError(saveError instanceof Error ? saveError.message : "Failed to generate and save the board to the workshop.");
     } finally {
       setSavingBoard(false);
-    }
-
-    if (savedBoard) {
-      const boardToUpdate = savedBoard;
-      generateTransparentBoardArt(boardToUpdate.config)
-        .then(async (boardImageUrl) => {
-          await saveBoard({ ...boardToUpdate, boardImageUrl });
-        })
-        .catch((artError) => {
-          console.warn("[Workshop] Board art generation failed:", artError instanceof Error ? artError.message : artError);
-        });
     }
   };
 
@@ -139,6 +131,24 @@ export function Workshop() {
     }
   };
 
+  const handleGenerateSelectedBoardArt = async () => {
+    if (!selectedBoard) return;
+    setGeneratingBoardArtId(selectedBoard.id);
+    setError("");
+    setMessage("Generating transparent skateboard art for this saved board…");
+    try {
+      const boardImageUrl = await generateTransparentBoardArt(selectedBoard.config);
+      await saveBoard({ ...selectedBoard, boardImageUrl, updatedAt: new Date().toISOString() });
+      sfxSuccess();
+      setMessage("Generated skateboard art is now on the workshop floor.");
+    } catch (artError) {
+      setMessage("");
+      setError(artError instanceof Error ? artError.message : "Failed to generate skateboard art.");
+    } finally {
+      setGeneratingBoardArtId(null);
+    }
+  };
+
   const handleApplyBoard = async () => {
     if (!selectedBoard || !selectedCard) {
       setError("Pick a saved board and a card before marrying the setup.");
@@ -153,28 +163,21 @@ export function Workshop() {
     setError("");
     setMessage("");
 
-    const reforgedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
-      feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
-      clearBoardImage: true,
-    });
     try {
+      const boardImageUrl = selectedBoard.boardImageUrl ?? await generateTransparentBoardArt(selectedBoard.config);
+      const reforgedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
+        feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
+        boardImageUrl,
+      });
       updateCard(reforgedCard);
       updateCardInDecks(reforgedCard);
       await removeBoard(selectedBoard.id);
       sfxSuccess();
-      setMessage(`${selectedCard.identity.name} took the new board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`);
-
-      const boardImageUrl = await generateTransparentBoardArt(selectedBoard.config);
-      const artPatchedCard = reforgeCardBoard(reforgedCard, selectedBoard.config, {
-        boardImageUrl,
-      });
-      updateCard(artPatchedCard);
-      updateCardInDecks(artPatchedCard);
-      setMessage(`${selectedCard.identity.name} took the new board. Stats updated and fresh board art locked in.`);
+      setMessage(`${selectedCard.identity.name} took the generated board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`);
     } catch (generationError) {
       const detail = generationError instanceof Error ? generationError.message : "Unknown workshop error.";
-      setMessage(`${selectedCard.identity.name} took the new board. Stats updated, but fresh board art could not be forged yet.`);
-      setError(`Workshop follow-up: ${detail}`);
+      setMessage("");
+      setError(`Could not bind the board until skateboard art is ready: ${detail}`);
     } finally {
       setApplyingBoardId(null);
     }
@@ -264,10 +267,10 @@ export function Workshop() {
           <div className="workshop-panel-heading">
             <div>
               <p className="eyebrow">Assembly Bench</p>
-              <h2>Build a spare board</h2>
+              <h2>Generate a spare skateboard</h2>
             </div>
             <button className="btn-primary btn-sm" type="button" onClick={handleBenchSave} disabled={savingBoard}>
-              {savingBoard ? "Saving…" : "Save to Workshop"}
+              {savingBoard ? "Generating…" : "Generate + Save"}
             </button>
           </div>
           <BoardBuilder value={boardConfig} onChange={setBoardConfig} />
@@ -332,7 +335,17 @@ export function Workshop() {
                   />
                 </div>
               ) : (
-                <BoardPreviewGrid urls={getBoardComponentImageUrls(selectedBoard.config)} accentColor="#ff8ccf" />
+                <div className="workshop-board-art workshop-board-art--empty">
+                  <span>Transparent skateboard art has not been generated for this saved build yet.</span>
+                  <button
+                    className="btn-primary btn-sm"
+                    type="button"
+                    onClick={handleGenerateSelectedBoardArt}
+                    disabled={generatingBoardArtId === selectedBoard.id}
+                  >
+                    {generatingBoardArtId === selectedBoard.id ? "Generating…" : "Generate Board Art"}
+                  </button>
+                </div>
               )}
               <div className="workshop-detail__meta">
                 <strong>{selectedBoard.label}</strong>
@@ -409,11 +422,9 @@ export function Workshop() {
                     />
                   </div>
                 ) : (
-                  <BoardPreviewGrid
-                    urls={getBoardComponentImageUrls(board.config)}
-                    className="board-preview-grid--paper-doll"
-                    accentColor={selectedBoardId === board.id ? "#9effd4" : "#7e67ff"}
-                  />
+                  <div className="workshop-board-card__art workshop-board-card__art--pending">
+                    <span>Generate art</span>
+                  </div>
                 )}
                 <span className="workshop-board-card__title">{board.label}</span>
                 <span className="workshop-board-card__meta">{board.loadout.accessProfile}</span>

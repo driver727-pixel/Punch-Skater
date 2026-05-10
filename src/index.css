@@ -4559,9 +4559,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .workshop-floor__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  min-height: 520px;
+  display: flex;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  gap: clamp(20px, 4vw, 72px);
+  flex-wrap: wrap;
+  padding: clamp(22px, 5vw, 64px) 12px;
 }
 
 .workshop-floor__drag-hint {
@@ -4573,15 +4578,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .workshop-board-card {
-  border: 1px solid rgba(204, 68, 255, 0.22);
-  background: rgba(10, 6, 22, 0.28);
-  border-radius: 18px;
-  padding: 12px;
-  text-align: left;
+  width: min(34vw, 380px);
+  min-width: 220px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 24px;
+  padding: 8px;
+  text-align: center;
   display: grid;
-  gap: 10px;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+  gap: 6px;
+  box-shadow: none;
   cursor: grab;
+  color: #fff;
+  transition: filter 160ms ease, opacity 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
 .workshop-board-card:active {
@@ -4589,18 +4598,17 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 .workshop-board-card--active {
-  border-color: rgba(0, 255, 136, 0.5);
-  box-shadow: 0 0 0 1px rgba(0, 255, 136, 0.22), 0 16px 34px rgba(0, 0, 0, 0.32);
+  border-color: rgba(0, 255, 136, 0.36);
+  filter: drop-shadow(0 0 18px rgba(0, 255, 136, 0.28));
 }
 
 .workshop-board-card--dragging {
   opacity: 0.4;
-  box-shadow: none;
 }
 
 .workshop-board-card--drop-target {
   border-color: rgba(0, 204, 255, 0.7);
-  box-shadow: 0 0 0 2px rgba(0, 204, 255, 0.35), 0 16px 34px rgba(0, 0, 0, 0.32);
+  filter: drop-shadow(0 0 20px rgba(0, 204, 255, 0.34));
 }
 
 .workshop-board-art {
@@ -4610,6 +4618,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   overflow: visible;
   background: transparent;
   aspect-ratio: 4 / 3;
+}
+
+.workshop-board-art--empty {
+  border: 1px dashed rgba(0, 204, 255, 0.34);
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  padding: 24px;
+  color: #cbd5ff;
+  text-align: center;
 }
 
 .workshop-board-art__img {
@@ -4626,6 +4644,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   overflow: visible;
   background: transparent;
   aspect-ratio: 4 / 3;
+  filter: drop-shadow(0 22px 24px rgba(0, 0, 0, 0.46));
 }
 
 .workshop-board-card__art-img {
@@ -4635,9 +4654,34 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: block;
 }
 
+.workshop-board-card__art--pending {
+  border: 1px dashed rgba(255, 255, 255, 0.24);
+  display: grid;
+  place-items: center;
+  color: #cbd5ff;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 12px;
+}
+
 .workshop-board-card__title {
   font-weight: 700;
+  display: inline-block;
+  justify-self: center;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(3, 8, 20, 0.7);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.workshop-board-card__meta {
+  display: inline-block;
+  justify-self: center;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: rgba(3, 8, 20, 0.56);
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {
