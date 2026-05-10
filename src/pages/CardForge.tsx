@@ -43,6 +43,7 @@ export function CardForge() {
     handleCollectionNavigation,
     handleDownloadJpg,
     handleForge,
+    handleForceRegenerateBoard,
     handleOpen3D,
     handleOpenFactions,
     handleOpenPrint,
@@ -51,6 +52,7 @@ export function CardForge() {
     handleReopenWelcome,
     handleSaveToCollection,
     isAnyLayerLoading,
+    isAdmin,
     isFirstCard,
     layers,
     openUpgradeModal,
@@ -153,6 +155,7 @@ export function CardForge() {
           characterRotation={characterPlacement?.rotationDeg ?? 0}
           characterScale={characterPlacement?.scale ?? 1}
           downloading={downloading}
+          isAdmin={isAdmin}
           isAnyLayerLoading={isAnyLayerLoading}
           isImageGenConfigured={isImageGenConfigured}
           layers={layers}
@@ -164,6 +167,7 @@ export function CardForge() {
           onCharacterRotationChange={setCharacterRotation}
           onCharacterScaleChange={setCharacterScale}
           onDownloadJpg={handleDownloadJpg}
+          onForceRegenerateBoard={handleForceRegenerateBoard}
           onOpen3D={handleOpen3D}
           onOpenPrint={handleOpenPrint}
           onOpenUpgradeModal={openUpgradeModal}

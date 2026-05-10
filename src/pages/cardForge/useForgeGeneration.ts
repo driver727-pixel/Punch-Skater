@@ -504,6 +504,35 @@ export function useForgeGeneration() {
     user,
   ]);
 
+  const handleForceRegenerateBoard = useCallback(async () => {
+    if (userProfile?.isAdmin !== true) {
+      setRecoveryError("Admin access is required to bypass the board image cache.");
+      return;
+    }
+    if (!generated) {
+      setRecoveryError("Forge a card before forcing a fresh board render.");
+      return;
+    }
+
+    const controller = replaceAbortController();
+    const { signal } = controller;
+    clearRecoveryIssues([], true);
+
+    const boardConfigToRender = generated.board.config ?? boardConfig;
+    const ok = await runBoardGeneration(boardConfigToRender, signal, { skipCache: true });
+    if (signal.aborted) return;
+    if (ok) {
+      setRecoveryMessage("Admin board regeneration complete. Save the card to keep this fresh board art.");
+    }
+  }, [
+    boardConfig,
+    clearRecoveryIssues,
+    generated,
+    replaceAbortController,
+    runBoardGeneration,
+    userProfile?.isAdmin,
+  ]);
+
   const handleRandomSkater = useCallback(() => {
     sfxClick();
     setPrompts((current) => buildRandomizedPrompts(current, ARCHETYPE_VALUES));
@@ -680,6 +709,7 @@ export function useForgeGeneration() {
     handleCloseFactionReveal,
     handleCloseRarityReveal,
     handleForge,
+    handleForceRegenerateBoard,
     handleLayerError,
     handlePreviewUpdate,
     handleRandomSkater,
@@ -727,6 +757,7 @@ export function useForgeGeneration() {
     handleCloseFactionReveal,
     handleCloseRarityReveal,
     handleForge,
+    handleForceRegenerateBoard,
     handleLayerError,
     handlePreviewUpdate,
     handleRandomSkater,
