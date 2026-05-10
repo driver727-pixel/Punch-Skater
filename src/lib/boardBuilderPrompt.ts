@@ -30,8 +30,9 @@ const BOARD_TYPE_IMAGE_DESCRIPTIONS: Record<BoardType, string> = {
     "An all-terrain electric skateboard with a rugged top-mount deck. " +
     "The deck has NO kicktail at the nose or the rear; instead it has a subtle drop-down profile between the front and rear axles for improved handling.",
   Mountain:
-    "A mountain-board style electric skateboard with an aggressive deck built for steep rough terrain, visible foot straps or boot bindings, a large box-shaped battery mounted on top of the deck, high ground clearance, and solid rubber off-road wheels. " +
-    "The deck has NO kicktail at the nose or the rear; instead it has a subtle drop-down profile between the front and rear axles.",
+    "A mountain-board style electric skateboard with an aggressive thick composite deck built for steep rough terrain, visible foot straps or boot bindings on top of the deck, a large box-shaped battery mounted on top of the deck, high ground clearance, and solid rubber off-road wheels. " +
+    "The deck is flat with mild concave for stability — it is NOT a drop-down deck and NOT a longboard cutout, and it has NO kicktail at the nose or the rear. " +
+    "It rides on wide channel-style mountainboard trucks where the four wheels extend out beyond the deck width on each side, giving the board a tall stance with plenty of clearance under the deck for off-road terrain.",
   Surf: "A surf-skate inspired electric skateboard with a wide swallowtail cruiser deck, a prominent upward rear kicktail, and a flowing stance.",
   Slider: "A slider style electric skateboard built around a low, compact deck for tight technical movement.",
 };
