@@ -3,7 +3,7 @@ import { MissionTransitScene } from "./MissionTransitScene";
 import { GeoAtlas } from "./GeoAtlas";
 import type { GeoAtlasMarker } from "./GeoAtlas";
 import { useAuth } from "../context/AuthContext";
-import { useDecks } from "../hooks/useDecks";
+import { DECK_CARD_LIMIT, useDecks } from "../hooks/useDecks";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import type { DistrictWeatherSnapshot } from "../lib/districtWeather";
 import { getDistrictAccessSummary } from "../lib/districtWeather";
@@ -33,6 +33,7 @@ import type {
 } from "../lib/sharedTypes";
 import type { District, JoustTactic, WorldLocation } from "../lib/types";
 import { getMissionBoard, runMission } from "../services/missions";
+import { CardThumbnail } from "./CardThumbnail";
 
 interface MissionsPanelProps {
   uid: string;
@@ -993,6 +994,21 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           onClick={() => setSelectedDeckId(evaluation.deckId)}
                         >
                           <strong>{evaluation.deckName}</strong>
+                          <div className="deck-item-preview mission-runner-card__preview" aria-hidden="true">
+                            {(deck?.cards ?? []).slice(0, DECK_CARD_LIMIT).map((card, previewIdx, previewCards) => {
+                              const spread = previewIdx - (previewCards.length - 1) / 2;
+                              const previewStyle = {
+                                "--deck-preview-offset": `${spread * 18}px`,
+                                "--deck-preview-rotate": `${spread * 6}deg`,
+                                zIndex: previewIdx + 1,
+                              } as CSSProperties;
+                              return (
+                                <div key={card.id} className="deck-preview-card" style={previewStyle}>
+                                  <CardThumbnail card={card} width={80} height={112} />
+                                </div>
+                              );
+                            })}
+                          </div>
                           <span className="mission-selector-card__tagline">
                             {deck?.cards.length ?? 0} cards · {evaluation.eligibleCardCount} mission-ready
                           </span>
