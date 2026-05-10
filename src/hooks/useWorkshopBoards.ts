@@ -71,10 +71,14 @@ export function useWorkshopBoards() {
 
   const saveBoard = useCallback(async (board: WorkshopBoardPayload) => {
     if (uid) {
-      await setDoc(doc(db, "users", uid, "workshopBoards", board.id), board);
+      await setDoc(doc(db, "users", uid, "workshopBoards", board.id), board, { merge: true });
       return;
     }
-    setBoards((prev) => sortBoards([...prev.filter((entry) => entry.id !== board.id), board]));
+    setBoards((prev) => {
+      const existing = prev.find((entry) => entry.id === board.id);
+      const nextBoard = existing ? { ...existing, ...board } : board;
+      return sortBoards([...prev.filter((entry) => entry.id !== board.id), nextBoard]);
+    });
   }, [uid]);
 
   const addBoard = useCallback(async (board: WorkshopBoardPayload) => {

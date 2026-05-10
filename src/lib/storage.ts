@@ -71,6 +71,9 @@ function normalizeWorkshopBoard(board: WorkshopBoardPayload): WorkshopBoardPaylo
 }
 
 function compareWorkshopBoards(a: WorkshopBoardPayload, b: WorkshopBoardPayload): number {
+  const aOrder = a.sortOrder ?? Infinity;
+  const bOrder = b.sortOrder ?? Infinity;
+  if (aOrder !== bOrder) return aOrder - bOrder;
   return b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
 }
 
