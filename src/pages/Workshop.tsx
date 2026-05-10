@@ -24,6 +24,7 @@ function clamp(value: number, min: number, max: number): number {
 const KEYBOARD_PERSIST_DEBOUNCE_MS = 220;
 const KEYBOARD_NUDGE_STEP = 0.015;
 const KEYBOARD_NUDGE_STEP_SHIFT = 0.03;
+const DRAG_MOVEMENT_THRESHOLD_PX = 3;
 
 function isValidFloorPlacement(
   placement: WorkshopBoardPayload["floorPlacement"] | undefined,
@@ -57,7 +58,7 @@ export function Workshop() {
   const [savingBoard, setSavingBoard] = useState(false);
   const [generatingBoardArtId, setGeneratingBoardArtId] = useState<string | null>(null);
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
-  const [draggingBoardIds, setDraggingBoardIds] = useState<Record<string, true>>({});
+  const [draggingBoardIds, setDraggingBoardIds] = useState<Set<string>>(() => new Set());
   const [boardFloorPositions, setBoardFloorPositions] = useState<Record<string, { x: number; y: number }>>({});
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
@@ -274,7 +275,11 @@ export function Workshop() {
       startY: event.clientY,
       moved: false,
     };
-    setDraggingBoardIds((current) => ({ ...current, [boardId]: true }));
+    setDraggingBoardIds((current) => {
+      const next = new Set(current);
+      next.add(boardId);
+      return next;
+    });
   };
 
   const persistFloorPlacement = (boardId: string, x: number, y: number) => {
@@ -309,7 +314,7 @@ export function Workshop() {
     if (bounds.width <= 0 || bounds.height <= 0) return;
     const movedX = Math.abs(event.clientX - session.startX);
     const movedY = Math.abs(event.clientY - session.startY);
-    if (!session.moved && (movedX > 3 || movedY > 3)) {
+    if (!session.moved && (movedX > DRAG_MOVEMENT_THRESHOLD_PX || movedY > DRAG_MOVEMENT_THRESHOLD_PX)) {
       session.moved = true;
     }
     const x = clamp((event.clientX - bounds.left - session.offsetX) / bounds.width, 0, 1);
@@ -336,8 +341,8 @@ export function Workshop() {
     const hasActiveSessionForBoard = Object.values(dragSessionsRef.current).some((entry) => entry.boardId === boardId);
     if (!hasActiveSessionForBoard) {
       setDraggingBoardIds((current) => {
-        const next = { ...current };
-        delete next[boardId];
+        const next = new Set(current);
+        next.delete(boardId);
         return next;
       });
     }
@@ -497,7 +502,7 @@ export function Workshop() {
           )}
           {!boardsLoading && boards.map((board, index) => {
             const tilt = ((index % 5) - 2) * 3;
-            const isDragging = Boolean(draggingBoardIds[board.id]);
+            const isDragging = draggingBoardIds.has(board.id);
             const placement = boardFloorPositions[board.id] ?? getDefaultFloorPlacement(index, boards.length);
             return (
               <button
