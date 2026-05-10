@@ -274,6 +274,11 @@ export interface WorkshopBoardPayload {
   sortOrder?: number;
   /** AI-generated skateboard art URL produced after the board is saved. */
   boardImageUrl?: string;
+  /** Normalized floor placement on the workshop paper-doll stage. */
+  floorPlacement?: {
+    x: number;
+    y: number;
+  };
 }
 
 // ── Deck payload ──────────────────────────────────────────────────────────────
