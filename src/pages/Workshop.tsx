@@ -98,7 +98,6 @@ export function Workshop() {
       sfxSuccess();
       setMessage("Generated skateboard saved to the workshop floor.");
     } catch (saveError) {
-      setMessage("");
       setError(saveError instanceof Error ? saveError.message : "Failed to generate and save the board to the workshop.");
     } finally {
       setSavingBoard(false);
@@ -158,16 +157,19 @@ export function Workshop() {
       setError(`${selectedCard.identity.name} needs ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies to cover the workshop fee.`);
       return;
     }
+    if (!selectedBoard.boardImageUrl) {
+      setError("Generate transparent skateboard art for this saved board before marrying it to a card.");
+      return;
+    }
 
     setApplyingBoardId(selectedBoard.id);
     setError("");
     setMessage("");
 
     try {
-      const boardImageUrl = selectedBoard.boardImageUrl ?? await generateTransparentBoardArt(selectedBoard.config);
       const reforgedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
         feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
-        boardImageUrl,
+        boardImageUrl: selectedBoard.boardImageUrl,
       });
       updateCard(reforgedCard);
       updateCardInDecks(reforgedCard);
@@ -363,7 +365,7 @@ export function Workshop() {
                   className="btn-primary btn-sm"
                   type="button"
                   onClick={handleApplyBoard}
-                  disabled={!selectedCard || applyingBoardId === selectedBoard.id}
+                  disabled={!selectedCard || !selectedBoard.boardImageUrl || applyingBoardId === selectedBoard.id}
                 >
                   {applyingBoardId === selectedBoard.id ? "Marrying…" : `Marry to Card · ${WORKSHOP_REFORGE_FEE_OZZIES} Oz`}
                 </button>
