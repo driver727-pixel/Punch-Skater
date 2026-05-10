@@ -89,11 +89,10 @@ function getCurrentBoardImageUserScope(): string {
 
 function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string[], userScope: string): string {
   const normalizedConfig = enforceCompatibility(normalizeBoardConfig(config));
-  const scopedUser = getBoardImageCacheUserScope(userScope);
   return [
     "board-img",
     BOARD_IMAGE_CACHE_VERSION,
-    `user-${scopedUser}`,
+    `user-${userScope}`,
     toCacheToken(normalizedConfig.boardType),
     toCacheToken(normalizedConfig.drivetrain),
     toCacheToken(normalizedConfig.motor),

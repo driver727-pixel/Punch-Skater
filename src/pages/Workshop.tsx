@@ -505,7 +505,7 @@ export function Workshop() {
                   disabled={generatingBoardArtId === selectedBoard.id}
                   title="Admin only — bypasses the per-user board cache for a fresh render."
                 >
-                  {generatingBoardArtId === selectedBoard.id ? "Regenerating…" : "Force regenerate (ignore cache)"}
+                  {generatingBoardArtId === selectedBoard.id ? "⏳ Regenerating…" : "Force regenerate (ignore cache)"}
                 </button>
               )}
               <button className="btn-danger btn-sm" type="button" onClick={handleScrapBoard}>
