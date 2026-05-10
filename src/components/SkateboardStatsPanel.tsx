@@ -77,7 +77,7 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
           <NeonBar label={SKATE_STATS.grt.label} value={skateStats.grt} max={SKATE_STAT_MAX} colorClass="neon-tube--yellow"  tooltip={SKATE_STATS.grt.tooltip} />
           <div className="skate-text-stats">
             <div className="skate-text-row">
-              <span className="skate-text-key">WEIGHT</span>
+              <span className="skate-text-key" title="Total component weight. Heavier builds reduce SPD and STL stats.">WEIGHT</span>
               <span className="skate-text-val neon-label--cyan">{skateStats.totalWeight}</span>
             </div>
           </div>
@@ -86,11 +86,11 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
 
       <div className="skate-text-stats">
         <div className="skate-text-row">
-          <span className="skate-text-key">ACCESS</span>
+          <span className="skate-text-key" title="Districts where this board performs optimally, determined by Deck compatibility.">ACCESS</span>
           <span className="skate-text-val neon-label--green">{loadout.accessProfile}</span>
         </div>
         <div className="skate-text-row">
-          <span className="skate-text-key">STYLE</span>
+          <span className="skate-text-key" title="Riding style tag determined by the Deck component — affects flavour and joust traits.">STYLE</span>
           <span className="skate-text-val neon-label--cyan">{loadout.style}</span>
         </div>
       </div>
