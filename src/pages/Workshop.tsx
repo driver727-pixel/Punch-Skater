@@ -63,6 +63,7 @@ export function Workshop() {
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
   const keyboardPersistTimersRef = useRef<Record<string, number>>({});
+  const suppressBoardClickRef = useRef<string | null>(null);
   const dragSessionsRef = useRef<Record<number, {
     boardId: string;
     offsetX: number;
@@ -325,9 +326,9 @@ export function Workshop() {
     }));
   };
 
-  const handleDragEnd = (boardId: string, pointerId: number) => {
+  const handleDragEnd = (boardId: string, pointerId: number): boolean => {
     const session = dragSessionsRef.current[pointerId];
-    if (!session || session.boardId !== boardId) return;
+    if (!session || session.boardId !== boardId) return false;
     delete dragSessionsRef.current[pointerId];
     const existingTimer = keyboardPersistTimersRef.current[boardId];
     if (typeof existingTimer === "number") {
@@ -338,7 +339,13 @@ export function Workshop() {
     if (placement) {
       persistFloorPlacement(boardId, placement.x, placement.y);
     }
-    const hasActiveSessionForBoard = Object.values(dragSessionsRef.current).some((entry) => entry.boardId === boardId);
+    let hasActiveSessionForBoard = false;
+    for (const pointerKey in dragSessionsRef.current) {
+      if (dragSessionsRef.current[pointerKey]?.boardId === boardId) {
+        hasActiveSessionForBoard = true;
+        break;
+      }
+    }
     if (!hasActiveSessionForBoard) {
       setDraggingBoardIds((current) => {
         const next = new Set(current);
@@ -346,6 +353,7 @@ export function Workshop() {
         return next;
       });
     }
+    return session.moved;
   };
 
   return (
@@ -520,7 +528,13 @@ export function Workshop() {
                   zIndex: isDragging ? 6 : 4,
                 }}
                 aria-label={`Select ${board.label} with ${board.loadout.accessProfile} access for card binding`}
-                onClick={() => handleSelectBoard(board.id)}
+                onClick={() => {
+                  if (suppressBoardClickRef.current === board.id) {
+                    suppressBoardClickRef.current = null;
+                    return;
+                  }
+                  handleSelectBoard(board.id);
+                }}
                 onKeyDown={(event) => {
                   let dx = 0;
                   let dy = 0;
@@ -543,9 +557,8 @@ export function Workshop() {
                   schedulePersistFloorPlacement(board.id, next.x, next.y);
                 }}
                 onPointerDown={(event) => {
-                  if (event.pointerType === "mouse" && event.button !== 0) return;
+                  if (event.button !== 0) return;
                   event.currentTarget.setPointerCapture(event.pointerId);
-                  handleSelectBoard(board.id);
                   handleDragStart(event, board.id, index);
                 }}
                 onPointerMove={(event) => handleDragMove(event, board.id)}
@@ -553,7 +566,15 @@ export function Workshop() {
                   if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                     event.currentTarget.releasePointerCapture(event.pointerId);
                   }
-                  handleDragEnd(board.id, event.pointerId);
+                  const moved = handleDragEnd(board.id, event.pointerId);
+                  if (moved) {
+                    suppressBoardClickRef.current = board.id;
+                    window.setTimeout(() => {
+                      if (suppressBoardClickRef.current === board.id) {
+                        suppressBoardClickRef.current = null;
+                      }
+                    }, 0);
+                  }
                 }}
                 onPointerCancel={(event) => {
                   if (event.currentTarget.hasPointerCapture(event.pointerId)) {
