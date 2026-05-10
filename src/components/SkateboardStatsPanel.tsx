@@ -90,7 +90,7 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
           <span className="skate-text-val neon-label--green">{loadout.accessProfile}</span>
         </div>
         <div className="skate-text-row">
-          <span className="skate-text-key" title="Riding style tag determined by the Deck component — affects flavour and joust traits.">STYLE</span>
+          <span className="skate-text-key" title="Riding style tag determined by the Deck component — affects flavor and joust traits.">STYLE</span>
           <span className="skate-text-val neon-label--cyan">{loadout.style}</span>
         </div>
       </div>

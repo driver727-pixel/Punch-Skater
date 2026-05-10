@@ -9080,7 +9080,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .skate-stat-value {
   font-size: 8px;
-  width: 18px;
+  width: 12px;
   text-align: right;
   flex-shrink: 0;
   color: var(--text);
