@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="deckGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00f5ff" />
-      <stop offset="100%" stop-color="#7b2cff" />
+      <stop offset="0%" stop-color="#ff4fd8" />
+      <stop offset="100%" stop-color="#ff9a3c" />
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="#090b1a" />
+  <rect width="64" height="64" rx="14" fill="#0c1024" />
   <rect x="9" y="27" width="46" height="10" rx="5" fill="url(#deckGlow)" />
-  <circle cx="17" cy="45" r="7" fill="#0f132a" stroke="#00f5ff" stroke-width="2.5" />
-  <circle cx="47" cy="45" r="7" fill="#0f132a" stroke="#7b2cff" stroke-width="2.5" />
-  <path d="M31 21h8l-6 10h6l-10 12 4-10h-6z" fill="#ffe45e" />
+  <circle cx="17" cy="45" r="7" fill="#12183a" stroke="#ff4fd8" stroke-width="2.5" />
+  <circle cx="47" cy="45" r="7" fill="#12183a" stroke="#ff9a3c" stroke-width="2.5" />
+  <path d="M31 21h8l-6 10h6l-10 12 4-10h-6z" fill="#68ff8a" />
 </svg>
