@@ -223,7 +223,7 @@ export function Workshop() {
     <div className="page page--workshop">
       <video
         className="workshop-page-bg"
-        src="/assets/backgrounds/workshop-bg.mp4"
+        src="/assets/backgrounds/workshop-bg.mp4?v=20260510"
         autoPlay
         loop
         muted
