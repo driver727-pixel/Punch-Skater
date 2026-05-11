@@ -1,18 +1,19 @@
-# Punch Skater — Lore & World Bible
+# Punch Skater — Internal Story Bible
 
 This directory is the human-readable companion to the live Codex data in
 `/home/runner/work/Punch-Skater/Punch-Skater/src/lib/lore.ts`.
-Writers, designers, and developers should keep these files aligned with the app so the
-site, design docs, and future content all speak with one voice.
+Writers, designers, and developers should treat these files as the internal story Bible:
+the place where public canon, writer-only truths, and future reveals sit beside each other
+without drifting out of sync.
 
 ## Contents
 
 | File | Description |
 |------|-------------|
-| [world-overview.md](./world-overview.md) | Macro setting, transit rules, courier code, and current world state |
-| [districts.md](./districts.md) | District dossiers, corridor framing, and classified reveal notes |
-| [archetypes.md](./archetypes.md) | The ten live courier archetypes used by the forge |
-| [factions.md](./factions.md) | Public faction canon and the discovery-driven dossier model |
+| [world-overview.md](./world-overview.md) | Macro setting, transit rules, bloc list, and tagged story pressure |
+| [districts.md](./districts.md) | District dossiers, corridor framing, and tagged geography notes |
+| [archetypes.md](./archetypes.md) | The ten live courier archetypes with Public / Internal / Reveal notes |
+| [factions.md](./factions.md) | Faction canon with explicit Public / Internal / Reveal separation |
 | [rivals.md](./rivals.md) | First-wave named district rivals, their tactics, rewards, and Codex unlocks |
 | [CHANGELOG.md](./CHANGELOG.md) | Short log of lore revisions that should be mirrored in the Codex |
 
@@ -34,3 +35,12 @@ When lore changes, update all three layers together:
 
 If a change alters how the Codex presents information, also update
 `/home/runner/work/Punch-Skater/Punch-Skater/src/pages/Lore.tsx`.
+
+## Visibility Tags
+
+- **Public** — safe in-world or Codex-facing knowledge.
+- **Internal** — writer-only truth, canon scaffolding, or continuity guidance.
+- **Reveal** — material intended to land later through story progression.
+
+Default rule: every lore item should answer both **what is true** and **who is allowed to
+know it yet**.

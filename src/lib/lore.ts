@@ -123,6 +123,7 @@ export const WORLD_LORE = {
     "settle prize disputes through high-speed jousts using cyber lances and shields.",
   factions: [
     "United Corporate Alliance (UCA)",
+    "Qu111s (Quills)",
     "Ne0n Legion",
     "Iron Curtains",
     "D4rk $pider",
@@ -134,6 +135,7 @@ export const WORLD_LORE = {
     "Moonrisers",
     "The Wooders",
     "Punch Skaters",
+    "The Team",
   ],
   code: [
     "Esk8 or die — motorized vehicles are relics.",
@@ -361,9 +363,8 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
     description:
       "Cyber ninja zealots who serve a massive secret society known as the Dark Lights. " +
       "They move packages between hidden temples, and few dare to open them for fear of " +
-      "being disappeared. The Knights Technarchy are predicted to attack the protagonist " +
-      "to acquire a sacred artifact. They have no logos, no visible crew markings — " +
-      "their rep is built entirely through fear and demonstrated precision.",
+      "being disappeared. They have no logos, no visible crew markings — their rep is " +
+      "built entirely through fear and demonstrated precision.",
     strengths: "Maximum Stealth, elite Speed. Excels in surveillance-heavy districts. Penalty: low Rep.",
   },
   {
@@ -383,9 +384,7 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
     description:
       "Publicly known as a Communist revolutionary insurgent group wanting to overthrow the " +
       "oligarchy. They traffic in weapons and terrorism, viewing themselves as freedom fighters, " +
-      "and use stolen information as leverage. They recruit heavily from ex-military veterans. " +
-      "[Future Reveal Detail]: The Iron Curtains are later revealed to be a secret arm of the " +
-      "UCA, operating as a false flag revolutionary group to suck in malcontents and keep them impotent.",
+      "and use stolen information as leverage. They recruit heavily from ex-military veterans.",
     strengths: "High Grit, balanced stats. Adaptable across all districts. Steady performers over specialists.",
   },
   {
@@ -427,8 +426,7 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
       "A university archaeological organization dedicated to tracking down and transporting " +
       "rare artifacts for museums and wealthy Airaway mansions. Their work leads them into " +
       "the Nightshade and into contact with secret religious cults who try to steal the items " +
-      "back. They are connected to the sacred artifact that the Knights Technarchy wants — " +
-      "the object that puts Skids in the crosshairs of multiple factions.",
+      "back. Their runs frequently put them between elite collectors and dangerous believers.",
     strengths: "Maximum Rep, high Tech. Elite access to high-security archives. Penalty: limited Stealth.",
   },
   {
@@ -482,8 +480,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
       "The dominant governing body — a consortium of leading corporations managing global " +
       "infrastructure from Airaway. The UCA provides identical white bikes to workers and " +
       "families as a symbol of sanctioned transit. These bikes are prime targets for Punch " +
-      "Skater broomstick attacks. The UCA secretly controls the Iron Curtains as a false-flag " +
-      "revolutionary group to contain and neutralize genuine dissent.",
+      "Skater broomstick attacks.",
   },
   {
     name: "Qu111s (Quills)",
@@ -492,9 +489,8 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     description:
       "A guerrilla journalist organization that monitors the activities of the oligarchs. " +
       "The Quills are known to protect couriers like Skids who carry dangerous information. " +
-      "Their end goal is to release intercepted data — including evidence that the Iron " +
-      "Curtains are a UCA false-flag operation — to spark a city-wide revolution. " +
-      "Quill-01 is their most active field operative.",
+      "Their end goal is to release intercepted data capable of sparking a city-wide " +
+      "revolution. Quill-01 is their most active field operative.",
   },
   {
     name: "Ne0n Legion",
@@ -513,10 +509,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     description:
       "Publicly known as a Communist revolutionary insurgent group. They traffic in weapons " +
       "and terrorism, viewing themselves as freedom fighters who use stolen information as " +
-      "leverage. They recruit heavily from Ex Military archetypes. " +
-      "[Hidden truth]: The Iron Curtains are secretly a UCA false-flag operation — designed " +
-      "to absorb malcontents and keep them impotent. A small internal faction discovered the " +
-      "truth and sent Skids undercover to protect him from the deception.",
+      "leverage. They recruit heavily from Ex Military archetypes.",
   },
   {
     name: "D4rk $pider",
@@ -537,8 +530,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
       "A medical humanitarian organization funded by oligarchy philanthropy. They use couriers " +
       "to transport medical gear, organs, and medicine to impoverished neighborhoods — and " +
       "sometimes to wealthy clients as well. These deliveries are highly sought-after and " +
-      "frequently stolen. The Asclepians placed Skids undercover in their organization after " +
-      "the Moonrisers recruited him — using his clean record as cover for a high-risk mission.",
+      "frequently stolen.",
   },
   {
     name: "The Mesopotamian Society",
@@ -548,8 +540,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
       "A university archaeological organization dedicated to tracking down and transporting " +
       "rare artifacts for museums and wealthy Airaway mansions. Their work leads them into " +
       "the Nightshade and into contact with secret religious cults who try to steal the items " +
-      "back. They are connected to the sacred artifact that Cyber Jeff Bezos wants delivered " +
-      "— the object that puts the Knights Technarchy on Skids' trail.",
+      "back.",
   },
   {
     name: "The Knights Technarchy",
@@ -558,9 +549,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     description:
       "Cyber ninja zealots who serve a massive secret society known as the Dark Lights. " +
       "They move packages between hidden temples, and few dare to open them for fear of " +
-      "being disappeared. The Knights Technarchy are predicted to attack Skids directly to " +
-      "obtain the sacred artifact he has been tasked with delivering to Cyber Jeff Bezos — " +
-      "creating the chaos that the Quills will use to release their data and spark a revolution.",
+      "being disappeared.",
   },
   {
     name: "Hermes' Squirmies",
@@ -588,10 +577,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     tagline: "The capitalist pigs will fall. We just need the right spark.",
     description:
       "A gang that talks loudly about fighting the capitalist pigs and organizes underground " +
-      "raves in Nightshade. Ketch brought Skids to a Moonriser rave where Skids demonstrated " +
-      "his skills and was recruited for a test delivery run. Although Skids wanted to run with " +
-      "the Moonrisers, they directed him to join the Asclepians undercover, using his clean " +
-      "record as an asset.",
+      "raves in Nightshade.",
   },
   {
     name: "The Wooders",
@@ -638,6 +624,18 @@ export interface LoreUpdateEntry {
 }
 
 export const LORE_UPDATES: LoreUpdateEntry[] = [
+  {
+    changedAt: "2026-05",
+    title: "Lore bible visibility tags clarified hidden truths",
+    summary:
+      "The lore docs now distinguish public canon, writer-only truth, and future reveals so " +
+      "plot pressure stays coherent without leaking twists into baseline reference text.",
+    highlights: [
+      "Public / Internal / Reveal labels now frame hidden truths across factions, geography, and plot notes.",
+      "The Team is explicitly listed alongside the other major live power blocs.",
+      "Artifact-run details and legacy Bezos references were removed from plain public Codex copy.",
+    ],
+  },
   {
     changedAt: "2026-05",
     title: "First wave of named district rivals entered the Codex",
