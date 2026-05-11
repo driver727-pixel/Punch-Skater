@@ -434,7 +434,7 @@ export function Workshop() {
           </div>
           <BoardBuilder value={boardConfig} onChange={setBoardConfig} showLockIn={false} />
           <div className="workshop-bench__preview">
-            <SkateboardStatsPanel loadout={benchLoadout} />
+            <SkateboardStatsPanel loadout={benchLoadout} config={normalizeBoardConfig(boardConfig)} />
           </div>
         </section>
 
@@ -480,7 +480,7 @@ export function Workshop() {
               <strong>{selectedBoard.label}</strong>
               <span>Saved {new Date(selectedBoard.createdAt).toLocaleString()}</span>
             </div>
-            <SkateboardStatsPanel loadout={selectedBoard.loadout} />
+            <SkateboardStatsPanel loadout={selectedBoard.loadout} config={selectedBoard.config} />
             <div className="workshop-detail__actions">
               <button
                 className="btn-outline btn-sm"
