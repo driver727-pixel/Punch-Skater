@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect, useMemo } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
@@ -408,8 +408,8 @@ function CardDisplayComponent({
     );
   }
 
-  const normalizedBoardConfig = normalizeBoardConfig(card.board.config);
-  const boardLoadout = calculateBoardStats(normalizedBoardConfig);
+  const normalizedBoardConfig = useMemo(() => normalizeBoardConfig(card.board.config), [card.board.config]);
+  const boardLoadout = useMemo(() => calculateBoardStats(normalizedBoardConfig), [normalizedBoardConfig]);
   const bt = BOARD_TYPE_OPTIONS.find((o) => o.value === normalizedBoardConfig.boardType);
   const dr = DRIVETRAIN_OPTIONS.find((o) => o.value === normalizedBoardConfig.drivetrain);
   const mt = MOTOR_OPTIONS.find((o) => o.value === normalizedBoardConfig.motor);

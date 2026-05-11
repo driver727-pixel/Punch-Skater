@@ -15,7 +15,7 @@
  * selections are automatically snapped to the first allowed value, and
  * disallowed carousel items are marked as disabled.
  */
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { BoardConfig, BoardLoadout } from "../lib/boardBuilder";
 import {
   BOARD_COMPONENT_IMAGE_URLS,
@@ -102,7 +102,7 @@ const DRIVE_ORIENTATION_ITEMS = [
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColor, showLockIn = true }: BoardBuilderProps) {
-  const normalizedValue = normalizeBoardConfig(value);
+  const normalizedValue = useMemo(() => normalizeBoardConfig(value), [value]);
   // Animation phase flags — toggled in sequence on lock-in
   const [shaking, setShaking]   = useState(false);
   const [locked,  setLocked]    = useState(false);
