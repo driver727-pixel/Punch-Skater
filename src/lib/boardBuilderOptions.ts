@@ -207,6 +207,7 @@ export const BATTERY_OPTIONS: BatteryOption[] = [
 export const DEFAULT_BOARD_CONFIG: BoardConfig = {
   boardType: "Street",
   drivetrain: "Belt",
+  driveOrientation: "Rear-Wheel Drive",
   motor: "Standard",
   wheels: "Urethane",
   battery: "SlimStealth",

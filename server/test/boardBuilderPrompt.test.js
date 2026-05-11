@@ -39,6 +39,8 @@ const BASE_CONFIG = {
 };
 
 const ALL_DRIVETRAINS = ['Belt', 'Hub', 'Gear', '4WD'];
+const DUPLICATE_REAR_ONLY_SENTENCE_BLOCK =
+  /For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD\./i;
 
 for (const drivetrain of ALL_DRIVETRAINS) {
   test(`buildBoardImagePrompt [${drivetrain}] — contains single-assembly anti-mutation constraint`, () => {
@@ -171,6 +173,19 @@ test('buildBoardImagePrompt [Belt + Urethane] — forbids hub wheel hardware on 
     prompt,
     /never from hub-motor wheel casings/i,
     'Belt prompt should explicitly forbid hub-motor wheel casings',
+  );
+});
+
+test('buildBoardImagePrompt [Belt] — omits the duplicate rear-only reminder block', () => {
+  const prompt = buildBoardImagePrompt({
+    ...BASE_CONFIG,
+    drivetrain: 'Belt',
+  });
+
+  assert.doesNotMatch(
+    prompt,
+    DUPLICATE_REAR_ONLY_SENTENCE_BLOCK,
+    'Prompt should not include the removed duplicate rear-only reminder block',
   );
 });
 

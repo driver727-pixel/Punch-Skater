@@ -2,6 +2,7 @@ import type { District } from "./types";
 
 export type BoardType = "Street" | "AT" | "Mountain" | "Surf" | "Slider";
 export type Drivetrain = "Belt" | "Hub" | "Gear" | "4WD";
+export type DriveOrientation = "Rear-Wheel Drive" | "Front-Wheel Drive";
 export type MotorType = "Micro" | "Standard" | "Torque" | "Outrunner";
 export type WheelType = "Urethane" | "Pneumatic" | "Rubber" | "Cloud";
 export type BatteryType = "SlimStealth" | "DoubleStack" | "TopPeli";
@@ -9,6 +10,7 @@ export type BatteryType = "SlimStealth" | "DoubleStack" | "TopPeli";
 export interface BoardConfig {
   boardType: BoardType;
   drivetrain: Drivetrain;
+  driveOrientation: DriveOrientation;
   motor: MotorType;
   wheels: WheelType;
   battery: BatteryType;
@@ -97,6 +99,7 @@ export interface BoardLoadout {
   acceleration: number;
   accessProfile: string;
   range: number;
+  traction: number;
   /** Skateboard Stat Engine envelope (present on all freshly forged cards). */
   skateStats?: SkateStats;
 }

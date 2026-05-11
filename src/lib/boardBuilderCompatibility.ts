@@ -4,6 +4,7 @@ import type {
   BoardConfig,
   BoardType,
   CompatibilityError,
+  DriveOrientation,
 } from "./boardBuilderTypes";
 
 // Older saved cards used "AWD" before the UI and prompt stack standardized on
@@ -14,10 +15,27 @@ function normalizeDrivetrain(drivetrain: string) {
   return drivetrain === LEGACY_FOUR_WHEEL_DRIVE ? "4WD" : drivetrain;
 }
 
+function normalizeDriveOrientation(driveOrientation: string | undefined): DriveOrientation {
+  switch (driveOrientation) {
+    case "Front-Wheel Drive":
+    case "FWD":
+      return "Front-Wheel Drive";
+    case "Rear-Wheel Drive":
+    case "RWD":
+      return "Rear-Wheel Drive";
+    default:
+      return "Rear-Wheel Drive";
+  }
+}
+
 export function normalizeBoardConfig(config: BoardConfig): BoardConfig {
+  const drivetrain = normalizeDrivetrain(config.drivetrain) as BoardConfig["drivetrain"];
   return {
     ...config,
-    drivetrain: normalizeDrivetrain(config.drivetrain) as BoardConfig["drivetrain"],
+    drivetrain,
+    driveOrientation: drivetrain === "4WD"
+      ? "Rear-Wheel Drive"
+      : normalizeDriveOrientation(config.driveOrientation),
   };
 }
 
@@ -134,6 +152,7 @@ export function enforceCompatibility(config: BoardConfig): BoardConfig {
   return {
     boardType: normalizedConfig.boardType,
     drivetrain: allowed.drivetrains.includes(normalizedConfig.drivetrain) ? normalizedConfig.drivetrain : allowed.drivetrains[0],
+    driveOrientation: normalizedConfig.driveOrientation,
     motor: allowed.motors.includes(normalizedConfig.motor) ? normalizedConfig.motor : allowed.motors[0],
     wheels: allowed.wheels.includes(normalizedConfig.wheels) ? normalizedConfig.wheels : allowed.wheels[0],
     battery: allowed.batteries.includes(normalizedConfig.battery) ? normalizedConfig.battery : allowed.batteries[0],
