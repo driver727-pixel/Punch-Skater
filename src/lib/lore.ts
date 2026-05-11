@@ -112,7 +112,7 @@ export const LORE_ACTIVE_ABILITIES = [
 
 export const WORLD_LORE = {
   summary:
-    "The world is mostly unified under the United Corporations of America (UCA), which " +
+    "The world is mostly unified under the United Corporate Alliance (UCA), which " +
     "operates from the elevated city of Airaway. Below it, the former roads and tunnels " +
     "have been repurposed into a sprawling courier underground. Electric skateboards " +
     "(Esk8) are the dominant transport — cheaper than flying cars and perfect for decayed " +
@@ -122,8 +122,7 @@ export const WORLD_LORE = {
     "evolved without firearms as a standard weapon culture; they fight, perform, and " +
     "settle prize disputes through high-speed jousts using cyber lances and shields.",
   factions: [
-    "United Corporations of America (UCA)",
-    "Qu111s (Quills)",
+    "United Corporate Alliance (UCA)",
     "Ne0n Legion",
     "Iron Curtains",
     "D4rk $pider",
@@ -167,7 +166,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
   {
     name: "Airaway",
     kind: "district",
-    controlledBy: "United Corporations of America (UCA)",
+    controlledBy: "United Corporate Alliance (UCA)",
     australianAnalogue: "Blue Mountains sky-city above Greater Western Sydney",
     tagline: "The higher you go, the colder the air. The colder the air, the cleaner the money.",
     description:
@@ -476,7 +475,7 @@ export interface FactionLoreEntry {
 
 export const FACTION_LORE: FactionLoreEntry[] = [
   {
-    name: "United Corporations of America (UCA)",
+    name: "United Corporate Alliance (UCA)",
     districts: ["Airaway"],
     tagline: "Infrastructure, security, compliance. In that order.",
     description:

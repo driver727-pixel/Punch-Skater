@@ -9,7 +9,7 @@ What follows is the public-facing canon that should stay aligned with `FACTION_L
 
 ---
 
-## United Corporations of America (UCA)
+## United Corporate Alliance (UCA)
 - **Districts:** Airaway
 - **Tagline:** *"Infrastructure, security, compliance. In that order."*
 

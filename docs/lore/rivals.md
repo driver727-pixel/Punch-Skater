@@ -29,7 +29,7 @@ future expansion slot for the Wooders.
 ## Mina Chrome — Airaway
 > *"Compliance check. Hold the line, mate, and try not to break it."*
 
-- **Faction:** United Corporations of America (UCA)
+- **Faction:** United Corporate Alliance (UCA)
 - **Signature tactic:** Guard (`Magnetic Guard`)
 - **Personality:** Polite, polished, absolutely lethal. Runs the Airaway
   checkpoints like a board meeting and quotes the contractor handbook

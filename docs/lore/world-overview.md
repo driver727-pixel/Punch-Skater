@@ -1,7 +1,7 @@
 # World Overview
 
 ## The City
-The world of **Punch Skater** is mostly unified under the **United Corporations of America (UCA)**.
+The world of **Punch Skater** is mostly unified under the **United Corporate Alliance (UCA)**.
 Its public face is **Airaway**: a Blue Mountains sky-city suspended above Greater Western Sydney,
 where executives live in polished towers while the basin below chokes on industrial smog.
 Below that corporate canopy stretches a courier underworld built out of decayed roads,
@@ -46,7 +46,7 @@ hijackings, raids, and route events erupt between destination hubs.
 - A Punch Skater owes nothing to nobody. Until they owe everything.
 
 ## Major Power Blocs
-- **United Corporations of America (UCA)** — the infrastructure empire in Airaway.
+- **United Corporate Alliance (UCA)** — the infrastructure empire in Airaway.
 - **Qu111s (Quills)** — guerrilla journalists gathering truth for release.
 - **Ne0n Legion** — transactional thieves and mercenaries.
 - **Iron Curtains** — apparent revolutionaries with a hidden UCA tether.

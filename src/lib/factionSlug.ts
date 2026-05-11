@@ -5,12 +5,12 @@
  *
  * Examples:
  *   "D4rk $pider"                          → "d4rk_pider"  ($ stripped)
- *   "United Corporations of America (UCA)" → "uca"
+ *   "United Corporate Alliance (UCA)" → "uca"
  *   "Hermes' Squirmies"                    → "hermes_squirmies"
  */
 
 const SLUG_OVERRIDES: Record<string, string> = {
-  "United Corporations of America (UCA)": "uca",
+  "United Corporate Alliance (UCA)": "uca",
 };
 
 export function factionSlug(name: string): string {
