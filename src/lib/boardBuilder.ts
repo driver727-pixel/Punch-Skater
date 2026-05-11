@@ -10,6 +10,7 @@ export type {
   BoardStatKey,
   BoardType,
   CompatibilityError,
+  DriveOrientation,
   Drivetrain,
   MotorOption,
   MotorType,
@@ -46,6 +47,7 @@ export {
 } from "./boardBuilderCompatibility";
 
 export {
+  calculateBoardTraction,
   calculateBoardStats,
   getBoardStatBonuses,
   getBoardSummary,

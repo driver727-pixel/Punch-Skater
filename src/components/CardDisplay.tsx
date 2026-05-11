@@ -7,7 +7,7 @@ import { ShareModal } from "./ShareModal";
 import { CardViewer3D } from "./CardViewer3D";
 import { PrintModal } from "./PrintModal";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
-import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
+import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS, calculateBoardStats, normalizeBoardConfig } from "../lib/boardBuilder";
 import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
@@ -108,7 +108,13 @@ function areCardsEqual(previous: CardPayload, next: CardPayload): boolean {
     previous.board.imageUrl === next.board.imageUrl &&
     previous.board.tuned === next.board.tuned &&
     previous.board.layerOrder === next.board.layerOrder &&
-    shallowEqualObject(previous.board.placement as unknown as Record<string, unknown>, next.board.placement as unknown as Record<string, unknown>)
+    previous.board.totalWeight === next.board.totalWeight &&
+    previous.board.loadoutSummary === next.board.loadoutSummary &&
+    previous.board.accessProfile === next.board.accessProfile &&
+    shallowEqualObject(previous.board.placement as unknown as Record<string, unknown>, next.board.placement as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.board.config as unknown as Record<string, unknown>, next.board.config as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.board.loadout as unknown as Record<string, unknown>, next.board.loadout as unknown as Record<string, unknown>) &&
+    shallowEqualObject(previous.board.components as unknown as Record<string, unknown>, next.board.components as unknown as Record<string, unknown>)
   );
 }
 
@@ -397,11 +403,16 @@ function CardDisplayComponent({
     );
   }
 
-  const bt = BOARD_TYPE_OPTIONS.find((o) => o.value === card.board.config.boardType);
-  const dr = DRIVETRAIN_OPTIONS.find((o) => o.value === card.board.config.drivetrain);
-  const mt = MOTOR_OPTIONS.find((o) => o.value === card.board.config.motor);
-  const wh = WHEEL_OPTIONS.find((o) => o.value === card.board.config.wheels);
-  const ba = BATTERY_OPTIONS.find((o) => o.value === card.board.config.battery);
+  const normalizedBoardConfig = normalizeBoardConfig(card.board.config);
+  const boardLoadout = card.board.loadout?.traction !== undefined
+    ? card.board.loadout
+    : calculateBoardStats(normalizedBoardConfig);
+  const bt = BOARD_TYPE_OPTIONS.find((o) => o.value === normalizedBoardConfig.boardType);
+  const dr = DRIVETRAIN_OPTIONS.find((o) => o.value === normalizedBoardConfig.drivetrain);
+  const mt = MOTOR_OPTIONS.find((o) => o.value === normalizedBoardConfig.motor);
+  const wh = WHEEL_OPTIONS.find((o) => o.value === normalizedBoardConfig.wheels);
+  const ba = BATTERY_OPTIONS.find((o) => o.value === normalizedBoardConfig.battery);
+  const driveBiasLabel = normalizedBoardConfig.driveOrientation === "Front-Wheel Drive" ? "FWD" : "RWD";
 
   return (
     <div className="card-stack-shell">
@@ -598,9 +609,12 @@ function CardDisplayComponent({
               <BoardRow icon={mt?.icon ?? "⚡"}   label="MOTOR"   value={mt?.label ?? card.board.components.motor} />
               <BoardRow icon={wh?.icon ?? "⚫"}   label="WHEELS"  value={wh?.label ?? card.board.components.wheels} />
               <BoardRow icon={ba?.icon ?? "🔋"}   label="BATTERY" value={ba?.label ?? card.board.components.battery} />
+              {normalizedBoardConfig.drivetrain !== "4WD" && (
+                <BoardRow icon="↔️" label="BIAS" value={driveBiasLabel} />
+              )}
             </div>
-            {card.board.loadout && (
-              <SkateboardStatsPanel loadout={card.board.loadout} />
+            {boardLoadout && (
+              <SkateboardStatsPanel loadout={boardLoadout} config={normalizedBoardConfig} />
             )}
           </div>
 

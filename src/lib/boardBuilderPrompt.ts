@@ -145,7 +145,6 @@ export function buildBoardImagePrompt(config: BoardConfig): string {
     `${getMountainboardLoreDescription(normalizedConfig)} ` +
     `Show one fully assembled complete skateboard only. ` +
     `The final board must clearly preserve the selected deck shape, drivetrain hardware, motor size, wheel type and wheel diameter${batteryPreservationClause} with no substitutions. ` +
-    `For Belt, Hub, and Gear builds, keep all drive hardware on the rear truck and rear wheels only; do not add any front drive hardware unless the selected drivetrain is 4WD. ` +
     `${noseConstraint}` +
     `Three-quarter product display view, centered composition, crisp painted detail, clearly illustrated gouache texture, not photoreal, no rider, no extra parts, no exploded view, exactly one skateboard in the image. ` +
     `CRITICAL: Absolutely no text, words, letters, numbers, labels, captions, annotations, callout lines, dimension lines, part names, diagrams, watermarks, or any written characters anywhere in the image or on the skateboard itself.`

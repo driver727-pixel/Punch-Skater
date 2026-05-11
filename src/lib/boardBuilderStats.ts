@@ -33,6 +33,11 @@ export function getBoardStatBonuses(config: BoardConfig): Partial<Record<BoardSt
   return totals;
 }
 
+export function calculateBoardTraction(config: BoardConfig): number {
+  const normalizedConfig = normalizeBoardConfig(config);
+  return normalizedConfig.drivetrain === "4WD" ? 10 : 9;
+}
+
 export function getBoardSummary(config: BoardConfig): string {
   const normalizedConfig = normalizeBoardConfig(config);
   const type = BOARD_TYPE_OPTIONS.find((option) => option.value === normalizedConfig.boardType);
@@ -79,6 +84,7 @@ export function calculateBoardStats(config: BoardConfig): BoardLoadout {
     acceleration: motorModel?.acceleration ?? DEFAULT_ACCEL,
     accessProfile: getBoardDistrictAccessProfile(normalizedConfig),
     range: batteryModel?.range ?? DEFAULT_RANGE,
+    traction: calculateBoardTraction(normalizedConfig),
     skateStats: computeSkateStats(normalizedConfig),
   };
 }

@@ -28,6 +28,7 @@ import {
   calculateBoardStats,
   enforceCompatibility,
   getAllowedComponents,
+  normalizeBoardConfig,
   validateBoardCompatibility,
 } from "../lib/boardBuilder";
 import { ConveyorCarousel } from "./ConveyorCarousel";
@@ -92,10 +93,16 @@ const BATTERY_ITEMS: CarouselItem[] = BATTERY_OPTIONS.map((o) => ({
   icon: o.icon,
   imageSrc: COMPONENT_IMAGE_URLS[o.value as keyof typeof COMPONENT_IMAGE_URLS],
   tagline: o.tagline,
-}))
+}));
+
+const DRIVE_ORIENTATION_ITEMS = [
+  { value: "Rear-Wheel Drive", label: "Rear-Wheel Drive" },
+  { value: "Front-Wheel Drive", label: "Front-Wheel Drive" },
+] as const;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColor, showLockIn = true }: BoardBuilderProps) {
+  const normalizedValue = normalizeBoardConfig(value);
   // Animation phase flags — toggled in sequence on lock-in
   const [shaking, setShaking]   = useState(false);
   const [locked,  setLocked]    = useState(false);
@@ -105,8 +112,8 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
   useEffect(() => () => { timerRefs.current.forEach(clearTimeout); }, []);
 
   // Derive allowed component sets and compatibility errors from the current deck type
-  const allowed      = getAllowedComponents(value.boardType);
-  const compatErrors = validateBoardCompatibility(value);
+  const allowed      = getAllowedComponents(normalizedValue.boardType);
+  const compatErrors = validateBoardCompatibility(normalizedValue);
 
   /**
    * Full lock-in animation sequence:
@@ -127,10 +134,10 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
       setTimeout(() => setShaking(false), 750),
       setTimeout(() => {
         setLocked(true);
-        onSave?.(value, calculateBoardStats(value));
+        onSave?.(normalizedValue, calculateBoardStats(normalizedValue));
       }, 1000),
     );
-  }, [value, onSave]);
+  }, [normalizedValue, onSave]);
 
   /** Reset the locked flag, enforce compatibility, and propagate a carousel selection change. */
   const handleCarouselChange = useCallback((next: BoardConfig) => {
@@ -144,10 +151,10 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
   const wheelSet      = new Set(allowed.wheels);
   const batterySet    = new Set(allowed.batteries);
 
-  const filteredDrivetrainItems = DRIVETRAIN_ITEMS.map((i) => ({ ...i, disabled: !drivetrainSet.has(i.value as typeof value.drivetrain) }));
-  const filteredMotorItems      = MOTOR_ITEMS.map((i) => ({ ...i, disabled: !motorSet.has(i.value as typeof value.motor) }));
-  const filteredWheelItems      = WHEEL_ITEMS.map((i) => ({ ...i, disabled: !wheelSet.has(i.value as typeof value.wheels) }));
-  const filteredBatteryItems    = BATTERY_ITEMS.map((i) => ({ ...i, disabled: !batterySet.has(i.value as typeof value.battery) }));
+  const filteredDrivetrainItems = DRIVETRAIN_ITEMS.map((i) => ({ ...i, disabled: !drivetrainSet.has(i.value as typeof normalizedValue.drivetrain) }));
+  const filteredMotorItems      = MOTOR_ITEMS.map((i) => ({ ...i, disabled: !motorSet.has(i.value as typeof normalizedValue.motor) }));
+  const filteredWheelItems      = WHEEL_ITEMS.map((i) => ({ ...i, disabled: !wheelSet.has(i.value as typeof normalizedValue.wheels) }));
+  const filteredBatteryItems    = BATTERY_ITEMS.map((i) => ({ ...i, disabled: !batterySet.has(i.value as typeof normalizedValue.battery) }));
 
   return (
     <div className={`board-builder${shaking ? " board-builder--shake" : ""}`}>
@@ -155,40 +162,60 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
       <ConveyorCarousel
         label="Decks"
         items={DECK_ITEMS}
-        selected={value.boardType}
-        onSelect={(v) => handleCarouselChange({ ...value, boardType: v as typeof value.boardType })}
+        selected={normalizedValue.boardType}
+        onSelect={(v) => handleCarouselChange({ ...normalizedValue, boardType: v as typeof normalizedValue.boardType })}
       />
 
       {/* Belt 2 — Drivetrains (determines Top Speed) */}
       <ConveyorCarousel
         label="Drivetrains"
         items={filteredDrivetrainItems}
-        selected={value.drivetrain}
-        onSelect={(v) => handleCarouselChange({ ...value, drivetrain: v as typeof value.drivetrain })}
+        selected={normalizedValue.drivetrain}
+        onSelect={(v) => handleCarouselChange({ ...normalizedValue, drivetrain: v as typeof normalizedValue.drivetrain })}
       />
+
+      {normalizedValue.drivetrain !== "4WD" && (
+        <div className="form-group" style={{ marginBottom: 12 }}>
+          <label>Drive Direction</label>
+          <div className="pill-group">
+            {DRIVE_ORIENTATION_ITEMS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`pill${normalizedValue.driveOrientation === option.value ? " selected" : ""}`}
+                aria-pressed={normalizedValue.driveOrientation === option.value}
+                onClick={() => handleCarouselChange({ ...normalizedValue, driveOrientation: option.value })}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="form-hint">This reversible drive setting updates the card stat only and does not change the board art.</p>
+        </div>
+      )}
 
       {/* Belt 3 — Motors (determines Acceleration) */}
       <ConveyorCarousel
         label="Motors"
         items={filteredMotorItems}
-        selected={value.motor}
-        onSelect={(v) => handleCarouselChange({ ...value, motor: v as typeof value.motor })}
+        selected={normalizedValue.motor}
+        onSelect={(v) => handleCarouselChange({ ...normalizedValue, motor: v as typeof normalizedValue.motor })}
       />
 
       {/* Belt 4 — Wheels (determines access profile) */}
       <ConveyorCarousel
         label="Wheels"
         items={filteredWheelItems}
-        selected={value.wheels}
-        onSelect={(v) => handleCarouselChange({ ...value, wheels: v as typeof value.wheels })}
+        selected={normalizedValue.wheels}
+        onSelect={(v) => handleCarouselChange({ ...normalizedValue, wheels: v as typeof normalizedValue.wheels })}
       />
 
       {/* Belt 5 — Batteries (determines Range) */}
       <ConveyorCarousel
         label="Batteries"
         items={filteredBatteryItems}
-        selected={value.battery}
-        onSelect={(v) => handleCarouselChange({ ...value, battery: v as typeof value.battery })}
+        selected={normalizedValue.battery}
+        onSelect={(v) => handleCarouselChange({ ...normalizedValue, battery: v as typeof normalizedValue.battery })}
       />
 
       {/* Compatibility warnings */}

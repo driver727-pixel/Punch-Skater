@@ -1,10 +1,12 @@
-import type { BoardLoadout } from "../lib/boardBuilder";
+import { calculateBoardTraction } from "../lib/boardBuilder";
+import type { BoardConfig, BoardLoadout } from "../lib/boardBuilder";
 
 // Inline stat labels since BOARD_STAT_LABELS and SKATE_STAT_LABELS were removed
 const BOARD_STATS = {
   speed:        { label: "Speed",  tooltip: "Board top speed" },
   acceleration: { label: "Accel",  tooltip: "How quickly the board reaches top speed" },
   range:        { label: "Range",  tooltip: "Battery range before recharge is needed" },
+  traction:     { label: "Traction", tooltip: "Drive grip rating. 4WD stays highest; reversible front/rear drive sits just below it." },
 } as const;
 
 const SKATE_STATS = {
@@ -16,6 +18,7 @@ const SKATE_STATS = {
 
 interface SkateboardStatsPanelProps {
   loadout: BoardLoadout;
+  config?: BoardConfig;
 }
 
 interface NeonBarProps {
@@ -52,8 +55,9 @@ function NeonBar({ label, value, max, colorClass, tooltip }: NeonBarProps) {
  */
 const SKATE_STAT_MAX = 220;
 
-export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
+export function SkateboardStatsPanel({ loadout, config }: SkateboardStatsPanelProps) {
   const { skateStats } = loadout;
+  const traction = loadout.traction ?? (config ? calculateBoardTraction(config) : 0);
 
   return (
     <div className="skate-stats-panel">
@@ -62,6 +66,7 @@ export function SkateboardStatsPanel({ loadout }: SkateboardStatsPanelProps) {
       <NeonBar label={BOARD_STATS.speed.label}        value={loadout.speed}        max={10} colorClass="neon-tube--cyan"    tooltip={BOARD_STATS.speed.tooltip} />
       <NeonBar label={BOARD_STATS.acceleration.label} value={loadout.acceleration} max={10} colorClass="neon-tube--magenta" tooltip={BOARD_STATS.acceleration.tooltip} />
       <NeonBar label={BOARD_STATS.range.label}        value={loadout.range}        max={10} colorClass="neon-tube--green"   tooltip={BOARD_STATS.range.tooltip} />
+      <NeonBar label={BOARD_STATS.traction.label}     value={traction}             max={10} colorClass="neon-tube--yellow"  tooltip={BOARD_STATS.traction.tooltip} />
 
       {skateStats && (
         <>
