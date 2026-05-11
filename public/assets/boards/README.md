@@ -14,6 +14,21 @@ It is not part of the live card-rendering pipeline.
 
 ---
 
+## Approved Mountain master image
+
+Mountain board renders now bypass live AI generation in production and use a
+single global approved master asset instead:
+
+`public/assets/boards/approved/mountainboard-master.png`
+
+- Replace that one file when you approve a better Mountain image.
+- Keep the background transparent so Workshop/Card renders do not need extra
+  background removal.
+- If you replace the file in place, bump the board asset version so browsers
+  request the new master image instead of a stale cached copy.
+
+---
+
 ## BoardPreviewGrid images (`public/assets/boards/<category>/`)
 
 These are the component images shown on the **assembly canvas**

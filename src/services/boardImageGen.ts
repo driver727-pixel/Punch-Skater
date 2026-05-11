@@ -1,4 +1,5 @@
 import { resolveApiUrl } from "../lib/apiUrls";
+import { resolveApprovedBoardImage } from "../lib/approvedBoardImages";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { enforceCompatibility, normalizeBoardConfig } from "../lib/boardBuilder";
 import boardImageVersionJson from "../lib/boardImageVersion.json";
@@ -185,6 +186,11 @@ async function pollBoardImageJob(jobId: string): Promise<string> {
 }
 
 export async function generateGouacheBoard(config: BoardConfig, options: GenerateBoardImageOptions = {}): Promise<string> {
+  const approvedImage = resolveApprovedBoardImage(config);
+  if (approvedImage) {
+    return approvedImage.imageUrl;
+  }
+
   const resolvedConfig = enforceCompatibility(normalizeBoardConfig(config));
   const imageUrls = getResolvedBoardReferenceUrls(resolvedConfig);
   const cacheKey = buildBoardImageCacheKey(resolvedConfig, imageUrls, getCurrentBoardImageUserScope());
@@ -242,4 +248,8 @@ export async function generateGouacheBoard(config: BoardConfig, options: Generat
     await setCachedImage(cacheKey, imageUrl);
   }
   return imageUrl;
+}
+
+export function shouldRemoveBoardImageBackground(config: BoardConfig): boolean {
+  return resolveApprovedBoardImage(config)?.backgroundRemovalRequired ?? true;
 }

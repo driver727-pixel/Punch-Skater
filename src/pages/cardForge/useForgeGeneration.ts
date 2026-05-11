@@ -11,7 +11,7 @@ import { enforceCompatibility, normalizeBoardConfig } from "../../lib/boardBuild
 import { resolveArchetypeStyle } from "../../lib/styles";
 import { sfxClick, sfxSuccessPing } from "../../lib/sfx";
 import { removeBackground, isImageGenConfigured } from "../../services/imageGen";
-import { generateGouacheBoard } from "../../services/boardImageGen";
+import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../../services/boardImageGen";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../../lib/promptBuilder";
 import { useTier } from "../../context/TierContext";
 import { useAuth } from "../../context/AuthContext";
@@ -213,10 +213,12 @@ export function useForgeGeneration() {
       const boardImageUrl = await generateGouacheBoard(config, options);
       if (signal?.aborted) return false;
       let finalBoardUrl = boardImageUrl;
-      try {
-        finalBoardUrl = (await removeBackground(boardImageUrl)).imageUrl;
-      } catch (bgError) {
-        console.warn("Board background removal failed, using original image:", bgError);
+      if (shouldRemoveBoardImageBackground(config)) {
+        try {
+          finalBoardUrl = (await removeBackground(boardImageUrl)).imageUrl;
+        } catch (bgError) {
+          console.warn("Board background removal failed, using original image:", bgError);
+        }
       }
       if (signal?.aborted) return false;
       setGenerated((current) => current ? {

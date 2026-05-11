@@ -9,7 +9,7 @@ import { calculateBoardStats, getBoardSummary, normalizeBoardConfig } from "../l
 import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
 import type { WorkshopBoardPayload } from "../lib/types";
 import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
-import { generateGouacheBoard } from "../services/boardImageGen";
+import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../services/boardImageGen";
 import { removeBackground } from "../services/imageGen";
 import { useAuth } from "../context/AuthContext";
 
@@ -18,6 +18,9 @@ async function generateTransparentBoardArt(
   options?: Parameters<typeof generateGouacheBoard>[1],
 ): Promise<string> {
   const boardImageUrl = await generateGouacheBoard(config, options);
+  if (!shouldRemoveBoardImageBackground(config)) {
+    return boardImageUrl;
+  }
   return (await removeBackground(boardImageUrl)).imageUrl;
 }
 
