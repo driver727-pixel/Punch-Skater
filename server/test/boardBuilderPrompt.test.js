@@ -17,6 +17,7 @@ import {
   CRITICAL_SINGLE_ASSEMBLY_CONSTRAINT,
   CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT,
   DRIVETRAIN_IMAGE_DESCRIPTIONS,
+  MOUNTAINBOARD_LOCK_CONSTRAINT,
   MOUNTAINBOARD_LORE_CONSTRAINT,
   WHEEL_IMAGE_DESCRIPTIONS,
   buildBoardImagePrompt,
@@ -185,6 +186,15 @@ test('buildBoardImagePrompt [Mountain 4WD] — includes mountainboard lore const
   assert.ok(
     prompt.includes(MOUNTAINBOARD_LORE_CONSTRAINT),
     'Mountain 4WD prompt must describe foot straps, boot bindings, top battery box, gear drives, and solid rubber wheel lore',
+  );
+  assert.ok(
+    prompt.includes(MOUNTAINBOARD_LOCK_CONSTRAINT),
+    'Mountain 4WD prompt must include the mountainboard lock constraint',
+  );
+  assert.match(
+    prompt,
+    /If any instruction conflicts, keep these mountainboard features unchanged/i,
+    'Mountain 4WD prompt must prioritize preserving mountainboard geometry and hardware on conflicts',
   );
   assert.doesNotMatch(
     prompt,
