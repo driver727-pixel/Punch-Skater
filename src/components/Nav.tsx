@@ -94,7 +94,7 @@ export function Nav() {
       </NavLink>
       {user && (
         <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Arena
+          Race
         </NavLink>
       )}
       {isEnabled("MISSIONS", user) && (

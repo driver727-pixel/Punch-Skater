@@ -12524,6 +12524,194 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .race-challenge-row { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem; }
 .race-wager-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .btn-outline--active { background: rgba(255, 68, 136, 0.25); border-color: #ff4488; }
+
+.forge-objective-panel {
+  width: min(1200px, 100%);
+  margin: 0 auto 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.forge-objective-card {
+  padding: 18px;
+  border: 1px solid rgba(0, 204, 255, 0.22);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(10, 12, 34, 0.96), rgba(6, 8, 24, 0.96));
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.forge-objective-card--primary {
+  border-color: rgba(0, 255, 136, 0.28);
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.35),
+    0 0 26px rgba(0, 255, 136, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.forge-objective-eyebrow {
+  color: var(--accent2);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.forge-objective-title {
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.forge-objective-copy,
+.forge-objective-status,
+.forge-objective-unlock-hint {
+  color: rgba(236, 228, 255, 0.82);
+  font-size: 14px;
+}
+
+.forge-objective-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.forge-objective-actions .btn-primary,
+.forge-objective-actions .btn-outline {
+  width: auto;
+}
+
+.forge-objective-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.forge-objective-stat {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.forge-objective-stat-label {
+  display: block;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.forge-objective-stat strong,
+.forge-objective-unlocks strong {
+  color: var(--text);
+  font-size: 18px;
+}
+
+.forge-objective-unlocks {
+  display: grid;
+  gap: 8px;
+}
+
+.forge-objective-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.forge-objective-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 204, 255, 0.18);
+  background: rgba(0, 204, 255, 0.07);
+  color: var(--text);
+  text-decoration: none;
+  text-align: center;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.forge-objective-link:hover,
+.forge-objective-link:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(0, 255, 136, 0.36);
+  background: rgba(0, 255, 136, 0.08);
+}
+
+.forge-objective-link--button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.login-gate-banner {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 204, 255, 0.24);
+  background: rgba(0, 204, 255, 0.08);
+  color: var(--text);
+  text-align: left;
+}
+
+.not-found-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.not-found-card {
+  width: min(680px, 100%);
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid rgba(204, 68, 255, 0.25);
+  background: linear-gradient(180deg, rgba(16, 9, 34, 0.96), rgba(8, 8, 24, 0.98));
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.42);
+  text-align: center;
+}
+
+.not-found-code {
+  margin-bottom: 10px;
+  color: var(--accent2);
+  font-family: var(--font-display);
+  font-size: clamp(48px, 10vw, 96px);
+  letter-spacing: 6px;
+  text-shadow: 0 0 20px rgba(0, 204, 255, 0.45);
+}
+
+.not-found-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .forge-objective-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .forge-objective-actions,
+  .not-found-actions {
+    flex-direction: column;
+  }
+
+  .forge-objective-actions .btn-primary,
+  .forge-objective-actions .btn-outline,
+  .not-found-actions .btn-primary,
+  .not-found-actions .btn-outline {
+    width: 100%;
+  }
+}
 .race-wager-value { font-size: 0.9rem; opacity: 0.9; }
 
 .race-hub { display: flex; flex-direction: column; gap: 1.25rem; }
