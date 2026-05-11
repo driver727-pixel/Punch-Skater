@@ -651,6 +651,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     () => (missionResult ? getMissionResultLog(missionResult) : []),
     [missionResult],
   );
+  const missionResultRewards = useMemo(
+    () => (missionResult ? getMissionResultRewards(missionResult) : null),
+    [missionResult],
+  );
   const selectedDeckCardCount = selectedDeck?.cards.length ?? 0;
   const selectedDeckReadyCount = selectedEvaluation?.eligibleCardCount ?? 0;
   const selectedRouteLabel = getSelectedRouteLabel(selectedMission, selectedCounterOption, selectedResultRevealed);
@@ -1393,18 +1397,18 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 </p>
               </div>
             <div className="mission-result__rewards">
-              {missionResult.rewardGranted ? (
+              {missionResult.rewardGranted && missionResultRewards ? (
                 <>
                   <div className="mission-result__reward-card mission-result__reward-card--xp">
                     <span className="mission-result__reward-label">Mission XP</span>
                     <strong className="mission-result__reward-value">
-                      +{getMissionResultRewards(missionResult).rewardXp}
+                      +{missionResultRewards.rewardXp}
                     </strong>
                   </div>
                   <div className="mission-result__reward-card mission-result__reward-card--ozzies">
                     <span className="mission-result__reward-label">Ozzies</span>
                     <strong className="mission-result__reward-value">
-                      +{getMissionResultRewards(missionResult).rewardOzzies}
+                      +{missionResultRewards.rewardOzzies}
                     </strong>
                   </div>
                 </>
