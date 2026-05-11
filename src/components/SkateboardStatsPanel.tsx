@@ -6,7 +6,7 @@ const BOARD_STATS = {
   speed:        { label: "Speed",  tooltip: "Board top speed" },
   acceleration: { label: "Accel",  tooltip: "How quickly the board reaches top speed" },
   range:        { label: "Range",  tooltip: "Battery range before recharge is needed" },
-  traction:     { label: "Traction", tooltip: "Drive grip rating. 4WD stays highest; reversible front/rear drive sits just below it." },
+  traction:     { label: "Traction", tooltip: "Drive grip rating. 4WD stays highest; reversible single-axle drive sits just below it." },
 } as const;
 
 const SKATE_STATS = {

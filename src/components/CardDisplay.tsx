@@ -66,6 +66,11 @@ interface CardDisplayProps {
   onLayerError?: (layer: "background" | "character" | "frame") => void;
 }
 
+const DRIVE_ORIENTATION_SHORT_LABELS = {
+  "Rear-Wheel Drive": "RWD",
+  "Front-Wheel Drive": "FWD",
+} as const;
+
 function shallowEqualObject(
   previous: Record<string, unknown> | null | undefined,
   next: Record<string, unknown> | null | undefined,
@@ -410,7 +415,7 @@ function CardDisplayComponent({
   const mt = MOTOR_OPTIONS.find((o) => o.value === normalizedBoardConfig.motor);
   const wh = WHEEL_OPTIONS.find((o) => o.value === normalizedBoardConfig.wheels);
   const ba = BATTERY_OPTIONS.find((o) => o.value === normalizedBoardConfig.battery);
-  const driveBiasLabel = normalizedBoardConfig.driveOrientation === "Front-Wheel Drive" ? "FWD" : "RWD";
+  const driveBiasLabel = DRIVE_ORIENTATION_SHORT_LABELS[normalizedBoardConfig.driveOrientation];
 
   return (
     <div className="card-stack-shell">

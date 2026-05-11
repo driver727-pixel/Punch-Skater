@@ -190,7 +190,7 @@ export function BoardBuilder({ value, onChange, onSave, accentColor: _accentColo
               </button>
             ))}
           </div>
-          <p className="form-hint">This reversible drive setting updates the card stat only and does not change the board art.</p>
+          <p className="form-hint">This reversible drive setting is shown on the card and does not change the board art.</p>
         </div>
       )}
 
