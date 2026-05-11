@@ -77,7 +77,7 @@ export const LORE_CHARACTER_NAMES = [
   "Saoirse Casper",
   "Ryo Kickturn",
   "Kwesi McTwist",
-  "Valentina Crooked",
+  "Valentina Melon",
   "Dani Ghostride",
 ];
 
