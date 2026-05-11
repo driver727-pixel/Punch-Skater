@@ -13,7 +13,10 @@ export function Login() {
   const { signIn, signUp, signInWithGoogle, sendPasswordReset, signInWithPhone } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string })?.from ?? "/missions";
+  const locationState = (location.state as { from?: string; gateLabel?: string; gateMessage?: string } | null) ?? null;
+  const from = locationState?.from ?? "/";
+  const gateLabel = locationState?.gateLabel ?? "";
+  const gateMessage = locationState?.gateMessage ?? "";
   const isAuthUnavailable = !auth;
 
   const [mode, setMode] = useState<"signin" | "signup" | "phone">("signin");
@@ -169,9 +172,14 @@ export function Login() {
       <div className="login-card">
         <div className="login-logo">⚡</div>
         <h1 className="login-title">Punch Skater</h1>
-        <p className="login-subtitle">DECK BUILDER</p>
+        <p className="login-subtitle">CARD GAME</p>
         <p className="login-game-badge"><a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer">A Sk8r Punk Game</a></p>
-        <p className="login-hint">Create an account to claim your Rare card bonus and start your login streak.</p>
+        <p className="login-hint">Create an account to claim your Rare card bonus, build a Crew, run Missions, race rivals, and trade.</p>
+        {gateMessage && (
+          <div className="login-gate-banner" role="status">
+            <strong>{gateLabel || "Account access required"}.</strong> {gateMessage}
+          </div>
+        )}
         {isAuthUnavailable && <p className="login-error">{firebaseUnavailableMessage}</p>}
 
         <div className="login-tabs">
@@ -374,7 +382,7 @@ export function Login() {
 
         <p className="login-guest">
           <button className="login-guest-btn" onClick={() => navigate("/")}>
-            Continue as guest →
+            Continue as guest (forge preview only) →
           </button>
         </p>
       </div>

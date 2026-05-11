@@ -3,6 +3,7 @@ import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
+import { ForgeObjectivePanel } from "../components/ForgeObjectivePanel";
 import {
   ACCENT_PRESETS,
   AGE_GROUPS,
@@ -116,6 +117,8 @@ export function CardForge() {
           Random Skater
         </button>
       </div>
+
+      <ForgeObjectivePanel onOpenStartHere={handleReopenWelcome} />
 
       <div className="forge-layout">
         <ForgeControlsPanel

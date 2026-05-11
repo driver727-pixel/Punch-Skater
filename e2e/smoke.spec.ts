@@ -29,7 +29,7 @@ test.describe('Home page (Card Forge)', () => {
   test('shows the nav brand', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.nav-title')).toBeVisible();
-    await expect(page.locator('.nav-subtitle')).toHaveText('DECK BUILDER');
+    await expect(page.locator('.nav-subtitle')).toHaveText('CARD GAME');
   });
 
   test('shows the Card Forge nav link as active', async ({ page }) => {
@@ -50,8 +50,9 @@ test.describe('Home page (Card Forge)', () => {
   test('shows the welcome prompt with getting started guidance', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /welcome to punch skater, rookie/i })).toBeVisible();
-    await expect(page.getByText(/5 punch skater class cards and 1 master class card/i)).toBeVisible();
-    await expect(page.getByText(/battle arena/i)).toBeVisible();
+    await expect(page.getByText(/build your crew\. win the joust\. rule the neon streets\./i)).toBeVisible();
+    await expect(page.getByText(/build a 6-card crew/i)).toBeVisible();
+    await expect(page.getByText(/climb the leaderboard/i)).toBeVisible();
   });
 
 

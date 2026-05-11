@@ -48,7 +48,7 @@ See [`docs/PROGRESSION.md`](docs/PROGRESSION.md) for the full progression model.
 - **Rivals + District Progression** — named district rivals, boss-tier rival snapshots, codex unlocks, and reputation hooks woven into mission outcomes
 - **Trades + Ranked Seasons** — direct offers, market listings, lifetime Crew rankings, and a seasonal leaderboard that ranks verified 6-card Crews on submitted Deck Power
 - **Battle Pass + Daily Progression** — daily login streaks, daily missions, weekly heat, and a 6-week seasonal battle pass with free and premium reward tracks
-- **Battle Arena** — public scouting summaries, real opponent deck snapshots, persistent results, and stat resolution syncing for both players
+- **Race Arena** — public scouting summaries, real opponent deck snapshots, persistent results, and stat resolution syncing for both players
 - **CraftLingua Codex** — district language library, account-linked share codes, forge profile uploads, and Rare/Legendary conlang flavor text
 
 ## Environment

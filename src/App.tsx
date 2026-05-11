@@ -84,6 +84,7 @@ const RaceTrack       = lazy(() => import("./pages/RaceTrack").then(m => ({ defa
 const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ default: m.FramePreview })));
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
 const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ default: m.Workshop })));
+const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -167,6 +168,7 @@ function App() {
                         <AdminRoute><AssetGenerator /></AdminRoute>
                       } />
                       <Route path="/dev/frame-preview" element={<FramePreview />} />
+                      <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>
                 </main>
