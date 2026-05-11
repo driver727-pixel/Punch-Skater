@@ -272,7 +272,7 @@ export interface WorkshopBoardPayload {
   sourceCardId?: string;
   /** Explicit display order on the workshop floor; lower values appear first. */
   sortOrder?: number;
-  /** AI-generated skateboard art URL produced after the board is saved. */
+  /** Generated or approved skateboard art URL produced after the board is saved. */
   boardImageUrl?: string;
   /** Normalized floor placement on the workshop paper-doll stage. */
   floorPlacement?: {

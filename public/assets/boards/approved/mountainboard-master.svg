@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Approved Mountainboard master image</title>
+  <desc id="desc">A deterministic mountainboard with four large off-road wheels, channel trucks, foot straps, and a top-mounted battery box on a transparent background.</desc>
+  <defs>
+    <linearGradient id="deckFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3e4348"/>
+      <stop offset="45%" stop-color="#15191d"/>
+      <stop offset="100%" stop-color="#06080a"/>
+    </linearGradient>
+    <linearGradient id="metalFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9aa3ad"/>
+      <stop offset="50%" stop-color="#4f5963"/>
+      <stop offset="100%" stop-color="#242a31"/>
+    </linearGradient>
+    <linearGradient id="batteryFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f6d36b"/>
+      <stop offset="55%" stop-color="#be8f2e"/>
+      <stop offset="100%" stop-color="#6c4812"/>
+    </linearGradient>
+    <radialGradient id="wheelRubber" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4b5359"/>
+      <stop offset="55%" stop-color="#1d2227"/>
+      <stop offset="100%" stop-color="#090b0d"/>
+    </radialGradient>
+    <radialGradient id="hubFill" cx="45%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#adb6bf"/>
+      <stop offset="100%" stop-color="#55606b"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)" transform="translate(120 60)">
+    <ellipse cx="480" cy="540" rx="420" ry="86" fill="#000000" opacity="0.12"/>
+
+    <g transform="translate(88 346)">
+      <g fill="url(#wheelRubber)" stroke="#0e1114" stroke-width="12">
+        <circle cx="110" cy="124" r="94"/>
+        <circle cx="350" cy="16" r="94"/>
+        <circle cx="662" cy="252" r="94"/>
+        <circle cx="902" cy="144" r="94"/>
+      </g>
+      <g fill="none" stroke="#2f363c" stroke-width="10" opacity="0.68">
+        <circle cx="110" cy="124" r="68"/>
+        <circle cx="350" cy="16" r="68"/>
+        <circle cx="662" cy="252" r="68"/>
+        <circle cx="902" cy="144" r="68"/>
+      </g>
+      <g fill="url(#hubFill)" stroke="#d5dee7" stroke-opacity="0.18" stroke-width="3">
+        <circle cx="110" cy="124" r="36"/>
+        <circle cx="350" cy="16" r="36"/>
+        <circle cx="662" cy="252" r="36"/>
+        <circle cx="902" cy="144" r="36"/>
+      </g>
+      <g fill="none" stroke="#747f89" stroke-width="8" stroke-linecap="round" opacity="0.7">
+        <path d="M74 124h72M110 88v72M86 100l48 48M134 100l-48 48"/>
+        <path d="M314 16h72M350 -20v72M326 -8l48 48M374 -8l-48 48"/>
+        <path d="M626 252h72M662 216v72M638 228l48 48M686 228l-48 48"/>
+        <path d="M866 144h72M902 108v72M878 120l48 48M926 120l-48 48"/>
+      </g>
+      <g fill="none" stroke="#1c2126" stroke-width="8" opacity="0.8">
+        <circle cx="110" cy="124" r="82" stroke-dasharray="10 18"/>
+        <circle cx="350" cy="16" r="82" stroke-dasharray="10 18"/>
+        <circle cx="662" cy="252" r="82" stroke-dasharray="10 18"/>
+        <circle cx="902" cy="144" r="82" stroke-dasharray="10 18"/>
+      </g>
+    </g>
+
+    <g stroke="url(#metalFill)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.96">
+      <path d="M230 434L386 358L514 384"/>
+      <path d="M746 528L874 554L1034 474"/>
+      <path d="M354 304L454 360"/>
+      <path d="M812 514L912 570"/>
+      <path d="M498 392L628 456"/>
+      <path d="M562 308L694 372"/>
+    </g>
+
+    <g fill="url(#metalFill)" stroke="#1b2025" stroke-width="8">
+      <rect x="432" y="340" width="90" height="58" rx="18" transform="rotate(24 477 369)"/>
+      <rect x="702" y="482" width="90" height="58" rx="18" transform="rotate(24 747 511)"/>
+      <rect x="520" y="286" width="90" height="58" rx="18" transform="rotate(24 565 315)"/>
+      <rect x="612" y="432" width="90" height="58" rx="18" transform="rotate(24 657 461)"/>
+    </g>
+
+    <g transform="translate(188 140) rotate(24 398 186)">
+      <path d="M42 186C96 74 226 16 390 24c184 10 344 92 398 162c-50 112-188 180-382 178C212 360 82 302 42 186z" fill="url(#deckFill)" stroke="#5b636b" stroke-width="10"/>
+      <path d="M126 178c34-78 130-126 262-118c148 8 276 74 334 128c-52 78-166 126-314 124C266 310 160 264 126 178z" fill="none" stroke="#6e777f" stroke-opacity="0.24" stroke-width="8"/>
+      <path d="M104 188c62 44 162 70 296 72c146 2 258-30 330-84" fill="none" stroke="#adb5bc" stroke-opacity="0.18" stroke-width="6"/>
+
+      <g transform="translate(240 110)">
+        <rect x="-58" y="-42" width="134" height="78" rx="18" fill="#12161a" stroke="#8d969f" stroke-width="6"/>
+        <rect x="132" y="-42" width="134" height="78" rx="18" fill="#12161a" stroke="#8d969f" stroke-width="6"/>
+        <path d="M-46 10c20-28 44-42 72-42s52 14 72 42" fill="none" stroke="#d6dde4" stroke-opacity="0.68" stroke-width="8"/>
+        <path d="M144 10c20-28 44-42 72-42s52 14 72 42" fill="none" stroke="#d6dde4" stroke-opacity="0.68" stroke-width="8"/>
+        <rect x="-44" y="-26" width="106" height="14" rx="7" fill="#c9ced4" opacity="0.72"/>
+        <rect x="146" y="-26" width="106" height="14" rx="7" fill="#c9ced4" opacity="0.72"/>
+      </g>
+    </g>
+
+    <g transform="translate(418 176) rotate(24 166 82)">
+      <rect x="0" y="0" width="332" height="126" rx="22" fill="url(#batteryFill)" stroke="#603d11" stroke-width="8"/>
+      <rect x="18" y="16" width="296" height="94" rx="14" fill="#2c3137" opacity="0.18"/>
+      <rect x="18" y="16" width="296" height="24" rx="10" fill="#fff3cc" opacity="0.18"/>
+      <circle cx="46" cy="62" r="8" fill="#5e3815"/>
+      <circle cx="286" cy="62" r="8" fill="#5e3815"/>
+      <rect x="144" y="-18" width="44" height="18" rx="6" fill="#2f3338"/>
+      <path d="M320 34h20v24h-20" fill="#2f3338"/>
+    </g>
+  </g>
+</svg>
