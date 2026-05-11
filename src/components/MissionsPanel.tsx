@@ -337,41 +337,51 @@ function getMissionStepClass(active: boolean, complete: boolean, progressed: boo
   ].filter(Boolean).join(" ");
 }
 
-function getMissionResultLog(result: MissionRunResponse): string[] {
+interface MissionLogEntry {
+  text: string;
+  kind: "default" | "xp" | "ozzies";
+}
+
+function getMissionResultRewards(result: MissionRunResponse): { rewardXp: number; rewardOzzies: number } {
+  const mission = result.mission;
+  if (typeof mission.lastRunRewardXp === "number" && typeof mission.lastRunRewardOzzies === "number") {
+    return { rewardXp: mission.lastRunRewardXp, rewardOzzies: mission.lastRunRewardOzzies };
+  }
+  if (mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID) {
+    return {
+      rewardXp: Math.max(0, mission.rewardXp - 20),
+      rewardOzzies: Math.max(0, mission.rewardOzzies - 20),
+    };
+  }
+  return getMissionEffectiveRewards(mission, mission.selectedCounterOptionId);
+}
+
+function getMissionResultLog(result: MissionRunResponse): MissionLogEntry[] {
   const mission = result.mission;
   const counterOption = getMissionEncounter(mission)?.options.find((option) => (
     option.id === (mission.selectedCounterOptionId ?? mission.activeRun?.selectedCounterOptionId)
   )) ?? null;
   const joustResult = mission.lastRunJoustResult ?? null;
   if (result.rewardGranted) {
-    const rewards = typeof mission.lastRunRewardXp === "number" && typeof mission.lastRunRewardOzzies === "number"
-      ? {
-        rewardXp: mission.lastRunRewardXp,
-        rewardOzzies: mission.lastRunRewardOzzies,
-      }
-      : mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
-        ? {
-          rewardXp: Math.max(0, mission.rewardXp - 20),
-          rewardOzzies: Math.max(0, mission.rewardOzzies - 20),
-        }
-        : getMissionEffectiveRewards(mission, mission.selectedCounterOptionId);
+    const rewards = getMissionResultRewards(result);
     return [
-      `${mission.selectedDeckName ?? result.evaluation.deckName} cleared ${mission.title}${counterOption ? ` via ${counterOption.label}` : mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " via a hard cutout" : ""}.`,
-      `Banked +${rewards.rewardXp} Mission XP.`,
-      `Pulled +${rewards.rewardOzzies} Ozzies out of ${mission.district}.`,
+      { text: `${mission.selectedDeckName ?? result.evaluation.deckName} cleared ${mission.title}${counterOption ? ` via ${counterOption.label}` : mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " via a hard cutout" : ""}.`, kind: "default" },
+      { text: `Banked +${rewards.rewardXp} Mission XP.`, kind: "xp" },
+      { text: `Pulled +${rewards.rewardOzzies} Ozzies out of ${mission.district}.`, kind: "ozzies" },
       ...(joustResult
         ? [
-          `${joustResult.playerName} called the district joust and ${joustResult.outcome === "win" ? "won" : joustResult.outcome === "draw" ? "drew" : "lost"} against ${joustResult.rivalName}.`,
-          `${formatJoustTacticLabel(joustResult.playerTactic)} into ${formatJoustTacticLabel(joustResult.rivalTactic)} — ${joustResult.narration}`,
+          { text: `${joustResult.playerName} called the district joust and ${joustResult.outcome === "win" ? "won" : joustResult.outcome === "draw" ? "drew" : "lost"} against ${joustResult.rivalName}.`, kind: "default" as const },
+          { text: `${formatJoustTacticLabel(joustResult.playerTactic)} into ${formatJoustTacticLabel(joustResult.rivalTactic)} — ${joustResult.narration}`, kind: "default" as const },
         ]
         : []),
-      ...(mission.lastRunCardOutcomes ?? []).map((outcome) => outcome.summary),
-      ...(mission.lastRunEffects ?? []).map((effect) => `${effect.label}: ${effect.summary}`),
+      ...(mission.lastRunCardOutcomes ?? []).map((outcome) => ({ text: outcome.summary, kind: "default" as const })),
+      ...(mission.lastRunEffects ?? []).map((effect) => ({ text: `${effect.label}: ${effect.summary}`, kind: "default" as const })),
     ];
   }
-  return mission.lastRunFailureReasons?.length
+  const failureLines = mission.lastRunFailureReasons?.length
     ? mission.lastRunFailureReasons
     : result.evaluation.results.filter((entry) => !entry.met).map((entry) => entry.detail);
+  return failureLines.map((text) => ({ text, kind: "default" as const }));
 }
 
 function getCounterOptionRequirementText(option: MissionEncounterOption): string {
@@ -639,6 +649,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   );
   const missionResultLog = useMemo(
     () => (missionResult ? getMissionResultLog(missionResult) : []),
+    [missionResult],
+  );
+  const missionResultRewards = useMemo(
+    () => (missionResult ? getMissionResultRewards(missionResult) : null),
     [missionResult],
   );
   const selectedDeckCardCount = selectedDeck?.cards.length ?? 0;
@@ -1082,7 +1096,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           <span className={selectedOutcomeBadgeClass}>{selectedOutcomeLabel}</span>
                         </div>
                         <div className="mission-result__rewards">
-                          <div className="mission-result__reward-card">
+                          <div className="mission-result__reward-card mission-result__reward-card--xp">
                             <span className="mission-result__reward-label">Mission XP</span>
                             <strong className="mission-result__reward-value">+{selectedRewards.rewardXp}</strong>
                           </div>
@@ -1383,28 +1397,52 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 </p>
               </div>
             <div className="mission-result__rewards">
-              <div className="mission-result__reward-card">
-                <span className="mission-result__reward-label">Chosen deck</span>
-                <strong className="mission-result__reward-value">
-                  {missionResult.mission.selectedDeckName ?? missionResult.evaluation.deckName}
-                </strong>
-              </div>
-              <div className="mission-result__reward-card mission-result__reward-card--ozzies">
-                <span className="mission-result__reward-label">Route</span>
-                <strong className="mission-result__reward-value">
-                  {missionResult.mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
-                    ? HARD_CUTOUT_LABEL
-                    : getMissionEncounter(missionResult.mission)?.options.find((option) => option.id === missionResult.mission.selectedCounterOptionId)?.label
-                      ?? MAIN_ROUTE_LABEL}
-                </strong>
-              </div>
+              {missionResult.rewardGranted && missionResultRewards ? (
+                <>
+                  <div className="mission-result__reward-card mission-result__reward-card--xp">
+                    <span className="mission-result__reward-label">Mission XP</span>
+                    <strong className="mission-result__reward-value">
+                      +{missionResultRewards.rewardXp}
+                    </strong>
+                  </div>
+                  <div className="mission-result__reward-card mission-result__reward-card--ozzies">
+                    <span className="mission-result__reward-label">Ozzies</span>
+                    <strong className="mission-result__reward-value">
+                      +{missionResultRewards.rewardOzzies}
+                    </strong>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mission-result__reward-card">
+                    <span className="mission-result__reward-label">Chosen deck</span>
+                    <strong className="mission-result__reward-value">
+                      {missionResult.mission.selectedDeckName ?? missionResult.evaluation.deckName}
+                    </strong>
+                  </div>
+                  <div className="mission-result__reward-card mission-result__reward-card--ozzies">
+                    <span className="mission-result__reward-label">Route</span>
+                    <strong className="mission-result__reward-value">
+                      {missionResult.mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
+                        ? HARD_CUTOUT_LABEL
+                        : getMissionEncounter(missionResult.mission)?.options.find((option) => option.id === missionResult.mission.selectedCounterOptionId)?.label
+                          ?? MAIN_ROUTE_LABEL}
+                    </strong>
+                  </div>
+                </>
+              )}
             </div>
             <div className="mission-result-popup__grid">
               <div className="mission-result-popup__panel">
                 <span className="mission-result-popup__eyebrow">Run log</span>
                 <ul className="mission-log">
                   {missionResultLog.map((entry) => (
-                    <li key={`${missionResult.mission.id}-${entry}`}>{entry}</li>
+                    <li
+                      key={`${missionResult.mission.id}-${entry.text}`}
+                      className={entry.kind !== "default" ? `mission-log__entry mission-log__entry--${entry.kind}` : undefined}
+                    >
+                      {entry.text}
+                    </li>
                   ))}
                 </ul>
               </div>

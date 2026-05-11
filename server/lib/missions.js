@@ -25,7 +25,7 @@ const DISTRICT_WHEEL_ACCESS_RULES = {
   },
 };
 
-export const DAILY_MISSION_BOARD_COUNT = 4;
+export const DAILY_MISSION_BOARD_COUNT = 6;
 
 const WEEKLY_MISSION_THEMES = [
   {
