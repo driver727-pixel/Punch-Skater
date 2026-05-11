@@ -247,7 +247,7 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
         </div>
         <p className="forge-objective-status">
           {user
-            ? "Collection, Missions, Race Arena, Trades, leaderboard submission, and Workshop are all one tap away."
+            ? "Collection, Missions, Race Arena, Trades, leaderboard submission, and Workshop are all readily accessible."
             : "Create an account when you want cloud saves, crews, Missions, Race Arena, Trades, leaderboard access, and Workshop."}
         </p>
       </div>
