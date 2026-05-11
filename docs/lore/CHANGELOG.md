@@ -5,6 +5,11 @@ Mirror each entry in `LORE_UPDATES` inside `src/lib/lore.ts` so the in-app Codex
 
 ## 2026-05
 
+### Lore bible visibility tags introduced
+- Reframed the lore docs as an internal story Bible instead of a purely public-facing packet.
+- Added explicit **Public / Internal / Reveal** labels to hidden truths, plot pressure, and geography notes.
+- Made **The Team** explicit in bloc-level references, removed remaining **Bezos** naming, and kept artifact-run details out of plain public canon.
+
 ### First wave of named district rivals
 - Introduced the first five named district rivals: Jax Voltage (Batteryville),
   Mina Chrome (Airaway), Rook Wraith (Nightshade), Vex Static (The Grid),

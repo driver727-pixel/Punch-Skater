@@ -5,7 +5,9 @@ The world canon tracks all major power blocs, but the live site now splits lore 
 - **Codex:** public macro-level world state and named power blocs.
 - **Factions page:** discovery-gated dossiers unlocked through forging.
 
-What follows is the public-facing canon that should stay aligned with `FACTION_LORE` in `src/lib/lore.ts`.
+What follows is the internal faction Bible. Keep every entry explicit about what is **Public**,
+what is **Internal**, and what is a future **Reveal**. The public-facing portions should stay
+aligned with `FACTION_LORE` in `src/lib/lore.ts`.
 
 ---
 
@@ -13,8 +15,10 @@ What follows is the public-facing canon that should stay aligned with `FACTION_L
 - **Districts:** Airaway
 - **Tagline:** *"Infrastructure, security, compliance. In that order."*
 
-The dominant governing consortium. Their identical white bikes make perfect symbols of sanctioned transit,
-which is exactly why Punch Skaters target them.
+**Public:** The dominant governing consortium. Their identical white bikes make perfect symbols of
+sanctioned transit, which is exactly why Punch Skaters target them.
+
+**Reveal:** Their covert relationship to the Iron Curtains is not public canon up front.
 
 ---
 
@@ -22,7 +26,11 @@ which is exactly why Punch Skaters target them.
 - **Districts:** Nightshade
 - **Tagline:** *"The truth is in the data. We will release it."*
 
-A guerrilla journalist organization trying to expose the UCA and reveal that the Iron Curtains are a false flag.
+**Public:** A guerrilla journalist organization trying to expose the UCA.
+
+**Internal:** They protect couriers like Skids when those riders become useful carriers of volatile truth.
+
+**Reveal:** Part of their endgame is proving the Iron Curtains are a false flag.
 
 ---
 
@@ -30,7 +38,7 @@ A guerrilla journalist organization trying to expose the UCA and reveal that the
 - **Districts:** Nightshade, The Grid
 - **Tagline:** *"Information is a commodity. We are the market."*
 
-Thieves and mercenaries who sell leverage to whoever can pay.
+**Public:** Thieves and mercenaries who sell leverage to whoever can pay.
 
 ---
 
@@ -38,7 +46,11 @@ Thieves and mercenaries who sell leverage to whoever can pay.
 - **Districts:** The Grid, Batteryville
 - **Tagline:** *"Overthrow the oligarchy. By any means necessary."*
 
-A revolutionary front with a hidden split between the public myth and the UCA's covert manipulation behind it.
+**Public:** A revolutionary front that markets itself as the answer to oligarch control.
+
+**Internal:** The public myth matters because disaffected riders need to believe it.
+
+**Reveal:** The UCA covertly manipulates the group as a false-flag containment arm.
 
 ---
 
@@ -46,7 +58,9 @@ A revolutionary front with a hidden split between the public myth and the UCA's 
 - **Districts:** The Grid, Nightshade
 - **Tagline:** *"Data for blackmail. Blackmail for survival."*
 
-Hackers and survivalists using information as extortion, fraud, and leverage.
+**Public:** Hackers and survivalists using information as extortion, fraud, and leverage.
+
+**Internal:** Their exact funding model should stay unresolved unless a later story needs to pin it down.
 
 ---
 
@@ -54,7 +68,10 @@ Hackers and survivalists using information as extortion, fraud, and leverage.
 - **Districts:** Airaway, Batteryville, Nightshade
 - **Tagline:** *"Medicine moves. People live. No questions asked."*
 
-Medical-humanitarian couriers operating across class lines, sometimes nobly and sometimes for wealthy patrons.
+**Public:** Medical-humanitarian couriers operating across class lines, sometimes nobly and sometimes
+for wealthy patrons.
+
+**Internal:** They are one of the most believable covers for moving a protagonist through hostile territory.
 
 ---
 
@@ -62,7 +79,11 @@ Medical-humanitarian couriers operating across class lines, sometimes nobly and 
 - **Districts:** Nightshade, Airaway
 - **Tagline:** *"Indiana Jones on an electric mountain skateboard."*
 
-Artifact couriers whose work pulls relics through museums, mansions, and hidden cult territory.
+**Public:** Artifact couriers whose work pulls relics through museums, mansions, and hidden cult territory.
+
+**Internal:** They connect elite collectors, academic legitimacy, and cult attention.
+
+**Reveal:** Their involvement in the central artifact run should stay tagged, not treated as plain public canon.
 
 ---
 
@@ -70,7 +91,11 @@ Artifact couriers whose work pulls relics through museums, mansions, and hidden 
 - **Districts:** Nightshade, Airaway
 - **Tagline:** *"The Dark Lights see everything. Serve or be disappeared."*
 
-Dark Lights zealots moving sacred packages and closing in on Skids' artifact run.
+**Public:** Dark Lights zealots moving sacred packages.
+
+**Internal:** They exist as organized cult pressure, not just aesthetic ninja menace.
+
+**Reveal:** Their move against Skids belongs to the hidden artifact-run thread until the story cashes it in.
 
 ---
 
@@ -78,7 +103,7 @@ Dark Lights zealots moving sacred packages and closing in on Skids' artifact run
 - **Districts:** The Roads, Batteryville, Nightshade
 - **Tagline:** *"Any job. Any package. Any risk. Price adjusted accordingly."*
 
-The neutral labor line of the courier world. They stay relevant by refusing ideology.
+**Public:** The neutral labor line of the courier world. They stay relevant by refusing ideology.
 
 ---
 
@@ -86,7 +111,7 @@ The neutral labor line of the courier world. They stay relevant by refusing ideo
 - **Districts:** Airaway, The Roads
 - **Tagline:** *"Sanctioned delivery. Corporate rates. No questions."*
 
-The official postal workers who make excellent cover for anyone needing checkpoint access.
+**Public:** The official postal workers who make excellent cover for anyone needing checkpoint access.
 
 ---
 
@@ -94,7 +119,9 @@ The official postal workers who make excellent cover for anyone needing checkpoi
 - **Districts:** Nightshade, Batteryville
 - **Tagline:** *"The capitalist pigs will fall. We just need the right spark."*
 
-Underground agitators and rave organizers who help push Skids into bigger currents.
+**Public:** Underground agitators and rave organizers who help push Skids into bigger currents.
+
+**Internal:** They are the spark, not the whole engine.
 
 ---
 
@@ -102,7 +129,7 @@ Underground agitators and rave organizers who help push Skids into bigger curren
 - **Districts:** The Forest
 - **Tagline:** *"Build with wood. Grind with wood. Live without the grid."*
 
-A self-governed off-grid commune whose distrust of corporate technology is total.
+**Public:** A self-governed off-grid commune whose distrust of corporate technology is total.
 
 ---
 
@@ -110,7 +137,8 @@ A self-governed off-grid commune whose distrust of corporate technology is total
 - **Districts:** Nightshade, The Roads, Batteryville
 - **Tagline:** *"We are the lowest rung. And we are everywhere."*
 
-The bruised, bloodied gutter-punk baseline of the whole setting. Everyone knows them. Nobody respects them. They keep coming anyway.
+**Public:** The bruised, bloodied gutter-punk baseline of the whole setting. Everyone knows them.
+Nobody respects them. They keep coming anyway.
 
 ---
 
@@ -118,10 +146,17 @@ The bruised, bloodied gutter-punk baseline of the whole setting. Everyone knows 
 - **Districts:** Glass City, Airaway
 - **Tagline:** *"Coordination wins races. Coordination wins everything."*
 
-A precision collective of ex-athletes who look sponsor-friendly enough to vanish into corporate branding.
+**Public:** A precision collective of ex-athletes who look sponsor-friendly enough to vanish into
+corporate branding.
+
+**Internal:** Keep **The Team** explicit anywhere the setting lists its major live power blocs, even
+though they present as polished operators instead of a classic faction.
 
 ---
 
 ## Discovery Rule
-When a forged combination surfaces a faction signal, the player unlocks that crew's full dossier on the separate **Factions** page.
-That keeps the world canon visible while preserving discovery as part of the game's narrative texture.
+**Public:** When a forged combination surfaces a faction signal, the player unlocks that crew's full
+dossier on the separate **Factions** page.
+
+**Internal:** Discovery gating controls *when* the player learns something; the story Bible still
+needs the full Public / Internal / Reveal split in one place.

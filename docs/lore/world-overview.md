@@ -1,38 +1,49 @@
 # World Overview
 
-## The City
-The world of **Punch Skater** is mostly unified under the **United Corporate Alliance (UCA)**.
-Its public face is **Airaway**: a Blue Mountains sky-city suspended above Greater Western Sydney,
-where executives live in polished towers while the basin below chokes on industrial smog.
-Below that corporate canopy stretches a courier underworld built out of decayed roads,
-repurposed tunnels, rail scaffolds, and off-grid settlements.
+## Visibility Legend
+- **Public** — safe in-world or Codex-facing knowledge.
+- **Internal** — writer-only truth or continuity scaffolding.
+- **Reveal** — story material meant to land later.
 
-The live theatre is now explicitly localized to Australia. Each district maps to a specific
-Australian analogue, giving the world a tighter geographic identity without changing the
+## The City
+**Public:** The world of **Punch Skater** is mostly unified under the
+**United Corporate Alliance (UCA)**. Its public face is **Airaway**: a Blue Mountains
+sky-city suspended above Greater Western Sydney, where executives live in polished towers
+while the basin below chokes on industrial smog. Below that canopy stretches a courier
+underworld built out of decayed roads, repurposed tunnels, rail scaffolds, and off-grid
+settlements.
+
+**Internal:** The live theatre is explicitly localized to Australia. Each district maps to a
+specific Australian analogue so the world has a tighter geographic identity without losing the
 core cyberpunk courier fantasy.
 
 ## Transit Doctrine
-**Esk8 (electric skateboards)** are the dominant transport system. They are cheaper than flying
-cars, better suited to failing infrastructure, and harder to lock down than conventional vehicles.
-The most valuable runner in the City is the **Skater Courier**: a person carrying critical data,
-contraband, medicine, or relics by hand.
+**Public:** **Esk8 (electric skateboards)** are the dominant transport system. They are cheaper
+than flying cars, better suited to failing infrastructure, and harder to lock down than
+conventional vehicles. The most valuable runner in the City is the **Skater Courier**: a person
+carrying critical data, contraband, medicine, or relics by hand.
 
-The City follows a simple brutal rule: **data on a thumb drive beats data on a server**.
+**Public:** The City follows a simple brutal rule: **data on a thumb drive beats data on a server**.
 Digital networks are too easy to hack, intercept, poison, or surveil. Physical delivery is trust.
 
 ## Australian Jousting Doctrine
-In the Australian theatre, **Punch Skaters did not evolve around firearms as standard weapons**.
-Guns exist, but they are treated as extreme-circumstance tools rather than everyday kit.
+**Public:** In the Australian theatre, **Punch Skaters did not evolve around firearms as standard
+weapons**. Guns exist, but they are treated as extreme-circumstance tools rather than everyday kit.
 
-Instead, Australian Punch Skaters evolved around **jousting on Esk8**. They fight, perform, and
-settle prize disputes with **cyber lances and shields**. Jousting is battle doctrine, street
-spectacle, and prize fighting culture all at once — a core public fact of the setting rather than
-an obscure subculture note.
+**Public:** Australian Punch Skaters instead evolved around **jousting on Esk8**. They fight,
+perform, and settle prize disputes with **cyber lances and shields**. Jousting is battle doctrine,
+street spectacle, and prize fighting culture all at once.
 
 ## The Roads
-**The Roads** are no longer treated as a standard district. They are a corridor gameplay layer:
-Nullarbor-like straightaways, freight arteries, underpasses, and weather-beaten transit routes where
-hijackings, raids, and route events erupt between destination hubs.
+**Public:** **The Roads** are the long-haul corridor layer: Nullarbor-like straightaways, freight
+arteries, underpasses, and weather-beaten transit routes where hijackings, raids, and route events
+erupt between destination hubs.
+
+**Internal:** Treat **The Roads** as district-equivalent in bloc lists, routing tables, and lore
+indexes when convenience matters, even though they are not a normal civic district or forge hub.
+
+**Reveal:** Any deeper contradiction between "district list" shorthand and actual world geography
+stays behind the curtain unless a future story beat makes it worth dramatizing.
 
 ## The Code
 - Esk8 or die — motorized vehicles are relics.
@@ -49,7 +60,7 @@ hijackings, raids, and route events erupt between destination hubs.
 - **United Corporate Alliance (UCA)** — the infrastructure empire in Airaway.
 - **Qu111s (Quills)** — guerrilla journalists gathering truth for release.
 - **Ne0n Legion** — transactional thieves and mercenaries.
-- **Iron Curtains** — apparent revolutionaries with a hidden UCA tether.
+- **Iron Curtains** — apparent revolutionaries promising to break oligarch control.
 - **D4rk $pider** — blackmail-minded dark-web survivalists.
 - **The Asclepians** — medical couriers moving life-saving cargo.
 - **The Mesopotamian Society** — relic hunters and artifact couriers.
@@ -62,16 +73,27 @@ hijackings, raids, and route events erupt between destination hubs.
 - **The Team** — ex-athlete operators whose coordination rivals the corps.
 
 ## Skids and the Current Story Pressure
-**Skip “Skids” Mayhew** is a Batteryville kid with roots in The Grid through his disappeared parents.
-He moves through a world where the Moonrisers, Asclepians, Quills, and artifact hunters all overlap.
+**Public:** **Skip “Skids” Mayhew** is a Batteryville kid with roots in The Grid through his
+disappeared parents. He moves through a world where the Moonrisers, Asclepians, Quills, and relic
+hunter factions all overlap.
+
+**Internal:** The current plot engine is the pressure created when courier labor, medical cover,
+truth-release crews, and relic movers all collide around Skids at once.
+
+**Reveal:** The artifact run itself stays out of plain public canon until the story spends it on
+screen. Until then, use it as writer-facing connective tissue rather than open-world fact.
+
 His current orbit includes:
 
-- The **Moonrisers** noticing him in Nightshade.
-- The **Asclepians** using his clean record as cover.
-- The **Mesopotamian Society** and **Knights Technarchy** tying him to a sacred artifact run.
-- The **Quills** trying to turn the fallout into a city-shaking truth release.
+- **Public:** The **Moonrisers** notice him in Nightshade.
+- **Public:** The **Asclepians** use his clean record as cover.
+- **Internal:** The **Mesopotamian Society** and **Knights Technarchy** tie him to the hidden
+  artifact-run spine of the plot.
+- **Reveal:** The **Quills** intend to turn the eventual fallout into a city-shaking truth release.
 
 ## Codex Visibility Rules
-The in-app **Codex** now exposes the macro world state publicly, while the dedicated **Factions** page
-holds discovery-gated dossiers. The canon is still shared; the difference is what the player has earned
-permission to know.
+**Public:** The in-app **Codex** exposes the macro world state publicly, while the dedicated
+**Factions** page holds discovery-gated dossiers.
+
+**Internal:** The canon is shared across docs and app data; the difference is what the player has
+earned permission to know at a given moment.
