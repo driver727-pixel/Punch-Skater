@@ -18,7 +18,7 @@ Replace the contents of your [types.ts](https://github.com/driver727-pixel/Punch
  */
 
 export type Faction = 
-  | "United Corporations of America (UCA)"
+  | "United Corporate Alliance (UCA)"
   | "Qu111s (Quills)"
   | "Ne0n Legion"
   | "Iron Curtains" 

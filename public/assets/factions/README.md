@@ -20,7 +20,7 @@ Registered images (place the file, it is picked up automatically):
 | The Mesopotamian Society             | `the_mesopotamian_society.webp`|
 | The Team                             | `the_team.webp`                |
 | The Wooders                          | `the_wooders.webp`             |
-| United Corporations of America (UCA) | `uca.webp`                     |
+| United Corporate Alliance (UCA)      | `uca.webp`                     |
 | UCPS Workers                         | `ucps_workers.webp`            |
 
 Images uploaded via the Admin panel (Firebase Storage) take precedence over

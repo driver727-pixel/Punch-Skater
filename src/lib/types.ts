@@ -3,7 +3,7 @@
  */
 export type { BoardType, Drivetrain, MotorType, WheelType, BatteryType, BoardConfig, BoardLoadout } from "./boardBuilder";
 export type Faction =
-  | "United Corporations of America (UCA)"
+  | "United Corporate Alliance (UCA)"
   | "Qu111s (Quills)"
   | "Ne0n Legion"
   | "Iron Curtains"

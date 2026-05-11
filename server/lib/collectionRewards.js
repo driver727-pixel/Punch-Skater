@@ -28,7 +28,7 @@ export const COLLECTION_REROLL_ACTION_BY_ID = Object.fromEntries(
 );
 
 export const COLLECTION_REWARD_FACTIONS = [
-  'United Corporations of America (UCA)',
+  'United Corporate Alliance (UCA)',
   'Qu111s (Quills)',
   'Ne0n Legion',
   'Iron Curtains',

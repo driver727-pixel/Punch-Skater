@@ -174,7 +174,7 @@ const FACTION_ASSETS: Partial<Record<Faction, string>> = {
   "The Mesopotamian Society":             "/assets/factions/the_mesopotamian_society.webp",
   "The Team":                             "/assets/factions/the_team.webp",
   "The Wooders":                          "/assets/factions/the_wooders.webp",
-  "United Corporations of America (UCA)": "/assets/factions/uca.webp",
+  "United Corporate Alliance (UCA)": "/assets/factions/uca.webp",
   "UCPS Workers":                         "/assets/factions/ucps_workers.webp",
   "Punch Skaters":                        "/assets/factions/punch_skaters.png",
 };

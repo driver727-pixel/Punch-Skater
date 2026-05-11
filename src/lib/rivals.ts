@@ -184,7 +184,7 @@ export const DISTRICT_RIVALS: readonly DistrictRival[] = [
     id: "airaway-mina-chrome",
     name: "Mina Chrome",
     district: "Airaway",
-    faction: "United Corporations of America (UCA)",
+    faction: "United Corporate Alliance (UCA)",
     archetype: "The Team",
     tagline: "Corporate shield specialist on the Blue Mountains glass lanes.",
     personality:
@@ -196,7 +196,7 @@ export const DISTRICT_RIVALS: readonly DistrictRival[] = [
       id: "rival-card-mina-chrome",
       name: "Mina Chrome",
       archetype: "The Team",
-      crew: "United Corporations of America (UCA)",
+      crew: "United Corporate Alliance (UCA)",
       district: "Airaway",
       stats: { speed: 6, range: 7, rangeNm: 7, stealth: 5, grit: 9 },
       joust: {

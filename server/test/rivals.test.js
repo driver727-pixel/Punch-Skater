@@ -24,7 +24,7 @@ const VALID_DISTRICTS = new Set([
   'Glass City',
 ]);
 const VALID_FACTIONS = new Set([
-  'United Corporations of America (UCA)',
+  'United Corporate Alliance (UCA)',
   'Qu111s (Quills)',
   'Ne0n Legion',
   'Iron Curtains',

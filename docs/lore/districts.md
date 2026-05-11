@@ -10,7 +10,7 @@ Every live district in the Codex now carries three layers:
 ## Airaway
 > *"The higher you go, the colder the air. The colder the air, the cleaner the money."*
 
-- **Control:** United Corporations of America (UCA)
+- **Control:** United Corporate Alliance (UCA)
 - **Australian analogue:** Blue Mountains sky-city above Greater Western Sydney
 - **Atmosphere:** Blue Mountains cold air, polished steel, pressurised walkways, automated maintenance drones, basin smog below.
 - **Known crews:** Chrome Blades, Phantom Riders
