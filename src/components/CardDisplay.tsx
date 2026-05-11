@@ -363,6 +363,8 @@ function CardDisplayComponent({
   const hasBuiltInDesignator = hasBuiltInFrameDesignator(card.class.rarity);
   const accent = card.visuals.accentColor || "#00ff88";
   const displayedArchetype = getDisplayedArchetype(card);
+  const normalizedBoardConfig = useMemo(() => normalizeBoardConfig(card.board.config), [card.board.config]);
+  const boardLoadout = useMemo(() => calculateBoardStats(normalizedBoardConfig), [normalizedBoardConfig]);
 
   const resolvedBackground = backgroundImageUrl ?? card.backgroundImageUrl;
   const resolvedCharacter  = characterImageUrl  ?? card.characterImageUrl;
@@ -408,8 +410,6 @@ function CardDisplayComponent({
     );
   }
 
-  const normalizedBoardConfig = useMemo(() => normalizeBoardConfig(card.board.config), [card.board.config]);
-  const boardLoadout = useMemo(() => calculateBoardStats(normalizedBoardConfig), [normalizedBoardConfig]);
   const bt = BOARD_TYPE_OPTIONS.find((o) => o.value === normalizedBoardConfig.boardType);
   const dr = DRIVETRAIN_OPTIONS.find((o) => o.value === normalizedBoardConfig.drivetrain);
   const mt = MOTOR_OPTIONS.find((o) => o.value === normalizedBoardConfig.motor);
