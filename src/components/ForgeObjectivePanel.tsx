@@ -138,16 +138,16 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
   });
   const quickLinks = user
     ? [
-        { label: "Collection", to: "/collection" },
-        { label: "My Crews", to: "/collection?tab=decks" },
-        { label: "Missions", to: "/missions" },
-        { label: "Race Arena", to: "/arena" },
-        { label: "Trades + leaderboard", to: "/trades" },
-        { label: "Workshop", to: "/workshop" },
+        { id: "collection", label: "Collection", to: "/collection" },
+        { id: "crews", label: "My Crews", to: "/collection?tab=decks" },
+        { id: "missions", label: "Missions", to: "/missions" },
+        { id: "race-arena", label: "Race Arena", to: "/arena" },
+        { id: "trades", label: "Trades + leaderboard", to: "/trades" },
+        { id: "workshop", label: "Workshop", to: "/workshop" },
       ]
     : [
-        { label: "Create account", to: "/login" },
-        { label: "Sign in", to: "/login" },
+        { id: "create-account", label: "Create account", to: "/login" },
+        { id: "sign-in", label: "Sign in", to: "/login" },
       ];
 
   return (
@@ -235,9 +235,9 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
 
       <div className="forge-objective-card">
         <span className="forge-objective-eyebrow">Quick routes</span>
-        <div className="forge-objective-links">
-          {quickLinks.map((link) => (
-            <Link key={`${link.label}:${link.to}`} className="forge-objective-link" to={link.to}>
+          <div className="forge-objective-links">
+            {quickLinks.map((link) => (
+            <Link key={link.id} className="forge-objective-link" to={link.to}>
               {link.label}
             </Link>
           ))}
