@@ -404,9 +404,7 @@ function CardDisplayComponent({
   }
 
   const normalizedBoardConfig = normalizeBoardConfig(card.board.config);
-  const boardLoadout = card.board.loadout?.traction !== undefined
-    ? card.board.loadout
-    : calculateBoardStats(normalizedBoardConfig);
+  const boardLoadout = calculateBoardStats(normalizedBoardConfig);
   const bt = BOARD_TYPE_OPTIONS.find((o) => o.value === normalizedBoardConfig.boardType);
   const dr = DRIVETRAIN_OPTIONS.find((o) => o.value === normalizedBoardConfig.drivetrain);
   const mt = MOTOR_OPTIONS.find((o) => o.value === normalizedBoardConfig.motor);

@@ -18,7 +18,7 @@ const SKATE_STATS = {
 
 interface SkateboardStatsPanelProps {
   loadout: BoardLoadout;
-  config?: BoardConfig;
+  config: BoardConfig;
 }
 
 interface NeonBarProps {
@@ -57,7 +57,7 @@ const SKATE_STAT_MAX = 220;
 
 export function SkateboardStatsPanel({ loadout, config }: SkateboardStatsPanelProps) {
   const { skateStats } = loadout;
-  const traction = loadout.traction ?? (config ? calculateBoardTraction(config) : 0);
+  const traction = calculateBoardTraction(config);
 
   return (
     <div className="skate-stats-panel">

@@ -29,10 +29,13 @@ function normalizeDriveOrientation(driveOrientation: string | undefined): DriveO
 }
 
 export function normalizeBoardConfig(config: BoardConfig): BoardConfig {
+  const drivetrain = normalizeDrivetrain(config.drivetrain) as BoardConfig["drivetrain"];
   return {
     ...config,
-    drivetrain: normalizeDrivetrain(config.drivetrain) as BoardConfig["drivetrain"],
-    driveOrientation: normalizeDriveOrientation(config.driveOrientation),
+    drivetrain,
+    driveOrientation: drivetrain === "4WD"
+      ? "Rear-Wheel Drive"
+      : normalizeDriveOrientation(config.driveOrientation),
   };
 }
 
