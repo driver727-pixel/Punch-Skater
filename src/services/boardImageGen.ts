@@ -208,7 +208,9 @@ export async function generateGouacheBoard(config: BoardConfig, options: Generat
     headers: await buildAuthorizedJsonHeaders(),
     body: JSON.stringify({
       prompt: options.variationKey
-        ? `${buildBoardImagePrompt(resolvedConfig)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references while choosing a different composition.`
+        ? resolvedConfig.boardType === "Mountain"
+          ? `${buildBoardImagePrompt(resolvedConfig)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references. Do not alter mountainboard geometry or hardware.`
+          : `${buildBoardImagePrompt(resolvedConfig)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references while choosing a different composition.`
         : buildBoardImagePrompt(resolvedConfig),
       imageUrls,
     }),

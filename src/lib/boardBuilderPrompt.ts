@@ -10,6 +10,9 @@ export const CRITICAL_SINGLE_DRIVETRAIN_CONSTRAINT =
 export const MOUNTAINBOARD_LORE_CONSTRAINT =
   "Mountainboards and Mountain Boards always use a true 4WD gear-drive drivetrain: all four wheels are powered through enclosed gearboxes, with no belts, no hub motors, and no separate belt-drive or hub-drive hardware. They always have foot straps or boot bindings on top of the deck plus a large box-shaped top-mounted battery pack that leaves room for an adult rider's feet while preserving off-road ground clearance. Mountainboards use solid rubber off-road wheels only — never vapor wheels, polyurethane wheels, or pneumatic wheels. They never use longboard geometry, drop-through layouts, or standard street-skate trucks; they use channel-style mountainboard trucks with visible channel arms and a tall off-road stance. Never omit the foot straps, boot bindings, top battery box, 4WD gear drives, channel-style mountainboard trucks, or solid rubber wheels.";
 
+export const MOUNTAINBOARD_LOCK_CONSTRAINT =
+  "CRITICAL for Mountain boards: preserve true mountainboard geometry and hardware — channel-style mountainboard trucks with visible channel arms, foot straps or boot bindings on top of the deck, a large box-shaped top-mounted battery, true 4WD enclosed gear-drive hardware on all four wheels, and solid rubber off-road wheels. If any instruction conflicts, keep these mountainboard features unchanged.";
+
 const BOARD_IMAGE_BASE_CONCEPT =
   "An electric skateboard, high-detail product display in Gouache style painting on a neutral dark gray background. " +
   "CRITICAL: The image must contain exactly ONE skateboard. Never show two or more skateboards in the same image under any circumstances. " +
@@ -99,7 +102,9 @@ function getMotorImageDescription(config: BoardConfig): string {
 }
 
 function getMountainboardLoreDescription(config: BoardConfig): string {
-  return config.boardType === "Mountain" ? MOUNTAINBOARD_LORE_CONSTRAINT : "";
+  return config.boardType === "Mountain"
+    ? `${MOUNTAINBOARD_LORE_CONSTRAINT} ${MOUNTAINBOARD_LOCK_CONSTRAINT}`
+    : "";
 }
 
 function getWheelDrivetrainCompatibilityDescription(config: BoardConfig): string {
