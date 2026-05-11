@@ -61,7 +61,7 @@ test('createDailyMissionBoardPayload returns a stable daily subset and cadence m
   const second = createDailyMissionBoardPayload('user-123', '2026-04-26T19:15:00.000Z');
   assert.equal(first.boardDateKey, '2026-04-26');
   assert.equal(first.dailyResetAt, '2026-04-27T00:00:00.000Z');
-  assert.equal(first.missions.length, 4);
+  assert.equal(first.missions.length, 6);
   assert.deepEqual(first.missions.map((entry) => entry.id), second.missions.map((entry) => entry.id));
 });
 
@@ -77,13 +77,13 @@ test('createDailyMissionBoardPayload swaps in a playable contract when the defau
     })),
   };
 
-  const baselinePayload = createDailyMissionBoardPayload('user-123', '2026-05-08T12:00:00.000Z');
+  const baselinePayload = createDailyMissionBoardPayload('user-123', '2026-05-11T12:00:00.000Z');
   assert.equal(baselinePayload.missions.some((entry) => evaluateMissionDeck(genericDeck, entry).eligible), false);
 
-  const rescuedPayload = createDailyMissionBoardPayload('user-123', '2026-05-08T12:00:00.000Z', {
+  const rescuedPayload = createDailyMissionBoardPayload('user-123', '2026-05-11T12:00:00.000Z', {
     decks: [genericDeck],
   });
-  assert.equal(rescuedPayload.missions.length, 4);
+  assert.equal(rescuedPayload.missions.length, 6);
   assert.equal(rescuedPayload.missions.some((entry) => evaluateMissionDeck(genericDeck, entry).eligible), true);
 });
 

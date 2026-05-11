@@ -10847,6 +10847,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-color: rgba(0,204,255,0.36);
   background: linear-gradient(180deg, rgba(0,204,255,0.12), rgba(0,0,0,0.28));
 }
+.mission-result__reward-card--xp {
+  border-color: var(--mission-accent-soft, rgba(0,255,136,0.42));
+  background: linear-gradient(180deg, var(--mission-accent-soft, rgba(0,255,136,0.14)), rgba(0,0,0,0.28));
+}
+.mission-result__reward-card--xp .mission-result__reward-value {
+  color: var(--mission-accent, var(--accent));
+}
 .mission-result__reward-label {
   font-size: 12px;
   color: var(--text-dim);
@@ -11137,7 +11144,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-result-panel__beams span {
   width: 20%;
   height: 220px;
-  background: linear-gradient(180deg, rgba(255,221,0,0.28), rgba(0,204,255,0));
+  background: linear-gradient(180deg, var(--mission-accent, rgba(255,221,0,0.28)), rgba(0,204,255,0));
   filter: blur(12px);
   transform: rotate(var(--beam-rotate, 0deg));
   animation: reward-beam-pulse 2.6s ease-in-out infinite;
@@ -11164,6 +11171,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-log--partial {
   opacity: 0.7;
   margin-bottom: 12px;
+}
+.mission-log__entry--xp {
+  color: var(--mission-accent, var(--accent));
+  font-weight: 700;
+}
+.mission-log__entry--ozzies {
+  color: #ffd98f;
+  font-weight: 700;
 }
 /* ── Fork in the road ─────────────────────────────────────────────── */
 .mission-fork {
