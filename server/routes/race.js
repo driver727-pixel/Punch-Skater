@@ -59,8 +59,15 @@ const BOT_ARCHETYPES = ['The Team', 'Qu111s', 'The Asclepians', 'Iron Curtains',
  * Generate a competitive bot snapshot seeded by the player card's stats and the
  * race seed. Bot total stat points are within ±10% of the player card's total so
  * the race stays challenging without being unfair.
+ *
+ * The distribution is proportional-with-noise and then clamped to [1, 10] per
+ * stat; rounding means the sum of bot stats is only approximately equal to
+ * `botTotal`, which is intentional — integer stats cannot always sum to an
+ * exact target when each is bounded.
  */
 function generateBotSnapshot(playerStats, seed) {
+  // Use a distinct sub-seed so bot stat generation is independent of the race
+  // simulation RNG (which uses the bare `raceSeed`).
   const rng = createRaceRng(`${seed}:bot-gen`);
 
   const playerTotal = (
@@ -86,6 +93,8 @@ function generateBotSnapshot(playerStats, seed) {
     stats: {
       speed: rawStats[0],
       range: rawStats[1],
+      // rangeNm mirrors range — "Nm" = nautical miles, a presentational alias
+      // for range used in card stat displays throughout the app.
       rangeNm: rawStats[1],
       stealth: rawStats[2],
       grit: rawStats[3],
@@ -598,6 +607,9 @@ export function registerRaceRoutes(app, {
 
       // Build snapshots and run the simulation before entering the transaction
       // (pure computation — no side effects).
+      // raceSeed is used directly for the race simulation so it can be stored and
+      // replayed. generateBotSnapshot uses `${raceSeed}:bot-gen` internally, so
+      // the two RNGs are independent sequences with no shared state.
       const playerSnapshot = createRaceCardSnapshot(playerCard);
       const raceSeed = randomUUID();
       const botSnapshot = generateBotSnapshot(playerSnapshot.stats, raceSeed);
