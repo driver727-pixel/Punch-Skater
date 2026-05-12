@@ -384,8 +384,12 @@ export interface RaceCardSnapshot {
   archetype: Archetype;
   rarity: Rarity;
   stats: ForgedCardStats;
-  /** Optional preview image URL used by the race animation. */
+  /** Single-image preview used by the race animation (character art preferred). */
   imageUrl?: string;
+  /** Individual composite art layers — used by arena card thumbnails. */
+  backgroundImageUrl?: string;
+  characterImageUrl?: string;
+  frameImageUrl?: string;
 }
 
 /**

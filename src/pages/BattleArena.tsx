@@ -52,15 +52,30 @@ function ArenaCardThumb({
   selected?: boolean;
   onClick?: () => void;
 }) {
+  const hasLayers = snapshot.backgroundImageUrl || snapshot.characterImageUrl || snapshot.frameImageUrl;
   return (
     <button
       type="button"
       className={`race-arena-card${selected ? " race-arena-card--selected" : ""}${isChallenger ? " race-arena-card--challenger" : ""}`}
       onClick={onClick}
     >
-      {snapshot.imageUrl && (
-        <img src={snapshot.imageUrl} alt="" className="race-arena-card-art" loading="lazy" />
-      )}
+      <div className="race-arena-card-art">
+        {hasLayers ? (
+          <>
+            {snapshot.backgroundImageUrl && (
+              <img src={snapshot.backgroundImageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
+            )}
+            {snapshot.characterImageUrl && (
+              <img src={snapshot.characterImageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
+            )}
+            {snapshot.frameImageUrl && (
+              <img src={snapshot.frameImageUrl} alt="" className="race-arena-card-art-layer race-arena-card-art-layer--frame" loading="lazy" />
+            )}
+          </>
+        ) : snapshot.imageUrl ? (
+          <img src={snapshot.imageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
+        ) : null}
+      </div>
       <div className="race-arena-card-meta">
         <span className="race-arena-card-name">
           {isChallenger && <span className="race-arena-card-flag" title="Challenger">🏁</span>}
@@ -267,7 +282,10 @@ export function BattleArena() {
         stealth: card.stats.stealth,
         grit: card.stats.grit,
       },
-      imageUrl: card.frameImageUrl ?? card.characterImageUrl ?? card.backgroundImageUrl,
+      imageUrl: card.characterImageUrl ?? card.backgroundImageUrl ?? card.frameImageUrl,
+      backgroundImageUrl: card.backgroundImageUrl,
+      characterImageUrl: card.characterImageUrl,
+      frameImageUrl: card.frameImageUrl,
     })) ?? []
   ), [primaryDeck]);
 

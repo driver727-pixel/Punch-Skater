@@ -411,6 +411,18 @@ export function createRaceCardSnapshot(card) {
       stealth: clampStatWithDefault(stats.stealth),
       grit: clampStatWithDefault(stats.grit),
     },
-    ...(card.frameImageUrl ? { imageUrl: String(card.frameImageUrl) } : {}),
+    // Use character art as the single-image preview (e.g. race animation).
+    // frameImageUrl is a transparent border overlay — unsuitable as a standalone image.
+    ...(card.characterImageUrl
+      ? { imageUrl: String(card.characterImageUrl) }
+      : card.backgroundImageUrl
+        ? { imageUrl: String(card.backgroundImageUrl) }
+        : card.frameImageUrl
+          ? { imageUrl: String(card.frameImageUrl) }
+          : {}),
+    // Individual layers for composite rendering (arena thumbnails).
+    ...(card.backgroundImageUrl ? { backgroundImageUrl: String(card.backgroundImageUrl) } : {}),
+    ...(card.characterImageUrl ? { characterImageUrl: String(card.characterImageUrl) } : {}),
+    ...(card.frameImageUrl ? { frameImageUrl: String(card.frameImageUrl) } : {}),
   };
 }
