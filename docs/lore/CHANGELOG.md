@@ -5,6 +5,11 @@ Mirror each entry in `LORE_UPDATES` inside `src/lib/lore.ts` so the in-app Codex
 
 ## 2026-05
 
+### Story pressure shifted to player couriers
+- Reframed the opening protagonist as a story driver who may return later, not the current live-content anchor.
+- Shifted Codex, district, archetype, faction, and mission copy toward player couriers, rival crews, and faction pressure.
+- Kept artifact-run material available as writer-facing connective tissue without pinning it to one protagonist.
+
 ### Lore bible visibility tags introduced
 - Reframed the lore docs as an internal story Bible instead of a purely public-facing packet.
 - Added explicit **Public / Internal / Reveal** labels to hidden truths, plot pressure, and geography notes.
@@ -33,5 +38,5 @@ Mirror each entry in `LORE_UPDATES` inside `src/lib/lore.ts` so the in-app Codex
 
 ### Courier schools aligned with live forge archetypes
 - Replaced the outdated archetype bible with the ten active forge archetypes.
-- Synced archetype writeups with Skids, the artifact run, and the current faction web.
+- Synced archetype writeups with courier pressure, the artifact run, and the current faction web.
 - Added the refreshed archetype section to the in-app Codex.

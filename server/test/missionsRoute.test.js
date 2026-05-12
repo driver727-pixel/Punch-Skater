@@ -6,7 +6,7 @@ function buildCard(overrides = {}) {
   return {
     id: overrides.id ?? 'card-default',
     identity: {
-      name: 'Skids Flash',
+      name: 'Signal Flash',
       ...overrides.identity,
     },
     maintenance: {

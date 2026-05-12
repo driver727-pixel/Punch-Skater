@@ -3,7 +3,6 @@ import type { Faction, Archetype, WorldLocation } from './types';
 // ── Character names ────────────────────────────────────────────────────────────
 
 export const LORE_CHARACTER_NAMES = [
-  "Skip 'Skids' Mayhew",
   "Ketch",
   "Cyber Jeff",
   "Quill-01",
@@ -217,9 +216,8 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
       "The city's engine room — power generation plants, refinery complexes, rail yards, " +
       "and recycler facilities that process the city's waste back into raw materials. In " +
       "Australia it lands between Port Kembla's steel coast and the Pilbara ore network: " +
-      "a logistics belt fed by mining giants and held together with union grit. Skip " +
-      "'Skids' Mayhew grew up here, watching his parents leave for The Grid every morning. " +
-      "The air tastes like ozone and machine oil. Rail yard switchways cut across " +
+      "a logistics belt fed by mining giants and held together with union grit. The air tastes " +
+      "like ozone and machine oil. Rail yard switchways cut across " +
       "everything. Couriers here specialize in bulk: heavy contraband, stockpiled " +
       "biologics, industrial quantities of restricted materials. Stamina is everything.",
     atmosphere: "Industrial, loud, ozone-tinged air, steelworks glare, Pilbara freight lines, three-dimensional rail scaffolding.",
@@ -227,7 +225,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
     flavorTexts: [
       "\"Grew up here. Still don't know how anyone breathes this air.\"",
       "\"The load is always too heavy. That's what the training is for.\"",
-      "\"Skids' first board had wheels stripped from a cargo cart. Batteryville builds you that way.\"",
+      "\"First boards here are often stripped from cargo carts. Batteryville builds riders that way.\"",
     ],
   },
   {
@@ -240,15 +238,14 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
       "The city's data district — server farm towers humming at sub-audible frequencies, " +
       "fiber conduit running visible along every wall and ceiling. Localized, it reads as " +
       "a cybernetic Canberra: sterile federal blocks, planned avenues, and server farms " +
-      "hidden behind policy language. Skids' parents worked here until they disappeared. " +
-      "The Grid is the most surveilled district in the city; every step is logged by " +
+      "hidden behind policy language. The Grid is the most surveilled district in the city; every step is logged by " +
       "Cascade Technologies' AI monitoring network. Couriers here carry physical chips " +
       "containing data so sensitive that no digital channel can be trusted. The Static " +
       "Pack wages a constant war against Cascade's surveillance nodes.",
     atmosphere: "Sterile, grid-pattern streets, omnipresent sensor arrays, federal order, scrolling diagnostic readouts.",
     crews: ["The Static Pack", "Phantom Riders"],
     flavorTexts: [
-      "\"His parents worked here until they didn't. Nobody explains what that means.\"",
+      "\"People vanish into worker records here. Nobody explains what that means.\"",
       "\"Cascade sees everything. The trick is being too boring to flag.\"",
       "\"The package is always a chip. The chip is always dangerous.\"",
     ],
@@ -265,8 +262,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
       "Prism Media Group displays while city security known as the Fuzz keeps the " +
       "tourist-friendly frontage pristine. Skaters are tolerated only in designated " +
       "transit corridors; venture off-grid and you're dealing with checkpoint drones and " +
-      "biometric sweeps. Skids and his crew skate here occasionally until the Fuzz " +
-      "pushes them out. It looks clean. It isn't.",
+      "biometric sweeps. Crews skate here only until the Fuzz pushes them out. It looks clean. It isn't.",
     atmosphere: "Bright holo-lit streets, polished coastal high-rises, heavy security presence, constant surveillance drones.",
     crews: ["Chrome Blades", "Neon Ghosts"],
     flavorTexts: [
@@ -286,13 +282,13 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
       "and hidden bars. Tight-knit, territorial skate crews use its tunnels for rapid " +
       "transit and private meetings. This is where the underground was born. Every " +
       "courier network in the city traces its roots to a Nightshade back-alley deal. " +
-      "Skids' crew uses the Nightshade tunnels but never goes deep, avoiding the more " +
-      "established skate gangs. The Moonrisers held their rave here — where Skids first " +
-      "got noticed.",
+      "New crews use the Nightshade tunnels but rarely go deep, avoiding the more " +
+      "established skate gangs. Moonriser raves turn unknown riders into signals that every " +
+      "crew starts tracking.",
     atmosphere: "Perpetual neon twilight, Melbourne-style laneways, blacklight murals, underground raves, loyal crews.",
     crews: ["Nightshade Runners", "The Undercurrent", "Neon Ghosts", "The Dark Lanes", "Moonrisers"],
     flavorTexts: [
-      "\"They held a rave down here. Skids thought it was just a party. It was an audition.\"",
+      "\"They hold raves down here that look like parties. Half of them are auditions.\"",
       "\"Don't go deep unless you're known. The established crews don't ask twice.\"",
       "\"Every courier network started with a deal made in Nightshade. Every single one.\"",
     ],
@@ -372,8 +368,8 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
     tagline: "The truth is in the data. We will release it.",
     description:
       "A guerilla journalist organization that monitors the activities of the oligarchs. " +
-      "Known to protect individuals like Skids and plan to release intercepted data to " +
-      "incite a revolution. The Qu111s operate through couriers who blend in as everyday " +
+      "Known to protect couriers carrying volatile proof and plan to release intercepted data " +
+      "when the surrounding chaos can make the city listen. The Qu111s operate through couriers who blend in as everyday " +
       "riders while carrying evidence that could topple the entire UCA power structure. " +
       "Quill-01 is their most active field operative.",
     strengths: "Maximum Rep, high Grit. Thrives in Nightshade and open districts. Penalty: low Stealth.",
@@ -415,8 +411,8 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
       "A medical humanitarian organization funded by rich oligarchy philanthropy. They use " +
       "couriers to transport special medical gear, organs, or medicine to impoverished " +
       "neighborhoods, though sometimes to rich people as well. These items are highly sought " +
-      "after and often stolen. The Asclepians placed Skids undercover after the Moonrisers " +
-      "recruited him — using his clean record as cover for a high-risk mission.",
+      "after and often stolen. The Asclepians routinely hide high-risk medical runs behind clean courier profiles, " +
+      "using boring records as cover until the checkpoint has already waved them through.",
     strengths: "Good Speed, high Grit, strong community access. Thrives in Batteryville and Nightshade.",
   },
   {
@@ -488,9 +484,8 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     tagline: "The truth is in the data. We will release it.",
     description:
       "A guerrilla journalist organization that monitors the activities of the oligarchs. " +
-      "The Quills are known to protect couriers like Skids who carry dangerous information. " +
-      "Their end goal is to release intercepted data capable of sparking a city-wide " +
-      "revolution. Quill-01 is their most active field operative.",
+      "The Quills are known to protect couriers carrying dangerous information. Their end " +
+      "goal is to release intercepted data capable of sparking a city-wide reckoning. Quill-01 is their most active field operative.",
   },
   {
     name: "Ne0n Legion",
@@ -499,8 +494,8 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     description:
       "Thieves and mercenaries for hire who steal information and sell it back to oligarchs " +
       "or other political interests. The Neon Legion operates without ideology — they are " +
-      "purely transactional. They are one of the factions that puts Skids in their crosshairs " +
-      "after he picks up the memory disc containing evidence against the UCA.",
+      "purely transactional. Any courier carrying evidence against the UCA can become a payday, " +
+      "a hostage, or a liability in their market.",
   },
   {
     name: "Iron Curtains",
@@ -599,7 +594,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
       "The term is both noun and verb — everyone in this world generally wants to 'punch them'. " +
       "Faction-less and amateur, they are outlawed in Airaway and considered a nuisance " +
       "by professional skaters. Their most infamous act is attacking UCA white bike riders " +
-      "by throwing broomsticks into the wheel spokes. Skip 'Skids' Mayhew started here.",
+      "by throwing broomsticks into the wheel spokes. Most legends start here before anyone learns their names.",
   },
   {
     name: "The Team",
@@ -624,6 +619,18 @@ export interface LoreUpdateEntry {
 }
 
 export const LORE_UPDATES: LoreUpdateEntry[] = [
+  {
+    changedAt: "2026-05",
+    title: "Story pressure shifted to player couriers",
+    summary:
+      "The current lore spine now centers player couriers, rival crews, and faction pressure " +
+      "instead of one named opening protagonist.",
+    highlights: [
+      "District, archetype, faction, and mission copy now frame unknown riders as the active story drivers.",
+      "Moonriser, Asclepian, Quill, relic-run, and rival-ladder pressure stays intact without pinning it to one courier.",
+      "The earlier protagonist thread is reserved as background history that can return later.",
+    ],
+  },
   {
     changedAt: "2026-05",
     title: "Lore bible visibility tags clarified hidden truths",
@@ -694,7 +701,7 @@ export const LORE_UPDATES: LoreUpdateEntry[] = [
     highlights: [
       "The Knights Technarchy, Qu111s, and Iron Curtains remain core playable archetypes.",
       "UCPS and The Team stay in rotation as sanctioned and coordinated courier schools.",
-      "Descriptions now reflect Skids, the artifact run, and the current faction web.",
+      "Descriptions now reflect courier-driven pressure, the artifact-run thread, and the current faction web.",
     ],
   },
 ];
