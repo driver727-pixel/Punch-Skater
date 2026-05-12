@@ -85,6 +85,7 @@ const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ d
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
 const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ default: m.Workshop })));
 const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
+const MAIN_CONTENT_SELECTOR = ".main";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -114,7 +115,7 @@ function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const main = document.querySelector(".main");
+    const main = document.querySelector(MAIN_CONTENT_SELECTOR);
     if (main instanceof HTMLElement) {
       main.scrollTo({ top: 0, left: 0, behavior: "auto" });
       return;
