@@ -24,6 +24,7 @@ type TabKey = "challengers" | "hub" | "solo";
 
 const WAGER_PRESETS = [0, 10, 50, 100];
 const SOLO_WAGER_PRESETS = [0, 5, 10, 25];
+const SOLO_WAGER_MAX = 25;
 
 function statTotal(stats: RaceCardSnapshot["stats"]): number {
   return stats.speed + stats.range + stats.stealth + stats.grit;
@@ -271,7 +272,7 @@ export function BattleArena() {
   ), [primaryDeck]);
 
   const myOzzies = Number(userProfile?.ozzies ?? 0);
-  const soloWagerCap = Math.max(0, Math.min(myOzzies, 25));
+  const soloWagerCap = Math.max(0, Math.min(myOzzies, SOLO_WAGER_MAX));
 
   useEffect(() => {
     if (primaryDeckRaceCards.length === 0) {
@@ -570,7 +571,7 @@ export function BattleArena() {
             <input
               type="range"
               min={0}
-              max={25}
+              max={SOLO_WAGER_MAX}
               step={5}
               value={Math.min(soloWager, soloWagerCap)}
               onChange={(e) => setSoloWager(Number(e.target.value))}

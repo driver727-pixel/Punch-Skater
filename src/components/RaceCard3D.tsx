@@ -15,7 +15,11 @@
  */
 import type { RaceCardSnapshot } from "../lib/types";
 
+// Ghost cards sit a short distance behind the lead card so the trail reads as
+// motion blur without drifting too far off the track on tight turns.
 const TRAIL_OFFSETS_PX = [12, 24];
+// Timeline speeds above this threshold are visually fast enough to justify
+// rendering the lightweight motion trail ghosts.
 const TRAIL_SPEED_THRESHOLD = 0.0008;
 
 interface RaceCard3DProps {
