@@ -2,6 +2,7 @@
  * Courier Race Arena — server routes.
  *
  * Endpoints:
+ *   POST   /api/race/solo        — start a solo race against a seeded bot opponent.
  *   POST   /api/race/challenge   — issue a new challenge (escrows challenger's wager).
  *   POST   /api/race/:id/respond — defender accepts or declines a pending challenge.
  *   POST   /api/race/:id/cancel  — challenger withdraws a pending challenge (refunds wager).
@@ -20,6 +21,7 @@
  */
 import {
   createRaceCardSnapshot,
+  createRaceRng,
   resolveRace,
   RACE_TICK_MS,
   STANDARD_RACE_WINNER_OZZIES,
@@ -44,6 +46,52 @@ const CHALLENGES_COLLECTION = 'challenges';
 const RACES_COLLECTION = 'races';
 const NOTIFICATIONS_COLLECTION = 'notifications';
 const PROFILE_COLLECTION = 'userProfiles';
+
+// ── Solo race bot config ─────────────────────────────────────────────────────
+
+const BOT_NAMES = [
+  'Ghost Runner', 'Circuit Breaker', 'Neon Shade', 'Iron Wheel', 'Static Charge',
+  'Grid Phantom', 'Voltage Dash', 'Asphalt Prophet', 'Null Rider', 'Frequency Six',
+];
+const BOT_ARCHETYPES = ['The Team', 'Qu111s', 'The Asclepians', 'Iron Curtains', 'Ne0n Legion'];
+
+/**
+ * Generate a competitive bot snapshot seeded by the player card's stats and the
+ * race seed. Bot total stat points are within ±10% of the player card's total so
+ * the race stays challenging without being unfair.
+ */
+function generateBotSnapshot(playerStats, seed) {
+  const rng = createRaceRng(`${seed}:bot-gen`);
+
+  const playerTotal = (
+    Number(playerStats.speed ?? 5) +
+    Number(playerStats.range ?? 5) +
+    Number(playerStats.stealth ?? 5) +
+    Number(playerStats.grit ?? 5)
+  );
+
+  // Bot total within ±10% of player total.
+  const botTotal = Math.round(playerTotal * (0.9 + rng() * 0.2));
+
+  // Distribute botTotal across the four stats with seeded random weights.
+  const weights = [0.5 + rng(), 0.5 + rng(), 0.5 + rng(), 0.5 + rng()];
+  const sumW = weights.reduce((a, b) => a + b, 0);
+  const rawStats = weights.map((w) => Math.max(1, Math.min(10, Math.round((w / sumW) * botTotal))));
+
+  return {
+    id: `bot-${seed}`,
+    name: BOT_NAMES[Math.floor(rng() * BOT_NAMES.length)],
+    archetype: BOT_ARCHETYPES[Math.floor(rng() * BOT_ARCHETYPES.length)],
+    rarity: 'Apprentice',
+    stats: {
+      speed: rawStats[0],
+      range: rawStats[1],
+      rangeNm: rawStats[1],
+      stealth: rawStats[2],
+      grit: rawStats[3],
+    },
+  };
+}
 
 const MAX_OPEN_CHALLENGES_PER_USER = 20;
 const MAX_WAGER = 10_000;
@@ -499,6 +547,135 @@ export function registerRaceRoutes(app, {
     } catch (error) {
       console.error('Race respond error:', error);
       res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to respond to challenge.' });
+    }
+  });
+
+  // ── POST /api/race/solo ──────────────────────────────────────────────────
+  // Race against a seeded bot opponent. Only the player's card receives XP /
+  // Ozzy / stat-boost deltas — the bot has no persistent card to update.
+  // Wager settlement: player wins → refund wager + STANDARD_RACE_WINNER_OZZIES;
+  // bot wins → wager is lost; draw → wager refunded.
+  // NOTE: must be registered before POST/GET /api/race/:id so Express does not
+  // treat the literal path segment "solo" as a dynamic :id parameter.
+  app.post('/api/race/solo', limiter, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Race arena is not configured on this server.' });
+      return;
+    }
+
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    const playerUid = caller.uid;
+    const cardId = String(req.body?.cardId ?? '').trim();
+    const wager = clampWager(req.body?.ozzyWager);
+    const district = String(req.body?.district ?? '').trim() || null;
+
+    if (!cardId) {
+      res.status(400).json({ error: 'cardId is required.' });
+      return;
+    }
+
+    try {
+      // Load the player's primary deck outside the transaction (no writes yet).
+      const decksSnap = await adminDb.collection('users').doc(playerUid).collection('decks').get();
+      const primaryDeckDoc = findPrimaryDeck(decksSnap);
+      if (!primaryDeckDoc) {
+        res.status(409).json({ error: 'You need a primary deck to run a solo sprint.' });
+        return;
+      }
+      const playerDeck = primaryDeckDoc.data();
+      const playerCard = getCardFromDeck(playerDeck, cardId);
+      if (!playerCard) {
+        res.status(409).json({ error: 'The selected card is not in your primary deck.' });
+        return;
+      }
+
+      // Build snapshots and run the simulation before entering the transaction
+      // (pure computation — no side effects).
+      const playerSnapshot = createRaceCardSnapshot(playerCard);
+      const raceSeed = randomUUID();
+      const botSnapshot = generateBotSnapshot(playerSnapshot.stats, raceSeed);
+      const { simulation, result: raw } = resolveRace(playerSnapshot, botSnapshot, { wager, raceSeed });
+
+      // Determine per-profile Ozzy adjustment for the player.
+      // Bot has no profile to update; only the player's card+profile change.
+      const playerWon = raw.winnerSide === 'challenger';
+      const draw = raw.winnerSide === null;
+      let profileOzzyAdjust = 0;
+      if (playerWon) {
+        profileOzzyAdjust = wager + STANDARD_RACE_WINNER_OZZIES;
+      } else if (draw) {
+        profileOzzyAdjust = wager; // refund
+      }
+      // Bot win: wager was already escrowed; no refund.
+
+      const raceId = `race-${randomUUID()}`;
+      const race = {
+        id: raceId,
+        challengeId: 'solo',
+        challengerUid: playerUid,
+        defenderUid: 'bot',
+        ...(district ? { district } : {}),
+        challenger: playerSnapshot,
+        defender: botSnapshot,
+        ozzyWager: wager,
+        laps: 1,
+        tickMs: RACE_TICK_MS,
+        timeline: simulation.timeline,
+        result: {
+          winnerUid: playerWon ? playerUid : null,
+          challengerFinishTick: raw.challengerFinishTick,
+          defenderFinishTick: raw.defenderFinishTick,
+          ozzyTransfer: raw.ozzyTransfer,
+          cardDeltas: raw.cardDeltas,
+          ...(raw.winnerStatBoost ? { winnerStatBoost: raw.winnerStatBoost } : {}),
+          raceSeed,
+        },
+        createdAt: nowIso(),
+      };
+
+      await adminDb.runTransaction(async (tx) => {
+        const profileRef = adminDb.collection(PROFILE_COLLECTION).doc(playerUid);
+        const cardRef = adminDb.collection('users').doc(playerUid).collection('cards').doc(cardId);
+
+        // All reads before any writes (Firestore requirement).
+        const [profileSnap, cardSnap] = await Promise.all([tx.get(profileRef), tx.get(cardRef)]);
+
+        // Validate wager balance and escrow it.
+        if (wager > 0) {
+          const balance = readOzzies(profileSnap.data());
+          if (balance < wager) {
+            throw badRequest(`You only have ${balance} Ozzies — not enough to wager ${wager}.`, 402);
+          }
+          tx.set(profileRef, { ozzies: FieldValue.increment(-wager), updatedAt: nowIso() }, { merge: true });
+        }
+
+        // Persist the race doc.
+        tx.set(adminDb.collection(RACES_COLLECTION).doc(raceId), race);
+
+        // Apply XP + Ozzy delta to the player's card.
+        applyCardDelta(
+          tx, cardRef, cardSnap,
+          raw.cardDeltas.challenger,
+          playerWon ? raw.winnerStatBoost : null,
+        );
+
+        // Settle Ozzies: credit winnings / refund back to profile.
+        if (profileOzzyAdjust > 0) {
+          tx.set(profileRef, { ozzies: FieldValue.increment(profileOzzyAdjust), updatedAt: nowIso() }, { merge: true });
+        }
+      });
+
+      res.status(201).json(race);
+    } catch (error) {
+      console.error('Solo race error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to start solo race.' });
     }
   });
 
