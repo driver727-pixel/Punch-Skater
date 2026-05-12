@@ -972,7 +972,7 @@ const BASE_MISSION_BOARD_DEFINITIONS: MissionTemplate[] = [
     title: "Parent Trace Protocol",
     tagline: "Follow the vanished worker IDs before Cascade purges the trail.",
     description:
-      "A buried Grid archive has surfaced with worker signatures Cascade insists were deleted. This run is part heist, part memorial, and part proof that The Grid never really forgets anything.",
+      "A buried Grid archive has surfaced with worker signatures Cascade insists were deleted. This run is part heist, part memorial, and part proof that Cascade's archive never really forgets anything.",
     district: "The Grid",
     rewardXp: 320,
     rewardOzzies: 95,
