@@ -1,7 +1,5 @@
 import { CRAFTLINGUA_DISTRICT_LANGUAGES } from "./craftlingua";
 
-export const DEFAULT_RACE_DISTRICT = "airaway" as const;
-
 export const RACE_DISTRICT_ORDER = [
   "airaway",
   "batteryville",
@@ -10,6 +8,8 @@ export const RACE_DISTRICT_ORDER = [
   "the-forest",
   "glass-city",
 ] as const;
+
+export const DEFAULT_RACE_DISTRICT = RACE_DISTRICT_ORDER[0];
 
 export type RaceDistrictSlug = (typeof RACE_DISTRICT_ORDER)[number];
 

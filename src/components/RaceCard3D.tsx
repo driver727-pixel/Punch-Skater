@@ -16,6 +16,7 @@
 import type { RaceCardSnapshot } from "../lib/types";
 
 const TRAIL_OFFSETS_PX = [12, 24];
+const TRAIL_SPEED_THRESHOLD = 0.0008;
 
 interface RaceCard3DProps {
   card: RaceCardSnapshot;
@@ -54,7 +55,7 @@ export function RaceCard3D({
   // mirroring the canvas renderer's `ctx.rotate(angle + Math.PI/2)`.
   const transform = `rotateZ(${(angleDeg + 90).toFixed(2)}deg) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg)`;
   const angleRad = (angleDeg * Math.PI) / 180;
-  const showTrail = speed > 0.0008;
+  const showTrail = speed > TRAIL_SPEED_THRESHOLD;
 
   return (
     <>
