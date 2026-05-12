@@ -46,17 +46,22 @@ function ArenaCardThumb({
   isChallenger,
   selected,
   onClick,
+  hideChallengeBorder,
 }: {
   snapshot: RaceCardSnapshot;
   isChallenger?: boolean;
   selected?: boolean;
   onClick?: () => void;
+  /** When true the challenger CSS border is suppressed (e.g. solo picker where
+   *  only the selected-state border should be shown). The 🏁 flag in the card
+   *  name is still rendered so the challenger can still be identified. */
+  hideChallengeBorder?: boolean;
 }) {
   const hasLayers = snapshot.backgroundImageUrl || snapshot.characterImageUrl || snapshot.frameImageUrl;
   return (
     <button
       type="button"
-      className={`race-arena-card${selected ? " race-arena-card--selected" : ""}${isChallenger ? " race-arena-card--challenger" : ""}`}
+      className={`race-arena-card${selected ? " race-arena-card--selected" : ""}${isChallenger && !hideChallengeBorder ? " race-arena-card--challenger" : ""}`}
       onClick={onClick}
     >
       <div className="race-arena-card-art">
@@ -297,12 +302,16 @@ export function BattleArena() {
       setSoloCardId("");
       return;
     }
-    setSoloCardId((current) => (
-      current && primaryDeckRaceCards.some((card) => card.id === current)
-        ? current
-        : primaryDeckRaceCards[0].id
-    ));
-  }, [primaryDeckRaceCards]);
+    setSoloCardId((current) => {
+      if (current && primaryDeckRaceCards.some((card) => card.id === current)) {
+        return current;
+      }
+      // Prefer the designated Challenger card as the default selection.
+      const challengerId = primaryDeck?.challengerCardId;
+      const challenger = challengerId && primaryDeckRaceCards.find((c) => c.id === challengerId);
+      return challenger ? challenger.id : primaryDeckRaceCards[0].id;
+    });
+  }, [primaryDeckRaceCards, primaryDeck]);
 
   useEffect(() => {
     if (soloWager > soloWagerCap) {
@@ -558,6 +567,7 @@ export function BattleArena() {
                   isChallenger={primaryDeck?.challengerCardId === card.id}
                   selected={soloCardId === card.id}
                   onClick={() => setSoloCardId(card.id)}
+                  hideChallengeBorder
                 />
               ))}
             </div>
