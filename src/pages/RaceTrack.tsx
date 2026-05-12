@@ -30,53 +30,213 @@ import { spawnCelebrationBurst } from "../lib/celebration";
 import { sfxBattleClash, sfxBattleWin, sfxBattleLose, sfxClick } from "../lib/sfx";
 import type { Race } from "../lib/types";
 import { RaceCard3D } from "../components/RaceCard3D";
+import { getRaceDistrictDisplayName } from "../lib/raceDistricts";
 
 const CANVAS_WIDTH = 720;
 const CANVAS_HEIGHT = 360;
 const PADDING = 60;
 
-/** Parametric oval circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
-function trackPoint(u: number) {
-  const cx = CANVAS_WIDTH / 2;
-  const cy = CANVAS_HEIGHT / 2;
-  const rx = (CANVAS_WIDTH - PADDING * 2) / 2;
-  const ry = (CANVAS_HEIGHT - PADDING * 2) / 2;
-  const theta = u * Math.PI * 2 - Math.PI / 2; // start at the top
-  const x = cx + Math.cos(theta) * rx;
-  const y = cy + Math.sin(theta) * ry;
-  // Tangent for orienting cards along the curve.
-  const dxdt = -Math.sin(theta) * rx;
-  const dydt = Math.cos(theta) * ry;
-  const angle = Math.atan2(dydt, dxdt);
-  return { x, y, angle };
+interface TrackTheme {
+  backdropTop: string;
+  backdropBottom: string;
+  ringColor: string;
+  laneColor: string;
+  gridColor: string;
+  glowColor: string;
+  scaleX: number;
+  scaleY: number;
 }
 
-/** Project a point on the offset (inside or outside) lane. */
-function offsetTrackPoint(u: number, lateral: number) {
-  const { x, y, angle } = trackPoint(u);
-  // Perpendicular offset.
-  const nx = Math.cos(angle - Math.PI / 2) * lateral;
-  const ny = Math.sin(angle - Math.PI / 2) * lateral;
-  return { x: x + nx, y: y + ny, angle };
+const DEFAULT_TRACK_THEME: TrackTheme = {
+  backdropTop: "#1b0e2e",
+  backdropBottom: "#070314",
+  ringColor: "rgba(40,30,60,0.95)",
+  laneColor: "rgba(255,220,70,0.55)",
+  gridColor: "rgba(120,70,200,0.18)",
+  glowColor: "#aa66ff",
+  scaleX: 1,
+  scaleY: 1,
+};
+
+const TRACK_THEMES: Record<string, TrackTheme> = {
+  airaway: {
+    backdropTop: "#0a1628",
+    backdropBottom: "#001440",
+    ringColor: "rgba(30,60,110,0.95)",
+    laneColor: "rgba(100,200,255,0.7)",
+    gridColor: "rgba(80,180,255,0.15)",
+    glowColor: "#66ccff",
+    scaleX: 1.15,
+    scaleY: 0.85,
+  },
+  nightshade: {
+    backdropTop: "#0d0018",
+    backdropBottom: "#050010",
+    ringColor: "rgba(55,20,75,0.95)",
+    laneColor: "rgba(200,80,255,0.7)",
+    gridColor: "rgba(160,60,220,0.15)",
+    glowColor: "#cc44ff",
+    scaleX: 0.85,
+    scaleY: 0.9,
+  },
+  batteryville: {
+    backdropTop: "#120800",
+    backdropBottom: "#080400",
+    ringColor: "rgba(80,35,0,0.95)",
+    laneColor: "rgba(255,140,30,0.7)",
+    gridColor: "rgba(220,100,20,0.15)",
+    glowColor: "#ff8800",
+    scaleX: 1.1,
+    scaleY: 0.8,
+  },
+  "the-grid": {
+    backdropTop: "#000d08",
+    backdropBottom: "#000804",
+    ringColor: "rgba(0,50,25,0.95)",
+    laneColor: "rgba(0,255,120,0.7)",
+    gridColor: "rgba(0,200,80,0.15)",
+    glowColor: "#00ff88",
+    scaleX: 1.2,
+    scaleY: 0.7,
+  },
+  "the-forest": {
+    backdropTop: "#061208",
+    backdropBottom: "#030a04",
+    ringColor: "rgba(20,55,15,0.95)",
+    laneColor: "rgba(100,220,80,0.7)",
+    gridColor: "rgba(60,180,40,0.15)",
+    glowColor: "#88ee44",
+    scaleX: 0.95,
+    scaleY: 1,
+  },
+  "glass-city": {
+    backdropTop: "#12100e",
+    backdropBottom: "#0a0806",
+    ringColor: "rgba(70,60,40,0.95)",
+    laneColor: "rgba(255,220,100,0.7)",
+    gridColor: "rgba(220,190,80,0.15)",
+    glowColor: "#ffdd55",
+    scaleX: 1.2,
+    scaleY: 0.75,
+  },
+};
+
+function getTrackTheme(district: string) {
+  return TRACK_THEMES[district] ?? DEFAULT_TRACK_THEME;
+}
+
+function getTrackRadii(district: string) {
+  const baseRx = (CANVAS_WIDTH - PADDING * 2) / 2;
+  const baseRy = (CANVAS_HEIGHT - PADDING * 2) / 2;
+  const theme = getTrackTheme(district);
+  return { rx: baseRx * theme.scaleX, ry: baseRy * theme.scaleY };
+}
+
+function createTrackHelpers(district: string) {
+  const { rx, ry } = getTrackRadii(district);
+
+  /** Parametric oval circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
+  function trackPoint(u: number) {
+    const cx = CANVAS_WIDTH / 2;
+    const cy = CANVAS_HEIGHT / 2;
+    const theta = u * Math.PI * 2 - Math.PI / 2; // start at the top
+    const x = cx + Math.cos(theta) * rx;
+    const y = cy + Math.sin(theta) * ry;
+    // Tangent for orienting cards along the curve.
+    const dxdt = -Math.sin(theta) * rx;
+    const dydt = Math.cos(theta) * ry;
+    const angle = Math.atan2(dydt, dxdt);
+    return { x, y, angle };
+  }
+
+  /** Project a point on the offset (inside or outside) lane. */
+  function offsetTrackPoint(u: number, lateral: number) {
+    const { x, y, angle } = trackPoint(u);
+    // Perpendicular offset.
+    const nx = Math.cos(angle - Math.PI / 2) * lateral;
+    const ny = Math.sin(angle - Math.PI / 2) * lateral;
+    return { x: x + nx, y: y + ny, angle };
+  }
+
+  return { trackPoint, offsetTrackPoint };
 }
 
 interface DrawArgs {
   ctx: CanvasRenderingContext2D;
+  district: string;
 }
 
 /** Draw the static track surface onto the canvas. Called once per race load. */
-function drawScene({ ctx }: DrawArgs) {
+function drawScene({ ctx, district }: DrawArgs) {
+  const theme = getTrackTheme(district);
+  const districtDisplayName = getRaceDistrictDisplayName(district) ?? "Open Circuit";
+  const { trackPoint, offsetTrackPoint } = createTrackHelpers(district);
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  // Backdrop — Sk8rpunk dusk gradient.
+  // Backdrop — district neon gradient.
   const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-  grad.addColorStop(0, "#1b0e2e");
-  grad.addColorStop(1, "#070314");
+  grad.addColorStop(0, theme.backdropTop);
+  grad.addColorStop(1, theme.backdropBottom);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  // City-block grid background.
-  ctx.strokeStyle = "rgba(120, 70, 200, 0.18)";
+  // District ambience accents.
+  ctx.save();
+  switch (district) {
+    case "airaway":
+      ctx.strokeStyle = "rgba(150,220,255,0.14)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(50 + i * 120, 70 + i * 12);
+        ctx.bezierCurveTo(120 + i * 110, 20, 190 + i * 110, 120, 260 + i * 110, 72);
+        ctx.stroke();
+      }
+      break;
+    case "nightshade":
+      ctx.fillStyle = "rgba(140,50,200,0.08)";
+      for (let i = -2; i < 8; i += 1) {
+        ctx.fillRect(i * 120, 0, 28, CANVAS_HEIGHT);
+      }
+      break;
+    case "batteryville":
+      ctx.fillStyle = "rgba(255,150,40,0.09)";
+      for (let i = -1; i < 10; i += 1) {
+        ctx.save();
+        ctx.translate(i * 84, CANVAS_HEIGHT - 48);
+        ctx.rotate(-0.4);
+        ctx.fillRect(0, 0, 18, 96);
+        ctx.restore();
+      }
+      break;
+    case "the-grid":
+      ctx.strokeStyle = "rgba(0,255,140,0.16)";
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i += 1) {
+        ctx.strokeRect(80 + i * 40, 55 + i * 18, CANVAS_WIDTH - 160 - i * 80, CANVAS_HEIGHT - 110 - i * 36);
+      }
+      break;
+    case "the-forest":
+      ctx.fillStyle = "rgba(120,210,90,0.08)";
+      for (let i = 0; i < 18; i += 1) {
+        ctx.beginPath();
+        ctx.arc(30 + (i * 37) % CANVAS_WIDTH, 25 + (i * 53) % CANVAS_HEIGHT, 8 + (i % 4), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    case "glass-city":
+      ctx.fillStyle = "rgba(255,220,120,0.08)";
+      for (let i = 0; i < 9; i += 1) {
+        ctx.fillRect(40 + i * 78, 40 + (i % 3) * 18, 28, 120 + (i % 4) * 18);
+      }
+      break;
+    default:
+      break;
+  }
+  ctx.restore();
+
+  // Grid background.
+  ctx.strokeStyle = theme.gridColor;
   ctx.lineWidth = 1;
   for (let x = 0; x < CANVAS_WIDTH; x += 32) {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_HEIGHT); ctx.stroke();
@@ -87,7 +247,9 @@ function drawScene({ ctx }: DrawArgs) {
 
   // Track surface — thick oval ring.
   ctx.lineWidth = 44;
-  ctx.strokeStyle = "rgba(40, 30, 60, 0.95)";
+  ctx.strokeStyle = theme.ringColor;
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = theme.glowColor;
   ctx.beginPath();
   for (let i = 0; i <= 200; i += 1) {
     const u = i / 200;
@@ -96,11 +258,14 @@ function drawScene({ ctx }: DrawArgs) {
   }
   ctx.closePath();
   ctx.stroke();
+  ctx.shadowBlur = 0;
 
   // Lane markers.
   ctx.lineWidth = 2;
   ctx.setLineDash([10, 10]);
-  ctx.strokeStyle = "rgba(255, 220, 70, 0.55)";
+  ctx.strokeStyle = theme.laneColor;
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = theme.glowColor;
   ctx.beginPath();
   for (let i = 0; i <= 200; i += 1) {
     const u = i / 200;
@@ -109,6 +274,7 @@ function drawScene({ ctx }: DrawArgs) {
   }
   ctx.closePath();
   ctx.stroke();
+  ctx.shadowBlur = 0;
   ctx.setLineDash([]);
 
   // Start/finish line at u=0.
@@ -120,12 +286,46 @@ function drawScene({ ctx }: DrawArgs) {
   ctx.moveTo(startA.x, startA.y);
   ctx.lineTo(startB.x, startB.y);
   ctx.stroke();
-  // Checker pattern hint.
-  ctx.fillStyle = "#ffffff";
-  for (let i = 0; i < 4; i += 1) {
-    const c = offsetTrackPoint(0, -18 + i * 12);
-    ctx.fillRect(c.x - 4, c.y - 4, 8, 8);
+
+  // Real checkerboard patch rotated with the start tangent.
+  const startCenter = trackPoint(0);
+  ctx.save();
+  ctx.translate(startCenter.x, startCenter.y);
+  ctx.rotate(startCenter.angle);
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      ctx.fillStyle = (row + col) % 2 === 0 ? "#ffffff" : "#000000";
+      ctx.fillRect(-12 + col * 6, -12 + row * 6, 6, 6);
+    }
   }
+  ctx.restore();
+
+  // District badge.
+  ctx.save();
+  ctx.font = "13px monospace";
+  ctx.textBaseline = "middle";
+  const badgeText = `DISTRICT: ${districtDisplayName.toUpperCase()}`;
+  const badgeWidth = ctx.measureText(badgeText).width + 18;
+  const badgeX = 14;
+  const badgeY = 14;
+  const badgeH = 24;
+  const badgeR = 12;
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ctx.beginPath();
+  ctx.moveTo(badgeX + badgeR, badgeY);
+  ctx.lineTo(badgeX + badgeWidth - badgeR, badgeY);
+  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY, badgeX + badgeWidth, badgeY + badgeR);
+  ctx.lineTo(badgeX + badgeWidth, badgeY + badgeH - badgeR);
+  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY + badgeH, badgeX + badgeWidth - badgeR, badgeY + badgeH);
+  ctx.lineTo(badgeX + badgeR, badgeY + badgeH);
+  ctx.quadraticCurveTo(badgeX, badgeY + badgeH, badgeX, badgeY + badgeH - badgeR);
+  ctx.lineTo(badgeX, badgeY + badgeR);
+  ctx.quadraticCurveTo(badgeX, badgeY, badgeX + badgeR, badgeY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(badgeText, badgeX + 9, badgeY + badgeH / 2 + 0.5);
+  ctx.restore();
 
   // Cards are rendered as CSS 3D elements (RaceCard3D) in the DOM overlay —
   // nothing more to draw here.
@@ -249,7 +449,7 @@ export function RaceTrack() {
     if (!race || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext("2d");
     if (!ctx) return;
-    drawScene({ ctx });
+    drawScene({ ctx, district: race.district ?? "" });
   }, [race]);
 
   // Finish-line celebration when the race completes.
@@ -266,6 +466,10 @@ export function RaceTrack() {
     if (!race || !user) return false;
     return race.challengerUid === user.uid || race.defenderUid === user.uid;
   }, [race, user]);
+  const trackHelpers = useMemo(
+    () => createTrackHelpers(race?.district ?? ""),
+    [race?.district],
+  );
 
   if (loading) {
     return <div className="page race-track-page"><p>Loading race…</p></div>;
@@ -275,9 +479,11 @@ export function RaceTrack() {
       <Link to="/arena" className="btn-primary">Back to Race Arena</Link></div>;
   }
   if (!race) return null;
+  const { offsetTrackPoint } = trackHelpers;
 
   const tk = race.timeline[tickIndex];
   const winner = race.result.winnerUid;
+  const districtDisplayName = getRaceDistrictDisplayName(race.district);
 
   // Compute 3D card positions for this tick.
   const chPos = offsetTrackPoint(tk.challengerProgress % 1, -10);
@@ -325,6 +531,7 @@ export function RaceTrack() {
             angleDeg={chAngleDeg}
             tiltX={20}
             tiltY={chTiltY}
+            speed={tk.challengerSpeed}
             variant="challenger"
           />
           <RaceCard3D
@@ -334,6 +541,7 @@ export function RaceTrack() {
             angleDeg={defAngleDeg}
             tiltX={20}
             tiltY={defTiltY}
+            speed={tk.defenderSpeed}
             variant="defender"
           />
           {/* Floating event overlays. */}
@@ -412,6 +620,11 @@ export function RaceTrack() {
                 ? `🏆 ${race.challenger.name} wins!`
                 : `🏆 ${race.defender.name} wins!`}
           </h2>
+          {districtDisplayName && (
+            <p style={{ margin: "0 0 0.75rem", opacity: 0.88 }}>
+              🏁 Raced in: {districtDisplayName}
+            </p>
+          )}
           <ul className="race-result-list">
             <li>
               <strong>{race.challenger.name}</strong>

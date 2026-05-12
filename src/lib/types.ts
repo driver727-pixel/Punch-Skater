@@ -466,6 +466,7 @@ export interface Race {
   challengeId: string;
   challengerUid: string;
   defenderUid: string;
+  district?: string;
   challenger: RaceCardSnapshot;
   defender: RaceCardSnapshot;
   ozzyWager: number;

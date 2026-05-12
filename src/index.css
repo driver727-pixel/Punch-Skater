@@ -12926,3 +12926,60 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   pointer-events: none;
 }
+
+/* ── District picker ── */
+.race-district-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.race-district-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  color: #ddd;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.race-district-btn:hover { background: rgba(255,255,255,0.12); }
+.race-district-btn.active {
+  border-color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Solo Sprint tab ── */
+.race-solo-panel {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px 0;
+}
+.race-solo-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.race-solo-description {
+  color: #aaa;
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.race-card-trail {
+  position: absolute;
+  width: 32px;
+  height: 44px;
+  border-radius: 4px;
+  pointer-events: none;
+  transform-origin: center center;
+  transition: opacity 0.08s linear;
+}
+.race-card-trail--1 { opacity: 0.35; }
+.race-card-trail--2 { opacity: 0.15; }
