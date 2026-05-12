@@ -1,5 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -85,6 +85,14 @@ const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ d
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
 const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ default: m.Workshop })));
 const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
+const MAIN_CONTENT_SELECTOR = ".main";
+
+function resolveScrollBehavior(): ScrollBehavior {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "auto";
+  }
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -110,6 +118,21 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const behavior = resolveScrollBehavior();
+    const main = document.querySelector(MAIN_CONTENT_SELECTOR);
+    if (main instanceof HTMLElement) {
+      main.scrollTo({ top: 0, left: 0, behavior });
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior });
+    }
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   return (
@@ -120,6 +143,7 @@ function App() {
           <LanguageProvider>
             <ErrorBoundary>
               <div className="app">
+                <ScrollToTopOnRouteChange />
                 <Nav />
                 {!isFirebaseConfigured && (
                   <div className="firebase-banner">{firebaseUnavailableMessage}</div>
