@@ -15,6 +15,8 @@
  */
 import type { RaceCardSnapshot } from "../lib/types";
 
+const TRAIL_OFFSETS_PX = [12, 24];
+
 interface RaceCard3DProps {
   card: RaceCardSnapshot;
   /** Horizontal position as a percentage of the canvas-inner container width (0–100). */
@@ -51,13 +53,12 @@ export function RaceCard3D({
   // Adding 90° converts the tangent vector angle to card-face orientation,
   // mirroring the canvas renderer's `ctx.rotate(angle + Math.PI/2)`.
   const transform = `rotateZ(${(angleDeg + 90).toFixed(2)}deg) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg)`;
-  const trailOffsets = [12, 24];
   const angleRad = (angleDeg * Math.PI) / 180;
   const showTrail = speed > 0.0008;
 
   return (
     <>
-      {showTrail && trailOffsets.map((distance, index) => (
+      {showTrail && TRAIL_OFFSETS_PX.map((distance, index) => (
         <div
           key={distance}
           className={`race-card-3d race-card-3d--${variant} race-card-trail race-card-trail--${index + 1}`}

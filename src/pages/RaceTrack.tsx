@@ -132,34 +132,33 @@ function getTrackRadii(district: string) {
   return { rx: baseRx * theme.scaleX, ry: baseRy * theme.scaleY };
 }
 
-let activeTrackRadii = getTrackRadii("");
+function createTrackHelpers(district: string) {
+  const { rx, ry } = getTrackRadii(district);
 
-function setTrackDistrict(district?: string) {
-  activeTrackRadii = getTrackRadii(district ?? "");
-}
+  /** Parametric oval circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
+  function trackPoint(u: number) {
+    const cx = CANVAS_WIDTH / 2;
+    const cy = CANVAS_HEIGHT / 2;
+    const theta = u * Math.PI * 2 - Math.PI / 2; // start at the top
+    const x = cx + Math.cos(theta) * rx;
+    const y = cy + Math.sin(theta) * ry;
+    // Tangent for orienting cards along the curve.
+    const dxdt = -Math.sin(theta) * rx;
+    const dydt = Math.cos(theta) * ry;
+    const angle = Math.atan2(dydt, dxdt);
+    return { x, y, angle };
+  }
 
-/** Parametric oval circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
-function trackPoint(u: number) {
-  const cx = CANVAS_WIDTH / 2;
-  const cy = CANVAS_HEIGHT / 2;
-  const { rx, ry } = activeTrackRadii;
-  const theta = u * Math.PI * 2 - Math.PI / 2; // start at the top
-  const x = cx + Math.cos(theta) * rx;
-  const y = cy + Math.sin(theta) * ry;
-  // Tangent for orienting cards along the curve.
-  const dxdt = -Math.sin(theta) * rx;
-  const dydt = Math.cos(theta) * ry;
-  const angle = Math.atan2(dydt, dxdt);
-  return { x, y, angle };
-}
+  /** Project a point on the offset (inside or outside) lane. */
+  function offsetTrackPoint(u: number, lateral: number) {
+    const { x, y, angle } = trackPoint(u);
+    // Perpendicular offset.
+    const nx = Math.cos(angle - Math.PI / 2) * lateral;
+    const ny = Math.sin(angle - Math.PI / 2) * lateral;
+    return { x: x + nx, y: y + ny, angle };
+  }
 
-/** Project a point on the offset (inside or outside) lane. */
-function offsetTrackPoint(u: number, lateral: number) {
-  const { x, y, angle } = trackPoint(u);
-  // Perpendicular offset.
-  const nx = Math.cos(angle - Math.PI / 2) * lateral;
-  const ny = Math.sin(angle - Math.PI / 2) * lateral;
-  return { x: x + nx, y: y + ny, angle };
+  return { trackPoint, offsetTrackPoint };
 }
 
 interface DrawArgs {
@@ -169,9 +168,9 @@ interface DrawArgs {
 
 /** Draw the static track surface onto the canvas. Called once per race load. */
 function drawScene({ ctx, district }: DrawArgs) {
-  setTrackDistrict(district);
   const theme = getTrackTheme(district);
   const districtDisplayName = getRaceDistrictDisplayName(district) ?? "Open Circuit";
+  const { trackPoint, offsetTrackPoint } = createTrackHelpers(district);
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   // Backdrop — district neon gradient.
@@ -467,6 +466,10 @@ export function RaceTrack() {
     if (!race || !user) return false;
     return race.challengerUid === user.uid || race.defenderUid === user.uid;
   }, [race, user]);
+  const trackHelpers = useMemo(
+    () => createTrackHelpers(race?.district ?? ""),
+    [race?.district],
+  );
 
   if (loading) {
     return <div className="page race-track-page"><p>Loading race…</p></div>;
@@ -476,7 +479,7 @@ export function RaceTrack() {
       <Link to="/arena" className="btn-primary">Back to Race Arena</Link></div>;
   }
   if (!race) return null;
-  setTrackDistrict(race.district);
+  const { offsetTrackPoint } = trackHelpers;
 
   const tk = race.timeline[tickIndex];
   const winner = race.result.winnerUid;
