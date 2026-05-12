@@ -31,6 +31,8 @@ interface RaceCard3DProps {
   tiltX: number;
   /** Side wobble in degrees (rotateY). Driven by instantaneous speed. */
   tiltY: number;
+  /** Raw timeline speed, used for optional motion-trail ghosts. */
+  speed?: number;
   /** Visual variant that controls the glow color. */
   variant: "challenger" | "defender";
 }
@@ -42,34 +44,63 @@ export function RaceCard3D({
   angleDeg,
   tiltX,
   tiltY,
+  speed = 0,
   variant,
 }: RaceCard3DProps) {
   // rotateZ aligns the card face to the direction of travel.
   // Adding 90° converts the tangent vector angle to card-face orientation,
   // mirroring the canvas renderer's `ctx.rotate(angle + Math.PI/2)`.
   const transform = `rotateZ(${(angleDeg + 90).toFixed(2)}deg) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg)`;
+  const trailOffsets = [12, 24];
+  const angleRad = (angleDeg * Math.PI) / 180;
+  const showTrail = speed > 0.0008;
 
   return (
-    <div
-      className={`race-card-3d race-card-3d--${variant}`}
-      aria-hidden="true"
-      style={{
-        left: `${leftPct.toFixed(3)}%`,
-        top: `${topPct.toFixed(3)}%`,
-        transform,
-      }}
-    >
-      {card.imageUrl ? (
-        <img
-          className="race-card-3d-image"
-          src={card.imageUrl}
-          alt=""
-          draggable={false}
-        />
-      ) : (
-        <div className="race-card-3d-placeholder" />
-      )}
-      <span className="race-card-3d-label">{card.name.slice(0, 8)}</span>
-    </div>
+    <>
+      {showTrail && trailOffsets.map((distance, index) => (
+        <div
+          key={distance}
+          className={`race-card-3d race-card-3d--${variant} race-card-trail race-card-trail--${index + 1}`}
+          aria-hidden="true"
+          style={{
+            left: `calc(${leftPct.toFixed(3)}% - ${(Math.cos(angleRad) * distance).toFixed(2)}px)`,
+            top: `calc(${topPct.toFixed(3)}% - ${(Math.sin(angleRad) * distance).toFixed(2)}px)`,
+            transform,
+          }}
+        >
+          {card.imageUrl ? (
+            <img
+              className="race-card-3d-image"
+              src={card.imageUrl}
+              alt=""
+              draggable={false}
+            />
+          ) : (
+            <div className="race-card-3d-placeholder" />
+          )}
+        </div>
+      ))}
+      <div
+        className={`race-card-3d race-card-3d--${variant}`}
+        aria-hidden="true"
+        style={{
+          left: `${leftPct.toFixed(3)}%`,
+          top: `${topPct.toFixed(3)}%`,
+          transform,
+        }}
+      >
+        {card.imageUrl ? (
+          <img
+            className="race-card-3d-image"
+            src={card.imageUrl}
+            alt=""
+            draggable={false}
+          />
+        ) : (
+          <div className="race-card-3d-placeholder" />
+        )}
+        <span className="race-card-3d-label">{card.name.slice(0, 8)}</span>
+      </div>
+    </>
   );
 }

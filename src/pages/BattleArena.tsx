@@ -15,13 +15,15 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useDecks } from "../hooks/useDecks";
 import { useRaceArena } from "../hooks/useRaceArena";
-import { fetchRaceArena, type ArenaListEntry } from "../services/race";
+import { fetchRaceArena, startSoloRace, type ArenaListEntry } from "../services/race";
 import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
+import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
 
-type TabKey = "challengers" | "hub";
+type TabKey = "challengers" | "hub" | "solo";
 
 const WAGER_PRESETS = [0, 10, 50, 100];
+const SOLO_WAGER_PRESETS = [0, 5, 10, 25];
 
 function statTotal(stats: RaceCardSnapshot["stats"]): number {
   return stats.speed + stats.range + stats.stealth + stats.grit;
@@ -75,6 +77,29 @@ interface ChallengeModalState {
   defenderCardId: string;
 }
 
+function RaceDistrictPicker({
+  district,
+  onSelect,
+}: {
+  district: string;
+  onSelect: (district: string) => void;
+}) {
+  return (
+    <div className="race-district-picker">
+      {RACE_DISTRICT_OPTIONS.map((option) => (
+        <button
+          key={option.slug}
+          type="button"
+          className={`race-district-btn${district === option.slug ? " active btn-outline--active" : ""}`}
+          onClick={() => onSelect(option.slug)}
+        >
+          {option.emoji} {option.displayName}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ChallengeModal({
   state,
   onClose,
@@ -85,13 +110,14 @@ function ChallengeModal({
 }: {
   state: ChallengeModalState;
   onClose: () => void;
-  onSubmit: (defenderCardId: string, wager: number) => Promise<void>;
+  onSubmit: (defenderCardId: string, wager: number, district: string) => Promise<void>;
   myChallengerCard: { id: string; name: string; stats: RaceCardSnapshot["stats"] } | null;
   busy: boolean;
   myOzzies: number;
 }) {
   const [defenderCardId, setDefenderCardId] = useState(state.defenderCardId);
   const [wager, setWager] = useState(0);
+  const [district, setDistrict] = useState(DEFAULT_RACE_DISTRICT);
   const defenderCard = state.opponent.cards.find((c) => c.id === defenderCardId);
   const cap = Math.max(0, Math.min(myOzzies, 10_000));
 
@@ -159,11 +185,16 @@ function ChallengeModal({
           <span className="race-wager-value">Wager: <strong>{wager}</strong> Ozzies</span>
         </div>
 
+        <div className="race-challenge-row">
+          <label>Choose district:</label>
+          <RaceDistrictPicker district={district} onSelect={setDistrict} />
+        </div>
+
         <div className="modal-actions">
           <button className="btn-outline" onClick={onClose} disabled={busy}>Cancel</button>
           <button
             className="btn-primary"
-            onClick={() => { sfxBattleReady(); onSubmit(defenderCardId, wager); }}
+            onClick={() => { sfxBattleReady(); onSubmit(defenderCardId, wager, district); }}
             disabled={busy || wager > cap}
           >
             {busy ? "Sending…" : "Send Challenge"}
@@ -179,7 +210,11 @@ export function BattleArena() {
   const { decks } = useDecks();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") === "hub" ? "hub" : "challengers") as TabKey;
+  const initialTab = (searchParams.get("tab") === "hub"
+    ? "hub"
+    : searchParams.get("tab") === "solo"
+      ? "solo"
+      : "challengers") as TabKey;
   const [tab, setTab] = useState<TabKey>(initialTab);
   const arena = useRaceArena();
 
@@ -188,6 +223,10 @@ export function BattleArena() {
   const [arenaError, setArenaError] = useState<string | null>(null);
   const [modal, setModal] = useState<ChallengeModalState | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [soloCardId, setSoloCardId] = useState("");
+  const [soloDistrict, setSoloDistrict] = useState<string>(DEFAULT_RACE_DISTRICT);
+  const [soloWager, setSoloWager] = useState(0);
+  const [soloLoading, setSoloLoading] = useState(false);
 
   // Discover the player's primary deck + Challenger card.
   const primaryDeck = useMemo(() => {
@@ -214,12 +253,49 @@ export function BattleArena() {
     };
   }, [primaryDeck]);
 
+  const primaryDeckRaceCards = useMemo(() => (
+    primaryDeck?.cards.map((card) => ({
+      id: card.id,
+      name: card.identity?.name ?? "Skater",
+      archetype: card.prompts.archetype,
+      rarity: card.class.rarity,
+      stats: {
+        speed: card.stats.speed,
+        range: card.stats.range,
+        rangeNm: card.stats.rangeNm,
+        stealth: card.stats.stealth,
+        grit: card.stats.grit,
+      },
+      imageUrl: card.frameImageUrl ?? card.characterImageUrl ?? card.backgroundImageUrl,
+    })) ?? []
+  ), [primaryDeck]);
+
   const myOzzies = Number(userProfile?.ozzies ?? 0);
+  const soloWagerCap = Math.max(0, Math.min(myOzzies, 25));
+
+  useEffect(() => {
+    if (primaryDeckRaceCards.length === 0) {
+      setSoloCardId("");
+      return;
+    }
+    setSoloCardId((current) => (
+      current && primaryDeckRaceCards.some((card) => card.id === current)
+        ? current
+        : primaryDeckRaceCards[0].id
+    ));
+  }, [primaryDeckRaceCards]);
+
+  useEffect(() => {
+    if (soloWager > soloWagerCap) {
+      setSoloWager(soloWagerCap);
+    }
+  }, [soloWager, soloWagerCap]);
 
   // Sync tab → URL.
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
-    if (tab === "hub") next.set("tab", "hub"); else next.delete("tab");
+    if (tab === "challengers") next.delete("tab");
+    else next.set("tab", tab);
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
   }, [tab, searchParams, setSearchParams]);
 
@@ -245,7 +321,7 @@ export function BattleArena() {
       .slice(0, 12)
   , [arena.incoming, arena.outgoing]);
 
-  async function handleIssue(defenderCardId: string, wager: number) {
+  async function handleIssue(defenderCardId: string, wager: number, district: string) {
     if (!modal || !myChallengerCard) return;
     try {
       await arena.issue({
@@ -253,12 +329,36 @@ export function BattleArena() {
         defenderUid: modal.opponent.uid,
         defenderCardId,
         ozzyWager: wager,
+        district,
       });
       setModal(null);
       setActionMessage("Challenge sent!");
       setTab("hub");
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Failed to send challenge.");
+    }
+  }
+
+  async function handleSoloStart() {
+    if (!soloCardId) {
+      setActionMessage("Pick one of your primary deck cards to start a solo race.");
+      return;
+    }
+    setSoloLoading(true);
+    setActionMessage(null);
+    try {
+      // Bot stats are generated server-side seeded by the player's card power level,
+      // so the race stays competitive without any client-side simulation.
+      const race = await startSoloRace({
+        cardId: soloCardId,
+        ozzyWager: Math.min(soloWager, soloWagerCap),
+        district: soloDistrict,
+      });
+      navigate(`/race/${race.id}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to start solo race.");
+    } finally {
+      setSoloLoading(false);
     }
   }
 
@@ -319,6 +419,9 @@ export function BattleArena() {
           {(incomingPending.length + outgoingPending.length) > 0 && (
             <span className="nav-badge">{incomingPending.length + outgoingPending.length}</span>
           )}
+        </button>
+        <button role="tab" aria-selected={tab === "solo"} className={`tab-btn${tab === "solo" ? " tab-btn--active" : ""}`} onClick={() => { sfxClick(); setTab("solo"); }}>
+          ⚡ Solo Sprint
         </button>
       </nav>
 
@@ -416,6 +519,76 @@ export function BattleArena() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {tab === "solo" && (
+        <section className="race-solo-panel">
+          <p className="race-solo-description">
+            Race against a bot courier. Low stakes — small risk, small reward.
+          </p>
+
+          <div className="race-challenge-row">
+            <label>Pick your racer:</label>
+            <div className="race-solo-card-grid">
+              {primaryDeckRaceCards.map((card) => (
+                <ArenaCardThumb
+                  key={card.id}
+                  snapshot={card}
+                  isChallenger={primaryDeck?.challengerCardId === card.id}
+                  selected={soloCardId === card.id}
+                  onClick={() => setSoloCardId(card.id)}
+                />
+              ))}
+            </div>
+            {primaryDeckRaceCards.length === 0 && (
+              <p className="race-arena-empty">Your primary deck has no cards available for a solo sprint yet.</p>
+            )}
+          </div>
+
+          <div className="race-challenge-row">
+            <label>Choose district:</label>
+            <RaceDistrictPicker district={soloDistrict} onSelect={setSoloDistrict} />
+          </div>
+
+          <div className="race-challenge-row">
+            <label>Wager (Ozzies) — your balance: {myOzzies}</label>
+            <div className="race-wager-presets">
+              {SOLO_WAGER_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className={`btn-outline btn-sm${soloWager === preset ? " btn-outline--active" : ""}`}
+                  disabled={preset > soloWagerCap}
+                  onClick={() => setSoloWager(preset)}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={25}
+              step={5}
+              value={Math.min(soloWager, soloWagerCap)}
+              onChange={(e) => setSoloWager(Number(e.target.value))}
+              disabled={soloWagerCap === 0}
+              aria-label="Solo race wager amount"
+            />
+            <span className="race-wager-value">Wager: <strong>{Math.min(soloWager, soloWagerCap)}</strong> Ozzies</span>
+          </div>
+
+          <div className="modal-actions">
+            <button
+              className="btn-primary"
+              onClick={handleSoloStart}
+              disabled={soloLoading || primaryDeckRaceCards.length === 0}
+            >
+              ▶ Start Solo Race
+            </button>
+            {soloLoading && <span className="race-track-status">Starting race…</span>}
           </div>
         </section>
       )}

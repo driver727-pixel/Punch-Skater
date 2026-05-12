@@ -29,6 +29,7 @@ export interface IssueChallengeInput {
   defenderUid: string;
   defenderCardId: string;
   ozzyWager?: number;
+  district?: string;
   message?: string;
 }
 
@@ -40,6 +41,22 @@ export async function issueRaceChallenge(input: IssueChallengeInput): Promise<Ra
     body: JSON.stringify(input),
   });
   return parseResponse<RaceChallenge>(res, "Failed to issue race challenge.");
+}
+
+export interface SoloRaceInput {
+  cardId: string;
+  ozzyWager: number;
+  district?: string;
+}
+
+export async function startSoloRace(input: SoloRaceInput): Promise<Race> {
+  const idToken = await getIdToken();
+  const res = await fetch(`${RACE_BASE}/solo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify(input),
+  });
+  return parseResponse<Race>(res, "Failed to start solo race.");
 }
 
 export async function cancelRaceChallenge(challengeId: string): Promise<RaceChallenge> {
