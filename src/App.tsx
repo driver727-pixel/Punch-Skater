@@ -85,6 +85,14 @@ const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ d
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
 const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ default: m.Workshop })));
 const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
+const MAIN_CONTENT_SELECTOR = ".main";
+
+function resolveScrollBehavior(): ScrollBehavior {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "auto";
+  }
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -114,12 +122,12 @@ function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const mainContentSelector = ".main";
-    const main = document.querySelector(mainContentSelector);
+    const behavior = resolveScrollBehavior();
+    const main = document.querySelector(MAIN_CONTENT_SELECTOR);
     if (main instanceof HTMLElement) {
-      main.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      main.scrollTo({ top: 0, left: 0, behavior });
     } else {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      window.scrollTo({ top: 0, left: 0, behavior });
     }
   }, [pathname]);
 
