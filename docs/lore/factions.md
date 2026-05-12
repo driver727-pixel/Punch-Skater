@@ -28,7 +28,7 @@ sanctioned transit, which is exactly why Punch Skaters target them.
 
 **Public:** A guerrilla journalist organization trying to expose the UCA.
 
-**Internal:** They protect couriers like Skids when those riders become useful carriers of volatile truth.
+**Internal:** They protect couriers when those riders become useful carriers of volatile truth.
 
 **Reveal:** Part of their endgame is proving the Iron Curtains are a false flag.
 
@@ -95,7 +95,7 @@ for wealthy patrons.
 
 **Internal:** They exist as organized cult pressure, not just aesthetic ninja menace.
 
-**Reveal:** Their move against Skids belongs to the hidden artifact-run thread until the story cashes it in.
+**Reveal:** Their move against an artifact courier belongs to the hidden artifact-run thread until the story cashes it in.
 
 ---
 
@@ -119,7 +119,7 @@ for wealthy patrons.
 - **Districts:** Nightshade, Batteryville
 - **Tagline:** *"The capitalist pigs will fall. We just need the right spark."*
 
-**Public:** Underground agitators and rave organizers who help push Skids into bigger currents.
+**Public:** Underground agitators and rave organizers who turn overlooked riders into bigger currents.
 
 **Internal:** They are the spark, not the whole engine.
 

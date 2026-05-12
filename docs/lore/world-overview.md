@@ -72,24 +72,26 @@ stays behind the curtain unless a future story beat makes it worth dramatizing.
 - **Punch Skaters** — the bruised, bloodied bottom rung that gives the world its name.
 - **The Team** — ex-athlete operators whose coordination rivals the corps.
 
-## Skids and the Current Story Pressure
-**Public:** **Skip “Skids” Mayhew** is a Batteryville kid with roots in The Grid through his
-disappeared parents. He moves through a world where the Moonrisers, Asclepians, Quills, and relic
-hunter factions all overlap.
+## Current Story Pressure
+**Public:** The active story pressure is no longer pinned to one named protagonist. The world now
+centers on player couriers, rival crews, and faction signals surfacing through missions, races,
+jousts, and forged cards.
 
-**Internal:** The current plot engine is the pressure created when courier labor, medical cover,
-truth-release crews, and relic movers all collide around Skids at once.
+**Internal:** The original opening protagonist was a story driver and can return later, but current
+canon should treat that thread as background history rather than the spine of live content. Build new
+beats around courier labor, medical cover, truth-release crews, relic movers, and rival ladders
+colliding across the city.
 
 **Reveal:** The artifact run itself stays out of plain public canon until the story spends it on
 screen. Until then, use it as writer-facing connective tissue rather than open-world fact.
 
-His current orbit includes:
+The current pressure web includes:
 
-- **Public:** The **Moonrisers** notice him in Nightshade.
-- **Public:** The **Asclepians** use his clean record as cover.
-- **Internal:** The **Mesopotamian Society** and **Knights Technarchy** tie him to the hidden
-  artifact-run spine of the plot.
-- **Reveal:** The **Quills** intend to turn the eventual fallout into a city-shaking truth release.
+- **Public:** The **Moonrisers** turn rave signals into recruitment pressure.
+- **Public:** The **Asclepians** use clean courier profiles as medical cover.
+- **Internal:** The **Mesopotamian Society** and **Knights Technarchy** keep the hidden
+  artifact-run spine moving through relic routes.
+- **Reveal:** The **Quills** intend to turn eventual fallout into a city-shaking truth release.
 
 ## Codex Visibility Rules
 **Public:** The in-app **Codex** exposes the macro world state publicly, while the dedicated

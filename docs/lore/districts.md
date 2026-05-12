@@ -51,7 +51,7 @@ logic, do it as a reveal rather than baseline reference text.
 - **Known crews:** Iron Circuit, Voltage Saints, Circuit Breakers
 
 **Public:** The engine room of the City. Batteryville is bulk cargo, rail switchways, refinery heat,
-and the district that built Skids. Stamina matters more than glamour here.
+and the district that turns exhausted workers into brutal long-haul couriers. Stamina matters more than glamour here.
 
 ---
 
@@ -66,8 +66,7 @@ and the district that built Skids. Stamina matters more than glamour here.
 **Public:** The most surveilled district in the City. Physical chips move here because the network
 itself cannot be trusted.
 
-**Internal:** Skids' parents vanished into this district's systems, which is why The Grid keeps
-pulling his story back toward it.
+**Internal:** The Grid swallows worker histories, courier aliases, and inconvenient family records; it should feel like a place where personal trails disappear into systems.
 
 ---
 
@@ -82,7 +81,7 @@ pulling his story back toward it.
 **Public:** The underground's birthplace. Every courier network traces itself back to a Nightshade
 deal, rave, betrayal, or rescue.
 
-**Internal:** This is where Skids gets noticed and where multiple faction lines begin to cross.
+**Internal:** This is where unknown riders become signals and multiple faction lines begin to cross.
 
 ---
 

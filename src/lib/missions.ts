@@ -862,7 +862,7 @@ const BASE_MISSION_BOARD_DEFINITIONS: MissionTemplate[] = [
     title: "Moonrise Echo Run",
     tagline: "Carry the rave signal through the Murk before the booth goes dark.",
     description:
-      "The Moonrisers are replaying the night Skids first got noticed, and every crew in Nightshade wants control of the broadcast. Build a deck that can move fast, stay quiet, and survive a crowded tunnel.",
+      "The Moonrisers are replaying a rave signal that keeps turning unknown riders into faction targets, and every crew in Nightshade wants control of the broadcast. Build a deck that can move fast, stay quiet, and survive a crowded tunnel.",
     district: "Nightshade",
     rewardXp: 275,
     rewardOzzies: 105,
@@ -972,7 +972,7 @@ const BASE_MISSION_BOARD_DEFINITIONS: MissionTemplate[] = [
     title: "Parent Trace Protocol",
     tagline: "Follow the vanished worker IDs before Cascade purges the trail.",
     description:
-      "A buried Grid archive has surfaced with the same worker signatures tied to Skids' missing parents. This run is part heist, part memorial, and part proof that Cascade never really deletes anything.",
+      "A buried Grid archive has surfaced with worker signatures Cascade insists were deleted. This run is part heist, part memorial, and part proof that The Grid never really forgets anything.",
     district: "The Grid",
     rewardXp: 320,
     rewardOzzies: 95,

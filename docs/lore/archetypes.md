@@ -14,8 +14,7 @@ without leaking future beats into public copy.
 **Public:** Cyber ninja zealots serving the secretive Dark Lights. They move sacred packages between
 hidden temples and build their reputation through fear and precision.
 
-**Internal:** Their pressure on Skids comes through the hidden artifact spine of the plot rather than
-through public faction knowledge.
+**Internal:** Their pressure enters through the hidden artifact spine rather than through public faction knowledge.
 
 **Strengths:** Maximum Stealth, elite Speed. Excels in surveillance-heavy districts. Penalty: low Rep.
 
@@ -24,7 +23,7 @@ through public faction knowledge.
 ## Qu111s
 > *"The truth is in the data. We will release it."*
 
-**Public:** A guerrilla journalist network protecting couriers like Skids while preparing a truth
+**Public:** A guerrilla journalist network protecting volatile proof-carriers while preparing a truth
 dump big enough to destabilize the UCA.
 
 **Reveal:** Their release only matters if the surrounding chaos is big enough to make the city
@@ -75,7 +74,7 @@ couriers and think like opportunists.
 **Public:** Medical couriers and humanitarian smugglers moving medicine, organs, and restricted care
 through hostile territory.
 
-**Internal:** They place Skids undercover after the Moonrisers notice him.
+**Internal:** They can hide high-risk medical cargo behind clean courier profiles when the route needs plausible cover.
 
 **Strengths:** Good Speed, high Grit, strong community access. Thrives in Batteryville and Nightshade.
 
@@ -89,7 +88,7 @@ and dangerous patrons.
 
 **Internal:** They are one of the quiet connectors between elite collecting culture and cult pressure.
 
-**Reveal:** Their work entangles Skids with the sacred object the Knights want.
+**Reveal:** Their work entangles courier routes with the sacred object the Knights want.
 
 **Strengths:** Maximum Rep, high Tech. Elite access to high-security archives. Penalty: limited Stealth.
 

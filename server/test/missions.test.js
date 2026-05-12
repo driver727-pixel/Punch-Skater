@@ -354,8 +354,8 @@ test('resolveMissionCounterChoice can settle a district joust with tactic-select
     cards: [
       buildCard({
         id: 'duelist-1',
-        name: 'Skids Flash',
-        identity: { name: 'Skids Flash', crew: 'Qu111s' },
+        name: 'Signal Flash',
+        identity: { name: 'Signal Flash', crew: 'Qu111s' },
         prompts: { archetype: 'Qu111s', district: 'Nightshade' },
         stats: { speed: 8, range: 6, stealth: 8, grit: 5 },
         board: { config: { boardType: 'Street', wheels: 'Cloud' } },

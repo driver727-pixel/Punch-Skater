@@ -187,7 +187,7 @@ const MISSION_PRESENTATIONS: Record<string, MissionPresentation> = {
   "nightshade-moonrise-echo": {
     operation: "Moonriser signal run",
     patron: "Moonriser rave network",
-    stakes: "Carry a rave broadcast through the Murk before the Dark Lanes seize the booth that made Skids famous.",
+    stakes: "Carry a rave broadcast through the Murk before the Dark Lanes seize the booth that turns unknown riders into targets.",
     rewardFocus: ["High-rep XP rush", "Stealth cash hush route", "Split route for hybrid decks"],
     sceneTags: ["Rave strobes", "Basement echo", "Crew handshakes"],
     successLabel: "Signal carried",
@@ -209,7 +209,7 @@ const MISSION_PRESENTATIONS: Record<string, MissionPresentation> = {
   "grid-parent-trace": {
     operation: "Vanished worker trace",
     patron: "Batteryville families and Static Pack archivists",
-    stakes: "Follow the same Cascade worker IDs that swallowed Skids' parents before the archive burns the trail.",
+    stakes: "Follow vanished Cascade worker IDs before the archive burns the trail.",
     rewardFocus: ["Lore-heavy XP", "Archive heist cash", "Cross-district split rewards"],
     sceneTags: ["Missing IDs", "Archive shards", "Cascade ghosts"],
     successLabel: "Trail reopened",
