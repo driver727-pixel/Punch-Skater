@@ -1,5 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -110,6 +110,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const main = document.querySelector(".main");
+    if (main instanceof HTMLElement) {
+      main.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      return;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   return (
@@ -120,6 +134,7 @@ function App() {
           <LanguageProvider>
             <ErrorBoundary>
               <div className="app">
+                <ScrollToTopOnRouteChange />
                 <Nav />
                 {!isFirebaseConfigured && (
                   <div className="firebase-banner">{firebaseUnavailableMessage}</div>
