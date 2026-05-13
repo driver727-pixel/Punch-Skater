@@ -8,7 +8,11 @@
   function setAttribute(selector, attribute, path) {
     var node = document.querySelector(selector);
     if (!node) return;
-    node.setAttribute(attribute, new URL(path, origin).toString());
+    try {
+      node.setAttribute(attribute, new URL(path, origin).toString());
+    } catch {
+      // Leave the build-time fallback value in place.
+    }
   }
 
   setAttribute('link[rel="canonical"]', 'href', '/');

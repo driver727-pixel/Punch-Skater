@@ -23,7 +23,7 @@ const BOARD_IMAGE_STATUS_BASE_URL = BOARD_IMAGE_API_URL.replace(
 // Single source of truth: src/lib/boardImageVersion.json
 export const BOARD_IMAGE_CACHE_VERSION = boardImageVersionJson.BOARD_IMAGE_CACHE_VERSION;
 const BOARD_IMAGE_LOCAL_CACHE_PREFIX = "skpd_board_image_cache::";
-const FALLBACK_BOARD_IMAGE_PUBLIC_ORIGIN = "https://punchskater.com";
+const FALLBACK_BOARD_IMAGE_PUBLIC_ORIGIN = "https://driver727-pixel.github.io";
 
 function resolveBoardImagePublicOrigin(): string {
   if (typeof window !== "undefined") {
