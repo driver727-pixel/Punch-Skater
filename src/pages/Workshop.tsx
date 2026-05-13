@@ -1,15 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
+import { CardContainer } from "../components/CardContainer";
 import { SkateboardStatsPanel } from "../components/SkateboardStatsPanel";
+import { SkaterCardFace } from "../components/SkaterCardFace";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
 import { useWorkshopBoards } from "../hooks/useWorkshopBoards";
+import { buildCardVars } from "../lib/cardVars";
 import { calculateBoardStats, getBoardSummary, normalizeBoardConfig } from "../lib/boardBuilder";
 import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
-import type { WorkshopBoardPayload } from "../lib/types";
+import type { BoardPlacement, CardPayload, CharacterPlacement, WorkshopBoardPayload } from "../lib/types";
 import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
 import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../services/boardImageGen";
+import { getStaticFrameBackUrl } from "../services/staticAssets";
 import { removeBackground } from "../services/imageGen";
 import { useAuth } from "../context/AuthContext";
 
@@ -65,10 +69,12 @@ export function Workshop() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingBoard, setSavingBoard] = useState(false);
+  const [savingCardLayout, setSavingCardLayout] = useState(false);
   const [generatingBoardArtId, setGeneratingBoardArtId] = useState<string | null>(null);
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
   const [draggingBoardIds, setDraggingBoardIds] = useState<Set<string>>(() => new Set());
   const [boardFloorPositions, setBoardFloorPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [editingCard, setEditingCard] = useState<CardPayload | null>(null);
   const workshopIgnoreCacheInputId = "workshop-ignore-board-cache";
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
@@ -152,6 +158,14 @@ export function Workshop() {
     () => cards.find((card) => card.id === selectedCardId) ?? null,
     [cards, selectedCardId],
   );
+  const cardEditorVars = useMemo(
+    () => (editingCard ? buildCardVars(editingCard, "editor") : null),
+    [editingCard],
+  );
+  const cardEditorWrapFrameClass = useMemo(
+    () => (editingCard && getStaticFrameBackUrl(editingCard.prompts.rarity) != null ? " print-card--wrap-frame" : ""),
+    [editingCard],
+  );
   const isAdmin = userProfile?.isAdmin === true;
   const benchLoadout = useMemo(
     () => calculateBoardStats(normalizeBoardConfig(boardConfig)),
@@ -164,6 +178,15 @@ export function Workshop() {
     if (nextCardId) next.set("card", nextCardId);
     setSearchParams(next, { replace: true });
   };
+
+  useEffect(() => {
+    if (!selectedCard) {
+      setEditingCard(null);
+      return;
+    }
+    setEditingCard(selectedCard);
+    setBoardConfig(normalizeBoardConfig(selectedCard.board.config));
+  }, [selectedCard]);
 
   const handleBenchSave = async () => {
     setSavingBoard(true);
@@ -188,6 +211,56 @@ export function Workshop() {
       setError(saveError instanceof Error ? saveError.message : "Failed to generate and save the board to the workshop.");
     } finally {
       setSavingBoard(false);
+    }
+  };
+
+  const handleSelectCard = (cardId: string) => {
+    setSelectedCardId(cardId);
+    updateSearchSelection(selectedBoardId, cardId);
+  };
+
+  const handleBoardPlacementChange = (placement: BoardPlacement) => {
+    setEditingCard((current) => (
+      current
+        ? {
+            ...current,
+            board: {
+              ...current.board,
+              placement,
+            },
+          }
+        : current
+    ));
+  };
+
+  const handleCharacterPlacementChange = (placement: CharacterPlacement) => {
+    setEditingCard((current) => (
+      current
+        ? {
+            ...current,
+            characterPlacement: placement,
+          }
+        : current
+    ));
+  };
+
+  const handleResetCardLayout = () => {
+    if (!selectedCard) return;
+    sfxClick();
+    setEditingCard(selectedCard);
+  };
+
+  const handleSaveCardLayout = () => {
+    if (!editingCard) return;
+    setSavingCardLayout(true);
+    try {
+      updateCard(editingCard);
+      updateCardInDecks(editingCard);
+      setMessage(`${editingCard.identity.name} now uses the updated card layout.`);
+      setError("");
+      sfxSuccess();
+    } finally {
+      setSavingCardLayout(false);
     }
   };
 
@@ -441,12 +514,12 @@ export function Workshop() {
           </div>
         </section>
 
-        {selectedBoard && (
+        <div className="workshop-sidebar">
           <section className="workshop-detail">
             <div className="workshop-panel-heading">
               <div>
-                <p className="eyebrow">Marriage Bay</p>
-                <h2>Bind a saved board to a card</h2>
+                <p className="eyebrow">Card Editor</p>
+                <h2>Edit the selected card in place</h2>
               </div>
             </div>
 
@@ -456,10 +529,7 @@ export function Workshop() {
                 <select
                   className="input workshop-select__control"
                   value={selectedCardId}
-                  onChange={(event) => {
-                    setSelectedCardId(event.target.value);
-                    updateSearchSelection(selectedBoardId, event.target.value);
-                  }}
+                  onChange={(event) => handleSelectCard(event.target.value)}
                 >
                   {cards.length === 0 && <option value="">No cards saved</option>}
                   {cards.map((card) => (
@@ -478,6 +548,59 @@ export function Workshop() {
                 <span>Available Ozzies: {selectedCard.ozzies ?? 0}</span>
               </div>
             )}
+
+            {editingCard && cardEditorVars && (
+              <>
+                <CardContainer cardVars={cardEditorVars}>
+                  <div className="print-preview-area print-preview-area--workshop">
+                    <div className="print-preview-slot">
+                      <p className="print-preview-label">Front</p>
+                      <div className="print-card-wrap">
+                        <div className={`print-card print-card--front${cardEditorWrapFrameClass}`}>
+                          <SkaterCardFace
+                            face="front"
+                            card={editingCard}
+                            backgroundImageUrl={editingCard.backgroundImageUrl}
+                            characterImageUrl={editingCard.characterImageUrl}
+                            frameImageUrl={editingCard.frameImageUrl}
+                            artEditable
+                            metadataEditable={false}
+                            onBoardPlacementChange={handleBoardPlacementChange}
+                            onCharacterPlacementChange={handleCharacterPlacementChange}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContainer>
+                <p className="form-hint" style={{ marginTop: 12 }}>
+                  Drag the skateboard on the card face to reposition it. On touch devices, pinch or rotate to scale and turn the layer.
+                </p>
+                <div className="workshop-detail__actions">
+                  <button className="btn-outline btn-sm" type="button" onClick={handleResetCardLayout}>
+                    Reset Card Layout
+                  </button>
+                  <button
+                    className="btn-primary btn-sm"
+                    type="button"
+                    onClick={handleSaveCardLayout}
+                    disabled={savingCardLayout}
+                  >
+                    {savingCardLayout ? "Saving…" : "Save Card Layout"}
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+
+        {selectedBoard && (
+          <section className="workshop-detail">
+            <div className="workshop-panel-heading">
+              <div>
+                <p className="eyebrow">Marriage Bay</p>
+                <h2>Bind a saved board to a card</h2>
+              </div>
+            </div>
 
             <div className="workshop-detail__meta">
               <strong>{selectedBoard.label}</strong>
@@ -528,6 +651,7 @@ export function Workshop() {
             </div>
           </section>
         )}
+        </div>
       </div>
 
       <section className="workshop-floor-stage" aria-label="Saved skateboard paper dolls" ref={floorStageRef}>

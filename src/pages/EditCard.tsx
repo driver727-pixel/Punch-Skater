@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import type { Archetype, CardPayload, Rarity, District, CardPrompts, Gender, AgeGroup, BodyType, HairLength, SkinTone, FaceCharacter } from "../lib/types";
 import { generateCard } from "../lib/generator";
 import { CardDisplay } from "../components/CardDisplay";
 import { useCollection } from "../hooks/useCollection";
+import { useDecks } from "../hooks/useDecks";
 import { useTier } from "../context/TierContext";
 import { FORGE_ARCHETYPE_OPTIONS } from "../lib/factionDiscovery";
 import { BoardBuilder, DEFAULT_BOARD_CONFIG } from "../components/BoardBuilder";
@@ -78,7 +79,9 @@ function normalizeFaceCharacter(faceCharacter?: string): FaceCharacter {
 export function EditCard() {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { cards, updateCard } = useCollection();
+  const { updateCardInDecks } = useDecks();
   const { openUpgradeModal } = useTier();
   const { linkedLanguage, profile, useCraftlingua } = useLanguage();
 
@@ -175,10 +178,12 @@ export function EditCard() {
         ...(preservedFlavorText !== undefined ? { flavorText: preservedFlavorText, flavorTextEnglish: preservedFlavorText } : {}),
       },
       board: {
+        ...original.board,
         ...newCard.board,
         config: normalizedBoard,
         loadout: calculateBoardStats(normalizedBoard),
       },
+      characterPlacement: original.characterPlacement,
     };
     setPreview(merged);
     void refreshCraftlinguaFront(merged);
@@ -220,6 +225,7 @@ export function EditCard() {
   const handleSaveEdit = () => {
     if (!preview) return;
     updateCard(preview);
+    updateCardInDecks(preview);
     setSaved(true);
     setTimeout(() => navigate("/collection"), 800);
   };
@@ -229,7 +235,7 @@ export function EditCard() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Edit Card</h1>
-          <p className="page-sub">Tweak your card's attributes and re-forge it.</p>
+          <p className="page-sub">Edit the card text here, or tweak the rest of the card before saving.</p>
         </div>
         <button className="btn-outline" onClick={() => { sfxClick(); navigate("/collection"); }}>← Back</button>
       </div>
@@ -373,6 +379,7 @@ export function EditCard() {
                 card={preview}
                 showShare={false}
                 onUpdate={handleCardTextUpdate}
+                initialEditField={searchParams.get("focus") === "name" ? "name" : undefined}
               />
             </>
           ) : (

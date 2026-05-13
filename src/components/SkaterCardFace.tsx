@@ -63,6 +63,10 @@ export interface SkaterCardFaceProps {
   fallbackHeight?: number;
   /** When true, name/bio/age (front) and stats (back) become editable inputs. */
   editable?: boolean;
+  /** Overrides art-layer placement editing without forcing text inputs editable. */
+  artEditable?: boolean;
+  /** Overrides metadata/stat editing without forcing art dragging editable. */
+  metadataEditable?: boolean;
   onBoardPlacementChange?: (placement: BoardPlacement) => void;
   onCharacterPlacementChange?: (placement: CharacterPlacement) => void;
   onNameChange?: (value: string) => void;
@@ -217,6 +221,8 @@ function CardFront({
   fallbackWidth = 189,
   fallbackHeight = 264,
   editable = false,
+  artEditable = editable,
+  metadataEditable = editable,
   onNameChange,
   onBoardPlacementChange,
   onCharacterPlacementChange,
@@ -248,16 +254,16 @@ function CardFront({
     opacity: characterBlend,
     zIndex: CHARACTER_LAYER_Z_INDEX,
   };
-  const boardPlacementChangeHandler = editable ? onBoardPlacementChange : undefined;
-  const characterPlacementChangeHandler = editable ? onCharacterPlacementChange : undefined;
+  const boardPlacementChangeHandler = artEditable ? onBoardPlacementChange : undefined;
+  const characterPlacementChangeHandler = artEditable ? onCharacterPlacementChange : undefined;
   const boardGesture = usePlacementGesture({
-    editable,
+    editable: artEditable,
     placement: boardPlacement,
     normalizePlacement: (nextPlacement) => normalizeBoardPlacement(boardPoseScene.key, nextPlacement),
     onPlacementChange: boardPlacementChangeHandler,
   });
   const characterGesture = usePlacementGesture({
-    editable,
+    editable: artEditable,
     placement: characterPlacement,
     normalizePlacement: normalizeCharacterPlacement,
     onPlacementChange: characterPlacementChangeHandler,
@@ -271,7 +277,7 @@ function CardFront({
       }
     : undefined;
 
-  const nameField = editable ? (
+  const nameField = metadataEditable ? (
     <input
       className="card-name-input"
       value={card.identity.name}
@@ -360,12 +366,13 @@ function CardFront({
 function CardBack({
   card,
   editable = false,
+  metadataEditable = editable,
   onNameChange,
   onBioChange,
   onAgeChange,
   onStatChange,
   boardImageLoading = false,
-}: Pick<SkaterCardFaceProps, "card" | "editable" | "onNameChange" | "onBioChange" | "onAgeChange" | "onStatChange" | "boardImageLoading">) {
+}: Pick<SkaterCardFaceProps, "card" | "editable" | "metadataEditable" | "onNameChange" | "onBioChange" | "onAgeChange" | "onStatChange" | "boardImageLoading">) {
   const [boardImageFailed, setBoardImageFailed] = useState(false);
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
@@ -421,7 +428,7 @@ function CardBack({
       <div className="print-back-hero">
         {/* ── Top identity overlay (fills the space above the board image) ── */}
         <div className="print-back-hero-identity">
-          {editable ? (
+          {metadataEditable ? (
             <input
               className="card-name-input print-back-identity-name-input"
               value={card.identity.name}
@@ -435,9 +442,9 @@ function CardBack({
             {!hasBuiltInDesignator && <span className="print-back-identity-badge">{card.class.badgeLabel}</span>}
             <span className="print-back-identity-role">{card.role.label}</span>
             {card.board.tuned && <span className="print-back-identity-tuned">⚡ TUNED</span>}
-            {card.identity.age && (
-              editable ? (
-                <label className="print-back-identity-age-field">
+              {card.identity.age && (
+               metadataEditable ? (
+                 <label className="print-back-identity-age-field">
                   <span className="print-back-identity-age-label">AGE</span>
                   <input
                     className="card-age-input print-back-identity-age-input"
@@ -520,7 +527,7 @@ function CardBack({
             </span>
           </div>
         )}
-        {editable ? (
+        {metadataEditable ? (
           (["speed", "range", "stealth", "grit"] as const).map((key) => (
             <div key={key} className="stat-bar card-stat-editor-row">
               <span className="stat-label" title={CARD_STAT_LABELS[key].tooltip}>{CARD_STAT_LABELS[key].label}</span>
@@ -575,7 +582,7 @@ function CardBack({
       </div>
 
       <div className="print-back-bio-strip">
-        {editable ? (
+        {metadataEditable ? (
           <textarea
             className="card-bio-input print-back-identity-bio-input"
             value={flavorText}
@@ -624,6 +631,8 @@ export function SkaterCardFace({
   fallbackWidth,
   fallbackHeight,
   editable,
+  artEditable,
+  metadataEditable,
   onNameChange,
   onBioChange,
   onAgeChange,
@@ -643,6 +652,8 @@ export function SkaterCardFace({
         fallbackWidth={fallbackWidth}
         fallbackHeight={fallbackHeight}
         editable={editable}
+        artEditable={artEditable}
+        metadataEditable={metadataEditable}
         onNameChange={onNameChange}
         onBoardPlacementChange={onBoardPlacementChange}
         onCharacterPlacementChange={onCharacterPlacementChange}
@@ -654,6 +665,7 @@ export function SkaterCardFace({
     <CardBack
       card={card}
       editable={editable}
+      metadataEditable={metadataEditable}
       onNameChange={onNameChange}
       onBioChange={onBioChange}
       onAgeChange={onAgeChange}
