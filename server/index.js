@@ -476,7 +476,7 @@ function sanitizeBoardImageBody(body = {}) {
       required: true,
       maxLength: MAX_BOARD_PROMPT_LENGTH,
     }),
-    imageUrls: normalizeBoardReferenceUrls(body.imageUrls),
+    imageUrls: normalizeBoardReferenceUrls(body.imageUrls, Array.from(ALLOWED_APP_ORIGINS)),
   };
 }
 
