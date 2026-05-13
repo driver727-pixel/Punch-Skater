@@ -11,7 +11,7 @@
     name: 'Punch Skater',
     alternateName: 'Skater Punk Deck Builder',
     description: 'Punch Skater is a free cyberpunk card game where you forge unique AI-powered courier trading cards, build competitive decks, and trade with other skaters across five dystopian city districts.',
-    url: siteOrigin,
+    url: new URL('/', siteOrigin).toString(),
     applicationCategory: 'GameApplication',
     operatingSystem: 'Web',
     browserRequirements: 'Requires JavaScript. Requires a modern browser.',
