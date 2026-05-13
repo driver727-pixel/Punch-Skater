@@ -716,9 +716,9 @@ export function Collection() {
                 {tierData.canSave && (
                   <button
                     className="btn-outline btn-sm"
-                    onClick={() => navigate(`/edit/${selected.id}`)}
+                    onClick={() => navigate(`/edit/${selected.id}?focus=name`)}
                   >
-                    ✎ Edit
+                    ✎ Edit Name
                   </button>
                 )}
                 <button
@@ -756,11 +756,11 @@ export function Collection() {
                    🤝 Send Offer
                  </button>
                  <button
-                   className="btn-outline btn-sm"
-                   onClick={() => navigate(`/workshop?card=${selected.id}`)}
-                 >
-                   🛹 Workshop
-                 </button>
+                    className="btn-outline btn-sm"
+                    onClick={() => navigate(`/workshop?card=${selected.id}`)}
+                  >
+                    🛹 Edit in Workshop
+                  </button>
                  {tierData.canEditDecks ? (
                    <button
                      className="btn-danger btn-sm"

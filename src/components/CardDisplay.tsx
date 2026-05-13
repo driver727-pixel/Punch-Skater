@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useMemo } from "react";
+import { memo, useState, useEffect, useMemo, useRef } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
@@ -64,6 +64,8 @@ interface CardDisplayProps {
   onUpdate?: (updates: { name?: string; age?: string; flavorText?: string }) => void;
   /** Called when a composite image layer fails to load (e.g. expired fal.ai URL). */
   onLayerError?: (layer: "background" | "character" | "frame") => void;
+  /** Opens and focuses a specific inline text field when editing starts. */
+  initialEditField?: "name" | "age" | "bio";
 }
 
 const DRIVE_ORIENTATION_SHORT_LABELS = {
@@ -307,6 +309,7 @@ function CardDisplayComponent({
   hideAllActions = false,
   onUpdate,
   onLayerError,
+  initialEditField,
 }: CardDisplayProps) {
   const [sharing, setSharing] = useState(false);
   const [viewing3D, setViewing3D] = useState(false);
@@ -320,6 +323,11 @@ function CardDisplayComponent({
   const [editingName, setEditingName] = useState(false);
   const [editingAge, setEditingAge] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
+  const cardIdentityRef = useRef<HTMLDivElement | null>(null);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const ageInputRef = useRef<HTMLInputElement | null>(null);
+  const bioInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const autoFocusKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     setLocalName(card.identity.name);
@@ -329,6 +337,29 @@ function CardDisplayComponent({
     setEditingAge(false);
     setEditingBio(false);
   }, [card.id, card.identity.name, card.identity.age, card.front.flavorText, card.front.flavorTextEnglish]);
+
+  useEffect(() => {
+    if (!onUpdate || !initialEditField) return;
+    const focusKey = `${card.id}:${initialEditField}`;
+    if (autoFocusKeyRef.current === focusKey) return;
+    autoFocusKeyRef.current = focusKey;
+    setEditingName(initialEditField === "name");
+    setEditingAge(initialEditField === "age");
+    setEditingBio(initialEditField === "bio");
+    window.requestAnimationFrame(() => {
+      cardIdentityRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (initialEditField === "name") {
+        nameInputRef.current?.focus();
+        nameInputRef.current?.select();
+      } else if (initialEditField === "age") {
+        ageInputRef.current?.focus();
+        ageInputRef.current?.select();
+      } else {
+        bioInputRef.current?.focus();
+        bioInputRef.current?.select();
+      }
+    });
+  }, [card.id, initialEditField, onUpdate]);
 
   const commitName = () => {
     setEditingName(false);
@@ -451,7 +482,7 @@ function CardDisplayComponent({
             <CardArt card={card} width={200} height={140} />
           )}
 
-          <div className="card-identity">
+          <div className="card-identity" ref={cardIdentityRef}>
             {onUpdate && (
               <button
                 type="button"
@@ -462,8 +493,9 @@ function CardDisplayComponent({
               </button>
             )}
             {onUpdate && editingName ? (
-              <input
-                className="card-edit-input"
+                <input
+                  ref={nameInputRef}
+                  className="card-edit-input"
                 value={localName}
                 onChange={(e) => setLocalName(e.target.value)}
                 onBlur={commitName}
@@ -488,6 +520,7 @@ function CardDisplayComponent({
             {(localAge || onUpdate) && (
               onUpdate && editingAge ? (
                 <input
+                  ref={ageInputRef}
                   className="card-edit-input card-age-input"
                   value={localAge}
                   placeholder="Age"
@@ -515,6 +548,7 @@ function CardDisplayComponent({
             {(localBio || onUpdate) && (
               onUpdate && editingBio ? (
                 <textarea
+                  ref={bioInputRef}
                   className="card-edit-textarea card-bio-textarea"
                   value={localBio}
                   onChange={(e) => setLocalBio(e.target.value)}
