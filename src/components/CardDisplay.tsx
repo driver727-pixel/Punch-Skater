@@ -327,6 +327,7 @@ function CardDisplayComponent({
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const ageInputRef = useRef<HTMLInputElement | null>(null);
   const bioInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const autoFocusKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     setLocalName(card.identity.name);
@@ -339,6 +340,9 @@ function CardDisplayComponent({
 
   useEffect(() => {
     if (!onUpdate || !initialEditField) return;
+    const focusKey = `${card.id}:${initialEditField}`;
+    if (autoFocusKeyRef.current === focusKey) return;
+    autoFocusKeyRef.current = focusKey;
     setEditingName(initialEditField === "name");
     setEditingAge(initialEditField === "age");
     setEditingBio(initialEditField === "bio");
@@ -355,7 +359,7 @@ function CardDisplayComponent({
         bioInputRef.current?.select();
       }
     });
-  }, [initialEditField, onUpdate]);
+  }, [card.id, initialEditField, onUpdate]);
 
   const commitName = () => {
     setEditingName(false);

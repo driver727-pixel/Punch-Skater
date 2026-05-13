@@ -259,6 +259,9 @@ export function Workshop() {
       setMessage(`${editingCard.identity.name} now uses the updated card layout.`);
       setError("");
       sfxSuccess();
+    } catch (saveError) {
+      setMessage("");
+      setError(saveError instanceof Error ? saveError.message : "Failed to save the updated card layout.");
     } finally {
       setSavingCardLayout(false);
     }
