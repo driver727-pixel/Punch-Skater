@@ -379,7 +379,7 @@ test.describe('SEO & meta tags', () => {
   test('home page has canonical link', async ({ page }) => {
     await page.goto('/');
     const canonical = page.locator('link[rel="canonical"]');
-    await expect(canonical).toHaveAttribute('href', 'https://punchskater.com/');
+    await expect(canonical).toHaveAttribute('href', new URL('/', page.url()).toString());
   });
 
   test('home page has JSON-LD structured data', async ({ page }) => {

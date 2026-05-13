@@ -103,6 +103,24 @@ test('normalizeBoardReferenceUrls rejects non-canonical origins and paths', () =
   );
 });
 
+test('normalizeBoardReferenceUrls accepts URLs from configured fallback origins', () => {
+  const urls = normalizeBoardReferenceUrls([
+    'https://driver727-pixel.github.io/assets/boards/deck/street.png',
+    'https://driver727-pixel.github.io/assets/boards/drivetrain/gear-drive.png',
+    'https://driver727-pixel.github.io/assets/boards/wheels/cloud-wheels.png',
+    'https://driver727-pixel.github.io/assets/boards/battery/slim-battery.png',
+    'https://driver727-pixel.github.io/assets/boards/motor/6354-motor.png',
+  ], ['https://punchskater.com', 'https://driver727-pixel.github.io']);
+
+  assert.deepEqual(urls, [
+    'https://driver727-pixel.github.io/assets/boards/deck/street.png',
+    'https://driver727-pixel.github.io/assets/boards/drivetrain/gear-drive.png',
+    'https://driver727-pixel.github.io/assets/boards/wheels/cloud-wheels.png',
+    'https://driver727-pixel.github.io/assets/boards/battery/slim-battery.png',
+    'https://driver727-pixel.github.io/assets/boards/motor/6354-motor.png',
+  ]);
+});
+
 test('normalizeBoardReferenceUrls accepts battery and motor URLs as the fourth and fifth references', () => {
   const urls = normalizeBoardReferenceUrls([
     'https://punchskater.com/assets/boards/deck/street.png',
