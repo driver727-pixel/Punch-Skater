@@ -3,7 +3,7 @@
     ? window.location.origin.trim()
     : '';
 
-  if (!/^https?:\/\//i.test(origin)) return;
+  if (!origin || origin === 'null') return;
 
   function setAttribute(selector, attribute, path) {
     var node = document.querySelector(selector);

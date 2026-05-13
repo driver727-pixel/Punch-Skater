@@ -28,7 +28,7 @@ const FALLBACK_BOARD_IMAGE_PUBLIC_ORIGIN = "https://punchskater.com";
 function resolveBoardImagePublicOrigin(): string {
   if (typeof window !== "undefined") {
     const browserOrigin = window.location.origin.trim();
-    if (browserOrigin && /^https?:\/\//i.test(browserOrigin)) {
+    if (browserOrigin && browserOrigin !== "null") {
       return browserOrigin;
     }
   }

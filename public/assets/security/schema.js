@@ -2,7 +2,7 @@
   var origin = window.location && typeof window.location.origin === 'string'
     ? window.location.origin.trim()
     : '';
-  var siteOrigin = /^https?:\/\//i.test(origin)
+  var siteOrigin = origin && origin !== 'null'
     ? origin
     : 'https://punchskater.com';
   var schema = {
