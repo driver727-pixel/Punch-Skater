@@ -10471,9 +10471,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-step--complete {
   border-color: rgba(0,255,136,0.24);
 }
-.mission-step--progressed {
-  animation: mission-step-progress 0.85s ease;
-}
 .mission-step__number {
   flex: 0 0 auto;
   display: inline-flex;
@@ -11300,19 +11297,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 12px;
   color: var(--text-dim);
   line-height: 1.5;
-}
-@keyframes mission-step-progress {
-  0% {
-    transform: translateY(4px) scale(0.985);
-    box-shadow: 0 0 0 0 rgba(255,255,255,0);
-  }
-  35% {
-    transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--mission-accent, #00ff88) 36%, transparent), 0 0 22px var(--mission-glow, rgba(0,255,136,0.22));
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
 }
 @keyframes mission-option-pending {
   from {
