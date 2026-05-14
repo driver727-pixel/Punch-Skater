@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { MissionTransitScene } from "./MissionTransitScene";
 import { GeoAtlas } from "./GeoAtlas";
 import type { GeoAtlasMarker } from "./GeoAtlas";
@@ -328,15 +328,6 @@ function getMissionThemeStyle(district: District): CSSProperties {
   } as CSSProperties;
 }
 
-function getMissionStepClass(active: boolean, complete: boolean, progressed: boolean): string {
-  return [
-    "mission-step",
-    active ? "mission-step--active" : "",
-    complete ? "mission-step--complete" : "",
-    progressed ? "mission-step--progressed" : "",
-  ].filter(Boolean).join(" ");
-}
-
 interface MissionLogEntry {
   text: string;
   kind: "default" | "xp" | "ozzies";
@@ -495,7 +486,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [selectedCounterOptionId, setSelectedCounterOptionId] = useState<string | null>(null);
   const [pendingCounterOptionId, setPendingCounterOptionId] = useState<string | null>(null);
   const [selectedJoustTactic, setSelectedJoustTactic] = useState<JoustTactic | null>(null);
-  const [progressedStep, setProgressedStep] = useState<number | null>(null);
   const [missionResult, setMissionResult] = useState<MissionRunResponse | null>(null);
 
   useEffect(() => {
@@ -706,14 +696,15 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     : selectedDeck
       ? 2
       : 1;
-  const previousMissionStepRef = useRef(activeMissionStep);
-  useEffect(() => {
-    if (activeMissionStep === previousMissionStepRef.current) return;
-    setProgressedStep(activeMissionStep);
-    previousMissionStepRef.current = activeMissionStep;
-    const timeoutId = window.setTimeout(() => setProgressedStep(null), 850);
-    return () => window.clearTimeout(timeoutId);
-  }, [activeMissionStep]);
+  const step1ClassName = ["mission-step", activeMissionStep === 1 ? "mission-step--active" : "", isStep1Complete ? "mission-step--complete" : ""]
+    .filter(Boolean)
+    .join(" ");
+  const step2ClassName = ["mission-step", isStep2Active ? "mission-step--active" : "", isStep2Complete ? "mission-step--complete" : ""]
+    .filter(Boolean)
+    .join(" ");
+  const step3ClassName = ["mission-step", activeMissionStep === 3 ? "mission-step--active" : "", selectedResultRevealed ? "mission-step--complete" : ""]
+    .filter(Boolean)
+    .join(" ");
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
@@ -959,21 +950,21 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               />
 
               <ol className="mission-steps" aria-label="Mission steps">
-                <li className={getMissionStepClass(activeMissionStep === 1, isStep1Complete, progressedStep === 1)}>
+                <li className={step1ClassName}>
                   <span className="mission-step__number">1</span>
                   <span className="mission-step__copy">
                     <strong>Pick a deck</strong>
                     <small>{selectedDeck ? selectedDeck.name : "Choose who goes"}</small>
                   </span>
                 </li>
-                <li className={getMissionStepClass(isStep2Active, isStep2Complete, progressedStep === 2)}>
+                <li className={step2ClassName}>
                   <span className="mission-step__number">2</span>
                   <span className="mission-step__copy">
                     <strong>Launch run</strong>
                     <small>Start the mission</small>
                   </span>
                 </li>
-                <li className={getMissionStepClass(activeMissionStep === 3, selectedResultRevealed, progressedStep === 3)}>
+                <li className={step3ClassName}>
                   <span className="mission-step__number">3</span>
                   <span className="mission-step__copy">
                     <strong>Answer event</strong>
