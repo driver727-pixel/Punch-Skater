@@ -1,4 +1,6 @@
+import type { CardPayload } from "../lib/types";
 import type { WorldLocation } from "../lib/types";
+import { CardThumbnail } from "./CardThumbnail";
 
 interface MissionTransitSceneProps {
   missionId: string;
@@ -10,6 +12,7 @@ interface MissionTransitSceneProps {
   sceneTags: string[];
   controlledBy: string;
   crewPressure: string;
+  crewCards?: CardPayload[];
 }
 
 export function MissionTransitScene({
@@ -22,8 +25,10 @@ export function MissionTransitScene({
   sceneTags,
   controlledBy,
   crewPressure,
+  crewCards = [],
 }: MissionTransitSceneProps) {
   const uniqueSceneTags = [...new Set(sceneTags)];
+  const displayCards = crewCards.slice(0, 3);
 
   return (
     <section className="mission-transit mission-panel">
@@ -48,6 +53,19 @@ export function MissionTransitScene({
           <span>{crewPressure}</span>
         </div>
       </div>
+      {displayCards.length > 0 && (
+        <div className="mission-transit__crew" aria-label="Crew sending on this mission">
+          <span className="mission-cinematic__metric-label">Crew up</span>
+          <div className="mission-transit__crew-cards">
+            {displayCards.map((card) => (
+              <div key={card.id} className="mission-transit__crew-card">
+                <CardThumbnail card={card} width={64} height={90} />
+                <span className="mission-transit__crew-name">{card.identity.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
