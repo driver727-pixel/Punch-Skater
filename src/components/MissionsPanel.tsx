@@ -328,15 +328,6 @@ function getMissionThemeStyle(district: District): CSSProperties {
   } as CSSProperties;
 }
 
-function getMissionStepClass(active: boolean, complete: boolean, progressed: boolean): string {
-  return [
-    "mission-step",
-    active ? "mission-step--active" : "",
-    complete ? "mission-step--complete" : "",
-    progressed ? "mission-step--progressed" : "",
-  ].filter(Boolean).join(" ");
-}
-
 interface MissionLogEntry {
   text: string;
   kind: "default" | "xp" | "ozzies";
@@ -495,7 +486,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [selectedCounterOptionId, setSelectedCounterOptionId] = useState<string | null>(null);
   const [pendingCounterOptionId, setPendingCounterOptionId] = useState<string | null>(null);
   const [selectedJoustTactic, setSelectedJoustTactic] = useState<JoustTactic | null>(null);
-  const [progressedStep, setProgressedStep] = useState<number | null>(null);
   const [missionResult, setMissionResult] = useState<MissionRunResponse | null>(null);
   const [streakExpanded, setStreakExpanded] = useState(false);
   const [resultPhase, setResultPhase] = useState<1 | 2 | 3>(1);
@@ -712,10 +702,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const previousMissionStepRef = useRef(activeMissionStep);
   useEffect(() => {
     if (activeMissionStep === previousMissionStepRef.current) return;
-    setProgressedStep(activeMissionStep);
     previousMissionStepRef.current = activeMissionStep;
-    const timeoutId = window.setTimeout(() => setProgressedStep(null), 850);
-    return () => window.clearTimeout(timeoutId);
   }, [activeMissionStep]);
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
