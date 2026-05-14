@@ -4351,7 +4351,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   opacity: 0.24;
 }
 
-.geo-atlas__map--australia { min-height: 620px; }
+.geo-atlas__map--australia { min-height: clamp(500px, 62vw, 820px); }
 .geo-atlas--compact .geo-atlas__map--australia {
   min-height: clamp(300px, 48vw, 520px);
 }
@@ -4806,6 +4806,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   stroke: rgba(255, 255, 255, 0.7);
   stroke-width: 1;
 }
+
+/* District glow fill circles (Phase 1 visual enhancement) */
+.geo-atlas__station-fill {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: none;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+.geo-atlas__station-fill--sky      { fill: rgba(125, 231, 255, 0.18); }
+.geo-atlas__station-fill--signal   { fill: rgba(255, 215, 102, 0.18); }
+.geo-atlas__station-fill--glass    { fill: rgba(255, 0, 122, 0.16); }
+.geo-atlas__station-fill--grid     { fill: rgba(127, 255, 212, 0.18); }
+.geo-atlas__station-fill--industrial { fill: rgba(255, 132, 0, 0.18); }
+.geo-atlas__station-fill--roads    { fill: rgba(242, 244, 255, 0.12); }
+.geo-atlas__station-fill--underground { fill: rgba(176, 84, 255, 0.18); }
+.geo-atlas__station-fill--wild     { fill: rgba(90, 201, 120, 0.18); }
 .geo-atlas__station--sky { stroke: rgba(0, 204, 255, 0.9); }
 .geo-atlas__station--glass { stroke: rgba(255, 0, 122, 0.9); }
 .geo-atlas__station--grid { stroke: rgba(127, 255, 212, 0.9); }
@@ -4981,6 +4997,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   text-transform: uppercase;
 }
 
+/* 2-letter initials shown only on very small screens */
+.geo-atlas__district-initial {
+  display: none;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
 .geo-atlas__district .district-badge__icon-wrap {
   flex: 0 0 22px;
   width: 22px;
@@ -5096,6 +5121,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .geo-atlas__marker--active .geo-atlas__marker-pin {
   transform: scale(1.08);
   filter: drop-shadow(0 0 16px rgba(0, 255, 136, 0.65));
+  animation: marker-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes marker-pulse {
+  0%, 100% { transform: scale(1.08); filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.5)); }
+  50%       { transform: scale(1.18); filter: drop-shadow(0 0 22px rgba(0, 255, 136, 0.85)); }
 }
 
 .geo-atlas__marker--active .geo-atlas__marker-label {
@@ -5722,6 +5753,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     padding: 10px 12px;
   }
 
+  /* Switch to initials in the 720px range too */
+  .geo-atlas__district-name {
+    display: none;
+  }
+  .geo-atlas__district-initial {
+    display: inline;
+  }
+  .geo-atlas__district {
+    min-width: 52px;
+    padding: 7px 10px;
+  }
+
   .geo-atlas__route-label {
     display: none;
   }
@@ -5734,6 +5777,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
   .mission-atlas-layout {
     grid-template-columns: 1fr;
+    max-width: 100%;
   }
 
   .lore-map {
@@ -9868,6 +9912,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .mission-selector-panel {
   display: flex;
   flex-direction: column;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .mission-selector-panel__header {
   display: flex;
@@ -9957,7 +10004,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .mission-grid {
   display: grid;
-  grid-template-columns: minmax(210px, 0.48fr) minmax(0, 1.52fr);
+  grid-template-columns: minmax(180px, 0.4fr) minmax(0, 1fr);
   gap: 14px;
 }
 .mission-atlas .geo-atlas__panel + .geo-atlas__panel {
@@ -9968,6 +10015,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   grid-template-columns: 1fr;
   gap: 18px;
   align-items: start;
+  max-width: 340px;
 }
 .mission-atlas .geo-atlas__panel {
   padding: 0;
@@ -9979,7 +10027,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: none;
 }
 .mission-atlas .geo-atlas__map--australia {
-  min-height: clamp(420px, 56vw, 760px);
+  min-height: clamp(440px, 56vw, 760px);
 }
 .mission-atlas-toolbar {
   display: flex;
@@ -10428,6 +10476,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background:
     radial-gradient(ellipse at top, var(--mission-glow, rgba(0,255,136,0.1)), transparent 38%),
     linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+  max-width: 860px;
 }
 .mission-panel__actions {
   display: flex;
@@ -11203,7 +11252,428 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: #ffd98f;
   font-weight: 700;
 }
-/* ── Fork in the road ─────────────────────────────────────────────── */
+/* ── Phase annotations on mission-operation-button ──────────────────── */
+.mission-operation-button {
+  border-left: 3px solid var(--op-accent, rgba(0,255,136,0.5));
+}
+.mission-operation-button--active {
+  border-left-color: var(--op-accent, rgba(0,255,136,0.9));
+}
+
+/* ── Daily ritual bar (mobile collapsible) ──────────────────────────── */
+.daily-ritual-bar {
+  display: none;
+  width: 100%;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,255,136,0.16);
+  background: rgba(0,255,136,0.04);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 10px;
+}
+.daily-ritual-bar--expanded {
+  border-color: rgba(0,255,136,0.32);
+}
+.daily-ritual-bar__pill {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+}
+.daily-ritual-bar__pill--theme {
+  color: #ffc832;
+  border-color: rgba(255,200,50,0.3);
+  background: rgba(255,200,50,0.08);
+}
+.daily-ritual-bar__toggle {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.daily-ritual-strip--collapsible {
+  overflow: hidden;
+}
+
+/* ── Mission chip row (mobile horizontal scroll) ─────────────────────── */
+.mission-chip-row {
+  display: none;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 6px 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.mission-chip-row::-webkit-scrollbar { display: none; }
+.mission-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(10,16,26,0.72);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+.mission-chip:hover {
+  border-color: var(--chip-accent, rgba(0,255,136,0.5));
+  transform: scale(1.04);
+}
+.mission-chip--active {
+  border-color: var(--chip-accent, rgba(0,255,136,0.7));
+  background: rgba(0,255,136,0.06);
+  box-shadow: 0 0 12px var(--chip-glow, rgba(0,255,136,0.18));
+}
+.mission-chip--completed {
+  border-color: rgba(0,204,255,0.4);
+  opacity: 0.72;
+}
+.mission-chip--blocked {
+  opacity: 0.5;
+}
+.mission-chip__glyph {
+  font-size: 16px;
+}
+
+/* ── Visual 3-node progress track ────────────────────────────────────── */
+.mission-progress-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 14px 0 4px;
+}
+.mission-progress-track__line {
+  flex: 1;
+  height: 2px;
+  background: rgba(255,255,255,0.12);
+  transition: background 0.3s;
+}
+.mission-progress-track__line--done {
+  background: var(--mission-accent, var(--accent));
+}
+.mission-progress-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.mission-progress-node__dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.18);
+  background: rgba(8,14,24,0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--text-dim);
+  transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.mission-progress-node--active .mission-progress-node__dot {
+  border-color: var(--mission-accent, var(--accent));
+  color: var(--mission-accent, var(--accent));
+  background: rgba(0,255,136,0.06);
+  box-shadow: 0 0 14px var(--mission-glow, rgba(0,255,136,0.2));
+  animation: progress-node-pulse 1.8s ease-in-out infinite;
+}
+.mission-progress-node--done .mission-progress-node__dot {
+  border-color: var(--mission-accent, var(--accent));
+  color: var(--mission-accent, var(--accent));
+  background: rgba(0,255,136,0.1);
+}
+.mission-progress-node__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.mission-progress-node--active .mission-progress-node__label,
+.mission-progress-node--done .mission-progress-node__label {
+  color: var(--mission-accent, var(--accent));
+}
+@keyframes progress-node-pulse {
+  0%, 100% { box-shadow: 0 0 10px var(--mission-glow, rgba(0,255,136,0.18)); }
+  50%       { box-shadow: 0 0 22px var(--mission-glow, rgba(0,255,136,0.36)); }
+}
+
+/* ── Inline "what's next" prompt ─────────────────────────────────────── */
+.mission-next-prompt {
+  margin: 8px 0 14px;
+}
+.mission-next-prompt__text {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim);
+}
+.mission-next-prompt__text--ready {
+  border-color: rgba(0,255,136,0.28);
+  background: rgba(0,255,136,0.05);
+  color: var(--accent);
+}
+.mission-next-prompt__text--event {
+  border-color: rgba(255,200,50,0.36);
+  background: rgba(255,200,50,0.06);
+  color: #ffc832;
+}
+.mission-next-prompt__text--done {
+  border-color: rgba(0,204,255,0.28);
+  background: rgba(0,204,255,0.05);
+  color: #7de7ff;
+}
+
+/* ── Accordion step panels (unified flow) ────────────────────────────── */
+.mission-accordion-step {
+  position: relative;
+  opacity: 0.72;
+  transition: opacity 0.25s;
+}
+.mission-accordion-step--active {
+  opacity: 1;
+  border-top-color: var(--mission-accent, rgba(0,255,136,0.5));
+  border-top-width: 2px;
+}
+.mission-accordion-step--done {
+  opacity: 0.65;
+  border-top-color: rgba(0,204,255,0.3);
+}
+.mission-accordion-step__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.mission-accordion-step__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mission-accordion-step__summary {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* ── Fork option tones (color-coded) ────────────────────────────────── */
+.mission-fork__option--tone-xp {
+  border-color: rgba(0,255,136,0.32);
+  background: linear-gradient(160deg, rgba(0,255,136,0.06), rgba(0,0,0,0.18));
+}
+.mission-fork__option--tone-xp .mission-fork__option-label { color: var(--accent); }
+.mission-fork__option--tone-ozzies {
+  border-color: rgba(255,200,50,0.32);
+  background: linear-gradient(160deg, rgba(255,200,50,0.07), rgba(0,0,0,0.18));
+}
+.mission-fork__option--tone-ozzies .mission-fork__option-label { color: #ffc832; }
+.mission-fork__option--tone-blocked {
+  border-color: rgba(255,68,102,0.28);
+  background: linear-gradient(160deg, rgba(255,68,102,0.05), rgba(0,0,0,0.22));
+  opacity: 0.62;
+}
+.mission-fork__option--tone-blocked .mission-fork__option-label { color: rgba(255,120,140,0.8); }
+.mission-fork__option--tone-neutral {
+  border-color: rgba(0,204,255,0.24);
+  background: linear-gradient(160deg, rgba(0,204,255,0.05), rgba(0,0,0,0.18));
+}
+.mission-fork__option--tone-exit {
+  border: 2px dashed rgba(255,200,50,0.44);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255,200,50,0.04) 0px,
+      rgba(255,200,50,0.04) 4px,
+      transparent 4px,
+      transparent 12px
+    ),
+    rgba(30,24,8,0.32);
+}
+.mission-fork__option--tone-exit .mission-fork__option-label { color: #ffc832; }
+
+/* ── Runner card clean/risky tones ──────────────────────────────────── */
+.mission-runner-card--clean {
+  border-color: rgba(0,255,136,0.28);
+}
+.mission-runner-card--risky {
+  border-color: rgba(255,68,102,0.25);
+}
+
+/* ── Phase 1 result: Impact Frame ────────────────────────────────────── */
+.mission-result-impact {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 24px 32px;
+  cursor: pointer;
+  animation: impact-frame-in 0.5s ease-out;
+}
+.mission-result-impact__glyph {
+  font-size: 64px;
+  line-height: 1;
+  animation: impact-glyph-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.mission-result-impact__headline {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mission-accent, var(--accent));
+  text-shadow: 0 0 24px var(--mission-glow, rgba(0,255,136,0.4));
+  text-align: center;
+  animation: impact-headline-in 0.5s 0.15s ease-out both;
+}
+.mission-result-impact__rewards {
+  display: flex;
+  gap: 16px;
+  animation: impact-rewards-in 0.5s 0.3s ease-out both;
+}
+.mission-result-impact__reward {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.mission-result-impact__reward--xp {
+  color: var(--accent);
+}
+.mission-result-impact__reward--oz {
+  color: #ffc832;
+}
+.mission-result-impact__skip {
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0;
+  animation: impact-skip-in 0.4s 1.2s ease-out forwards;
+}
+@keyframes impact-frame-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes impact-glyph-pop {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes impact-headline-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes impact-rewards-in {
+  from { transform: translateY(10px) scale(0.92); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes impact-skip-in {
+  to { opacity: 0.55; }
+}
+
+/* ── Result popup: meta line + log toggle + log drawer ──────────────── */
+.mission-result-popup__meta-line {
+  margin: -4px 0 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+.mission-result-log-toggle {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  margin-top: 8px;
+}
+.mission-result-log-toggle:hover,
+.mission-result-log-toggle--open {
+  border-color: rgba(0,255,136,0.28);
+  background: rgba(0,255,136,0.04);
+  color: var(--text);
+}
+.mission-result-log-drawer {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: log-drawer-open 0.22s ease-out;
+}
+@keyframes log-drawer-open {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Color-coded log entry kinds */
+.mission-log__entry--joust    { color: #ffc832; font-weight: 700; }
+.mission-log__entry--warning  { color: rgba(255,90,110,0.95); font-weight: 600; }
+.mission-log__entry--effect   { color: #c07bff; font-weight: 600; }
+
+/* ── Crew card row in MissionTransitScene ────────────────────────────── */
+.mission-transit__crew {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.mission-transit__crew-cards {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.mission-transit__crew-cards::-webkit-scrollbar { display: none; }
+.mission-transit__crew-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transition: transform 0.18s ease;
+}
+.mission-transit__crew-card:hover {
+  transform: translateY(-3px) scale(1.03);
+}
+.mission-transit__crew-name {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .mission-fork {
   border-color: rgba(255,200,50,0.32);
   background:
@@ -11339,14 +11809,50 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .mission-grid {
     grid-template-columns: 1fr;
   }
+  .mission-atlas-layout {
+    max-width: 100%;
+  }
   .mission-weather {
     flex-direction: column;
   }
   .mission-selector-grid {
     grid-template-columns: 1fr;
   }
+  /* Show chip row on mobile, hide desktop operation list */
+  .mission-chip-row {
+    display: flex;
+  }
   .mission-operation-grid {
-    grid-template-columns: 1fr;
+    display: none;
+  }
+  /* Show collapsible bar on mobile, hide full strip by default */
+  .daily-ritual-bar {
+    display: flex;
+  }
+  .daily-ritual-strip--collapsible {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-bottom: 0;
+  }
+  .daily-ritual-strip--collapsible.daily-ritual-strip--open {
+    max-height: 1000px;
+    margin-bottom: 18px;
+  }
+  /* Smaller atlas on mobile */
+  .mission-atlas .geo-atlas__map--australia {
+    min-height: clamp(280px, 80vw, 480px);
+  }
+  /* Show district initials on very small screens, hide full name */
+  .geo-atlas__district-name {
+    display: none;
+  }
+  .geo-atlas__district-initial {
+    display: inline;
+  }
+  .geo-atlas__district {
+    min-width: 52px;
+    padding: 7px 10px;
   }
   .mission-fork__options {
     grid-template-columns: 1fr;
@@ -11378,15 +11884,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .mission-selector-panel__header {
     padding: 10px 12px;
   }
-  .mission-atlas .geo-atlas__map--australia {
-    min-height: clamp(360px, 90vw, 560px);
-  }
   .mission-result-overlay {
     align-items: flex-end;
     padding: 12px;
   }
   .mission-result-popup {
     max-height: calc(100vh - 24px);
+  }
+  /* Impact frame smaller on mobile */
+  .mission-result-impact__headline {
+    font-size: 26px;
+  }
+  .mission-result-impact__glyph {
+    font-size: 48px;
+  }
+  .mission-result-impact__reward {
+    font-size: 22px;
   }
 }
 
