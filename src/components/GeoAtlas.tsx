@@ -144,6 +144,10 @@ const DISTRICT_INITIALS: Partial<Record<WorldLocation, string>> = {
   Electropolis: "EP",
 };
 
+function getDistrictInitial(name: WorldLocation): string {
+  return DISTRICT_INITIALS[name] ?? name.substring(0, 2).toUpperCase();
+}
+
 const WORLD_CONTINENTS = [
   {
     name: "North America",
@@ -545,7 +549,7 @@ export function GeoAtlas({
                         <DistrictBadge location={district.name} size="sm" showLabel={false} decorative />
                         <span className="geo-atlas__district-name">{district.name}</span>
                         <span className="geo-atlas__district-initial" aria-hidden="true">
-                          {DISTRICT_INITIALS[district.name] ?? district.name.substring(0, 2).toUpperCase()}
+                          {getDistrictInitial(district.name)}
                         </span>
                       </button>
                     );
@@ -556,7 +560,7 @@ export function GeoAtlas({
                       <DistrictBadge location={district.name} size="sm" showLabel={false} decorative />
                       <span className="geo-atlas__district-name">{district.name}</span>
                       <span className="geo-atlas__district-initial" aria-hidden="true">
-                        {DISTRICT_INITIALS[district.name] ?? district.name.substring(0, 2).toUpperCase()}
+                        {getDistrictInitial(district.name)}
                       </span>
                     </div>
                   );

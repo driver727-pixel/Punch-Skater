@@ -822,8 +822,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   }, [selectedDeck, selectedMission, uid, user]);
 
   useEffect(() => {
+    const IMPACT_FRAME_DURATION_MS = 2200;
     if (!missionResult || resultPhase !== 1) return;
-    const timeout = window.setTimeout(() => setResultPhase(2), 2200);
+    const timeout = window.setTimeout(() => setResultPhase(2), IMPACT_FRAME_DURATION_MS);
     return () => window.clearTimeout(timeout);
   }, [missionResult, resultPhase]);
 
