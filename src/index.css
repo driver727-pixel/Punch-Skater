@@ -11836,7 +11836,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     margin-bottom: 0;
   }
   .daily-ritual-strip--collapsible.daily-ritual-strip--open {
-    max-height: 1000px;
+    max-height: 2000px;
     margin-bottom: 18px;
   }
   /* Smaller atlas on mobile */
