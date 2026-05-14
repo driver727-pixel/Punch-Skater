@@ -99,6 +99,7 @@ const SAME_DISTRICT_OFFSETS: Array<{ x: number; y: number }> = [
 ];
 const MISSION_DECK_PREVIEW_OFFSET_PER_CARD = 18;
 const MISSION_DECK_PREVIEW_ROTATION_PER_CARD = 6;
+const IMPACT_FRAME_DURATION_MS = 2200;
 
 const DEFAULT_PRESENTATION: MissionPresentation = {
   operation: "Underground contract",
@@ -487,6 +488,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [pendingCounterOptionId, setPendingCounterOptionId] = useState<string | null>(null);
   const [selectedJoustTactic, setSelectedJoustTactic] = useState<JoustTactic | null>(null);
   const [missionResult, setMissionResult] = useState<MissionRunResponse | null>(null);
+  const [streakExpanded, setStreakExpanded] = useState(false);
+  const [resultPhase, setResultPhase] = useState<1 | 2 | 3>(1);
+  const [logExpanded, setLogExpanded] = useState(false);
 
   useEffect(() => {
     if (!isEnabled("MISSIONS", user)) return;
@@ -696,15 +700,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     : selectedDeck
       ? 2
       : 1;
-  const step1ClassName = ["mission-step", activeMissionStep === 1 ? "mission-step--active" : "", isStep1Complete ? "mission-step--complete" : ""]
-    .filter(Boolean)
-    .join(" ");
-  const step2ClassName = ["mission-step", isStep2Active ? "mission-step--active" : "", isStep2Complete ? "mission-step--complete" : ""]
-    .filter(Boolean)
-    .join(" ");
-  const step3ClassName = ["mission-step", activeMissionStep === 3 ? "mission-step--active" : "", selectedResultRevealed ? "mission-step--complete" : ""]
-    .filter(Boolean)
-    .join(" ");
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
@@ -772,6 +767,8 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       if (result.awaitingChoice) {
         setMissionResult(null);
       } else {
+        setResultPhase(1);
+        setLogExpanded(false);
         setMissionResult(result);
       }
     } catch (nextError) {
@@ -794,7 +791,11 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       setProgression(result.progression);
       setSelectedDeckId(result.mission.selectedDeckId ?? selectedDeck.id);
       setSelectedCounterOptionId(result.mission.selectedCounterOptionId ?? counterOptionId);
-      if (!result.awaitingChoice) setMissionResult(result);
+      if (!result.awaitingChoice) {
+        setResultPhase(1);
+        setLogExpanded(false);
+        setMissionResult(result);
+      }
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Failed to resolve mission.");
     } finally {
@@ -802,6 +803,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       setPendingCounterOptionId(null);
     }
   }, [selectedDeck, selectedMission, uid, user]);
+
+  useEffect(() => {
+    if (!missionResult || resultPhase !== 1) return;
+    const timeout = window.setTimeout(() => setResultPhase(2), IMPACT_FRAME_DURATION_MS);
+    return () => window.clearTimeout(timeout);
+  }, [missionResult, resultPhase]);
 
   if (!isEnabled("MISSIONS", user)) return null;
 
@@ -820,7 +827,21 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
         </div>
       </div>
 
-      <div className="daily-ritual-strip">
+      {/* Mobile collapsible streak bar — desktop shows full grid */}
+      <button
+        type="button"
+        className={`daily-ritual-bar${streakExpanded ? " daily-ritual-bar--expanded" : ""}`}
+        onClick={() => setStreakExpanded((v) => !v)}
+        aria-expanded={streakExpanded}
+      >
+        <span className="daily-ritual-bar__pill">🔥 {streakState?.currentStreak ?? 0}-day streak</span>
+        <span className="daily-ritual-bar__pill">📋 {missions.length} contracts</span>
+        <span className="daily-ritual-bar__pill">⏱ {missionResetCountdown}</span>
+        {weeklyTheme && <span className="daily-ritual-bar__pill daily-ritual-bar__pill--theme">{weeklyTheme.label}</span>}
+        <span className="daily-ritual-bar__toggle" aria-hidden="true">{streakExpanded ? "▲" : "▼"}</span>
+      </button>
+
+      <div className={`daily-ritual-strip daily-ritual-strip--collapsible${streakExpanded ? " daily-ritual-strip--open" : ""}`}>
         <article className="daily-ritual-card">
           <span className="daily-ritual-card__label">Login streak</span>
           <strong className="daily-ritual-card__value">{streakState?.currentStreak ?? 0} days</strong>
@@ -882,10 +903,40 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 showMarkerLabels="active"
               />
             </div>
+            {/* Mobile horizontal chip row */}
+            <div className="mission-chip-row" role="listbox" aria-label="Select a mission">
+              {missions.map((mission) => {
+                const eligible = missionEligibilityByMissionId.get(mission.id);
+                const theme = DISTRICT_THEMES[mission.district];
+                return (
+                  <button
+                    key={mission.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selectedMission?.id === mission.id}
+                    className={[
+                      "mission-chip",
+                      selectedMission?.id === mission.id ? "mission-chip--active" : "",
+                      mission.status === "completed" ? "mission-chip--completed" : "",
+                      eligible === false && mission.status !== "completed" ? "mission-chip--blocked" : "",
+                    ].filter(Boolean).join(" ")}
+                    style={{ "--chip-accent": theme.accent, "--chip-glow": theme.glow } as CSSProperties}
+                    onClick={() => setSelectedMissionId(mission.id)}
+                  >
+                    <DistrictBadge location={mission.district} size="sm" showLabel={false} decorative />
+                    <span className="mission-chip__glyph">
+                      {mission.status === "completed" ? "✓" : theme.glyph}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Desktop mission list */}
             <div className="mission-operation-grid">
               {missions.map((mission) => {
                 const presentation = getMissionPresentation(mission);
                 const eligible = missionEligibilityByMissionId.get(mission.id);
+                const theme = DISTRICT_THEMES[mission.district];
                 return (
                   <button
                     key={mission.id}
@@ -896,6 +947,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       mission.status === "completed" ? "mission-operation-button--completed" : "",
                       eligible === false && mission.status !== "completed" ? "mission-operation-button--blocked" : "",
                     ].filter(Boolean).join(" ")}
+                    style={{ "--op-accent": theme.accent } as CSSProperties}
                     onClick={() => setSelectedMissionId(mission.id)}
                   >
                     <span className="mission-operation-button__label">
@@ -903,7 +955,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       {presentation.operation}
                     </span>
                     <span className="mission-operation-button__status">
-                      {mission.status === "completed" ? "✓" : DISTRICT_THEMES[mission.district].glyph}
+                      {mission.status === "completed" ? "✓" : theme.glyph}
                     </span>
                   </button>
                 );
@@ -947,41 +999,60 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 sceneTags={selectedPresentation.sceneTags}
                 controlledBy={selectedLocaleLore?.controlledBy ?? selectedDistrictLore?.controlledBy ?? "Courier crews"}
                 crewPressure={selectedLocaleLore?.crews.slice(0, 2).join(" · ") ?? selectedMission.district}
+                crewCards={(selectedDeck?.cards ?? []).slice(0, 3)}
               />
 
-              <ol className="mission-steps" aria-label="Mission steps">
-                <li className={step1ClassName}>
-                  <span className="mission-step__number">1</span>
-                  <span className="mission-step__copy">
-                    <strong>Pick a deck</strong>
-                    <small>{selectedDeck ? selectedDeck.name : "Choose who goes"}</small>
+              {/* Visual 3-node progress track */}
+              <div className="mission-progress-track" aria-label="Mission steps">
+                <div className={`mission-progress-node${activeMissionStep === 1 ? " mission-progress-node--active" : ""}${isStep1Complete ? " mission-progress-node--done" : ""}`}>
+                  <div className="mission-progress-node__dot">
+                    {isStep1Complete ? "✓" : "1"}
+                  </div>
+                  <span className="mission-progress-node__label">
+                    {isStep1Complete ? (selectedDeck?.name ?? "Deck set") : "Pick deck"}
                   </span>
-                </li>
-                <li className={step2ClassName}>
-                  <span className="mission-step__number">2</span>
-                  <span className="mission-step__copy">
-                    <strong>Launch run</strong>
-                    <small>Start the mission</small>
+                </div>
+                <div className={`mission-progress-track__line${isStep1Complete ? " mission-progress-track__line--done" : ""}`} aria-hidden="true" />
+                <div className={`mission-progress-node${isStep2Active ? " mission-progress-node--active" : ""}${isStep2Complete ? " mission-progress-node--done" : ""}`}>
+                  <div className="mission-progress-node__dot">
+                    {isStep2Complete ? "✓" : "2"}
+                  </div>
+                  <span className="mission-progress-node__label">
+                    {isStep2Complete ? "Launched" : "Launch run"}
                   </span>
-                </li>
-                <li className={step3ClassName}>
-                  <span className="mission-step__number">3</span>
-                  <span className="mission-step__copy">
-                    <strong>Answer event</strong>
-                    <small>{selectedAwaitingChoice ? "Choose below" : selectedResultRevealed ? "Resolved" : "Reveals after launch"}</small>
+                </div>
+                <div className={`mission-progress-track__line${isStep2Complete ? " mission-progress-track__line--done" : ""}`} aria-hidden="true" />
+                <div className={`mission-progress-node${activeMissionStep === 3 ? " mission-progress-node--active" : ""}${selectedResultRevealed ? " mission-progress-node--done" : ""}`}>
+                  <div className="mission-progress-node__dot">
+                    {selectedResultRevealed ? "✓" : "3"}
+                  </div>
+                  <span className="mission-progress-node__label">
+                    {selectedResultRevealed ? "Resolved" : selectedAwaitingChoice ? "Choose now" : "Event"}
                   </span>
-                </li>
-              </ol>
+                </div>
+              </div>
+
+              {/* Inline "what's next" prompt */}
+              <div className="mission-next-prompt">
+                {selectedResultRevealed
+                  ? <span className="mission-next-prompt__text mission-next-prompt__text--done">✓ Mission complete — rewards locked in</span>
+                  : selectedAwaitingChoice
+                    ? <span className="mission-next-prompt__text mission-next-prompt__text--event">⚡ Live event — pick a counter option below →</span>
+                    : !selectedDeck
+                      ? <span className="mission-next-prompt__text">Choose a deck below →</span>
+                      : <span className="mission-next-prompt__text mission-next-prompt__text--ready">Deck selected — tap Launch Run to reveal the event →</span>
+                }
+              </div>
 
               <div className="mission-flow">
-                <section className="mission-stage mission-panel">
-                  <div className="mission-stage__header">
-                    <div>
-                      <span className="mission-stage__eyebrow">Step 1</span>
-                      <h4 className="mission-stage__title">Pick a deck</h4>
-                      <p className="mission-stage__summary">
-                        Choose the cards you want to send. Green means safer; red means risky.
-                      </p>
+                {/* ── Accordion Step 1: Pick a deck ─────────────────── */}
+                <section className={`mission-accordion-step${activeMissionStep === 1 || !selectedDeck ? " mission-accordion-step--active" : ""}${isStep1Complete ? " mission-accordion-step--done" : ""} mission-panel`}>
+                  <div className="mission-accordion-step__header">
+                    <div className="mission-accordion-step__title-block">
+                      <span className="mission-stage__eyebrow">Step 1 — Pick a deck</span>
+                      {isStep1Complete && (
+                        <span className="mission-accordion-step__summary">✓ {selectedDeck?.name ?? "Deck set"}</span>
+                      )}
                     </div>
                     <div className="mission-deck-focus">
                       <span className="mission-deck-focus__label">Current pick</span>
@@ -998,7 +1069,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                         <button
                           key={evaluation.deckId}
                           type="button"
-                          className={`mission-runner-card${selectedDeck?.id === evaluation.deckId ? " mission-runner-card--active" : ""}`}
+                          className={`mission-runner-card${selectedDeck?.id === evaluation.deckId ? " mission-runner-card--active" : ""}${evaluation.eligible ? " mission-runner-card--clean" : " mission-runner-card--risky"}`}
                           onClick={() => setSelectedDeckId(evaluation.deckId)}
                         >
                           <strong>{evaluation.deckName}</strong>
@@ -1031,14 +1102,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </div>
                 </section>
 
-                <section className="mission-stage mission-panel">
-                  <div className="mission-stage__header">
-                    <div>
-                      <span className="mission-stage__eyebrow">Step 2</span>
-                      <h4 className="mission-stage__title">Launch the run</h4>
-                      <p className="mission-stage__summary">
-                        Tap the button when the deck looks right. The next choice appears only after launch.
-                      </p>
+                {/* ── Accordion Step 2: Launch ───────────────────────── */}
+                <section className={`mission-accordion-step${isStep2Active ? " mission-accordion-step--active" : ""}${isStep2Complete ? " mission-accordion-step--done" : ""} mission-panel`}>
+                  <div className="mission-accordion-step__header">
+                    <div className="mission-accordion-step__title-block">
+                      <span className="mission-stage__eyebrow">Step 2 — Launch the run</span>
+                      {isStep2Complete && (
+                        <span className="mission-accordion-step__summary">✓ Run in motion</span>
+                      )}
                     </div>
                     <div className="mission-stage__actions">
                       <button
@@ -1061,22 +1132,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       </button>
                     </div>
                   </div>
-
-                  {!selectedResultRevealed && (
-                    <article className="mission-next-card">
-                      <span className="mission-next-card__label">Next step</span>
-                      <strong className="mission-next-card__value">
-                        {selectedAwaitingChoice ? "Choose a response below" : "Press Launch Run"}
-                      </strong>
-                      <p>
-                        {selectedAwaitingChoice
-                          ? "The mission paused for a live event. Pick one available response to finish."
-                          : selectedEvaluation?.eligible
-                            ? "This deck is ready. Rewards and the live event reveal after you launch."
-                            : "This deck can launch, but it is risky. Pick a stronger deck if you want safer odds."}
-                      </p>
-                    </article>
-                  )}
 
                   {selectedResultRevealed && (
                   <div className="mission-outcome-grid">
@@ -1186,15 +1241,15 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   )}
                 </section>
 
+                {/* ── Accordion Step 3: Live event ───────────────────── */}
                 {selectedEncounter && (selectedAwaitingChoice || selectedResultRevealed) && (
-                  <section className="mission-stage mission-panel mission-fork">
-                    <div className="mission-stage__header">
-                      <div>
-                        <span className="mission-stage__eyebrow">Step 3</span>
-                        <h4 className="mission-stage__title">Answer the live event</h4>
-                        <p className="mission-stage__summary">
-                          Choose one available response. Disabled choices need cards that are not in the revealed hand.
-                        </p>
+                  <section className={`mission-accordion-step${activeMissionStep === 3 ? " mission-accordion-step--active" : ""}${selectedResultRevealed ? " mission-accordion-step--done" : ""} mission-panel mission-fork`}>
+                    <div className="mission-accordion-step__header">
+                      <div className="mission-accordion-step__title-block">
+                        <span className="mission-stage__eyebrow">Step 3 — Live event</span>
+                        {selectedResultRevealed && (
+                          <span className="mission-accordion-step__summary">✓ Resolved via {selectedRouteLabel}</span>
+                        )}
                       </div>
                     </div>
                     <div className="mission-fork__header">
@@ -1250,48 +1305,67 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                       </>
                     )}
                     <div className="mission-fork__options">
-                      {selectedEncounter.options.map((option) => (
-                        <button
-                          key={`${selectedMission.id}-${option.id}`}
-                          type="button"
-                          className={`mission-fork__option${selectedCounterOption?.id === option.id || pendingCounterOptionId === option.id ? " mission-fork__option--active" : ""}${pendingCounterOptionId === option.id ? " mission-fork__option--pending" : ""}`}
-                          onClick={() => handleResolveEncounter(
-                            option.id,
-                            option.encounterType === "joust" ? selectedJoustTactic : null,
-                          )}
-                          aria-pressed={selectedCounterOption?.id === option.id}
-                          disabled={
-                            selectedAwaitingChoice
-                              ? !option.available
-                                || runningMissionId === selectedMission.id
-                              : true
-                          }
-                        >
-                          <span className="mission-fork__option-label">{option.label}</span>
-                          <span className="mission-fork__option-meta">{getEncounterOptionMetaText(option, selectedAwaitingChoice)}</span>
-                          <span className="mission-fork__option-desc">{option.description}</span>
-                          {(selectedAwaitingChoice || selectedResultRevealed) && (
-                            <span className="mission-fork__option-desc">
-                              {getCounterOptionRequirementText(option)}
+                      {selectedEncounter.options.map((option) => {
+                        const isActive = selectedCounterOption?.id === option.id || pendingCounterOptionId === option.id;
+                        const isPending = pendingCounterOptionId === option.id;
+                        const rewardType = option.rewardXpDelta ? "xp" : option.rewardOzziesDelta ? "ozzies" : null;
+                        const toneClass = !option.available
+                          ? "mission-fork__option--tone-blocked"
+                          : rewardType === "xp"
+                            ? "mission-fork__option--tone-xp"
+                            : rewardType === "ozzies"
+                              ? "mission-fork__option--tone-ozzies"
+                              : "mission-fork__option--tone-neutral";
+                        return (
+                          <button
+                            key={`${selectedMission.id}-${option.id}`}
+                            type="button"
+                            className={[
+                              "mission-fork__option",
+                              toneClass,
+                              isActive ? "mission-fork__option--active" : "",
+                              isPending ? "mission-fork__option--pending" : "",
+                            ].filter(Boolean).join(" ")}
+                            onClick={() => handleResolveEncounter(
+                              option.id,
+                              option.encounterType === "joust" ? selectedJoustTactic : null,
+                            )}
+                            aria-pressed={selectedCounterOption?.id === option.id}
+                            disabled={
+                              selectedAwaitingChoice
+                                ? !option.available || runningMissionId === selectedMission.id
+                                : true
+                            }
+                          >
+                            <span className="mission-fork__option-label">
+                              {option.encounterType === "joust" ? "⚔️ " : rewardType === "ozzies" ? "💰 " : rewardType === "xp" ? "⚡ " : ""}
+                              {option.label}
                             </span>
-                          )}
-                          {(selectedAwaitingChoice || selectedResultRevealed) && (option.rewardXpDelta || option.rewardOzziesDelta) && (
-                            <span className="mission-fork__option-desc">
-                              {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
-                              {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
-                              {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                            <span className="mission-fork__option-meta">{getEncounterOptionMetaText(option, selectedAwaitingChoice)}</span>
+                            <span className="mission-fork__option-desc">{option.description}</span>
+                            {(selectedAwaitingChoice || selectedResultRevealed) && (
+                              <span className="mission-fork__option-desc">
+                                {getCounterOptionRequirementText(option)}
+                              </span>
+                            )}
+                            {(selectedAwaitingChoice || selectedResultRevealed) && (option.rewardXpDelta || option.rewardOzziesDelta) && (
+                              <span className="mission-fork__option-desc">
+                                {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
+                                {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
+                                {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                       {selectedAwaitingChoice && (
                         <button
                           type="button"
-                          className={`mission-fork__option${pendingCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " mission-fork__option--active mission-fork__option--pending" : ""}`}
+                          className={`mission-fork__option mission-fork__option--tone-exit${pendingCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " mission-fork__option--active mission-fork__option--pending" : ""}`}
                           onClick={() => handleResolveEncounter(HARD_CUTOUT_COUNTER_ID)}
                           disabled={runningMissionId === selectedMission.id}
                         >
-                          <span className="mission-fork__option-label">Emergency exit</span>
+                          <span className="mission-fork__option-label">🚪 Emergency exit</span>
                           <span className="mission-fork__option-meta">Always available</span>
                           <span className="mission-fork__option-desc">Finish safely with smaller rewards.</span>
                         </button>
@@ -1374,122 +1448,167 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
             >
               ×
             </button>
-            <div className="mission-result-popup__summary">
-              <span className="mission-selector-card__district">
-                <DistrictBadge location={missionResult.mission.district} size="sm" />
-              </span>
-              <h3 id="mission-result-title" className="mission-selector-card__name">
-                {missionResult.rewardGranted
-                  ? getMissionPresentation(missionResult.mission).successLabel
-                  : getMissionPresentation(missionResult.mission).failureLabel}
-              </h3>
-                <p className="mission-selector-card__tagline">
-                  {missionResult.mission.lastRunSummary ?? missionResult.evaluation.summary}
-                </p>
-              </div>
-            <div className="mission-result__rewards">
-              {missionResult.rewardGranted && missionResultRewards ? (
-                <>
-                  <div className="mission-result__reward-card mission-result__reward-card--xp">
-                    <span className="mission-result__reward-label">Mission XP</span>
-                    <strong className="mission-result__reward-value">
-                      +{missionResultRewards.rewardXp}
-                    </strong>
-                  </div>
-                  <div className="mission-result__reward-card mission-result__reward-card--ozzies">
-                    <span className="mission-result__reward-label">Ozzies</span>
-                    <strong className="mission-result__reward-value">
-                      +{missionResultRewards.rewardOzzies}
-                    </strong>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mission-result__reward-card">
-                    <span className="mission-result__reward-label">Chosen deck</span>
-                    <strong className="mission-result__reward-value">
-                      {missionResult.mission.selectedDeckName ?? missionResult.evaluation.deckName}
-                    </strong>
-                  </div>
-                  <div className="mission-result__reward-card mission-result__reward-card--ozzies">
-                    <span className="mission-result__reward-label">Route</span>
-                    <strong className="mission-result__reward-value">
-                      {missionResult.mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
-                        ? HARD_CUTOUT_LABEL
-                        : getMissionEncounter(missionResult.mission)?.options.find((option) => option.id === missionResult.mission.selectedCounterOptionId)?.label
-                          ?? MAIN_ROUTE_LABEL}
-                    </strong>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="mission-result-popup__grid">
-              <div className="mission-result-popup__panel">
-                <span className="mission-result-popup__eyebrow">Run log</span>
-                <ul className="mission-log">
-                  {missionResultLog.map((entry) => (
-                    <li
-                      key={`${missionResult.mission.id}-${entry.text}`}
-                      className={entry.kind !== "default" ? `mission-log__entry mission-log__entry--${entry.kind}` : undefined}
-                    >
-                      {entry.text}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {missionResult.mission.lastRunJoustResult && (
-                <div className="mission-result-popup__panel">
-                  <span className="mission-result-popup__eyebrow">District joust</span>
-                  <div className="mission-stats">
-                    <div className="mission-stat-row">
-                      <span className="mission-stat-label">Outcome</span>
-                      <span className="mission-stat-value">{getJoustOutcomeLabel(missionResult.mission.lastRunJoustResult)}</span>
-                    </div>
-                    <div className="mission-stat-row">
-                      <span className="mission-stat-label">Matchup</span>
-                      <span className="mission-stat-value">
-                        {missionResult.mission.lastRunJoustResult.playerName} vs {missionResult.mission.lastRunJoustResult.rivalName}
-                      </span>
-                    </div>
-                    <div className="mission-stat-row">
-                      <span className="mission-stat-label">Tactics</span>
-                      <span className="mission-stat-value">
-                        {formatJoustTacticLabel(missionResult.mission.lastRunJoustResult.playerTactic)} / {formatJoustTacticLabel(missionResult.mission.lastRunJoustResult.rivalTactic)}
-                      </span>
-                    </div>
-                    <div className="mission-stat-row">
-                      <span className="mission-stat-label">Bonus</span>
-                      <span className="mission-stat-value">
-                        +{missionResult.mission.lastRunJoustResult.rewardXpBonus} XP · +{missionResult.mission.lastRunJoustResult.rewardOzziesBonus} Oz
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mission-intel-card__quote">{missionResult.mission.lastRunJoustResult.narration}</p>
+
+            {/* ── Phase 1: Impact Frame ─────────────────────────────── */}
+            {resultPhase === 1 && (
+              <div
+                className="mission-result-impact"
+                onClick={() => setResultPhase(2)}
+                role="button"
+                tabIndex={0}
+                aria-label="Tap to skip to rewards"
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setResultPhase(2); }}
+              >
+                <div className="mission-result-impact__glyph" aria-hidden="true">
+                  {DISTRICT_THEMES[missionResult.mission.district].glyph}
                 </div>
-              )}
-              {(missionResult.mission.lastRunCardOutcomes?.length ?? 0) > 0 && (
-                <div className="mission-result-popup__panel">
-                  <span className="mission-result-popup__eyebrow">Maintenance fallout</span>
-                  <ul className="mission-intel-list">
-                    {(missionResult.mission.lastRunCardOutcomes ?? []).map((outcome) => (
-                      <li key={`${missionResult.mission.id}-${outcome.cardId}-${outcome.label}`}>{outcome.detail}</li>
-                    ))}
-                  </ul>
+                <h3 id="mission-result-title" className="mission-result-impact__headline">
+                  {missionResult.rewardGranted
+                    ? getMissionPresentation(missionResult.mission).successLabel
+                    : getMissionPresentation(missionResult.mission).failureLabel}
+                </h3>
+                <div className="mission-result-impact__rewards">
+                  {missionResult.rewardGranted && missionResultRewards && (
+                    <>
+                      <span className="mission-result-impact__reward mission-result-impact__reward--xp">
+                        +{missionResultRewards.rewardXp} XP
+                      </span>
+                      <span className="mission-result-impact__reward mission-result-impact__reward--oz">
+                        +{missionResultRewards.rewardOzzies} Oz
+                      </span>
+                    </>
+                  )}
                 </div>
-              )}
-              <div className="mission-result-popup__panel">
-                <span className="mission-result-popup__eyebrow">Why players chase it</span>
-                <ul className="mission-intel-list">
-                  {getMissionPresentation(missionResult.mission).rewardFocus.map((entry) => (
-                    <li key={`${missionResult.mission.id}-focus-${entry}`}>{entry}</li>
-                  ))}
-                </ul>
-                <p className="mission-intel-card__quote">
-                  {DISTRICT_LORE_BY_NAME.get(missionResult.mission.district)?.flavorTexts[1]
-                    ?? "The district remembers who cleared the route and who folded."}
-                </p>
+                <span className="mission-result-impact__skip">Tap anywhere to continue →</span>
               </div>
-            </div>
+            )}
+
+            {/* ── Phase 2: Reward cards + summary ──────────────────── */}
+            {resultPhase >= 2 && (
+              <>
+                <div className="mission-result-popup__summary">
+                  <span className="mission-selector-card__district">
+                    <DistrictBadge location={missionResult.mission.district} size="sm" />
+                  </span>
+                  <h3 id="mission-result-title" className="mission-selector-card__name">
+                    {missionResult.rewardGranted
+                      ? getMissionPresentation(missionResult.mission).successLabel
+                      : getMissionPresentation(missionResult.mission).failureLabel}
+                  </h3>
+                </div>
+                <div className="mission-result__rewards">
+                  {missionResult.rewardGranted && missionResultRewards ? (
+                    <>
+                      <div className="mission-result__reward-card mission-result__reward-card--xp">
+                        <span className="mission-result__reward-label">Mission XP</span>
+                        <strong className="mission-result__reward-value">
+                          +{missionResultRewards.rewardXp}
+                        </strong>
+                      </div>
+                      <div className="mission-result__reward-card mission-result__reward-card--ozzies">
+                        <span className="mission-result__reward-label">Ozzies</span>
+                        <strong className="mission-result__reward-value">
+                          +{missionResultRewards.rewardOzzies}
+                        </strong>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mission-result__reward-card">
+                        <span className="mission-result__reward-label">Chosen deck</span>
+                        <strong className="mission-result__reward-value">
+                          {missionResult.mission.selectedDeckName ?? missionResult.evaluation.deckName}
+                        </strong>
+                      </div>
+                      <div className="mission-result__reward-card mission-result__reward-card--ozzies">
+                        <span className="mission-result__reward-label">Route</span>
+                        <strong className="mission-result__reward-value">
+                          {missionResult.mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
+                            ? HARD_CUTOUT_LABEL
+                            : getMissionEncounter(missionResult.mission)?.options.find((option) => option.id === missionResult.mission.selectedCounterOptionId)?.label
+                              ?? MAIN_ROUTE_LABEL}
+                        </strong>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Route + joust compact summary line */}
+                <div className="mission-result-popup__meta-line">
+                  <span>via {missionResult.mission.selectedCounterOptionId === HARD_CUTOUT_COUNTER_ID
+                    ? HARD_CUTOUT_LABEL
+                    : getMissionEncounter(missionResult.mission)?.options.find((o) => o.id === missionResult.mission.selectedCounterOptionId)?.label
+                      ?? MAIN_ROUTE_LABEL}</span>
+                  {missionResult.mission.lastRunJoustResult && (
+                    <span> · Joust: {getJoustOutcomeLabel(missionResult.mission.lastRunJoustResult)} vs {missionResult.mission.lastRunJoustResult.rivalName}</span>
+                  )}
+                </div>
+
+                {/* ── Phase 3: Expandable log drawer ─────────────────── */}
+                <button
+                  type="button"
+                  className={`mission-result-log-toggle${logExpanded ? " mission-result-log-toggle--open" : ""}`}
+                  onClick={() => setLogExpanded((v) => !v)}
+                  aria-expanded={logExpanded}
+                >
+                  {logExpanded ? "Hide run log ▲" : "See full run log ▾"}
+                </button>
+                {logExpanded && (
+                  <div className="mission-result-log-drawer">
+                    <ul className="mission-log">
+                      {missionResultLog.map((entry) => (
+                        <li
+                          key={`${missionResult.mission.id}-${entry.text}`}
+                          className={entry.kind !== "default" ? `mission-log__entry mission-log__entry--${entry.kind}` : undefined}
+                        >
+                          {entry.text}
+                        </li>
+                      ))}
+                    </ul>
+                    {missionResult.mission.lastRunJoustResult && (
+                      <div className="mission-result-popup__panel">
+                        <span className="mission-result-popup__eyebrow">District joust</span>
+                        <div className="mission-stats">
+                          <div className="mission-stat-row">
+                            <span className="mission-stat-label">Outcome</span>
+                            <span className="mission-stat-value">{getJoustOutcomeLabel(missionResult.mission.lastRunJoustResult)}</span>
+                          </div>
+                          <div className="mission-stat-row">
+                            <span className="mission-stat-label">Matchup</span>
+                            <span className="mission-stat-value">
+                              {missionResult.mission.lastRunJoustResult.playerName} vs {missionResult.mission.lastRunJoustResult.rivalName}
+                            </span>
+                          </div>
+                          <div className="mission-stat-row">
+                            <span className="mission-stat-label">Tactics</span>
+                            <span className="mission-stat-value">
+                              {formatJoustTacticLabel(missionResult.mission.lastRunJoustResult.playerTactic)} / {formatJoustTacticLabel(missionResult.mission.lastRunJoustResult.rivalTactic)}
+                            </span>
+                          </div>
+                          <div className="mission-stat-row">
+                            <span className="mission-stat-label">Bonus</span>
+                            <span className="mission-stat-value">
+                              +{missionResult.mission.lastRunJoustResult.rewardXpBonus} XP · +{missionResult.mission.lastRunJoustResult.rewardOzziesBonus} Oz
+                            </span>
+                          </div>
+                        </div>
+                        <p className="mission-intel-card__quote">{missionResult.mission.lastRunJoustResult.narration}</p>
+                      </div>
+                    )}
+                    {(missionResult.mission.lastRunCardOutcomes?.length ?? 0) > 0 && (
+                      <div className="mission-result-popup__panel">
+                        <span className="mission-result-popup__eyebrow">Maintenance fallout</span>
+                        <ul className="mission-intel-list">
+                          {(missionResult.mission.lastRunCardOutcomes ?? []).map((outcome) => (
+                            <li key={`${missionResult.mission.id}-${outcome.cardId}-${outcome.label}`}>{outcome.detail}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
