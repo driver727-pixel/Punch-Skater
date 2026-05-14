@@ -99,6 +99,7 @@ const SAME_DISTRICT_OFFSETS: Array<{ x: number; y: number }> = [
 ];
 const MISSION_DECK_PREVIEW_OFFSET_PER_CARD = 18;
 const MISSION_DECK_PREVIEW_ROTATION_PER_CARD = 6;
+const IMPACT_FRAME_DURATION_MS = 2200;
 
 const DEFAULT_PRESENTATION: MissionPresentation = {
   operation: "Underground contract",
@@ -804,7 +805,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   }, [selectedDeck, selectedMission, uid, user]);
 
   useEffect(() => {
-    const IMPACT_FRAME_DURATION_MS = 2200;
     if (!missionResult || resultPhase !== 1) return;
     const timeout = window.setTimeout(() => setResultPhase(2), IMPACT_FRAME_DURATION_MS);
     return () => window.clearTimeout(timeout);

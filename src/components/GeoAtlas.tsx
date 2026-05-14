@@ -145,7 +145,7 @@ const DISTRICT_INITIALS: Partial<Record<WorldLocation, string>> = {
 };
 
 function getDistrictInitial(name: WorldLocation): string {
-  return DISTRICT_INITIALS[name] ?? name.substring(0, 2).toUpperCase();
+  return DISTRICT_INITIALS[name] ?? name.slice(0, 2).toUpperCase();
 }
 
 const WORLD_CONTINENTS = [
