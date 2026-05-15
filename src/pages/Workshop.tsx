@@ -453,6 +453,9 @@ export function Workshop() {
     return session.moved;
   };
 
+  const isAdminUser = userProfile?.isAdmin ?? false;
+  const marryButtonLabel = isAdminUser ? "Marry to Card · Free" : `Marry to Card · ${WORKSHOP_REFORGE_FEE_OZZIES} Oz`;
+
   return (
     <div className="page page--workshop">
       <video
@@ -486,7 +489,7 @@ export function Workshop() {
         <div className="workshop-hero__meta">
           <span><strong>{boards.length}</strong> saved boards</span>
           <span><strong>{cards.length}</strong> forged cards</span>
-          <span>{(userProfile?.isAdmin) ? <strong>Free (admin)</strong> : <><strong>{WORKSHOP_REFORGE_FEE_OZZIES}</strong> Oz workshop fee</>}</span>
+          <span>{isAdminUser ? <strong>Free (admin)</strong> : <><strong>{WORKSHOP_REFORGE_FEE_OZZIES}</strong> Oz workshop fee</>}</span>
         </div>
       </section>
 
@@ -655,7 +658,7 @@ export function Workshop() {
                 onClick={handleApplyBoard}
                 disabled={!selectedCard || !selectedBoard.boardImageUrl || applyingBoardId === selectedBoard.id}
               >
-                {applyingBoardId === selectedBoard.id ? "Marrying…" : (userProfile?.isAdmin ? "Marry to Card · Free" : `Marry to Card · ${WORKSHOP_REFORGE_FEE_OZZIES} Oz`)}
+                {applyingBoardId === selectedBoard.id ? "Marrying…" : marryButtonLabel}
               </button>
             </div>
           </section>
