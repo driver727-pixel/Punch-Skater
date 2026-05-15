@@ -1,3 +1,24 @@
+/**
+ * Registers admin-only API routes.
+ *
+ * @param {import('express').Application} app - The Express application instance.
+ * @param {object} deps
+ * @param {import('firebase-admin/auth').Auth | null} deps.adminAuth
+ * @param {import('firebase-admin/firestore').Firestore | null} deps.adminDb
+ * @param {Function} deps.authSyncRateLimit
+ * @param {Function} deps.adminUserRateLimit
+ * @param {Function} deps.authenticateFirebaseUser
+ * @param {Function} deps.authenticateAdminRequest
+ * @param {Function} deps.syncAdminClaim
+ * @param {Function} deps.isStrongPassword
+ * @param {Function} deps.buildUserDisplayName
+ * @param {Function} deps.upsertUserLookupRecord
+ * @param {Function} deps.reconcilePurchasedTierForUser
+ * @param {Function} deps.deleteUserData
+ * @param {Function} deps.migrateUserCards
+ * @param {import('firebase-admin/firestore').FieldValue} deps.FieldValue - Firestore FieldValue
+ *   used to write server-authoritative timestamps (e.g. FieldValue.serverTimestamp()).
+ */
 export function registerAdminRoutes(app, {
   adminAuth,
   adminDb,
@@ -17,6 +38,8 @@ export function registerAdminRoutes(app, {
   app.use('/api/auth/sync-session', authSyncRateLimit);
   app.use('/api/admin/create-user', adminUserRateLimit);
   app.use('/api/admin/delete-user', adminUserRateLimit);
+  // Rate-limit all player management routes under /api/admin/player/
+  app.use('/api/admin/player/', adminUserRateLimit);
 
   app.post('/api/auth/sync-session', async (req, res) => {
     if (!adminAuth) {
@@ -193,8 +216,9 @@ export function registerAdminRoutes(app, {
   });
 
   // ── Player data management ─────────────────────────────────────────────────
+  // Rate limiting for /api/admin/player/* is pre-registered above via app.use.
 
-  app.get('/api/admin/player/:uid/cards', adminUserRateLimit, async (req, res) => {
+  app.get('/api/admin/player/:uid/cards', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
       return;
@@ -220,7 +244,7 @@ export function registerAdminRoutes(app, {
     }
   });
 
-  app.get('/api/admin/player/:uid/decks', adminUserRateLimit, async (req, res) => {
+  app.get('/api/admin/player/:uid/decks', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
       return;
@@ -246,7 +270,7 @@ export function registerAdminRoutes(app, {
     }
   });
 
-  app.put('/api/admin/player/:uid/profile', adminUserRateLimit, async (req, res) => {
+  app.put('/api/admin/player/:uid/profile', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
       return;
@@ -288,7 +312,7 @@ export function registerAdminRoutes(app, {
     }
   });
 
-  app.put('/api/admin/player/:uid/cards/:cardId', adminUserRateLimit, async (req, res) => {
+  app.put('/api/admin/player/:uid/cards/:cardId', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
       return;
@@ -318,7 +342,7 @@ export function registerAdminRoutes(app, {
     }
   });
 
-  app.delete('/api/admin/player/:uid/cards/:cardId', adminUserRateLimit, async (req, res) => {
+  app.delete('/api/admin/player/:uid/cards/:cardId', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
       return;
@@ -343,7 +367,7 @@ export function registerAdminRoutes(app, {
     }
   });
 
-  app.delete('/api/admin/player/:uid/decks/:deckId', adminUserRateLimit, async (req, res) => {
+  app.delete('/api/admin/player/:uid/decks/:deckId', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
       return;
