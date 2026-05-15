@@ -187,8 +187,9 @@ function PlayerPanel({ user, onClose }: PlayerPanelProps) {
     }
   };
 
-  const handleDeleteDeck = async (deckId: string) => {
-    if (!window.confirm(`Delete deck ${deckId}?`)) return;
+  const handleDeleteDeck = async (deckId: string, deckName?: string) => {
+    const label = deckName ? `"${deckName}"` : `deck ${deckId}`;
+    if (!window.confirm(`Delete ${label}?`)) return;
     setPanelError("");
     try {
       const res = await adminFetch(`/api/admin/player/${user.uid}/decks/${deckId}`, { method: "DELETE" });
@@ -327,7 +328,7 @@ function PlayerPanel({ user, onClose }: PlayerPanelProps) {
                     <td>
                       <button
                         className="btn-outline admin-delete-user-btn"
-                        onClick={() => handleDeleteDeck(deck.id)}
+                        onClick={() => handleDeleteDeck(deck.id, deck.name)}
                       >
                         🗑 Delete
                       </button>

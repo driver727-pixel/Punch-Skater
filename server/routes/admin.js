@@ -35,6 +35,9 @@ export function registerAdminRoutes(app, {
   migrateUserCards,
   FieldValue,
 }) {
+  // Maximum allowed display-name length (kept in sync with the Firestore profile schema).
+  const DISPLAY_NAME_MAX_LENGTH = 40;
+
   app.use('/api/auth/sync-session', authSyncRateLimit);
   app.use('/api/admin/create-user', adminUserRateLimit);
   app.use('/api/admin/delete-user', adminUserRateLimit);
@@ -292,7 +295,7 @@ export function registerAdminRoutes(app, {
       return;
     }
     const patch = {};
-    if (displayName !== undefined) patch.displayName = displayName.trim().slice(0, 40);
+    if (displayName !== undefined) patch.displayName = displayName.trim().slice(0, DISPLAY_NAME_MAX_LENGTH);
     if (Object.keys(patch).length === 0) {
       res.status(400).json({ error: 'No updatable fields provided.' });
       return;
