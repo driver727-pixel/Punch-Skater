@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deleteUserData } from '../lib/userDeletion.js';
+import { deleteUserData, migrateUserCards } from '../lib/userDeletion.js';
 
 function createMockAdminDb(uid) {
   const deletedPaths = [];
@@ -117,4 +117,103 @@ test('deleteUserData removes per-user docs, subcollections, and related query re
   assert.ok(adminDb.batchedPaths.includes(`notifications/${uid}/items/notif-1`));
   assert.ok(adminDb.batchedPaths.includes(`missions?uid/${uid}`));
   assert.ok(adminDb.batchedPaths.includes(`races?defenderUid/${uid}`));
+});
+
+function createMigrateAdminDb(fromUid, toUid, cardFixtures) {
+  const setBatches = [];
+
+  function createDocRef(path) {
+    const subcollections = new Map();
+    return {
+      path,
+      id: path.split('/').pop(),
+      data() {
+        return cardFixtures.find((c) => c.id === path.split('/').pop())?.data ?? {};
+      },
+      collection(subpath) {
+        const key = `${path}/${subpath}`;
+        if (!subcollections.has(key)) subcollections.set(key, createCollectionRef(key));
+        return subcollections.get(key);
+      },
+    };
+  }
+
+  function createCollectionRef(path) {
+    const uid = path.split('/')[1];
+    const isFrom = uid === fromUid;
+    let exhausted = false;
+    return {
+      path,
+      doc(id) {
+        return createDocRef(`${path}/${id}`);
+      },
+      limit() {
+        return {
+          async get() {
+            if (!isFrom || exhausted) return { empty: true, size: 0, docs: [] };
+            exhausted = true;
+            const docs = cardFixtures.map((c) => ({
+              id: c.id,
+              ref: createDocRef(`${path}/${c.id}`),
+              data() { return c.data; },
+            }));
+            return { empty: docs.length === 0, size: docs.length, docs };
+          },
+          startAfter() {
+            return {
+              async get() {
+                return { empty: true, size: 0, docs: [] };
+              },
+            };
+          },
+        };
+      },
+    };
+  }
+
+  return {
+    setBatches,
+    batch() {
+      const ops = [];
+      return {
+        set(ref, data) { ops.push({ path: ref.path, data }); },
+        delete() {},
+        async commit() { setBatches.push(...ops); },
+      };
+    },
+    collection(path) {
+      return createCollectionRef(path);
+    },
+  };
+}
+
+test('migrateUserCards copies all source cards to the target user', async () => {
+  const fromUid = 'user-from';
+  const toUid = 'user-to';
+  const cards = [
+    { id: 'card-alpha', data: { name: 'Alpha', rarity: 'rare' } },
+    { id: 'card-beta', data: { name: 'Beta', rarity: 'common' } },
+  ];
+
+  const adminDb = createMigrateAdminDb(fromUid, toUid, cards);
+  const { migratedCount } = await migrateUserCards({ adminDb, fromUid, toUid });
+
+  assert.equal(migratedCount, 2);
+  const paths = adminDb.setBatches.map((op) => op.path);
+  assert.ok(paths.includes(`users/${toUid}/cards/card-alpha`));
+  assert.ok(paths.includes(`users/${toUid}/cards/card-beta`));
+  const alphaOp = adminDb.setBatches.find((op) => op.path.endsWith('card-alpha'));
+  assert.deepEqual(alphaOp.data, cards[0].data);
+});
+
+test('migrateUserCards returns 0 when source has no cards', async () => {
+  const adminDb = createMigrateAdminDb('user-empty', 'user-dest', []);
+  const { migratedCount } = await migrateUserCards({ adminDb, fromUid: 'user-empty', toUid: 'user-dest' });
+  assert.equal(migratedCount, 0);
+  assert.equal(adminDb.setBatches.length, 0);
+});
+
+test('migrateUserCards returns 0 without crashing when adminDb is falsy', async () => {
+  const result = await migrateUserCards({ adminDb: null, fromUid: 'a', toUid: 'b' });
+  assert.deepEqual(result, { migratedCount: 0 });
 });

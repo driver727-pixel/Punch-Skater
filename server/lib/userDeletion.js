@@ -20,6 +20,33 @@ export async function deleteQueryDocs(adminDb, queryRef, pageSize = 200) {
   }
 }
 
+export async function migrateUserCards({ adminDb, fromUid, toUid, pageSize = 200 }) {
+  if (!adminDb || !fromUid || !toUid) return { migratedCount: 0 };
+
+  const fromCardsRef = adminDb.collection('users').doc(fromUid).collection('cards');
+  const toCardsRef = adminDb.collection('users').doc(toUid).collection('cards');
+  let migratedCount = 0;
+  let lastDoc = null;
+
+  while (true) {
+    let query = fromCardsRef.limit(pageSize);
+    if (lastDoc) query = query.startAfter(lastDoc);
+    const snap = await query.get();
+    if (snap.empty) break;
+
+    const batch = adminDb.batch();
+    snap.docs.forEach((docSnap) => {
+      batch.set(toCardsRef.doc(docSnap.id), docSnap.data());
+    });
+    await batch.commit();
+    migratedCount += snap.size;
+    lastDoc = snap.docs[snap.docs.length - 1];
+    if (snap.size < pageSize) break;
+  }
+
+  return { migratedCount };
+}
+
 export async function deleteUserData({ adminDb, uid, pageSize = 200 }) {
   if (!adminDb || !uid) return;
 
