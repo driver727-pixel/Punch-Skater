@@ -824,6 +824,7 @@ registerAdminRoutes(app, {
   upsertUserLookupRecord,
   deleteUserData,
   migrateUserCards,
+  FieldValue,
 });
 
 registerAccountRoutes(app, {

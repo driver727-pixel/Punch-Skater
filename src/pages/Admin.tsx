@@ -15,6 +15,7 @@ import {
 import { db, auth } from "../lib/firebase";
 import { TIERS, type TierLevel } from "../lib/tiers";
 import { resolveApiUrl } from "../lib/apiUrls";
+import type { CardPayload } from "../lib/types";
 
 interface UserProfile {
   uid: string;
@@ -50,6 +51,301 @@ const TIER_LABELS: Record<string, string> = {
   tier3: `${TIERS.tier3.name} (${TIERS.tier3.price})`,
 };
 
+// ── Player management panel ───────────────────────────────────────────────────
+
+interface PlayerPanelProps {
+  user: UserProfile;
+  onClose: () => void;
+}
+
+function PlayerPanel({ user, onClose }: PlayerPanelProps) {
+  const [cards, setCards] = useState<CardPayload[]>([]);
+  const [decks, setDecks] = useState<Array<{ id: string; name?: string; cardIds?: string[] }>>([]);
+  const [loadingCards, setLoadingCards] = useState(false);
+  const [loadingDecks, setLoadingDecks] = useState(false);
+  const [panelError, setPanelError] = useState("");
+  const [panelSuccess, setPanelSuccess] = useState("");
+
+  // Profile edit
+  const [editDisplayName, setEditDisplayName] = useState(user.displayName ?? "");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Card restore
+  const [restoreJson, setRestoreJson] = useState("");
+  const [restoringCard, setRestoringCard] = useState(false);
+
+  const adminFetch = useCallback(async (path: string, options: RequestInit = {}) => {
+    if (!auth?.currentUser) throw new Error("Not signed in.");
+    const idToken = await auth.currentUser.getIdToken();
+    return fetch(resolveAdminActionUrl(path), {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+        ...(options.headers ?? {}),
+      },
+    });
+  }, []);
+
+  const loadCards = useCallback(async () => {
+    setLoadingCards(true);
+    setPanelError("");
+    try {
+      const res = await adminFetch(`/api/admin/player/${user.uid}/cards`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to load cards.");
+      setCards(data.cards ?? []);
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : "Failed to load cards.");
+    } finally {
+      setLoadingCards(false);
+    }
+  }, [adminFetch, user.uid]);
+
+  const loadDecks = useCallback(async () => {
+    setLoadingDecks(true);
+    try {
+      const res = await adminFetch(`/api/admin/player/${user.uid}/decks`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to load decks.");
+      setDecks(data.decks ?? []);
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : "Failed to load decks.");
+    } finally {
+      setLoadingDecks(false);
+    }
+  }, [adminFetch, user.uid]);
+
+  useEffect(() => {
+    void loadCards();
+    void loadDecks();
+  }, [loadCards, loadDecks]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPanelError("");
+    setPanelSuccess("");
+    const trimmed = editDisplayName.trim();
+    if (!trimmed) { setPanelError("Display name cannot be empty."); return; }
+    setSavingProfile(true);
+    try {
+      const res = await adminFetch(`/api/admin/player/${user.uid}/profile`, {
+        method: "PUT",
+        body: JSON.stringify({ displayName: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to save profile.");
+      setPanelSuccess("✓ Profile saved.");
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : "Failed to save profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    if (!window.confirm(`Delete card ${cardId}? This cannot be undone.`)) return;
+    setPanelError("");
+    try {
+      const res = await adminFetch(`/api/admin/player/${user.uid}/cards/${cardId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to delete card.");
+      setCards((prev) => prev.filter((c) => c.id !== cardId));
+      setPanelSuccess(`✓ Card ${cardId} deleted.`);
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : "Failed to delete card.");
+    }
+  };
+
+  const handleRestoreCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPanelError("");
+    setPanelSuccess("");
+    let parsed: CardPayload;
+    try {
+      parsed = JSON.parse(restoreJson) as CardPayload;
+    } catch {
+      setPanelError("Invalid JSON. Paste a valid card object.");
+      return;
+    }
+    if (!parsed?.id) { setPanelError("Card JSON must have an `id` field."); return; }
+    setRestoringCard(true);
+    try {
+      const res = await adminFetch(`/api/admin/player/${user.uid}/cards/${parsed.id}`, {
+        method: "PUT",
+        body: JSON.stringify(parsed),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to restore card.");
+      setRestoreJson("");
+      setPanelSuccess(`✓ Card ${parsed.id} saved to player's collection.`);
+      void loadCards();
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : "Failed to restore card.");
+    } finally {
+      setRestoringCard(false);
+    }
+  };
+
+  const handleDeleteDeck = async (deckId: string) => {
+    if (!window.confirm(`Delete deck ${deckId}?`)) return;
+    setPanelError("");
+    try {
+      const res = await adminFetch(`/api/admin/player/${user.uid}/decks/${deckId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to delete deck.");
+      setDecks((prev) => prev.filter((d) => d.id !== deckId));
+      setPanelSuccess(`✓ Deck deleted.`);
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : "Failed to delete deck.");
+    }
+  };
+
+  return (
+    <div className="admin-player-panel">
+      <div className="admin-player-panel-header">
+        <div>
+          <strong>{user.email}</strong>
+          <span className="admin-uid" style={{ marginLeft: 8 }}>{user.uid}</span>
+        </div>
+        <button className="btn-outline" onClick={onClose}>✕ Close</button>
+      </div>
+
+      {panelError && <p className="admin-error">{panelError}</p>}
+      {panelSuccess && <p className="admin-saved">{panelSuccess}</p>}
+
+      {/* ── Profile edit ──────────────────────────────────────────────────── */}
+      <section className="admin-player-section">
+        <h3 className="admin-section-title">Profile Settings</h3>
+        <form className="admin-create-form" onSubmit={handleSaveProfile}>
+          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+            <input
+              className="input"
+              type="text"
+              placeholder="Display name"
+              value={editDisplayName}
+              onChange={(e) => setEditDisplayName(e.target.value)}
+              maxLength={40}
+              required
+            />
+          </div>
+          <button className="btn-primary" type="submit" disabled={savingProfile}>
+            {savingProfile ? "⏳ Saving…" : "Save Profile"}
+          </button>
+        </form>
+      </section>
+
+      {/* ── Collection ────────────────────────────────────────────────────── */}
+      <section className="admin-player-section">
+        <h3 className="admin-section-title">
+          Collection ({cards.length} cards)
+          {loadingCards && " ⏳"}
+          <button className="btn-outline" style={{ marginLeft: 12, padding: "2px 10px" }} onClick={loadCards}>
+            ↺ Refresh
+          </button>
+        </h3>
+
+        {cards.length > 0 && (
+          <div className="admin-table-wrap" style={{ maxHeight: 320 }}>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Rarity</th>
+                  <th>ID</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cards.map((card) => (
+                  <tr key={card.id}>
+                    <td>{card.identity?.name ?? "—"}</td>
+                    <td>{card.class?.rarity ?? card.prompts?.rarity ?? "—"}</td>
+                    <td><code className="admin-uid">{card.id.slice(0, 12)}…</code></td>
+                    <td>
+                      <button
+                        className="btn-outline admin-delete-user-btn"
+                        onClick={() => handleDeleteCard(card.id)}
+                      >
+                        🗑 Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {!loadingCards && cards.length === 0 && (
+          <p className="admin-empty">No cards in collection.</p>
+        )}
+
+        {/* Restore card */}
+        <div style={{ marginTop: 12 }}>
+          <h4 className="admin-section-title" style={{ fontSize: "0.85rem" }}>Restore / Add Card (paste card JSON)</h4>
+          <form onSubmit={handleRestoreCard} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <textarea
+              className="input"
+              style={{ flex: 1, minHeight: 72, fontFamily: "monospace", fontSize: "0.8rem" }}
+              placeholder='{"id": "...", "identity": {...}, ...}'
+              value={restoreJson}
+              onChange={(e) => setRestoreJson(e.target.value)}
+            />
+            <button className="btn-primary" type="submit" disabled={restoringCard} style={{ whiteSpace: "nowrap" }}>
+              {restoringCard ? "⏳ Saving…" : "Save Card"}
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* ── Decks ─────────────────────────────────────────────────────────── */}
+      <section className="admin-player-section">
+        <h3 className="admin-section-title">
+          Decks ({decks.length})
+          {loadingDecks && " ⏳"}
+          <button className="btn-outline" style={{ marginLeft: 12, padding: "2px 10px" }} onClick={loadDecks}>
+            ↺ Refresh
+          </button>
+        </h3>
+        {decks.length > 0 && (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Cards</th>
+                  <th>ID</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {decks.map((deck) => (
+                  <tr key={deck.id}>
+                    <td>{deck.name ?? "—"}</td>
+                    <td>{deck.cardIds?.length ?? "—"}</td>
+                    <td><code className="admin-uid">{deck.id.slice(0, 12)}…</code></td>
+                    <td>
+                      <button
+                        className="btn-outline admin-delete-user-btn"
+                        onClick={() => handleDeleteDeck(deck.id)}
+                      >
+                        🗑 Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {!loadingDecks && decks.length === 0 && (
+          <p className="admin-empty">No decks.</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export function Admin() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
@@ -62,6 +358,9 @@ export function Admin() {
   const [savingUid, setSavingUid] = useState<string | null>(null);
   const [successUid, setSuccessUid] = useState<string | null>(null);
   const successTimerRef = useRef<number | null>(null);
+
+  // Player management panel
+  const [managingUser, setManagingUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     return () => {
@@ -292,6 +591,14 @@ export function Admin() {
             </div>
           </div>
 
+          {/* ── Player management panel ─────────────────────────────────────── */}
+          {managingUser && (
+            <PlayerPanel
+              user={managingUser}
+              onClose={() => setManagingUser(null)}
+            />
+          )}
+
           {/* ── Search ─────────────────────────────────────────────────────── */}
           <div className="admin-search-row">
             <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
@@ -382,17 +689,25 @@ export function Admin() {
                         )}
                       </td>
                       <td>
-                        <button
-                          className="btn-outline admin-delete-user-btn"
-                          disabled={deletingUid === u.uid || currentUserUid === u.uid}
-                          onClick={() => handleDeleteUser(u.uid, u.email)}
-                        >
-                          {currentUserUid === u.uid
-                            ? "Current account"
-                            : deletingUid === u.uid
-                              ? "⏳ Deleting…"
-                              : "🗑 Delete"}
-                        </button>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button
+                            className="btn-outline"
+                            onClick={() => setManagingUser(managingUser?.uid === u.uid ? null : u)}
+                          >
+                            {managingUser?.uid === u.uid ? "✕ Close" : "✏ Manage"}
+                          </button>
+                          <button
+                            className="btn-outline admin-delete-user-btn"
+                            disabled={deletingUid === u.uid || currentUserUid === u.uid}
+                            onClick={() => handleDeleteUser(u.uid, u.email)}
+                          >
+                            {currentUserUid === u.uid
+                              ? "Current account"
+                              : deletingUid === u.uid
+                                ? "⏳ Deleting…"
+                                : "🗑 Delete"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
