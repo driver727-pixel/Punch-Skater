@@ -14,14 +14,26 @@ It is not part of the live card-rendering pipeline.
 
 ---
 
-## Approved Mountain master image
+## Approved master images
 
-Mountain board renders now bypass live AI generation in production and use a
-single global approved master asset instead:
+Certain board configurations bypass live AI generation in production and use a
+single global approved master asset instead.
+
+### Mountain board
 
 `public/assets/boards/approved/mountainboard-master.png`
 
-- Replace that one file when you approve a better Mountain image.
+Triggered when: `boardType === "Mountain"` (any compatible component set).
+
+### Carbon GTR (Street + Pneumatic wheels + Belt drive)
+
+`public/assets/boards/approved/carbon-gtr.png`
+
+Triggered when: `boardType === "Street"`, `wheels === "Pneumatic"`, `drivetrain === "Belt"`.
+
+### Guidelines for all approved images
+
+- Replace that one file when you approve a better image for the configuration.
 - Keep the background transparent so Workshop/Card renders do not need extra
   background removal.
 - If you replace the file in place, bump the board asset version so browsers
