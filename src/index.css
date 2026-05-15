@@ -3409,7 +3409,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 70vh;
+  min-height: 100vh;
+  padding: 24px 16px;
 }
 .login-card {
   background: var(--bg2);
@@ -3421,10 +3422,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   box-shadow: 6px 6px 0 rgba(0,255,136,0.2), 0 0 40px rgba(0,0,0,0.6);
+  animation: login-card-enter 0.35s ease-out both;
 }
-.login-logo { font-size: 36px; margin-bottom: 4px; }
+.login-logo { font-size: 48px; margin-bottom: 4px; animation: login-logo-pulse 2.8s ease-in-out infinite; }
 .login-title {
   font-family: var(--font-display);
   font-size: 28px;
@@ -3472,7 +3474,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .login-tab--active { background: var(--bg2); color: var(--accent); }
 
 .login-form { width: 100%; display: flex; flex-direction: column; gap: 0; }
-.login-error { font-size: 12px; color: var(--danger); margin: 4px 0; }
+.login-error {
+  font-size: 12px;
+  color: var(--danger);
+  margin: 4px 0;
+  padding: 6px 8px;
+  background: rgba(255, 68, 68, 0.08);
+  border-left: 3px solid var(--danger);
+  border-radius: 0 3px 3px 0;
+}
 
 .login-divider {
   display: flex;
@@ -3519,7 +3529,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 12px;
   cursor: pointer;
   text-decoration: underline;
+  opacity: 0.85;
+  transition: opacity 0.15s;
 }
+.login-guest-btn:hover { opacity: 1; }
 
 .login-hint {
   font-size: 12px;
@@ -3582,6 +3595,21 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transition: color 0.15s;
 }
 .password-toggle:hover { color: var(--text); }
+
+/* Password strength meter */
+.pw-strength {
+  display: flex;
+  gap: 4px;
+  margin-top: 7px;
+}
+.pw-strength-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.25s;
+}
+.pw-strength-bar--met { background: var(--accent); }
 
 /* ===== Account Settings Page ===== */
 .account-settings {
@@ -12678,6 +12706,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     0 1px 0 rgba(0,0,0,0.6) !important;
 }
 
+/* ===== Login Card — entrance animation ===== */
+@keyframes login-card-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Login Logo — subtle glow pulse ===== */
+@keyframes login-logo-pulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(255,220,0,0.5), 0 0 20px rgba(255,220,0,0.2); }
+  50%       { text-shadow: 0 0 18px rgba(255,220,0,0.9), 0 0 40px rgba(255,220,0,0.45); }
+}
+
 /* ===== Form Input Focus — stronger neon ring ===== */
 .card-edit-input:focus {
   box-shadow:
@@ -12795,6 +12835,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .forge-generated-buttons .btn-outline,
   .forge-generated-buttons .btn-primary,
   .btn-forge {
+    animation: none !important;
+  }
+  .login-card,
+  .login-logo {
     animation: none !important;
   }
 }

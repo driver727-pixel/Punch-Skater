@@ -28,6 +28,15 @@ export function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const pwCriteria = mode === "signup" && password
+    ? [
+        password.length >= 12,
+        /[a-z]/.test(password) && /[A-Z]/.test(password),
+        /\d/.test(password),
+        /[^A-Za-z0-9]/.test(password),
+      ]
+    : null;
+
   // Forgot password
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -182,20 +191,26 @@ export function Login() {
         )}
         {isAuthUnavailable && <p className="login-error">{firebaseUnavailableMessage}</p>}
 
-        <div className="login-tabs">
+        <div className="login-tabs" role="tablist" aria-label="Sign-in method">
           <button
+            role="tab"
+            aria-selected={mode === "signin"}
             className={`login-tab login-tab--signin ${mode === "signin" ? "login-tab--active" : ""}`}
             onClick={() => switchMode("signin")}
           >
-            Sign In
+            🔑 Sign In
           </button>
           <button
+            role="tab"
+            aria-selected={mode === "signup"}
             className={`login-tab ${mode === "signup" ? "login-tab--active" : ""}`}
             onClick={() => switchMode("signup")}
           >
-            Create Account
+            ✨ Create Account
           </button>
           <button
+            role="tab"
+            aria-selected={mode === "phone"}
             className={`login-tab ${mode === "phone" ? "login-tab--active" : ""}`}
             onClick={() => switchMode("phone")}
           >
@@ -217,9 +232,10 @@ export function Login() {
                 onChange={(e) => setForgotEmail(e.target.value)}
                 required
                 autoComplete="email"
+                autoFocus
               />
             </div>
-            {error && <p className="login-error">{error}</p>}
+            {error && <p className="login-error" role="alert">{error}</p>}
             {forgotSuccess && (
               <p className="login-success">✓ Reset link sent! Check your inbox.</p>
             )}
@@ -249,9 +265,10 @@ export function Login() {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   autoComplete="tel"
+                  autoFocus
                 />
               </div>
-              {error && <p className="login-error">{error}</p>}
+              {error && <p className="login-error" role="alert">{error}</p>}
               <div ref={recaptchaContainerRef} />
               <button className="btn-primary btn-lg" type="submit" disabled={loading}>
                 {loading ? "⏳ Sending code…" : "Send SMS Code"}
@@ -272,9 +289,11 @@ export function Login() {
                   maxLength={6}
                   autoComplete="one-time-code"
                   inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  autoFocus
                 />
               </div>
-              {error && <p className="login-error">{error}</p>}
+              {error && <p className="login-error" role="alert">{error}</p>}
               <button className="btn-primary btn-lg" type="submit" disabled={loading}>
                 {loading ? "⏳ Verifying…" : "Verify Code"}
               </button>
@@ -300,6 +319,7 @@ export function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                autoFocus
               />
             </div>
             <div className="form-group">
@@ -323,6 +343,20 @@ export function Login() {
                   <span aria-hidden="true">{showPassword ? "🙈" : "👁"}</span>
                 </button>
               </div>
+              {pwCriteria && (
+                <div className="pw-strength">
+                  <span className="visually-hidden" role="status" aria-live="polite">
+                    {`Password requirements met: ${
+                      (["12+ characters", "mixed case", "number", "special character"] as const)
+                        .filter((_, i) => pwCriteria![i])
+                        .join(", ") || "none"
+                    }`}
+                  </span>
+                  {pwCriteria.map((met, i) => (
+                    <span key={i} aria-hidden="true" className={`pw-strength-bar${met ? " pw-strength-bar--met" : ""}`} />
+                  ))}
+                </div>
+              )}
             </div>
             {mode === "signup" && (
               <div className="form-group">
@@ -357,7 +391,7 @@ export function Login() {
                 Forgot password?
               </button>
             )}
-            {error && <p className="login-error">{error}</p>}
+            {error && <p className="login-error" role="alert">{error}</p>}
             <button className={`btn-primary btn-lg${mode === "signin" ? " btn-signin" : ""}`} type="submit" disabled={loading}>
               {loading ? "⏳ Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
             </button>
