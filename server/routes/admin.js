@@ -150,8 +150,8 @@ export function registerAdminRoutes(app, {
       return;
     }
 
-    const fromEmail = typeof req.body?.fromEmail === 'string' ? req.body.fromEmail.trim() : '';
-    const toEmail = typeof req.body?.toEmail === 'string' ? req.body.toEmail.trim() : '';
+    const fromEmail = typeof req.body?.fromEmail === 'string' ? req.body.fromEmail.trim().toLowerCase() : '';
+    const toEmail = typeof req.body?.toEmail === 'string' ? req.body.toEmail.trim().toLowerCase() : '';
     if (!fromEmail) {
       res.status(400).json({ error: 'fromEmail is required.' });
       return;
@@ -160,7 +160,7 @@ export function registerAdminRoutes(app, {
       res.status(400).json({ error: 'toEmail is required.' });
       return;
     }
-    if (fromEmail.toLowerCase() === toEmail.toLowerCase()) {
+    if (fromEmail === toEmail) {
       res.status(400).json({ error: 'fromEmail and toEmail must be different accounts.' });
       return;
     }

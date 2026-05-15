@@ -40,7 +40,7 @@ export async function migrateUserCards({ adminDb, fromUid, toUid, pageSize = 200
     });
     await batch.commit();
     migratedCount += snap.size;
-    lastDoc = snap.docs[snap.docs.length - 1];
+    lastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
     if (snap.size < pageSize) break;
   }
 
