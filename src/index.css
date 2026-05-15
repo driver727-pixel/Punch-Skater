@@ -8268,6 +8268,29 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .admin-create-form .form-group { margin-bottom: 0; }
 
+/* ── Admin player panel ─────────────────────────────────────────────────── */
+.admin-player-panel {
+  background: var(--bg2);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.admin-player-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-player-section {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.admin-player-section:first-child { border-top: none; margin-top: 0; }
+
 /* ── Admin tabs ─────────────────────────────────────────────────────────── */
 .admin-tabs {
   display: flex;

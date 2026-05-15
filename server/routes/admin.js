@@ -1,3 +1,24 @@
+/**
+ * Registers admin-only API routes.
+ *
+ * @param {import('express').Application} app - The Express application instance.
+ * @param {object} deps
+ * @param {import('firebase-admin/auth').Auth | null} deps.adminAuth
+ * @param {import('firebase-admin/firestore').Firestore | null} deps.adminDb
+ * @param {Function} deps.authSyncRateLimit
+ * @param {Function} deps.adminUserRateLimit
+ * @param {Function} deps.authenticateFirebaseUser
+ * @param {Function} deps.authenticateAdminRequest
+ * @param {Function} deps.syncAdminClaim
+ * @param {Function} deps.isStrongPassword
+ * @param {Function} deps.buildUserDisplayName
+ * @param {Function} deps.upsertUserLookupRecord
+ * @param {Function} deps.reconcilePurchasedTierForUser
+ * @param {Function} deps.deleteUserData
+ * @param {Function} deps.migrateUserCards
+ * @param {import('firebase-admin/firestore').FieldValue} deps.FieldValue - Firestore FieldValue
+ *   used to write server-authoritative timestamps (e.g. FieldValue.serverTimestamp()).
+ */
 export function registerAdminRoutes(app, {
   adminAuth,
   adminDb,
@@ -12,10 +33,16 @@ export function registerAdminRoutes(app, {
   reconcilePurchasedTierForUser,
   deleteUserData,
   migrateUserCards,
+  FieldValue,
 }) {
+  // Maximum allowed display-name length (kept in sync with the Firestore profile schema).
+  const DISPLAY_NAME_MAX_LENGTH = 40;
+
   app.use('/api/auth/sync-session', authSyncRateLimit);
   app.use('/api/admin/create-user', adminUserRateLimit);
   app.use('/api/admin/delete-user', adminUserRateLimit);
+  // Rate-limit all player management routes under /api/admin/player/
+  app.use('/api/admin/player/', adminUserRateLimit);
 
   app.post('/api/auth/sync-session', async (req, res) => {
     if (!adminAuth) {
@@ -188,6 +215,183 @@ export function registerAdminRoutes(app, {
     } catch (error) {
       console.error('Admin migrate-cards failed:', error);
       res.status(500).json({ error: 'Failed to migrate cards.' });
+    }
+  });
+
+  // ── Player data management ─────────────────────────────────────────────────
+  // Rate limiting for /api/admin/player/* is pre-registered above via app.use.
+
+  app.get('/api/admin/player/:uid/cards', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+    const { uid } = req.params;
+    if (!uid) {
+      res.status(400).json({ error: 'uid is required.' });
+      return;
+    }
+    try {
+      const snap = await adminDb.collection('users').doc(uid).collection('cards').get();
+      const cards = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      res.json({ cards });
+    } catch (error) {
+      console.error('Admin get player cards failed:', error);
+      res.status(500).json({ error: 'Failed to load player cards.' });
+    }
+  });
+
+  app.get('/api/admin/player/:uid/decks', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+    const { uid } = req.params;
+    if (!uid) {
+      res.status(400).json({ error: 'uid is required.' });
+      return;
+    }
+    try {
+      const snap = await adminDb.collection('users').doc(uid).collection('decks').get();
+      const decks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      res.json({ decks });
+    } catch (error) {
+      console.error('Admin get player decks failed:', error);
+      res.status(500).json({ error: 'Failed to load player decks.' });
+    }
+  });
+
+  app.put('/api/admin/player/:uid/profile', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+    const { uid } = req.params;
+    if (!uid) {
+      res.status(400).json({ error: 'uid is required.' });
+      return;
+    }
+    const { displayName } = req.body ?? {};
+    if (displayName !== undefined && (typeof displayName !== 'string' || !displayName.trim())) {
+      res.status(400).json({ error: 'displayName must be a non-empty string.' });
+      return;
+    }
+    const patch = {};
+    if (displayName !== undefined) patch.displayName = displayName.trim().slice(0, DISPLAY_NAME_MAX_LENGTH);
+    if (Object.keys(patch).length === 0) {
+      res.status(400).json({ error: 'No updatable fields provided.' });
+      return;
+    }
+    patch.updatedAt = FieldValue.serverTimestamp();
+    try {
+      await Promise.all([
+        adminDb.collection('userProfiles').doc(uid).set(patch, { merge: true }),
+        patch.displayName !== undefined
+          ? adminDb.collection('userLookup').doc(uid).set({ displayName: patch.displayName, updatedAt: patch.updatedAt }, { merge: true })
+          : Promise.resolve(),
+      ]);
+      res.json({ uid, ...patch, updatedAt: undefined });
+    } catch (error) {
+      console.error('Admin update player profile failed:', error);
+      res.status(500).json({ error: 'Failed to update player profile.' });
+    }
+  });
+
+  app.put('/api/admin/player/:uid/cards/:cardId', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+    const { uid, cardId } = req.params;
+    if (!uid || !cardId) {
+      res.status(400).json({ error: 'uid and cardId are required.' });
+      return;
+    }
+    const cardData = req.body;
+    if (!cardData || typeof cardData !== 'object' || Array.isArray(cardData)) {
+      res.status(400).json({ error: 'Request body must be a card object.' });
+      return;
+    }
+    try {
+      await adminDb.collection('users').doc(uid).collection('cards').doc(cardId).set(cardData);
+      res.json({ uid, cardId });
+    } catch (error) {
+      console.error('Admin save player card failed:', error);
+      res.status(500).json({ error: 'Failed to save player card.' });
+    }
+  });
+
+  app.delete('/api/admin/player/:uid/cards/:cardId', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+    const { uid, cardId } = req.params;
+    if (!uid || !cardId) {
+      res.status(400).json({ error: 'uid and cardId are required.' });
+      return;
+    }
+    try {
+      await adminDb.collection('users').doc(uid).collection('cards').doc(cardId).delete();
+      res.json({ uid, cardId });
+    } catch (error) {
+      console.error('Admin delete player card failed:', error);
+      res.status(500).json({ error: 'Failed to delete player card.' });
+    }
+  });
+
+  app.delete('/api/admin/player/:uid/decks/:deckId', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+    const { uid, deckId } = req.params;
+    if (!uid || !deckId) {
+      res.status(400).json({ error: 'uid and deckId are required.' });
+      return;
+    }
+    try {
+      await adminDb.collection('users').doc(uid).collection('decks').doc(deckId).delete();
+      res.json({ uid, deckId });
+    } catch (error) {
+      console.error('Admin delete player deck failed:', error);
+      res.status(500).json({ error: 'Failed to delete player deck.' });
     }
   });
 }
