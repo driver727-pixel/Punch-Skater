@@ -214,10 +214,12 @@ export function registerRaceRoutes(app, {
     }
 
     const challengerUid = caller.uid;
+    const callerIsAdmin = caller.admin === true;
     const defenderUid = String(req.body?.defenderUid ?? '').trim();
     const defenderCardId = String(req.body?.defenderCardId ?? '').trim();
     const challengerCardId = String(req.body?.challengerCardId ?? '').trim();
-    const wager = clampWager(req.body?.ozzyWager);
+    // Admin accounts are never charged Ozzies; their effective wager is 0.
+    const wager = callerIsAdmin ? 0 : clampWager(req.body?.ozzyWager);
     const message = String(req.body?.message ?? '').slice(0, 280);
 
     if (!defenderUid || !defenderCardId || !challengerCardId) {
@@ -389,6 +391,7 @@ export function registerRaceRoutes(app, {
     }
     const id = String(req.params?.id ?? '').trim();
     const accept = req.body?.accept === true;
+    const defenderIsAdmin = caller.admin === true;
     if (!id) {
       res.status(400).json({ error: 'Challenge id is required.' });
       return;
@@ -453,10 +456,10 @@ export function registerRaceRoutes(app, {
         const defProfileRef = adminDb.collection(PROFILE_COLLECTION).doc(ch.defenderUid);
 
         const readsToFetch = [tx.get(challengerCardRef), tx.get(defenderCardRef)];
-        if (ch.ozzyWager > 0) readsToFetch.push(tx.get(defProfileRef));
+        if (ch.ozzyWager > 0 && !defenderIsAdmin) readsToFetch.push(tx.get(defProfileRef));
         const [challengerCardSnap, defenderCardSnap, defProfileSnap] = await Promise.all(readsToFetch);
 
-        if (ch.ozzyWager > 0) {
+        if (ch.ozzyWager > 0 && !defenderIsAdmin) {
           const balance = readOzzies(defProfileSnap.data());
           if (balance < ch.ozzyWager) {
             throw badRequest(`You only have ${balance} Ozzies — not enough to match the ${ch.ozzyWager} wager.`, 402);
@@ -582,7 +585,8 @@ export function registerRaceRoutes(app, {
 
     const playerUid = caller.uid;
     const cardId = String(req.body?.cardId ?? '').trim();
-    const wager = clampWager(req.body?.ozzyWager);
+    // Admin accounts are never charged Ozzies; their effective wager is 0.
+    const wager = caller.admin === true ? 0 : clampWager(req.body?.ozzyWager);
     const district = String(req.body?.district ?? '').trim() || null;
 
     if (!cardId) {
