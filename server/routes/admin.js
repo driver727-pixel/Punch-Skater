@@ -11,6 +11,7 @@ export function registerAdminRoutes(app, {
   upsertUserLookupRecord,
   reconcilePurchasedTierForUser,
   deleteUserData,
+  migrateUserCards,
 }) {
   app.use('/api/auth/sync-session', authSyncRateLimit);
   app.use('/api/admin/create-user', adminUserRateLimit);
@@ -133,6 +134,60 @@ export function registerAdminRoutes(app, {
     } catch (error) {
       console.error('Admin delete-user failed:', error);
       res.status(500).json({ error: 'Failed to delete user.' });
+    }
+  });
+
+  app.post('/api/admin/migrate-cards', adminUserRateLimit, async (req, res) => {
+    if (!adminAuth || !adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+
+    const fromEmail = typeof req.body?.fromEmail === 'string' ? req.body.fromEmail.trim().toLowerCase() : '';
+    const toEmail = typeof req.body?.toEmail === 'string' ? req.body.toEmail.trim().toLowerCase() : '';
+    if (!fromEmail) {
+      res.status(400).json({ error: 'fromEmail is required.' });
+      return;
+    }
+    if (!toEmail) {
+      res.status(400).json({ error: 'toEmail is required.' });
+      return;
+    }
+    if (fromEmail === toEmail) {
+      res.status(400).json({ error: 'fromEmail and toEmail must be different accounts.' });
+      return;
+    }
+
+    let fromUser;
+    let toUser;
+    try {
+      [fromUser, toUser] = await Promise.all([
+        adminAuth.getUserByEmail(fromEmail),
+        adminAuth.getUserByEmail(toEmail),
+      ]);
+    } catch (error) {
+      if (error?.code === 'auth/user-not-found') {
+        res.status(404).json({ error: 'One or both email addresses were not found.' });
+        return;
+      }
+      console.error('Admin migrate-cards user lookup failed:', error);
+      res.status(500).json({ error: 'Failed to look up user accounts.' });
+      return;
+    }
+
+    try {
+      const { migratedCount } = await migrateUserCards({ adminDb, fromUid: fromUser.uid, toUid: toUser.uid });
+      res.json({ fromUid: fromUser.uid, toUid: toUser.uid, migratedCount });
+    } catch (error) {
+      console.error('Admin migrate-cards failed:', error);
+      res.status(500).json({ error: 'Failed to migrate cards.' });
     }
   });
 }

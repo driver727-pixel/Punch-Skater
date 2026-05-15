@@ -38,7 +38,7 @@ import {
   resolveHigherPaidTier,
 } from './lib/payments.js';
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
-import { deleteUserData } from './lib/userDeletion.js';
+import { deleteUserData, migrateUserCards } from './lib/userDeletion.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerAccountRoutes } from './routes/account.js';
 import { registerBattleRoutes } from './routes/battle.js';
@@ -823,6 +823,7 @@ registerAdminRoutes(app, {
   buildUserDisplayName,
   upsertUserLookupRecord,
   deleteUserData,
+  migrateUserCards,
 });
 
 registerAccountRoutes(app, {
