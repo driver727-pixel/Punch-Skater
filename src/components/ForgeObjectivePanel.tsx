@@ -107,8 +107,8 @@ function getObjectiveState({
     description: "Keep tuning your Crew, race other challengers, submit a seasonal lineup, and use Workshop to upgrade how your skaters ride and look.",
     primaryLabel: "Run Missions",
     primaryTo: "/missions",
-    secondaryLabel: "View Trades + leaderboard",
-    secondaryTo: "/trades",
+    secondaryLabel: "Leaderboard",
+    secondaryTo: "/leaderboard",
   };
 }
 

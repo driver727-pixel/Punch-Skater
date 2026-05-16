@@ -10,6 +10,9 @@ function getFeatureLabel(pathname: string): string {
   if (pathname.startsWith("/collection")) return "Collection and Crews";
   if (pathname.startsWith("/edit/")) return "card editing";
   if (pathname.startsWith("/trades")) return "Trades and seasonal leaderboard";
+  if (pathname.startsWith("/leaderboard")) return "Leaderboard";
+  if (pathname.startsWith("/profile")) return "Your Profile";
+  if (pathname.startsWith("/trash")) return "Trash bin";
   if (pathname.startsWith("/arena")) return "Race Arena";
   if (pathname.startsWith("/race/")) return "race replays";
   if (pathname.startsWith("/missions")) return "Missions";

@@ -84,6 +84,9 @@ const RaceTrack       = lazy(() => import("./pages/RaceTrack").then(m => ({ defa
 const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ default: m.FramePreview })));
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
 const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ default: m.Workshop })));
+const UserProfile     = lazy(() => import("./pages/UserProfile").then(m => ({ default: m.UserProfile })));
+const Leaderboard     = lazy(() => import("./pages/Leaderboard").then(m => ({ default: m.Leaderboard })));
+const Trash           = lazy(() => import("./pages/Trash").then(m => ({ default: m.Trash })));
 const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 const MAIN_CONTENT_SELECTOR = ".main";
 
@@ -184,6 +187,15 @@ function App() {
                       } />
                       <Route path="/workshop" element={
                         <ProtectedRoute><Workshop /></ProtectedRoute>
+                      } />
+                      <Route path="/profile" element={
+                        <ProtectedRoute><UserProfile /></ProtectedRoute>
+                      } />
+                      <Route path="/leaderboard" element={
+                        <ProtectedRoute><Leaderboard /></ProtectedRoute>
+                      } />
+                      <Route path="/trash" element={
+                        <ProtectedRoute><Trash /></ProtectedRoute>
                       } />
                       <Route path="/admin" element={
                         <AdminRoute><Admin /></AdminRoute>

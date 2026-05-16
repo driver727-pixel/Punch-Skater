@@ -12,7 +12,6 @@ import { TIERS } from "../lib/tiers";
 import { db } from "../lib/firebase";
 import { TierModal } from "./TierModal";
 import { NotificationBell } from "./NotificationBell";
-import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { sfxNavigate } from "../lib/sfx";
 import { GeoAtlas } from "./GeoAtlas";
 import { useAmbience } from "../hooks/useAmbience";
@@ -25,8 +24,6 @@ export function Nav() {
   const tierData = TIERS[tier];
   const uid = user?.uid ?? null;
   const isAdmin = userProfile?.isAdmin === true;
-  const { discoveredFactions } = useFactionDiscovery();
-
   const [ambienceEnabled, toggleAmbience] = useAmbience();
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -86,12 +83,6 @@ export function Nav() {
       <NavLink to="/" end className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Card Forge
       </NavLink>
-      <NavLink to="/collection" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-        Collection
-      </NavLink>
-      <NavLink to="/trades" className={({ isActive }) => `nav-link${isActive ? " active" : ""}${pendingTrades > 0 ? " nav-link--badge" : ""}`} onClick={handleNav}>
-        Trades{pendingTrades > 0 && <span className="nav-badge">{pendingTrades}</span>}
-      </NavLink>
       {user && (
         <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
           Race
@@ -102,19 +93,17 @@ export function Nav() {
           Missions
         </NavLink>
       )}
-      {user && (
-        <NavLink to="/workshop" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Workshop
-        </NavLink>
-      )}
       <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Codex
       </NavLink>
-      {discoveredFactions.length > 0 && (
-        <NavLink to="/factions" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Factions
+      {user && (
+        <NavLink to="/leaderboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+          Leaderboard
         </NavLink>
       )}
+      <NavLink to="/collection" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+        Collection
+      </NavLink>
       {isAdmin && (
         <>
           <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
@@ -183,15 +172,21 @@ export function Nav() {
                     <div className="user-dropdown-email">{user.email}</div>
                     <button
                       className="user-dropdown-item"
-                      onClick={() => { setMenuOpen(false); navigate("/account"); }}
+                      onClick={() => { setMenuOpen(false); navigate("/profile"); }}
                     >
-                      ⚙ Account Settings
+                      👤 My Profile
                     </button>
                     <button
                       className="user-dropdown-item"
                       onClick={() => { setMenuOpen(false); navigate("/trades"); }}
                     >
                       🤝 Trades{pendingTrades > 0 && ` (${pendingTrades})`}
+                    </button>
+                    <button
+                      className="user-dropdown-item"
+                      onClick={() => { setMenuOpen(false); navigate("/account"); }}
+                    >
+                      ⚙ Account Settings
                     </button>
                     <button
                       className="user-dropdown-item"
