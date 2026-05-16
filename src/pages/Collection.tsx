@@ -139,6 +139,16 @@ export function Collection() {
     setSelected((prev) => (prev && !validIds.has(prev.id) ? null : prev));
   }, [cards]);
 
+  // Close card detail panel on Escape key
+  useEffect(() => {
+    if (!selected) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [selected]);
+
   // Derive unique values from actual cards for filter dropdowns
   const filterOptions = useMemo(() => {
     const rarities = new Set<Rarity>();

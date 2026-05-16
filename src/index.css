@@ -1866,7 +1866,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .collection-bulk-actions > * { flex: 1 1 160px; }
 }
 
-.collection-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 45vw); gap: 24px; align-items: start; }
+.collection-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, min(45vw, 800px)); gap: 24px; align-items: start; }
 @media (max-width: 800px) { .collection-layout { grid-template-columns: 1fr; } }
 
 .card-grid {
