@@ -107,8 +107,8 @@ function getObjectiveState({
     description: "Keep tuning your Crew, race other challengers, submit a seasonal lineup, and use Workshop to upgrade how your skaters ride and look.",
     primaryLabel: "Run Missions",
     primaryTo: "/missions",
-    secondaryLabel: "View Trades + leaderboard",
-    secondaryTo: "/trades",
+    secondaryLabel: "Leaderboard",
+    secondaryTo: "/leaderboard",
   };
 }
 
@@ -142,7 +142,8 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
         { id: "crews", label: "My Crews", to: "/collection?tab=decks" },
         { id: "missions", label: "Missions", to: "/missions" },
         { id: "race-arena", label: "Race Arena", to: "/arena" },
-        { id: "trades", label: "Trades + leaderboard", to: "/trades" },
+        { id: "trades", label: "Trades", to: "/trades" },
+        { id: "leaderboard", label: "Leaderboard", to: "/leaderboard" },
         { id: "workshop", label: "Workshop", to: "/workshop" },
       ]
     : [
@@ -247,8 +248,8 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
         </div>
         <p className="forge-objective-status">
           {user
-            ? "Collection, Missions, Race Arena, Trades, leaderboard submission, and Workshop are all readily accessible."
-            : "Create an account when you want cloud saves, crews, Missions, Race Arena, Trades, leaderboard access, and Workshop."}
+            ? "Collection, Missions, Race Arena, Trades, Leaderboard, and Workshop are all readily accessible."
+            : "Create an account when you want cloud saves, crews, Missions, Race Arena, Trades, Leaderboard, and Workshop."}
         </p>
       </div>
     </section>
