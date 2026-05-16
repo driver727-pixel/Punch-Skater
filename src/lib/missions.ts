@@ -551,11 +551,14 @@ function buildMissionRivalPressure(
   const seenCount = record?.seenCount ?? 0;
   const losses = record?.losses ?? 0;
   const wins = record?.wins ?? 0;
+  const isContested = seenCount > 0 && losses === wins && (losses > 0 || wins > 0);
   const status = seenCount === 0 ? "fresh" : losses > wins ? "grudge" : "known";
   const heat = status === "fresh" ? 0 : status === "grudge" ? 2 : 1;
   let summary = `${config.rival.name} is fresh district pressure — the lane has not learned your tells yet.`;
   if (status === "known") {
-    summary = `${config.rival.name} remembers your last pass. Expect a tighter read and less free space in the lane.`;
+    summary = isContested
+      ? `${config.rival.name} knows your line now and the score is even. Expect a sharper, more respectful rematch.`
+      : `${config.rival.name} remembers your last pass. Expect a tighter read and less free space in the lane.`;
   } else if (status === "grudge") {
     summary = `${config.rival.name} has a score to settle here. The route will feel personal until you answer back.`;
   }
