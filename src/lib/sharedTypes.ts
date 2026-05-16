@@ -218,6 +218,10 @@ export interface MissionJoustResult {
   cardRewardId?: string;
   /** @sprint 6 @owner gamma — Named-rival district reputation gained on victory. */
   districtReputationDelta?: number;
+  /** @sprint 7 @owner gamma — Expressive bonus signals attached to this joust resolution. */
+  rewardSignals?: MissionRewardSignal[];
+  /** @sprint 7 @owner gamma — Rival pressure snapshot that framed this joust. */
+  rivalPressure?: MissionRivalPressure | null;
 }
 
 /**
@@ -273,6 +277,12 @@ export interface MissionActiveRunState {
   selectedJoustTactic?: JoustTactic | null;
   counterPower?: number;
   summary?: string;
+  /** @sprint 7 @owner gamma — Route-story beats generated for the live run. */
+  storyBeats?: MissionStoryBeat[];
+  /** @sprint 7 @owner gamma — Board-derived crew identities active on this run. */
+  boardPlaystyles?: MissionBoardPlaystyle[];
+  /** @sprint 7 @owner gamma — Rival memory and heat level for named district jousts. */
+  rivalPressure?: MissionRivalPressure | null;
 }
 
 /**
@@ -348,6 +358,14 @@ export interface MissionBoardEntry {
   lastRunJoustResult?: MissionJoustResult | null;
   /** @sprint 6 @owner gamma — Persisted card-level maintenance fallout from the last resolved run. */
   lastRunCardOutcomes?: MissionCardOutcome[];
+  /** @sprint 7 @owner gamma — Route-story beats captured for the last launch or resolution. */
+  lastRunStoryBeats?: MissionStoryBeat[];
+  /** @sprint 7 @owner gamma — Expressive reward signals earned on the last resolved run. */
+  lastRunRewardSignals?: MissionRewardSignal[];
+  /** @sprint 7 @owner gamma — Board-derived crew identities captured on the last run. */
+  lastRunBoardPlaystyles?: MissionBoardPlaystyle[];
+  /** @sprint 7 @owner gamma — Rival memory snapshot attached to the last run. */
+  lastRunRivalPressure?: MissionRivalPressure | null;
 }
 
 /**
@@ -363,6 +381,8 @@ export interface MissionBoardProgression {
   defeatedRivalIds?: string[];
   /** @sprint 6 @owner gamma — Stable Codex ids unlocked through rival progression. */
   codexUnlockIds?: string[];
+  /** @sprint 7 @owner gamma — Per-rival memory used to surface rematches and grudges. */
+  rivalRecords?: Record<string, MissionRivalRecord>;
 }
 
 /**
@@ -408,6 +428,71 @@ export interface MissionDeckEvaluation {
   synergyTags?: MissionCounterTag[];
   activeCardIds?: string[];
   counterPower?: number;
+  /** @sprint 7 @owner gamma — Board-derived crew identities inferred during preflight. */
+  boardPlaystyles?: MissionBoardPlaystyle[];
+}
+
+/**
+ * Board-driven crew identity surfaced during mission prep and live runs.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionBoardPlaystyle {
+  id: string;
+  label: string;
+  summary: string;
+  powerDelta?: number;
+}
+
+/**
+ * Structured route beat used to turn a mission run into a short story.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionStoryBeat {
+  id: string;
+  stage: "launch" | "pressure" | "finish";
+  label: string;
+  summary: string;
+  tone?: "neutral" | "risk" | "reward";
+}
+
+/**
+ * Expressive bonus signal that adds texture to mission rewards.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionRewardSignal {
+  id: string;
+  label: string;
+  summary: string;
+  rewardXpDelta?: number;
+  rewardOzziesDelta?: number;
+}
+
+/**
+ * Per-rival history stored on the user profile for rematches and grudges.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionRivalRecord {
+  rivalId: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  seenCount: number;
+  lastOutcome?: JoustOutcome;
+  streak?: number;
+  lastSeenAt?: string;
+}
+
+/**
+ * Snapshot of the current named-rival heat carried into a mission run.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionRivalPressure {
+  rivalId: string;
+  rivalName: string;
+  heat: number;
+  status: "fresh" | "known" | "grudge";
+  summary: string;
+  taunt?: string;
 }
 
 /**

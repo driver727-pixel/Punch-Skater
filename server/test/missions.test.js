@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   HARD_CUTOUT_COUNTER_ID,
+  applyMissionRivalRecord,
   buildMissionActiveRunState,
   createDailyMissionBoardPayload,
   createMissionBoardEntries,
@@ -304,6 +305,8 @@ test('buildMissionActiveRunState creates a pending live encounter with available
   assert.equal(runState.activeCardIds.length, 3);
   assert.ok(runState.availableCounterOptionIds.length > 0);
   assert.ok(getMissionEncounter(mission).options.length >= 3);
+  assert.ok(runState.boardPlaystyles?.some((playstyle) => playstyle.id === 'full-noise-sprinter'));
+  assert.equal(runState.storyBeats?.length, 3);
 });
 
 test('resolveMissionCounterChoice returns selected encounter rewards when the hand can answer', () => {
@@ -383,8 +386,79 @@ test('resolveMissionCounterChoice can settle a district joust with tactic-select
   assert.equal(resolution.joustResult?.rivalId, 'nightshade-rook-wraith');
   assert.equal(resolution.joustResult?.rivalName, 'Rook Wraith');
   assert.ok(['win', 'draw', 'loss'].includes(resolution.joustResult?.outcome));
-  assert.equal(resolution.rewardXpDelta, resolution.joustResult?.rewardXpBonus ?? 0);
-  assert.equal(resolution.rewardOzziesDelta, resolution.joustResult?.rewardOzziesBonus ?? 0);
+  assert.ok(resolution.rewardXpDelta >= (resolution.joustResult?.rewardXpBonus ?? 0));
+  assert.ok(resolution.rewardOzziesDelta >= (resolution.joustResult?.rewardOzziesBonus ?? 0));
+});
+
+test('resolveMissionCounterChoice adds expressive reward signals on a grudge rematch win', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'glass-city-exchange');
+  const deck = {
+    id: 'deck-rematch-1',
+    name: 'Highlight Hunters',
+    cards: [
+      buildCard({
+        id: 'showpony-1',
+        name: 'Halo Breaker',
+        identity: { name: 'Halo Breaker', crew: 'The Team' },
+        prompts: { archetype: 'The Team', district: 'Glass City' },
+        stats: { speed: 9, range: 7, stealth: 8, grit: 6 },
+        board: { config: { boardType: 'Surf', wheels: 'Cloud' } },
+        joust: {
+          lance: 9,
+          shield: 7,
+          hype: 9,
+          gear: { boardType: 'Surf', lanceType: 'neon', shieldType: 'banner', armorTag: 'spotlight shell' },
+          traits: ['Neon Flourish', 'Boost Charge'],
+        },
+      }),
+      buildCard({
+        id: 'showpony-2',
+        prompts: { archetype: 'Qu111s', district: 'Glass City' },
+        identity: { crew: 'Qu111s' },
+        stats: { speed: 8, range: 6, stealth: 8, grit: 5 },
+        board: { config: { boardType: 'Slider', wheels: 'Cloud' } },
+      }),
+      ...Array.from({ length: 3 }, (_, index) => buildCard({
+        id: `showpony-extra-${index + 1}`,
+        prompts: { district: 'Glass City' },
+        stats: { speed: 7, range: 6, stealth: 7, grit: 5 },
+        board: { config: { boardType: 'Surf', wheels: 'Cloud' } },
+      })),
+    ],
+  };
+
+  const rivalRecords = {
+    'glass-city-nova-saint': {
+      rivalId: 'glass-city-nova-saint',
+      wins: 0,
+      losses: 2,
+      draws: 0,
+      seenCount: 2,
+      lastOutcome: 'loss',
+      streak: -2,
+      lastSeenAt: '2026-05-01T00:00:00.000Z',
+    },
+  };
+  const runState = buildMissionActiveRunState(deck, mission, null, '2026-05-16T00:00:00.000Z', rivalRecords);
+  const resolution = resolveMissionCounterChoice(mission, deck, runState, 'district-joust', 'trickStrike');
+
+  assert.equal(runState.rivalPressure?.status, 'grudge');
+  assert.ok((resolution.rewardSignals ?? []).length > 0);
+  assert.ok((resolution.storyBeats ?? []).some((beat) => beat.stage === 'finish'));
+  if (resolution.joustResult?.outcome === 'win') {
+    assert.ok((resolution.rewardSignals ?? []).some((signal) => signal.id === 'highlight-reel'));
+  }
+});
+
+test('applyMissionRivalRecord tracks repeat rival outcomes and streak direction', () => {
+  const first = applyMissionRivalRecord('grid-vex-static', 'loss', {}, '2026-05-16T00:00:00.000Z');
+  const second = applyMissionRivalRecord('grid-vex-static', 'win', first, '2026-05-17T00:00:00.000Z');
+
+  assert.equal(first['grid-vex-static'].losses, 1);
+  assert.equal(first['grid-vex-static'].streak, -1);
+  assert.equal(second['grid-vex-static'].wins, 1);
+  assert.equal(second['grid-vex-static'].seenCount, 2);
+  assert.equal(second['grid-vex-static'].streak, 1);
 });
 
 test('mission encounters pull named rival data for first-wave districts', () => {
