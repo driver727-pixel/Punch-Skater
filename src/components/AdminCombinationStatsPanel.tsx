@@ -53,8 +53,11 @@ export function AdminCombinationStatsPanel() {
       const res = await fetch(resolveAdminActionUrl("/api/admin/combination-stats"), {
         headers: { Authorization: `Bearer ${idToken}` },
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(errData.error ?? "Failed to load combination stats.");
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load combination stats.");
       setStats(data as CombinationStats);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load combination stats.");
