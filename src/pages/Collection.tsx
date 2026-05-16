@@ -665,6 +665,14 @@ export function Collection() {
               <button className="btn-outline btn-sm" onClick={clearFilters}>Clear Filters</button>
             </div>
           ) : (
+          <>
+          {selected && (
+            <div
+              className="card-detail-backdrop"
+              aria-hidden="true"
+              onClick={() => setSelected(null)}
+            />
+          )}
           <div className="collection-layout">
           <div className="card-grid">
             {filteredCards.map((card) => {
@@ -783,6 +791,7 @@ export function Collection() {
             </div>
           )}
         </div>
+          </>
           )}
         </>
       )}

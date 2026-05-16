@@ -1866,7 +1866,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .collection-bulk-actions > * { flex: 1 1 160px; }
 }
 
-.collection-layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
+.collection-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 45vw); gap: 24px; align-items: start; }
 @media (max-width: 800px) { .collection-layout { grid-template-columns: 1fr; } }
 
 .card-grid {
@@ -1936,12 +1936,36 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .card-sub { display: block; font-size: 12px; color: var(--text-dim); }
 
 .card-detail-panel {
-  position: relative;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   background: var(--bg2);
   border: 2px solid var(--border);
   border-radius: 4px;
   padding: 16px;
   box-shadow: 3px 3px 0 rgba(0,255,136,0.1), inset 0 0 40px rgba(0,0,0,0.2);
+}
+.card-detail-backdrop { display: none; }
+@media (max-width: 800px) {
+  .card-detail-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 199;
+  }
+  .card-detail-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-height: 85vh;
+    border-radius: 12px 12px 0 0;
+    z-index: 200;
+    overflow-y: auto;
+  }
 }
 .close-btn {
   position: absolute;
@@ -7718,10 +7742,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .print-preview-area--collection .print-card-wrap {
   padding: 0;
+  width: 100%;
 }
 .print-preview-area--collection .print-preview-slot {
   width: 100%;
   gap: 6px;
+}
+.print-preview-area--collection .print-card {
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--card-aspect-ratio);
+  --card-name-size:      1.0rem;
+  --card-bio-size:       0.82rem;
+  --card-age-size:       0.88rem;
+  --card-back-name-size: 1rem;
+  --card-back-body-size: 0.715rem;
+  --stat-font-size:      var(--card-back-body-size);
 }
 
 /* ── Card Editor: inline editable inputs overlaid on the card faces ─────── */
