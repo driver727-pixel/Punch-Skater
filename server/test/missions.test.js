@@ -291,7 +291,8 @@ test('buildMissionActiveRunState creates a pending live encounter with available
         id: 'counter-2',
         prompts: { archetype: 'Qu111s', district: 'The Grid' },
         identity: { crew: 'Qu111s' },
-        stats: { speed: 7, range: 7, stealth: 6, grit: 4 },
+        stats: { speed: 8, range: 7, stealth: 6, grit: 4 },
+        board: { config: { boardType: 'Street', wheels: 'Urethane' } },
       }),
       ...Array.from({ length: 3 }, (_, index) => buildCard({
         id: `counter-extra-${index + 1}`,
