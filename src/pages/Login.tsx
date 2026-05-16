@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth, RecaptchaVerifier } from "../context/AuthContext";
 import { auth, firebaseUnavailableMessage } from "../lib/firebase";
@@ -49,6 +49,8 @@ export function Login() {
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
   const recaptchaVerifierRef = useRef<InstanceType<typeof RecaptchaVerifier> | null>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const authModes: Array<"signin" | "signup" | "phone"> = ["signin", "signup", "phone"];
 
   // Cleanup recaptcha on unmount
   useEffect(() => {
@@ -71,6 +73,38 @@ export function Login() {
     setSmsCode("");
     setPhone("");
     clearRecaptcha();
+  };
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const moveFocus = (nextIndex: number) => {
+      const resolvedIndex = (nextIndex + authModes.length) % authModes.length;
+      const nextMode = authModes[resolvedIndex];
+      switchMode(nextMode);
+      tabRefs.current[resolvedIndex]?.focus();
+    };
+
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault();
+        moveFocus(index + 1);
+        return;
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault();
+        moveFocus(index - 1);
+        return;
+      case "Home":
+        event.preventDefault();
+        moveFocus(0);
+        return;
+      case "End":
+        event.preventDefault();
+        moveFocus(authModes.length - 1);
+        return;
+      default:
+        return;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,31 +227,52 @@ export function Login() {
 
         <div className="login-tabs" role="tablist" aria-label="Sign-in method">
           <button
+            id="login-tab-signin"
+            ref={(node) => { tabRefs.current[0] = node; }}
             role="tab"
+            tabIndex={mode === "signin" ? 0 : -1}
             aria-selected={mode === "signin"}
+            aria-controls="login-panel-signin"
             className={`login-tab login-tab--signin ${mode === "signin" ? "login-tab--active" : ""}`}
             onClick={() => switchMode("signin")}
+            onKeyDown={(event) => handleTabKeyDown(event, 0)}
           >
             🔑 Sign In
           </button>
           <button
+            id="login-tab-signup"
+            ref={(node) => { tabRefs.current[1] = node; }}
             role="tab"
+            tabIndex={mode === "signup" ? 0 : -1}
             aria-selected={mode === "signup"}
+            aria-controls="login-panel-signup"
             className={`login-tab ${mode === "signup" ? "login-tab--active" : ""}`}
             onClick={() => switchMode("signup")}
+            onKeyDown={(event) => handleTabKeyDown(event, 1)}
           >
             ✨ Create Account
           </button>
           <button
+            id="login-tab-phone"
+            ref={(node) => { tabRefs.current[2] = node; }}
             role="tab"
+            tabIndex={mode === "phone" ? 0 : -1}
             aria-selected={mode === "phone"}
+            aria-controls="login-panel-phone"
             className={`login-tab ${mode === "phone" ? "login-tab--active" : ""}`}
             onClick={() => switchMode("phone")}
+            onKeyDown={(event) => handleTabKeyDown(event, 2)}
           >
             📱 Phone
           </button>
         </div>
 
+        <div
+          id={`login-panel-${mode}`}
+          role="tabpanel"
+          aria-labelledby={`login-tab-${mode}`}
+          className="login-tabpanel"
+        >
         {/* ── Forgot password view ── */}
         {forgotMode ? (
           <form className="login-form" onSubmit={handleForgotPassword}>
@@ -419,6 +474,7 @@ export function Login() {
             Continue as guest (forge preview only) →
           </button>
         </p>
+        </div>
       </div>
     </div>
   );

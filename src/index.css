@@ -366,6 +366,49 @@ body::after {
   flex: 1;
   overflow-y: auto;
 }
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 10000;
+  padding: 8px 12px;
+  border: 2px solid var(--accent2);
+  border-radius: 8px;
+  background: rgba(5, 5, 14, 0.96);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 1px;
+  transform: translateY(-150%);
+  transition: transform 0.2s ease;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+.app-status-eyebrow {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.app-status-banner {
+  border-color: rgba(0, 204, 255, 0.28);
+  background: rgba(0, 204, 255, 0.08);
+  color: #cceeff;
+}
+.app-error-state {
+  display: grid;
+  gap: 10px;
+  padding-top: 40px;
+  text-align: left;
+}
+.app-error-state__copy { color: var(--text-dim); }
+.app-error-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .page {
   width: 100%;
   max-width: min(1200px, 95vw);
@@ -766,6 +809,25 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 12px;
+}
+.forge-whats-new {
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 204, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(8, 18, 30, 0.72);
+}
+.forge-whats-new__eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent2);
+}
+.forge-whats-new__copy {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 12px;
 }
 
 /* ── Battle Pass panel ─────────────────────────────────────────────────────── */
@@ -1857,11 +1919,26 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   gap: 8px;
   flex-wrap: wrap;
 }
+.collection-pagination {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.collection-pagination__meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 92px;
+  text-align: center;
+}
 @media (max-width: 600px) {
   .collection-search-row { flex-direction: column; }
   .collection-search-input,
   .collection-sort-select { width: 100%; min-width: 0; }
   .collection-filter-select { width: 100%; min-width: 0; }
+  .collection-pagination { justify-content: space-between; }
+  .collection-pagination__meta { min-width: auto; }
   .collection-bulk-actions { width: 100%; }
   .collection-bulk-actions > * { flex: 1 1 160px; }
 }
@@ -1898,6 +1975,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     3px 3px 0 rgba(0,255,136,0.3),
     0 0 14px rgba(0,255,136,0.2),
     0 0 28px rgba(0,204,255,0.1);
+}
+.card-thumb:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 2px;
+  border-color: var(--accent2);
 }
 .card-thumb--active { border-color: var(--accent2); box-shadow: 3px 3px 0 rgba(0,204,255,0.3); }
 .card-thumb--active.card-thumb--selected { box-shadow: 3px 3px 0 rgba(0,204,255,0.3), 0 0 0 1px rgba(0,255,136,0.25); }
@@ -2595,7 +2677,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .nav-mobile-menu {
   display: none;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   padding: 8px 16px 12px;
@@ -2603,8 +2685,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .nav-mobile-menu .nav-link {
   display: block;
-  padding: 10px 12px;
+  padding: 11px 12px;
   border-radius: 4px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
 }
 .nav-mobile-menu-footer {
   display: flex;
@@ -2643,7 +2727,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     letter-spacing: 2px;
   }
   .nav-game-badge {
-    font-size: 12px;
+    font-size: 11px;
     max-width: 100%;
     text-align: center;
   }
@@ -2666,6 +2750,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .nav-mobile-menu .nav-link {
     min-height: 44px;
     font-size: 13px;
+  }
+  body::before,
+  body::after {
+    display: none;
+  }
+  .nav::after,
+  .site-footer::before {
+    animation: none !important;
+    opacity: 0.5;
+  }
+  .nav-links .nav-link,
+  .forge-form .pill-group .pill,
+  .forge-generated-buttons .btn-outline,
+  .forge-generated-buttons .btn-primary,
+  .btn-forge {
+    animation: none !important;
   }
 }
 
@@ -2922,10 +3022,30 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 40vh;
-  color: var(--text-dim);
+  gap: 12px;
+  min-height: 34vh;
+  color: var(--text);
   font-size: 14px;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin: 20px auto;
+  max-width: min(560px, 95vw);
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(7, 12, 18, 0.98), rgba(26, 11, 34, 0.94));
+}
+.page-loading__glyph {
+  font-size: 24px;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(0,255,136,0.55);
+}
+.page-loading__copy {
+  display: grid;
+  gap: 4px;
+}
+.page-loading__copy > span {
+  color: var(--text-dim);
+  font-size: 12px;
 }
 .card-art-skeleton {
   position: relative;
@@ -3496,6 +3616,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transition: all 0.15s;
 }
 .login-tab--active { background: var(--bg2); color: var(--accent); }
+.login-tab:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: -2px;
+}
+.login-tabpanel { width: 100%; }
 
 .login-form { width: 100%; display: flex; flex-direction: column; gap: 0; }
 .login-error {
@@ -4379,6 +4504,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transition: color 0.15s;
 }
 .site-footer__link:hover { color: var(--accent); }
+@media (max-width: 700px) {
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .site-footer__nav {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+  .site-footer__link {
+    padding: 4px 0;
+  }
+}
 
 /* ===== Credits Page / Legal Pages ===== */
 .credits-page { max-width: 800px; }

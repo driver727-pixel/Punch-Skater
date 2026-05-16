@@ -12,13 +12,13 @@ const RARITY_TIERS = [
 ] as const;
 
 const GAME_LOOP_STEPS = [
-  { icon: "⚡", label: "Forge", desc: "Configure your skater and reveal a random class card — every pull is a blind drop." },
-  { icon: "👥", label: "Build a 6-Card Crew", desc: "Assemble exactly 6 cards into an active Crew. Crew Power and Ozzies determine your rank." },
-  { icon: "🗺️", label: "Run Missions", desc: "Daily Rituals earn XP, Ozzies, and loot. Mission outcomes can boost or strain your cards." },
-  { icon: "🏆", label: "Win Jousts", desc: "Face rival skaters in card-based joust encounters. Choose your tactic, leverage crew stats, and take the win." },
-  { icon: "💰", label: "Earn Rewards", desc: "Collect XP, Ozzies, card packs, lore unlocks, and rare cards. Reaching Deck Power thresholds unlocks higher rarity forges." },
-  { icon: "🤝", label: "Trade Cards", desc: "Swap cards with other players to fill crew gaps, chase rare pulls, or build the perfect faction lineup." },
-  { icon: "📊", label: "Climb the Leaderboard", desc: "Post your best 6-card Crew and compete for the top rank on the neon underground leaderboard." },
+  { icon: "⚡", label: "Forge", desc: "Roll a fresh skater card from a blind drop." },
+  { icon: "👥", label: "Build a Crew", desc: "Pick your best 6 cards into one active crew." },
+  { icon: "🗺️", label: "Run Missions", desc: "Earn XP, Ozzies, and rewards through district contracts." },
+  { icon: "🏆", label: "Win Jousts", desc: "Counter rival tactics and convert your stat edge into wins." },
+  { icon: "💰", label: "Claim Rewards", desc: "Unlock cosmetics, lore, and progression milestones." },
+  { icon: "🤝", label: "Trade", desc: "Swap cards to patch weak roles and chase faction goals." },
+  { icon: "📊", label: "Climb Rankings", desc: "Submit your crew and push for a top seasonal spot." },
 ] as const;
 
 export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
@@ -44,10 +44,11 @@ export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
         <div className="forge-welcome__eyebrow">Start Here</div>
         <h2 id="forge-welcome-title" className="forge-welcome__title">Welcome to Punch Skater, Rookie.</h2>
         <p className="forge-welcome__tagline">
-          Create your skater. Build your crew. Win the joust. Rule the neon streets.
+          Forge fast. Build smart. Climb rankings.
         </p>
         <p className="forge-welcome__lede">
-          Punch Skater is a collectible card game built around creation, crews, missions, jousting, trading, and underground glory. Every card you forge is a cyberpunk electric-skate warrior. Your goal: forge a legendary 6-card crew, dominate joust encounters, and climb to the top of the neon leaderboard.
+          Your progression loop is simple: forge cards, lock a 6-card crew, run contracts, win jousts, and reinvest rewards.
+          Legendary status is earned through play, not purchases.
         </p>
 
         <h3 className="forge-welcome__loop-title">The Game Loop</h3>

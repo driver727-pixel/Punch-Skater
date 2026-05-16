@@ -63,6 +63,8 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           src={backgroundImageUrl}
           alt="background"
           className={backgroundLayerClassName}
+          loading="lazy"
+          decoding="async"
         />
       )}
       {showExactBoardLayer && card.board.imageUrl && !boardImageFailed && (
@@ -71,6 +73,8 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           alt="exact generated skateboard"
           className="card-art-layer card-art-layer--board-exact"
           style={boardPlacementStyle}
+          loading="lazy"
+          decoding="async"
           onError={() => setBoardImageFailed(true)}
         />
       )}
@@ -80,6 +84,8 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           alt="character"
           className="card-art-layer card-art-layer--character"
           style={characterPlacementStyle}
+          loading="lazy"
+          decoding="async"
         />
       )}
       {frameImageUrl && !showSvgFrame && (
@@ -88,6 +94,8 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           alt="frame"
           className={frameLayerClassName}
           style={frameLayerStyle}
+          loading="lazy"
+          decoding="async"
         />
       )}
       {showSvgFrame && (

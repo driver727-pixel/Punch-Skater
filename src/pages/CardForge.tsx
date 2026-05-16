@@ -93,6 +93,12 @@ export function CardForge() {
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <h1 className="page-title">CARD FORGE</h1>
       <p className="page-sub">Forge your skater — then build a 6-card crew, run missions, win jousts, and climb the neon leaderboard</p>
+      <section className="forge-whats-new" aria-label="Build updates">
+        <p className="forge-whats-new__eyebrow">What’s New</p>
+        <p className="forge-whats-new__copy">
+          Build {__BUILD_NUMBER__}: smoother collection navigation, improved keyboard access, and refreshed loading UX.
+        </p>
+      </section>
 
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
 
