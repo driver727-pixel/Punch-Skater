@@ -111,14 +111,37 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "2rem", textAlign: "center", color: "#ff4466" }}>
-          <h2>Something went wrong.</h2>
-          <p>Please refresh the page and try again.</p>
+        <div className="page app-error-state" role="alert">
+          <p className="app-status-eyebrow">System Alert</p>
+          <h2 className="page-title">Runtime Fault</h2>
+          <p className="page-sub">Something glitched while rendering this view.</p>
+          <p className="app-error-state__copy">You can retry, return to the forge, or reload the page.</p>
+          <div className="app-error-state__actions">
+            <button type="button" className="btn-primary btn-sm" onClick={() => this.setState({ hasError: false })}>
+              Retry View
+            </button>
+            <a href="/" className="btn-outline btn-sm">Go to Card Forge</a>
+            <button type="button" className="btn-outline btn-sm" onClick={() => window.location.reload()}>
+              Reload App
+            </button>
+          </div>
         </div>
       );
     }
     return this.props.children;
   }
+}
+
+function AppLoadingState() {
+  return (
+    <div className="page-loading" role="status" aria-live="polite">
+      <span className="page-loading__glyph" aria-hidden="true">⚡</span>
+      <div className="page-loading__copy">
+        <strong>Booting district feed…</strong>
+        <span>Syncing your latest neon run.</span>
+      </div>
+    </div>
+  );
 }
 
 function ScrollToTopOnRouteChange() {
@@ -146,14 +169,15 @@ function App() {
           <LanguageProvider>
             <ErrorBoundary>
               <div className="app">
+                <a className="skip-link" href="#main-content">Skip to main content</a>
                 <ScrollToTopOnRouteChange />
                 <Nav />
                 {!isFirebaseConfigured && (
                   <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                 )}
                 <PlayerRewardBanner />
-                <main className="main">
-                  <Suspense fallback={<div className="page-loading">Loading…</div>}>
+                <main id="main-content" className="main" tabIndex={-1}>
+                  <Suspense fallback={<AppLoadingState />}>
                     <Routes>
                       <Route path="/" element={<CardForge />} />
                       <Route path="/login" element={<Login />} />

@@ -28,6 +28,7 @@ import {
 import { claimCollectionReward, fetchCollectionRewards } from "../services/collectionRewards";
 
 type SortOption = "name-asc" | "name-desc" | "newest" | "oldest" | "rarity";
+const COLLECTION_PAGE_SIZE = 24;
 
 const RARITY_ORDER: Record<Rarity, number> = {
   "Legendary": 0,
@@ -89,6 +90,7 @@ export function Collection() {
   const [rewardClaimingId, setRewardClaimingId] = useState<string | null>(null);
   const [rewardMessage, setRewardMessage] = useState("");
   const [rewardError, setRewardError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const existingIds = useMemo(() => new Set(cards.map((c) => c.id)), [cards]);
 
@@ -237,12 +239,19 @@ export function Collection() {
     () => cards.filter((card) => selectedIds.has(card.id)),
     [cards, selectedIds],
   );
+  const pageSize = COLLECTION_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(filteredCards.length / pageSize));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const pagedCards = useMemo(() => {
+    const start = (currentPageSafe - 1) * pageSize;
+    return filteredCards.slice(start, start + pageSize);
+  }, [filteredCards, currentPageSafe, pageSize]);
   const visibleSelectedCount = useMemo(
-    () => filteredCards.reduce((count, card) => count + (selectedIds.has(card.id) ? 1 : 0), 0),
-    [filteredCards, selectedIds],
+    () => pagedCards.reduce((count, card) => count + (selectedIds.has(card.id) ? 1 : 0), 0),
+    [pagedCards, selectedIds],
   );
   const hasSelection = selectedIds.size > 0;
-  const allFilteredSelected = filteredCards.length > 0 && visibleSelectedCount === filteredCards.length;
+  const allPagedSelected = pagedCards.length > 0 && visibleSelectedCount === pagedCards.length;
   const rewardMilestones = useMemo(() => {
     const milestones = rewardEvaluation.milestones;
     switch (rewardFilter) {
@@ -264,6 +273,14 @@ export function Collection() {
     }
   }, [rewardEvaluation.milestones, rewardFilter]);
   const claimableRewardCount = rewardEvaluation.milestones.filter((entry) => entry.eligible && !entry.claimed).length;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterRarity, filterArchetype, filterFaction, filterDistrict, sortBy]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   const handleClaimReward = async (milestoneId: string) => {
     if (!user) return;
@@ -305,10 +322,10 @@ export function Collection() {
   const toggleSelectAllFiltered = () => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (allFilteredSelected) {
-        filteredCards.forEach((card) => next.delete(card.id));
+      if (allPagedSelected) {
+        pagedCards.forEach((card) => next.delete(card.id));
       } else {
-        filteredCards.forEach((card) => next.add(card.id));
+        pagedCards.forEach((card) => next.add(card.id));
       }
       return next;
     });
@@ -389,6 +406,7 @@ export function Collection() {
             <div className="empty-state">
               <span className="empty-icon">🔒</span>
               <p>Account saving requires a paid tier.</p>
+              <button className="btn-outline" onClick={() => navigate("/")}>Back to Card Forge</button>
               <button className="btn-primary" onClick={openUpgradeModal}>Upgrade to Save Cards</button>
             </div>
           </>
@@ -446,6 +464,7 @@ export function Collection() {
         <div className="empty-state">
           <span className="empty-icon">📦</span>
           <p>No cards yet. Head to the Card Forge to create your first courier.</p>
+          <button className="btn-primary btn-sm" onClick={() => navigate("/")}>Open Card Forge</button>
         </div>
       ) : (
         <>
@@ -490,7 +509,7 @@ export function Collection() {
 
             {rewardMessage && <div className="collection-rewards-message collection-rewards-message--ok">{rewardMessage}</div>}
             {rewardError && <div className="collection-rewards-message collection-rewards-message--error">{rewardError}</div>}
-            {rewardLoading && <div className="collection-rewards-message">Syncing reward claims…</div>}
+            {rewardLoading && <div className="collection-rewards-message app-status-banner">Syncing reward claims…</div>}
 
             <div className="collection-rewards-list">
               {rewardMilestones.slice(0, 12).map((entry) => (
@@ -620,19 +639,43 @@ export function Collection() {
               </p>
             )}
 
+            <div className="collection-pagination" role="navigation" aria-label="Collection pages">
+              <button
+                className="btn-outline btn-sm"
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPageSafe <= 1}
+              >
+                Prev
+              </button>
+              <span className="collection-pagination__meta">
+                Page {currentPageSafe} of {totalPages}
+              </span>
+              <button
+                className="btn-outline btn-sm"
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPageSafe >= totalPages}
+              >
+                Next
+              </button>
+            </div>
+
             <div className="collection-bulk-bar">
               <span className="collection-bulk-count">
                 {hasSelection
                   ? `${selectedIds.size} selected`
-                  : `${filteredCards.length} visible`}
+                  : totalPages === 1
+                    ? `${pagedCards.length} visible`
+                    : `${pagedCards.length} on this page`}
               </span>
               <div className="collection-bulk-actions">
                 <button
                   className="btn-outline btn-sm"
                   onClick={toggleSelectAllFiltered}
-                  disabled={filteredCards.length === 0}
+                  disabled={pagedCards.length === 0}
                 >
-                  {allFilteredSelected ? "Clear Visible" : "Select All"}
+                  {allPagedSelected ? "Clear Page" : "Select All on Page"}
                 </button>
                 <button
                   className="btn-outline btn-sm"
@@ -685,18 +728,28 @@ export function Collection() {
           )}
           <div className="collection-layout">
           <div className="card-grid">
-            {filteredCards.map((card) => {
+            {pagedCards.map((card) => {
               const isCardSelected = selectedIds.has(card.id);
               return (
                 <div
                   key={card.id}
                   className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""} ${isCardSelected ? "card-thumb--selected" : ""}`}
-                 onClick={() => {
-                   const next = selected?.id === card.id ? null : card;
-                   if (next) sfxClick();
-                   setSelected(next);
-                 }}
-               >
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open ${card.identity.name}`}
+                  onClick={() => {
+                    const next = selected?.id === card.id ? null : card;
+                    if (next) sfxClick();
+                    setSelected(next);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    const next = selected?.id === card.id ? null : card;
+                    if (next) sfxClick();
+                    setSelected(next);
+                  }}
+                >
                  <button
                    type="button"
                    className={`card-thumb-select ${isCardSelected ? "card-thumb-select--active" : ""}`}

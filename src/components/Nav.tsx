@@ -76,16 +76,17 @@ export function Nav() {
     navigate("/");
   };
 
-  const renderNavLinks = (onClick?: () => void) => {
+  const renderNavLinks = (onClick?: () => void, options?: { mobile?: boolean }) => {
+    const isMobile = options?.mobile === true;
     const handleNav = () => { sfxNavigate(); onClick?.(); };
     return (
     <>
       <NavLink to="/" end className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-        Card Forge
+        Forge
       </NavLink>
       {user && (
         <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Race
+          Arena
         </NavLink>
       )}
       {isEnabled("MISSIONS", user) && (
@@ -98,7 +99,7 @@ export function Nav() {
       </NavLink>
       {user && (
         <NavLink to="/leaderboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Leaderboard
+          Rankings
         </NavLink>
       )}
       <NavLink to="/collection" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
@@ -109,9 +110,11 @@ export function Nav() {
           <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
             ⚙ Admin
           </NavLink>
-          <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
-            🎨 Image Assets
-          </NavLink>
+          {!isMobile && (
+            <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
+              🎨 Image Assets
+            </NavLink>
+          )}
         </>
       )}
     </>
@@ -221,7 +224,7 @@ export function Nav() {
 
         {navOpen && (
           <div className="nav-mobile-menu">
-            {renderNavLinks(() => setNavOpen(false))}
+            {renderNavLinks(() => setNavOpen(false), { mobile: true })}
             <div className="nav-mobile-menu-footer">
               <button
                 className={`ambience-btn${ambienceEnabled ? " ambience-btn--on" : ""}`}
