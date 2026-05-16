@@ -239,18 +239,19 @@ export function Collection() {
     () => cards.filter((card) => selectedIds.has(card.id)),
     [cards, selectedIds],
   );
-  const totalPages = Math.max(1, Math.ceil(filteredCards.length / COLLECTION_PAGE_SIZE));
+  const pageSize = COLLECTION_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(filteredCards.length / pageSize));
   const currentPageSafe = Math.min(currentPage, totalPages);
   const pagedCards = useMemo(() => {
-    const start = (currentPageSafe - 1) * COLLECTION_PAGE_SIZE;
-    return filteredCards.slice(start, start + COLLECTION_PAGE_SIZE);
-  }, [filteredCards, currentPageSafe]);
+    const start = (currentPageSafe - 1) * pageSize;
+    return filteredCards.slice(start, start + pageSize);
+  }, [filteredCards, currentPageSafe, pageSize]);
   const visibleSelectedCount = useMemo(
     () => pagedCards.reduce((count, card) => count + (selectedIds.has(card.id) ? 1 : 0), 0),
     [pagedCards, selectedIds],
   );
   const hasSelection = selectedIds.size > 0;
-  const allFilteredSelected = pagedCards.length > 0 && visibleSelectedCount === pagedCards.length;
+  const allPagedSelected = pagedCards.length > 0 && visibleSelectedCount === pagedCards.length;
   const rewardMilestones = useMemo(() => {
     const milestones = rewardEvaluation.milestones;
     switch (rewardFilter) {
@@ -321,7 +322,7 @@ export function Collection() {
   const toggleSelectAllFiltered = () => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (allFilteredSelected) {
+      if (allPagedSelected) {
         pagedCards.forEach((card) => next.delete(card.id));
       } else {
         pagedCards.forEach((card) => next.add(card.id));
@@ -664,7 +665,9 @@ export function Collection() {
               <span className="collection-bulk-count">
                 {hasSelection
                   ? `${selectedIds.size} selected`
-                  : `${pagedCards.length} visible on page`}
+                  : totalPages === 1
+                    ? `${pagedCards.length} visible`
+                    : `${pagedCards.length} on this page`}
               </span>
               <div className="collection-bulk-actions">
                 <button
@@ -672,7 +675,7 @@ export function Collection() {
                   onClick={toggleSelectAllFiltered}
                   disabled={pagedCards.length === 0}
                 >
-                  {allFilteredSelected ? "Clear Visible" : "Select All"}
+                  {allPagedSelected ? "Clear Page" : "Select All on Page"}
                 </button>
                 <button
                   className="btn-outline btn-sm"
@@ -734,8 +737,7 @@ export function Collection() {
                   role="button"
                   tabIndex={0}
                   aria-label={`Open ${card.identity.name}`}
-                  aria-pressed={selected?.id === card.id}
-                 onClick={() => {
+                  onClick={() => {
                     const next = selected?.id === card.id ? null : card;
                     if (next) sfxClick();
                     setSelected(next);

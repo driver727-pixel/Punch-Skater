@@ -35,6 +35,8 @@
 html, body { height: 100%; }
 
 body {
+  --crt-overlay-opacity: 1;
+  --crt-track-animation: vhs-track 8s linear infinite;
   background-color: var(--bg);
   /* 90s comic: halftone dot overlay + horizontal scan lines + faint pixel grid */
   background-image:
@@ -65,6 +67,7 @@ body::before {
       transparent 3px
     );
   mix-blend-mode: multiply;
+  opacity: var(--crt-overlay-opacity);
 }
 
 /* VHS tracking line — a faint horizontal bar that scrolls down the viewport */
@@ -84,7 +87,8 @@ body::after {
     rgba(0, 204, 255, 0.06) 70%,
     transparent
   );
-  animation: vhs-track 8s linear infinite;
+  opacity: var(--crt-overlay-opacity);
+  animation: var(--crt-track-animation);
 }
 
 #root { display: flex; flex-direction: column; min-height: 100vh; }
@@ -2677,7 +2681,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .nav-mobile-menu {
   display: none;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   padding: 8px 16px 12px;
@@ -2751,9 +2755,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     min-height: 44px;
     font-size: 13px;
   }
-  body::before,
-  body::after {
-    display: none;
+  body {
+    --crt-overlay-opacity: 0;
+    --crt-track-animation: none;
   }
   .nav::after,
   .site-footer::before {
