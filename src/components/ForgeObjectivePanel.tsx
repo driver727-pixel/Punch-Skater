@@ -136,20 +136,6 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
     hasChallenger: Boolean(primaryDeck?.challengerCardId),
     missionXp,
   });
-  const quickLinks = user
-    ? [
-        { id: "collection", label: "Collection", to: "/collection" },
-        { id: "crews", label: "My Crews", to: "/collection?tab=decks" },
-        { id: "missions", label: "Missions", to: "/missions" },
-        { id: "race-arena", label: "Race Arena", to: "/arena" },
-        { id: "trades", label: "Trades + leaderboard", to: "/trades" },
-        { id: "workshop", label: "Workshop", to: "/workshop" },
-      ]
-    : [
-        { id: "create-account", label: "Create account", to: "/login" },
-        { id: "sign-in", label: "Sign in", to: "/login" },
-      ];
-
   return (
     <section className="forge-objective-panel" aria-label="Current objective and progression">
       <div className="forge-objective-card forge-objective-card--primary">
@@ -233,24 +219,6 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
         </div>
       </div>
 
-      <div className="forge-objective-card">
-        <span className="forge-objective-eyebrow">Quick routes</span>
-          <div className="forge-objective-links">
-            {quickLinks.map((link) => (
-            <Link key={link.id} className="forge-objective-link" to={link.to}>
-              {link.label}
-            </Link>
-          ))}
-          <button type="button" className="forge-objective-link forge-objective-link--button" onClick={onOpenStartHere}>
-            Re-open Start Here
-          </button>
-        </div>
-        <p className="forge-objective-status">
-          {user
-            ? "Collection, Missions, Race Arena, Trades, leaderboard submission, and Workshop are all readily accessible."
-            : "Create an account when you want cloud saves, crews, Missions, Race Arena, Trades, leaderboard access, and Workshop."}
-        </p>
-      </div>
     </section>
   );
 }
