@@ -43,6 +43,7 @@ export function registerAdminRoutes(app, {
   app.use('/api/admin/delete-user', adminUserRateLimit);
   // Rate-limit all player management routes under /api/admin/player/
   app.use('/api/admin/player/', adminUserRateLimit);
+  app.use('/api/admin/combination-stats', adminUserRateLimit);
 
   app.post('/api/auth/sync-session', async (req, res) => {
     if (!adminAuth) {
@@ -399,7 +400,7 @@ export function registerAdminRoutes(app, {
   // Returns the count of unique board configs and character combos created,
   // split between the admin collection and all non-admin user collections.
 
-  app.get('/api/admin/combination-stats', adminUserRateLimit, async (req, res) => {
+  app.get('/api/admin/combination-stats', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
       return;
@@ -431,6 +432,8 @@ export function registerAdminRoutes(app, {
         const data = docSnap.data();
 
         // Board configuration key (boardType|drivetrain|driveOrientation|motor|wheels|battery).
+        // driveOrientation is optional on legacy cards that pre-date the field; it defaults
+        // to 'Rear-Wheel Drive' so those cards still map to a deterministic combo key.
         const config = data?.board?.config;
         if (config?.boardType && config?.drivetrain && config?.motor && config?.wheels && config?.battery) {
           const boardKey = [

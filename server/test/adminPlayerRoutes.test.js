@@ -74,8 +74,10 @@ function makeCollectionRef(path, store) {
         if (predicate) docs = docs.filter(({ data }) => predicate(data()));
         return { docs };
       },
-      where(field, op, value) {
-        // Only '==' is needed by the combination-stats endpoint.
+      // Only the '==' operator is used in production code; other operators are not
+      // implemented here. The `op` parameter is accepted to match the Firestore API
+      // signature but is intentionally unused in this test stub.
+      where(field, _op, value) {
         return makeQuery((d) => (predicate ? predicate(d) : true) && d[field] === value);
       },
     };
@@ -84,7 +86,7 @@ function makeCollectionRef(path, store) {
   return {
     path,
     ...makeQuery(),
-    where(field, op, value) {
+    where(field, _op, value) {
       return makeQuery((d) => d[field] === value);
     },
     doc(id) {
@@ -99,7 +101,10 @@ function makeCollectionGroupRef(name, store) {
       const docs = Object.entries(store)
         .filter(([k]) => {
           const parts = k.split('/');
-          // Collection name appears at an even index (0, 2, 4, …) that is not the last segment.
+          // In Firestore paths, collection names sit at even indices (0, 2, 4, …)
+          // and document IDs at odd indices (1, 3, 5, …).
+          // e.g. users/uid/cards/cardId → 'users'[0], uid[1], 'cards'[2], cardId[3]
+          // We match any even-indexed segment that equals `name` and is not the last part.
           return parts.some((part, i) => part === name && i % 2 === 0 && i < parts.length - 1);
         })
         .map(([k, v]) => ({ id: k.split('/').pop(), ref: { path: k }, data: () => v }));
