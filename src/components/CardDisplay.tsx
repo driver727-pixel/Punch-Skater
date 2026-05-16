@@ -385,8 +385,12 @@ function CardDisplayComponent({
   const openMetadataEditor = () => {
     if (!onUpdate) return;
     setEditingName(true);
-    setEditingAge(false);
-    setEditingBio(false);
+    setEditingAge(true);
+    setEditingBio(true);
+    window.requestAnimationFrame(() => {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    });
   };
   // ─────────────────────────────────────────────────────────────────────────
 

@@ -8303,6 +8303,51 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-bottom: 4px;
 }
 
+/* ── Edit-card page: section headers ───────────────────────────────────────── */
+.edit-form-section-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.85;
+  margin: 18px 0 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(0, 255, 136, 0.18);
+}
+.edit-form-section-header:first-child { margin-top: 0; }
+
+/* ── Edit-card page: sticky save/action bar ─────────────────────────────────── */
+.edit-card-action-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  margin: 16px -16px -16px;
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.edit-card-status-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 0;
+  opacity: 0.75;
+}
+.edit-card-status-hint--dirty {
+  color: var(--accent2);
+  opacity: 0.9;
+}
+
+/* ── Edit-card page: inline text-edit hint above card ─────────────────────── */
+.edit-card-text-hint {
+  text-align: center;
+  margin-bottom: 10px !important;
+}
+
 /* Pencil hint shown on editable fields */
 .card-edit-hint {
   font-size: 5px;

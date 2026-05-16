@@ -15,6 +15,8 @@ import { sfxClick } from "../lib/sfx";
 import { useLanguage } from "../context/LanguageContext";
 import { buildCraftlinguaFlavorFields } from "../services/craftlingua";
 
+const AUTO_PREVIEW_DELAY_MS = 350;
+
 const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
@@ -76,6 +78,24 @@ function normalizeFaceCharacter(faceCharacter?: string): FaceCharacter {
   return LEGACY_FACE_CHARACTER_MAP[faceCharacter ?? ""] ?? "Conventional";
 }
 
+// Builds the canonical CardPrompts object from a saved card, normalising any
+// legacy field values to the current enum sets.
+function buildPromptsFromCard(card: CardPayload): CardPrompts {
+  return {
+    archetype: card.prompts.archetype,
+    rarity: card.prompts.rarity as Rarity,
+    style: resolveArchetypeStyle(card.prompts.archetype, card.prompts.style),
+    district: card.prompts.district as District,
+    accentColor: card.prompts.accentColor,
+    gender: (card.prompts.gender as Gender) ?? "Non-binary",
+    ageGroup: normalizeAgeGroup(card.prompts.ageGroup),
+    bodyType: normalizeBodyType(card.prompts.bodyType),
+    hairLength: normalizeHairLength(card.prompts.hairLength),
+    skinTone: normalizeSkinTone(card.prompts.skinTone),
+    faceCharacter: normalizeFaceCharacter(card.prompts.faceCharacter),
+  };
+}
+
 export function EditCard() {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
@@ -91,44 +111,88 @@ export function EditCard() {
   const [boardConfig, setBoardConfig] = useState<BoardConfig>(DEFAULT_BOARD_CONFIG);
   const [preview, setPreview] = useState<CardPayload | null>(null);
   const [saved, setSaved] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isAutoUpdating, setIsAutoUpdating] = useState(false);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref pattern: allows the debounced auto-preview effect to access the latest
+  // preview without adding `preview` as a dependency (which would create an
+  // infinite loop, since the effect itself sets `preview`).
+  const latestPreviewRef = useRef<CardPayload | null>(null);
+  useEffect(() => { latestPreviewRef.current = preview; }, [preview]);
 
-  const refreshCraftlinguaFront = async (card: CardPayload) => {
-    const front = await buildCraftlinguaFlavorFields({
-      card,
-      linkedLanguage,
-      profile,
-      useCraftlingua,
-    });
-    setPreview((current) => (
-      current && current.id === card.id
-        ? { ...current, front }
-        : current
-    ));
-  };
-
-  // Initialise prompts from the original card once loaded
+  // Initialise prompts from the original card once loaded.
   useEffect(() => {
     if (original && !prompts) {
-      setPrompts({
-        archetype: original.prompts.archetype,
-        rarity: original.prompts.rarity as Rarity,
-        style: resolveArchetypeStyle(original.prompts.archetype, original.prompts.style),
-        district: original.prompts.district as District,
-        accentColor: original.prompts.accentColor,
-        gender: (original.prompts.gender as Gender) ?? "Non-binary",
-        ageGroup: normalizeAgeGroup(original.prompts.ageGroup),
-        bodyType: normalizeBodyType(original.prompts.bodyType),
-        hairLength: normalizeHairLength(original.prompts.hairLength),
-        skinTone: normalizeSkinTone(original.prompts.skinTone),
-        faceCharacter: normalizeFaceCharacter(original.prompts.faceCharacter),
-      });
+      setPrompts(buildPromptsFromCard(original));
       if (original.board) setBoardConfig(normalizeBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board }));
-      // Show the original card as starting preview
       setPreview(original);
     }
   }, [original, prompts]);
+
+  // Auto-preview: rebuild the card preview 350 ms after any prompt or board
+  // config change.  The generation is deterministic (seeded), so the same
+  // options always produce the same card.
+  useEffect(() => {
+    if (!prompts || !original) return;
+    setIsAutoUpdating(true);
+    const timer = setTimeout(async () => {
+      const currentPreview = latestPreviewRef.current;
+      const previewPrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
+      const normalizedBoard = normalizeBoardConfig(boardConfig);
+      const newCard = generateCard(previewPrompts);
+      const preservedName = currentPreview?.identity.name ?? original.identity.name;
+      const preservedAge = currentPreview?.identity.age ?? original.identity.age ?? "";
+      const preservedFlavorText =
+        currentPreview?.front?.flavorTextEnglish ??
+        currentPreview?.front?.flavorText ??
+        original.front?.flavorTextEnglish ??
+        original.front?.flavorText;
+      const merged: CardPayload = {
+        ...newCard,
+        id: original.id,
+        createdAt: original.createdAt,
+        identity: {
+          ...newCard.identity,
+          name: preservedName,
+          age: preservedAge,
+        },
+        backgroundImageUrl: original.backgroundImageUrl,
+        characterImageUrl: original.characterImageUrl,
+        frameImageUrl: original.frameImageUrl,
+        front: {
+          ...newCard.front,
+          ...(preservedFlavorText !== undefined
+            ? { flavorText: preservedFlavorText, flavorTextEnglish: preservedFlavorText }
+            : {}),
+        },
+        board: {
+          ...original.board,
+          ...newCard.board,
+          config: normalizedBoard,
+          loadout: calculateBoardStats(normalizedBoard),
+        },
+        characterPlacement: original.characterPlacement,
+      };
+      setPreview(merged);
+      setIsAutoUpdating(false);
+
+      // Refresh the Craftlingua conlang overlay if configured.
+      const front = await buildCraftlinguaFlavorFields({
+        card: merged,
+        linkedLanguage,
+        profile,
+        useCraftlingua,
+      });
+      setPreview((current) =>
+        current && current.id === merged.id ? { ...current, front } : current,
+      );
+    }, AUTO_PREVIEW_DELAY_MS);
+
+    return () => {
+      clearTimeout(timer);
+      setIsAutoUpdating(false);
+    };
+  }, [prompts, boardConfig, original, linkedLanguage, profile, useCraftlingua]);
 
   if (!original || !prompts) {
     return (
@@ -142,51 +206,23 @@ export function EditCard() {
 
   const set = <K extends keyof CardPrompts>(key: K, val: CardPrompts[K]) => {
     setPrompts((p) => p ? { ...p, [key]: val } : p);
+    setIsDirty(true);
     setSaved(false);
   };
+
   const setArchetype = (archetype: Archetype) => {
     setPrompts((current) => current ? {
       ...current,
       archetype,
       style: resolveArchetypeStyle(archetype, current.style),
     } : current);
+    setIsDirty(true);
     setSaved(false);
   };
 
-  const handlePreview = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const previewPrompts = { ...prompts, style: resolveArchetypeStyle(prompts.archetype, prompts.style) };
-    const normalizedBoard = normalizeBoardConfig(boardConfig);
-    const newCard = generateCard(previewPrompts);
-    const preservedName = preview?.identity.name ?? original.identity.name;
-    const preservedAge = preview?.identity.age ?? original.identity.age ?? "";
-    const preservedFlavorText = preview?.front?.flavorTextEnglish ?? preview?.front?.flavorText ?? original.front?.flavorTextEnglish ?? original.front?.flavorText;
-    const merged: CardPayload = {
-      ...newCard,
-      id: original.id,
-      createdAt: original.createdAt,
-      identity: {
-        ...newCard.identity,
-        name: preservedName,
-        age: preservedAge,
-      },
-      backgroundImageUrl: original.backgroundImageUrl,
-      characterImageUrl: original.characterImageUrl,
-      frameImageUrl: original.frameImageUrl,
-      front: {
-        ...newCard.front,
-        ...(preservedFlavorText !== undefined ? { flavorText: preservedFlavorText, flavorTextEnglish: preservedFlavorText } : {}),
-      },
-      board: {
-        ...original.board,
-        ...newCard.board,
-        config: normalizedBoard,
-        loadout: calculateBoardStats(normalizedBoard),
-      },
-      characterPlacement: original.characterPlacement,
-    };
-    setPreview(merged);
-    void refreshCraftlinguaFront(merged);
+  const handleBoardConfigChange = (config: BoardConfig) => {
+    setBoardConfig(config);
+    setIsDirty(true);
     setSaved(false);
   };
 
@@ -202,7 +238,9 @@ export function EditCard() {
         },
         front: {
           ...current.front,
-          ...(updates.flavorText !== undefined ? { flavorText: updates.flavorText, flavorTextEnglish: updates.flavorText } : {}),
+          ...(updates.flavorText !== undefined
+            ? { flavorText: updates.flavorText, flavorTextEnglish: updates.flavorText }
+            : {}),
         },
       } satisfies CardPayload;
     });
@@ -217,8 +255,24 @@ export function EditCard() {
             },
           }
         : null;
-      if (next) void refreshCraftlinguaFront(next);
+      if (next) {
+        void buildCraftlinguaFlavorFields({ card: next, linkedLanguage, profile, useCraftlingua })
+          .then((front) =>
+            setPreview((current) =>
+              current && current.id === next.id ? { ...current, front } : current,
+            ),
+          );
+      }
     }
+    setIsDirty(true);
+    setSaved(false);
+  };
+
+  const handleReset = () => {
+    setPrompts(buildPromptsFromCard(original));
+    setBoardConfig(normalizeBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board }));
+    setPreview(original);
+    setIsDirty(false);
     setSaved(false);
   };
 
@@ -226,22 +280,32 @@ export function EditCard() {
     if (!preview) return;
     updateCard(preview);
     updateCardInDecks(preview);
+    setIsDirty(false);
     setSaved(true);
     setTimeout(() => navigate("/collection"), 800);
   };
+
+  const isSaveDisabled = saved || !isDirty || isAutoUpdating || !preview;
+  const saveButtonStyle = isDirty && !isAutoUpdating && !saved
+    ? { borderColor: "var(--accent2)", color: "var(--accent2)" }
+    : undefined;
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Edit Card</h1>
-          <p className="page-sub">Edit the card text here, or tweak the rest of the card before saving.</p>
+          <p className="page-sub">Tweak your courier — the preview updates automatically.</p>
         </div>
         <button className="btn-outline" onClick={() => { sfxClick(); navigate("/collection"); }}>← Back</button>
       </div>
 
       <div className="forge-layout">
         <div className="forge-form">
+
+          {/* ── IDENTITY ─────────────────────────────────────────────────── */}
+          <div className="edit-form-section-header">Identity</div>
+
           <div className="form-group">
             <label>Cover Identity</label>
             <div className="pill-group">
@@ -269,6 +333,9 @@ export function EditCard() {
               ))}
             </div>
           </div>
+
+          {/* ── APPEARANCE ───────────────────────────────────────────────── */}
+          <div className="edit-form-section-header">Appearance</div>
 
           <div className="form-group">
             <label>Gender</label>
@@ -324,18 +391,8 @@ export function EditCard() {
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Board Loadout</label>
-            <p className="form-hint" style={{ marginBottom: 12 }}>
-              Build your electric skateboard — your most important piece of gear.
-            </p>
-            <BoardBuilder
-              value={boardConfig}
-              onChange={setBoardConfig}
-              accentColor={prompts.accentColor}
-              onSave={(config) => { setBoardConfig(config); }}
-            />
-          </div>
+          {/* ── STYLE ────────────────────────────────────────────────────── */}
+          <div className="edit-form-section-header">Style</div>
 
           <div className="form-group">
             <label>Accent Color</label>
@@ -353,28 +410,58 @@ export function EditCard() {
             </div>
           </div>
 
-          <button className="btn-primary btn-lg" onClick={() => { sfxClick(); handlePreview(); }}>
-            ⚡ Preview Changes
-          </button>
+          {/* ── BOARD ────────────────────────────────────────────────────── */}
+          <div className="edit-form-section-header">Board Loadout</div>
 
-          {preview && (
+          <div className="form-group">
+            <p className="form-hint" style={{ marginBottom: 12 }}>
+              Build your electric skateboard — your most important piece of gear.
+            </p>
+            <BoardBuilder
+              value={boardConfig}
+              onChange={handleBoardConfigChange}
+              accentColor={prompts.accentColor}
+              onSave={(config) => { handleBoardConfigChange(config); }}
+            />
+          </div>
+
+          {/* ── ACTIONS (sticky bottom bar) ──────────────────────────────── */}
+          <div className="edit-card-action-bar">
+            {isAutoUpdating && (
+              <p className="edit-card-status-hint">⏳ Updating preview…</p>
+            )}
+            {isDirty && !isAutoUpdating && !saved && (
+              <p className="edit-card-status-hint edit-card-status-hint--dirty">● Unsaved changes</p>
+            )}
             <button
               className="btn-primary btn-lg"
-              style={{ marginTop: "8px", borderColor: "var(--accent2)", color: "var(--accent2)" }}
               onClick={() => { sfxClick(); handleSaveEdit(); }}
-              disabled={saved}
+              disabled={isSaveDisabled}
+              style={saveButtonStyle}
             >
-              {saved ? "✓ Saved!" : "💾 Save Edit"}
+              {saved ? "✓ Saved!" : "💾 Save Changes"}
             </button>
-          )}
-          <button className="btn-outline" style={{ width: "100%", marginTop: "8px" }} onClick={() => { sfxClick(); openUpgradeModal(); }}>
-            Manage Tier
-          </button>
+            {isDirty && (
+              <button
+                className="btn-outline btn-sm"
+                style={{ width: "100%" }}
+                onClick={() => { sfxClick(); handleReset(); }}
+              >
+                ↩ Reset to Original
+              </button>
+            )}
+            <button className="btn-outline" style={{ width: "100%" }} onClick={() => { sfxClick(); openUpgradeModal(); }}>
+              Manage Tier
+            </button>
+          </div>
         </div>
 
         <div className="forge-preview">
           {preview ? (
             <>
+              <p className="form-hint edit-card-text-hint">
+                ✎ Click the courier's name, age, or bio directly to edit them.
+              </p>
               <CardDisplay
                 card={preview}
                 showShare={false}
@@ -385,7 +472,7 @@ export function EditCard() {
           ) : (
             <div className="empty-preview">
               <span className="empty-icon">✎</span>
-              <p>Change options and hit Preview Changes.</p>
+              <p>Loading card…</p>
             </div>
           )}
         </div>
