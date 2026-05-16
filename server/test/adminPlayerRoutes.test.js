@@ -65,16 +65,45 @@ function makeDocRef(path, store) {
 }
 
 function makeCollectionRef(path, store) {
+  function makeQuery(predicate = null) {
+    return {
+      async get() {
+        let docs = Object.entries(store)
+          .filter(([k]) => k.startsWith(path + '/') && k.split('/').length === path.split('/').length + 1)
+          .map(([k, v]) => ({ id: k.split('/').pop(), ref: { path: k }, data: () => v }));
+        if (predicate) docs = docs.filter(({ data }) => predicate(data()));
+        return { docs };
+      },
+      where(field, op, value) {
+        // Only '==' is needed by the combination-stats endpoint.
+        return makeQuery((d) => (predicate ? predicate(d) : true) && d[field] === value);
+      },
+    };
+  }
+
   return {
     path,
-    async get() {
-      const docs = Object.entries(store)
-        .filter(([k]) => k.startsWith(path + '/') && k.split('/').length === path.split('/').length + 1)
-        .map(([k, v]) => ({ id: k.split('/').pop(), data: () => v }));
-      return { docs };
+    ...makeQuery(),
+    where(field, op, value) {
+      return makeQuery((d) => d[field] === value);
     },
     doc(id) {
       return makeDocRef(`${path}/${id}`, store);
+    },
+  };
+}
+
+function makeCollectionGroupRef(name, store) {
+  return {
+    async get() {
+      const docs = Object.entries(store)
+        .filter(([k]) => {
+          const parts = k.split('/');
+          // Collection name appears at an even index (0, 2, 4, …) that is not the last segment.
+          return parts.some((part, i) => part === name && i % 2 === 0 && i < parts.length - 1);
+        })
+        .map(([k, v]) => ({ id: k.split('/').pop(), ref: { path: k }, data: () => v }));
+      return { docs };
     },
   };
 }
@@ -85,6 +114,9 @@ function makeAdminDb(initialData = {}) {
     store,
     collection(name) {
       return makeCollectionRef(name, store);
+    },
+    collectionGroup(name) {
+      return makeCollectionGroupRef(name, store);
     },
   };
 }
@@ -300,4 +332,141 @@ test('DELETE /api/admin/player/:uid/decks/:deckId removes the deck', async () =>
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.deckId, 'deck-del');
   assert.equal(adminDb.store['users/player-1/decks/deck-del'], undefined);
+});
+
+// ── GET /api/admin/combination-stats ─────────────────────────────────────────
+
+function makeCard(boardType, drivetrain, motor, wheels, battery, archetype, rarity, style, district, gender, ageGroup, bodyType) {
+  return {
+    board: {
+      config: { boardType, drivetrain, driveOrientation: 'Rear-Wheel Drive', motor, wheels, battery },
+    },
+    prompts: { archetype, rarity, style, district, gender, ageGroup, bodyType },
+  };
+}
+
+const SAMPLE_CARD = makeCard(
+  'Street', 'Belt', 'Standard', 'Urethane', 'SlimStealth',
+  'The Team', 'Apprentice', 'Street', 'Airaway', 'Man', 'Adult', 'Athletic',
+);
+
+test('GET /api/admin/combination-stats returns zero counts when no cards exist', async () => {
+  const { findRoute } = buildHarness();
+  const route = findRoute('GET', '/api/admin/combination-stats');
+  assert.ok(route, 'route should exist');
+
+  const res = await invokeRoute(route);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.admin.boardCombos, 0);
+  assert.equal(res.body.admin.charCombos, 0);
+  assert.equal(res.body.users.boardCombos, 0);
+  assert.equal(res.body.users.charCombos, 0);
+  assert.equal(res.body.combined.boardCombos, 0);
+  assert.equal(res.body.combined.charCombos, 0);
+});
+
+test('GET /api/admin/combination-stats counts admin cards separately from user cards', async () => {
+  const { findRoute } = buildHarness({
+    adminDbData: {
+      // Admin user profile
+      'userProfiles/admin-uid-1': { isAdmin: true },
+      // Admin card — Street/Belt config
+      'users/admin-uid-1/cards/card-a': SAMPLE_CARD,
+      // Player card — same board combo as admin
+      'users/player-1/cards/card-b': SAMPLE_CARD,
+      // Player card — different board combo
+      'users/player-2/cards/card-c': makeCard(
+        'AT', 'Gear', 'Torque', 'Pneumatic', 'DoubleStack',
+        'Ne0n Legion', 'Rare', 'Punk Rocker', 'The Grid', 'Woman', 'Young Adult', 'Slim',
+      ),
+    },
+  });
+
+  const route = findRoute('GET', '/api/admin/combination-stats');
+  const res = await invokeRoute(route);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.admin.boardCombos, 1, 'admin has 1 unique board combo');
+  assert.equal(res.body.admin.charCombos, 1, 'admin has 1 unique char combo');
+  assert.equal(res.body.users.boardCombos, 2, 'users have 2 unique board combos');
+  assert.equal(res.body.users.charCombos, 2, 'users have 2 unique char combos');
+  // Combined deduplicates: admin+player-1 share a board/char combo, player-2 adds a new one → 2 combined
+  assert.equal(res.body.combined.boardCombos, 2);
+  assert.equal(res.body.combined.charCombos, 2);
+});
+
+test('GET /api/admin/combination-stats deduplicates identical combos within one group', async () => {
+  const { findRoute } = buildHarness({
+    adminDbData: {
+      'users/player-1/cards/card-x': SAMPLE_CARD,
+      'users/player-1/cards/card-y': SAMPLE_CARD, // same card shape, different id
+    },
+  });
+
+  const route = findRoute('GET', '/api/admin/combination-stats');
+  const res = await invokeRoute(route);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.users.boardCombos, 1, 'duplicate cards count as one combo');
+  assert.equal(res.body.users.charCombos, 1);
+});
+
+test('GET /api/admin/combination-stats skips cards missing required fields', async () => {
+  const { findRoute } = buildHarness({
+    adminDbData: {
+      // Card with no board config — contributes a char combo but not a board combo.
+      'users/player-1/cards/card-no-board': { prompts: SAMPLE_CARD.prompts },
+      // Card with no prompts — contributes a board combo but not a char combo.
+      'users/player-1/cards/card-no-prompts': { board: SAMPLE_CARD.board },
+    },
+  });
+
+  const route = findRoute('GET', '/api/admin/combination-stats');
+  const res = await invokeRoute(route);
+
+  assert.equal(res.statusCode, 200);
+  // card-no-board lacks a board.config so it does not count toward boardCombos.
+  // card-no-prompts has a valid board.config so it counts as one board combo.
+  assert.equal(res.body.users.boardCombos, 1, 'only card with valid board.config counts toward boardCombos');
+  // card-no-board has valid prompts so it counts as one char combo.
+  // card-no-prompts lacks prompts so it does not count toward charCombos.
+  assert.equal(res.body.users.charCombos, 1, 'only card with valid prompts counts toward charCombos');
+});
+
+test('GET /api/admin/combination-stats returns 503 when adminDb is absent', async () => {
+  const app = createAppHarness();
+  registerAdminRoutes(app, {
+    adminAuth: null,
+    adminDb: null,
+    authSyncRateLimit: (_req, _res, next) => next(),
+    adminUserRateLimit: (_req, _res, next) => next(),
+    authenticateFirebaseUser: async () => {},
+    authenticateAdminRequest: async () => {},
+    syncAdminClaim: async () => {},
+    isStrongPassword: () => true,
+    buildUserDisplayName: () => 'Skater',
+    upsertUserLookupRecord: async () => {},
+    reconcilePurchasedTierForUser: async () => {},
+    deleteUserData: async () => {},
+    migrateUserCards: async () => ({ migratedCount: 0 }),
+    FieldValue: { serverTimestamp: () => '__SERVER_TS__' },
+  });
+
+  const route = app.routes.find((r) => r.method === 'GET' && r.path === '/api/admin/combination-stats');
+  assert.ok(route, 'route should exist');
+
+  const res = await invokeRoute(route);
+  assert.equal(res.statusCode, 503);
+});
+
+test('GET /api/admin/combination-stats returns 403 for non-admin', async () => {
+  const { findRoute } = buildHarness({
+    authenticateAdminRequest: async () => {
+      throw Object.assign(new Error('Forbidden: admin access required.'), { statusCode: 403 });
+    },
+  });
+
+  const route = findRoute('GET', '/api/admin/combination-stats');
+  const res = await invokeRoute(route);
+  assert.equal(res.statusCode, 403);
 });

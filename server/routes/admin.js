@@ -394,4 +394,105 @@ export function registerAdminRoutes(app, {
       res.status(500).json({ error: 'Failed to delete player deck.' });
     }
   });
+
+  // ── Combination coverage stats ─────────────────────────────────────────────
+  // Returns the count of unique board configs and character combos created,
+  // split between the admin collection and all non-admin user collections.
+
+  app.get('/api/admin/combination-stats', adminUserRateLimit, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+
+    try {
+      // Collect admin UIDs from userProfiles docs that have isAdmin === true.
+      const adminProfilesSnap = await adminDb.collection('userProfiles').where('isAdmin', '==', true).get();
+      const adminUids = new Set(adminProfilesSnap.docs.map((d) => d.id));
+
+      // Fetch every card across all users via the 'cards' collection group.
+      const cardsSnap = await adminDb.collectionGroup('cards').get();
+
+      const adminBoardCombos = new Set();
+      const adminCharCombos = new Set();
+      const userBoardCombos = new Set();
+      const userCharCombos = new Set();
+
+      for (const docSnap of cardsSnap.docs) {
+        // Card path shape: users/{uid}/cards/{cardId} → uid is at index 1.
+        const pathParts = docSnap.ref.path.split('/');
+        const uid = pathParts[1];
+        const data = docSnap.data();
+
+        // Board configuration key (boardType|drivetrain|driveOrientation|motor|wheels|battery).
+        const config = data?.board?.config;
+        if (config?.boardType && config?.drivetrain && config?.motor && config?.wheels && config?.battery) {
+          const boardKey = [
+            config.boardType,
+            config.drivetrain,
+            config.driveOrientation ?? 'Rear-Wheel Drive',
+            config.motor,
+            config.wheels,
+            config.battery,
+          ].join('|');
+
+          if (adminUids.has(uid)) {
+            adminBoardCombos.add(boardKey);
+          } else {
+            userBoardCombos.add(boardKey);
+          }
+        }
+
+        // Character profile key from the seven required prompt fields.
+        const prompts = data?.prompts;
+        if (
+          prompts?.archetype && prompts?.rarity && prompts?.style &&
+          prompts?.district && prompts?.gender && prompts?.ageGroup && prompts?.bodyType
+        ) {
+          const charKey = [
+            prompts.archetype,
+            prompts.rarity,
+            prompts.style,
+            prompts.district,
+            prompts.gender,
+            prompts.ageGroup,
+            prompts.bodyType,
+          ].join('|');
+
+          if (adminUids.has(uid)) {
+            adminCharCombos.add(charKey);
+          } else {
+            userCharCombos.add(charKey);
+          }
+        }
+      }
+
+      const combinedBoardCombos = new Set([...adminBoardCombos, ...userBoardCombos]);
+      const combinedCharCombos = new Set([...adminCharCombos, ...userCharCombos]);
+
+      res.json({
+        admin: {
+          boardCombos: adminBoardCombos.size,
+          charCombos: adminCharCombos.size,
+        },
+        users: {
+          boardCombos: userBoardCombos.size,
+          charCombos: userCharCombos.size,
+        },
+        combined: {
+          boardCombos: combinedBoardCombos.size,
+          charCombos: combinedCharCombos.size,
+        },
+      });
+    } catch (error) {
+      console.error('Admin combination-stats failed:', error);
+      res.status(500).json({ error: 'Failed to compute combination stats.' });
+    }
+  });
 }

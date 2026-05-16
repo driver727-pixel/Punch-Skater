@@ -13575,3 +13575,80 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .race-card-trail--1 { opacity: 0.35; }
 .race-card-trail--2 { opacity: 0.15; }
+
+/* ── Admin Combination Stats Panel ─────────────────────────────────────────── */
+.admin-combo-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.admin-combo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.admin-combo-desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.admin-combo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 700px) {
+  .admin-combo-grid { grid-template-columns: 1fr; }
+}
+.admin-combo-section {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.admin-combo-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.admin-combo-rows { display: flex; flex-direction: column; gap: 10px; }
+.admin-combo-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  row-gap: 4px;
+}
+.admin-combo-row--combined {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 2px;
+}
+.admin-combo-label { font-size: 12px; color: var(--text-dim); grid-column: 1; }
+.admin-combo-count { font-size: 13px; font-weight: 700; color: var(--text); grid-column: 2; text-align: right; min-width: 40px; }
+.admin-combo-pct { font-size: 12px; color: var(--accent); grid-column: 3; text-align: right; min-width: 58px; }
+.admin-combo-bar-wrap {
+  grid-column: 1 / -1;
+  height: 5px;
+  background: var(--bg2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.admin-combo-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+.admin-combo-bar--admin   { background: var(--accent2); }
+.admin-combo-bar--users   { background: var(--accent); }
+.admin-combo-bar--combined { background: #00ff88; }
