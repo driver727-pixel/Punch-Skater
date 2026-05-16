@@ -317,7 +317,8 @@ export function Workshop() {
       setError("Pick a saved board and a card before marrying the setup.");
       return;
     }
-    if ((selectedCard.ozzies ?? 0) < WORKSHOP_REFORGE_FEE_OZZIES) {
+    const isAdmin = userProfile?.isAdmin ?? false;
+    if (!isAdmin && (selectedCard.ozzies ?? 0) < WORKSHOP_REFORGE_FEE_OZZIES) {
       setError(`${selectedCard.identity.name} needs ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies to cover the workshop fee.`);
       return;
     }
@@ -331,15 +332,20 @@ export function Workshop() {
     setMessage("");
 
     try {
+      const appliedFee = isAdmin ? 0 : WORKSHOP_REFORGE_FEE_OZZIES;
       const reforgedCard = reforgeCardBoard(selectedCard, selectedBoard.config, {
-        feeOzzies: WORKSHOP_REFORGE_FEE_OZZIES,
+        feeOzzies: appliedFee,
         boardImageUrl: selectedBoard.boardImageUrl,
       });
       updateCard(reforgedCard);
       updateCardInDecks(reforgedCard);
       await removeBoard(selectedBoard.id);
       sfxSuccess();
-      setMessage(`${selectedCard.identity.name} took the generated board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`);
+      setMessage(
+        isAdmin
+          ? `${selectedCard.identity.name} took the generated board. Stats updated.`
+          : `${selectedCard.identity.name} took the generated board. Stats updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`,
+      );
     } catch (generationError) {
       const detail = generationError instanceof Error ? generationError.message : "Unknown workshop error.";
       setMessage("");
@@ -447,6 +453,9 @@ export function Workshop() {
     return session.moved;
   };
 
+  const isAdminUser = userProfile?.isAdmin ?? false;
+  const marryButtonLabel = isAdminUser ? "Marry to Card · Free" : `Marry to Card · ${WORKSHOP_REFORGE_FEE_OZZIES} Oz`;
+
   return (
     <div className="page page--workshop">
       <video
@@ -480,7 +489,7 @@ export function Workshop() {
         <div className="workshop-hero__meta">
           <span><strong>{boards.length}</strong> saved boards</span>
           <span><strong>{cards.length}</strong> forged cards</span>
-          <span><strong>{WORKSHOP_REFORGE_FEE_OZZIES}</strong> Oz workshop fee</span>
+          <span>{isAdminUser ? <strong>Free (admin)</strong> : <><strong>{WORKSHOP_REFORGE_FEE_OZZIES}</strong> Oz workshop fee</>}</span>
         </div>
       </section>
 
@@ -649,7 +658,7 @@ export function Workshop() {
                 onClick={handleApplyBoard}
                 disabled={!selectedCard || !selectedBoard.boardImageUrl || applyingBoardId === selectedBoard.id}
               >
-                {applyingBoardId === selectedBoard.id ? "Marrying…" : `Marry to Card · ${WORKSHOP_REFORGE_FEE_OZZIES} Oz`}
+                {applyingBoardId === selectedBoard.id ? "Marrying…" : marryButtonLabel}
               </button>
             </div>
           </section>
