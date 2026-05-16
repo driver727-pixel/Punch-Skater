@@ -21,15 +21,19 @@ import {
   getMissionWeatherSummary,
 } from "../lib/missions";
 import type {
+  MissionBoardPlaystyle,
   MissionBoardEntry,
   MissionBoardTheme,
   MissionBoardProgression,
   MissionEncounterOption,
   MissionJoustResult,
+  MissionRewardSignal,
   MissionRequirement,
   MissionRequirementResult,
+  MissionRivalPressure,
   MissionRunResponse,
   MissionStatusEffect,
+  MissionStoryBeat,
 } from "../lib/sharedTypes";
 import type { District, JoustTactic, WorldLocation } from "../lib/types";
 import { getMissionBoard, runMission } from "../services/missions";
@@ -334,6 +338,30 @@ interface MissionLogEntry {
   kind: "default" | "xp" | "ozzies";
 }
 
+function formatPlaystyle(playstyle: MissionBoardPlaystyle): string {
+  const powerLabel = playstyle.powerDelta ? ` (+${playstyle.powerDelta} power)` : "";
+  return `${playstyle.label}${powerLabel} — ${playstyle.summary}`;
+}
+
+function formatStoryBeat(beat: MissionStoryBeat): string {
+  return `${beat.label}: ${beat.summary}`;
+}
+
+function formatRewardSignal(signal: MissionRewardSignal): string {
+  const rewards = [
+    signal.rewardXpDelta ? `+${signal.rewardXpDelta} XP` : null,
+    signal.rewardOzziesDelta ? `+${signal.rewardOzziesDelta} Oz` : null,
+  ].filter(Boolean).join(" · ");
+  return rewards
+    ? `${signal.label} (${rewards}) — ${signal.summary}`
+    : `${signal.label} — ${signal.summary}`;
+}
+
+function formatRivalPressure(pressure: MissionRivalPressure): string {
+  const statusLabel = pressure.status === "grudge" ? "Grudge" : pressure.status === "known" ? "Known rival" : "Fresh rival";
+  return `${statusLabel} · Heat ${pressure.heat} — ${pressure.summary}`;
+}
+
 function getMissionResultRewards(result: MissionRunResponse): { rewardXp: number; rewardOzzies: number } {
   const mission = result.mission;
   if (typeof mission.lastRunRewardXp === "number" && typeof mission.lastRunRewardOzzies === "number") {
@@ -367,6 +395,8 @@ function getMissionResultLog(result: MissionRunResponse): MissionLogEntry[] {
         ]
         : []),
       ...(mission.lastRunCardOutcomes ?? []).map((outcome) => ({ text: outcome.summary, kind: "default" as const })),
+      ...(mission.lastRunRewardSignals ?? []).map((signal) => ({ text: formatRewardSignal(signal), kind: "default" as const })),
+      ...(mission.lastRunStoryBeats ?? []).map((beat) => ({ text: formatStoryBeat(beat), kind: "default" as const })),
       ...(mission.lastRunEffects ?? []).map((effect) => ({ text: `${effect.label}: ${effect.summary}`, kind: "default" as const })),
     ];
   }
@@ -631,6 +661,30 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     },
     [selectedCounterOptionId, selectedMission, selectedResultRevealed, weatherByDistrict],
   );
+  const selectedPlaystyles = useMemo(
+    () => selectedMission?.activeRun?.boardPlaystyles
+      ?? selectedMission?.lastRunBoardPlaystyles
+      ?? selectedEvaluation?.boardPlaystyles
+      ?? [],
+    [selectedEvaluation?.boardPlaystyles, selectedMission],
+  );
+  const selectedStoryBeats = useMemo(
+    () => selectedMission?.activeRun?.storyBeats
+      ?? selectedMission?.lastRunStoryBeats
+      ?? [],
+    [selectedMission],
+  );
+  const selectedRewardSignals = useMemo(
+    () => selectedMission?.lastRunRewardSignals ?? selectedMission?.lastRunJoustResult?.rewardSignals ?? [],
+    [selectedMission],
+  );
+  const selectedRivalPressure = useMemo(
+    (): MissionRivalPressure | null => selectedMission?.activeRun?.rivalPressure
+      ?? selectedMission?.lastRunRivalPressure
+      ?? selectedMission?.lastRunJoustResult?.rivalPressure
+      ?? null,
+    [selectedMission],
+  );
   const selectedPresentation = useMemo(() => getMissionPresentation(selectedMission), [selectedMission]);
   const selectedDistrictLore = useMemo(
     () => (selectedMission ? DISTRICT_LORE_BY_NAME.get(selectedMission.district) ?? null : null),
@@ -703,14 +757,18 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const selectedLaunchTips = useMemo(() => {
     if (!selectedMission) return [];
     const statusTips = (selectedEvaluation?.statusEffects ?? []).slice(0, 2).map((effect) => effect.summary);
+    const playstyleTip = selectedPlaystyles[0] ? `Crew identity — ${selectedPlaystyles[0].summary}` : null;
+    const rivalTip = selectedRivalPressure ? `Rival heat — ${selectedRivalPressure.summary}` : null;
     return [
       `${selectedMission.district} intel — ${getMissionPressureSummary(selectedMission, selectedDistrictWeather, weatherByDistrict)}`,
       selectedEvaluation?.eligible
         ? "This deck can launch clean, but the real tension now comes from the live counter window mid-run."
         : "Launch Run still works on a risky deck. Failure can sideline one courier for a short injury, breakdown, or arrest timeout.",
+      ...(playstyleTip ? [playstyleTip] : []),
+      ...(rivalTip ? [rivalTip] : []),
       ...(statusTips.length > 0 ? statusTips : ["Hardware effects and crew synergies can spike or blunt the live counter power."]),
     ];
-  }, [selectedDistrictWeather, selectedEvaluation, selectedMission, weatherByDistrict]);
+  }, [selectedDistrictWeather, selectedEvaluation, selectedMission, selectedPlaystyles, selectedRivalPressure, weatherByDistrict]);
 
   const missionEligibilityByMissionId = useMemo((): Map<string, boolean> => {
     if (!selectedDeck) return new Map();
@@ -1187,6 +1245,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                             <span className="mission-stat-value">{getJoustOutcomeLabel(selectedMission.lastRunJoustResult)}</span>
                           </div>
                         )}
+                        {selectedRivalPressure && (
+                          <div className="mission-stat-row">
+                            <span className="mission-stat-label">Rival heat</span>
+                            <span className="mission-stat-value">{selectedRivalPressure.status}</span>
+                          </div>
+                        )}
                         <div className="mission-stat-row">
                           <span className="mission-stat-label">Last run</span>
                           <span className="mission-stat-value">{formatTimestamp(selectedMission.lastRunAt) ?? "Never launched"}</span>
@@ -1278,6 +1342,23 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                               <li key={`${selectedMission.id}-${effect.id}`}>{formatStatusEffect(effect)}</li>
                             ))}
                           </ul>
+                        )}
+                        {selectedPlaystyles.length > 0 && (
+                          <ul className="mission-intel-list">
+                            {selectedPlaystyles.map((playstyle) => (
+                              <li key={`${selectedMission.id}-${playstyle.id}`}>{formatPlaystyle(playstyle)}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {selectedStoryBeats.length > 0 && (
+                          <ul className="mission-intel-list">
+                            {selectedStoryBeats.map((beat) => (
+                              <li key={`${selectedMission.id}-${beat.id}`}>{formatStoryBeat(beat)}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {selectedRivalPressure && (
+                          <p className="mission-intel-card__quote">{formatRivalPressure(selectedRivalPressure)}</p>
                         )}
                         {selectedJoustOption && availableJoustTactics.length > 0 && (
                           <div className="mission-joust-picker">
@@ -1387,10 +1468,13 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                 <article className="mission-intel-card">
                   <span className="mission-intel-card__label">{selectedResultRevealed ? "Reward profile" : "Black-box payout"}</span>
                   <ul className="mission-intel-list">
+                    {selectedResultRevealed && selectedRewardSignals.map((signal) => (
+                      <li key={`${selectedMission.id}-${signal.id}`}>{formatRewardSignal(signal)}</li>
+                    ))}
                     {selectedResultRevealed
                       ? selectedPresentation.rewardFocus.map((item) => (
-                        <li key={`${selectedMission.id}-${item}`}>{item}</li>
-                      ))
+                          <li key={`${selectedMission.id}-${item}`}>{item}</li>
+                        ))
                       : [
                         "Payout odds stay hidden until the run resolves",
                         "Live counters can add extra XP, Ozzies, or force a clipped cutout",
@@ -1404,8 +1488,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   </p>
                 </article>
                 <article className="mission-intel-card">
-                  <span className="mission-intel-card__label">{selectedResultRevealed ? "Run breakdown" : "Pre-run rumors"}</span>
+                  <span className="mission-intel-card__label">{selectedResultRevealed ? "Run breakdown" : "Crew identity"}</span>
                     <ul className="mission-intel-list">
+                      {selectedPlaystyles.map((playstyle) => (
+                        <li key={`${selectedMission.id}-style-${playstyle.id}`}>{formatPlaystyle(playstyle)}</li>
+                      ))}
+                      {selectedStoryBeats.map((beat) => (
+                        <li key={`${selectedMission.id}-beat-${beat.id}`}>{formatStoryBeat(beat)}</li>
+                      ))}
                       {selectedLaunchTips.slice(0, 3).map((tip, index) => (
                         <li key={`${selectedMission.id}-tip-${index}`}>{tip}</li>
                       ))}
@@ -1542,6 +1632,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                   {missionResult.mission.lastRunJoustResult && (
                     <span> · Joust: {getJoustOutcomeLabel(missionResult.mission.lastRunJoustResult)} vs {missionResult.mission.lastRunJoustResult.rivalName}</span>
                   )}
+                  {missionResult.mission.lastRunRivalPressure && (
+                    <span> · Rival heat: {missionResult.mission.lastRunRivalPressure.status}</span>
+                  )}
                 </div>
 
                 {/* ── Phase 3: Expandable log drawer ─────────────────── */}
@@ -1593,6 +1686,25 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                           </div>
                         </div>
                         <p className="mission-intel-card__quote">{missionResult.mission.lastRunJoustResult.narration}</p>
+                      </div>
+                    )}
+                    {((missionResult.mission.lastRunRewardSignals?.length ?? 0) > 0 || (missionResult.mission.lastRunStoryBeats?.length ?? 0) > 0 || (missionResult.mission.lastRunBoardPlaystyles?.length ?? 0) > 0) && (
+                      <div className="mission-result-popup__panel">
+                        <span className="mission-result-popup__eyebrow">Crew story</span>
+                        <ul className="mission-intel-list">
+                          {(missionResult.mission.lastRunBoardPlaystyles ?? []).map((playstyle) => (
+                            <li key={`${missionResult.mission.id}-${playstyle.id}`}>{formatPlaystyle(playstyle)}</li>
+                          ))}
+                          {(missionResult.mission.lastRunStoryBeats ?? []).map((beat) => (
+                            <li key={`${missionResult.mission.id}-${beat.id}`}>{formatStoryBeat(beat)}</li>
+                          ))}
+                          {(missionResult.mission.lastRunRewardSignals ?? []).map((signal) => (
+                            <li key={`${missionResult.mission.id}-${signal.id}`}>{formatRewardSignal(signal)}</li>
+                          ))}
+                        </ul>
+                        {missionResult.mission.lastRunRivalPressure && (
+                          <p className="mission-intel-card__quote">{formatRivalPressure(missionResult.mission.lastRunRivalPressure)}</p>
+                        )}
                       </div>
                     )}
                     {(missionResult.mission.lastRunCardOutcomes?.length ?? 0) > 0 && (

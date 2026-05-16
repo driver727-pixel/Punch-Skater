@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import {
   HARD_CUTOUT_COUNTER_ID,
+  applyMissionRivalRecord,
   buildMissionActiveRunState,
   createDailyMissionBoardPayload,
   evaluateMissionDeck,
@@ -81,6 +82,11 @@ function getProgression(profile) {
     codexUnlockIds: Array.isArray(profile?.codexUnlockIds)
       ? profile.codexUnlockIds.filter((value) => typeof value === 'string')
       : [],
+    rivalRecords: profile?.rivalRecords && typeof profile.rivalRecords === 'object'
+      ? Object.fromEntries(
+        Object.entries(profile.rivalRecords).filter(([, value]) => value && typeof value === 'object'),
+      )
+      : {},
   };
 }
 
@@ -393,12 +399,11 @@ export function registerMissionRoutes(app, {
             requestedChoiceId,
             requestedJoustTactic || availableJoustTactics[0] || null,
           );
-          const rewards = resolution.hardCutout
-            ? {
-              rewardXp: Math.max(0, mission.rewardXp + resolution.rewardXpDelta),
-              rewardOzzies: Math.max(0, mission.rewardOzzies + resolution.rewardOzziesDelta),
-            }
-            : getMissionEffectiveRewards(mission, resolution.selectedOption?.id ?? null, weatherPayload);
+          const baseRewards = getMissionEffectiveRewards(mission, null, weatherPayload);
+          const rewards = {
+            rewardXp: Math.max(0, baseRewards.rewardXp + resolution.rewardXpDelta),
+            rewardOzzies: Math.max(0, baseRewards.rewardOzzies + resolution.rewardOzziesDelta),
+          };
           const nextProgression = {
             missionXp: progression.missionXp + rewards.rewardXp,
             missionOzzies: progression.missionOzzies + rewards.rewardOzzies,
@@ -410,6 +415,14 @@ export function registerMissionRoutes(app, {
             codexUnlockIds: resolution.joustResult?.loreUnlockIds?.length
               ? [...new Set([...progression.codexUnlockIds, ...resolution.joustResult.loreUnlockIds])]
               : progression.codexUnlockIds,
+            rivalRecords: resolution.joustResult?.rivalId
+              ? applyMissionRivalRecord(
+                resolution.joustResult.rivalId,
+                resolution.joustResult.outcome,
+                progression.rivalRecords,
+                now,
+              )
+              : progression.rivalRecords,
           };
           const resolutionRisk = buildMissionResolutionRisk(mission, deck, activeRun, resolution, now);
           const resolvedDeck = resolutionRisk?.updatedDeck ?? deck;
@@ -428,6 +441,9 @@ export function registerMissionRoutes(app, {
               selectedCounterOptionId: resolution.selectedOption?.id ?? HARD_CUTOUT_COUNTER_ID,
               selectedJoustTactic: resolution.joustResult?.playerTactic ?? null,
               summary: resolution.summary,
+              storyBeats: resolution.storyBeats,
+              boardPlaystyles: activeRun.boardPlaystyles ?? [],
+              rivalPressure: resolution.rivalPressure ?? activeRun.rivalPressure ?? null,
             },
             completedAt: now,
             lastRunAt: now,
@@ -439,6 +455,10 @@ export function registerMissionRoutes(app, {
             lastRunRewardXp: rewards.rewardXp,
             lastRunRewardOzzies: rewards.rewardOzzies,
             lastRunJoustResult: resolution.joustResult,
+            lastRunStoryBeats: resolution.storyBeats,
+            lastRunRewardSignals: resolution.rewardSignals,
+            lastRunBoardPlaystyles: activeRun.boardPlaystyles ?? [],
+            lastRunRivalPressure: resolution.rivalPressure ?? activeRun.rivalPressure ?? null,
             updatedAt: now,
           };
 
@@ -449,6 +469,7 @@ export function registerMissionRoutes(app, {
             districtReputation: nextProgression.districtReputation,
             defeatedRivalIds: nextProgression.defeatedRivalIds,
             codexUnlockIds: nextProgression.codexUnlockIds,
+            rivalRecords: nextProgression.rivalRecords,
             updatedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
           if (resolutionRisk) {
@@ -488,6 +509,10 @@ export function registerMissionRoutes(app, {
             lastRunEffects: evaluation.statusEffects ?? [],
             lastRunCardOutcomes: failureRisk?.outcomes ?? [],
             lastRunJoustResult: null,
+            lastRunStoryBeats: [],
+            lastRunRewardSignals: [],
+            lastRunBoardPlaystyles: evaluation.boardPlaystyles ?? [],
+            lastRunRivalPressure: null,
             updatedAt: now,
           };
           tx.set(missionRef, updatedMission, { merge: true });
@@ -507,7 +532,7 @@ export function registerMissionRoutes(app, {
           };
         }
 
-        const liveRun = buildMissionActiveRunState(deck, mission, weatherPayload, now);
+        const liveRun = buildMissionActiveRunState(deck, mission, weatherPayload, now, progression.rivalRecords);
         if (!liveRun) {
           const rewards = getMissionEffectiveRewards(mission, null, weatherPayload);
           const nextProgression = {
@@ -516,6 +541,7 @@ export function registerMissionRoutes(app, {
             districtReputation: progression.districtReputation,
             defeatedRivalIds: progression.defeatedRivalIds,
             codexUnlockIds: progression.codexUnlockIds,
+            rivalRecords: progression.rivalRecords,
           };
           const updatedMission = {
             ...mission,
@@ -534,6 +560,10 @@ export function registerMissionRoutes(app, {
             lastRunRewardXp: rewards.rewardXp,
             lastRunRewardOzzies: rewards.rewardOzzies,
             lastRunJoustResult: null,
+            lastRunStoryBeats: [],
+            lastRunRewardSignals: [],
+            lastRunBoardPlaystyles: evaluation.boardPlaystyles ?? [],
+            lastRunRivalPressure: null,
             updatedAt: now,
           };
 
@@ -544,6 +574,7 @@ export function registerMissionRoutes(app, {
             districtReputation: nextProgression.districtReputation,
             defeatedRivalIds: nextProgression.defeatedRivalIds,
             codexUnlockIds: nextProgression.codexUnlockIds,
+            rivalRecords: nextProgression.rivalRecords,
             updatedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
 
@@ -568,6 +599,10 @@ export function registerMissionRoutes(app, {
             lastRunEffects: liveRun.statusEffects ?? evaluation.statusEffects ?? [],
             lastRunCardOutcomes: [],
             lastRunJoustResult: null,
+            lastRunStoryBeats: liveRun.storyBeats ?? [],
+            lastRunRewardSignals: [],
+            lastRunBoardPlaystyles: liveRun.boardPlaystyles ?? evaluation.boardPlaystyles ?? [],
+            lastRunRivalPressure: liveRun.rivalPressure ?? null,
             updatedAt: now,
           };
         tx.set(missionRef, updatedMission, { merge: true });

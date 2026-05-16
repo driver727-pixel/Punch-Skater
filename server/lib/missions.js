@@ -1,5 +1,6 @@
 import { getAvailableJoustTactics, resolveJoust, selectDefaultJoustRider } from './joust.js';
 import {
+  getDistrictRival,
   getDistrictRivalMissionHook,
   getDistrictRivalProgressionAward,
 } from './rivals.js';
@@ -101,6 +102,8 @@ const HEAVY_RAIN_MISSION_BONUS = {
   rewardXpDelta: 30,
   rewardOzziesDelta: 20,
 };
+const MISSION_SIGNAL_REWARD = 6;
+const MISSION_GRUDGE_REWARD = 8;
 
 function getMissionThreatSummary(mission) {
   switch (mission.district) {
@@ -358,6 +361,88 @@ function buildMissionStatusEffects(cards, mission, weather) {
   return effects;
 }
 
+function buildMissionBoardPlaystyles(cards, mission) {
+  const candidates = [];
+  const sprinterCount = cards.filter((card) => (
+    (Number(card?.stats?.speed) || 0) >= 8 && card?.board?.config?.wheels === 'Urethane'
+  )).length;
+  const ghostlineCount = cards.filter((card) => (
+    (Number(card?.stats?.stealth) || 0) >= 7
+      && (
+        card?.board?.config?.wheels === 'Cloud'
+        || card?.board?.config?.boardType === 'Surf'
+        || card?.board?.config?.boardType === 'Slider'
+      )
+  )).length;
+  const bruiserCount = cards.filter((card) => (
+    (Number(card?.stats?.grit) || 0) >= 7
+      && (
+        card?.board?.config?.wheels === 'Pneumatic'
+        || card?.board?.config?.wheels === 'Rubber'
+        || card?.board?.config?.boardType === 'Mountain'
+        || card?.board?.config?.boardType === 'AT'
+      )
+  )).length;
+  const showponyCount = cards.filter((card) => (
+    (Number(card?.stats?.speed) || 0) >= 7
+      && (Number(card?.stats?.stealth) || 0) >= 7
+      && (card?.board?.config?.boardType === 'Surf' || card?.board?.config?.boardType === 'Slider')
+  )).length;
+
+  if (sprinterCount >= 2) {
+    candidates.push({
+      id: 'full-noise-sprinter',
+      label: 'Full-noise sprinter',
+      summary: `${sprinterCount} couriers are running fast urethane sprint rigs built to own the clean lane in ${mission.district}.`,
+      powerDelta: 1,
+      weight: sprinterCount,
+    });
+  }
+  if (ghostlineCount >= 2) {
+    candidates.push({
+      id: 'ghostline-rig',
+      label: 'Ghostline rig',
+      summary: `${ghostlineCount} couriers are tuned for hush routes, cloud-brake recoveries, and camera-dodging exits.`,
+      powerDelta: 1,
+      weight: ghostlineCount,
+    });
+  }
+  if (bruiserCount >= 2) {
+    candidates.push({
+      id: 'salvage-bruiser',
+      label: 'Salvage bruiser',
+      summary: `${bruiserCount} couriers are carrying heavy-wheel traction and rough-route grit for the ugly part of the contract.`,
+      powerDelta: 1,
+      weight: bruiserCount,
+    });
+  }
+  if (showponyCount >= 2) {
+    candidates.push({
+      id: 'showpony-trickline',
+      label: 'Showpony trickline',
+      summary: `${showponyCount} couriers are built to turn side-cuts and feints into highlight-reel exits.`,
+      powerDelta: 1,
+      weight: showponyCount,
+    });
+  }
+
+  return candidates
+    .sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label))
+    .slice(0, 2)
+    .map(({ weight, ...playstyle }) => playstyle);
+}
+
+function buildMissionPlaystyleEffects(playstyles) {
+  return playstyles.map((playstyle) => ({
+    id: `playstyle-${playstyle.id}`,
+    label: playstyle.label,
+    summary: playstyle.summary,
+    kind: 'synergy',
+    powerDelta: Number(playstyle.powerDelta) || 0,
+    source: 'Crew identity',
+  }));
+}
+
 function hasMissionRegenCapableSetup(cards) {
   return cards.some((card) => (
     card?.board?.config?.wheels === 'Cloud'
@@ -366,6 +451,165 @@ function hasMissionRegenCapableSetup(cards) {
       && (Number(card?.stats?.speed) || 0) >= 6
     )
   ));
+}
+
+function getMissionRivalRecord(rivalRecords, rivalId) {
+  if (!rivalId) return null;
+  const record = rivalRecords?.[rivalId];
+  return record && typeof record === 'object' ? record : null;
+}
+
+function buildMissionRivalPressure(mission, rivalRecords = {}) {
+  const config = getMissionJoustConfig(mission);
+  if (!config.rivalId) return null;
+  const rival = getDistrictRival(config.rivalId);
+  const record = getMissionRivalRecord(rivalRecords, config.rivalId);
+  const seenCount = record?.seenCount ?? 0;
+  const losses = record?.losses ?? 0;
+  const wins = record?.wins ?? 0;
+  const isContested = seenCount > 0 && losses === wins && (losses > 0 || wins > 0);
+  const status = seenCount === 0 ? 'fresh' : losses > wins ? 'grudge' : 'known';
+  const heat = status === 'fresh' ? 0 : status === 'grudge' ? 2 : 1;
+  let summary = `${config.rival.name} is fresh district pressure — the lane has not learned your tells yet.`;
+  if (status === 'known') {
+    summary = isContested
+      ? `${config.rival.name} knows your line now and the score is even. Expect a sharper, more respectful rematch.`
+      : `${config.rival.name} remembers your last pass. Expect a tighter read and less free space in the lane.`;
+  } else if (status === 'grudge') {
+    summary = `${config.rival.name} has a score to settle here. The route will feel personal until you answer back.`;
+  }
+  return {
+    rivalId: config.rivalId,
+    rivalName: config.rival.name,
+    heat,
+    status,
+    summary,
+    taunt: rival?.dialogue?.intro ?? config.intro,
+  };
+}
+
+function buildMissionStoryBeats({
+  mission,
+  deckName,
+  playstyles,
+  rivalPressure,
+  encounter,
+  resolutionSummary,
+  rewardSignals,
+}) {
+  const primaryStyle = playstyles?.[0];
+  const launchSummary = primaryStyle
+    ? `${deckName} rolls into ${mission.district} as a ${primaryStyle.label.toLowerCase()} crew. ${primaryStyle.summary}`
+    : `${deckName} rolls into ${mission.district} with a clean courier brief and no wasted motion.`;
+  const pressureSummary = rivalPressure
+    ? `${rivalPressure.summary} ${encounter?.threat ?? getMissionThreatSummary(mission)}`
+    : encounter?.threat ?? getMissionThreatSummary(mission);
+  const finishSummary = resolutionSummary
+    ?? (rewardSignals?.length
+      ? `${rewardSignals.map((signal) => signal.label).join(' + ')} will shape the payout if the crew lands the route.`
+      : 'The finish stays unwritten until the crew answers the live pressure.');
+  return [
+    { id: `${mission.definitionId}-launch`, stage: 'launch', label: 'Launch window', summary: launchSummary, tone: 'neutral' },
+    { id: `${mission.definitionId}-pressure`, stage: 'pressure', label: 'Heat spike', summary: pressureSummary, tone: rivalPressure?.status === 'grudge' ? 'risk' : 'neutral' },
+    { id: `${mission.definitionId}-finish`, stage: 'finish', label: 'Exit line', summary: finishSummary, tone: rewardSignals?.length ? 'reward' : 'neutral' },
+  ];
+}
+
+function buildMissionRewardSignals(mission, activeRun, selectedOption, joustResult) {
+  if (!selectedOption) return [];
+  const playstyleIds = new Set((activeRun?.boardPlaystyles ?? []).map((playstyle) => playstyle.id));
+  const signals = [];
+  if (selectedOption.encounterType === 'counter') {
+    const minimumPower = selectedOption.minimumCounterPower ?? 0;
+    const currentPower = activeRun?.counterPower ?? 0;
+    if (currentPower >= minimumPower + 2) {
+      signals.push({
+        id: 'route-owned',
+        label: 'Route owned',
+        summary: `The crew answered ${selectedOption.label} with spare headroom and turned the district pressure into a clean advantage.`,
+        rewardXpDelta: MISSION_SIGNAL_REWARD,
+      });
+    }
+    if (
+      playstyleIds.has('ghostline-rig')
+      && (selectedOption.requiredTags ?? []).some((tag) => tag === 'quiet_line' || tag === 'camera_blind')
+    ) {
+      signals.push({
+        id: 'ghost-lane',
+        label: 'Ghost lane',
+        summary: 'A hush-route deck turned the counter into a clean unseen exit.',
+        rewardOzziesDelta: MISSION_SIGNAL_REWARD,
+      });
+    }
+    if (playstyleIds.has('full-noise-sprinter') && (selectedOption.requiredTags ?? []).includes('mainline_speed')) {
+      signals.push({
+        id: 'full-noise',
+        label: 'Full noise',
+        summary: 'The sprinter rigs hit the gap at full clip and made the lane look easy.',
+        rewardXpDelta: MISSION_SIGNAL_REWARD,
+      });
+    }
+  }
+  if (joustResult) {
+    if (joustResult.outcome === 'win' && joustResult.strike >= 3) {
+      signals.push({
+        id: 'clean-read',
+        label: 'Clean read',
+        summary: `The crew read ${joustResult.rivalName} early and won the clash without drifting off-plan.`,
+        rewardXpDelta: MISSION_SIGNAL_REWARD,
+      });
+    }
+    if (joustResult.outcome === 'win' && joustResult.playerTactic === 'trickStrike') {
+      signals.push({
+        id: 'highlight-reel',
+        label: 'Highlight reel',
+        summary: 'A showy finishing line turned the district duel into pure bragging-rights currency.',
+        rewardOzziesDelta: MISSION_SIGNAL_REWARD,
+      });
+    }
+    if (activeRun?.rivalPressure?.status === 'grudge' && joustResult.outcome === 'win') {
+      signals.push({
+        id: 'settled-score',
+        label: 'Settled score',
+        summary: `The crew finally answered ${joustResult.rivalName}'s heat and took extra value off the rematch.`,
+        rewardXpDelta: MISSION_GRUDGE_REWARD,
+        rewardOzziesDelta: MISSION_GRUDGE_REWARD,
+      });
+    }
+  }
+  return signals;
+}
+
+function getMissionRewardSignalTotals(signals) {
+  return signals.reduce((totals, signal) => ({
+    rewardXpDelta: totals.rewardXpDelta + (Number(signal?.rewardXpDelta) || 0),
+    rewardOzziesDelta: totals.rewardOzziesDelta + (Number(signal?.rewardOzziesDelta) || 0),
+  }), { rewardXpDelta: 0, rewardOzziesDelta: 0 });
+}
+
+export function applyMissionRivalRecord(rivalId, outcome, rivalRecords = {}, seenAt = new Date().toISOString()) {
+  if (!rivalId) return { ...(rivalRecords ?? {}) };
+  const previous = getMissionRivalRecord(rivalRecords, rivalId);
+  const wins = (previous?.wins ?? 0) + (outcome === 'win' ? 1 : 0);
+  const losses = (previous?.losses ?? 0) + (outcome === 'loss' ? 1 : 0);
+  const draws = (previous?.draws ?? 0) + (outcome === 'draw' ? 1 : 0);
+  const previousStreak = previous?.streak ?? 0;
+  const sameOutcome = previous?.lastOutcome === outcome;
+  const nextStreak = sameOutcome ? Math.abs(previousStreak) + 1 : 1;
+  const signedStreak = outcome === 'loss' ? -nextStreak : nextStreak;
+  return {
+    ...(rivalRecords ?? {}),
+    [rivalId]: {
+      rivalId,
+      wins,
+      losses,
+      draws,
+      seenCount: (previous?.seenCount ?? 0) + 1,
+      lastOutcome: outcome,
+      streak: signedStreak,
+      lastSeenAt: seenAt,
+    },
+  };
 }
 
 function buildMissionSynergyTags(cards, mission) {
@@ -1136,16 +1380,28 @@ export function getMissionEffectiveRequirements(mission, selectedCounterOptionId
   return [...(mission?.requirements ?? []), ...(selectedOption?.requirements ?? [])];
 }
 
-export function buildMissionActiveRunState(deck, mission, weatherPayload = null, launchedAt = new Date().toISOString()) {
+export function buildMissionActiveRunState(deck, mission, weatherPayload = null, launchedAt = new Date().toISOString(), rivalRecords = {}) {
   const encounter = getMissionEncounter(mission);
   if (!encounter) return null;
   const weatherByDistrict = buildWeatherMap(weatherPayload);
   const readyCards = Array.isArray(deck?.cards) ? deck.cards.filter((card) => isMissionCardReady(card)) : [];
   const activeCards = buildMissionActiveCards(readyCards);
   const weather = weatherByDistrict[mission.district] ?? null;
-  const statusEffects = buildMissionStatusEffects(readyCards, mission, weather);
+  const boardPlaystyles = buildMissionBoardPlaystyles(readyCards, mission);
+  const statusEffects = [
+    ...buildMissionStatusEffects(readyCards, mission, weather),
+    ...buildMissionPlaystyleEffects(boardPlaystyles),
+  ];
   const synergyTags = buildMissionSynergyTags(readyCards, mission);
+  const rivalPressure = buildMissionRivalPressure(mission, rivalRecords);
   const enrichedEncounter = enrichEncounterOptions(encounter, activeCards, mission, statusEffects, synergyTags);
+  const storyBeats = buildMissionStoryBeats({
+    mission,
+    deckName: typeof deck?.name === 'string' ? deck.name : 'Unnamed Deck',
+    playstyles: boardPlaystyles,
+    rivalPressure,
+    encounter: enrichedEncounter,
+  });
   return {
     phase: 'event',
     launchedAt,
@@ -1155,9 +1411,12 @@ export function buildMissionActiveRunState(deck, mission, weatherPayload = null,
     activeCardIds: activeCards.map((card) => card.id),
     synergyTags,
     statusEffects,
+    boardPlaystyles,
+    rivalPressure,
     availableCounterOptionIds: enrichedEncounter.options.filter((option) => option.available).map((option) => option.id),
     counterPower: statusEffects.reduce((sum, effect) => sum + (Number(effect?.powerDelta) || 0), 0),
     summary: enrichedEncounter.threat,
+    storyBeats,
   };
 }
 
@@ -1172,6 +1431,15 @@ export function resolveMissionCounterChoice(mission, deck, activeRun, counterOpt
       rewardOzziesDelta: -20,
       summary: 'The crew had to take a hard cutout when the live counter window closed.',
       joustResult: null,
+      rewardSignals: [],
+      storyBeats: buildMissionStoryBeats({
+        mission,
+        deckName: typeof deck?.name === 'string' ? deck.name : 'Unnamed Deck',
+        playstyles: activeRun?.boardPlaystyles ?? [],
+        rivalPressure: activeRun?.rivalPressure ?? null,
+        resolutionSummary: 'The crew had to bail before the district pressure turned the route into a wipeout.',
+      }),
+      rivalPressure: activeRun?.rivalPressure ?? null,
     };
   }
   const selectedOption = encounter.options.find((option) => option.id === selectedId) ?? null;
@@ -1183,27 +1451,71 @@ export function resolveMissionCounterChoice(mission, deck, activeRun, counterOpt
       rewardOzziesDelta: -20,
       summary: 'The live counter fizzled, so the crew escaped through a hard cutout.',
       joustResult: null,
+      rewardSignals: [],
+      storyBeats: buildMissionStoryBeats({
+        mission,
+        deckName: typeof deck?.name === 'string' ? deck.name : 'Unnamed Deck',
+        playstyles: activeRun?.boardPlaystyles ?? [],
+        rivalPressure: activeRun?.rivalPressure ?? null,
+        resolutionSummary: 'The live counter fizzled and the crew had to settle for a clipped escape line.',
+      }),
+      rivalPressure: activeRun?.rivalPressure ?? null,
     };
   }
   if (selectedOption.encounterType === 'joust') {
     const joustResult = resolveMissionJoust(mission, deck, activeRun, playerTactic);
+    const rewardSignals = buildMissionRewardSignals(mission, activeRun, selectedOption, joustResult);
+    const signalTotals = getMissionRewardSignalTotals(rewardSignals);
     const rewards = joustResult ? getMissionJoustRewards(joustResult) : MISSION_JOUST_BASE_REWARDS.loss;
+    const rivalPressure = activeRun?.rivalPressure ?? null;
+    const storyBeats = buildMissionStoryBeats({
+      mission,
+      deckName: typeof deck?.name === 'string' ? deck.name : 'Unnamed Deck',
+      playstyles: activeRun?.boardPlaystyles ?? [],
+      rivalPressure,
+      encounter,
+      resolutionSummary: joustResult?.narration ?? `${selectedOption.label} settled into a cautious draw.`,
+      rewardSignals,
+    });
     return {
       selectedOption,
       hardCutout: false,
-      rewardXpDelta: rewards.rewardXpDelta,
-      rewardOzziesDelta: rewards.rewardOzziesDelta,
+      rewardXpDelta: rewards.rewardXpDelta + signalTotals.rewardXpDelta,
+      rewardOzziesDelta: rewards.rewardOzziesDelta + signalTotals.rewardOzziesDelta,
       summary: joustResult?.narration ?? `${selectedOption.label} settled into a cautious draw.`,
-      joustResult,
+      joustResult: joustResult
+        ? {
+          ...joustResult,
+          rewardSignals,
+          rivalPressure,
+        }
+        : null,
+      rewardSignals,
+      storyBeats,
+      rivalPressure,
     };
   }
+  const rewardSignals = buildMissionRewardSignals(mission, activeRun, selectedOption, null);
+  const signalTotals = getMissionRewardSignalTotals(rewardSignals);
+  const rivalPressure = activeRun?.rivalPressure ?? null;
   return {
     selectedOption,
     hardCutout: false,
-    rewardXpDelta: Number(selectedOption.rewardXpDelta) || 0,
-    rewardOzziesDelta: Number(selectedOption.rewardOzziesDelta) || 0,
+    rewardXpDelta: (Number(selectedOption.rewardXpDelta) || 0) + signalTotals.rewardXpDelta,
+    rewardOzziesDelta: (Number(selectedOption.rewardOzziesDelta) || 0) + signalTotals.rewardOzziesDelta,
     summary: selectedOption.successSummary ?? `${selectedOption.label} kept the run moving.`,
     joustResult: null,
+    rewardSignals,
+    storyBeats: buildMissionStoryBeats({
+      mission,
+      deckName: typeof deck?.name === 'string' ? deck.name : 'Unnamed Deck',
+      playstyles: activeRun?.boardPlaystyles ?? [],
+      rivalPressure,
+      encounter,
+      resolutionSummary: selectedOption.successSummary ?? `${selectedOption.label} kept the run moving.`,
+      rewardSignals,
+    }),
+    rivalPressure,
   };
 }
 
@@ -1345,7 +1657,11 @@ export function evaluateMissionDeck(deck, mission, weatherPayload = null, select
   const weatherByDistrict = buildWeatherMap(weatherPayload);
   const cards = Array.isArray(deck?.cards) ? deck.cards.filter((card) => isMissionCardReady(card)) : [];
   const weather = weatherByDistrict[mission.district] ?? null;
-  const statusEffects = buildMissionStatusEffects(cards, mission, weather);
+  const boardPlaystyles = buildMissionBoardPlaystyles(cards, mission);
+  const statusEffects = [
+    ...buildMissionStatusEffects(cards, mission, weather),
+    ...buildMissionPlaystyleEffects(boardPlaystyles),
+  ];
   const synergyTags = buildMissionSynergyTags(cards, mission);
   const activeCards = buildMissionActiveCards(cards);
   const selectedOption = getMissionEncounterOption(mission, selectedCounterOptionId)
@@ -1433,6 +1749,7 @@ export function evaluateMissionDeck(deck, mission, weatherPayload = null, select
       : firstUnmet?.detail ?? 'This deck is missing mission requirements.',
     results,
     statusEffects,
+    boardPlaystyles,
     synergyTags,
     activeCardIds: activeCards.map((card) => card.id),
     counterPower: statusEffects.reduce((sum, effect) => sum + (Number(effect?.powerDelta) || 0), 0),
