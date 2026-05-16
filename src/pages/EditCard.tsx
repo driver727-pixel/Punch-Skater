@@ -78,6 +78,24 @@ function normalizeFaceCharacter(faceCharacter?: string): FaceCharacter {
   return LEGACY_FACE_CHARACTER_MAP[faceCharacter ?? ""] ?? "Conventional";
 }
 
+// Builds the canonical CardPrompts object from a saved card, normalising any
+// legacy field values to the current enum sets.
+function buildPromptsFromCard(card: CardPayload): CardPrompts {
+  return {
+    archetype: card.prompts.archetype,
+    rarity: card.prompts.rarity as Rarity,
+    style: resolveArchetypeStyle(card.prompts.archetype, card.prompts.style),
+    district: card.prompts.district as District,
+    accentColor: card.prompts.accentColor,
+    gender: (card.prompts.gender as Gender) ?? "Non-binary",
+    ageGroup: normalizeAgeGroup(card.prompts.ageGroup),
+    bodyType: normalizeBodyType(card.prompts.bodyType),
+    hairLength: normalizeHairLength(card.prompts.hairLength),
+    skinTone: normalizeSkinTone(card.prompts.skinTone),
+    faceCharacter: normalizeFaceCharacter(card.prompts.faceCharacter),
+  };
+}
+
 export function EditCard() {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
@@ -105,19 +123,7 @@ export function EditCard() {
   // Initialise prompts from the original card once loaded.
   useEffect(() => {
     if (original && !prompts) {
-      setPrompts({
-        archetype: original.prompts.archetype,
-        rarity: original.prompts.rarity as Rarity,
-        style: resolveArchetypeStyle(original.prompts.archetype, original.prompts.style),
-        district: original.prompts.district as District,
-        accentColor: original.prompts.accentColor,
-        gender: (original.prompts.gender as Gender) ?? "Non-binary",
-        ageGroup: normalizeAgeGroup(original.prompts.ageGroup),
-        bodyType: normalizeBodyType(original.prompts.bodyType),
-        hairLength: normalizeHairLength(original.prompts.hairLength),
-        skinTone: normalizeSkinTone(original.prompts.skinTone),
-        faceCharacter: normalizeFaceCharacter(original.prompts.faceCharacter),
-      });
+      setPrompts(buildPromptsFromCard(original));
       if (original.board) setBoardConfig(normalizeBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board }));
       setPreview(original);
     }
@@ -263,20 +269,7 @@ export function EditCard() {
   };
 
   const handleReset = () => {
-    const resetPrompts: CardPrompts = {
-      archetype: original.prompts.archetype,
-      rarity: original.prompts.rarity as Rarity,
-      style: resolveArchetypeStyle(original.prompts.archetype, original.prompts.style),
-      district: original.prompts.district as District,
-      accentColor: original.prompts.accentColor,
-      gender: (original.prompts.gender as Gender) ?? "Non-binary",
-      ageGroup: normalizeAgeGroup(original.prompts.ageGroup),
-      bodyType: normalizeBodyType(original.prompts.bodyType),
-      hairLength: normalizeHairLength(original.prompts.hairLength),
-      skinTone: normalizeSkinTone(original.prompts.skinTone),
-      faceCharacter: normalizeFaceCharacter(original.prompts.faceCharacter),
-    };
-    setPrompts(resetPrompts);
+    setPrompts(buildPromptsFromCard(original));
     setBoardConfig(normalizeBoardConfig({ ...DEFAULT_BOARD_CONFIG, ...original.board }));
     setPreview(original);
     setIsDirty(false);
@@ -291,6 +284,11 @@ export function EditCard() {
     setSaved(true);
     setTimeout(() => navigate("/collection"), 800);
   };
+
+  const isSaveDisabled = saved || !isDirty || isAutoUpdating || !preview;
+  const saveButtonStyle = isDirty && !isAutoUpdating && !saved
+    ? { borderColor: "var(--accent2)", color: "var(--accent2)" }
+    : undefined;
 
   return (
     <div className="page">
@@ -438,8 +436,8 @@ export function EditCard() {
             <button
               className="btn-primary btn-lg"
               onClick={() => { sfxClick(); handleSaveEdit(); }}
-              disabled={saved || !isDirty || isAutoUpdating || !preview}
-              style={isDirty && !isAutoUpdating && !saved ? { borderColor: "var(--accent2)", color: "var(--accent2)" } : undefined}
+              disabled={isSaveDisabled}
+              style={saveButtonStyle}
             >
               {saved ? "✓ Saved!" : "💾 Save Changes"}
             </button>
