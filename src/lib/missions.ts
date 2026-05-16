@@ -505,7 +505,12 @@ function buildMissionBoardPlaystyles(
   return candidates
     .sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label))
     .slice(0, 2)
-    .map(({ weight: _weight, ...playstyle }) => playstyle);
+    .map((playstyle) => ({
+      id: playstyle.id,
+      label: playstyle.label,
+      summary: playstyle.summary,
+      powerDelta: playstyle.powerDelta,
+    }));
 }
 
 function buildMissionPlaystyleEffects(playstyles: MissionBoardPlaystyle[]): MissionStatusEffect[] {
