@@ -3842,6 +3842,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 /* ===== Account Settings Page ===== */
 .account-settings {
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   gap: 28px;
