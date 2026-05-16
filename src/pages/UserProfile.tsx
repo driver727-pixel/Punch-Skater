@@ -2,10 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTier } from "../context/TierContext";
 import { useCollection } from "../hooks/useCollection";
+import { useDecks } from "../hooks/useDecks";
 import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { TIERS } from "../lib/tiers";
 import { sfxNavigate } from "../lib/sfx";
 import { useLeaderboard } from "../hooks/useLeaderboard";
+import { CardThumbnail } from "../components/CardThumbnail";
 
 interface ProfileLinkProps {
   icon: string;
@@ -38,13 +40,19 @@ function ProfileLink({ icon, label, to, badge, desc }: ProfileLinkProps) {
   );
 }
 
+const PRIMARY_DECK_CARD_WIDTH = 160;
+const PRIMARY_DECK_CARD_HEIGHT = 224;
+
 export function UserProfile() {
   const { user, userProfile } = useAuth();
   const { tier } = useTier();
   const tierData = TIERS[tier];
   const { cards } = useCollection();
+  const { decks } = useDecks();
   const { discoveredFactions } = useFactionDiscovery();
   const { myEntry } = useLeaderboard();
+
+  const primaryDeck = decks.find((d) => d.isPrimary) ?? null;
 
   const displayName = user?.displayName ?? user?.email?.split("@")[0] ?? "Courier";
   const avatarLetter = displayName[0].toUpperCase();
@@ -103,6 +111,33 @@ export function UserProfile() {
           </div>
         )}
       </div>
+
+      {/* ── Primary Deck ───────────────────────────────────── */}
+      <section className="profile-primary-deck">
+        <h2 className="profile-hub-heading">
+          Primary Deck
+          {primaryDeck && (
+            <span className="profile-primary-deck__name"> — {primaryDeck.name}</span>
+          )}
+        </h2>
+        {primaryDeck ? (
+          <div className="profile-primary-deck__cards">
+            {primaryDeck.cards.map((card) => (
+              <div key={card.id} className="profile-primary-deck__card">
+                <CardThumbnail card={card} width={PRIMARY_DECK_CARD_WIDTH} height={PRIMARY_DECK_CARD_HEIGHT} />
+                <span className="profile-primary-deck__card-name">{card.identity.name}</span>
+              </div>
+            ))}
+            {primaryDeck.cards.length === 0 && (
+              <p className="profile-primary-deck__empty">No cards in this deck yet.</p>
+            )}
+          </div>
+        ) : (
+          <p className="profile-primary-deck__empty">
+            No primary deck set — head to the <strong>Deck Builder</strong> and star a deck to feature it here.
+          </p>
+        )}
+      </section>
 
       {/* ── Hub links ──────────────────────────────────────── */}
       <section className="profile-hub">
