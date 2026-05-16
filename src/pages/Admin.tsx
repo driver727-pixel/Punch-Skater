@@ -16,6 +16,7 @@ import { db, auth } from "../lib/firebase";
 import { TIERS, type TierLevel } from "../lib/tiers";
 import { resolveApiUrl } from "../lib/apiUrls";
 import type { CardPayload } from "../lib/types";
+import { AdminCombinationStatsPanel } from "../components/AdminCombinationStatsPanel";
 
 interface UserProfile {
   uid: string;
@@ -591,6 +592,9 @@ export function Admin() {
               </span>
             </div>
           </div>
+
+          {/* ── Combination coverage ───────────────────────────────────────── */}
+          <AdminCombinationStatsPanel />
 
           {/* ── Player management panel ─────────────────────────────────────── */}
           {managingUser && (
