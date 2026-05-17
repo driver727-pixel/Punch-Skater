@@ -30,6 +30,7 @@ export function AccountSettings() {
 
   // Display name
   const [displayName, setDisplayName] = useState(currentDisplayName);
+  const [displayNameDirty, setDisplayNameDirty] = useState(false);
   const [nameSuccess, setNameSuccess] = useState("");
   const [nameError, setNameError] = useState("");
   const [nameLoading, setNameLoading] = useState(false);
@@ -61,8 +62,10 @@ export function AccountSettings() {
   }, [userProfile?.craftlinguaLink?.shareCode]);
 
   useEffect(() => {
-    setDisplayName(currentDisplayName);
-  }, [currentDisplayName]);
+    if (!displayNameDirty) {
+      setDisplayName(currentDisplayName);
+    }
+  }, [currentDisplayName, displayNameDirty]);
 
   const isEmailUser = !!user?.email && user.providerData.some(p => p.providerId === "password");
 
@@ -82,6 +85,7 @@ export function AccountSettings() {
     setNameLoading(true);
     try {
       await changeDisplayName(trimmed);
+      setDisplayNameDirty(false);
       setNameSuccess("Display name updated!");
     } catch (err: unknown) {
       setNameError(friendlyError(err));
@@ -196,7 +200,13 @@ export function AccountSettings() {
                 className="input"
                 type="text"
                 value={displayName}
-                onChange={(e) => { setDisplayName(e.target.value); setNameSuccess(""); setNameError(""); }}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setDisplayName(nextValue);
+                  setDisplayNameDirty(nextValue !== currentDisplayName);
+                  setNameSuccess("");
+                  setNameError("");
+                }}
                 maxLength={40}
                 required
                 autoComplete="name"

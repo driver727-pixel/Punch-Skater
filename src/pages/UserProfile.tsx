@@ -59,6 +59,7 @@ export function UserProfile() {
     profileDisplayName: userProfile?.displayName,
     authDisplayName: user?.displayName,
     email: user?.email,
+    fallbackName: "Courier",
   });
   const avatarLetter = resolveUserInitial(displayName);
   const missionXp = userProfile?.missionXp ?? 0;

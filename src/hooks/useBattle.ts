@@ -337,7 +337,7 @@ export function useBattle() {
         throw err;
       }
     },
-    [uid, user, userProfile?.displayName],
+    [uid, user?.displayName, user?.email, userProfile?.displayName],
   );
 
   const unreadyDeck = useCallback(async () => {
