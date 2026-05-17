@@ -785,12 +785,32 @@ export function Collection() {
               </CardContainer>
               <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {tierData.canSave && (
-                  <button
-                    className="btn-outline btn-sm"
-                    onClick={() => navigate(`/edit/${selected.id}?focus=name`)}
-                  >
-                    ✎ Edit Name
-                  </button>
+                  <>
+                    <button
+                      className="btn-primary btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}`)}
+                    >
+                      ✎ Customize Card
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}?mode=identity&focus=name`)}
+                    >
+                      Rename
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}?mode=layout`)}
+                    >
+                      ↔ Reposition Art
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}?mode=art`)}
+                    >
+                      ✨ Refresh Art
+                    </button>
+                  </>
                 )}
                 <button
                   className="btn-outline btn-3d btn-sm"
@@ -826,11 +846,11 @@ export function Collection() {
                  >
                    🤝 Send Offer
                  </button>
-                 <button
+                  <button
                     className="btn-outline btn-sm"
                     onClick={() => navigate(`/workshop?card=${selected.id}`)}
                   >
-                    🛹 Edit in Workshop
+                    🛹 Swap Board
                   </button>
                  {tierData.canEditDecks ? (
                    <button
