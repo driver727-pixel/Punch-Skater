@@ -16,6 +16,7 @@ import { sfxNavigate } from "../lib/sfx";
 import { GeoAtlas } from "./GeoAtlas";
 import { useAmbience } from "../hooks/useAmbience";
 import { isEnabled } from "../lib/featureFlags";
+import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
@@ -24,6 +25,12 @@ export function Nav() {
   const tierData = TIERS[tier];
   const uid = user?.uid ?? null;
   const isAdmin = userProfile?.isAdmin === true;
+  const userDisplayName = resolveUserDisplayName({
+    profileDisplayName: userProfile?.displayName,
+    authDisplayName: user?.displayName,
+    email: user?.email,
+  });
+  const userInitial = resolveUserInitial(userDisplayName);
   const [ambienceEnabled, toggleAmbience] = useAmbience();
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -166,9 +173,9 @@ export function Nav() {
                 <button
                   className="user-avatar-btn"
                   onClick={() => setMenuOpen((v) => !v)}
-                  title={user.email ?? "Account"}
+                  title={user.email ?? userDisplayName}
                 >
-                  {(user.displayName ?? user.email ?? "?")[0].toUpperCase()}
+                  {userInitial}
                 </button>
                 {menuOpen && (
                   <div className="user-dropdown">

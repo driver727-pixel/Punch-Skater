@@ -33,6 +33,7 @@ import {
   WINNER_BONUS,
 } from "../lib/battle";
 import { resolveApiUrl } from "../lib/apiUrls";
+import { resolveUserDisplayName } from "../lib/userIdentity";
 
 /** Minimum cards required in a deck to ready for battle. */
 export const MIN_BATTLE_CARDS = 1;
@@ -165,7 +166,7 @@ async function applyBattleResultToUserCollections(uid: string, result: BattleRes
 }
 
 export function useBattle() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const uid = user?.uid ?? null;
 
   const [arenaEntries, setArenaEntries] = useState<ArenaEntry[]>([]);
@@ -305,7 +306,11 @@ export function useBattle() {
       if (!uid || !db || deck.cards.length < MIN_BATTLE_CARDS) return;
       const entry: ArenaEntry = {
         uid,
-        displayName: user?.displayName ?? user?.email?.split("@")[0] ?? "Skater",
+        displayName: resolveUserDisplayName({
+          profileDisplayName: userProfile?.displayName,
+          authDisplayName: user?.displayName,
+          email: user?.email,
+        }),
         deckId: deck.id,
         deckName: deck.name,
         cardCount: deck.cards.length,
@@ -332,7 +337,7 @@ export function useBattle() {
         throw err;
       }
     },
-    [uid, user],
+    [uid, user?.displayName, user?.email, userProfile?.displayName],
   );
 
   const unreadyDeck = useCallback(async () => {

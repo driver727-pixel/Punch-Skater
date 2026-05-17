@@ -8,6 +8,7 @@ import { TIERS } from "../lib/tiers";
 import { sfxNavigate } from "../lib/sfx";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { CardThumbnail } from "../components/CardThumbnail";
+import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
 
 interface ProfileLinkProps {
   icon: string;
@@ -54,8 +55,13 @@ export function UserProfile() {
 
   const primaryDeck = decks.find((d) => d.isPrimary) ?? null;
 
-  const displayName = user?.displayName ?? user?.email?.split("@")[0] ?? "Courier";
-  const avatarLetter = displayName[0].toUpperCase();
+  const displayName = resolveUserDisplayName({
+    profileDisplayName: userProfile?.displayName,
+    authDisplayName: user?.displayName,
+    email: user?.email,
+    fallbackName: "Courier",
+  });
+  const avatarLetter = resolveUserInitial(displayName);
   const missionXp = userProfile?.missionXp ?? 0;
   const ozzies = userProfile?.ozzies ?? 0;
 

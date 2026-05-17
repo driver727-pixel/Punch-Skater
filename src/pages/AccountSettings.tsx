@@ -8,6 +8,7 @@ import {
   PASSWORD_REQUIREMENTS_MESSAGE,
   PASSWORD_REQUIREMENTS_PLACEHOLDER,
 } from "../lib/passwordRules";
+import { resolveUserDisplayName } from "../lib/userIdentity";
 
 export function AccountSettings() {
   const {
@@ -21,8 +22,15 @@ export function AccountSettings() {
   } = useAuth();
   const navigate = useNavigate();
 
+  const currentDisplayName = resolveUserDisplayName({
+    profileDisplayName: userProfile?.displayName,
+    authDisplayName: user?.displayName,
+    email: user?.email,
+  });
+
   // Display name
-  const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [displayName, setDisplayName] = useState(currentDisplayName);
+  const [displayNameDirty, setDisplayNameDirty] = useState(false);
   const [nameSuccess, setNameSuccess] = useState("");
   const [nameError, setNameError] = useState("");
   const [nameLoading, setNameLoading] = useState(false);
@@ -53,6 +61,12 @@ export function AccountSettings() {
     setShareCode(userProfile?.craftlinguaLink?.shareCode ?? "");
   }, [userProfile?.craftlinguaLink?.shareCode]);
 
+  useEffect(() => {
+    if (!displayNameDirty) {
+      setDisplayName(currentDisplayName);
+    }
+  }, [currentDisplayName, displayNameDirty]);
+
   const isEmailUser = !!user?.email && user.providerData.some(p => p.providerId === "password");
 
   const handleDisplayNameSubmit = async (e: React.FormEvent) => {
@@ -64,13 +78,14 @@ export function AccountSettings() {
       setNameError("Display name cannot be empty.");
       return;
     }
-    if (trimmed === user?.displayName) {
+    if (trimmed === currentDisplayName) {
       setNameError("That is already your display name.");
       return;
     }
     setNameLoading(true);
     try {
       await changeDisplayName(trimmed);
+      setDisplayNameDirty(false);
       setNameSuccess("Display name updated!");
     } catch (err: unknown) {
       setNameError(friendlyError(err));
@@ -185,7 +200,13 @@ export function AccountSettings() {
                 className="input"
                 type="text"
                 value={displayName}
-                onChange={(e) => { setDisplayName(e.target.value); setNameSuccess(""); setNameError(""); }}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setDisplayName(nextValue);
+                  setDisplayNameDirty(nextValue !== currentDisplayName);
+                  setNameSuccess("");
+                  setNameError("");
+                }}
                 maxLength={40}
                 required
                 autoComplete="name"
