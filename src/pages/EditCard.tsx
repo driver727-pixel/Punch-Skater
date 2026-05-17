@@ -1024,7 +1024,7 @@ export function EditCard() {
                 </span>
               </div>
               <p className="form-hint edit-card-text-hint">
-                ✎ Click the courier&apos;s name, age, or bio directly to edit them. All other saved-card controls live in the left column.
+                ✎ Click the courier&apos;s name, age, or bio directly to edit these fields. All other saved-card controls live in the left column.
               </p>
               <CardDisplay
                 card={preview}
