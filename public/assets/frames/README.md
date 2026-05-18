@@ -42,7 +42,7 @@ Keep the raster files only while you still need backward compatibility for
 cards that already saved `frameImageUrl` values pointing at them.
 
 Once you have migrated or retired those records, you can remove both the files
-and their registrations in `/home/runner/work/Punch-Skater/Punch-Skater/src/services/staticAssets.ts`.
+and their registrations in `src/services/staticAssets.ts`.
 
 ## How to Get Images
 
@@ -55,9 +55,8 @@ and their registrations in `/home/runner/work/Punch-Skater/Punch-Skater/src/serv
 
 ## Activating a File
 
-After placing the file, open
-`/home/runner/work/Punch-Skater/Punch-Skater/src/services/staticAssets.ts` and
-add the corresponding entry in `FRAME_ASSETS`:
+After placing the file, open `src/services/staticAssets.ts` and add the
+corresponding entry in `FRAME_ASSETS`:
 
 ```ts
 const FRAME_ASSETS: Partial<Record<Rarity, string>> = {
