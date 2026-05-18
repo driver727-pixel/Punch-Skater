@@ -15,9 +15,9 @@ import { InsetNeonTube } from "./InsetNeonTube";
 import { hasBuiltInFrameDesignator, RARITY_COLORS } from "../lib/cardRarityVisuals";
 import {
   getFrameBlendMode,
-  getStaticFrameBackUrl,
   shouldInsetBackgroundForFrame,
   shouldRenderSvgFrame,
+  shouldUseWrapFrameLayout,
 } from "../services/staticAssets";
 import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 import {
@@ -195,11 +195,11 @@ function CompositeArt({
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
     : "card-art-layer card-art-layer--background";
   const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
-  const hasBackFrame = getStaticFrameBackUrl(card.prompts.rarity) != null;
+  const hasWrapFrame = shouldUseWrapFrameLayout(card.prompts.rarity, frameImageUrl);
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
-  const frameLayerClassName = hasBackFrame
+  const frameLayerClassName = hasWrapFrame
     ? "card-art-layer card-art-layer--frame card-art-layer--frame-wrap"
     : "card-art-layer card-art-layer--frame";
   const boardPoseScene = resolveBoardPoseScene(card.characterSeed);
@@ -219,7 +219,7 @@ function CompositeArt({
   }
 
   return (
-    <div className={`card-art-composite${fullSize ? " card-art-composite--full" : ""}${hasBackFrame ? " card-art-composite--wrap-frame" : ""}`}>
+    <div className={`card-art-composite${fullSize ? " card-art-composite--full" : ""}${hasWrapFrame ? " card-art-composite--wrap-frame" : ""}`}>
       {/* Layer 1 – Background (district environment) */}
       {backgroundImageUrl ? (
         <img
@@ -261,7 +261,7 @@ function CompositeArt({
         </div>
       ) : null}
 
-      {/* Layer 4 – Frame (ornate rarity border, screen-blended AI image — used for Punch Skater) */}
+      {/* Layer 4 – Legacy raster frame fallback for older saved cards */}
       {frameImageUrl && !showSvgFrame ? (
         <img
           src={frameImageUrl}
@@ -276,7 +276,7 @@ function CompositeArt({
         </div>
       ) : null}
 
-      {/* Layer 5 – SVG neon border overlay for the four redesigned rarity frames */}
+      {/* Layer 5 – Built-in procedural frame overlay */}
       {showSvgFrame && (
         <FrameOverlay
           rarity={card.prompts.rarity}

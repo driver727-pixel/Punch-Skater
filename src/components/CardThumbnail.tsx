@@ -4,9 +4,9 @@ import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
 import {
   getFrameBlendMode,
-  getStaticFrameBackUrl,
   shouldInsetBackgroundForFrame,
   shouldRenderSvgFrame,
+  shouldUseWrapFrameLayout,
 } from "../services/staticAssets";
 import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 import {
@@ -30,7 +30,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
   const [boardImageFailed, setBoardImageFailed] = useState(false);
   const { backgroundImageUrl, characterImageUrl, frameImageUrl } = card;
   const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
-  const hasBackFrame = getStaticFrameBackUrl(card.prompts.rarity) != null;
+  const hasWrapFrame = shouldUseWrapFrameLayout(card.prompts.rarity, frameImageUrl);
   const hasLayers = backgroundImageUrl || characterImageUrl || frameImageUrl;
   const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
@@ -38,7 +38,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
-  const frameLayerClassName = hasBackFrame
+  const frameLayerClassName = hasWrapFrame
     ? "card-art-layer card-art-layer--frame card-art-layer--frame-wrap"
     : "card-art-layer card-art-layer--frame";
   const boardPoseScene = resolveBoardPoseScene(card.characterSeed);
@@ -57,7 +57,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
   }
 
   return (
-    <div className={`card-art-composite${hasBackFrame ? " card-art-composite--wrap-frame" : ""}`} style={{ width, height }}>
+    <div className={`card-art-composite${hasWrapFrame ? " card-art-composite--wrap-frame" : ""}`} style={{ width, height }}>
       {backgroundImageUrl && (
         <img
           src={backgroundImageUrl}

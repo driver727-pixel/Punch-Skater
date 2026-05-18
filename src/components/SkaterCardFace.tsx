@@ -29,6 +29,7 @@ import {
   getStaticFrameBackUrl,
   shouldInsetBackgroundForFrame,
   shouldRenderSvgFrame,
+  shouldUseWrapFrameLayout,
 } from "../services/staticAssets";
 import { computeFocalCrop } from "../lib/focalCrop";
 import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
@@ -233,11 +234,11 @@ function CardFront({
     ? "print-art-layer print-art-layer--bg print-art-layer--bg-inset"
     : "print-art-layer print-art-layer--bg";
   const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
-  const hasBackFrame = getStaticFrameBackUrl(card.prompts.rarity) != null;
+  const hasWrapFrame = shouldUseWrapFrameLayout(card.prompts.rarity, frameImageUrl);
   const frameLayerStyle = frameImageUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, frameImageUrl) }
     : undefined;
-  const frameLayerClass = hasBackFrame
+  const frameLayerClass = hasWrapFrame
     ? "print-art-layer print-art-layer--frame print-art-layer--frame-wrap"
     : "print-art-layer print-art-layer--frame";
   const boardPoseScene = resolveBoardPoseScene(card.characterSeed);
@@ -270,7 +271,7 @@ function CardFront({
   });
 
   // Focal-crop background when the rarity has a dual-face PNG frame.
-  const bgStyle: React.CSSProperties | undefined = (backgroundImageUrl && hasBackFrame)
+  const bgStyle: React.CSSProperties | undefined = (backgroundImageUrl && hasWrapFrame)
     ? {
         objectFit: "cover",
         objectPosition: computeFocalCrop(card.frameSeed, "front").objectPosition,
@@ -367,17 +368,19 @@ function CardBack({
   card,
   editable = false,
   metadataEditable = editable,
+  frameImageUrl,
   onNameChange,
   onBioChange,
   onAgeChange,
   onStatChange,
   boardImageLoading = false,
-}: Pick<SkaterCardFaceProps, "card" | "editable" | "metadataEditable" | "onNameChange" | "onBioChange" | "onAgeChange" | "onStatChange" | "boardImageLoading">) {
+}: Pick<SkaterCardFaceProps, "card" | "editable" | "metadataEditable" | "frameImageUrl" | "onNameChange" | "onBioChange" | "onAgeChange" | "onStatChange" | "boardImageLoading">) {
   const [boardImageFailed, setBoardImageFailed] = useState(false);
   const accent = card.visuals.accentColor || "#00ff88";
   const rarityColor = RARITY_COLORS[card.prompts.rarity] || "#aaaaaa";
   const hasBuiltInDesignator = hasBuiltInFrameDesignator(card.prompts.rarity);
-  const backFrameUrl = getStaticFrameBackUrl(card.prompts.rarity);
+  const showSvgFrame = shouldRenderSvgFrame(card.prompts.rarity, frameImageUrl);
+  const backFrameUrl = showSvgFrame ? null : getStaticFrameBackUrl(card.prompts.rarity);
   const hasBackFrame = backFrameUrl != null;
   const backFrameStyle = backFrameUrl
     ? { mixBlendMode: getFrameBlendMode(card.prompts.rarity, backFrameUrl) }
@@ -602,6 +605,14 @@ function CardBack({
         )}
       </div>
 
+      {showSvgFrame && (
+        <FrameOverlay
+          rarity={card.prompts.rarity}
+          frameSeed={card.frameSeed}
+          className="print-art-layer print-art-layer--svg-frame print-art-layer--frame-back print-art-layer--frame-wrap"
+        />
+      )}
+
       {backFrameUrl && (
         <img
           src={backFrameUrl}
@@ -666,6 +677,7 @@ export function SkaterCardFace({
       card={card}
       editable={editable}
       metadataEditable={metadataEditable}
+      frameImageUrl={frameImageUrl}
       onNameChange={onNameChange}
       onBioChange={onBioChange}
       onAgeChange={onAgeChange}

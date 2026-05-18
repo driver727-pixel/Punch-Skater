@@ -1,10 +1,11 @@
 # Card Frame / Border Assets
 
-Place rarity-tier border frame images here for the legacy raster frame fallback.
+Place rarity-tier border frame images here only if you need the legacy raster
+frame fallback for older saved cards.
 
-The live app now prefers the built-in SVG cable borders for Punch Skater, Apprentice,
-Master, Rare, and Legendary. These files are only used when older saved cards still
-reference the registered PNG overlay paths.
+The live app now renders built-in procedural frames for Punch Skater,
+Apprentice, Master, Rare, and Legendary by default. These files are no longer
+part of the normal forge path.
 
 ## Filename Convention
 
@@ -35,20 +36,28 @@ For best results the frame image should have:
 Legacy AI-generated frames with a black interior still work. Those continue to use
 screen blending automatically when they are not one of the registered static assets.
 
+## When to Keep These Files
+
+Keep the raster files only while you still need backward compatibility for
+cards that already saved `frameImageUrl` values pointing at them.
+
+Once you have migrated or retired those records, you can remove both the files
+and their registrations in `/home/runner/work/Punch-Skater/Punch-Skater/src/services/staticAssets.ts`.
+
 ## How to Get Images
 
-1. **AI-generated (first time):** Click "FORGE COURIER CARD" with the desired rarity. The
-   generated URL is logged to the browser console as
-   `[StaticAsset] Generated frame for <Rarity>: <URL>`. Download and save it here, then
-   register it in `src/services/staticAssets.ts`.
+1. **Older saved cards already depend on them:** Keep the existing registered
+   files in place until those cards have been migrated.
 
-2. **Custom artwork:** Design your own border in any image editor. Export as WebP (preferred)
-   or PNG/JPG, named per the table above.
+2. **Manual legacy fallback:** If you intentionally want a raster fallback for a
+   rarity, design or export the border art as WebP (preferred) or PNG/JPG and
+   name it per the table above.
 
 ## Activating a File
 
-After placing the file, open `src/services/staticAssets.ts` and uncomment (or add) the
-corresponding entry in `FRAME_ASSETS`:
+After placing the file, open
+`/home/runner/work/Punch-Skater/Punch-Skater/src/services/staticAssets.ts` and
+add the corresponding entry in `FRAME_ASSETS`:
 
 ```ts
 const FRAME_ASSETS: Partial<Record<Rarity, string>> = {
@@ -60,4 +69,5 @@ const FRAME_ASSETS: Partial<Record<Rarity, string>> = {
 };
 ```
 
-Once registered, zero fal.ai credits are consumed for that rarity tier's frame.
+Registering a file does not make it the primary render path. It only keeps the
+legacy raster fallback available for cards that already store that frame URL.

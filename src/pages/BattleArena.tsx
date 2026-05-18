@@ -19,6 +19,8 @@ import { fetchRaceArena, startSoloRace, type ArenaListEntry } from "../services/
 import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
+import { FrameOverlay } from "../components/FrameOverlay";
+import { shouldInsetBackgroundForFrame, shouldRenderSvgFrame, shouldUseWrapFrameLayout } from "../services/staticAssets";
 
 type TabKey = "challengers" | "hub" | "solo";
 
@@ -58,23 +60,37 @@ function ArenaCardThumb({
   hideChallengeBorder?: boolean;
 }) {
   const hasLayers = snapshot.backgroundImageUrl || snapshot.characterImageUrl || snapshot.frameImageUrl;
+  const showSvgFrame = shouldRenderSvgFrame(snapshot.rarity, snapshot.frameImageUrl);
+  const hasWrapFrame = shouldUseWrapFrameLayout(snapshot.rarity, snapshot.frameImageUrl);
+  const backgroundClassName = shouldInsetBackgroundForFrame(snapshot.rarity, snapshot.frameImageUrl)
+    ? "race-arena-card-art-layer race-arena-card-art-layer--background-inset"
+    : "race-arena-card-art-layer";
   return (
     <button
       type="button"
       className={`race-arena-card${selected ? " race-arena-card--selected" : ""}${isChallenger && !hideChallengeBorder ? " race-arena-card--challenger" : ""}`}
       onClick={onClick}
     >
-      <div className="race-arena-card-art">
+      <div className={`race-arena-card-art${hasWrapFrame ? " race-arena-card-art--wrap-frame" : ""}`}>
         {hasLayers ? (
           <>
             {snapshot.backgroundImageUrl && (
-              <img src={snapshot.backgroundImageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
+              <img src={snapshot.backgroundImageUrl} alt="" className={backgroundClassName} loading="lazy" />
             )}
             {snapshot.characterImageUrl && (
               <img src={snapshot.characterImageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
             )}
-            {snapshot.frameImageUrl && (
+            {snapshot.frameImageUrl && !showSvgFrame && (
               <img src={snapshot.frameImageUrl} alt="" className="race-arena-card-art-layer race-arena-card-art-layer--frame" loading="lazy" />
+            )}
+            {showSvgFrame && (
+              <FrameOverlay
+                rarity={snapshot.rarity}
+                frameSeed={snapshot.id}
+                width={56}
+                height={78}
+                className="race-arena-card-art-layer race-arena-card-art-layer--svg-frame"
+              />
             )}
           </>
         ) : snapshot.imageUrl ? (

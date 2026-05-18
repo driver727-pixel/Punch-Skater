@@ -13,7 +13,7 @@ import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
 import type { BoardPlacement, CardPayload, CharacterPlacement, WorkshopBoardPayload } from "../lib/types";
 import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
 import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../services/boardImageGen";
-import { getStaticFrameBackUrl } from "../services/staticAssets";
+import { shouldUseWrapFrameLayout } from "../services/staticAssets";
 import { removeBackground } from "../services/imageGen";
 import { useAuth } from "../context/AuthContext";
 
@@ -163,7 +163,7 @@ export function Workshop() {
     [editingCard],
   );
   const cardEditorWrapFrameClass = useMemo(
-    () => (editingCard && getStaticFrameBackUrl(editingCard.prompts.rarity) != null ? " print-card--wrap-frame" : ""),
+    () => (editingCard && shouldUseWrapFrameLayout(editingCard.prompts.rarity, editingCard.frameImageUrl) ? " print-card--wrap-frame" : ""),
     [editingCard],
   );
   const isAdmin = userProfile?.isAdmin === true;

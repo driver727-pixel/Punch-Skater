@@ -1,18 +1,19 @@
 import { memo } from "react";
 import type { Rarity } from "../lib/types";
 import { createFrameUid } from "../lib/frameUid";
+import { PROCEDURAL_FRAME_RARITIES } from "../lib/proceduralFrames";
 
 export const FRAME_RENDER_WIDTH = 750;
 export const FRAME_RENDER_HEIGHT = 1050;
 
 export const STANDARD_FRAME_RARITIES = [
+  "Apprentice",
+  "Master",
+  "Rare",
   "Legendary",
 ] as const satisfies readonly Exclude<Rarity, "Punch Skater">[];
 
-export const FRAME_PREVIEW_RARITIES = [
-  "Punch Skater",
-  ...STANDARD_FRAME_RARITIES,
-] as const satisfies readonly Rarity[];
+export const FRAME_PREVIEW_RARITIES = PROCEDURAL_FRAME_RARITIES;
 
 interface FrameProps {
   width: number;
@@ -86,6 +87,50 @@ function buildEdgeSpecks(seed: string, colorA: string, colorB: string) {
     if (side === 1) return { x: FRAME_RENDER_WIDTH - inset, y: FRAME_RENDER_HEIGHT * along, radius, opacity, color };
     if (side === 2) return { x: FRAME_RENDER_WIDTH * along, y: FRAME_RENDER_HEIGHT - inset, radius, opacity, color };
     return { x: inset, y: FRAME_RENDER_HEIGHT * along, radius, opacity, color };
+  });
+}
+
+function buildEdgeBars(seed: string, startIndex: number, count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const along = 0.12 + seededVal(seed, startIndex + index * 5) * 0.76;
+    const edgeInset = 28 + seededVal(seed, startIndex + index * 5 + 1) * 14;
+    const length = 34 + seededVal(seed, startIndex + index * 5 + 2) * 34;
+    const thickness = 5 + seededVal(seed, startIndex + index * 5 + 3) * 4;
+    const side = Math.floor(seededVal(seed, startIndex + index * 5 + 4) * 4);
+
+    if (side === 0) {
+      return { x: FRAME_RENDER_WIDTH * along - length / 2, y: edgeInset, width: length, height: thickness };
+    }
+    if (side === 1) {
+      return { x: FRAME_RENDER_WIDTH - edgeInset - thickness, y: FRAME_RENDER_HEIGHT * along - length / 2, width: thickness, height: length };
+    }
+    if (side === 2) {
+      return { x: FRAME_RENDER_WIDTH * along - length / 2, y: FRAME_RENDER_HEIGHT - edgeInset - thickness, width: length, height: thickness };
+    }
+    return { x: edgeInset, y: FRAME_RENDER_HEIGHT * along - length / 2, width: thickness, height: length };
+  });
+}
+
+function buildRareShards(seed: string) {
+  return Array.from({ length: 10 }, (_, index) => {
+    const side = index % 4;
+    const along = 0.14 + seededVal(seed, 300 + index * 6) * 0.72;
+    const inset = 18 + seededVal(seed, 301 + index * 6) * 18;
+    const width = 18 + seededVal(seed, 302 + index * 6) * 18;
+    const height = 9 + seededVal(seed, 303 + index * 6) * 14;
+    const skew = (seededVal(seed, 304 + index * 6) - 0.5) * 32;
+    const opacity = 0.45 + seededVal(seed, 305 + index * 6) * 0.3;
+
+    if (side === 0) {
+      return { x: FRAME_RENDER_WIDTH * along, y: inset, width, height, skew, opacity, rotate: 0 };
+    }
+    if (side === 1) {
+      return { x: FRAME_RENDER_WIDTH - inset, y: FRAME_RENDER_HEIGHT * along, width, height, skew, opacity, rotate: 90 };
+    }
+    if (side === 2) {
+      return { x: FRAME_RENDER_WIDTH * along, y: FRAME_RENDER_HEIGHT - inset, width, height, skew, opacity, rotate: 180 };
+    }
+    return { x: inset, y: FRAME_RENDER_HEIGHT * along, width, height, skew, opacity, rotate: -90 };
   });
 }
 
@@ -201,6 +246,327 @@ function PunchSkaterFrame({ uid, frameSeed }: { uid: string; frameSeed: string }
           fill={speck.color}
           fillOpacity={speck.opacity}
         />
+      ))}
+    </>
+  );
+}
+
+function ApprenticeFrame({ uid, frameSeed }: { uid: string; frameSeed: string }) {
+  const safeUid = createFrameUid(uid, FRAME_UID_MAX_LENGTH);
+  const bars = buildEdgeBars(frameSeed, 120, 12);
+  const specks = buildEdgeSpecks(frameSeed, "#68ffe0", "#1f6f63");
+
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${safeUid}_apprenticeRail`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#083d36" />
+          <stop offset="34%" stopColor="#30c6a2" />
+          <stop offset="70%" stopColor="#b7fff0" />
+          <stop offset="100%" stopColor="#0c5449" />
+        </linearGradient>
+        <linearGradient id={`${safeUid}_apprenticeCore`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#d6fff6" stopOpacity="0.78" />
+          <stop offset="100%" stopColor="#30c6a2" stopOpacity="0.16" />
+        </linearGradient>
+        <filter id={`${safeUid}_apprenticeGlow`} x="-18%" y="-18%" width="136%" height="136%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect
+        x="18"
+        y="18"
+        width="714"
+        height="1014"
+        rx="46"
+        fill="none"
+        stroke={`url(#${safeUid}_apprenticeRail)`}
+        strokeWidth="8"
+        filter={`url(#${safeUid}_apprenticeGlow)`}
+      />
+      <rect
+        x="34"
+        y="34"
+        width="682"
+        height="982"
+        rx="38"
+        fill="none"
+        stroke={`url(#${safeUid}_apprenticeCore)`}
+        strokeWidth="2.8"
+      />
+
+      {CORNER_TRANSFORMS.map((corner) => (
+        <g key={corner.key} transform={corner.transform}>
+          <path
+            d="M 0 84 C 0 32 32 0 84 0"
+            fill="none"
+            stroke="#2ee1b8"
+            strokeWidth="7"
+            strokeLinecap="round"
+          />
+          <circle cx="18" cy="62" r="8" fill="#062b26" stroke="#87ffe7" strokeWidth="1.6" />
+          <circle cx="62" cy="18" r="8" fill="#062b26" stroke="#87ffe7" strokeWidth="1.6" />
+        </g>
+      ))}
+
+      {FRAME_TOP_CONNECTORS.map((x) => (
+        <g key={`apprentice-top-${x}`} filter={`url(#${safeUid}_apprenticeGlow)`}>
+          <rect x={x - 22} y="15" width="44" height="16" rx="8" fill="#0d574b" stroke="#9effeb" strokeWidth="1.6" />
+          <rect x={x - 22} y={FRAME_RENDER_HEIGHT - 31} width="44" height="16" rx="8" fill="#0d574b" stroke="#9effeb" strokeWidth="1.6" />
+        </g>
+      ))}
+
+      {bars.map((bar, index) => (
+        <rect
+          key={`apprentice-bar-${index}`}
+          x={bar.x}
+          y={bar.y}
+          width={bar.width}
+          height={bar.height}
+          rx={Math.min(bar.width, bar.height) / 2}
+          fill="#91fff0"
+          fillOpacity="0.65"
+          stroke="#155f53"
+          strokeWidth="1"
+        />
+      ))}
+
+      {specks.map((speck, index) => (
+        <circle
+          key={`apprentice-speck-${index}`}
+          cx={speck.x}
+          cy={speck.y}
+          r={speck.radius}
+          fill={speck.color}
+          fillOpacity={Math.min(0.62, speck.opacity)}
+        />
+      ))}
+    </>
+  );
+}
+
+function MasterFrame({ uid, frameSeed }: { uid: string; frameSeed: string }) {
+  const safeUid = createFrameUid(uid, FRAME_UID_MAX_LENGTH);
+  const bars = buildEdgeBars(frameSeed, 220, 14);
+  const nodeOffsets = [132, 275, 475, 618];
+
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${safeUid}_masterRail`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#22022f" />
+          <stop offset="30%" stopColor="#8e2fff" />
+          <stop offset="70%" stopColor="#ffd2ff" />
+          <stop offset="100%" stopColor="#3e0b69" />
+        </linearGradient>
+        <linearGradient id={`${safeUid}_masterTrace`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f7d2ff" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#8e2fff" stopOpacity="0.18" />
+        </linearGradient>
+        <filter id={`${safeUid}_masterGlow`} x="-22%" y="-22%" width="144%" height="144%">
+          <feGaussianBlur stdDeviation="3.8" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect
+        x="18"
+        y="18"
+        width="714"
+        height="1014"
+        rx="46"
+        fill="none"
+        stroke={`url(#${safeUid}_masterRail)`}
+        strokeWidth="7.5"
+        filter={`url(#${safeUid}_masterGlow)`}
+      />
+      <rect
+        x="28"
+        y="28"
+        width="694"
+        height="994"
+        rx="40"
+        fill="none"
+        stroke="#5e1899"
+        strokeWidth="2"
+        strokeOpacity="0.78"
+      />
+      <rect
+        x="42"
+        y="42"
+        width="666"
+        height="966"
+        rx="32"
+        fill="none"
+        stroke={`url(#${safeUid}_masterTrace)`}
+        strokeWidth="2.2"
+        strokeDasharray="12 16"
+      />
+
+      {CORNER_TRANSFORMS.map((corner) => (
+        <g key={corner.key} transform={corner.transform} filter={`url(#${safeUid}_masterGlow)`}>
+          <path
+            d="M 0 92 C 0 40 40 0 92 0"
+            fill="none"
+            stroke="#b76dff"
+            strokeWidth="6.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 9 98 C 18 58 58 18 98 9"
+            fill="none"
+            stroke="#ffd4ff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeOpacity="0.78"
+          />
+          <rect x="14" y="58" width="16" height="12" rx="4" fill="#250031" stroke="#efb7ff" strokeWidth="1.3" />
+          <rect x="58" y="14" width="12" height="16" rx="4" fill="#250031" stroke="#efb7ff" strokeWidth="1.3" />
+        </g>
+      ))}
+
+      {nodeOffsets.map((x) => (
+        <g key={`master-top-${x}`}>
+          <circle cx={x} cy="23" r="6" fill="#2a0339" stroke="#f3c0ff" strokeWidth="1.8" />
+          <circle cx={x} cy={FRAME_RENDER_HEIGHT - 23} r="6" fill="#2a0339" stroke="#f3c0ff" strokeWidth="1.8" />
+        </g>
+      ))}
+
+      {FRAME_SIDE_CONNECTORS.map((y) => (
+        <g key={`master-side-${y}`}>
+          <circle cx="23" cy={y} r="6" fill="#2a0339" stroke="#f3c0ff" strokeWidth="1.8" />
+          <circle cx={FRAME_RENDER_WIDTH - 23} cy={y} r="6" fill="#2a0339" stroke="#f3c0ff" strokeWidth="1.8" />
+        </g>
+      ))}
+
+      {bars.map((bar, index) => (
+        <rect
+          key={`master-bar-${index}`}
+          x={bar.x}
+          y={bar.y}
+          width={bar.width}
+          height={bar.height}
+          rx={Math.min(bar.width, bar.height) / 2}
+          fill="#f3c0ff"
+          fillOpacity="0.5"
+          stroke="#4d0d7c"
+          strokeWidth="1"
+        />
+      ))}
+    </>
+  );
+}
+
+function RareFrame({ uid, frameSeed }: { uid: string; frameSeed: string }) {
+  const safeUid = createFrameUid(uid, FRAME_UID_MAX_LENGTH);
+  const shards = buildRareShards(frameSeed);
+
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${safeUid}_rareRail`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#04264c" />
+          <stop offset="30%" stopColor="#2d7eff" />
+          <stop offset="72%" stopColor="#d2f4ff" />
+          <stop offset="100%" stopColor="#0b3f82" />
+        </linearGradient>
+        <linearGradient id={`${safeUid}_rareCore`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#d9f8ff" stopOpacity="0.78" />
+          <stop offset="100%" stopColor="#2d7eff" stopOpacity="0.18" />
+        </linearGradient>
+        <filter id={`${safeUid}_rareGlow`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3.4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect
+        x="18"
+        y="18"
+        width="714"
+        height="1014"
+        rx="46"
+        fill="none"
+        stroke={`url(#${safeUid}_rareRail)`}
+        strokeWidth="7.5"
+        filter={`url(#${safeUid}_rareGlow)`}
+      />
+      <rect
+        x="34"
+        y="34"
+        width="682"
+        height="982"
+        rx="38"
+        fill="none"
+        stroke={`url(#${safeUid}_rareCore)`}
+        strokeWidth="2.4"
+      />
+
+      {CORNER_TRANSFORMS.map((corner) => (
+        <g key={corner.key} transform={corner.transform}>
+          <path
+            d="M 0 88 C 0 36 36 0 88 0"
+            fill="none"
+            stroke="#63beff"
+            strokeWidth="6.8"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 10 94 C 20 56 56 20 94 10"
+            fill="none"
+            stroke="#e6fbff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeOpacity="0.82"
+          />
+        </g>
+      ))}
+
+      {FRAME_TOP_CONNECTORS.map((x) => (
+        <g key={`rare-top-${x}`} filter={`url(#${safeUid}_rareGlow)`}>
+          <path
+            d={`M ${x - 22} 23 L ${x} 12 L ${x + 22} 23 L ${x} 34 Z`}
+            fill="#c9efff"
+            fillOpacity="0.65"
+            stroke="#2d7eff"
+            strokeWidth="1.5"
+          />
+          <path
+            d={`M ${x - 22} ${FRAME_RENDER_HEIGHT - 23} L ${x} ${FRAME_RENDER_HEIGHT - 34} L ${x + 22} ${FRAME_RENDER_HEIGHT - 23} L ${x} ${FRAME_RENDER_HEIGHT - 12} Z`}
+            fill="#c9efff"
+            fillOpacity="0.65"
+            stroke="#2d7eff"
+            strokeWidth="1.5"
+          />
+        </g>
+      ))}
+
+      {shards.map((shard, index) => (
+        <g
+          key={`rare-shard-${index}`}
+          transform={`translate(${shard.x} ${shard.y}) rotate(${shard.rotate})`}
+          filter={`url(#${safeUid}_rareGlow)`}
+        >
+          <path
+            d={`M ${-shard.width / 2} 0 L 0 ${-shard.height} L ${shard.width / 2} 0 L 0 ${shard.height} Z`}
+            fill="#d7f7ff"
+            fillOpacity={shard.opacity}
+            stroke="#3b8cff"
+            strokeWidth="1.1"
+            transform={`skewX(${shard.skew})`}
+          />
+        </g>
       ))}
     </>
   );
@@ -342,6 +708,9 @@ function CardFrameComponent({ width, height, rarity, frameSeed, uid }: FrameProp
   return (
     <g transform={`scale(${scaleX} ${scaleY})`}>
       {rarity === "Punch Skater" && <PunchSkaterFrame uid={uid} frameSeed={frameSeed} />}
+      {rarity === "Apprentice" && <ApprenticeFrame uid={uid} frameSeed={frameSeed} />}
+      {rarity === "Master" && <MasterFrame uid={uid} frameSeed={frameSeed} />}
+      {rarity === "Rare" && <RareFrame uid={uid} frameSeed={frameSeed} />}
       {rarity === "Legendary" && <LegendaryFrame uid={uid} frameSeed={frameSeed} />}
     </g>
   );

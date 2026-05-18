@@ -1,10 +1,12 @@
 /**
  * staticAssets.ts
  *
- * Registry of pre-loaded static image assets for district backgrounds and rarity
- * frame borders.  When an entry is present here the app uses the static file
- * directly — no Firestore read and no fal.ai API call — eliminating per-forge
- * credit usage for stable layers.
+ * Registry of pre-loaded static image assets for district backgrounds and
+ * legacy rarity frame fallbacks.
+ *
+ * Background entries remain first-class assets used directly by the app.
+ * Frame entries are now only a backward-compatibility path for older saved
+ * cards that still reference raster frame URLs.
  *
  * ── Background ───────────────────────────────────────────────────────────────
  *  One image per district, used for every context (preview, print, download).
@@ -12,19 +14,18 @@
  *  Place files in  public/assets/backgrounds/<slug>.webp  then uncomment the
  *  corresponding entry in BACKGROUND_ASSETS below.
  *
- * ── How to add a frame ───────────────────────────────────────────────────────
+ * ── How to add a legacy frame fallback ──────────────────────────────────────
  *  1. Place the image in   public/assets/frames/<slug>.webp       (see README there).
  *  2. Add (or uncomment) the rarity key below in FRAME_ASSETS.
  *
  * ── Getting the first-run URLs ───────────────────────────────────────────────
- *  After forging a card the browser console logs:
+ *  Background generation still logs:
  *    [StaticAsset] Generated background for <District>: <URL>
- *    [StaticAsset] Generated frame for <Rarity>: <URL>
- *  Download those images, rename per the convention, place them in the
- *  appropriate folder, then register them here.
+ *  Frame generation is no longer part of the normal forge path.
  */
 
 import type { District, Faction, Rarity } from "../lib/types";
+import { hasProceduralFrame } from "../lib/proceduralFrames";
 
 export type FrameBlendMode = "normal" | "screen";
 
@@ -56,9 +57,9 @@ const BACKGROUND_ASSETS: Partial<Record<District, string>> = {
   "Glass City": "/assets/backgrounds/glass-city.jpg",
 };
 
-// ── Frame registry ─────────────────────────────────────────────────────────────
+// ── Legacy frame registry ──────────────────────────────────────────────────────
 //
-// Uncomment an entry once you have placed the corresponding file in
+// Add an entry once you have placed the corresponding fallback file in
 // public/assets/frames/.
 //
 // Example:
@@ -109,32 +110,37 @@ export function getStaticBackgroundUrl(district: District): string | null {
 }
 
 /**
- * Returns the public URL of a pre-loaded static frame image for the given
- * rarity tier, or null if no static file has been registered yet.
+ * Returns the public URL of a legacy static frame image for the given rarity
+ * tier, or null if no fallback raster file has been registered.
  *
- * When non-null the caller should use this URL immediately, skipping both the
- * Firestore cache and the fal.ai generation step.
+ * New cards should prefer the built-in procedural frames. This remains so
+ * older saved cards can keep rendering their stored raster overlays.
  */
 export function getStaticFrameUrl(rarity: Rarity): string | null {
   return FRAME_ASSETS[rarity]?.url ?? null;
 }
 
 /**
- * Returns the public URL of the pre-loaded static frame image to overlay on
- * the **back** face of the card for the given rarity, or null if no
- * back-specific frame is registered.  When set, the back-face frame should be
- * rendered the same way as the front-face frame so that border decorations
- * (e.g. corner bandages) appear to wrap continuously around the card.
+ * Returns the public URL of the legacy static frame image to overlay on the
+ * **back** face of older saved cards, or null if no back-specific fallback is
+ * registered for the rarity.
  */
 export function getStaticFrameBackUrl(rarity: Rarity): string | null {
   return FRAME_ASSETS[rarity]?.backUrl ?? null;
 }
 
+function isRegisteredFrameAssetUrl(rarity: Rarity, frameUrl?: string): boolean {
+  if (!frameUrl) return false;
+  const asset = FRAME_ASSETS[rarity];
+  return Boolean(asset && (asset.url === frameUrl || asset.backUrl === frameUrl));
+}
+
 export function shouldRenderSvgFrame(rarity: Rarity, frameUrl?: string): boolean {
-  if (!frameUrl) return true;
-  // Any rarity that registers a back-face frame ships real card-sized PNG frames
-  // for both faces — render the PNG instead of the procedural SVG overlay.
-  return getStaticFrameBackUrl(rarity) == null;
+  return hasProceduralFrame(rarity) && !frameUrl;
+}
+
+export function shouldUseWrapFrameLayout(rarity: Rarity, frameUrl?: string): boolean {
+  return hasProceduralFrame(rarity) || isRegisteredFrameAssetUrl(rarity, frameUrl);
 }
 
 export function getFrameBlendMode(rarity: Rarity, frameUrl?: string): FrameBlendMode {
@@ -147,7 +153,7 @@ export function getFrameBlendMode(rarity: Rarity, frameUrl?: string): FrameBlend
 }
 
 export function shouldInsetBackgroundForFrame(rarity: Rarity, frameUrl?: string): boolean {
-  if (!frameUrl) return false;
+  if (!frameUrl) return hasProceduralFrame(rarity);
   const asset = FRAME_ASSETS[rarity];
   if (asset && asset.url === frameUrl) {
     return asset.insetBackground ?? false;

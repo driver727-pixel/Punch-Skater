@@ -36,6 +36,7 @@ import {
   rollForgeRarity,
 } from "../../lib/cardClassProgression";
 import { createCharacterLayerValidator, type ForgeLayer, useForgeLayers } from "./useForgeLayers";
+import { hasProceduralFrame } from "../../lib/proceduralFrames";
 import {
   CHARACTER_CACHE_VERSION,
   CHARACTER_GENERATION_OPTIONS,
@@ -391,7 +392,9 @@ export function useForgeGeneration() {
       layerParams.character.generationOptions,
       layerParams.character.attempts,
     );
-    generateLayer("frame", layerParams.frame.key, layerParams.frame.prompt, layerParams.frame.seed, signal);
+    if (!hasProceduralFrame(cardWithBoard.prompts.rarity)) {
+      generateLayer("frame", layerParams.frame.key, layerParams.frame.prompt, layerParams.frame.seed, signal);
+    }
 
     setForging(false);
   }, [
