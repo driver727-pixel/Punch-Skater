@@ -90,6 +90,12 @@ function buildEdgeSpecks(seed: string, colorA: string, colorB: string) {
   });
 }
 
+/**
+ * Builds short illuminated bars that hug the frame perimeter.
+ *
+ * `startIndex` reserves a deterministic slice of the seed-space so different
+ * rarities can reuse the helper without generating the same pattern.
+ */
 function buildEdgeBars(seed: string, startIndex: number, count: number) {
   return Array.from({ length: count }, (_, index) => {
     const along = 0.12 + seededVal(seed, startIndex + index * 5) * 0.76;
@@ -111,6 +117,12 @@ function buildEdgeBars(seed: string, startIndex: number, count: number) {
   });
 }
 
+/**
+ * Builds small crystal shards that sit around the Rare frame edges.
+ *
+ * The returned transforms are already normalized for edge placement so callers
+ * can render each shard directly with a translate + rotate wrapper.
+ */
 function buildRareShards(seed: string) {
   return Array.from({ length: 10 }, (_, index) => {
     const side = index % 4;
