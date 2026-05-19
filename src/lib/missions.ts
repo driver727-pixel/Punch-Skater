@@ -319,6 +319,12 @@ function inferEncounterOptionTags(option: MissionForkOption): MissionCounterTag[
   return dedupeCounterTags((option.requirements ?? []).flatMap((requirement) => mapRequirementToCounterTags(requirement)));
 }
 
+export function getEncounterOptionTagGroups(option: Pick<MissionForkOption, "requirements">): MissionCounterTag[][] {
+  return (option.requirements ?? [])
+    .map((requirement) => dedupeCounterTags(mapRequirementToCounterTags(requirement)))
+    .filter((tags) => tags.length > 0);
+}
+
 function inferEncounterOptionPower(option: MissionForkOption): number {
   const requirementCount = option.requirements?.length ?? 0;
   return Math.max(1, 1 + Math.floor(requirementCount / 2));
@@ -741,11 +747,11 @@ function getMissionOptionPower(
   statusEffects: MissionStatusEffect[],
   synergyTags: MissionCounterTag[],
 ): number {
-  const requiredTags = option.requiredTags ?? [];
+  const requirementGroups = getEncounterOptionTagGroups(option);
   const activeTags = activeCards.flatMap((card) => getCardCounterTags(card, mission));
-  const matchingTags = requiredTags.filter((tag) => activeTags.includes(tag) || synergyTags.includes(tag));
+  const matchingGroups = requirementGroups.filter((tags) => tags.some((tag) => activeTags.includes(tag) || synergyTags.includes(tag)));
   const effectPower = statusEffects.reduce((sum, effect) => sum + (effect.powerDelta ?? 0), 0);
-  return matchingTags.length + effectPower;
+  return matchingGroups.length + effectPower;
 }
 
 function enrichEncounterOptions(
@@ -760,10 +766,13 @@ function enrichEncounterOptions(
     options: encounter.options.map((option) => {
       const currentPower = getMissionOptionPower(option, activeCards, mission, statusEffects, synergyTags);
       const requiredTags = option.requiredTags ?? [];
+      const requirementGroups = getEncounterOptionTagGroups(option);
       const available = option.encounterType === "joust"
         ? activeCards.length > 0
-        : requiredTags.every((tag) => (
-          activeCards.some((card) => getCardCounterTags(card, mission).includes(tag)) || synergyTags.includes(tag)
+        : requirementGroups.every((tags) => (
+          tags.some((tag) => (
+            activeCards.some((card) => getCardCounterTags(card, mission).includes(tag)) || synergyTags.includes(tag)
+          ))
         )) && currentPower >= (option.minimumCounterPower ?? 1);
       return {
         ...option,

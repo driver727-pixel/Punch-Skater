@@ -14,6 +14,7 @@ import { DistrictBadge } from "./DistrictBadge";
 import {
   HARD_CUTOUT_COUNTER_ID,
   evaluateMissionDeck,
+  getEncounterOptionTagGroups,
   getMissionEncounter,
   getMissionEffectiveRequirements,
   getMissionEffectiveRewards,
@@ -409,6 +410,11 @@ function getMissionResultLog(result: MissionRunResponse): MissionLogEntry[] {
 function getCounterOptionRequirementText(option: MissionEncounterOption): string {
   if (option.encounterType === "joust") {
     return option.joustPrompt ?? option.description;
+  }
+  const requirementLabels = getEncounterOptionTagGroups(option)
+    .map((tags) => tags.join(" or "));
+  if (requirementLabels.length) {
+    return `Needs ${requirementLabels.join(" · ")}.`;
   }
   if (option.requiredTags?.length) {
     return `Needs ${option.requiredTags.join(" · ")}.`;
