@@ -310,6 +310,37 @@ test('buildMissionActiveRunState creates a pending live encounter with available
   assert.equal(runState.storyBeats?.length, 3);
 });
 
+test('buildMissionActiveRunState treats multi-tag requirement hints as alternatives within one requirement', () => {
+  const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-parent-trace');
+  const deck = {
+    id: 'deck-live-ghost-query',
+    name: 'Ghost Query',
+    cards: [
+      buildCard({
+        id: 'ghost-query-1',
+        prompts: { archetype: 'Qu111s', district: 'The Grid' },
+        identity: { crew: 'Qu111s' },
+        stats: { speed: 7, range: 6, stealth: 8, grit: 4 },
+      }),
+      buildCard({
+        id: 'ghost-query-2',
+        prompts: { archetype: 'Qu111s', district: 'Batteryville' },
+        identity: { crew: 'Qu111s' },
+        stats: { speed: 7, range: 6, stealth: 6, grit: 5 },
+      }),
+      ...Array.from({ length: 3 }, (_, index) => buildCard({
+        id: `ghost-query-extra-${index + 1}`,
+        prompts: { archetype: 'Qu111s', district: 'Batteryville' },
+        identity: { crew: 'Qu111s' },
+        stats: { speed: 6, range: 6, stealth: 5, grit: 5 },
+      })),
+    ],
+  };
+
+  const runState = buildMissionActiveRunState(deck, mission);
+  assert.ok(runState.availableCounterOptionIds.includes('ghost-query'));
+});
+
 test('resolveMissionCounterChoice returns selected encounter rewards when the hand can answer', () => {
   const mission = createMissionBoardEntries('user-123').find((entry) => entry.definitionId === 'grid-parent-trace');
   const deck = {
