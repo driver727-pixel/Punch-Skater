@@ -37,6 +37,7 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_IMAGE_API_URL: ${{ secrets.VITE_IMAGE_API_URL }}
           VITE_ADMIN_EMAILS: ${{ secrets.VITE_ADMIN_EMAILS }}
+          VITE_FF_JOUSTUR_SKATUR: "true"
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

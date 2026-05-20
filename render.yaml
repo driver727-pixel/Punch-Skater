@@ -2,7 +2,7 @@ services:
   - type: web
     name: skater-punk-proxy
     runtime: node
-    buildCommand: npm install
+    buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: FAL_KEY
