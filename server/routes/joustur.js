@@ -221,12 +221,13 @@ async function tryCreateCasualMatch(db, callerUid, callerLineup, randomUUID) {
     const matchId = `jm-${randomUUID()}`;
     const matchDoc = {
       id: matchId,
-      status: 'active',
+      status: 'initializing',
       mode: 'casual',
       challengerUid: callerUid,
       defenderUid,
       board: buildInitialBoardState(callerUid),
-      // Player states will be patched in after the transaction.
+      // Player states will be patched in after the transaction; status will
+      // flip to 'active' only once both player states are written.
       challengerState: null,
       defenderState: null,
       winnerUid: null,
@@ -241,12 +242,28 @@ async function tryCreateCasualMatch(db, callerUid, callerLineup, randomUUID) {
     if (!result) return null;
     const { matchId, defenderUid, defenderLineup } = result;
 
-    // Now build player states and patch in (outside transaction).
-    const { challengerState, defenderState } = await buildMatchPlayerStates(
-      db, callerUid, defenderUid, callerLineup, defenderLineup,
-    );
     const ref = db.collection(MATCHES_COL).doc(matchId);
-    await ref.update({ challengerState, defenderState, updatedAt: nowIso() });
+    try {
+      // Build player states and patch them in atomically with the status flip.
+      // If this fails the match is stuck as 'initializing' and can be cleaned
+      // up safely — neither player is in 'active' state so no moves can be
+      // submitted.
+      const { challengerState, defenderState } = await buildMatchPlayerStates(
+        db, callerUid, defenderUid, callerLineup, defenderLineup,
+      );
+      await ref.update({
+        status: 'active',
+        challengerState,
+        defenderState,
+        updatedAt: nowIso(),
+      });
+    } catch (err) {
+      // Card fetch or patch failed — delete the match doc so the queue slot is
+      // freed and neither player is stuck waiting for an unplayable match.
+      await ref.delete().catch(() => {});
+      throw err;
+    }
+
     const updated = await ref.get();
     return updated.data();
   });
@@ -320,12 +337,17 @@ export function registerJousturRoutes(app, {
 
     try {
       // Both players need saved lineups.
-      const [challengerSnap, defenderSnap] = await Promise.all([
+      const [challengerSnap, defenderSnap, defenderLookupSnap] = await Promise.all([
         adminDb.collection(LINEUPS_COL).doc(caller.uid).get(),
         adminDb.collection(LINEUPS_COL).doc(defenderUid).get(),
+        adminDb.collection('userLookup').doc(defenderUid).get(),
       ]);
       if (!challengerSnap.exists) throw badRequest('Save a lineup before issuing a challenge.', 409);
       if (!defenderSnap.exists)   throw badRequest('Opponent has not saved a Joustur lineup yet.', 409);
+
+      const defenderDisplayName = defenderLookupSnap.exists
+        ? (defenderLookupSnap.data()?.displayName ?? '')
+        : '';
 
       const id = `jc-${randomUUID()}`;
       const challenge = {
@@ -334,7 +356,7 @@ export function registerJousturRoutes(app, {
         challengerUid: caller.uid,
         challengerDisplayName: caller.name ?? caller.email?.split('@')[0] ?? 'Skater',
         defenderUid,
-        defenderDisplayName: '',
+        defenderDisplayName,
         createdAt: nowIso(),
         updatedAt: nowIso(),
       };
@@ -456,6 +478,40 @@ export function registerJousturRoutes(app, {
     }
   });
 
+  // ── GET /api/joustur/challenges ─────────────────────────────────────────────
+  // Returns pending challenges where the caller is either the challenger or the
+  // defender.  This is what the UI needs to show a challenge inbox / outbox.
+  app.get('/api/joustur/challenges', limiter, async (req, res) => {
+    if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
+    let caller;
+    try { caller = await authenticateFirebaseUser(req); }
+    catch (e) { res.status(e.statusCode ?? 500).json({ error: e.message }); return; }
+
+    try {
+      const col = adminDb.collection(CHALLENGES_COL);
+      const [asChallengerSnap, asDefenderSnap] = await Promise.all([
+        col
+          .where('challengerUid', '==', caller.uid)
+          .where('status', '==', 'pending')
+          .orderBy('createdAt', 'desc')
+          .limit(20)
+          .get(),
+        col
+          .where('defenderUid', '==', caller.uid)
+          .where('status', '==', 'pending')
+          .orderBy('createdAt', 'desc')
+          .limit(20)
+          .get(),
+      ]);
+
+      const sent     = asChallengerSnap.docs.map((d) => d.data());
+      const received = asDefenderSnap.docs.map((d) => d.data());
+      res.json({ sent, received });
+    } catch (e) {
+      res.status(e.statusCode ?? 500).json({ error: e.message });
+    }
+  });
+
   // ── POST /api/joustur/queue ─────────────────────────────────────────────────
   app.post('/api/joustur/queue', limiter, async (req, res) => {
     if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
@@ -539,6 +595,9 @@ export function registerJousturRoutes(app, {
   // Step 1 of the two-step turn flow: generate the USB Shard roll for the
   // active player.  The roll is stored in the match document before being
   // returned so both players can always read the canonical result.
+  //
+  // The entire read-validate-write cycle runs inside a Firestore transaction
+  // to prevent duplicate rolls from concurrent requests (double-tap, two tabs).
   app.post('/api/joustur/match/:id/roll', limiter, async (req, res) => {
     if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
     let caller;
@@ -548,40 +607,47 @@ export function registerJousturRoutes(app, {
     const matchId = String(req.params?.id ?? '').trim();
     try {
       const matchRef = adminDb.collection(MATCHES_COL).doc(matchId);
-      const snap = await matchRef.get();
-      if (!snap.exists) throw badRequest('Match not found.', 404);
-      const match = snap.data();
-
-      if (match.challengerUid !== caller.uid && match.defenderUid !== caller.uid) {
-        throw badRequest('Access denied.', 403);
-      }
-      if (match.status !== 'active') throw badRequest('This match is not active.', 409);
-      if (match.board.activePlayerUid !== caller.uid) {
-        throw badRequest('It is not your turn.', 403);
-      }
-      if (match.board.rollResult !== null) {
-        throw badRequest('A roll is already pending — submit your move first.', 409);
-      }
-
-      // Generate deterministic roll.
+      // Pre-compute the roll-seed timestamp outside the transaction so the
+      // deterministic seed is stable across any transaction retries.
       const timestamp = Date.now();
-      const seed = generateRollSeed(matchId, match.board.turn, timestamp);
-      const rng  = createSeededRng(seed);
-      const roll = rollUsbShards(rng);
 
-      // Compute legal moves for the client.
-      const isChallenger = match.challengerUid === caller.uid;
-      const activeState   = isChallenger ? match.challengerState : match.defenderState;
-      const opponentState = isChallenger ? match.defenderState   : match.challengerState;
-      const boardWithRoll = { ...match.board, rollResult: roll };
-      const legalMoves = getLegalMoves(boardWithRoll, activeState, opponentState);
+      const result = await adminDb.runTransaction(async (tx) => {
+        const snap = await tx.get(matchRef);
+        if (!snap.exists) throw badRequest('Match not found.', 404);
+        const match = snap.data();
 
-      await matchRef.update({
-        'board.rollResult': roll,
-        updatedAt: nowIso(),
+        if (match.challengerUid !== caller.uid && match.defenderUid !== caller.uid) {
+          throw badRequest('Access denied.', 403);
+        }
+        if (match.status !== 'active') throw badRequest('This match is not active.', 409);
+        if (match.board.activePlayerUid !== caller.uid) {
+          throw badRequest('It is not your turn.', 403);
+        }
+        if (match.board.rollResult !== null) {
+          throw badRequest('A roll is already pending — submit your move first.', 409);
+        }
+
+        // Generate deterministic roll.
+        const seed = generateRollSeed(matchId, match.board.turn, timestamp);
+        const rng  = createSeededRng(seed);
+        const roll = rollUsbShards(rng);
+
+        // Compute legal moves for the client.
+        const isChallenger = match.challengerUid === caller.uid;
+        const activeState   = isChallenger ? match.challengerState : match.defenderState;
+        const opponentState = isChallenger ? match.defenderState   : match.challengerState;
+        const boardWithRoll = { ...match.board, rollResult: roll };
+        const legalMoves = getLegalMoves(boardWithRoll, activeState, opponentState);
+
+        tx.update(matchRef, {
+          'board.rollResult': roll,
+          updatedAt: nowIso(),
+        });
+
+        return { roll, legalMoves, canActivateSupport: !activeState.supportRuntime.activated };
       });
 
-      res.json({ roll, legalMoves, canActivateSupport: !activeState.supportRuntime.activated });
+      res.json(result);
     } catch (e) {
       res.status(e.statusCode ?? 500).json({ error: e.message });
     }
@@ -589,6 +655,12 @@ export function registerJousturRoutes(app, {
 
   // ── POST /api/joustur/match/:id/move ────────────────────────────────────────
   // Step 2: submit the active player's chosen action.
+  //
+  // The entire read-validate-compute-write cycle runs inside a Firestore
+  // transaction to prevent:
+  //   • duplicate moves from concurrent requests (TOCTOU)
+  //   • double reward grants if two concurrent winning moves both see
+  //     rewardsGranted=false before either commits
   app.post('/api/joustur/match/:id/move', limiter, async (req, res) => {
     if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
     let caller;
@@ -598,138 +670,150 @@ export function registerJousturRoutes(app, {
     const matchId = String(req.params?.id ?? '').trim();
     try {
       const matchRef = adminDb.collection(MATCHES_COL).doc(matchId);
-      const snap = await matchRef.get();
-      if (!snap.exists) throw badRequest('Match not found.', 404);
-      const match = snap.data();
 
-      if (match.challengerUid !== caller.uid && match.defenderUid !== caller.uid) {
-        throw badRequest('Access denied.', 403);
-      }
-      if (match.status !== 'active') throw badRequest('This match is not active.', 409);
-      if (match.board.activePlayerUid !== caller.uid) {
-        throw badRequest('It is not your turn.', 403);
-      }
-      if (match.board.rollResult === null) {
-        throw badRequest('Roll first before submitting a move.', 409);
-      }
-
-      const isChallenger = match.challengerUid === caller.uid;
-      const activeState   = isChallenger ? match.challengerState : match.defenderState;
-      const opponentState = isChallenger ? match.defenderState   : match.challengerState;
-
-      // Parse and validate the move choice.
+      // Parse the move choice from the request body before entering the transaction.
       const cardId              = req.body?.cardId ? String(req.body.cardId) : null;
       const activateSupport     = req.body?.activateSupport === true;
       const supportTargetCardId = req.body?.supportTargetCardId
         ? String(req.body.supportTargetCardId)
         : undefined;
 
-      // Validate: if cardId is provided, it must be a legal move.
-      if (cardId) {
-        const legal = getLegalMoves(match.board, activeState, opponentState);
-        if (!legal.some((m) => m.cardId === cardId)) {
-          throw badRequest('That move is not legal for the current roll.', 422);
-        }
-      } else if (!activateSupport && match.board.rollResult !== 0) {
-        // Player must either move a rider or activate support (unless roll is 0).
-        const legal = getLegalMoves(match.board, activeState, opponentState);
-        if (legal.length > 0) {
-          throw badRequest('You must move a rider (or activate support) when legal moves exist.', 422);
-        }
+      // High #4 — support activation must be the sole action for the turn.
+      // Allowing both together would let overclock boost the roll and then
+      // immediately move a rider with the inflated value.
+      if (activateSupport && cardId) {
+        throw badRequest('Support activation must be the sole action for the turn - do not combine with a rider move.', 422);
       }
 
-      // Validate support activation.
-      if (activateSupport && activeState.supportRuntime.activated) {
-        throw badRequest('Support has already been used in this match.', 409);
-      }
+      let responseData;
 
-      const preTurn = match.board.turn;
-      const preActiveFrom = cardId
-        ? (activeState.riders.find((r) => r.cardId === cardId)?.position ?? 0)
-        : 0;
+      await adminDb.runTransaction(async (tx) => {
+        const snap = await tx.get(matchRef);
+        if (!snap.exists) throw badRequest('Match not found.', 404);
+        const match = snap.data();
 
-      // Apply the move (pure).
-      const { board: newBoard, active: newActive, opponent: newOpp, extraTurn, capturedCardId, events } =
-        applyMove(
-          match.board,
-          activeState,
-          opponentState,
-          { cardId, activateSupport, supportTargetCardId },
+        if (match.challengerUid !== caller.uid && match.defenderUid !== caller.uid) {
+          throw badRequest('Access denied.', 403);
+        }
+        if (match.status !== 'active') throw badRequest('This match is not active.', 409);
+        if (match.board.activePlayerUid !== caller.uid) {
+          throw badRequest('It is not your turn.', 403);
+        }
+        if (match.board.rollResult === null) {
+          throw badRequest('Roll first before submitting a move.', 409);
+        }
+
+        const isChallenger = match.challengerUid === caller.uid;
+        const activeState   = isChallenger ? match.challengerState : match.defenderState;
+        const opponentState = isChallenger ? match.defenderState   : match.challengerState;
+
+        // Validate: if cardId is provided, it must be a legal move.
+        if (cardId) {
+          const legal = getLegalMoves(match.board, activeState, opponentState);
+          if (!legal.some((m) => m.cardId === cardId)) {
+            throw badRequest('That move is not legal for the current roll.', 422);
+          }
+        } else if (!activateSupport && match.board.rollResult !== 0) {
+          // Player must either move a rider or activate support (unless roll is 0).
+          const legal = getLegalMoves(match.board, activeState, opponentState);
+          if (legal.length > 0) {
+            throw badRequest('You must move a rider (or activate support) when legal moves exist.', 422);
+          }
+        }
+
+        // Validate support activation.
+        if (activateSupport && activeState.supportRuntime.activated) {
+          throw badRequest('Support has already been used in this match.', 409);
+        }
+
+        const preTurn = match.board.turn;
+        const preActiveFrom = cardId
+          ? (activeState.riders.find((r) => r.cardId === cardId)?.position ?? 0)
+          : 0;
+
+        // Apply the move (pure).
+        const { board: newBoard, active: newActive, opponent: newOpp, extraTurn, capturedCardId, events } =
+          applyMove(
+            match.board,
+            activeState,
+            opponentState,
+            { cardId, activateSupport, supportTargetCardId },
+          );
+
+        // Build the updated match.
+        const newMatch = {
+          ...match,
+          board: newBoard,
+          updatedAt: nowIso(),
+        };
+        if (isChallenger) {
+          newMatch.challengerState = newActive;
+          newMatch.defenderState   = newOpp;
+        } else {
+          newMatch.defenderState   = newActive;
+          newMatch.challengerState = newOpp;
+        }
+
+        // Win detection.
+        let winner = null;
+        if (detectWinner(newActive)) {
+          winner = caller.uid;
+          newMatch.status      = 'completed';
+          newMatch.winnerUid   = winner;
+          newMatch.completedAt = nowIso();
+        }
+
+        // Grant rewards idempotently — check the in-transaction snapshot so
+        // concurrent winning moves cannot both see rewardsGranted=false.
+        if (winner && !match.rewardsGranted) {
+          newMatch.rewardsGranted = true;
+          const rewards = calcRewards(newMatch);
+          const cRef = adminDb.collection(PROFILES_COL).doc(newMatch.challengerUid);
+          const dRef = adminDb.collection(PROFILES_COL).doc(newMatch.defenderUid);
+          tx.set(cRef, {
+            xp: FieldValue.increment(rewards.challenger.xp),
+            ozzies: FieldValue.increment(rewards.challenger.ozzies),
+            updatedAt: nowIso(),
+          }, { merge: true });
+          tx.set(dRef, {
+            xp: FieldValue.increment(rewards.defender.xp),
+            ozzies: FieldValue.increment(rewards.defender.ozzies),
+            updatedAt: nowIso(),
+          }, { merge: true });
+        }
+
+        // Persist match (single write — includes rewardsGranted if applicable).
+        tx.set(matchRef, newMatch);
+
+        // Persist turn log entry.
+        const supportEffect = activateSupport ? activeState.support.supportEffect : undefined;
+        const toPosition = cardId
+          ? (newActive.riders.find((r) => r.cardId === cardId)?.position ?? 0)
+          : 0;
+        const turnEntry = buildTurnLogEntry({
+          id: `turn-${randomUUID()}`,
+          matchId,
+          turn: preTurn,
+          playerUid: caller.uid,
+          rollResult: match.board.rollResult,
+          movedCardId: cardId,
+          fromPosition: preActiveFrom,
+          toPosition,
+          capturedCardId,
+          extraTurn,
+          supportActivated: activateSupport,
+          supportEffect,
+          timestamp: nowIso(),
+        });
+        tx.set(
+          matchRef.collection(TURNS_SUBCOL).doc(turnEntry.id),
+          turnEntry,
         );
 
-      // Build the updated match.
-      const newMatch = {
-        ...match,
-        board: newBoard,
-        updatedAt: nowIso(),
-      };
-      if (isChallenger) {
-        newMatch.challengerState = newActive;
-        newMatch.defenderState   = newOpp;
-      } else {
-        newMatch.defenderState   = newActive;
-        newMatch.challengerState = newOpp;
-      }
-
-      // Win detection.
-      let winner = null;
-      if (detectWinner(newActive)) {
-        winner = caller.uid;
-        newMatch.status      = 'completed';
-        newMatch.winnerUid   = winner;
-        newMatch.completedAt = nowIso();
-      }
-
-      // Persist match.
-      await matchRef.set(newMatch);
-
-      // Persist turn log entry.
-      const supportEffect = activateSupport ? activeState.support.supportEffect : undefined;
-      const turnEntry = buildTurnLogEntry({
-        id: `turn-${randomUUID()}`,
-        matchId,
-        turn: preTurn,
-        playerUid: caller.uid,
-        rollResult: match.board.rollResult,
-        movedCardId: cardId,
-        fromPosition: preActiveFrom,
-        toPosition: cardId ? (newActive.riders.find((r) => r.cardId === cardId)?.position ?? 0) : 0,
-        capturedCardId,
-        extraTurn,
-        supportActivated: activateSupport,
-        supportEffect,
-        timestamp: nowIso(),
+        responseData = { match: newMatch, turnEntry, events, extraTurn, winner };
       });
-      await adminDb
-        .collection(MATCHES_COL)
-        .doc(matchId)
-        .collection(TURNS_SUBCOL)
-        .doc(turnEntry.id)
-        .set(turnEntry);
 
-      // Grant rewards idempotently after completion.
-      if (winner && !match.rewardsGranted) {
-        const rewards = calcRewards(newMatch);
-        const batch = adminDb.batch();
-
-        const cRef = adminDb.collection(PROFILES_COL).doc(newMatch.challengerUid);
-        const dRef = adminDb.collection(PROFILES_COL).doc(newMatch.defenderUid);
-        batch.set(cRef, {
-          xp: FieldValue.increment(rewards.challenger.xp),
-          ozzies: FieldValue.increment(rewards.challenger.ozzies),
-          updatedAt: nowIso(),
-        }, { merge: true });
-        batch.set(dRef, {
-          xp: FieldValue.increment(rewards.defender.xp),
-          ozzies: FieldValue.increment(rewards.defender.ozzies),
-          updatedAt: nowIso(),
-        }, { merge: true });
-        batch.update(matchRef, { rewardsGranted: true, updatedAt: nowIso() });
-        await batch.commit();
-        newMatch.rewardsGranted = true;
-      }
-
-      res.json({ match: newMatch, turnEntry, events, extraTurn, winner });
+      res.json(responseData);
     } catch (e) {
       res.status(e.statusCode ?? 500).json({ error: e.message });
     }

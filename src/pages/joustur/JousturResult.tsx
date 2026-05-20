@@ -9,15 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getJousturMatch } from "../../services/joustur";
 import type { JousturMatch } from "../../lib/jousturTypes";
-
-const FACTION_LABELS: Record<string, string> = {
-  rustKids:        "Rust Kids",
-  neonSaints:      "Neon Saints",
-  signalGhosts:    "Signal Ghosts",
-  chromeSyndicate: "Chrome Syndicate",
-  voltageVultures: "Voltage Vultures",
-  alleyWraiths:    "Alley Wraiths",
-};
+import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 
 export function JousturResult() {
   const { id: matchId } = useParams<{ id: string }>();
@@ -57,9 +49,9 @@ export function JousturResult() {
       </div>
 
       <h1 className="joustur-result__title">
-        {FACTION_LABELS[myState.faction] ?? myState.faction}
+        {JOUSTUR_FACTION_LABELS[myState.faction] ?? myState.faction}
         {" vs "}
-        {FACTION_LABELS[oppState.faction] ?? oppState.faction}
+        {JOUSTUR_FACTION_LABELS[oppState.faction] ?? oppState.faction}
       </h1>
 
       <div className="joustur-result__scores">
@@ -67,7 +59,7 @@ export function JousturResult() {
           <p className="joustur-result__score-label">You</p>
           <p className="joustur-result__score-value">{myState.scoredCount} / 6</p>
           <p className="joustur-result__score-faction">
-            {FACTION_LABELS[myState.faction] ?? myState.faction}
+            {JOUSTUR_FACTION_LABELS[myState.faction] ?? myState.faction}
           </p>
         </div>
         <div className="joustur-result__score-vs">vs</div>
@@ -75,7 +67,7 @@ export function JousturResult() {
           <p className="joustur-result__score-label">Opponent</p>
           <p className="joustur-result__score-value">{oppState.scoredCount} / 6</p>
           <p className="joustur-result__score-faction">
-            {FACTION_LABELS[oppState.faction] ?? oppState.faction}
+            {JOUSTUR_FACTION_LABELS[oppState.faction] ?? oppState.faction}
           </p>
         </div>
       </div>

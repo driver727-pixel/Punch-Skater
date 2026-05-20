@@ -23,20 +23,13 @@ import type {
   JousturPlayerState,
   JousturRiderRuntimeState,
 } from "../../lib/jousturTypes";
+import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 
 const STEALTH_ALCOVES = new Set([4, 6, 8, 12, 14]);
 
 const POS_LABELS: Record<number, string> = {
   0: "Off board",
   15: "Scored",
-};
-const FACTION_LABELS: Record<string, string> = {
-  rustKids:        "Rust Kids",
-  neonSaints:      "Neon Saints",
-  signalGhosts:    "Signal Ghosts",
-  chromeSyndicate: "Chrome Syndicate",
-  voltageVultures: "Voltage Vultures",
-  alleyWraiths:    "Alley Wraiths",
 };
 
 function posLabel(pos: number): string {
@@ -74,7 +67,7 @@ function PlayerPanel({
         {isMe ? "You" : "Opponent"}
         {isActive && <span className="joustur-board__turn-badge"> — Active</span>}
         <span className="joustur-board__faction-badge">
-          {FACTION_LABELS[player.faction] ?? player.faction}
+          {JOUSTUR_FACTION_LABELS[player.faction] ?? player.faction}
         </span>
       </h3>
 
@@ -166,8 +159,11 @@ export function JousturBoard() {
 
   useEffect(() => {
     loadMatch();
-    // Poll every 15 s when it's not the player's turn.
-    const interval = setInterval(loadMatch, 15_000);
+    // Poll every 15 s, but only while the tab is visible to avoid wasting
+    // network requests and Firebase quota when the player is elsewhere.
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") loadMatch();
+    }, 15_000);
     return () => clearInterval(interval);
   }, [loadMatch]);
 
@@ -243,9 +239,9 @@ export function JousturBoard() {
     <div className="page joustur-board">
       <p className="page-eyebrow">Joustur Skatur</p>
       <h1 className="page-title">
-        {FACTION_LABELS[myState.faction] ?? myState.faction}
+        {JOUSTUR_FACTION_LABELS[myState.faction] ?? myState.faction}
         {" vs "}
-        {FACTION_LABELS[oppState.faction] ?? oppState.faction}
+        {JOUSTUR_FACTION_LABELS[oppState.faction] ?? oppState.faction}
       </h1>
 
       {error && (

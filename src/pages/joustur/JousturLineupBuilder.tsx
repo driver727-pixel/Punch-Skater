@@ -5,7 +5,7 @@
  * Uses the player's existing card collection via useCollection.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCollection } from "../../hooks/useCollection";
 import { useJousturLineup } from "../../hooks/useJousturLineup";
@@ -90,11 +90,25 @@ export function JousturLineupBuilder() {
   const { lineup, saving, error: saveError, saveLineup } = useJousturLineup();
 
   const [riderIds, setRiderIds] = useState<(string | null)[]>(
-    () => lineup?.riderCardIds ?? Array(RIDER_COUNT).fill(null),
+    () => Array(RIDER_COUNT).fill(null),
   );
-  const [supportId, setSupportId] = useState<string | null>(
-    () => lineup?.supportCardId ?? null,
-  );
+  const [supportId, setSupportId] = useState<string | null>(null);
+  // Track whether we have already applied the saved lineup so a late-arriving
+  // load doesn't overwrite any edits the user has already made.
+  const [lineupApplied, setLineupApplied] = useState(false);
+
+  // Pre-populate slots once the saved lineup loads asynchronously.
+  useEffect(() => {
+    if (lineup && !lineupApplied) {
+      const savedRiders =
+        Array.isArray(lineup.riderCardIds) && lineup.riderCardIds.length === RIDER_COUNT
+          ? (lineup.riderCardIds as (string | null)[])
+          : Array(RIDER_COUNT).fill(null);
+      setRiderIds(savedRiders);
+      setSupportId(lineup.supportCardId ?? null);
+      setLineupApplied(true);
+    }
+  }, [lineup, lineupApplied]);
   const [pickingSlot, setPickingSlot] = useState<
     { type: "rider"; index: number } | { type: "support" } | null
   >(null);

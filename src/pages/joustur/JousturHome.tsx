@@ -11,15 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { listJousturMatches, enqueueJoustur, dequeueJoustur } from "../../services/joustur";
 import { useJousturLineup } from "../../hooks/useJousturLineup";
 import type { JousturMatch } from "../../lib/jousturTypes";
-
-const FACTION_LABELS: Record<string, string> = {
-  rustKids:        "Rust Kids",
-  neonSaints:      "Neon Saints",
-  signalGhosts:    "Signal Ghosts",
-  chromeSyndicate: "Chrome Syndicate",
-  voltageVultures: "Voltage Vultures",
-  alleyWraiths:    "Alley Wraiths",
-};
+import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 
 function matchStatusLabel(match: JousturMatch, myUid: string): string {
   if (match.status === "completed") {
@@ -148,11 +140,11 @@ export function JousturHome() {
                 </div>
                 <div className="joustur-home__match-factions">
                   <span>
-                    {FACTION_LABELS[m.challengerState.faction] ?? m.challengerState.faction}
+                    {JOUSTUR_FACTION_LABELS[m.challengerState.faction] ?? m.challengerState.faction}
                   </span>
                   <span className="joustur-home__match-vs">vs</span>
                   <span>
-                    {FACTION_LABELS[m.defenderState.faction] ?? m.defenderState.faction}
+                    {JOUSTUR_FACTION_LABELS[m.defenderState.faction] ?? m.defenderState.faction}
                   </span>
                 </div>
                 <div className="joustur-home__match-score">
@@ -185,9 +177,9 @@ export function JousturHome() {
                   {matchStatusLabel(m, user?.uid ?? "")}
                 </span>
                 <span>
-                  {FACTION_LABELS[m.challengerState.faction] ?? m.challengerState.faction}
+                  {JOUSTUR_FACTION_LABELS[m.challengerState.faction] ?? m.challengerState.faction}
                   {" vs "}
-                  {FACTION_LABELS[m.defenderState.faction] ?? m.defenderState.faction}
+                  {JOUSTUR_FACTION_LABELS[m.defenderState.faction] ?? m.defenderState.faction}
                 </span>
                 <Link to={`/joustur/result/${m.id}`} className="btn-outline btn-sm">
                   View →
