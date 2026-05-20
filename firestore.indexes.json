@@ -32,6 +32,24 @@
         { "fieldPath": "uid",       "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "jousturChallenges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "challengerUid", "order": "ASCENDING"  },
+        { "fieldPath": "status",        "order": "ASCENDING"  },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "jousturChallenges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "defenderUid", "order": "ASCENDING"  },
+        { "fieldPath": "status",      "order": "ASCENDING"  },
+        { "fieldPath": "createdAt",   "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
