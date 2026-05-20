@@ -19,6 +19,7 @@ import { fetchRaceArena, startSoloRace, type ArenaListEntry } from "../services/
 import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
+import { isEnabled } from "../lib/featureFlags";
 
 type TabKey = "challengers" | "hub" | "solo";
 
@@ -296,6 +297,7 @@ export function BattleArena() {
 
   const myOzzies = Number(userProfile?.ozzies ?? 0);
   const soloWagerCap = Math.max(0, Math.min(myOzzies, SOLO_WAGER_MAX));
+  const showJousturEntry = isEnabled("JOUSTUR_SKATUR", user);
 
   useEffect(() => {
     if (primaryDeckRaceCards.length === 0) {
@@ -426,6 +428,11 @@ export function BattleArena() {
         <p className="race-arena-subtitle">
           Pick an opponent's card, set a wager, and watch your Challenger race them on the courier circuit.
         </p>
+        {showJousturEntry && (
+          <p>
+            <Link to="/joustur" className="btn-outline btn-sm">🛹 Open Joustur</Link>
+          </p>
+        )}
         <div className="race-arena-self">
           {myChallengerCard ? (
             <span>Your Challenger: <strong>{myChallengerCard.name}</strong> (Power {statTotal(myChallengerCard.stats)})</span>
