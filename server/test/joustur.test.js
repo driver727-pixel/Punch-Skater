@@ -49,6 +49,7 @@ import {
   applyMove,
   detectWinner,
   calcRewards,
+  canActivateSupportEffect,
   // RNG
   createSeededRng,
   generateRollSeed,
@@ -500,7 +501,9 @@ test('applyMove — pass (cardId null) advances turn', () => {
 
 test('applyMove — recoveryPing moves a captured rider to pos 1', () => {
   const playerA = makePlayer('A', RIDER_COUNT, 'Punch Skaters');
-  // One rider already captured (pos 0).
+  // Mark one rider as captured (position 0, isCaptured=true) — as happens after
+  // an opponent capture event.
+  playerA.riders[0].isCaptured = true;
   const board = makeBoard('A', 1);
 
   const { active } = applyMove(board, playerA, makePlayer('B'), {
@@ -509,9 +512,10 @@ test('applyMove — recoveryPing moves a captured rider to pos 1', () => {
   });
 
   assert.equal(active.supportRuntime.activated, true);
-  // At least one rider should now be at position 1 (was at 0 before).
+  // The captured rider should now be at position 1.
   const recoveredRider = active.riders.find((r) => r.position === PRIVATE_ENTRY_MIN);
-  assert.ok(recoveredRider, 'recoveryPing should recover a rider to pos 1');
+  assert.ok(recoveredRider, 'recoveryPing should recover a captured rider to pos 1');
+  assert.equal(recoveredRider.isCaptured, false, 'recovered rider should no longer be marked as captured');
 });
 
 test('applyMove — crowdRoar grants extra turn', () => {
@@ -721,4 +725,139 @@ test('turn advances after a normal move', () => {
 
   assert.equal(newBoard.turn, 2);
   assert.equal(newBoard.activePlayerUid, 'B');
+});
+
+// ── isCaptured flag (P1-B) ────────────────────────────────────────────────────
+
+test('buildInitialPlayerState — isCaptured starts as false for all riders', () => {
+  const player = makePlayer('A');
+  player.riders.forEach((r) => assert.equal(r.isCaptured, false));
+});
+
+test('applyMove — capture sets isCaptured=true on the opponent rider', () => {
+  const playerA = makePlayer('A');
+  const playerB = makePlayer('B');
+  // Place B's first rider in the shared lane at position 7.
+  playerB.riders[0].position = 7;
+  // Place A's first rider so it can land on 7 with roll 2.
+  playerA.riders[0].position = 5;
+  const board = makeBoard('A', 2);
+
+  const { opponent } = applyMove(board, playerA, playerB, {
+    cardId: playerA.riders[0].cardId,
+    activateSupport: false,
+  });
+
+  const capturedRider = opponent.riders[0];
+  assert.equal(capturedRider.position, OFF_BOARD);
+  assert.equal(capturedRider.isCaptured, true);
+});
+
+test('applyMove — riders that never entered the board are NOT isCaptured', () => {
+  const playerA = makePlayer('A');
+  // All riders stay at OFF_BOARD (never entered).
+  const player = makePlayer('B');
+  const board = makeBoard('B', 1);
+
+  const { active } = applyMove(board, player, playerA, {
+    cardId: null,
+    activateSupport: false,
+  });
+
+  // Off-board riders that were never moved should not have isCaptured set.
+  active.riders.filter((r) => r.position === OFF_BOARD).forEach((r) => {
+    assert.equal(r.isCaptured, false);
+  });
+});
+
+test('applyMove — recoveryPing only recovers a captured rider, not an unentered one', () => {
+  const playerB = makePlayer('B');
+  // rider[0] at OFF_BOARD but NOT captured (isCaptured=false — never entered).
+  // rider[1] at OFF_BOARD and IS captured.
+  playerB.riders[1].isCaptured = true;
+
+  const support = makeSupportSnapshot(`sup-B`, 'Punch Skaters'); // recoveryPing
+  playerB.support = support;
+  const board = makeBoard('B', 1);
+
+  const { active } = applyMove(board, playerB, makePlayer('A'), {
+    cardId: null,
+    activateSupport: true,
+  });
+
+  // rider[0] (not captured) should stay at OFF_BOARD.
+  assert.equal(active.riders[0].position, OFF_BOARD);
+  assert.equal(active.riders[0].isCaptured, false);
+
+  // rider[1] (captured) should be recovered to entry.
+  assert.equal(active.riders[1].position, PRIVATE_ENTRY_MIN);
+  assert.equal(active.riders[1].isCaptured, false);
+});
+
+test('applyMove — recoveryPing does nothing when no captured riders exist', () => {
+  const playerB = makePlayer('B');
+  // No riders are captured (all at OFF_BOARD but isCaptured=false).
+  const support = makeSupportSnapshot(`sup-B`, 'Punch Skaters');
+  playerB.support = support;
+  const board = makeBoard('B', 1);
+
+  const { active, events } = applyMove(board, playerB, makePlayer('A'), {
+    cardId: null,
+    activateSupport: true,
+  });
+
+  // Should emit supportBlocked event, not recoveryPing.
+  const blocked = events.find((e) => e.type === 'supportBlocked');
+  assert.ok(blocked, 'Expected supportBlocked event');
+  assert.equal(blocked.effect, 'recoveryPing');
+  // Support must NOT be marked as activated when precondition fails.
+  assert.equal(active.supportRuntime.activated, false);
+});
+
+// ── canActivateSupportEffect (P1-C) ──────────────────────────────────────────
+
+test('canActivateSupportEffect — recoveryPing blocked when no captured riders', () => {
+  const player = makePlayer('A'); // all riders at OFF_BOARD, isCaptured=false
+  const { canActivate, reason } = canActivateSupportEffect('recoveryPing', player);
+  assert.equal(canActivate, false);
+  assert.ok(reason);
+});
+
+test('canActivateSupportEffect — recoveryPing allowed when a captured rider exists', () => {
+  const player = makePlayer('A');
+  player.riders[0].isCaptured = true;
+  const { canActivate } = canActivateSupportEffect('recoveryPing', player);
+  assert.equal(canActivate, true);
+});
+
+test('canActivateSupportEffect — sideRoute blocked when no entry-zone riders', () => {
+  const player = makePlayer('A');
+  // Move all riders to shared zone.
+  player.riders.forEach((r) => { r.position = 6; });
+  const { canActivate, reason } = canActivateSupportEffect('sideRoute', player);
+  assert.equal(canActivate, false);
+  assert.ok(reason);
+});
+
+test('canActivateSupportEffect — sideRoute allowed when an entry-zone rider exists', () => {
+  const player = makePlayer('A');
+  player.riders[0].position = 2;
+  const { canActivate } = canActivateSupportEffect('sideRoute', player);
+  assert.equal(canActivate, true);
+});
+
+test('canActivateSupportEffect — already-activated support is always blocked', () => {
+  const player = makePlayer('A');
+  player.riders[0].isCaptured = true; // satisfies recoveryPing precondition
+  player.supportRuntime = { activated: true, activatedOnTurn: 1 };
+  const { canActivate } = canActivateSupportEffect('recoveryPing', player);
+  assert.equal(canActivate, false);
+});
+
+test('canActivateSupportEffect — effects without preconditions are always canActivate=true', () => {
+  const player = makePlayer('A');
+  for (const effect of ['crowdRoar', 'smokeScreen', 'reroll', 'overclock']) {
+    const { canActivate } = canActivateSupportEffect(effect, player);
+    assert.equal(canActivate, true, `${effect} should have no preconditions`);
+  }
 });

@@ -62,6 +62,13 @@ export async function saveJousturLineup(
 
 // ── Challenges ────────────────────────────────────────────────────────────────
 
+export async function listJousturChallenges(): Promise<{
+  sent: JousturChallenge[];
+  received: JousturChallenge[];
+}> {
+  return apiFetch<{ sent: JousturChallenge[]; received: JousturChallenge[] }>("/challenges");
+}
+
 export async function createJousturChallenge(
   defenderUid: string,
 ): Promise<JousturChallenge> {
@@ -114,7 +121,7 @@ export async function getJousturMatch(matchId: string): Promise<JousturMatch> {
 export interface RollResult {
   roll: number;
   legalMoves: JousturLegalMove[];
-  canActivateSupport: boolean;
+  canActivateSupport: { canActivate: boolean; reason: string | null };
 }
 
 export async function rollJousturShards(matchId: string): Promise<RollResult> {

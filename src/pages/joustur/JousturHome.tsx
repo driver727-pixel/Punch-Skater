@@ -8,9 +8,17 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { listJousturMatches, enqueueJoustur, dequeueJoustur } from "../../services/joustur";
+import {
+  listJousturMatches,
+  enqueueJoustur,
+  dequeueJoustur,
+  listJousturChallenges,
+  createJousturChallenge,
+  acceptJousturChallenge,
+  declineJousturChallenge,
+} from "../../services/joustur";
 import { useJousturLineup } from "../../hooks/useJousturLineup";
-import type { JousturMatch } from "../../lib/jousturTypes";
+import type { JousturMatch, JousturChallenge } from "../../lib/jousturTypes";
 import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 
 function matchStatusLabel(match: JousturMatch, myUid: string): string {
@@ -31,11 +39,19 @@ export function JousturHome() {
   const [inQueue, setInQueue] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Challenge state
+  const [challenges, setChallenges] = useState<{ sent: JousturChallenge[]; received: JousturChallenge[] }>({ sent: [], received: [] });
+  const [challengeDefenderUid, setChallengeDefenderUid] = useState("");
+  const [challengeLoading, setChallengeLoading] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     setLoadingMatches(true);
-    listJousturMatches()
-      .then(setMatches)
+    Promise.all([
+      listJousturMatches(),
+      listJousturChallenges(),
+    ])
+      .then(([m, c]) => { setMatches(m); setChallenges(c); })
       .catch((e) => setError(e.message))
       .finally(() => setLoadingMatches(false));
   }, [user]);
@@ -65,8 +81,55 @@ export function JousturHome() {
     finally { setQueueing(false); }
   };
 
-  const activeMatches  = matches.filter((m) => m.status === "active");
-  const pastMatches    = matches.filter((m) => m.status !== "active").slice(0, 5);
+  const handleSendChallenge = async () => {
+    const uid = challengeDefenderUid.trim();
+    if (!uid) { setError("Enter a player UID to challenge."); return; }
+    if (!lineup) { setError("Build and save a lineup first."); return; }
+    setError(null);
+    setChallengeLoading(true);
+    try {
+      await createJousturChallenge(uid);
+      setChallengeDefenderUid("");
+      const updated = await listJousturChallenges();
+      setChallenges(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to send challenge.");
+    } finally {
+      setChallengeLoading(false);
+    }
+  };
+
+  const handleAcceptChallenge = async (challengeId: string) => {
+    setError(null);
+    try {
+      const match = await acceptJousturChallenge(challengeId);
+      navigate(`/joustur/match/${match.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to accept challenge.");
+    }
+  };
+
+  const handleDeclineChallenge = async (challengeId: string) => {
+    setError(null);
+    try {
+      await declineJousturChallenge(challengeId);
+      setChallenges((prev) => ({
+        sent: prev.sent.filter((c) => c.id !== challengeId),
+        received: prev.received.filter((c) => c.id !== challengeId),
+      }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to decline challenge.");
+    }
+  };
+
+  // P0-A: Only show matches with non-null player states (initializing docs are
+  // filtered out server-side, but guard here as well for safety).
+  const activeMatches = matches.filter(
+    (m) => m.status === "active" && m.challengerState && m.defenderState,
+  );
+  const pastMatches = matches
+    .filter((m) => m.status !== "active" && m.challengerState && m.defenderState)
+    .slice(0, 5);
 
   return (
     <div className="page joustur-home">
@@ -121,6 +184,74 @@ export function JousturHome() {
         </Link>
       </div>
 
+      {/* Challenge a Friend */}
+      <section className="joustur-home__section">
+        <h2 className="joustur-home__section-title">Challenge a Friend</h2>
+        <div className="joustur-home__challenge-form">
+          <input
+            type="text"
+            className="input"
+            placeholder="Player UID"
+            value={challengeDefenderUid}
+            onChange={(e) => setChallengeDefenderUid(e.target.value)}
+            aria-label="Player UID to challenge"
+          />
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            onClick={handleSendChallenge}
+            disabled={challengeLoading || !lineup}
+            title={!lineup ? "Save a lineup first" : undefined}
+          >
+            {challengeLoading ? "Sending…" : "Send Challenge"}
+          </button>
+        </div>
+
+        {/* Received challenges */}
+        {challenges.received.length > 0 && (
+          <div className="joustur-home__challenges">
+            <h3 className="joustur-home__challenges-subtitle">Received</h3>
+            <ul className="joustur-home__challenge-list">
+              {challenges.received.map((c) => (
+                <li key={c.id} className="joustur-home__challenge-item">
+                  <span>{c.challengerDisplayName || c.challengerUid} challenged you</span>
+                  <div className="joustur-home__challenge-actions">
+                    <button
+                      type="button"
+                      className="btn-primary btn-sm"
+                      onClick={() => handleAcceptChallenge(c.id)}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline btn-sm"
+                      onClick={() => handleDeclineChallenge(c.id)}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Sent challenges */}
+        {challenges.sent.length > 0 && (
+          <div className="joustur-home__challenges">
+            <h3 className="joustur-home__challenges-subtitle">Sent</h3>
+            <ul className="joustur-home__challenge-list">
+              {challenges.sent.map((c) => (
+                <li key={c.id} className="joustur-home__challenge-item">
+                  <span>Waiting for {c.defenderDisplayName || c.defenderUid}…</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
       {/* Active matches */}
       {loadingMatches ? (
         <p className="joustur-home__loading">Loading matches…</p>
@@ -140,17 +271,17 @@ export function JousturHome() {
                 </div>
                 <div className="joustur-home__match-factions">
                   <span>
-                    {JOUSTUR_FACTION_LABELS[m.challengerState.faction] ?? m.challengerState.faction}
+                    {JOUSTUR_FACTION_LABELS[m.challengerState!.faction] ?? m.challengerState!.faction}
                   </span>
                   <span className="joustur-home__match-vs">vs</span>
                   <span>
-                    {JOUSTUR_FACTION_LABELS[m.defenderState.faction] ?? m.defenderState.faction}
+                    {JOUSTUR_FACTION_LABELS[m.defenderState!.faction] ?? m.defenderState!.faction}
                   </span>
                 </div>
                 <div className="joustur-home__match-score">
-                  {m.challengerState.scoredCount} / 6
+                  {m.challengerState!.scoredCount} / 6
                   <span className="joustur-home__match-vs">–</span>
-                  {m.defenderState.scoredCount} / 6
+                  {m.defenderState!.scoredCount} / 6
                 </div>
                 <Link
                   to={`/joustur/match/${m.id}`}
@@ -177,9 +308,9 @@ export function JousturHome() {
                   {matchStatusLabel(m, user?.uid ?? "")}
                 </span>
                 <span>
-                  {JOUSTUR_FACTION_LABELS[m.challengerState.faction] ?? m.challengerState.faction}
+                  {JOUSTUR_FACTION_LABELS[m.challengerState!.faction] ?? m.challengerState!.faction}
                   {" vs "}
-                  {JOUSTUR_FACTION_LABELS[m.defenderState.faction] ?? m.defenderState.faction}
+                  {JOUSTUR_FACTION_LABELS[m.defenderState!.faction] ?? m.defenderState!.faction}
                 </span>
                 <Link to={`/joustur/result/${m.id}`} className="btn-outline btn-sm">
                   View →

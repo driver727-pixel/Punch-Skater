@@ -34,6 +34,18 @@ export function JousturResult() {
   if (loading) return <div className="page joustur-result"><p>Loading result…</p></div>;
   if (!match) return <div className="page joustur-result"><p>{error ?? "Match not found."}</p></div>;
 
+  // P0-A: Guard against matches still initializing (null player states).
+  if (!match.challengerState || !match.defenderState) {
+    return (
+      <div className="page joustur-result">
+        <p>Match is still being set up — please try again in a moment.</p>
+        <button type="button" className="btn-outline btn-sm" onClick={() => navigate("/joustur")}>
+          Back
+        </button>
+      </div>
+    );
+  }
+
   const myUid = user?.uid ?? "";
   const didWin = match.winnerUid === myUid;
   const isChallenger = match.challengerUid === myUid;

@@ -62,7 +62,7 @@ export type JousturChallengeStatus =
   | "cancelled"
   | "expired";
 
-export type JousturMatchStatus = "active" | "completed" | "cancelled";
+export type JousturMatchStatus = "initializing" | "active" | "completed" | "cancelled";
 
 export type JousturMatchMode = "friend" | "casual";
 
@@ -116,6 +116,8 @@ export interface JousturRiderRuntimeState {
    */
   position: number;
   isScored: boolean;
+  /** True when the rider was sent back to OFF_BOARD by an opponent capture. */
+  isCaptured: boolean;
 }
 
 export interface JousturSupportRuntimeState {
@@ -165,14 +167,25 @@ export interface JousturMatch {
   challengerUid: string;
   defenderUid: string;
   board: JousturBoardState;
-  challengerState: JousturPlayerState;
-  defenderState: JousturPlayerState;
+  /**
+   * Null only while status === "initializing" (player states are being built).
+   * Always present for "active" / "completed" / "cancelled" matches.
+   */
+  challengerState: JousturPlayerState | null;
+  defenderState: JousturPlayerState | null;
   winnerUid: string | null;
   /** Prevents duplicate reward grants. */
   rewardsGranted: boolean;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  /**
+   * Hydrated by GET /match/:id when board.rollResult !== null and the caller
+   * is the active player.  Not persisted — computed on read.
+   */
+  legalMoves?: JousturLegalMove[];
+  /** Hydrated alongside legalMoves. */
+  canActivateSupport?: { canActivate: boolean; reason: string | null };
 }
 
 // ── Turn log ──────────────────────────────────────────────────────────────────
