@@ -5,6 +5,7 @@
  */
 
 import { getAuth } from "firebase/auth";
+import { resolveApiUrl } from "../lib/apiUrls";
 import type {
   JousturLineup,
   JousturChallenge,
@@ -14,7 +15,10 @@ import type {
   JousturMoveChoice,
 } from "../lib/jousturTypes";
 
-const API_BASE = "/api/joustur";
+const API_BASE = resolveApiUrl(
+  (import.meta.env.VITE_JOUSTUR_API_URL as string | undefined)?.trim(),
+  "/api/joustur",
+);
 
 async function getIdToken(): Promise<string> {
   const user = getAuth().currentUser;
