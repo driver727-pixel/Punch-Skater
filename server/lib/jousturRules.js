@@ -242,7 +242,7 @@ export function validateLineup(riderCardIds, supportCardId) {
 // ── State builders ────────────────────────────────────────────────────────────
 
 function buildRiderRuntime(snapshot) {
-  return { cardId: snapshot.cardId, position: OFF_BOARD, isScored: false };
+  return { cardId: snapshot.cardId, position: OFF_BOARD, isScored: false, isCaptured: false };
 }
 
 /**
@@ -357,6 +357,48 @@ export function getLegalMoves(boardState, activePlayer, opponentPlayer) {
   return moves;
 }
 
+// ── Support activation legality ───────────────────────────────────────────────
+
+/**
+ * Check whether a support effect can currently be activated by the active
+ * player.  This is a pure, side-effect-free helper.
+ *
+ * @param {string} effect        JousturSupportEffect key.
+ * @param {object} activePlayer  JousturPlayerState (with runtime riders).
+ * @returns {{ canActivate: boolean, reason: string|null }}
+ */
+export function canActivateSupportEffect(effect, activePlayer) {
+  // Already used — covers every effect type.
+  if (activePlayer.supportRuntime.activated) {
+    return { canActivate: false, reason: 'Support has already been used in this match.' };
+  }
+
+  switch (effect) {
+    case 'recoveryPing': {
+      const hasCaptured = activePlayer.riders.some(
+        (r) => r.position === OFF_BOARD && r.isCaptured && !r.isScored,
+      );
+      if (!hasCaptured) {
+        return { canActivate: false, reason: 'recoveryPing requires at least one captured rider.' };
+      }
+      break;
+    }
+    case 'sideRoute': {
+      const hasEntryRider = activePlayer.riders.some(
+        (r) => r.position >= PRIVATE_ENTRY_MIN && r.position <= PRIVATE_ENTRY_MAX,
+      );
+      if (!hasEntryRider) {
+        return { canActivate: false, reason: 'sideRoute requires at least one rider in the entry zone (positions 1–4).' };
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
+  return { canActivate: true, reason: null };
+}
+
 // ── Move application ──────────────────────────────────────────────────────────
 
 /**
@@ -381,66 +423,75 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
   // ── Support activation ────────────────────────────────────────────────────
   if (moveChoice.activateSupport && !newActive.supportRuntime.activated) {
     const effect = newActive.support.supportEffect;
-    newActive.supportRuntime = { activated: true, activatedOnTurn: newBoard.turn };
+    const { canActivate, reason } = canActivateSupportEffect(effect, newActive);
 
-    switch (effect) {
-      case 'recoveryPing': {
-        // Move the first captured (position 0) rider back to entry.
-        const captured = newActive.riders.find(
-          (r) => r.position === OFF_BOARD && !r.isScored,
-        );
-        if (captured) {
-          captured.position = PRIVATE_ENTRY_MIN;
-          events.push({ type: 'recoveryPing', cardId: captured.cardId });
+    if (!canActivate) {
+      // Precondition not met — emit a no-op event and do not mark as activated.
+      events.push({ type: 'supportBlocked', effect, reason });
+    } else {
+      newActive.supportRuntime = { activated: true, activatedOnTurn: newBoard.turn };
+
+      switch (effect) {
+        case 'recoveryPing': {
+          // Move the first captured (isCaptured=true, position=0) rider back
+          // to entry.  Riders that simply haven't entered yet are not eligible.
+          const captured = newActive.riders.find(
+            (r) => r.position === OFF_BOARD && r.isCaptured && !r.isScored,
+          );
+          if (captured) {
+            captured.position = PRIVATE_ENTRY_MIN;
+            captured.isCaptured = false;
+            events.push({ type: 'recoveryPing', cardId: captured.cardId });
+          }
+          break;
         }
-        break;
-      }
-      case 'crowdRoar':
-        extraTurn = true;
-        events.push({ type: 'crowdRoar' });
-        break;
+        case 'crowdRoar':
+          extraTurn = true;
+          events.push({ type: 'crowdRoar' });
+          break;
 
-      case 'smokeScreen':
-        newBoard.smokeScreenUid = newActive.uid;
-        newBoard.smokeScreenExpiresAfterTurn = newBoard.turn + 1;
-        events.push({ type: 'smokeScreen', uid: newActive.uid });
-        break;
+        case 'smokeScreen':
+          newBoard.smokeScreenUid = newActive.uid;
+          newBoard.smokeScreenExpiresAfterTurn = newBoard.turn + 1;
+          events.push({ type: 'smokeScreen', uid: newActive.uid });
+          break;
 
-      case 'reroll':
-        // Regenerate roll on the next step; grant an extra turn so the same
-        // player rolls and moves again.
-        extraTurn = true;
-        newBoard.rollResult = null; // forces a fresh /roll call
-        events.push({ type: 'reroll' });
-        break;
+        case 'reroll':
+          // Regenerate roll on the next step; grant an extra turn so the same
+          // player rolls and moves again.
+          extraTurn = true;
+          newBoard.rollResult = null; // forces a fresh /roll call
+          events.push({ type: 'reroll' });
+          break;
 
-      case 'overclock': {
-        // +1 to current roll (can exceed 4); extra turn to use it.
-        const boosted = (newBoard.rollResult ?? 0) + 1;
-        newBoard.rollResult = boosted;
-        extraTurn = true;
-        events.push({ type: 'overclock', newRoll: boosted });
-        break;
-      }
-
-      case 'sideRoute': {
-        // Teleport a rider from private entry to the start of private exit.
-        const targetRider = moveChoice.supportTargetCardId
-          ? newActive.riders.find((r) => r.cardId === moveChoice.supportTargetCardId)
-          : newActive.riders.find(
-              (r) =>
-                r.position >= PRIVATE_ENTRY_MIN &&
-                r.position <= PRIVATE_ENTRY_MAX,
-            );
-        if (targetRider) {
-          targetRider.position = PRIVATE_EXIT_MIN;
-          events.push({ type: 'sideRoute', cardId: targetRider.cardId });
+        case 'overclock': {
+          // +1 to current roll (can exceed 4); extra turn to use it.
+          const boosted = (newBoard.rollResult ?? 0) + 1;
+          newBoard.rollResult = boosted;
+          extraTurn = true;
+          events.push({ type: 'overclock', newRoll: boosted });
+          break;
         }
-        break;
-      }
 
-      default:
-        break;
+        case 'sideRoute': {
+          // Teleport a rider from private entry to the start of private exit.
+          const targetRider = moveChoice.supportTargetCardId
+            ? newActive.riders.find((r) => r.cardId === moveChoice.supportTargetCardId)
+            : newActive.riders.find(
+                (r) =>
+                  r.position >= PRIVATE_ENTRY_MIN &&
+                  r.position <= PRIVATE_ENTRY_MAX,
+              );
+          if (targetRider) {
+            targetRider.position = PRIVATE_EXIT_MIN;
+            events.push({ type: 'sideRoute', cardId: targetRider.cardId });
+          }
+          break;
+        }
+
+        default:
+          break;
+      }
     }
   }
 
@@ -470,6 +521,7 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
           if (oppRider && !isStealthAlcove(toPos) && !opponentProtected) {
             capturedCardId = oppRider.cardId;
             oppRider.position = OFF_BOARD;
+            oppRider.isCaptured = true;
             events.push({ type: 'capture', capturedCardId: oppRider.cardId, atPosition: toPos });
           }
         }

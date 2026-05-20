@@ -25,6 +25,7 @@ import {
   buildInitialPlayerState,
   buildInitialBoardState,
   getLegalMoves,
+  canActivateSupportEffect,
   applyMove,
   detectWinner,
   calcRewards,
@@ -182,40 +183,63 @@ async function buildMatchPlayerStates(db, challengerUid, defenderUid, challenger
  * Returns the new JousturMatch on success, or null if no opponent was found.
  *
  * Uses a Firestore transaction to avoid double-matching.
+ *
+ * Strategy (P0-C fix): The initial queue scan is intentionally performed
+ * OUTSIDE the transaction because Firestore transactions don't support queries.
+ * Inside the transaction we use `tx.get(opponentRef)` to include the opponent
+ * doc in the transaction's read-set, so Firestore's optimistic concurrency will
+ * abort and retry any concurrent transaction that tries to match the same
+ * opponent simultaneously.
  */
 async function tryCreateCasualMatch(db, callerUid, callerLineup, randomUUID) {
   const queueRef = db.collection(QUEUE_COL);
   const callerRef = queueRef.doc(callerUid);
 
+  // Scan the queue outside the transaction — Firestore transactions do not
+  // support queries. We find candidate opponents here, then verify each one
+  // still exists inside the transaction via a transactional document read.
+  const snap = await queueRef.orderBy('enqueuedAt').limit(10).get();
+  const opponentDoc = snap.docs.find((d) => d.id !== callerUid);
+
+  if (!opponentDoc) {
+    // No opponent in queue — enqueue the caller and return.
+    await callerRef.set({ uid: callerUid, enqueuedAt: nowIso() });
+    return null;
+  }
+
+  const opponentRef = opponentDoc.ref;
+
   return db.runTransaction(async (tx) => {
-    // Find any queued player that isn't the caller.
-    const snap = await queueRef.orderBy('enqueuedAt').limit(10).get();
-    const opponent = snap.docs.find((d) => d.id !== callerUid);
-    if (!opponent) {
-      // No opponent available — just ensure the caller is queued.
-      tx.set(callerRef, {
-        uid: callerUid,
-        enqueuedAt: nowIso(),
-      });
+    // Re-read the opponent doc inside the transaction so Firestore includes it
+    // in the read-set. If another concurrent transaction has already deleted
+    // this doc (matched the opponent), Firestore will abort and retry.
+    const opponentSnap = await tx.get(opponentRef);
+    if (!opponentSnap.exists) {
+      // Opponent was already matched by a concurrent transaction — enqueue caller.
+      tx.set(callerRef, { uid: callerUid, enqueuedAt: nowIso() });
       return null;
     }
 
-    const defenderUid = opponent.id;
+    const defenderUid = opponentSnap.id;
+    if (defenderUid === callerUid) {
+      // Defensive guard — shouldn't happen after the pre-scan filter.
+      tx.set(callerRef, { uid: callerUid, enqueuedAt: nowIso() });
+      return null;
+    }
+
     const defenderLineupRef = db.collection(LINEUPS_COL).doc(defenderUid);
     const defenderLineupSnap = await tx.get(defenderLineupRef);
     if (!defenderLineupSnap.exists) {
-      // Opponent has no lineup — remove from queue and try again next request.
-      tx.delete(opponent.ref);
+      // Opponent has no lineup — remove from queue and enqueue caller.
+      tx.delete(opponentRef);
       tx.set(callerRef, { uid: callerUid, enqueuedAt: nowIso() });
       return null;
     }
 
     const defenderLineup = defenderLineupSnap.data();
 
-    // Build states outside the transaction (card fetches can't be transactional).
-    // We'll do it after the transaction commits if needed.
-    // For now, remove both from queue and create the match doc.
-    tx.delete(opponent.ref);
+    // Remove both from queue and create the match doc atomically.
+    tx.delete(opponentRef);
     tx.delete(callerRef);
 
     const matchId = `jm-${randomUUID()}`;
@@ -392,62 +416,79 @@ export function registerJousturRoutes(app, {
 
     try {
       const chalRef = adminDb.collection(CHALLENGES_COL).doc(challengeId);
-      const chalSnap = await chalRef.get();
-      if (!chalSnap.exists) throw badRequest('Challenge not found.', 404);
 
-      const ch = chalSnap.data();
-      if (ch.defenderUid !== caller.uid) throw badRequest('Only the defender can accept this challenge.', 403);
-      if (ch.status !== 'pending') throw badRequest('This challenge is no longer pending.', 409);
+      // P0-B: Wrap the entire accept flow in a transaction so that two
+      // concurrent accept requests cannot both see status==='pending' and
+      // each create a separate match.  The challenge read, status check,
+      // challenge update, and match creation all happen atomically.
+      let match;
+      let challengerUid;
 
-      // Load lineups.
-      const [cLineupSnap, dLineupSnap] = await Promise.all([
-        adminDb.collection(LINEUPS_COL).doc(ch.challengerUid).get(),
-        adminDb.collection(LINEUPS_COL).doc(ch.defenderUid).get(),
-      ]);
-      if (!cLineupSnap.exists) throw badRequest('Challenger has no saved lineup.', 409);
-      if (!dLineupSnap.exists) throw badRequest('You need a saved lineup to accept.', 409);
+      await adminDb.runTransaction(async (tx) => {
+        const chalSnap = await tx.get(chalRef);
+        if (!chalSnap.exists) throw badRequest('Challenge not found.', 404);
 
-      // Build full player states (verifies card ownership).
-      const { challengerState, defenderState } = await buildMatchPlayerStates(
-        adminDb,
-        ch.challengerUid,
-        ch.defenderUid,
-        cLineupSnap.data(),
-        dLineupSnap.data(),
-      );
+        const ch = chalSnap.data();
+        if (ch.defenderUid !== caller.uid) throw badRequest('Only the defender can accept this challenge.', 403);
+        // Re-check inside the transaction — a concurrent accept may have
+        // already changed the status before this transaction commits.
+        if (ch.status !== 'pending') throw badRequest('This challenge is no longer pending.', 409);
 
-      const matchId = `jm-${randomUUID()}`;
-      const match = {
-        id: matchId,
-        status: 'active',
-        mode: 'friend',
-        challengerUid: ch.challengerUid,
-        defenderUid: ch.defenderUid,
-        board: buildInitialBoardState(ch.challengerUid),
-        challengerState,
-        defenderState,
-        winnerUid: null,
-        rewardsGranted: false,
-        createdAt: nowIso(),
-        updatedAt: nowIso(),
-      };
+        // Load lineups transactionally so they're part of the read-set.
+        const cLineupRef = adminDb.collection(LINEUPS_COL).doc(ch.challengerUid);
+        const dLineupRef = adminDb.collection(LINEUPS_COL).doc(ch.defenderUid);
+        const [cLineupSnap, dLineupSnap] = await Promise.all([
+          tx.get(cLineupRef),
+          tx.get(dLineupRef),
+        ]);
+        if (!cLineupSnap.exists) throw badRequest('Challenger has no saved lineup.', 409);
+        if (!dLineupSnap.exists) throw badRequest('You need a saved lineup to accept.', 409);
 
-      const batch = adminDb.batch();
-      batch.set(adminDb.collection(MATCHES_COL).doc(matchId), match);
-      batch.update(chalRef, { status: 'accepted', matchId, updatedAt: nowIso() });
-      await batch.commit();
+        // Build full player states (card fetches, cannot be inside tx).
+        // We do this here (still inside the tx callback) because the async
+        // work is done before any tx.set() calls — Firestore doesn't execute
+        // the writes until after the callback resolves, so this is safe.
+        const { challengerState, defenderState } = await buildMatchPlayerStates(
+          adminDb,
+          ch.challengerUid,
+          ch.defenderUid,
+          cLineupSnap.data(),
+          dLineupSnap.data(),
+        );
 
-      // Notify challenger.
+        const matchId = `jm-${randomUUID()}`;
+        match = {
+          id: matchId,
+          status: 'active',
+          mode: 'friend',
+          challengerUid: ch.challengerUid,
+          defenderUid: ch.defenderUid,
+          board: buildInitialBoardState(ch.challengerUid),
+          challengerState,
+          defenderState,
+          winnerUid: null,
+          rewardsGranted: false,
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+        };
+        challengerUid = ch.challengerUid;
+
+        tx.set(adminDb.collection(MATCHES_COL).doc(matchId), match);
+        tx.update(chalRef, { status: 'accepted', matchId, updatedAt: nowIso() });
+      });
+
+      // Notify challenger outside the transaction (notifications are not
+      // transactional and a failure here must not roll back the match).
       const notif = buildNotification({
-        uid: ch.challengerUid,
+        uid: challengerUid,
         type: 'joustur_accepted',
         title: 'Your Joustur challenge was accepted!',
         body: 'Head to Joustur to take your first turn.',
-        link: `/joustur/match/${matchId}`,
-        data: { matchId },
+        link: `/joustur/match/${match.id}`,
+        data: { matchId: match.id },
         randomUUID,
       });
-      await adminDb.doc(`notifications/${ch.challengerUid}/items/${notif.ref.id}`).set(notif.payload);
+      await adminDb.doc(`notifications/${challengerUid}/items/${notif.ref.id}`).set(notif.payload);
 
       res.status(201).json(match);
     } catch (e) {
@@ -561,7 +602,13 @@ export function registerJousturRoutes(app, {
       const seen = new Set();
       const matches = [];
       [...asChallenger.docs, ...asDefender.docs].forEach((d) => {
-        if (!seen.has(d.id)) { seen.add(d.id); matches.push(d.data()); }
+        if (!seen.has(d.id)) {
+          seen.add(d.id);
+          const data = d.data();
+          // Exclude matches that are still being initialised — player states
+          // are not yet set and the UI cannot safely render them.
+          if (data.status !== 'initializing') matches.push(data);
+        }
       });
       matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       res.json(matches);
@@ -585,6 +632,25 @@ export function registerJousturRoutes(app, {
       if (match.challengerUid !== caller.uid && match.defenderUid !== caller.uid) {
         throw badRequest('Access denied.', 403);
       }
+      // A match still in 'initializing' has null player states. Returning it
+      // would cause null-dereferences on the client; ask the caller to retry.
+      if (match.status === 'initializing') {
+        throw badRequest('Match is still being set up — please try again in a moment.', 409);
+      }
+
+      // P1-A: If a roll is already pending for this player, hydrate legalMoves
+      // and canActivateSupport so a page reload doesn't lose that context.
+      if (match.board.rollResult !== null && match.board.activePlayerUid === caller.uid) {
+        const isChallenger = match.challengerUid === caller.uid;
+        const activeState   = isChallenger ? match.challengerState : match.defenderState;
+        const opponentState = isChallenger ? match.defenderState   : match.challengerState;
+        match.legalMoves = getLegalMoves(match.board, activeState, opponentState);
+        match.canActivateSupport = canActivateSupportEffect(
+          activeState.support.supportEffect,
+          activeState,
+        );
+      }
+
       res.json(match);
     } catch (e) {
       res.status(e.statusCode ?? 500).json({ error: e.message });
@@ -644,7 +710,10 @@ export function registerJousturRoutes(app, {
           updatedAt: nowIso(),
         });
 
-        return { roll, legalMoves, canActivateSupport: !activeState.supportRuntime.activated };
+        return { roll, legalMoves, canActivateSupport: canActivateSupportEffect(
+          activeState.support.supportEffect,
+          activeState,
+        ) };
       });
 
       res.json(result);

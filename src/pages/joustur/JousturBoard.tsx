@@ -26,6 +26,8 @@ import type {
 import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 
 const STEALTH_ALCOVES = new Set([4, 6, 8, 12, 14]);
+const PRIVATE_ENTRY_MIN = 1;
+const PRIVATE_ENTRY_MAX = 4;
 
 const POS_LABELS: Record<number, string> = {
   0: "Off board",
@@ -53,11 +55,18 @@ function PlayerPanel({
   isMe: boolean;
   isActive: boolean;
   legalMoves: JousturLegalMove[];
-  canActivateSupport: boolean;
+  canActivateSupport: { canActivate: boolean; reason: string | null };
   onSelectRider: (cardId: string) => void;
   onActivateSupport: (targetCardId?: string) => void;
 }) {
   const legalSet = new Set(legalMoves.map((m) => m.cardId));
+  const isSideRoute = player.support.supportEffect === "sideRoute";
+
+  // For sideRoute, track which entry-zone rider the player wants to teleport.
+  const [sideRouteTarget, setSideRouteTarget] = useState<string>("");
+  const entryRiders = player.riders.filter(
+    (r) => r.position >= PRIVATE_ENTRY_MIN && r.position <= PRIVATE_ENTRY_MAX,
+  );
 
   return (
     <div
@@ -105,7 +114,7 @@ function PlayerPanel({
       </ul>
 
       {/* Support card */}
-      {isMe && isActive && canActivateSupport && !player.supportRuntime.activated && (
+      {isMe && isActive && !player.supportRuntime.activated && (
         <div className="joustur-board__support">
           <p className="joustur-board__support-name">
             Support: {player.support.name}{" "}
@@ -113,13 +122,51 @@ function PlayerPanel({
               ({player.support.supportEffect})
             </span>
           </p>
-          <button
-            type="button"
-            className="btn-outline btn-sm"
-            onClick={() => onActivateSupport()}
-          >
-            Activate Support
-          </button>
+          {canActivateSupport.canActivate ? (
+            isSideRoute && entryRiders.length > 0 ? (
+              /* SideRoute target picker */
+              <div className="joustur-board__sideRoute-picker">
+                <select
+                  value={sideRouteTarget}
+                  onChange={(e) => setSideRouteTarget(e.target.value)}
+                  className="joustur-board__sideRoute-select"
+                  aria-label="Select rider to teleport"
+                >
+                  <option value="">Pick a rider…</option>
+                  {entryRiders.map((r, i) => (
+                    <option key={r.cardId} value={r.cardId}>
+                      {player.lineup[player.riders.indexOf(r)]?.name ?? `Rider ${i + 1}`} (Entry {r.position})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn-outline btn-sm"
+                  disabled={!sideRouteTarget}
+                  onClick={() => onActivateSupport(sideRouteTarget)}
+                >
+                  Activate SideRoute
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn-outline btn-sm"
+                onClick={() => onActivateSupport()}
+              >
+                Activate Support
+              </button>
+            )
+          ) : (
+            <button
+              type="button"
+              className="btn-outline btn-sm"
+              disabled
+              title={canActivateSupport.reason ?? undefined}
+            >
+              Activate Support
+            </button>
+          )}
         </div>
       )}
       {player.supportRuntime.activated && (
@@ -140,9 +187,14 @@ export function JousturBoard() {
   const [rolling, setRolling] = useState(false);
   const [moving, setMoving] = useState(false);
   const [legalMoves, setLegalMoves] = useState<JousturLegalMove[]>([]);
-  const [canActivateSupport, setCanActivateSupport] = useState(false);
+  const [canActivateSupport, setCanActivateSupport] = useState<{
+    canActivate: boolean;
+    reason: string | null;
+  }>({ canActivate: false, reason: null });
   const [rollResult, setRollResult] = useState<number | null>(null);
   const [lastEvent, setLastEvent] = useState<string | null>(null);
+
+  const myUid = user?.uid ?? "";
 
   const loadMatch = useCallback(async () => {
     if (!matchId) return;
@@ -150,12 +202,24 @@ export function JousturBoard() {
       const m = await getJousturMatch(matchId);
       setMatch(m);
       if (m.status !== "active") navigate(`/joustur/result/${matchId}`);
+      // P1-A: Hydrate legal moves from the match response when a roll is
+      // already pending (e.g. after a page reload mid-turn).
+      if (
+        m.board.rollResult !== null &&
+        m.board.activePlayerUid === myUid &&
+        m.legalMoves !== undefined &&
+        m.canActivateSupport !== undefined
+      ) {
+        setRollResult(m.board.rollResult);
+        setLegalMoves(m.legalMoves);
+        setCanActivateSupport(m.canActivateSupport);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load match.");
     } finally {
       setLoading(false);
     }
-  }, [matchId, navigate]);
+  }, [matchId, navigate, myUid]);
 
   useEffect(() => {
     loadMatch();
@@ -167,9 +231,15 @@ export function JousturBoard() {
     return () => clearInterval(interval);
   }, [loadMatch]);
 
-  const myUid = user?.uid ?? "";
   const isMyTurn = match?.board.activePlayerUid === myUid;
-  const rollPending = match?.board.rollResult !== null || rollResult !== null;
+  // rollPending: a roll has been generated AND we have the context to act on it.
+  // We use either the locally cached rollResult OR the server-stored one (for
+  // reloads), but only if legal moves have been hydrated — otherwise the pass
+  // button would appear incorrectly before hydration completes.
+  const serverRoll = match?.board.rollResult ?? null;
+  const rollPending =
+    (rollResult !== null || serverRoll !== null) &&
+    (rollResult !== null || legalMoves.length > 0 || canActivateSupport.canActivate);
 
   const handleRoll = async () => {
     if (!matchId || rolling) return;
@@ -202,7 +272,7 @@ export function JousturBoard() {
         setMatch(result.match);
         setRollResult(null);
         setLegalMoves([]);
-        setCanActivateSupport(false);
+        setCanActivateSupport({ canActivate: false, reason: null });
         if (result.winner) {
           navigate(`/joustur/result/${matchId}`);
           return;
@@ -228,6 +298,18 @@ export function JousturBoard() {
 
   if (loading) return <div className="page joustur-board"><p>Loading match…</p></div>;
   if (!match) return <div className="page joustur-board"><p>{error ?? "Match not found."}</p></div>;
+
+  // P0-A: Guard against matches still in 'initializing' state (null player states).
+  if (!match.challengerState || !match.defenderState) {
+    return (
+      <div className="page joustur-board">
+        <p>Match is being set up — please wait a moment and refresh.</p>
+        <button type="button" className="btn-outline btn-sm" onClick={loadMatch}>
+          Refresh
+        </button>
+      </div>
+    );
+  }
 
   const isChallenger = match.challengerUid === myUid;
   const myState       = isChallenger ? match.challengerState : match.defenderState;
@@ -277,8 +359,9 @@ export function JousturBoard() {
         </div>
       )}
 
-      {/* Pass button (roll = 0 with no legal moves) */}
-      {isMyTurn && rollPending && myLegalMoves.length === 0 && !canActivateSupport && (
+      {/* Pass button — only when roll is pending AND there are truly no legal
+          moves and support cannot be activated. */}
+      {isMyTurn && rollPending && myLegalMoves.length === 0 && !canActivateSupport.canActivate && (
         <div className="joustur-board__roll-area">
           <p className="joustur-board__no-moves">No legal moves — you must pass.</p>
           <button
@@ -299,7 +382,7 @@ export function JousturBoard() {
           isMe
           isActive={isMyTurn}
           legalMoves={myLegalMoves}
-          canActivateSupport={isMyTurn && rollPending ? canActivateSupport : false}
+          canActivateSupport={isMyTurn && rollPending ? canActivateSupport : { canActivate: false, reason: null }}
           onSelectRider={(cardId) => handleMove(cardId, false)}
           onActivateSupport={handleActivateSupport}
         />
@@ -308,7 +391,7 @@ export function JousturBoard() {
           isMe={false}
           isActive={!isMyTurn}
           legalMoves={[]}
-          canActivateSupport={false}
+          canActivateSupport={{ canActivate: false, reason: null }}
           onSelectRider={() => {}}
           onActivateSupport={() => {}}
         />

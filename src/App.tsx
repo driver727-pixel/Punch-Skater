@@ -9,6 +9,7 @@ import { Footer } from "./components/Footer";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { firebaseUnavailableMessage, isFirebaseConfigured } from "./lib/firebase";
+import { isEnabled } from "./lib/featureFlags";
 
 /** Applies data-theme and data-time attributes to <html> for CSS theming. */
 function ThemeApplier() {
@@ -94,6 +95,13 @@ const JousturBoard    = lazy(() => import("./pages/joustur/JousturBoard").then(m
 const JousturResult   = lazy(() => import("./pages/joustur/JousturResult").then(m => ({ default: m.JousturResult })));
 const JousturRules    = lazy(() => import("./pages/joustur/JousturRules").then(m => ({ default: m.JousturRules })));
 const MAIN_CONTENT_SELECTOR = ".main";
+
+/** P2-C: Redirects to "/" when the JOUSTUR_SKATUR feature flag is off. */
+function JousturGate({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  if (!isEnabled("JOUSTUR_SKATUR", user)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
 
 function resolveScrollBehavior(): ScrollBehavior {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -215,16 +223,16 @@ function App() {
                         <ProtectedRoute><Missions /></ProtectedRoute>
                       } />
                       <Route path="/joustur" element={
-                        <ProtectedRoute><JousturHome /></ProtectedRoute>
+                        <ProtectedRoute><JousturGate><JousturHome /></JousturGate></ProtectedRoute>
                       } />
                       <Route path="/joustur/lineup" element={
-                        <ProtectedRoute><JousturLineupBuilder /></ProtectedRoute>
+                        <ProtectedRoute><JousturGate><JousturLineupBuilder /></JousturGate></ProtectedRoute>
                       } />
                       <Route path="/joustur/match/:id" element={
-                        <ProtectedRoute><JousturBoard /></ProtectedRoute>
+                        <ProtectedRoute><JousturGate><JousturBoard /></JousturGate></ProtectedRoute>
                       } />
                       <Route path="/joustur/result/:id" element={
-                        <ProtectedRoute><JousturResult /></ProtectedRoute>
+                        <ProtectedRoute><JousturGate><JousturResult /></JousturGate></ProtectedRoute>
                       } />
                       <Route path="/joustur/rules" element={<JousturRules />} />
                       <Route path="/workshop" element={
