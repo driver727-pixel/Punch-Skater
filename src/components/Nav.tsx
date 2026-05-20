@@ -101,11 +101,6 @@ export function Nav() {
           Missions
         </NavLink>
       )}
-      {isEnabled("JOUSTUR_SKATUR", user) && user && (
-        <NavLink to="/joustur" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Joustur
-        </NavLink>
-      )}
       <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Codex
       </NavLink>
