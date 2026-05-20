@@ -1,0 +1,107 @@
+/**
+ * JousturResult.tsx — Post-match result screen.
+ *
+ * Shows winner, both players' scores, and offers navigation back to Joustur hub.
+ */
+
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { getJousturMatch } from "../../services/joustur";
+import type { JousturMatch } from "../../lib/jousturTypes";
+
+const FACTION_LABELS: Record<string, string> = {
+  rustKids:        "Rust Kids",
+  neonSaints:      "Neon Saints",
+  signalGhosts:    "Signal Ghosts",
+  chromeSyndicate: "Chrome Syndicate",
+  voltageVultures: "Voltage Vultures",
+  alleyWraiths:    "Alley Wraiths",
+};
+
+export function JousturResult() {
+  const { id: matchId } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [match, setMatch] = useState<JousturMatch | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!matchId) return;
+    getJousturMatch(matchId)
+      .then((m) => {
+        setMatch(m);
+        // If the match is still active, redirect to the board.
+        if (m.status === "active") navigate(`/joustur/match/${matchId}`);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load match."))
+      .finally(() => setLoading(false));
+  }, [matchId, navigate]);
+
+  if (loading) return <div className="page joustur-result"><p>Loading result…</p></div>;
+  if (!match) return <div className="page joustur-result"><p>{error ?? "Match not found."}</p></div>;
+
+  const myUid = user?.uid ?? "";
+  const didWin = match.winnerUid === myUid;
+  const isChallenger = match.challengerUid === myUid;
+  const myState  = isChallenger ? match.challengerState  : match.defenderState;
+  const oppState = isChallenger ? match.defenderState    : match.challengerState;
+
+  return (
+    <div className="page joustur-result">
+      <p className="page-eyebrow">Joustur Skatur</p>
+
+      <div className={`joustur-result__banner ${didWin ? "joustur-result__banner--win" : "joustur-result__banner--loss"}`}>
+        {didWin ? "⚡ Victory!" : match.winnerUid ? "💀 Defeated" : "— Draw —"}
+      </div>
+
+      <h1 className="joustur-result__title">
+        {FACTION_LABELS[myState.faction] ?? myState.faction}
+        {" vs "}
+        {FACTION_LABELS[oppState.faction] ?? oppState.faction}
+      </h1>
+
+      <div className="joustur-result__scores">
+        <div className={`joustur-result__score-card${didWin ? " joustur-result__score-card--winner" : ""}`}>
+          <p className="joustur-result__score-label">You</p>
+          <p className="joustur-result__score-value">{myState.scoredCount} / 6</p>
+          <p className="joustur-result__score-faction">
+            {FACTION_LABELS[myState.faction] ?? myState.faction}
+          </p>
+        </div>
+        <div className="joustur-result__score-vs">vs</div>
+        <div className={`joustur-result__score-card${!didWin && match.winnerUid ? " joustur-result__score-card--winner" : ""}`}>
+          <p className="joustur-result__score-label">Opponent</p>
+          <p className="joustur-result__score-value">{oppState.scoredCount} / 6</p>
+          <p className="joustur-result__score-faction">
+            {FACTION_LABELS[oppState.faction] ?? oppState.faction}
+          </p>
+        </div>
+      </div>
+
+      {match.rewardsGranted && (
+        <p className="joustur-result__rewards-note">
+          🎁 Rewards have been added to your profile.
+        </p>
+      )}
+
+      <div className="joustur-result__actions">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => navigate("/joustur")}
+        >
+          Play Again
+        </button>
+        <button
+          type="button"
+          className="btn-outline"
+          onClick={() => navigate("/")}
+        >
+          Back to Forge
+        </button>
+      </div>
+    </div>
+  );
+}
