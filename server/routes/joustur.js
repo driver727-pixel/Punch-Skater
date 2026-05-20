@@ -222,7 +222,9 @@ async function tryCreateCasualMatch(db, callerUid, callerLineup, randomUUID) {
 
     const defenderUid = opponentSnap.id;
     if (defenderUid === callerUid) {
-      // Defensive guard — shouldn't happen after the pre-scan filter.
+      // Defensive guard: the pre-scan filters the caller on line 202, but if
+      // the caller somehow enqueued themselves between the scan and the tx.get
+      // read (very unlikely), we must not create a match against ourselves.
       tx.set(callerRef, { uid: callerUid, enqueuedAt: nowIso() });
       return null;
     }
@@ -444,10 +446,11 @@ export function registerJousturRoutes(app, {
         if (!cLineupSnap.exists) throw badRequest('Challenger has no saved lineup.', 409);
         if (!dLineupSnap.exists) throw badRequest('You need a saved lineup to accept.', 409);
 
-        // Build full player states (card fetches, cannot be inside tx).
-        // We do this here (still inside the tx callback) because the async
-        // work is done before any tx.set() calls — Firestore doesn't execute
-        // the writes until after the callback resolves, so this is safe.
+        // Build full player states by fetching card docs outside the transaction's
+        // read-set.  This call is idempotent (read-only card fetches) so it is
+        // safe to re-execute on transaction retry.  All Firestore writes are
+        // buffered via tx.set() calls below and only committed after this
+        // callback resolves — no writes occur here.
         const { challengerState, defenderState } = await buildMatchPlayerStates(
           adminDb,
           ch.challengerUid,

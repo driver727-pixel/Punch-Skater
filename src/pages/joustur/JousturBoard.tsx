@@ -48,6 +48,8 @@ function PlayerPanel({
   isActive,
   legalMoves,
   canActivateSupport,
+  sideRouteTarget,
+  onSideRouteTargetChange,
   onSelectRider,
   onActivateSupport,
 }: {
@@ -56,16 +58,20 @@ function PlayerPanel({
   isActive: boolean;
   legalMoves: JousturLegalMove[];
   canActivateSupport: { canActivate: boolean; reason: string | null };
+  sideRouteTarget: string;
+  onSideRouteTargetChange: (cardId: string) => void;
   onSelectRider: (cardId: string) => void;
   onActivateSupport: (targetCardId?: string) => void;
 }) {
   const legalSet = new Set(legalMoves.map((m) => m.cardId));
   const isSideRoute = player.support.supportEffect === "sideRoute";
 
-  // For sideRoute, track which entry-zone rider the player wants to teleport.
-  const [sideRouteTarget, setSideRouteTarget] = useState<string>("");
   const entryRiders = player.riders.filter(
     (r) => r.position >= PRIVATE_ENTRY_MIN && r.position <= PRIVATE_ENTRY_MAX,
+  );
+  // Build a cardId-to-snapshot index for O(1) name lookup.
+  const riderIndexByCardId = new Map(
+    player.riders.map((r, i) => [r.cardId, i]),
   );
 
   return (
@@ -128,16 +134,22 @@ function PlayerPanel({
               <div className="joustur-board__sideRoute-picker">
                 <select
                   value={sideRouteTarget}
-                  onChange={(e) => setSideRouteTarget(e.target.value)}
+                  onChange={(e) => onSideRouteTargetChange(e.target.value)}
                   className="joustur-board__sideRoute-select"
                   aria-label="Select rider to teleport"
                 >
                   <option value="">Pick a rider…</option>
-                  {entryRiders.map((r, i) => (
-                    <option key={r.cardId} value={r.cardId}>
-                      {player.lineup[player.riders.indexOf(r)]?.name ?? `Rider ${i + 1}`} (Entry {r.position})
-                    </option>
-                  ))}
+                  {entryRiders.map((r, i) => {
+                    const snapshotIdx = riderIndexByCardId.get(r.cardId);
+                    const name = snapshotIdx !== undefined
+                      ? (player.lineup[snapshotIdx]?.name ?? `Rider ${i + 1}`)
+                      : `Rider ${i + 1}`;
+                    return (
+                      <option key={r.cardId} value={r.cardId}>
+                        {name} (Entry {r.position})
+                      </option>
+                    );
+                  })}
                 </select>
                 <button
                   type="button"
@@ -193,6 +205,9 @@ export function JousturBoard() {
   }>({ canActivate: false, reason: null });
   const [rollResult, setRollResult] = useState<number | null>(null);
   const [lastEvent, setLastEvent] = useState<string | null>(null);
+  // sideRoute target selection — kept in JousturBoard so it survives re-renders
+  // of PlayerPanel during polling.
+  const [sideRouteTarget, setSideRouteTarget] = useState<string>("");
 
   const myUid = user?.uid ?? "";
 
@@ -273,6 +288,7 @@ export function JousturBoard() {
         setRollResult(null);
         setLegalMoves([]);
         setCanActivateSupport({ canActivate: false, reason: null });
+        setSideRouteTarget("");
         if (result.winner) {
           navigate(`/joustur/result/${matchId}`);
           return;
@@ -383,6 +399,8 @@ export function JousturBoard() {
           isActive={isMyTurn}
           legalMoves={myLegalMoves}
           canActivateSupport={isMyTurn && rollPending ? canActivateSupport : { canActivate: false, reason: null }}
+          sideRouteTarget={sideRouteTarget}
+          onSideRouteTargetChange={setSideRouteTarget}
           onSelectRider={(cardId) => handleMove(cardId, false)}
           onActivateSupport={handleActivateSupport}
         />
@@ -392,6 +410,8 @@ export function JousturBoard() {
           isActive={!isMyTurn}
           legalMoves={[]}
           canActivateSupport={{ canActivate: false, reason: null }}
+          sideRouteTarget=""
+          onSideRouteTargetChange={() => {}}
           onSelectRider={() => {}}
           onActivateSupport={() => {}}
         />
