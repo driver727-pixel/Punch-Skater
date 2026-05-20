@@ -162,7 +162,7 @@ export function JousturBoard() {
     // Poll every 15 s, but only while the tab is visible to avoid wasting
     // network requests and Firebase quota when the player is elsewhere.
     const interval = setInterval(() => {
-      if (document.visibilityState !== "hidden") loadMatch();
+      if (document.visibilityState === "visible") loadMatch();
     }, 15_000);
     return () => clearInterval(interval);
   }, [loadMatch]);

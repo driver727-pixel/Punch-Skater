@@ -682,7 +682,7 @@ export function registerJousturRoutes(app, {
       // Allowing both together would let overclock boost the roll and then
       // immediately move a rider with the inflated value.
       if (activateSupport && cardId) {
-        throw badRequest('Support activation must be the sole action for the turn — do not combine with a rider move.', 422);
+        throw badRequest('Support activation must be the sole action for the turn - do not combine with a rider move.', 422);
       }
 
       let responseData;
