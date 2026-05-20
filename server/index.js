@@ -53,6 +53,7 @@ import { registerRewardRoutes } from './routes/rewards.js';
 import { registerTradeRoutes } from './routes/trades.js';
 import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
 import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
+import { registerJousturRoutes } from './routes/joustur.js';
 
 // Load the shared pricing config — the single source of truth for Stripe
 // price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
@@ -239,6 +240,13 @@ const raceRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 60,
   message: { error: 'Too many race requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const jousturRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many Joustur requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -886,6 +894,14 @@ registerBattlePassRoutes(app, {
 registerRaceRoutes(app, {
   adminDb,
   raceRateLimit,
+  authenticateFirebaseUser,
+  randomUUID,
+  FieldValue,
+});
+
+registerJousturRoutes(app, {
+  adminDb,
+  jousturRateLimit,
   authenticateFirebaseUser,
   randomUUID,
   FieldValue,

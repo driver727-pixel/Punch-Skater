@@ -1,0 +1,169 @@
+# Joustur Skatur — MVP Technical Spec
+
+> Async Royal Game of Ur-inspired board mode for Punch Skater.
+> Last updated: 2026-05-20
+
+## Summary
+
+Joustur Skatur is an async board game mode where two players race their rider
+crews across a shared track.  Each player selects **6 rider cards + 1 support
+card**.  Riders move by rolling 4 USB Shards (0–4 total steps).  Stealth
+Alcoves are safe zones that also grant an extra turn.  The first player to
+score all 6 riders wins.
+
+---
+
+## Faction mapping
+
+| Punch Skater crew       | Joustur faction    |
+|-------------------------|--------------------|
+| Punch Skaters           | Rust Kids          |
+| Ne0n Legion             | Neon Saints        |
+| Qu111s (Quills)         | Signal Ghosts      |
+| The Team                | Chrome Syndicate   |
+| Iron Curtains           | Voltage Vultures   |
+| The Asclepians          | Alley Wraiths      |
+| _all other crews_       | Rust Kids (default)|
+
+Faction is determined by the **support card's crew** for the player's overall
+faction identity; each rider's individual faction is derived from its own crew.
+
+---
+
+## Board layout
+
+```
+Position  0      : off-board (not yet entered)
+Positions 1–4    : private entry    [private — no captures here]
+Positions 5–12   : shared lane      [shared — captures apply]
+Positions 13–14  : private exit     [private — no captures here]
+Position  15     : exited / scored
+```
+
+**Total on-board positions:** 14 (1–14).
+
+### Stealth Alcoves — positions 4, 6, 8, 12, 14
+
+| Position | Zone              | Effect                              |
+|----------|-------------------|-------------------------------------|
+| 4        | Private entry     | Extra turn (not capturable anyway)  |
+| 6        | Shared lane       | Safe from capture + extra turn      |
+| 8        | Shared lane       | Safe from capture + extra turn      |
+| 12       | Shared lane       | Safe from capture + extra turn      |
+| 14       | Private exit      | Extra turn (not capturable anyway)  |
+
+---
+
+## USB Shard roll
+
+Four binary dice (each 0 or 1) are summed → **0–4**.  The server generates the
+roll deterministically using a seeded PRNG keyed to
+`matchId + "::" + turn + "::" + timestamp`.  The roll is stored in the match
+document before being returned to the active player.
+
+---
+
+## Turn flow (two-step, server-authoritative)
+
+1. **Roll** — active player calls `POST /api/joustur/match/:id/roll`.
+   Server generates USB Shard result, stores it in the match, and returns it
+   along with the list of legal moves.
+2. **Move** — active player calls `POST /api/joustur/match/:id/move` with a
+   chosen rider (or support activation).  Server validates and applies the
+   move server-side, then returns the updated match state.
+
+---
+
+## Gameplay rules
+
+- Exactly 6 rider cards + 1 support card per lineup.
+- No duplicate card IDs within a lineup (support cannot duplicate a rider).
+- Captures only possible in the shared lane (positions 5–12).
+- Private lanes (1–4 and 13–14) are always safe.
+- A rider on a Stealth Alcove **cannot be captured** (shared-zone alcoves).
+- **Exact roll required to exit** — a rider must land on position 15 exactly
+  (overshoot = illegal).
+- Roll 0 = forced pass (no legal moves).
+- **Support card** may be activated **once per match**, as the player's sole
+  action for that turn.
+- Turns are strictly sequential — one player moves, then the other.
+
+---
+
+## Rider traits
+
+Resolved deterministically per rider card via:
+1. Exact trait-name lookup
+2. Keyword scan of the trait name (case-insensitive substring match)
+3. Default: **boost**
+
+`boost | guard | feint | anchor | strike | slip | surge | echo`
+
+---
+
+## Faction passives
+
+| Faction           | Passive key      |
+|-------------------|------------------|
+| Rust Kids         | patchworkRush    |
+| Neon Saints       | crowdHalo        |
+| Signal Ghosts     | ghostRoute       |
+| Chrome Syndicate  | precisionCast    |
+| Voltage Vultures  | surgeTrigger     |
+| Alley Wraiths     | cutline          |
+
+---
+
+## Support effects (activated once per match)
+
+| Faction           | Effect key    | Behaviour (MVP)                                                |
+|-------------------|---------------|----------------------------------------------------------------|
+| Rust Kids         | recoveryPing  | Recover first captured rider from pos 0 → pos 1               |
+| Neon Saints       | crowdRoar     | Grant an extra turn (same player moves again)                  |
+| Signal Ghosts     | smokeScreen   | Own riders immune to capture for opponent's next turn          |
+| Chrome Syndicate  | reroll        | Regenerate USB Shards; extra turn to act on the new roll       |
+| Voltage Vultures  | overclock     | +1 to current roll (may reach 5 for an exit); extra turn       |
+| Alley Wraiths     | sideRoute     | Teleport one entry-zone rider (pos 1–4) directly to pos 13     |
+
+---
+
+## Rewards
+
+| Condition                          | XP  | Ozzies |
+|------------------------------------|-----|--------|
+| Participation (any result)         | +50 | +10    |
+| Win bonus                          | +100| +25    |
+| `strike` trait present in lineup   | +15 | —      |
+| `echo` trait present in lineup     | +10 | —      |
+| `crowdHalo` faction passive        | +10 | —      |
+| `crowdRoar` support activated      | +10 | —      |
+
+Rewards are calculated and applied server-side after match completion and are
+guarded by the `rewardsGranted` flag for idempotency.
+
+---
+
+## Data model
+
+Firestore collections:
+
+| Collection                               | Purpose                          |
+|------------------------------------------|----------------------------------|
+| `jousturLineups/{uid}`                   | Saved lineup (card IDs only)     |
+| `jousturChallenges/{id}`                 | Friend challenges                |
+| `jousturMatches/{id}`                    | Match state                      |
+| `jousturMatches/{id}/turns/{turnId}`     | Turn-by-turn log                 |
+| `jousturQueue/{uid}`                     | Casual matchmaking queue         |
+
+See `src/lib/jousturTypes.ts` for complete type definitions.
+
+---
+
+## Security requirements
+
+- **Server-authoritative** — all move validation and state mutation happens on
+  the server; clients never write match documents directly.
+- Only the **active player** may call `/roll` or `/move`.
+- Card ownership is verified before match creation.
+- Reward grants are **idempotent** (guarded by `rewardsGranted`).
+- Completed matches reject further turn actions.

@@ -88,6 +88,11 @@ const UserProfile     = lazy(() => import("./pages/UserProfile").then(m => ({ de
 const Leaderboard     = lazy(() => import("./pages/Leaderboard").then(m => ({ default: m.Leaderboard })));
 const Trash           = lazy(() => import("./pages/Trash").then(m => ({ default: m.Trash })));
 const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
+const JousturHome     = lazy(() => import("./pages/joustur/JousturHome").then(m => ({ default: m.JousturHome })));
+const JousturLineupBuilder = lazy(() => import("./pages/joustur/JousturLineupBuilder").then(m => ({ default: m.JousturLineupBuilder })));
+const JousturBoard    = lazy(() => import("./pages/joustur/JousturBoard").then(m => ({ default: m.JousturBoard })));
+const JousturResult   = lazy(() => import("./pages/joustur/JousturResult").then(m => ({ default: m.JousturResult })));
+const JousturRules    = lazy(() => import("./pages/joustur/JousturRules").then(m => ({ default: m.JousturRules })));
 const MAIN_CONTENT_SELECTOR = ".main";
 
 function resolveScrollBehavior(): ScrollBehavior {
@@ -209,6 +214,19 @@ function App() {
                       <Route path="/missions" element={
                         <ProtectedRoute><Missions /></ProtectedRoute>
                       } />
+                      <Route path="/joustur" element={
+                        <ProtectedRoute><JousturHome /></ProtectedRoute>
+                      } />
+                      <Route path="/joustur/lineup" element={
+                        <ProtectedRoute><JousturLineupBuilder /></ProtectedRoute>
+                      } />
+                      <Route path="/joustur/match/:id" element={
+                        <ProtectedRoute><JousturBoard /></ProtectedRoute>
+                      } />
+                      <Route path="/joustur/result/:id" element={
+                        <ProtectedRoute><JousturResult /></ProtectedRoute>
+                      } />
+                      <Route path="/joustur/rules" element={<JousturRules />} />
                       <Route path="/workshop" element={
                         <ProtectedRoute><Workshop /></ProtectedRoute>
                       } />
