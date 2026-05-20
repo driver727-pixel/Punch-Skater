@@ -6826,6 +6826,22 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-family: 'Courier New', Courier, monospace;
 }
 
+@media (max-width: 768px) {
+  .viewer3d-stage {
+    min-height: 420px;
+    padding: 16px 20px 28px;
+  }
+
+  .viewer3d-stage--inline {
+    min-height: 420px;
+    padding-bottom: 36px;
+  }
+
+  .viewer3d-card {
+    width: min(240px, calc(100vw - 40px));
+  }
+}
+
 /* ===================================================================
    Print Modal (screen styles)
    =================================================================== */
