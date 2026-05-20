@@ -37,7 +37,7 @@ export const featureFlags = {
   SHARE_LINKS: envFlag("VITE_FF_SHARE_LINKS", false),
 
   /** Joustur Skatur async board mode. @owner gamma */
-  JOUSTUR_SKATUR: envFlag("VITE_FF_JOUSTUR_SKATUR", true),
+  JOUSTUR_SKATUR: envFlag("VITE_FF_JOUSTUR_SKATUR", false),
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;

@@ -280,5 +280,56 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // Joustur Skatur collections — all writes are server-only (Admin SDK).
+    // Clients may read only their own documents or documents they participate in.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // ── Joustur Lineups ───────────────────────────────────────────────────────
+    // One doc per uid, keyed by uid.  Only the owner may read; server writes.
+    match /jousturLineups/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    // ── Joustur Challenges ────────────────────────────────────────────────────
+    // Challenger and defender may read their own pending challenges.
+    // All state transitions (accept / decline) go through server routes.
+    match /jousturChallenges/{challengeId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid  == request.auth.uid
+      );
+      allow create, update, delete: if false;
+    }
+
+    // ── Joustur Matches ───────────────────────────────────────────────────────
+    // Both participants may read the match document.  All game-state mutations
+    // (roll, move, win detection, rewards) are server-only.
+    match /jousturMatches/{matchId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid  == request.auth.uid
+      );
+      allow create, update, delete: if false;
+
+      // Turn log sub-collection — both participants may read for replay.
+      match /turns/{turnId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/jousturMatches/$(matchId)).data.challengerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/jousturMatches/$(matchId)).data.defenderUid  == request.auth.uid
+        );
+        allow create, update, delete: if false;
+      }
+    }
+
+    // ── Joustur Queue ─────────────────────────────────────────────────────────
+    // Players may read only their own queue entry.  Enqueue / dequeue is
+    // handled server-side so the matchmaking transaction cannot be bypassed.
+    match /jousturQueue/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
   }
 }

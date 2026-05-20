@@ -451,27 +451,39 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
       const fromPos = rider.position;
       const toPos = fromPos + (newBoard.rollResult ?? 0);
 
-      // Capture check (shared lane only).
-      if (isSharedPosition(toPos)) {
-        const oppRider = newOpp.riders.find(
-          (r) => !r.isScored && r.position === toPos,
-        );
-        if (oppRider) {
-          capturedCardId = oppRider.cardId;
-          oppRider.position = OFF_BOARD;
-          events.push({ type: 'capture', capturedCardId: oppRider.cardId, atPosition: toPos });
+      // Friendly blockade — mirrors the getLegalMoves check so applyMove
+      // is safe when called directly (e.g., replay engine, future modes).
+      const blockedByOwn = newActive.riders.some(
+        (r) => !r.isScored && r.cardId !== rider.cardId && r.position === toPos,
+      );
+
+      if (!blockedByOwn) {
+        // Capture check (shared lane only).
+        // Guards match getLegalMoves: stealth-alcove riders and smoke-screened
+        // opponents are immune to capture even if applyMove is called without
+        // prior getLegalMoves validation.
+        if (isSharedPosition(toPos)) {
+          const oppRider = newOpp.riders.find(
+            (r) => !r.isScored && r.position === toPos,
+          );
+          const opponentProtected = newBoard.smokeScreenUid === newOpp.uid;
+          if (oppRider && !isStealthAlcove(toPos) && !opponentProtected) {
+            capturedCardId = oppRider.cardId;
+            oppRider.position = OFF_BOARD;
+            events.push({ type: 'capture', capturedCardId: oppRider.cardId, atPosition: toPos });
+          }
         }
-      }
 
-      rider.position = toPos;
+        rider.position = toPos;
 
-      if (toPos === EXIT_POSITION) {
-        rider.isScored = true;
-        newActive.scoredCount = newActive.riders.filter((r) => r.isScored).length;
-        events.push({ type: 'exit', cardId: rider.cardId });
-      } else if (isStealthAlcove(toPos)) {
-        extraTurn = true;
-        events.push({ type: 'stealthAlcove', cardId: rider.cardId, position: toPos });
+        if (toPos === EXIT_POSITION) {
+          rider.isScored = true;
+          newActive.scoredCount = newActive.riders.filter((r) => r.isScored).length;
+          events.push({ type: 'exit', cardId: rider.cardId });
+        } else if (isStealthAlcove(toPos)) {
+          extraTurn = true;
+          events.push({ type: 'stealthAlcove', cardId: rider.cardId, position: toPos });
+        }
       }
     }
   }

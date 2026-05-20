@@ -243,3 +243,18 @@ export interface JousturMatchRewards {
   challenger: JousturPlayerReward;
   defender: JousturPlayerReward;
 }
+
+// ── UI display helpers ────────────────────────────────────────────────────────
+
+/**
+ * Human-readable names for each Joustur faction key.
+ * Defined once here so all pages stay in sync automatically.
+ */
+export const JOUSTUR_FACTION_LABELS: Record<string, string> = {
+  rustKids:        "Rust Kids",
+  neonSaints:      "Neon Saints",
+  signalGhosts:    "Signal Ghosts",
+  chromeSyndicate: "Chrome Syndicate",
+  voltageVultures: "Voltage Vultures",
+  alleyWraiths:    "Alley Wraiths",
+};
