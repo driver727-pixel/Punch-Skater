@@ -1200,7 +1200,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .forge-hero__art-frame {
   position: relative;
-  min-height: 100%;
   min-height: 320px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 22px;
