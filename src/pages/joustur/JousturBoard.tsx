@@ -21,13 +21,57 @@ import type {
   JousturMatch,
   JousturLegalMove,
   JousturPlayerState,
+  JousturRiderSnapshot,
   JousturRiderRuntimeState,
 } from "../../lib/jousturTypes";
 import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 
+const JOUSTUR_BOARD_IMAGE_URL = "/assets/joustur/joustur-board.png";
 const STEALTH_ALCOVES = new Set([4, 6, 8, 12, 14]);
 const PRIVATE_ENTRY_MIN = 1;
 const PRIVATE_ENTRY_MAX = 4;
+const EXIT_POSITION = 15;
+type BoardSide = "top" | "bottom";
+
+interface BoardPoint {
+  x: number;
+  y: number;
+}
+
+const BOARD_COLUMNS = [18.5, 27.6, 36.7, 45.8, 54.9, 64, 73.1, 82.2] as const;
+const BOARD_ROWS: Record<BoardSide | "shared", number> = {
+  top: 28.5,
+  shared: 50.4,
+  bottom: 72.3,
+};
+
+function getBoardPoint(position: number, side: BoardSide): BoardPoint {
+  if (position === 0) {
+    return { x: 7.5, y: BOARD_ROWS[side] };
+  }
+  if (position === EXIT_POSITION) {
+    return { x: 92.5, y: BOARD_ROWS[side] };
+  }
+  if (position >= 1 && position <= 4) {
+    return { x: BOARD_COLUMNS[position - 1], y: BOARD_ROWS[side] };
+  }
+  if (position >= 5 && position <= 12) {
+    return { x: BOARD_COLUMNS[position - 5], y: BOARD_ROWS.shared };
+  }
+  if (position >= 13 && position <= 14) {
+    return { x: BOARD_COLUMNS[position - 7], y: BOARD_ROWS[side] };
+  }
+  return { x: 50, y: BOARD_ROWS[side] };
+}
+
+function getStackOffset(index: number, total: number): BoardPoint {
+  if (total <= 1) return { x: 0, y: 0 };
+  const spread = Math.min(2.4, 8 / total);
+  return {
+    x: (index - (total - 1) / 2) * spread,
+    y: index % 2 === 0 ? -0.75 : 0.75,
+  };
+}
 
 const POS_LABELS: Record<number, string> = {
   0: "Off board",
@@ -40,6 +84,173 @@ function posLabel(pos: number): string {
   if (pos >= 5 && pos <= 12) return `Shared ${pos}${STEALTH_ALCOVES.has(pos) ? " ⚡" : ""}`;
   if (pos >= 13 && pos <= 14) return `Exit ${pos}${STEALTH_ALCOVES.has(pos) ? " ⚡" : ""}`;
   return `${pos}`;
+}
+
+function RiderCardPiece({
+  snapshot,
+  ownerLabel,
+}: {
+  snapshot?: JousturRiderSnapshot;
+  ownerLabel: string;
+}) {
+  const hasLayers = Boolean(
+    snapshot?.backgroundImageUrl ||
+    snapshot?.characterImageUrl ||
+    snapshot?.frameImageUrl,
+  );
+  const name = snapshot?.name ?? "Rider";
+
+  return (
+    <span className="joustur-board-piece__card" aria-hidden="true">
+      {hasLayers ? (
+        <>
+          {snapshot?.backgroundImageUrl && (
+            <img
+              src={snapshot.backgroundImageUrl}
+              alt=""
+              className="joustur-board-piece__layer joustur-board-piece__layer--background"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+          {snapshot?.characterImageUrl && (
+            <img
+              src={snapshot.characterImageUrl}
+              alt=""
+              className="joustur-board-piece__layer joustur-board-piece__layer--character"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+          {snapshot?.frameImageUrl && (
+            <img
+              src={snapshot.frameImageUrl}
+              alt=""
+              className="joustur-board-piece__layer joustur-board-piece__layer--frame"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+        </>
+      ) : (
+        <span className="joustur-board-piece__fallback">
+          {name.slice(0, 2).toUpperCase()}
+        </span>
+      )}
+      <span className="joustur-board-piece__owner">{ownerLabel}</span>
+    </span>
+  );
+}
+
+function VisualBoard({
+  myState,
+  oppState,
+  myLegalMoves,
+  isMyTurn,
+  rollPending,
+  moving,
+  onSelectRider,
+}: {
+  myState: JousturPlayerState;
+  oppState: JousturPlayerState;
+  myLegalMoves: JousturLegalMove[];
+  isMyTurn: boolean;
+  rollPending: boolean;
+  moving: boolean;
+  onSelectRider: (cardId: string) => void;
+}) {
+  const legalMoveByCardId = new Map(myLegalMoves.map((move) => [move.cardId, move]));
+  const stackCounts = new Map<string, number>();
+  const stackIndexes = new Map<string, number>();
+  const players = [
+    { state: oppState, side: "top" as const, label: "Opponent" },
+    { state: myState, side: "bottom" as const, label: "You" },
+  ];
+
+  for (const player of players) {
+    for (const rider of player.state.riders) {
+      const key = `${player.side}:${rider.position}`;
+      stackCounts.set(key, (stackCounts.get(key) ?? 0) + 1);
+    }
+  }
+
+  return (
+    <section className="joustur-visual-board" aria-label="Joustur gameplay board">
+      <div className="joustur-visual-board__frame">
+        <img
+          src={JOUSTUR_BOARD_IMAGE_URL}
+          alt="Joustur gameplay board with numbered movement tiles"
+          className="joustur-visual-board__image"
+          loading="eager"
+          decoding="async"
+        />
+
+        {Array.from({ length: 14 }, (_, i) => i + 1).map((position) => {
+          const point = getBoardPoint(position, "bottom");
+          return (
+            <span
+              key={position}
+              className={`joustur-visual-board__snap${STEALTH_ALCOVES.has(position) ? " joustur-visual-board__snap--alcove" : ""}`}
+              style={{ left: `${point.x}%`, top: `${point.y}%` }}
+              aria-hidden="true"
+            />
+          );
+        })}
+
+        {isMyTurn && rollPending && myLegalMoves.map((move) => {
+          const target = getBoardPoint(move.toPosition, "bottom");
+          return (
+            <button
+              key={`${move.cardId}-${move.toPosition}`}
+              type="button"
+              className={`joustur-visual-board__move-target${move.wouldCapture ? " joustur-visual-board__move-target--capture" : ""}${move.isExitMove ? " joustur-visual-board__move-target--exit" : ""}`}
+              style={{ left: `${target.x}%`, top: `${target.y}%` }}
+              onClick={() => onSelectRider(move.cardId)}
+              disabled={moving}
+              aria-label={`Move ${move.cardId} to ${posLabel(move.toPosition)}`}
+              title={`Move to ${posLabel(move.toPosition)}${move.wouldCapture ? " and capture" : ""}`}
+            />
+          );
+        })}
+
+        {players.flatMap((player) =>
+          player.state.riders.map((rider, riderIndex) => {
+            const key = `${player.side}:${rider.position}`;
+            const stackIndex = stackIndexes.get(key) ?? 0;
+            stackIndexes.set(key, stackIndex + 1);
+            const stackTotal = stackCounts.get(key) ?? 1;
+            const point = getBoardPoint(rider.position, player.side);
+            const offset = getStackOffset(stackIndex, stackTotal);
+            const legalMove = player.side === "bottom" ? legalMoveByCardId.get(rider.cardId) : undefined;
+            const isLegal = Boolean(legalMove);
+            const snapshot = player.state.lineup[riderIndex];
+            return (
+              <button
+                key={`${player.side}-${rider.cardId}`}
+                type="button"
+                className={`joustur-board-piece joustur-board-piece--${player.side}${rider.isScored ? " joustur-board-piece--scored" : ""}${rider.isCaptured ? " joustur-board-piece--captured" : ""}${isLegal ? " joustur-board-piece--legal" : ""}`}
+                style={{
+                  left: `${point.x + offset.x}%`,
+                  top: `${point.y + offset.y}%`,
+                }}
+                disabled={!isLegal || moving}
+                onClick={() => isLegal && onSelectRider(rider.cardId)}
+                aria-label={`${player.label} ${snapshot?.name ?? rider.cardId} at ${posLabel(rider.position)}${isLegal && legalMove ? `, legal move to ${posLabel(legalMove.toPosition)}` : ""}`}
+                title={`${snapshot?.name ?? rider.cardId} · ${posLabel(rider.position)}`}
+              >
+                <RiderCardPiece snapshot={snapshot} ownerLabel={player.label === "You" ? "YOU" : "OPP"} />
+              </button>
+            );
+          }),
+        )}
+      </div>
+      <div className="joustur-visual-board__legend" aria-hidden="true">
+        <span><i className="joustur-visual-board__legend-dot" /> Snap tile center</span>
+        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--alcove" /> Stealth Alcove</span>
+        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--move" /> Legal destination</span>
+      </div>
+    </section>
+  );
 }
 
 function PlayerPanel({
@@ -394,6 +605,16 @@ export function JousturBoard() {
       )}
 
       {/* Board panels */}
+      <VisualBoard
+        myState={myState}
+        oppState={oppState}
+        myLegalMoves={myLegalMoves}
+        isMyTurn={isMyTurn}
+        rollPending={rollPending}
+        moving={moving}
+        onSelectRider={(cardId) => handleMove(cardId, false)}
+      />
+
       <div className="joustur-board__panels">
         <PlayerPanel
           label="You"
