@@ -786,6 +786,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .btn-primary.btn-lg { padding: 12px 28px; font-size: 15px; width: 100%; margin-top: 16px; }
 
 .btn-glass {
+  position: relative;
   backdrop-filter: blur(14px) saturate(145%);
   -webkit-backdrop-filter: blur(14px) saturate(145%);
   background-image:
@@ -5149,6 +5150,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .forge-whats-new:hover,
 .forge-objective-card:hover,
 .battle-pass-panel:hover,
+.site-footer:focus-within,
 .site-footer:hover {
   transform: translateY(-2px);
   border-color: rgba(0, 255, 136, 0.28);
