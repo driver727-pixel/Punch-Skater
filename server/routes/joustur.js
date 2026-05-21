@@ -19,7 +19,6 @@ import rateLimit from 'express-rate-limit';
 import {
   validateLineup,
   resolveFactionForCrew,
-  FACTION_PASSIVE,
   FACTION_SUPPORT_EFFECT,
   resolveRiderTrait,
   buildInitialPlayerState,
@@ -33,9 +32,8 @@ import {
   generateRollSeed,
   rollUsbShards,
   createSeededRng,
-  OFF_BOARD,
-  PRIVATE_ENTRY_MIN,
-  PRIVATE_ENTRY_MAX,
+  chooseAutomatedMove,
+  buildSoloBotPlayerState,
 } from '../lib/jousturRules.js';
 
 // ── Fallback rate limiter (production injector overrides this) ────────────────
@@ -56,6 +54,7 @@ const MATCHES_COL     = 'jousturMatches';
 const TURNS_SUBCOL    = 'turns';
 const QUEUE_COL       = 'jousturQueue';
 const PROFILES_COL    = 'userProfiles';
+const SOLO_BOT_UID_PREFIX = 'joustur-solo-bot';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -176,6 +175,110 @@ async function buildMatchPlayerStates(db, challengerUid, defenderUid, challenger
     challengerState: buildState(challengerUid, challengerLineup, challengerCards),
     defenderState:   buildState(defenderUid,   defenderLineup,   defenderCards),
   };
+}
+
+async function buildPlayerStateFromLineup(db, uid, lineup) {
+  const allIds = [...lineup.riderCardIds, lineup.supportCardId];
+  const cards = await fetchPlayerCards(db, uid, allIds);
+  const riderSnapshots = lineup.riderCardIds.map((id) => riderSnapshotFromCard(cards[id]));
+  const supportSnap = supportSnapshotFromCard(cards[lineup.supportCardId]);
+  const faction = resolveFactionForCrew(cards[lineup.supportCardId].identity?.crew ?? '');
+  return buildInitialPlayerState(uid, riderSnapshots, supportSnap, faction);
+}
+
+function applyMatchRewards(tx, db, match, FieldValue) {
+  const rewards = calcRewards(match);
+  const challengerRef = db.collection(PROFILES_COL).doc(match.challengerUid);
+
+  if (match.mode === 'solo') {
+    tx.set(challengerRef, {
+      xp: FieldValue.increment(rewards.challenger.xp),
+      ozzies: FieldValue.increment(rewards.challenger.ozzies),
+      updatedAt: nowIso(),
+    }, { merge: true });
+    return;
+  }
+
+  const defenderRef = db.collection(PROFILES_COL).doc(match.defenderUid);
+  tx.set(challengerRef, {
+    xp: FieldValue.increment(rewards.challenger.xp),
+    ozzies: FieldValue.increment(rewards.challenger.ozzies),
+    updatedAt: nowIso(),
+  }, { merge: true });
+  tx.set(defenderRef, {
+    xp: FieldValue.increment(rewards.defender.xp),
+    ozzies: FieldValue.increment(rewards.defender.ozzies),
+    updatedAt: nowIso(),
+  }, { merge: true });
+}
+
+function resolveSoloBotTurns(match, matchId, randomUUID) {
+  const nextMatch = JSON.parse(JSON.stringify(match));
+  const turnEntries = [];
+
+  while (
+    nextMatch.mode === 'solo' &&
+    nextMatch.status === 'active' &&
+    nextMatch.board.activePlayerUid === nextMatch.defenderUid
+  ) {
+    const activeState = nextMatch.defenderState;
+    const opponentState = nextMatch.challengerState;
+    const roll = rollUsbShards(
+      createSeededRng(generateRollSeed(matchId, nextMatch.board.turn, 'solo-bot')),
+    );
+    const boardWithRoll = {
+      ...nextMatch.board,
+      rollResult: roll,
+    };
+    const choice = chooseAutomatedMove(boardWithRoll, activeState, opponentState);
+    const fromPosition = choice.cardId
+      ? (activeState.riders.find((r) => r.cardId === choice.cardId)?.position ?? 0)
+      : 0;
+    const supportEffect = choice.activateSupport
+      ? activeState.support.supportEffect
+      : undefined;
+    const { board, active, opponent, extraTurn, capturedCardId, events } = applyMove(
+      boardWithRoll,
+      activeState,
+      opponentState,
+      choice,
+    );
+
+    nextMatch.board = board;
+    nextMatch.defenderState = active;
+    nextMatch.challengerState = opponent;
+    nextMatch.updatedAt = nowIso();
+
+    if (detectWinner(active)) {
+      nextMatch.status = 'completed';
+      nextMatch.winnerUid = active.uid;
+      nextMatch.completedAt = nowIso();
+    }
+
+    const toPosition = choice.cardId
+      ? (active.riders.find((r) => r.cardId === choice.cardId)?.position ?? 0)
+      : 0;
+    turnEntries.push({
+      turnEntry: buildTurnLogEntry({
+        id: `turn-${randomUUID()}`,
+        matchId,
+        turn: boardWithRoll.turn,
+        playerUid: activeState.uid,
+        rollResult: roll,
+        movedCardId: choice.cardId,
+        fromPosition,
+        toPosition,
+        capturedCardId,
+        extraTurn,
+        supportActivated: choice.activateSupport,
+        supportEffect,
+        timestamp: nowIso(),
+      }),
+      events,
+    });
+  }
+
+  return { match: nextMatch, turnEntries };
 }
 
 /**
@@ -590,6 +693,42 @@ export function registerJousturRoutes(app, {
     res.json({ dequeued: true });
   });
 
+  // ── POST /api/joustur/solo ──────────────────────────────────────────────────
+  app.post('/api/joustur/solo', limiter, async (req, res) => {
+    if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
+    let caller;
+    try { caller = await authenticateFirebaseUser(req); }
+    catch (e) { res.status(e.statusCode ?? 500).json({ error: e.message }); return; }
+
+    try {
+      const lineupSnap = await adminDb.collection(LINEUPS_COL).doc(caller.uid).get();
+      if (!lineupSnap.exists) throw badRequest('Save a lineup before starting a solo match.', 409);
+
+      const challengerState = await buildPlayerStateFromLineup(adminDb, caller.uid, lineupSnap.data());
+      const defenderUid = `${SOLO_BOT_UID_PREFIX}-${randomUUID()}`;
+      const matchId = `jm-${randomUUID()}`;
+      const match = {
+        id: matchId,
+        status: 'active',
+        mode: 'solo',
+        challengerUid: caller.uid,
+        defenderUid,
+        board: buildInitialBoardState(caller.uid),
+        challengerState,
+        defenderState: buildSoloBotPlayerState(challengerState, defenderUid),
+        winnerUid: null,
+        rewardsGranted: false,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+
+      await adminDb.collection(MATCHES_COL).doc(matchId).set(match);
+      res.status(201).json(match);
+    } catch (e) {
+      res.status(e.statusCode ?? 500).json({ error: e.message });
+    }
+  });
+
   // ── GET /api/joustur/matches ────────────────────────────────────────────────
   app.get('/api/joustur/matches', limiter, async (req, res) => {
     if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
@@ -813,7 +952,7 @@ export function registerJousturRoutes(app, {
           );
 
         // Build the updated match.
-        const newMatch = {
+        let newMatch = {
           ...match,
           board: newBoard,
           updatedAt: nowIso(),
@@ -834,28 +973,17 @@ export function registerJousturRoutes(app, {
           newMatch.winnerUid   = winner;
           newMatch.completedAt = nowIso();
         }
-
-        // Grant rewards idempotently — check the in-transaction snapshot so
-        // concurrent winning moves cannot both see rewardsGranted=false.
-        if (winner && !match.rewardsGranted) {
-          newMatch.rewardsGranted = true;
-          const rewards = calcRewards(newMatch);
-          const cRef = adminDb.collection(PROFILES_COL).doc(newMatch.challengerUid);
-          const dRef = adminDb.collection(PROFILES_COL).doc(newMatch.defenderUid);
-          tx.set(cRef, {
-            xp: FieldValue.increment(rewards.challenger.xp),
-            ozzies: FieldValue.increment(rewards.challenger.ozzies),
-            updatedAt: nowIso(),
-          }, { merge: true });
-          tx.set(dRef, {
-            xp: FieldValue.increment(rewards.defender.xp),
-            ozzies: FieldValue.increment(rewards.defender.ozzies),
-            updatedAt: nowIso(),
-          }, { merge: true });
+        const botTurnEntries = [];
+        if (
+          newMatch.mode === 'solo' &&
+          newMatch.status === 'active' &&
+          newMatch.board.activePlayerUid === newMatch.defenderUid
+        ) {
+          const soloResolution = resolveSoloBotTurns(newMatch, matchId, randomUUID);
+          newMatch = soloResolution.match;
+          botTurnEntries.push(...soloResolution.turnEntries);
+          winner = newMatch.winnerUid;
         }
-
-        // Persist match (single write — includes rewardsGranted if applicable).
-        tx.set(matchRef, newMatch);
 
         // Persist turn log entry.
         const supportEffect = activateSupport ? activeState.support.supportEffect : undefined;
@@ -881,6 +1009,23 @@ export function registerJousturRoutes(app, {
           matchRef.collection(TURNS_SUBCOL).doc(turnEntry.id),
           turnEntry,
         );
+
+        botTurnEntries.forEach(({ turnEntry: botTurnEntry }) => {
+          tx.set(
+            matchRef.collection(TURNS_SUBCOL).doc(botTurnEntry.id),
+            botTurnEntry,
+          );
+        });
+
+        // Grant rewards idempotently — check the in-transaction snapshot so
+        // concurrent winning moves cannot both see rewardsGranted=false.
+        if (newMatch.status === 'completed' && !match.rewardsGranted) {
+          newMatch.rewardsGranted = true;
+          applyMatchRewards(tx, adminDb, newMatch, FieldValue);
+        }
+
+        // Persist match (single write — includes rewardsGranted if applicable).
+        tx.set(matchRef, newMatch);
 
         responseData = { match: newMatch, turnEntry, events, extraTurn, winner };
       });

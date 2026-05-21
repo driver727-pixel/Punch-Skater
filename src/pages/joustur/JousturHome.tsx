@@ -12,6 +12,7 @@ import {
   listJousturMatches,
   enqueueJoustur,
   dequeueJoustur,
+  startSoloJousturMatch,
   listJousturChallenges,
   createJousturChallenge,
   acceptJousturChallenge,
@@ -29,6 +30,12 @@ function matchStatusLabel(match: JousturMatch, myUid: string): string {
   return "⏳ Waiting";
 }
 
+function matchModeLabel(mode: JousturMatch["mode"]): string {
+  if (mode === "friend") return "👥 Friend";
+  if (mode === "solo") return "🤖 Solo";
+  return "🎮 Casual";
+}
+
 export function JousturHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -36,6 +43,7 @@ export function JousturHome() {
   const [matches, setMatches] = useState<JousturMatch[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [queueing, setQueueing] = useState(false);
+  const [startingSolo, setStartingSolo] = useState(false);
   const [inQueue, setInQueue] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +87,20 @@ export function JousturHome() {
     try { await dequeueJoustur(); setInQueue(false); }
     catch (e) { setError(e instanceof Error ? e.message : "Failed to leave queue."); }
     finally { setQueueing(false); }
+  };
+
+  const handleSoloStart = async () => {
+    if (!lineup) { setError("Build and save a lineup first."); return; }
+    setError(null);
+    setStartingSolo(true);
+    try {
+      const match = await startSoloJousturMatch();
+      navigate(`/joustur/match/${match.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to start solo match.");
+    } finally {
+      setStartingSolo(false);
+    }
   };
 
   const handleSendChallenge = async () => {
@@ -182,6 +204,15 @@ export function JousturHome() {
         <Link to="/joustur/rules" className="btn-outline btn-sm">
           📖 Rules
         </Link>
+        <button
+          type="button"
+          className="btn-outline"
+          onClick={handleSoloStart}
+          disabled={startingSolo || !lineup}
+          title={!lineup ? "Save a lineup first" : undefined}
+        >
+          {startingSolo ? "Booting…" : "🤖 Start Solo Match"}
+        </button>
       </div>
 
       {/* Challenge a Friend */}
@@ -263,7 +294,7 @@ export function JousturHome() {
               <li key={m.id} className="joustur-home__match-card">
                 <div className="joustur-home__match-meta">
                   <span className="joustur-home__match-mode">
-                    {m.mode === "friend" ? "👥 Friend" : "🎮 Casual"}
+                    {matchModeLabel(m.mode)}
                   </span>
                   <span className="joustur-home__match-status">
                     {matchStatusLabel(m, user?.uid ?? "")}
@@ -294,7 +325,7 @@ export function JousturHome() {
           </ul>
         </section>
       ) : (
-        <p className="joustur-home__empty">No active matches. Start one above!</p>
+        <p className="joustur-home__empty">No active matches. Start a friend, casual, or solo game above!</p>
       )}
 
       {/* Past matches */}

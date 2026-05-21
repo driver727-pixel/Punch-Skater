@@ -51,6 +51,7 @@ export function JousturResult() {
   const isChallenger = match.challengerUid === myUid;
   const myState  = isChallenger ? match.challengerState  : match.defenderState;
   const oppState = isChallenger ? match.defenderState    : match.challengerState;
+  const opponentLabel = match.mode === "solo" ? "House Bot" : "Opponent";
 
   return (
     <div className="page joustur-result">
@@ -76,7 +77,7 @@ export function JousturResult() {
         </div>
         <div className="joustur-result__score-vs">vs</div>
         <div className={`joustur-result__score-card${!didWin && match.winnerUid ? " joustur-result__score-card--winner" : ""}`}>
-          <p className="joustur-result__score-label">Opponent</p>
+          <p className="joustur-result__score-label">{opponentLabel}</p>
           <p className="joustur-result__score-value">{oppState.scoredCount} / 6</p>
           <p className="joustur-result__score-faction">
             {JOUSTUR_FACTION_LABELS[oppState.faction] ?? oppState.faction}

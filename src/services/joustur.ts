@@ -110,6 +110,10 @@ export async function dequeueJoustur(): Promise<{ dequeued: boolean }> {
   return apiFetch("/queue", { method: "DELETE" });
 }
 
+export async function startSoloJousturMatch(): Promise<JousturMatch> {
+  return apiFetch<JousturMatch>("/solo", { method: "POST" });
+}
+
 // ── Matches ───────────────────────────────────────────────────────────────────
 
 export async function listJousturMatches(): Promise<JousturMatch[]> {

@@ -64,7 +64,7 @@ export type JousturChallengeStatus =
 
 export type JousturMatchStatus = "initializing" | "active" | "completed" | "cancelled";
 
-export type JousturMatchMode = "friend" | "casual";
+export type JousturMatchMode = "friend" | "casual" | "solo";
 
 // ── Lineup ────────────────────────────────────────────────────────────────────
 
