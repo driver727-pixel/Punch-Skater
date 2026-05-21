@@ -29,6 +29,7 @@ export const PRIVATE_EXIT_MAX = 14;
 export const STEALTH_ALCOVES = Object.freeze(new Set([4, 6, 8, 12, 14]));
 export const RIDER_COUNT = 6;
 export const SHARD_COUNT = 4; // binary dice per roll
+const HUMAN_RIDER_NUMBER_OFFSET = 1;
 
 // ── Board utilities ───────────────────────────────────────────────────────────
 
@@ -506,12 +507,13 @@ export function buildSoloBotPlayerState(playerState, botUid) {
 
   clone.uid = uidPrefix;
   clone.lineup = clone.lineup.map((snapshot, index) => {
-    const nextCardId = `${uidPrefix}-rider-${index + 1}-${snapshot.cardId}`;
+    const riderNumber = index + HUMAN_RIDER_NUMBER_OFFSET;
+    const nextCardId = `${uidPrefix}-rider-${riderNumber}-${snapshot.cardId}`;
     cardIdMap.set(snapshot.cardId, nextCardId);
     return {
       ...snapshot,
       cardId: nextCardId,
-      name: snapshot.name ? `Echo ${snapshot.name}` : `Echo Rider ${index + 1}`,
+      name: snapshot.name ? `Echo ${snapshot.name}` : `Echo Rider ${riderNumber}`,
     };
   });
   clone.riders = clone.riders.map((rider) => ({

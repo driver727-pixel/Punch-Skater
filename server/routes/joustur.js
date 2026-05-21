@@ -54,6 +54,7 @@ const MATCHES_COL     = 'jousturMatches';
 const TURNS_SUBCOL    = 'turns';
 const QUEUE_COL       = 'jousturQueue';
 const PROFILES_COL    = 'userProfiles';
+const SOLO_BOT_UID_PREFIX = 'joustur-solo-bot';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -704,7 +705,7 @@ export function registerJousturRoutes(app, {
       if (!lineupSnap.exists) throw badRequest('Save a lineup before starting a solo match.', 409);
 
       const challengerState = await buildPlayerStateFromLineup(adminDb, caller.uid, lineupSnap.data());
-      const defenderUid = `joustur-solo-bot-${randomUUID()}`;
+      const defenderUid = `${SOLO_BOT_UID_PREFIX}-${randomUUID()}`;
       const matchId = `jm-${randomUUID()}`;
       const match = {
         id: matchId,
