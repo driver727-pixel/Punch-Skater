@@ -166,6 +166,11 @@ function VisualBoard({
     { state: oppState, side: "top" as const, label: "Opponent" },
     { state: myState, side: "bottom" as const, label: "You" },
   ];
+  const snapshotByCardId = new Map(
+    players.flatMap((player) =>
+      player.state.lineup.map((snapshot) => [snapshot.cardId, snapshot] as const),
+    ),
+  );
 
   for (const player of players) {
     for (const rider of player.state.riders) {
@@ -214,7 +219,7 @@ function VisualBoard({
         })}
 
         {players.flatMap((player) =>
-          player.state.riders.map((rider, riderIndex) => {
+          player.state.riders.map((rider) => {
             const key = `${player.side}:${rider.position}`;
             const stackIndex = stackIndexes.get(key) ?? 0;
             stackIndexes.set(key, stackIndex + 1);
@@ -223,7 +228,7 @@ function VisualBoard({
             const offset = getStackOffset(stackIndex, stackTotal);
             const legalMove = player.side === "bottom" ? legalMoveByCardId.get(rider.cardId) : undefined;
             const isLegal = Boolean(legalMove);
-            const snapshot = player.state.lineup[riderIndex];
+            const snapshot = snapshotByCardId.get(rider.cardId);
             return (
               <button
                 key={`${player.side}-${rider.cardId}`}
@@ -244,10 +249,10 @@ function VisualBoard({
           }),
         )}
       </div>
-      <div className="joustur-visual-board__legend" aria-hidden="true">
-        <span><i className="joustur-visual-board__legend-dot" /> Snap tile center</span>
-        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--alcove" /> Stealth Alcove</span>
-        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--move" /> Legal destination</span>
+      <div className="joustur-visual-board__legend">
+        <span><i className="joustur-visual-board__legend-dot" aria-hidden="true" /> Snap tile center</span>
+        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--alcove" aria-hidden="true" /> Stealth Alcove</span>
+        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--move" aria-hidden="true" /> Legal destination</span>
       </div>
     </section>
   );
