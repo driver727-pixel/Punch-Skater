@@ -173,6 +173,95 @@ function ScrollToTopOnRouteChange() {
   return null;
 }
 
+function AppParallaxBackdrop() {
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const main = document.querySelector(MAIN_CONTENT_SELECTOR);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let rafId = 0;
+
+    const writeScroll = () => {
+      rafId = 0;
+      const scrollTop = main instanceof HTMLElement ? main.scrollTop : window.scrollY;
+      root.style.setProperty("--parallax-scroll", scrollTop.toFixed(2));
+    };
+
+    const requestScrollWrite = () => {
+      if (reducedMotion.matches || rafId) return;
+      rafId = window.requestAnimationFrame(writeScroll);
+    };
+
+    const writePointer = (event?: PointerEvent) => {
+      if (reducedMotion.matches || !event) {
+        root.style.setProperty("--parallax-pointer-x", "0");
+        root.style.setProperty("--parallax-pointer-y", "0");
+        return;
+      }
+
+      const x = (event.clientX / window.innerWidth - 0.5) * 2;
+      const y = (event.clientY / window.innerHeight - 0.5) * 2;
+      root.style.setProperty("--parallax-pointer-x", x.toFixed(3));
+      root.style.setProperty("--parallax-pointer-y", y.toFixed(3));
+    };
+
+    const handleReducedMotionChange = () => {
+      if (reducedMotion.matches) {
+        if (rafId) window.cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      writeScroll();
+      writePointer();
+    };
+
+    writeScroll();
+    writePointer();
+
+    if (main instanceof HTMLElement) {
+      main.addEventListener("scroll", requestScrollWrite, { passive: true });
+    } else {
+      window.addEventListener("scroll", requestScrollWrite, { passive: true });
+    }
+    window.addEventListener("pointermove", writePointer, { passive: true });
+    reducedMotion.addEventListener("change", handleReducedMotionChange);
+
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+      if (main instanceof HTMLElement) {
+        main.removeEventListener("scroll", requestScrollWrite);
+      } else {
+        window.removeEventListener("scroll", requestScrollWrite);
+      }
+      window.removeEventListener("pointermove", writePointer);
+      reducedMotion.removeEventListener("change", handleReducedMotionChange);
+      root.style.setProperty("--parallax-scroll", "0");
+      root.style.setProperty("--parallax-pointer-x", "0");
+      root.style.setProperty("--parallax-pointer-y", "0");
+    };
+  }, []);
+
+  return (
+    <div className="app-parallax" aria-hidden="true">
+      <div className="app-parallax__layer app-parallax__layer--nebula" />
+      <div className="app-parallax__layer app-parallax__layer--grid" />
+      <div className="app-parallax__layer app-parallax__layer--beams" />
+      <div className="app-parallax__props app-parallax__props--left">
+        <span className="app-parallax__prop app-parallax__prop--dish" />
+        <span className="app-parallax__prop app-parallax__prop--cassette" />
+        <span className="app-parallax__prop app-parallax__prop--cable" />
+      </div>
+      <div className="app-parallax__props app-parallax__props--right">
+        <span className="app-parallax__prop app-parallax__prop--dish app-parallax__prop--dish-sm" />
+        <span className="app-parallax__prop app-parallax__prop--antenna" />
+        <span className="app-parallax__prop app-parallax__prop--laser" />
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -182,6 +271,7 @@ function App() {
           <LanguageProvider>
             <ErrorBoundary>
               <div className="app">
+                <AppParallaxBackdrop />
                 <a className="skip-link" href="#main-content">Skip to main content</a>
                 <ScrollToTopOnRouteChange />
                 <Nav />
