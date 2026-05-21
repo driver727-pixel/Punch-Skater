@@ -272,6 +272,139 @@ body {
   }
 }
 
+/* ===== CyberpunkD4Dice ===== */
+
+/* Wrapper — centres the die and stacks the button children vertically */
+.d4-dice {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+/* The clickable button that wraps scene + label */
+.d4-dice__trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: outline-color 150ms, opacity 150ms;
+}
+
+.d4-dice__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.d4-dice__trigger:not(:disabled):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+
+/* 3-D perspective container */
+.d4-dice__scene {
+  perspective: 520px;
+  width: 120px;
+  height: 120px;
+}
+
+/* The element that receives CSS 3-D transforms / animations */
+.d4-dice__shape {
+  width: 120px;
+  height: 120px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.d4-dice__svg {
+  display: block;
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 0 18px rgba(0, 204, 255, 0.55));
+  transition: filter 200ms, transform 200ms;
+}
+
+/* Hover/focus glow when the die is clickable */
+.d4-dice__trigger:not(:disabled):hover .d4-dice__svg,
+.d4-dice__trigger:not(:disabled):focus-visible .d4-dice__svg {
+  filter:
+    drop-shadow(0 0 28px rgba(0, 255, 136, 0.75))
+    drop-shadow(0 0 10px rgba(0, 204, 255, 0.6));
+  transform: scale(1.08);
+}
+
+/* ── Spinning while rolling ────────────────────────────────────────────── */
+.d4-dice--rolling .d4-dice__shape {
+  animation: d4-tumble 0.38s linear infinite;
+}
+
+.d4-dice--rolling .d4-dice__svg {
+  filter:
+    drop-shadow(0 0 30px rgba(0, 255, 136, 0.85))
+    drop-shadow(0 0 14px rgba(0, 204, 255, 0.7));
+  transition: none;
+}
+
+/* ── Bounce-land after rolling ─────────────────────────────────────────── */
+.d4-dice--landed .d4-dice__shape {
+  animation: d4-land 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Result glow when settled ──────────────────────────────────────────── */
+.d4-dice--result .d4-dice__svg {
+  filter:
+    drop-shadow(0 0 22px rgba(0, 255, 136, 0.7))
+    drop-shadow(0 0 8px rgba(204, 68, 255, 0.45));
+}
+
+/* ── Text label below the die ──────────────────────────────────────────── */
+.d4-dice__label {
+  color: var(--accent2);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  text-shadow: 0 0 12px rgba(0, 204, 255, 0.7);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.d4-dice--rolling .d4-dice__label {
+  color: var(--accent);
+  text-shadow: 0 0 14px rgba(0, 255, 136, 0.8);
+}
+
+.d4-dice--result .d4-dice__label {
+  color: var(--accent);
+  font-weight: bold;
+  text-shadow: 0 0 16px rgba(0, 255, 136, 0.85);
+  letter-spacing: 0.16em;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────────────────── */
+
+/* Fast multi-axis tumble simulating an airborne d4 */
+@keyframes d4-tumble {
+  0%   { transform: rotateY(0deg)   rotateX(0deg)   rotateZ(0deg); }
+  25%  { transform: rotateY(90deg)  rotateX(50deg)  rotateZ(18deg); }
+  50%  { transform: rotateY(180deg) rotateX(-35deg) rotateZ(-12deg); }
+  75%  { transform: rotateY(270deg) rotateX(65deg)  rotateZ(8deg); }
+  100% { transform: rotateY(360deg) rotateX(0deg)   rotateZ(0deg); }
+}
+
+/* Overshooting bounce-land once rolling ends */
+@keyframes d4-land {
+  0%   { transform: rotateZ(-7deg)  scale(1.28) translateY(-12px); }
+  40%  { transform: rotateZ(2deg)   scale(0.91) translateY(0); }
+  62%  { transform: rotateZ(-1deg)  scale(1.05) translateY(-3px); }
+  80%  { transform: rotateZ(0.5deg) scale(0.98) translateY(0); }
+  100% { transform: rotateZ(0deg)   scale(1)    translateY(0); }
+}
+
 /* ===== 90s Vending Machine CRT Overlay ===== */
 body::before {
   content: "";
