@@ -25,6 +25,7 @@ import type {
   JousturRiderRuntimeState,
 } from "../../lib/jousturTypes";
 import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
+import { CyberpunkD4Dice } from "../../components/CyberpunkD4Dice";
 
 const JOUSTUR_BOARD_IMAGE_URL = "/assets/joustur/joustur-board.png";
 const STEALTH_ALCOVES = new Set([4, 6, 8, 12, 14]);
@@ -586,22 +587,20 @@ export function JousturBoard() {
       <div className="joustur-board__status">
         {isMyTurn
           ? rollPending
-            ? `🎲 Roll: ${rollResult ?? match.board.rollResult} — pick a rider to move`
+            ? "🎯 Pick a rider to move"
             : "🎲 Your turn — roll the USB Shards"
           : "⏳ Waiting for opponent…"}
       </div>
 
-      {/* Roll button */}
-      {isMyTurn && !rollPending && (
+      {/* Animated d4 dice — shown whenever it is the active player's turn */}
+      {isMyTurn && (
         <div className="joustur-board__roll-area">
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleRoll}
-            disabled={rolling}
-          >
-            {rolling ? "Rolling…" : "🎲 Roll USB Shards"}
-          </button>
+          <CyberpunkD4Dice
+            rolling={rolling}
+            result={rollPending && !rolling ? (rollResult ?? match.board.rollResult) : null}
+            onRoll={handleRoll}
+            disabled={rolling || rollPending}
+          />
         </div>
       )}
 
