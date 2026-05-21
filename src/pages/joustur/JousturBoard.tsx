@@ -38,7 +38,9 @@ interface BoardPoint {
   y: number;
 }
 
+// Percent-based centers for the eight numbered columns on the visual board.
 const BOARD_COLUMNS = [18.5, 27.6, 36.7, 45.8, 54.9, 64, 73.1, 82.2] as const;
+// Percent-based row centers: opponent private lane, shared lane, player private lane.
 const BOARD_ROWS: Record<BoardSide | "shared", number> = {
   top: 28.5,
   shared: 50.4,
@@ -66,11 +68,21 @@ function getBoardPoint(position: number, side: BoardSide): BoardPoint {
 
 function getStackOffset(index: number, total: number): BoardPoint {
   if (total <= 1) return { x: 0, y: 0 };
+  // Keep stacked cards centered with at most ~8% total horizontal spread.
   const spread = Math.min(2.4, 8 / total);
+  // Alternate a small vertical offset so same-tile cards remain distinguishable.
   return {
     x: (index - (total - 1) / 2) * spread,
     y: index % 2 === 0 ? -0.75 : 0.75,
   };
+}
+
+function getPieceInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const chars = words.length > 1
+    ? words.slice(0, 2).map((word) => Array.from(word)[0])
+    : Array.from(words[0] ?? name).slice(0, 2);
+  return chars.filter(Boolean).join("").toUpperCase() || "??";
 }
 
 const POS_LABELS: Record<number, string> = {
@@ -134,7 +146,7 @@ function RiderCardPiece({
         </>
       ) : (
         <span className="joustur-board-piece__fallback">
-          {name.slice(0, 2).toUpperCase()}
+          {getPieceInitials(name)}
         </span>
       )}
       <span className="joustur-board-piece__owner">{ownerLabel}</span>
