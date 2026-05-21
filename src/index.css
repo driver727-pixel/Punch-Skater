@@ -54,6 +54,224 @@ body {
   line-height: 1.55;
 }
 
+/* ===== Joustur gameplay board ===== */
+.joustur-visual-board {
+  margin: 28px auto;
+  width: min(100%, 1180px);
+}
+
+.joustur-visual-board__frame {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(0, 255, 136, 0.45);
+  border-radius: 24px;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 204, 255, 0.18), rgba(4, 4, 12, 0.92) 70%);
+  box-shadow:
+    0 0 32px rgba(0, 204, 255, 0.28),
+    inset 0 0 30px rgba(0, 0, 0, 0.55);
+}
+
+.joustur-visual-board__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.joustur-visual-board__snap,
+.joustur-visual-board__move-target,
+.joustur-board-piece {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.joustur-visual-board__snap {
+  width: clamp(18px, 3vw, 40px);
+  aspect-ratio: 1;
+  border: 1px dashed rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.joustur-visual-board__snap--alcove {
+  border-color: rgba(0, 255, 136, 0.75);
+  box-shadow: 0 0 18px rgba(0, 255, 136, 0.38);
+}
+
+.joustur-visual-board__move-target {
+  width: clamp(38px, 5.5vw, 74px);
+  aspect-ratio: 1;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.16);
+  box-shadow: 0 0 22px rgba(0, 255, 136, 0.5);
+  cursor: pointer;
+  z-index: 4;
+}
+
+.joustur-visual-board__move-target--capture {
+  border-color: var(--danger);
+  background: rgba(255, 68, 68, 0.18);
+  box-shadow: 0 0 22px rgba(255, 68, 68, 0.5);
+}
+
+.joustur-visual-board__move-target--exit {
+  border-color: var(--accent2);
+  background: rgba(0, 204, 255, 0.18);
+  box-shadow: 0 0 22px rgba(0, 204, 255, 0.55);
+}
+
+.joustur-board-piece {
+  width: clamp(42px, 5vw, 72px);
+  aspect-ratio: var(--card-aspect-ratio);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: default;
+  filter: drop-shadow(0 7px 7px rgba(0, 0, 0, 0.65));
+  transition: transform 160ms ease, filter 160ms ease;
+  z-index: 5;
+}
+
+.joustur-board-piece--top {
+  --piece-owner-color: var(--purple);
+}
+
+.joustur-board-piece--bottom {
+  --piece-owner-color: var(--accent);
+}
+
+.joustur-board-piece--legal {
+  cursor: pointer;
+  filter:
+    drop-shadow(0 7px 7px rgba(0, 0, 0, 0.65))
+    drop-shadow(0 0 12px rgba(0, 255, 136, 0.8));
+}
+
+.joustur-board-piece--legal:hover,
+.joustur-board-piece--legal:focus-visible {
+  transform: translate(-50%, -50%) scale(1.12);
+  outline: none;
+}
+
+.joustur-board-piece--captured {
+  opacity: 0.82;
+}
+
+.joustur-board-piece--scored {
+  filter:
+    drop-shadow(0 7px 7px rgba(0, 0, 0, 0.65))
+    drop-shadow(0 0 10px rgba(0, 204, 255, 0.75));
+}
+
+.joustur-board-piece__card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 2px solid var(--piece-owner-color, var(--accent));
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(14, 14, 32, 0.95), rgba(0, 204, 255, 0.24));
+}
+
+.joustur-board-piece__layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.joustur-board-piece__layer--background {
+  z-index: 1;
+}
+
+.joustur-board-piece__layer--character {
+  z-index: 2;
+}
+
+.joustur-board-piece__layer--frame {
+  z-index: 3;
+  mix-blend-mode: screen;
+}
+
+.joustur-board-piece__fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--accent2);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.5vw, 1.9rem);
+  letter-spacing: 0.06em;
+}
+
+.joustur-board-piece__owner {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 4;
+  border-radius: 999px;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.72);
+  color: var(--piece-owner-color, var(--accent));
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.joustur-visual-board__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: 0.86rem;
+}
+
+.joustur-visual-board__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.joustur-visual-board__legend-dot {
+  width: 12px;
+  aspect-ratio: 1;
+  border: 1px dashed rgba(255, 255, 255, 0.48);
+  border-radius: 50%;
+}
+
+.joustur-visual-board__legend-dot--alcove {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.45);
+}
+
+.joustur-visual-board__legend-dot--move {
+  border: 2px solid var(--accent);
+  background: rgba(0, 255, 136, 0.18);
+}
+
+@media (max-width: 720px) {
+  .joustur-visual-board {
+    width: calc(100% + 24px);
+    margin-left: -12px;
+    margin-right: -12px;
+  }
+
+  .joustur-visual-board__frame {
+    border-radius: 14px;
+  }
+
+  .joustur-board-piece {
+    width: clamp(32px, 7vw, 48px);
+  }
+
+  .joustur-board-piece__owner {
+    display: none;
+  }
+}
+
 /* ===== 90s Vending Machine CRT Overlay ===== */
 body::before {
   content: "";
