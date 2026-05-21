@@ -820,7 +820,7 @@ export function buildTurnLogEntry(opts) {
     capturedCardId: opts.capturedCardId ?? null,
     extraTurn: opts.extraTurn ?? false,
     supportActivated: opts.supportActivated ?? false,
-    supportEffect: opts.supportEffect,
+    supportEffect: opts.supportEffect ?? null,
     summary,
     timestamp: opts.timestamp,
   };
