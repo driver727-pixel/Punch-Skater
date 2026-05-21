@@ -399,6 +399,134 @@ export function canActivateSupportEffect(effect, activePlayer) {
   return { canActivate: true, reason: null };
 }
 
+function compareMovePriority(a, b) {
+  const scoreA = [
+    a.isExitMove ? 1 : 0,
+    a.wouldCapture ? 1 : 0,
+    isStealthAlcove(a.toPosition) ? 1 : 0,
+    a.toPosition,
+    a.fromPosition,
+  ];
+  const scoreB = [
+    b.isExitMove ? 1 : 0,
+    b.wouldCapture ? 1 : 0,
+    isStealthAlcove(b.toPosition) ? 1 : 0,
+    b.toPosition,
+    b.fromPosition,
+  ];
+  for (let i = 0; i < scoreA.length; i++) {
+    if (scoreA[i] !== scoreB[i]) return scoreB[i] - scoreA[i];
+  }
+  return String(a.cardId).localeCompare(String(b.cardId));
+}
+
+function chooseSideRouteTarget(activePlayer) {
+  const entryRiders = activePlayer.riders
+    .filter(
+      (r) =>
+        !r.isScored &&
+        r.position >= PRIVATE_ENTRY_MIN &&
+        r.position <= PRIVATE_ENTRY_MAX,
+    )
+    .sort((a, b) => {
+      if (a.position !== b.position) return b.position - a.position;
+      return String(a.cardId).localeCompare(String(b.cardId));
+    });
+  return entryRiders[0] ?? null;
+}
+
+/**
+ * Deterministically choose an automated move for a solo bot turn.
+ *
+ * Strategy:
+ *   1. Prefer exits, then captures, then stealth alcoves, then forward progress.
+ *   2. Use support when there are no legal moves / a zero roll.
+ *   3. For sideRoute, spend support early when no high-impact move exists.
+ *
+ * @param {object} boardState
+ * @param {object} activePlayer
+ * @param {object} opponentPlayer
+ * @returns {{ cardId: string|null, activateSupport: boolean, supportTargetCardId?: string }}
+ */
+export function chooseAutomatedMove(boardState, activePlayer, opponentPlayer) {
+  const legalMoves = getLegalMoves(boardState, activePlayer, opponentPlayer)
+    .sort(compareMovePriority);
+  const bestMove = legalMoves[0] ?? null;
+  const supportStatus = canActivateSupportEffect(
+    activePlayer.support.supportEffect,
+    activePlayer,
+  );
+  const sideRouteTarget = chooseSideRouteTarget(activePlayer);
+  const hasHighImpactMove = Boolean(
+    bestMove &&
+      (bestMove.isExitMove ||
+        bestMove.wouldCapture ||
+        isStealthAlcove(bestMove.toPosition)),
+  );
+
+  if (supportStatus.canActivate) {
+    if (
+      activePlayer.support.supportEffect === 'sideRoute' &&
+      sideRouteTarget &&
+      !hasHighImpactMove
+    ) {
+      return {
+        cardId: null,
+        activateSupport: true,
+        supportTargetCardId: sideRouteTarget.cardId,
+      };
+    }
+    if (legalMoves.length === 0 || boardState.rollResult === 0) {
+      return {
+        cardId: null,
+        activateSupport: true,
+        ...(sideRouteTarget ? { supportTargetCardId: sideRouteTarget.cardId } : {}),
+      };
+    }
+  }
+
+  if (bestMove) {
+    return { cardId: bestMove.cardId, activateSupport: false };
+  }
+
+  return { cardId: null, activateSupport: false };
+}
+
+/**
+ * Clone a player state into a solo-bot mirror with unique card IDs.
+ *
+ * @param {object} playerState
+ * @param {string} botUid
+ * @returns {object}
+ */
+export function buildSoloBotPlayerState(playerState, botUid) {
+  const clone = JSON.parse(JSON.stringify(playerState));
+  const cardIdMap = new Map();
+  const uidPrefix = String(botUid ?? 'joustur-solo-bot');
+
+  clone.uid = uidPrefix;
+  clone.lineup = clone.lineup.map((snapshot, index) => {
+    const nextCardId = `${uidPrefix}-rider-${index + 1}-${snapshot.cardId}`;
+    cardIdMap.set(snapshot.cardId, nextCardId);
+    return {
+      ...snapshot,
+      cardId: nextCardId,
+      name: snapshot.name ? `Echo ${snapshot.name}` : `Echo Rider ${index + 1}`,
+    };
+  });
+  clone.riders = clone.riders.map((rider) => ({
+    ...rider,
+    cardId: cardIdMap.get(rider.cardId) ?? `${uidPrefix}-${rider.cardId}`,
+  }));
+  clone.support = {
+    ...clone.support,
+    cardId: `${uidPrefix}-support-${clone.support.cardId}`,
+    name: clone.support.name ? `Echo ${clone.support.name}` : 'Echo Support',
+  };
+
+  return clone;
+}
+
 // ── Move application ──────────────────────────────────────────────────────────
 
 /**

@@ -43,6 +43,7 @@ function posLabel(pos: number): string {
 }
 
 function PlayerPanel({
+  label,
   player,
   isMe,
   isActive,
@@ -53,6 +54,7 @@ function PlayerPanel({
   onSelectRider,
   onActivateSupport,
 }: {
+  label: string;
   player: JousturPlayerState;
   isMe: boolean;
   isActive: boolean;
@@ -79,7 +81,7 @@ function PlayerPanel({
       className={`joustur-board__player${isMe ? " joustur-board__player--me" : ""}${isActive ? " joustur-board__player--active" : ""}`}
     >
       <h3 className="joustur-board__player-name">
-        {isMe ? "You" : "Opponent"}
+        {label}
         {isActive && <span className="joustur-board__turn-badge"> — Active</span>}
         <span className="joustur-board__faction-badge">
           {JOUSTUR_FACTION_LABELS[player.faction] ?? player.faction}
@@ -394,6 +396,7 @@ export function JousturBoard() {
       {/* Board panels */}
       <div className="joustur-board__panels">
         <PlayerPanel
+          label="You"
           player={myState}
           isMe
           isActive={isMyTurn}
@@ -405,6 +408,7 @@ export function JousturBoard() {
           onActivateSupport={handleActivateSupport}
         />
         <PlayerPanel
+          label={match.mode === "solo" ? "House Bot" : "Opponent"}
           player={oppState}
           isMe={false}
           isActive={!isMyTurn}

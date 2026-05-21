@@ -50,6 +50,8 @@ import {
   detectWinner,
   calcRewards,
   canActivateSupportEffect,
+  chooseAutomatedMove,
+  buildSoloBotPlayerState,
   // RNG
   createSeededRng,
   generateRollSeed,
@@ -860,4 +862,34 @@ test('canActivateSupportEffect — effects without preconditions are always canA
     const { canActivate } = canActivateSupportEffect(effect, player);
     assert.equal(canActivate, true, `${effect} should have no preconditions`);
   }
+});
+
+test('chooseAutomatedMove prefers an exit over other legal moves', () => {
+  let playerA = makePlayer('A');
+  const playerB = makePlayer('B');
+  playerA = setRiderPositions(playerA, [14, 5, 0, 0, 0, 0]);
+  const choice = chooseAutomatedMove(makeBoard('A', 1), playerA, playerB);
+  assert.equal(choice.activateSupport, false);
+  assert.equal(choice.cardId, playerA.riders[0].cardId);
+});
+
+test('chooseAutomatedMove uses support when a zero roll leaves no legal moves', () => {
+  const playerA = makePlayer('A', RIDER_COUNT, 'Ne0n Legion');
+  const playerB = makePlayer('B');
+  const choice = chooseAutomatedMove(makeBoard('A', 0), playerA, playerB);
+  assert.equal(choice.activateSupport, true);
+  assert.equal(choice.cardId, null);
+});
+
+test('buildSoloBotPlayerState mirrors a player with unique echo card ids', () => {
+  const player = makePlayer('A');
+  const bot = buildSoloBotPlayerState(player, 'solo-bot-1');
+  assert.equal(bot.uid, 'solo-bot-1');
+  assert.equal(bot.lineup.length, player.lineup.length);
+  assert.equal(bot.riders.length, player.riders.length);
+  assert.ok(bot.lineup.every((r) => r.cardId.startsWith('solo-bot-1-rider-')));
+  assert.ok(bot.lineup.every((r) => r.name.startsWith('Echo ')));
+  assert.ok(bot.riders.every((r) => r.cardId.startsWith('solo-bot-1-rider-')));
+  assert.ok(bot.support.cardId.startsWith('solo-bot-1-support-'));
+  assert.ok(bot.support.name.startsWith('Echo '));
 });
