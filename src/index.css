@@ -790,11 +790,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   -webkit-backdrop-filter: blur(14px) saturate(145%);
   background-image:
     linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04)),
-    linear-gradient(135deg, color-mix(in srgb, var(--accent2) 22%, transparent), color-mix(in srgb, var(--purple) 30%, transparent));
+    linear-gradient(135deg, rgba(0, 204, 255, 0.22), rgba(204, 68, 255, 0.3));
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.24),
     0 8px 18px rgba(0, 0, 0, 0.36),
-    0 0 18px color-mix(in srgb, var(--accent2) 34%, transparent),
+    0 0 18px rgba(0, 204, 255, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.42),
     inset 0 -18px 24px rgba(7, 8, 16, 0.34);
 }
@@ -815,7 +815,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.34),
     0 14px 26px rgba(0, 0, 0, 0.4),
-    0 0 24px color-mix(in srgb, var(--accent) 34%, transparent),
+    0 0 24px rgba(0, 255, 136, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.54),
     inset 0 -18px 24px rgba(7, 8, 16, 0.4);
 }
