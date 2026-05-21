@@ -144,21 +144,21 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
         <p className="forge-objective-copy">{objective.description}</p>
         <div className="forge-objective-actions">
           {objective.primaryTo ? (
-            <Link className="btn-primary" to={objective.primaryTo}>
+            <Link className="btn-primary btn-glass" to={objective.primaryTo}>
               {objective.primaryLabel}
             </Link>
           ) : (
-            <button type="button" className="btn-primary" onClick={onOpenStartHere}>
+            <button type="button" className="btn-primary btn-glass" onClick={onOpenStartHere}>
               {objective.primaryLabel}
             </button>
           )}
           {objective.secondaryLabel && (
             objective.secondaryTo ? (
-              <Link className="btn-outline" to={objective.secondaryTo}>
+              <Link className="btn-outline btn-glass" to={objective.secondaryTo}>
                 {objective.secondaryLabel}
               </Link>
             ) : (
-              <button type="button" className="btn-outline" onClick={onOpenStartHere}>
+              <button type="button" className="btn-outline btn-glass" onClick={onOpenStartHere}>
                 {objective.secondaryLabel}
               </button>
             )

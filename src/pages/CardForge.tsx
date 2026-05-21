@@ -4,6 +4,7 @@ import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
 import { ForgeObjectivePanel } from "../components/ForgeObjectivePanel";
+import { RetroWireframeTunnel } from "../components/RetroWireframeTunnel";
 import {
   ACCENT_PRESETS,
   AGE_GROUPS,
@@ -89,40 +90,80 @@ export function CardForge() {
   const battlePass = useBattlePass();
 
   return (
-    <div className="page">
+    <div className="page page--forge">
       <span className="build-number">{__BUILD_NUMBER__}</span>
-      <h1 className="page-title">CARD FORGE</h1>
-      <p className="page-sub">Forge your skater — then build a 6-card crew, run missions, win jousts, and climb the neon leaderboard</p>
-      <section className="forge-whats-new" aria-label="Build updates">
-        <p className="forge-whats-new__eyebrow">What’s New</p>
-        <p className="forge-whats-new__copy">
-          Build {__BUILD_NUMBER__}: smoother collection navigation, improved keyboard access, and refreshed loading UX.
-        </p>
+      <section className="forge-hero">
+        <div className="forge-hero__copy">
+          <p className="forge-hero__eyebrow">Dirty Future Card Lab</p>
+          <h1 className="page-title forge-hero__title">CARD FORGE</h1>
+          <p className="page-sub forge-hero__sub">Forge your skater — then build a 6-card crew, run missions, win jousts, and climb the neon leaderboard</p>
+          <div className="forge-quick-actions">
+            <button
+              type="button"
+              className="btn-outline btn-glass btn-sm forge-welcome-reopen"
+              onClick={handleReopenWelcome}
+              aria-label="Open Start Here welcome"
+            >
+              Start Here
+            </button>
+            <button
+              type="button"
+              className="btn-outline btn-glass btn-sm forge-randomize-button"
+              onClick={handleRandomSkater}
+              disabled={forging || isAnyLayerLoading}
+              title={RANDOM_SKATER_TOOLTIP}
+              aria-label={`Random Skater. ${RANDOM_SKATER_TOOLTIP}`}
+              data-testid="random-punch-skater-button"
+            >
+              Random Skater
+            </button>
+          </div>
+          <section className="forge-whats-new" aria-label="Build updates">
+            <p className="forge-whats-new__eyebrow">What’s New</p>
+            <p className="forge-whats-new__copy">
+              Build {__BUILD_NUMBER__}: smoother collection navigation, improved keyboard access, and refreshed loading UX.
+            </p>
+          </section>
+          <div className="forge-hero__tags" aria-label="Forge atmosphere">
+            <span>Glass toggles</span>
+            <span>Mag cassettes</span>
+            <span>Neon relay wires</span>
+            <span>Greasy rover rigs</span>
+          </div>
+        </div>
+
+        <aside className="forge-hero__art" aria-hidden="true">
+          <div className="forge-hero__art-frame">
+            <RetroWireframeTunnel className="forge-hero__tunnel" />
+            <div className="forge-hero__sun" />
+            <div className="forge-hero__laser" />
+            <div className="forge-hero__dish" />
+            <div className="forge-hero__cassette">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="forge-hero__rover">
+              <span className="forge-hero__rover-eye" />
+              <span className="forge-hero__rover-wheel forge-hero__rover-wheel--front" />
+              <span className="forge-hero__rover-wheel forge-hero__rover-wheel--rear" />
+            </div>
+            <div className="forge-hero__switches">
+              <span className="forge-hero__switch forge-hero__switch--on" />
+              <span className="forge-hero__switch" />
+              <span className="forge-hero__switch forge-hero__switch--hot" />
+            </div>
+            <div className="forge-hero__cable forge-hero__cable--one" />
+            <div className="forge-hero__cable forge-hero__cable--two" />
+            <div className="forge-hero__art-copy">
+              <strong>SK8R PUNK UPLINK</strong>
+              <span>satellite grit • cassette hiss • neon dust</span>
+            </div>
+          </div>
+        </aside>
       </section>
 
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
-
-      <div className="forge-quick-actions">
-        <button
-          type="button"
-          className="btn-outline btn-sm forge-welcome-reopen"
-          onClick={handleReopenWelcome}
-          aria-label="Open Start Here welcome"
-        >
-          Start Here
-        </button>
-        <button
-          type="button"
-          className="btn-outline btn-sm forge-randomize-button"
-          onClick={handleRandomSkater}
-          disabled={forging || isAnyLayerLoading}
-          title={RANDOM_SKATER_TOOLTIP}
-          aria-label={`Random Skater. ${RANDOM_SKATER_TOOLTIP}`}
-          data-testid="random-punch-skater-button"
-        >
-          Random Skater
-        </button>
-      </div>
 
       <ForgeObjectivePanel onOpenStartHere={handleReopenWelcome} />
 

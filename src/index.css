@@ -30,6 +30,9 @@
   /* Canonical poker-card aspect ratio used by .print-card, .viewer3d-card, and
      the forge preview variant.  Update once here to change all three. */
   --card-aspect-ratio: 2.5 / 3.5;
+  --parallax-scroll: 0;
+  --parallax-pointer-x: 0;
+  --parallax-pointer-y: 0;
 }
 
 html, body { height: 100%; }
@@ -329,7 +332,216 @@ body::after {
 }
 
 /* ===== Layout ===== */
-.app { display: flex; flex-direction: column; min-height: 100vh; }
+.app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  isolation: isolate;
+}
+.app-parallax {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.app-parallax__layer,
+.app-parallax__props {
+  position: absolute;
+  inset: 0;
+}
+.app-parallax__layer--nebula {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(0, 255, 136, 0.12), transparent 24%),
+    radial-gradient(circle at 84% 16%, rgba(0, 204, 255, 0.16), transparent 28%),
+    radial-gradient(circle at 58% 70%, rgba(255, 0, 153, 0.16), transparent 22%),
+    radial-gradient(circle at 72% 88%, rgba(255, 196, 76, 0.1), transparent 20%);
+  filter: blur(10px) saturate(140%);
+  opacity: 0.9;
+  transform:
+    translate3d(calc(var(--parallax-pointer-x) * -24px), calc(var(--parallax-scroll) * -0.04px + var(--parallax-pointer-y) * -16px), 0)
+    scale(1.08);
+}
+.app-parallax__layer--grid {
+  top: 38vh;
+  bottom: -26vh;
+  background:
+    linear-gradient(180deg, rgba(2, 4, 8, 0) 0%, rgba(2, 4, 8, 0.36) 20%, rgba(2, 4, 8, 0.88) 100%),
+    repeating-linear-gradient(90deg, rgba(0, 204, 255, 0.12) 0 1px, transparent 1px 7vw),
+    repeating-linear-gradient(180deg, rgba(0, 255, 136, 0.14) 0 1px, transparent 1px 7vh);
+  border-top: 1px solid rgba(0, 204, 255, 0.5);
+  box-shadow: 0 -8px 24px rgba(0, 204, 255, 0.12);
+  opacity: 0.48;
+  transform:
+    perspective(900px)
+    rotateX(78deg)
+    translate3d(calc(var(--parallax-pointer-x) * 14px), calc(var(--parallax-scroll) * -0.12px), 0)
+    scale(1.45);
+  transform-origin: center top;
+}
+.app-parallax__layer--beams {
+  background:
+    linear-gradient(112deg, transparent 0 30%, rgba(255, 0, 153, 0.14) 42%, transparent 54%),
+    linear-gradient(72deg, transparent 0 44%, rgba(0, 255, 136, 0.1) 58%, transparent 70%),
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.08), transparent 42%);
+  opacity: 0.6;
+  mix-blend-mode: screen;
+  transform:
+    translate3d(calc(var(--parallax-pointer-x) * 28px), calc(var(--parallax-scroll) * -0.08px + var(--parallax-pointer-y) * 16px), 0)
+    scale(1.04);
+}
+.app-parallax__props {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 18vh clamp(10px, 4vw, 42px) clamp(12px, 3vw, 28px);
+}
+.app-parallax__props--left {
+  transform: translate3d(calc(var(--parallax-pointer-x) * -18px), calc(var(--parallax-scroll) * -0.18px), 0);
+}
+.app-parallax__props--right {
+  transform: translate3d(calc(var(--parallax-pointer-x) * 18px), calc(var(--parallax-scroll) * -0.24px), 0);
+}
+.app-parallax__props--right::before,
+.app-parallax__props--left::before {
+  content: "";
+  position: absolute;
+  bottom: 12vh;
+  width: clamp(110px, 18vw, 220px);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 160, 66, 0.6), transparent);
+  filter: blur(0.4px);
+  opacity: 0.5;
+}
+.app-parallax__props--left::before { left: 10%; transform: rotate(-14deg); }
+.app-parallax__props--right::before { right: 16%; transform: rotate(18deg); }
+.app-parallax__prop {
+  position: relative;
+  flex: 0 0 auto;
+  opacity: 0.28;
+  filter: drop-shadow(0 0 14px rgba(0, 255, 136, 0.18));
+}
+.app-parallax__prop--dish,
+.app-parallax__prop--dish-sm {
+  width: clamp(90px, 12vw, 150px);
+  height: clamp(90px, 12vw, 150px);
+  border: 2px solid rgba(0, 204, 255, 0.34);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.16), transparent 32%),
+    linear-gradient(180deg, rgba(13, 16, 28, 0.9), rgba(6, 8, 16, 0.78));
+}
+.app-parallax__prop--dish::before,
+.app-parallax__prop--dish::after,
+.app-parallax__prop--dish-sm::before,
+.app-parallax__prop--dish-sm::after {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 50%;
+}
+.app-parallax__prop--dish::after,
+.app-parallax__prop--dish-sm::after {
+  inset: auto 48% -38px;
+  width: 4px;
+  height: 58px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(0, 204, 255, 0.6), rgba(0, 0, 0, 0.1));
+}
+.app-parallax__prop--dish-sm {
+  width: clamp(70px, 9vw, 110px);
+  height: clamp(70px, 9vw, 110px);
+}
+.app-parallax__prop--cassette {
+  width: clamp(110px, 12vw, 160px);
+  height: clamp(72px, 8vw, 110px);
+  margin-left: clamp(12px, 2vw, 22px);
+  border: 2px solid rgba(255, 166, 77, 0.3);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 30% 55%, rgba(255, 193, 94, 0.28), transparent 18%),
+    radial-gradient(circle at 70% 55%, rgba(255, 193, 94, 0.28), transparent 18%),
+    linear-gradient(180deg, rgba(34, 30, 22, 0.85), rgba(10, 10, 12, 0.86));
+}
+.app-parallax__prop--cassette::before,
+.app-parallax__prop--cassette::after {
+  content: "";
+  position: absolute;
+  top: 52%;
+  width: 22%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 235, 182, 0.34);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+.app-parallax__prop--cassette::before { left: 18%; }
+.app-parallax__prop--cassette::after { right: 18%; }
+.app-parallax__prop--antenna {
+  width: 10px;
+  height: clamp(120px, 20vh, 220px);
+  margin-right: clamp(6px, 2vw, 22px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(0, 255, 136, 0.68), rgba(0, 204, 255, 0.18));
+}
+.app-parallax__prop--antenna::before,
+.app-parallax__prop--antenna::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+.app-parallax__prop--antenna::before {
+  top: -14px;
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255, 0, 153, 0.45);
+  background: rgba(16, 10, 26, 0.9);
+}
+.app-parallax__prop--antenna::after {
+  top: 12%;
+  width: 110px;
+  height: 110px;
+  border: 1px solid rgba(0, 204, 255, 0.18);
+  box-shadow: 0 0 0 20px rgba(0, 204, 255, 0.04), 0 0 0 40px rgba(0, 204, 255, 0.025);
+}
+.app-parallax__prop--cable {
+  width: clamp(100px, 13vw, 180px);
+  height: clamp(30px, 5vw, 58px);
+  margin-left: clamp(6px, 1vw, 18px);
+  border-bottom: 4px solid rgba(255, 0, 153, 0.32);
+  border-radius: 0 0 120px 120px;
+}
+.app-parallax__prop--cable::before,
+.app-parallax__prop--laser::before {
+  content: "";
+  position: absolute;
+  inset: auto auto 100% 0;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 0, 153, 0.4), transparent);
+  filter: blur(6px);
+}
+.app-parallax__prop--laser {
+  width: clamp(120px, 14vw, 190px);
+  height: 2px;
+  margin-left: clamp(16px, 3vw, 40px);
+  align-self: center;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.7), rgba(0, 204, 255, 0.92), transparent);
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+}
+.nav-container,
+.firebase-banner,
+.player-reward-banner,
+.main,
+.site-footer {
+  position: relative;
+  z-index: 1;
+}
 .firebase-banner {
   margin: 12px auto 0;
   max-width: 980px;
@@ -369,6 +581,7 @@ body::after {
 .main {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 .skip-link {
   position: fixed;
@@ -418,6 +631,16 @@ body::after {
   max-width: min(1200px, 95vw);
   padding: 24px 18px;
   margin: 0 auto;
+  position: relative;
+}
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 204, 255, 0.38), rgba(255, 0, 153, 0.4), transparent);
+  opacity: 0.45;
+  pointer-events: none;
 }
 .page-title {
   font-family: var(--font-display);
@@ -561,6 +784,42 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   animation: none;
 }
 .btn-primary.btn-lg { padding: 12px 28px; font-size: 15px; width: 100%; margin-top: 16px; }
+
+.btn-glass {
+  position: relative;
+  backdrop-filter: blur(14px) saturate(145%);
+  -webkit-backdrop-filter: blur(14px) saturate(145%);
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04)),
+    linear-gradient(135deg, rgba(0, 204, 255, 0.22), rgba(204, 68, 255, 0.3));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 8px 18px rgba(0, 0, 0, 0.36),
+    0 0 18px rgba(0, 204, 255, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -18px 24px rgba(7, 8, 16, 0.34);
+}
+.btn-glass::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.26), transparent 28% 72%, rgba(255, 255, 255, 0.16)),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.28), transparent 32%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+.btn-glass:hover:not(:disabled),
+.btn-glass:focus-visible {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.34),
+    0 14px 26px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(0, 255, 136, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.54),
+    inset 0 -18px 24px rgba(7, 8, 16, 0.4);
+}
 
 /* Forge-specific primary CTA */
 .btn-forge {
@@ -801,6 +1060,75 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: start;
 }
 
+.page--forge {
+  padding-top: 28px;
+}
+.forge-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 22px;
+  margin-bottom: 24px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid rgba(0, 204, 255, 0.16);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 32%),
+    linear-gradient(135deg, rgba(10, 14, 32, 0.9), rgba(6, 8, 20, 0.84));
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.36),
+    0 0 36px rgba(0, 204, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.forge-hero::before,
+.forge-hero::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.forge-hero::before {
+  inset: auto -8% -18% auto;
+  width: clamp(220px, 30vw, 420px);
+  height: clamp(220px, 30vw, 420px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 0, 153, 0.18), transparent 70%);
+  filter: blur(16px);
+}
+.forge-hero::after {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.9), transparent 92%);
+  opacity: 0.2;
+}
+.forge-hero__copy,
+.forge-hero__art {
+  position: relative;
+  z-index: 1;
+}
+.forge-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.forge-hero__eyebrow {
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #ffd97a;
+  text-shadow: 0 0 10px rgba(255, 196, 76, 0.24);
+}
+.forge-hero__title,
+.forge-hero__sub {
+  margin-bottom: 0;
+}
+.forge-hero__sub {
+  max-width: 48rem;
+}
 .forge-layout > * {
   width: 100%;
   min-width: 0;
@@ -812,14 +1140,18 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   justify-content: flex-start;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .forge-whats-new {
-  margin: 8px 0 14px;
-  padding: 10px 12px;
+  margin: 0;
+  padding: 14px 16px;
   border: 1px solid rgba(0, 204, 255, 0.24);
-  border-radius: 8px;
-  background: rgba(8, 18, 30, 0.72);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(6, 16, 30, 0.82), rgba(16, 8, 24, 0.76));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 14px 34px rgba(0, 0, 0, 0.24);
 }
 .forge-whats-new__eyebrow {
   margin: 0 0 4px;
@@ -830,8 +1162,298 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .forge-whats-new__copy {
   margin: 0;
-  color: var(--text-dim);
+  color: rgba(236, 228, 255, 0.82);
   font-size: 12px;
+  line-height: 1.6;
+}
+.forge-hero__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.forge-hero__tags span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 12px 8px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 247, 214, 0.92);
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+}
+.forge-hero__tags span::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.44);
+}
+.forge-hero__art {
+  align-self: stretch;
+}
+.forge-hero__art-frame {
+  position: relative;
+  min-height: 320px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(8, 10, 22, 0.88), rgba(6, 7, 18, 0.96));
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 20px 42px rgba(0, 0, 0, 0.3);
+}
+.forge-hero__tunnel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.58;
+  transform: translateY(calc(var(--parallax-scroll) * -0.08px)) scale(1.06);
+}
+.forge-hero__sun {
+  position: absolute;
+  top: 11%;
+  right: 12%;
+  width: clamp(86px, 11vw, 132px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 140, 56, 0.9) 0 7px, rgba(255, 88, 164, 0.9) 7px 14px),
+    linear-gradient(180deg, #ffd84d, #ff4499);
+  box-shadow: 0 0 28px rgba(255, 102, 178, 0.32);
+  opacity: 0.92;
+}
+.forge-hero__laser {
+  position: absolute;
+  top: 26%;
+  left: 4%;
+  width: 58%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.7), rgba(0, 204, 255, 0.92), transparent);
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.36);
+  transform: rotate(-7deg);
+}
+.forge-hero__dish {
+  position: absolute;
+  top: 12%;
+  left: 12%;
+  width: clamp(76px, 10vw, 120px);
+  height: clamp(76px, 10vw, 120px);
+  border-radius: 50%;
+  border: 2px solid rgba(0, 204, 255, 0.36);
+  background: radial-gradient(circle at 34% 32%, rgba(255, 255, 255, 0.18), transparent 28%), rgba(8, 14, 22, 0.84);
+  box-shadow: 0 0 20px rgba(0, 204, 255, 0.18);
+}
+.forge-hero__dish::before,
+.forge-hero__dish::after {
+  content: "";
+  position: absolute;
+}
+.forge-hero__dish::before {
+  inset: 16%;
+  border: 1px solid rgba(0, 255, 136, 0.24);
+  border-radius: 50%;
+}
+.forge-hero__dish::after {
+  left: 50%;
+  bottom: -42px;
+  width: 4px;
+  height: 62px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(0, 204, 255, 0.58), rgba(0, 0, 0, 0.1));
+  transform: translateX(-50%);
+}
+.forge-hero__cassette {
+  position: absolute;
+  right: 10%;
+  bottom: 16%;
+  width: clamp(132px, 18vw, 198px);
+  height: clamp(78px, 10vw, 112px);
+  border-radius: 18px;
+  border: 2px solid rgba(255, 183, 90, 0.3);
+  background:
+    linear-gradient(180deg, rgba(45, 34, 24, 0.95), rgba(10, 10, 12, 0.94));
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: rotate(-8deg);
+}
+.forge-hero__cassette span {
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(255, 233, 184, 0.36);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+.forge-hero__cassette span:nth-child(1) { left: 18%; }
+.forge-hero__cassette span:nth-child(2) { right: 18%; }
+.forge-hero__cassette span:nth-child(3) {
+  left: 50%;
+  width: 52%;
+  height: 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 176, 79, 0.18);
+  transform: translate(-50%, -50%);
+}
+.forge-hero__rover {
+  position: absolute;
+  left: 18%;
+  bottom: 16%;
+  width: clamp(120px, 17vw, 180px);
+  height: clamp(56px, 7vw, 82px);
+  border-radius: 20px 20px 14px 14px;
+  border: 1px solid rgba(155, 167, 182, 0.22);
+  background:
+    linear-gradient(135deg, rgba(66, 72, 84, 0.92), rgba(24, 26, 34, 0.98));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+.forge-hero__rover::before {
+  content: "";
+  position: absolute;
+  inset: 14% 12% 42%;
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 50%),
+    linear-gradient(180deg, rgba(18, 18, 24, 0.94), rgba(10, 10, 12, 0.9));
+}
+.forge-hero__rover::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -34px;
+  width: 4px;
+  height: 42px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(0, 255, 136, 0.72), rgba(0, 204, 255, 0.2));
+  transform: translateX(-50%);
+}
+.forge-hero__rover-eye {
+  position: absolute;
+  top: 28%;
+  right: 18%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 166, 77, 0.95), rgba(255, 0, 153, 0.7));
+  box-shadow: 0 0 18px rgba(255, 102, 178, 0.28);
+}
+.forge-hero__rover-wheel {
+  position: absolute;
+  bottom: -12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.12), rgba(12, 12, 16, 0.96));
+  border: 2px solid rgba(255, 255, 255, 0.18);
+}
+.forge-hero__rover-wheel--front { left: 18%; }
+.forge-hero__rover-wheel--rear { right: 18%; }
+.forge-hero__switches {
+  position: absolute;
+  right: 12%;
+  top: 18%;
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(4, 9, 16, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+.forge-hero__switch {
+  position: relative;
+  width: 18px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.forge-hero__switch::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  width: 10px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(232, 238, 255, 0.88);
+  transform: translateX(-50%);
+  transition: transform 180ms ease, background 180ms ease;
+}
+.forge-hero__switch--on::before,
+.forge-hero__switch--hot::before {
+  transform: translate(-50%, 14px);
+}
+.forge-hero__switch--on::after,
+.forge-hero__switch--hot::after {
+  content: "";
+  position: absolute;
+  inset: auto 50% 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.42);
+}
+.forge-hero__switch--hot::after {
+  background: #ff6a3d;
+  box-shadow: 0 0 12px rgba(255, 106, 61, 0.45);
+}
+.forge-hero__cable {
+  position: absolute;
+  border-bottom: 3px solid rgba(255, 0, 153, 0.36);
+  border-radius: 0 0 160px 160px;
+}
+.forge-hero__cable--one {
+  left: -6%;
+  bottom: 20%;
+  width: 42%;
+  height: 20%;
+  transform: rotate(9deg);
+}
+.forge-hero__cable--two {
+  right: 20%;
+  bottom: 6%;
+  width: 36%;
+  height: 24%;
+  border-bottom-color: rgba(0, 255, 136, 0.28);
+  transform: rotate(-8deg);
+}
+.forge-hero__art-copy {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(5, 8, 16, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+.forge-hero__art-copy strong {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #ffd97a;
+}
+.forge-hero__art-copy span {
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(236, 228, 255, 0.72);
 }
 
 /* ── Battle Pass panel ─────────────────────────────────────────────────────── */
@@ -4475,12 +5097,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
+  background:
+    linear-gradient(135deg, rgba(8, 10, 22, 0.92), rgba(7, 10, 18, 0.88));
+  border-top: 1px solid rgba(0, 204, 255, 0.16);
   font-size: 12px;
   color: var(--text-dim);
   flex-shrink: 0;
   position: relative;
+  backdrop-filter: blur(12px);
 }
 /* Neon strip above footer */
 .site-footer::before {
@@ -4508,6 +5132,32 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   transition: color 0.15s;
 }
 .site-footer__link:hover { color: var(--accent); }
+
+.firebase-banner,
+.player-reward-banner,
+.forge-whats-new,
+.forge-objective-card,
+.battle-pass-panel,
+.site-footer {
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background 220ms ease;
+}
+.firebase-banner:hover,
+.player-reward-banner:hover,
+.forge-whats-new:hover,
+.forge-objective-card:hover,
+.battle-pass-panel:hover,
+.site-footer:focus-within,
+.site-footer:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 255, 136, 0.28);
+  box-shadow:
+    0 18px 38px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(0, 204, 255, 0.08);
+}
 @media (max-width: 700px) {
   .site-footer {
     flex-direction: column;
@@ -10324,6 +10974,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     gap: 10px;
   }
 
+  .forge-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .forge-hero__art-frame {
+    min-height: 280px;
+  }
+
   .forge-quick-actions > button {
     width: 100%;
     min-height: 44px;
@@ -13938,6 +14596,26 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .not-found-actions .btn-primary,
   .not-found-actions .btn-outline {
     width: 100%;
+  }
+
+  .app-parallax__props {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-parallax__layer,
+  .app-parallax__props,
+  .forge-hero__tunnel,
+  .btn-glass,
+  .firebase-banner,
+  .player-reward-banner,
+  .forge-whats-new,
+  .forge-objective-card,
+  .battle-pass-panel,
+  .site-footer {
+    transform: none !important;
+    animation: none !important;
   }
 }
 .race-wager-value { font-size: 0.9rem; opacity: 0.9; }
