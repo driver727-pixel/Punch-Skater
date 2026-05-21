@@ -599,7 +599,7 @@ export function JousturBoard() {
             rolling={rolling}
             result={rollPending && !rolling ? (rollResult ?? match.board.rollResult) : null}
             onRoll={handleRoll}
-            disabled={rolling || rollPending}
+            disabled={rolling}
           />
         </div>
       )}

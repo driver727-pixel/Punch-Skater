@@ -75,7 +75,7 @@ export function CyberpunkD4Dice({
 
   const faceColor = FACE_COLORS[displayFace] ?? "#00ff88";
 
-  const isClickable = !disabled && !rolling && result === null;
+  const canRoll = !disabled && !rolling && result === null;
 
   const ariaLabel = rolling
     ? "Rolling USB Shards…"
@@ -101,10 +101,10 @@ export function CyberpunkD4Dice({
       <button
         type="button"
         className="d4-dice__trigger"
-        onClick={isClickable ? onRoll : undefined}
-        disabled={!isClickable}
+        onClick={canRoll ? onRoll : undefined}
+        disabled={disabled || rolling}
         aria-label={ariaLabel}
-        title={isClickable ? "Click to roll the USB Shards" : undefined}
+        title={canRoll ? "Click to roll the USB Shards" : undefined}
       >
         {/* ── 3-D scene container ──────────────────────────────────────── */}
         <div className="d4-dice__scene">
