@@ -312,18 +312,28 @@ body {
   height: 120px;
 }
 
+/* Triple-dice layout: 3 dice in a row */
+.d4-dice__scene--triple {
+  display: flex;
+  gap: 8px;
+  width: auto;
+  height: 80px;
+  align-items: center;
+  justify-content: center;
+}
+
 /* The element that receives CSS 3-D transforms / animations */
 .d4-dice__shape {
-  width: 120px;
-  height: 120px;
+  width: 80px;
+  height: 80px;
   transform-style: preserve-3d;
   will-change: transform;
 }
 
 .d4-dice__svg {
   display: block;
-  width: 120px;
-  height: 120px;
+  width: 80px;
+  height: 80px;
   filter: drop-shadow(0 0 18px rgba(0, 204, 255, 0.55));
   transition: filter 200ms, transform 200ms;
 }
@@ -383,6 +393,30 @@ body {
   font-weight: bold;
   text-shadow: 0 0 16px rgba(0, 255, 136, 0.85);
   letter-spacing: 0.16em;
+}
+
+/* ── Display-only mode (opponent dice view) ────────────────────────────── */
+.d4-dice--display-only {
+  opacity: 0.85;
+}
+
+.d4-dice--display-only .d4-dice__trigger {
+  cursor: default;
+}
+
+.joustur-board__roll-area--opponent {
+  margin-bottom: 12px;
+}
+
+.joustur-board__opponent-roll-label {
+  color: var(--accent2);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 4px;
+  opacity: 0.8;
 }
 
 /* ── Keyframes ─────────────────────────────────────────────────────────── */

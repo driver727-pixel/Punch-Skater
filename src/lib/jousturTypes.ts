@@ -154,10 +154,18 @@ export interface JousturBoardState {
   turn: number;
   activePlayerUid: string;
   /**
-   * Current USB Shard roll (0–4, or 5 after overclock).
+   * Current dice roll total (0–3, or higher after overclock).
    * `null` means the roll has not been generated yet for this turn.
    */
   rollResult: number | null;
+  /** Individual dice results array (each 0 or 1); null when not yet rolled. */
+  diceResults: number[] | null;
+  /** The last completed roll total (for opponent visibility). */
+  lastRollResult: number | null;
+  /** Individual dice from the last completed roll. */
+  lastDiceResults: number[] | null;
+  /** UID of the player who made the last roll. */
+  lastRollPlayerUid: string | null;
   /**
    * UID of the player whose riders are immune to capture for this turn
    * (set by smokeScreen support activation).  Null when inactive.
