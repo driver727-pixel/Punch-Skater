@@ -217,7 +217,7 @@ export function CyberpunkD4Dice({
         {/* ── 3-D scene container with 3 dice ────────────────────────── */}
         <div className="d4-dice__scene d4-dice__scene--triple">
           {displayDice.map((marked, i) => (
-            <div className="d4-dice__shape" key={i}>
+            <div className="d4-dice__shape" key={`die-${i}`}>
               <TetrahedralDie marked={marked === 1} rolling={rolling} />
             </div>
           ))}

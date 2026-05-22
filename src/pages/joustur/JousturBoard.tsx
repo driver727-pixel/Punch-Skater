@@ -640,7 +640,7 @@ export function JousturBoard() {
         {isMyTurn
           ? rollPending
             ? "🎯 Pick a rider to move"
-            : "🎲 Your turn — roll die"
+            : "🎲 Your turn — roll dice"
           : "⏳ Waiting for opponent…"}
       </div>
 

@@ -82,7 +82,7 @@ export function JousturRules() {
             the same time.
           </li>
           <li>
-            On your turn, first <strong>roll die</strong> (3 tetrahedral
+            On your turn, first <strong>roll dice</strong> (3 tetrahedral
             dice — each with 2 marked corners and 2 unmarked corners. Count
             marked corners facing up → 0–3 steps). A roll of 0 lets you
             move <strong>4 tiles</strong> instead of skipping your turn!
