@@ -30,6 +30,10 @@ import {
   STEALTH_ALCOVES,
   RIDER_COUNT,
   SHARD_COUNT,
+  PLAYER1_PATH,
+  PLAYER2_PATH,
+  SHARED_TILES,
+  getTileAtIndex,
   // Board utils
   isOnBoard,
   isSharedPosition,
@@ -83,13 +87,15 @@ function makeSupportSnapshot(cardId, crew = 'Punch Skaters') {
   };
 }
 
-function makePlayer(uid, riderCount = RIDER_COUNT, crew = 'Punch Skaters') {
+function makePlayer(uid, riderCount = RIDER_COUNT, crew = 'Punch Skaters', playerPath) {
   const riders = Array.from({ length: riderCount }, (_, i) =>
     makeRiderSnapshot(`r${i + 1}-${uid}`, 'boost', crew),
   );
   const support = makeSupportSnapshot(`sup-${uid}`, crew);
   const faction = resolveFactionForCrew(crew);
-  return buildInitialPlayerState(uid, riders, support, faction);
+  // Default: 'A' uses PLAYER1_PATH, 'B' (and others) use PLAYER2_PATH.
+  const resolvedPath = playerPath ?? (uid === 'A' ? PLAYER1_PATH : PLAYER2_PATH);
+  return buildInitialPlayerState(uid, riders, support, faction, resolvedPath);
 }
 
 function makeBoard(activeUid, rollResult = null) {
@@ -121,6 +127,48 @@ test('board constants are consistent', () => {
   assert.equal(PRIVATE_EXIT_MAX, 14);
   assert.equal(RIDER_COUNT, 6);
   assert.equal(SHARD_COUNT, 4);
+});
+
+test('PLAYER1_PATH and PLAYER2_PATH have 14 tiles each', () => {
+  assert.equal(PLAYER1_PATH.length, 14);
+  assert.equal(PLAYER2_PATH.length, 14);
+});
+
+test('PLAYER1_PATH matches official path: 4,3,2,1,7,8,9,10,11,12,13,14,6,5', () => {
+  assert.deepEqual([...PLAYER1_PATH], [4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5]);
+});
+
+test('PLAYER2_PATH matches official path: 18,17,16,15,7,8,9,10,11,12,13,14,20,19', () => {
+  assert.deepEqual([...PLAYER2_PATH], [18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19]);
+});
+
+test('shared tiles (indices 5-12) map to same tile numbers for both paths', () => {
+  for (let i = 5; i <= 12; i++) {
+    const p1Tile = getTileAtIndex(i, PLAYER1_PATH);
+    const p2Tile = getTileAtIndex(i, PLAYER2_PATH);
+    assert.equal(p1Tile, p2Tile, `Index ${i} should map to same tile for both paths`);
+  }
+});
+
+test('SHARED_TILES set contains tiles 7-14', () => {
+  assert.equal(SHARED_TILES.size, 8);
+  for (let t = 7; t <= 14; t++) {
+    assert.ok(SHARED_TILES.has(t), `tile ${t} should be in SHARED_TILES`);
+  }
+});
+
+test('getTileAtIndex returns correct tile for valid indices', () => {
+  assert.equal(getTileAtIndex(1, PLAYER1_PATH), 4);
+  assert.equal(getTileAtIndex(14, PLAYER1_PATH), 5);
+  assert.equal(getTileAtIndex(1, PLAYER2_PATH), 18);
+  assert.equal(getTileAtIndex(14, PLAYER2_PATH), 19);
+  assert.equal(getTileAtIndex(5, PLAYER1_PATH), 7);
+});
+
+test('getTileAtIndex returns null for out-of-range indices', () => {
+  assert.equal(getTileAtIndex(0, PLAYER1_PATH), null);
+  assert.equal(getTileAtIndex(15, PLAYER1_PATH), null);
+  assert.equal(getTileAtIndex(-1, PLAYER1_PATH), null);
 });
 
 test('isOnBoard covers 1–14 only', () => {

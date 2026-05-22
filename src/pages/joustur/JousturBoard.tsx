@@ -34,6 +34,10 @@ const PRIVATE_ENTRY_MAX = 4;
 const EXIT_POSITION = 15;
 type BoardSide = "top" | "bottom";
 
+/** Player tile paths matching server/lib/jousturRules.js */
+const PLAYER1_PATH = [4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5] as const;
+const PLAYER2_PATH = [18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19] as const;
+
 interface BoardPoint {
   x: number;
   y: number;
@@ -41,13 +45,53 @@ interface BoardPoint {
 
 // Percent-based centers for the eight numbered columns on the visual board.
 const BOARD_COLUMNS = [18.5, 27.6, 36.7, 45.8, 54.9, 64, 73.1, 82.2] as const;
-// Percent-based row centers: opponent private lane, shared lane, player private lane.
+// Percent-based row centers: P2 private lane (top), shared lane (middle), P1 private lane (bottom).
 const BOARD_ROWS: Record<BoardSide | "shared", number> = {
   top: 28.5,
   shared: 50.4,
   bottom: 72.3,
 };
 
+/**
+ * Map from board tile number to visual {x, y} position.
+ * P1 private entry tiles (4,3,2,1) = bottom row, columns 0-3
+ * P1 private exit tiles (6,5) = bottom row, columns 6-7
+ * P2 private entry tiles (18,17,16,15) = top row, columns 0-3
+ * P2 private exit tiles (20,19) = top row, columns 6-7
+ * Shared tiles (7-14) = middle row, columns 0-7
+ */
+const TILE_POSITIONS: Record<number, BoardPoint> = {
+  // P1 private entry (bottom row, left to right = tile 4,3,2,1)
+  4:  { x: BOARD_COLUMNS[0], y: BOARD_ROWS.bottom },
+  3:  { x: BOARD_COLUMNS[1], y: BOARD_ROWS.bottom },
+  2:  { x: BOARD_COLUMNS[2], y: BOARD_ROWS.bottom },
+  1:  { x: BOARD_COLUMNS[3], y: BOARD_ROWS.bottom },
+  // P1 private exit (bottom row, right side = tile 6,5)
+  6:  { x: BOARD_COLUMNS[6], y: BOARD_ROWS.bottom },
+  5:  { x: BOARD_COLUMNS[7], y: BOARD_ROWS.bottom },
+  // P2 private entry (top row, left to right = tile 18,17,16,15)
+  18: { x: BOARD_COLUMNS[0], y: BOARD_ROWS.top },
+  17: { x: BOARD_COLUMNS[1], y: BOARD_ROWS.top },
+  16: { x: BOARD_COLUMNS[2], y: BOARD_ROWS.top },
+  15: { x: BOARD_COLUMNS[3], y: BOARD_ROWS.top },
+  // P2 private exit (top row, right side = tile 20,19)
+  20: { x: BOARD_COLUMNS[6], y: BOARD_ROWS.top },
+  19: { x: BOARD_COLUMNS[7], y: BOARD_ROWS.top },
+  // Shared tiles (middle row, left to right = tiles 7-14)
+  7:  { x: BOARD_COLUMNS[0], y: BOARD_ROWS.shared },
+  8:  { x: BOARD_COLUMNS[1], y: BOARD_ROWS.shared },
+  9:  { x: BOARD_COLUMNS[2], y: BOARD_ROWS.shared },
+  10: { x: BOARD_COLUMNS[3], y: BOARD_ROWS.shared },
+  11: { x: BOARD_COLUMNS[4], y: BOARD_ROWS.shared },
+  12: { x: BOARD_COLUMNS[5], y: BOARD_ROWS.shared },
+  13: { x: BOARD_COLUMNS[6], y: BOARD_ROWS.shared },
+  14: { x: BOARD_COLUMNS[7], y: BOARD_ROWS.shared },
+};
+
+/**
+ * Get the visual board point for a rider at a given path index.
+ * Uses the player's tile path to look up the visual position.
+ */
 function getBoardPoint(position: number, side: BoardSide): BoardPoint {
   if (position === 0) {
     return { x: 7.5, y: BOARD_ROWS[side] };
@@ -55,14 +99,10 @@ function getBoardPoint(position: number, side: BoardSide): BoardPoint {
   if (position === EXIT_POSITION) {
     return { x: 92.5, y: BOARD_ROWS[side] };
   }
-  if (position >= 1 && position <= 4) {
-    return { x: BOARD_COLUMNS[position - 1], y: BOARD_ROWS[side] };
-  }
-  if (position >= 5 && position <= 12) {
-    return { x: BOARD_COLUMNS[position - 5], y: BOARD_ROWS.shared };
-  }
-  if (position >= 13 && position <= 14) {
-    return { x: BOARD_COLUMNS[position - 7], y: BOARD_ROWS[side] };
+  const path = side === "bottom" ? PLAYER1_PATH : PLAYER2_PATH;
+  if (position >= 1 && position <= 14) {
+    const tile = path[position - 1];
+    return TILE_POSITIONS[tile] ?? { x: 50, y: BOARD_ROWS[side] };
   }
   return { x: 50, y: BOARD_ROWS[side] };
 }
@@ -91,11 +131,14 @@ const POS_LABELS: Record<number, string> = {
   15: "Scored",
 };
 
-function posLabel(pos: number): string {
+function posLabel(pos: number, side: BoardSide = "bottom"): string {
   if (POS_LABELS[pos]) return POS_LABELS[pos];
-  if (pos >= 1 && pos <= 4) return `Entry ${pos}`;
-  if (pos >= 5 && pos <= 12) return `Shared ${pos}${STEALTH_ALCOVES.has(pos) ? " ⚡" : ""}`;
-  if (pos >= 13 && pos <= 14) return `Exit ${pos}${STEALTH_ALCOVES.has(pos) ? " ⚡" : ""}`;
+  const path = side === "bottom" ? PLAYER1_PATH : PLAYER2_PATH;
+  if (pos >= 1 && pos <= 14) {
+    const tile = path[pos - 1];
+    const zone = pos <= 4 ? "Entry" : pos <= 12 ? "Shared" : "Exit";
+    return `${zone} (tile ${tile})${STEALTH_ALCOVES.has(pos) ? " ⚡" : ""}`;
+  }
   return `${pos}`;
 }
 
@@ -334,7 +377,7 @@ function PlayerPanel({
                 {snapshot?.name ?? rider.cardId}
               </span>
               <span className="joustur-board__rider-pos">
-                {posLabel(rider.position)}
+                {posLabel(rider.position, isMe ? "bottom" : "top")}
               </span>
               {isLegal && isMe && isActive && (
                 <button
