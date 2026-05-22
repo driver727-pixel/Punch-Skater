@@ -40,7 +40,7 @@ const FACTIONS = [
     faction: "Alley Wraiths",
     crew: "The Asclepians",
     passive: "cutline",
-    support: "sideRoute — teleport one of your entry-zone riders (pos 1–4) directly to pos 13",
+    support: "sideRoute — teleport one of your entry-zone riders directly to the exit zone",
   },
 ];
 
@@ -102,18 +102,15 @@ export function JousturRules() {
         <h2>Board layout</h2>
         <div className="joustur-rules__board-diagram">
           <div className="joustur-rules__lane joustur-rules__lane--private">
-            <p>Private entry: 1–4</p>
-            <p className="joustur-rules__lane-note">No captures · Stealth Alcove at 4</p>
+            <p>Player 1 path: tiles 4→3→2→1→(shared)→6→5</p>
+            <p>Player 2 path: tiles 18→17→16→15→(shared)→20→19</p>
+            <p className="joustur-rules__lane-note">Entry &amp; exit tiles are private — no captures</p>
           </div>
           <div className="joustur-rules__lane joustur-rules__lane--shared">
-            <p>Shared lane: 5–12</p>
+            <p>Shared lane: tiles 7→8→9→10→11→12→13→14</p>
             <p className="joustur-rules__lane-note">
-              Captures apply · Stealth Alcoves at 6, 8, 12
+              Both players share these tiles — captures apply · Stealth Alcoves at path indices 6, 8, 12
             </p>
-          </div>
-          <div className="joustur-rules__lane joustur-rules__lane--private">
-            <p>Private exit: 13–14</p>
-            <p className="joustur-rules__lane-note">No captures · Stealth Alcove at 14</p>
           </div>
         </div>
 
@@ -121,7 +118,7 @@ export function JousturRules() {
         <ul className="joustur-rules__list">
           <li>Landing on a Stealth Alcove grants you an <strong>extra turn</strong>.</li>
           <li>
-            Stealth Alcoves in the shared lane (6, 8, 12) also make your rider{" "}
+            Stealth Alcoves in the shared lane also make your rider{" "}
             <strong>safe from capture</strong> — your opponent cannot land there
             while you occupy it.
           </li>
@@ -129,8 +126,8 @@ export function JousturRules() {
 
         <h3>Captures</h3>
         <ul className="joustur-rules__list">
-          <li>Captures only happen in the <strong>shared lane</strong> (pos 5–12).</li>
-          <li>Landing on an opponent's rider sends it back to off-board (pos 0).</li>
+          <li>Captures only happen in the <strong>shared lane</strong> (tiles 7–14).</li>
+          <li>Landing on an opponent's rider sends it back to off-board.</li>
           <li>Riders on Stealth Alcoves are safe. Riders protected by smoke screen are safe.</li>
         </ul>
       </section>

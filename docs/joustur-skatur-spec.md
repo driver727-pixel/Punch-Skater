@@ -33,24 +33,31 @@ faction identity; each rider's individual faction is derived from its own crew.
 ## Board layout
 
 ```
-Position  0      : off-board (not yet entered)
-Positions 1–4    : private entry    [private — no captures here]
-Positions 5–12   : shared lane      [shared — captures apply]
-Positions 13–14  : private exit     [private — no captures here]
-Position  15     : exited / scored
+Each player traverses their own ordered path of 14 tiles (1-based path index).
+Path index 0 = off-board (not yet entered / captured)
+Path index 15 = exited / scored
+
+Player 1 (challenger) tile path: 4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5
+Player 2 (defender) tile path:   18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19
+
+Path indices 1–4   : private entry    [private — no captures here]
+Path indices 5–12  : shared lane      [shared — captures apply, tiles 7–14]
+Path indices 13–14 : private exit     [private — no captures here]
 ```
 
-**Total on-board positions:** 14 (1–14).
+**Total on-board positions:** 14 (path indices 1–14).
+**Total board tiles:** 20 (tiles 1–20).
+Shared tiles (7–14) are traversed by both players.
 
-### Stealth Alcoves — positions 4, 6, 8, 12, 14
+### Stealth Alcoves — path indices 4, 6, 8, 12, 14
 
-| Position | Zone              | Effect                              |
-|----------|-------------------|-------------------------------------|
-| 4        | Private entry     | Extra turn (not capturable anyway)  |
-| 6        | Shared lane       | Safe from capture + extra turn      |
-| 8        | Shared lane       | Safe from capture + extra turn      |
-| 12       | Shared lane       | Safe from capture + extra turn      |
-| 14       | Private exit      | Extra turn (not capturable anyway)  |
+| Path Index | Zone              | Effect                              |
+|------------|-------------------|-------------------------------------|
+| 4          | Private entry     | Extra turn (not capturable anyway)  |
+| 6          | Shared lane       | Safe from capture + extra turn      |
+| 8          | Shared lane       | Safe from capture + extra turn      |
+| 12         | Shared lane       | Safe from capture + extra turn      |
+| 14         | Private exit      | Extra turn (not capturable anyway)  |
 
 ---
 
@@ -78,10 +85,12 @@ document before being returned to the active player.
 
 - Exactly 6 rider cards + 1 support card per lineup.
 - No duplicate card IDs within a lineup (support cannot duplicate a rider).
-- Captures only possible in the shared lane (positions 5–12).
-- Private lanes (1–4 and 13–14) are always safe.
+- Captures only possible in the shared lane (path indices 5–12, tiles 7–14).
+- Captures occur when an active player's rider lands on a shared tile occupied
+  by an opponent's rider (same tile number across different paths).
+- Private lanes (indices 1–4 and 13–14) are always safe.
 - A rider on a Stealth Alcove **cannot be captured** (shared-zone alcoves).
-- **Exact roll required to exit** — a rider must land on position 15 exactly
+- **Exact roll required to exit** — a rider must land on path index 15 exactly
   (overshoot = illegal).
 - Roll 0 = forced pass (no legal moves).
 - **Support card** may be activated **once per match**, as the player's sole

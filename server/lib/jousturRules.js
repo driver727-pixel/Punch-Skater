@@ -4,14 +4,18 @@
  * This module has NO I/O or side-effects.  Every function is a pure
  * transformation of data, making it trivially testable.
  *
- * Board layout:
- *   0         = off-board (not yet entered / captured)
- *   1–4       = private entry  (no captures)
- *   5–12      = shared lane    (captures apply here)
- *   13–14     = private exit   (no captures)
- *   15        = exited / scored
+ * Board layout (tile-path based):
+ *   Each player traverses their own ordered path of 14 tiles.
+ *   A rider's "position" is their 1-based index along the path (1–14).
+ *   0 = off-board (not yet entered / captured), 15 = exited / scored.
  *
- * Stealth Alcoves: 4, 6, 8, 12, 14
+ *   Player 1 (challenger) path tiles: 4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5
+ *   Player 2 (defender) path tiles:   18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19
+ *
+ *   Shared tiles: 7–14 (path indices 5–12 for both players)
+ *   Private tiles: indices 1–4 (entry) and 13–14 (exit)
+ *
+ * Stealth Alcoves (by path index): 4, 6, 8, 12, 14
  *   – Shared-zone alcoves (6, 8, 12): safe from capture + extra turn
  *   – Private alcoves (4, 14): extra turn only (already uncapturable)
  */
@@ -31,12 +35,36 @@ export const RIDER_COUNT = 6;
 export const SHARD_COUNT = 4; // binary dice per roll
 const RIDER_NUMBER_OFFSET = 1;
 
+/**
+ * Ordered tile paths for each player side.
+ * Index 0 = path position 1, Index 13 = path position 14.
+ * Player 1 starts at tile 4 (path index 1), exits after tile 5 (path index 14).
+ * Player 2 starts at tile 18 (path index 1), exits after tile 19 (path index 14).
+ */
+export const PLAYER1_PATH = Object.freeze([4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5]);
+export const PLAYER2_PATH = Object.freeze([18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19]);
+
+/** Set of shared tile numbers — captures only possible on these tiles. */
+export const SHARED_TILES = Object.freeze(new Set([7, 8, 9, 10, 11, 12, 13, 14]));
+
+/**
+ * Get the tile number for a given path index and player path.
+ * @param {number} pathIndex  1-based path index (1–14).
+ * @param {number[]} path     PLAYER1_PATH or PLAYER2_PATH.
+ * @returns {number|null}     Tile number, or null if out of range.
+ */
+export function getTileAtIndex(pathIndex, path) {
+  if (pathIndex < 1 || pathIndex > 14) return null;
+  return path[pathIndex - 1];
+}
+
 // ── Board utilities ───────────────────────────────────────────────────────────
 
 export function isOnBoard(position) {
   return position >= PRIVATE_ENTRY_MIN && position <= PRIVATE_EXIT_MAX;
 }
 
+/** Check if a path index is in the shared zone (indices 5–12). */
 export function isSharedPosition(position) {
   return position >= SHARED_MIN && position <= SHARED_MAX;
 }
@@ -45,6 +73,7 @@ export function isPrivatePosition(position) {
   return isOnBoard(position) && !isSharedPosition(position);
 }
 
+/** Check if a path index is a Stealth Alcove (indices 4, 6, 8, 12, 14). */
 export function isStealthAlcove(position) {
   return STEALTH_ALCOVES.has(position);
 }
@@ -252,8 +281,10 @@ function buildRiderRuntime(snapshot) {
  * @param {object[]} lineup  Array of JousturRiderSnapshot objects.
  * @param {object}  support  JousturSupportSnapshot.
  * @param {string}  faction  Resolved JousturFaction key.
+ * @param {number[]} playerPath  PLAYER1_PATH or PLAYER2_PATH.
+ *   Defaults to PLAYER1_PATH — callers MUST pass PLAYER2_PATH for the defender.
  */
-export function buildInitialPlayerState(uid, lineup, support, faction) {
+export function buildInitialPlayerState(uid, lineup, support, faction, playerPath = PLAYER1_PATH) {
   return {
     uid,
     faction,
@@ -263,6 +294,7 @@ export function buildInitialPlayerState(uid, lineup, support, faction) {
     riders: lineup.map(buildRiderRuntime),
     supportRuntime: { activated: false },
     scoredCount: 0,
+    playerPath,
   };
 }
 
@@ -288,6 +320,9 @@ export function buildInitialBoardState(challengerUid) {
  * Returns an empty array when roll is 0 (player must pass) or when no
  * rider can legally move.
  *
+ * Captures are determined by tile occupancy: two riders from opposing paths
+ * can only collide when they occupy the same shared tile (tiles 7–14).
+ *
  * @param {object} boardState
  * @param {object} activePlayer   JousturPlayerState
  * @param {object} opponentPlayer JousturPlayerState
@@ -298,6 +333,8 @@ export function getLegalMoves(boardState, activePlayer, opponentPlayer) {
   if (typeof rollResult !== 'number' || rollResult === 0) return [];
 
   const opponentProtected = boardState.smokeScreenUid === opponentPlayer.uid;
+  const activePath = activePlayer.playerPath || PLAYER1_PATH;
+  const opponentPath = opponentPlayer.playerPath || PLAYER2_PATH;
   const moves = [];
 
   for (const rider of activePlayer.riders) {
@@ -329,14 +366,18 @@ export function getLegalMoves(boardState, activePlayer, opponentPlayer) {
     );
     if (blockedByOwn) continue;
 
-    // Captures — only valid in the shared lane.
+    // Captures — only valid in the shared lane (path indices 5–12).
+    // Captures are based on matching TILE numbers, not path indices.
     let capturedCardId = null;
     let wouldCapture = false;
 
     if (isSharedPosition(toPos)) {
-      const target = opponentPlayer.riders.find(
-        (r) => !r.isScored && r.position === toPos,
-      );
+      const activeTile = getTileAtIndex(toPos, activePath);
+      const target = opponentPlayer.riders.find((r) => {
+        if (r.isScored || !isSharedPosition(r.position)) return false;
+        const oppTile = getTileAtIndex(r.position, opponentPath);
+        return oppTile === activeTile;
+      });
       if (target) {
         // Cannot capture on a Stealth Alcove or when opponent has smoke screen.
         if (isStealthAlcove(toPos) || opponentProtected) continue;
@@ -506,6 +547,8 @@ export function buildSoloBotPlayerState(playerState, botUid) {
   const uidPrefix = String(botUid ?? 'joustur-solo-bot');
 
   clone.uid = uidPrefix;
+  // Bot always takes the Player 2 (defender) path.
+  clone.playerPath = PLAYER2_PATH;
   clone.lineup = clone.lineup.map((snapshot, index) => {
     const riderNumber = index + RIDER_NUMBER_OFFSET;
     const nextCardId = `${uidPrefix}-rider-${riderNumber}-${snapshot.cardId}`;
@@ -643,10 +686,16 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
         // Guards match getLegalMoves: stealth-alcove riders and smoke-screened
         // opponents are immune to capture even if applyMove is called without
         // prior getLegalMoves validation.
+        // Captures are based on matching TILE numbers across paths.
         if (isSharedPosition(toPos)) {
-          const oppRider = newOpp.riders.find(
-            (r) => !r.isScored && r.position === toPos,
-          );
+          const activePath = newActive.playerPath || PLAYER1_PATH;
+          const opponentPath = newOpp.playerPath || PLAYER2_PATH;
+          const activeTile = getTileAtIndex(toPos, activePath);
+          const oppRider = newOpp.riders.find((r) => {
+            if (r.isScored || !isSharedPosition(r.position)) return false;
+            const oppTile = getTileAtIndex(r.position, opponentPath);
+            return oppTile === activeTile;
+          });
           const opponentProtected = newBoard.smokeScreenUid === newOpp.uid;
           if (oppRider && !isStealthAlcove(toPos) && !opponentProtected) {
             capturedCardId = oppRider.cardId;

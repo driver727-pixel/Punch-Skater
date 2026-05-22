@@ -33,6 +33,8 @@ import {
   rollUsbShards,
   createSeededRng,
   chooseAutomatedMove,
+  PLAYER1_PATH,
+  PLAYER2_PATH,
   buildSoloBotPlayerState,
 } from '../lib/jousturRules.js';
 
@@ -164,16 +166,16 @@ async function buildMatchPlayerStates(db, challengerUid, defenderUid, challenger
     fetchPlayerCards(db, defenderUid, defenderAllIds),
   ]);
 
-  function buildState(uid, lineup, cards) {
+  function buildState(uid, lineup, cards, playerPath) {
     const riderSnapshots = lineup.riderCardIds.map((id) => riderSnapshotFromCard(cards[id]));
     const supportSnap    = supportSnapshotFromCard(cards[lineup.supportCardId]);
     const faction        = resolveFactionForCrew(cards[lineup.supportCardId].identity?.crew ?? '');
-    return buildInitialPlayerState(uid, riderSnapshots, supportSnap, faction);
+    return buildInitialPlayerState(uid, riderSnapshots, supportSnap, faction, playerPath);
   }
 
   return {
-    challengerState: buildState(challengerUid, challengerLineup, challengerCards),
-    defenderState:   buildState(defenderUid,   defenderLineup,   defenderCards),
+    challengerState: buildState(challengerUid, challengerLineup, challengerCards, PLAYER1_PATH),
+    defenderState:   buildState(defenderUid,   defenderLineup,   defenderCards, PLAYER2_PATH),
   };
 }
 
@@ -183,7 +185,7 @@ async function buildPlayerStateFromLineup(db, uid, lineup) {
   const riderSnapshots = lineup.riderCardIds.map((id) => riderSnapshotFromCard(cards[id]));
   const supportSnap = supportSnapshotFromCard(cards[lineup.supportCardId]);
   const faction = resolveFactionForCrew(cards[lineup.supportCardId].identity?.crew ?? '');
-  return buildInitialPlayerState(uid, riderSnapshots, supportSnap, faction);
+  return buildInitialPlayerState(uid, riderSnapshots, supportSnap, faction, PLAYER1_PATH);
 }
 
 function applyMatchRewards(tx, db, match, FieldValue) {

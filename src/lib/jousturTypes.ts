@@ -5,14 +5,18 @@
  * server/lib/jousturRules.js exactly so the client can consume match state
  * without any casting.
  *
- * Board layout reminder:
- *   0         = off-board (not yet entered)
- *   1–4       = private entry
- *   5–12      = shared lane (captures here only)
- *   13–14     = private exit
- *   15        = exited / scored
+ * Board layout (tile-path based):
+ *   Each player traverses their own ordered path of 14 tiles.
+ *   A rider's "position" is their 1-based index along the path (1–14).
+ *   0 = off-board (not yet entered), 15 = exited / scored.
  *
- * Stealth Alcoves: 4, 6, 8, 12, 14
+ *   Player 1 path tiles: 4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5
+ *   Player 2 path tiles: 18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19
+ *
+ *   Shared zone: path indices 5–12 (tiles 7–14 for both paths)
+ *   Private zones: indices 1–4 (entry) and 13–14 (exit)
+ *
+ * Stealth Alcoves (by path index): 4, 6, 8, 12, 14
  */
 
 // ── Enums / union types ───────────────────────────────────────────────────────
@@ -137,6 +141,12 @@ export interface JousturPlayerState {
   supportRuntime: JousturSupportRuntimeState;
   /** How many riders have been scored (exited at position 15). */
   scoredCount: number;
+  /**
+   * Ordered tile path for this player.
+   * Player 1 (challenger): [4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5]
+   * Player 2 (defender):   [18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19]
+   */
+  playerPath: number[];
 }
 
 export interface JousturBoardState {
