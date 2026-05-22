@@ -15218,6 +15218,24 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
 }
 
+/* ── Mobile: race track fills the viewport width ── */
+@media (max-width: 768px) {
+  .race-track-page {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .race-track-canvas {
+    border-radius: 0;
+  }
+  .race-track-hud {
+    padding: 0 0.75rem;
+  }
+  .race-hud-row {
+    grid-template-columns: 110px 1fr 68px;
+    gap: 0.4rem;
+  }
+}
+
 /* ── District picker ── */
 .race-district-picker {
   display: flex;
