@@ -44,39 +44,39 @@ interface BoardPoint {
 }
 
 // Percent-based centers for the eight numbered columns on the visual board.
-const BOARD_COLUMNS = [18.5, 27.6, 36.7, 45.8, 54.9, 64, 73.1, 82.2] as const;
-// Percent-based row centers: P2 private lane (top), shared lane (middle), P1 private lane (bottom).
+const BOARD_COLUMNS = [30.0, 35.7, 41.4, 47.1, 52.9, 58.6, 64.3, 70.0] as const;
+// Percent-based row centers: P1 private lane (top), shared lane (middle), P2 private lane (bottom).
 const BOARD_ROWS: Record<BoardSide | "shared", number> = {
-  top: 28.5,
-  shared: 50.4,
-  bottom: 72.3,
+  top: 37.0,
+  shared: 47.0,
+  bottom: 59.5,
 };
 
 /**
  * Map from board tile number to visual {x, y} position.
- * P1 private entry tiles (4,3,2,1) = bottom row, columns 0-3
- * P1 private exit tiles (6,5) = bottom row, columns 6-7
- * P2 private entry tiles (18,17,16,15) = top row, columns 0-3
- * P2 private exit tiles (20,19) = top row, columns 6-7
+ * P1 private entry tiles (1,2,3,4) = top row, columns 0-3
+ * P1 private exit tiles (5,6) = top row, columns 6-7
+ * P2 private entry tiles (15,16,17,18) = bottom row, columns 0-3
+ * P2 private exit tiles (19,20) = bottom row, columns 6-7
  * Shared tiles (7-14) = middle row, columns 0-7
  */
 const TILE_POSITIONS: Record<number, BoardPoint> = {
-  // P1 private entry (bottom row, left to right = tile 4,3,2,1)
-  4:  { x: BOARD_COLUMNS[0], y: BOARD_ROWS.bottom },
-  3:  { x: BOARD_COLUMNS[1], y: BOARD_ROWS.bottom },
-  2:  { x: BOARD_COLUMNS[2], y: BOARD_ROWS.bottom },
-  1:  { x: BOARD_COLUMNS[3], y: BOARD_ROWS.bottom },
-  // P1 private exit (bottom row, right side = tile 6,5)
-  6:  { x: BOARD_COLUMNS[6], y: BOARD_ROWS.bottom },
-  5:  { x: BOARD_COLUMNS[7], y: BOARD_ROWS.bottom },
-  // P2 private entry (top row, left to right = tile 18,17,16,15)
-  18: { x: BOARD_COLUMNS[0], y: BOARD_ROWS.top },
-  17: { x: BOARD_COLUMNS[1], y: BOARD_ROWS.top },
-  16: { x: BOARD_COLUMNS[2], y: BOARD_ROWS.top },
-  15: { x: BOARD_COLUMNS[3], y: BOARD_ROWS.top },
-  // P2 private exit (top row, right side = tile 20,19)
-  20: { x: BOARD_COLUMNS[6], y: BOARD_ROWS.top },
-  19: { x: BOARD_COLUMNS[7], y: BOARD_ROWS.top },
+  // P1 private entry (top row, left to right = tile 1,2,3,4)
+  1:  { x: BOARD_COLUMNS[0], y: BOARD_ROWS.top },
+  2:  { x: BOARD_COLUMNS[1], y: BOARD_ROWS.top },
+  3:  { x: BOARD_COLUMNS[2], y: BOARD_ROWS.top },
+  4:  { x: BOARD_COLUMNS[3], y: BOARD_ROWS.top },
+  // P1 private exit (top row, right side = tile 5,6)
+  5:  { x: BOARD_COLUMNS[6], y: BOARD_ROWS.top },
+  6:  { x: BOARD_COLUMNS[7], y: BOARD_ROWS.top },
+  // P2 private entry (bottom row, left to right = tile 15,16,17,18)
+  15: { x: BOARD_COLUMNS[0], y: BOARD_ROWS.bottom },
+  16: { x: BOARD_COLUMNS[1], y: BOARD_ROWS.bottom },
+  17: { x: BOARD_COLUMNS[2], y: BOARD_ROWS.bottom },
+  18: { x: BOARD_COLUMNS[3], y: BOARD_ROWS.bottom },
+  // P2 private exit (bottom row, right side = tile 19,20)
+  19: { x: BOARD_COLUMNS[6], y: BOARD_ROWS.bottom },
+  20: { x: BOARD_COLUMNS[7], y: BOARD_ROWS.bottom },
   // Shared tiles (middle row, left to right = tiles 7-14)
   7:  { x: BOARD_COLUMNS[0], y: BOARD_ROWS.shared },
   8:  { x: BOARD_COLUMNS[1], y: BOARD_ROWS.shared },
@@ -91,20 +91,25 @@ const TILE_POSITIONS: Record<number, BoardPoint> = {
 /**
  * Get the visual board point for a rider at a given path index.
  * Uses the player's tile path to look up the visual position.
+ * Note: Player 1 (side="bottom" in UI) uses tiles 1-6 which are visually
+ * on the TOP row of the board image. Player 2 (side="top" in UI) uses tiles
+ * 15-20 which are on the BOTTOM row.
  */
 function getBoardPoint(position: number, side: BoardSide): BoardPoint {
+  // Player 1 private lane is visually at the top; Player 2 at the bottom.
+  const laneY = side === "bottom" ? BOARD_ROWS.top : BOARD_ROWS.bottom;
   if (position === 0) {
-    return { x: 7.5, y: BOARD_ROWS[side] };
+    return { x: 7.5, y: laneY };
   }
   if (position === EXIT_POSITION) {
-    return { x: 92.5, y: BOARD_ROWS[side] };
+    return { x: 92.5, y: laneY };
   }
   const path = side === "bottom" ? PLAYER1_PATH : PLAYER2_PATH;
   if (position >= 1 && position <= 14) {
     const tile = path[position - 1];
-    return TILE_POSITIONS[tile] ?? { x: 50, y: BOARD_ROWS[side] };
+    return TILE_POSITIONS[tile] ?? { x: 50, y: laneY };
   }
-  return { x: 50, y: BOARD_ROWS[side] };
+  return { x: 50, y: laneY };
 }
 
 function getStackOffset(index: number, total: number): BoardPoint {
