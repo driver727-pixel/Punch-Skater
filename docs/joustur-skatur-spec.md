@@ -34,15 +34,15 @@ faction identity; each rider's individual faction is derived from its own crew.
 
 ```
 Each player traverses their own ordered path of 14 tiles (1-based path index).
-Path index 0 = off-board (not yet entered / captured)
+Path index 0 = off-board (not yet entered / bumped)
 Path index 15 = exited / scored
 
 Player 1 (challenger) tile path: 4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5
 Player 2 (defender) tile path:   18, 17, 16, 15, 7, 8, 9, 10, 11, 12, 13, 14, 20, 19
 
-Path indices 1–4   : private entry    [private — no captures here]
-Path indices 5–12  : shared lane      [shared — captures apply, tiles 7–14]
-Path indices 13–14 : private exit     [private — no captures here]
+Path indices 1–4   : private entry    [private — no clashes here]
+Path indices 5–12  : shared lane      [shared — joust clashes apply, tiles 7–14]
+Path indices 13–14 : private exit     [private — no clashes here]
 ```
 
 **Total on-board positions:** 14 (path indices 1–14).
@@ -54,9 +54,9 @@ Shared tiles (7–14) are traversed by both players.
 | Path Index | Zone              | Effect                              |
 |------------|-------------------|-------------------------------------|
 | 4          | Private entry     | Extra turn (not capturable anyway)  |
-| 6          | Shared lane       | Safe from capture + extra turn      |
-| 8          | Shared lane       | Safe from capture + extra turn      |
-| 12         | Shared lane       | Safe from capture + extra turn      |
+| 6          | Shared lane       | Safe from clashes + extra turn      |
+| 8          | Shared lane       | Safe from clashes + extra turn      |
+| 12         | Shared lane       | Safe from clashes + extra turn      |
 | 14         | Private exit      | Extra turn (not capturable anyway)  |
 
 ---
@@ -85,11 +85,19 @@ document before being returned to the active player.
 
 - Exactly 6 rider cards + 1 support card per lineup.
 - No duplicate card IDs within a lineup (support cannot duplicate a rider).
-- Captures only possible in the shared lane (path indices 5–12, tiles 7–14).
-- Captures occur when an active player's rider lands on a shared tile occupied
-  by an opponent's rider (same tile number across different paths).
+- Joust clashes only happen in the shared lane (path indices 5–12, tiles 7–14).
+- Landing on an occupied shared tile starts a hidden **Joust Clash** instead of
+  immediately bumping the opponent.
+- Both riders secretly choose one stance: **charge**, **guard**, or **feint**.
+- Stance triangle: **charge > feint**, **guard > charge**, **feint > guard**.
+- A rider gains **+1 clash score** when they pick the stance favoured by their
+  Joustur trait (`boost/strike/surge → charge`, `guard/anchor → guard`,
+  `feint/slip/echo → feint`).
+- Higher clash score wins the tile; ties favour the defender already occupying
+  the tile.
+- Clash loser is bumped to path index 0 and marked captured.
 - Private lanes (indices 1–4 and 13–14) are always safe.
-- A rider on a Stealth Alcove **cannot be captured** (shared-zone alcoves).
+- A rider on a Stealth Alcove **cannot be challenged** (shared-zone alcoves).
 - **Exact roll required to exit** — a rider must land on path index 15 exactly
   (overshoot = illegal).
 - Roll 0 = forced pass (no legal moves).
@@ -127,9 +135,9 @@ Resolved deterministically per rider card via:
 
 | Faction           | Effect key    | Behaviour (MVP)                                                |
 |-------------------|---------------|----------------------------------------------------------------|
-| Rust Kids         | recoveryPing  | Recover first captured rider from pos 0 → pos 1               |
+| Rust Kids         | recoveryPing  | Recover first bumped rider from pos 0 → pos 1                 |
 | Neon Saints       | crowdRoar     | Grant an extra turn (same player moves again)                  |
-| Signal Ghosts     | smokeScreen   | Own riders immune to capture for opponent's next turn          |
+| Signal Ghosts     | smokeScreen   | Own riders cannot be challenged for opponent's next turn       |
 | Chrome Syndicate  | reroll        | Regenerate USB Shards; extra turn to act on the new roll       |
 | Voltage Vultures  | overclock     | +1 to current roll (may reach 5 for an exit); extra turn       |
 | Alley Wraiths     | sideRoute     | Teleport one entry-zone rider (pos 1–4) directly to pos 13     |

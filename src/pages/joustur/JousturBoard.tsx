@@ -16,8 +16,11 @@ import {
   getJousturMatch,
   rollJousturShards,
   submitJousturMove,
+  submitJousturClashChoice,
 } from "../../services/joustur";
 import type {
+  JousturClashStance,
+  JousturClashState,
   JousturMatch,
   JousturLegalMove,
   JousturPlayerState,
@@ -33,6 +36,15 @@ const PRIVATE_ENTRY_MIN = 1;
 const PRIVATE_ENTRY_MAX = 4;
 const EXIT_POSITION = 15;
 type BoardSide = "top" | "bottom";
+const CLASH_STANCE_OPTIONS: Array<{
+  stance: JousturClashStance;
+  label: string;
+  desc: string;
+}> = [
+  { stance: "charge", label: "Charge", desc: "Beats Feint" },
+  { stance: "guard", label: "Guard", desc: "Beats Charge" },
+  { stance: "feint", label: "Feint", desc: "Beats Guard" },
+];
 
 /** Player tile paths matching server/lib/jousturRules.js */
 const PLAYER1_PATH = [4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5] as const;
@@ -110,6 +122,18 @@ function getBoardPoint(position: number, side: BoardSide): BoardPoint {
     return TILE_POSITIONS[tile] ?? { x: 50, y: laneY };
   }
   return { x: 50, y: laneY };
+}
+
+function getBoardTile(position: number, side: BoardSide): number | null {
+  if (position < 1 || position > 14) return null;
+  const path = side === "bottom" ? PLAYER1_PATH : PLAYER2_PATH;
+  return path[position - 1] ?? null;
+}
+
+function getBoardStackKey(position: number, side: BoardSide): string {
+  const tile = getBoardTile(position, side);
+  if (tile !== null) return `tile:${tile}`;
+  return `${side}:${position}`;
 }
 
 function getStackOffset(index: number, total: number): BoardPoint {
@@ -206,6 +230,7 @@ function RiderCardPiece({
 function VisualBoard({
   myState,
   oppState,
+  clash,
   myLegalMoves,
   isMyTurn,
   rollPending,
@@ -214,6 +239,7 @@ function VisualBoard({
 }: {
   myState: JousturPlayerState;
   oppState: JousturPlayerState;
+  clash: JousturClashState | null;
   myLegalMoves: JousturLegalMove[];
   isMyTurn: boolean;
   rollPending: boolean;
@@ -235,7 +261,7 @@ function VisualBoard({
 
   for (const player of players) {
     for (const rider of player.state.riders) {
-      const key = `${player.side}:${rider.position}`;
+      const key = getBoardStackKey(rider.position, player.side);
       stackCounts.set(key, (stackCounts.get(key) ?? 0) + 1);
     }
   }
@@ -263,6 +289,18 @@ function VisualBoard({
           );
         })}
 
+        {clash && TILE_POSITIONS[clash.tile] && (
+          <span
+            className="joustur-visual-board__clash"
+            style={{
+              left: `${TILE_POSITIONS[clash.tile].x}%`,
+              top: `${TILE_POSITIONS[clash.tile].y}%`,
+            }}
+            aria-label={`Active joust clash on tile ${clash.tile}`}
+            title={`Joust clash on tile ${clash.tile}`}
+          />
+        )}
+
         {isMyTurn && rollPending && myLegalMoves.map((move) => {
           const target = getBoardPoint(move.toPosition, "bottom");
           return (
@@ -274,14 +312,14 @@ function VisualBoard({
               onClick={() => onSelectRider(move.cardId)}
               disabled={moving}
               aria-label={`Move ${move.cardId} to ${posLabel(move.toPosition)}`}
-              title={`Move to ${posLabel(move.toPosition)}${move.wouldCapture ? " and capture" : ""}`}
+              title={`Move to ${posLabel(move.toPosition)}${move.wouldCapture ? " and start a joust clash" : ""}`}
             />
           );
         })}
 
         {players.flatMap((player) =>
           player.state.riders.map((rider) => {
-            const key = `${player.side}:${rider.position}`;
+            const key = getBoardStackKey(rider.position, player.side);
             const stackIndex = stackIndexes.get(key) ?? 0;
             stackIndexes.set(key, stackIndex + 1);
             const stackTotal = stackCounts.get(key) ?? 1;
@@ -290,11 +328,15 @@ function VisualBoard({
             const legalMove = player.side === "bottom" ? legalMoveByCardId.get(rider.cardId) : undefined;
             const isLegal = Boolean(legalMove);
             const snapshot = snapshotByCardId.get(rider.cardId);
+            const isClashing = Boolean(
+              clash &&
+              (clash.attackerCardId === rider.cardId || clash.defenderCardId === rider.cardId),
+            );
             return (
               <button
                 key={`${player.side}-${rider.cardId}`}
                 type="button"
-                className={`joustur-board-piece joustur-board-piece--${player.side}${rider.isScored ? " joustur-board-piece--scored" : ""}${rider.isCaptured ? " joustur-board-piece--captured" : ""}${isLegal ? " joustur-board-piece--legal" : ""}`}
+                className={`joustur-board-piece joustur-board-piece--${player.side}${rider.isScored ? " joustur-board-piece--scored" : ""}${rider.isCaptured ? " joustur-board-piece--captured" : ""}${isLegal ? " joustur-board-piece--legal" : ""}${isClashing ? " joustur-board-piece--clashing" : ""}`}
                 style={{
                   left: `${point.x + offset.x}%`,
                   top: `${point.y + offset.y}%`,
@@ -314,6 +356,7 @@ function VisualBoard({
         <span><i className="joustur-visual-board__legend-dot" aria-hidden="true" /> Snap tile center</span>
         <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--alcove" aria-hidden="true" /> Stealth Alcove</span>
         <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--move" aria-hidden="true" /> Legal destination</span>
+        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--clash" aria-hidden="true" /> Active clash</span>
       </div>
     </section>
   );
@@ -477,6 +520,7 @@ export function JousturBoard() {
   const [error, setError] = useState<string | null>(null);
   const [rolling, setRolling] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [clashing, setClashing] = useState(false);
   const [legalMoves, setLegalMoves] = useState<JousturLegalMove[]>([]);
   const [canActivateSupport, setCanActivateSupport] = useState<{
     canActivate: boolean;
@@ -497,9 +541,16 @@ export function JousturBoard() {
       const m = await getJousturMatch(matchId);
       setMatch(m);
       if (m.status !== "active") navigate(`/joustur/result/${matchId}`);
+      if (m.board.clash) {
+        setRollResult(null);
+        setDiceResults(null);
+        setLegalMoves([]);
+        setCanActivateSupport({ canActivate: false, reason: null });
+      }
       // P1-A: Hydrate legal moves from the match response when a roll is
       // already pending (e.g. after a page reload mid-turn).
       if (
+        m.board.clash === null &&
         m.board.rollResult !== null &&
         m.board.activePlayerUid === myUid &&
         m.legalMoves !== undefined &&
@@ -528,12 +579,35 @@ export function JousturBoard() {
   }, [loadMatch]);
 
   const isMyTurn = match?.board.activePlayerUid === myUid;
+  const activeClash = match?.board.clash ?? null;
+  const myClashRole = activeClash
+    ? activeClash.attackerUid === myUid
+      ? "attacker"
+      : activeClash.defenderUid === myUid
+        ? "defender"
+        : null
+    : null;
+  const myClashChoice = activeClash
+    ? myClashRole === "attacker"
+      ? activeClash.attackerChoice
+      : myClashRole === "defender"
+        ? activeClash.defenderChoice
+        : null
+    : null;
+  const opponentClashChoiceLocked = activeClash
+    ? myClashRole === "attacker"
+      ? activeClash.defenderChoiceLocked
+      : myClashRole === "defender"
+        ? activeClash.attackerChoiceLocked
+        : false
+    : false;
   // rollPending: a roll has been generated AND we have the context to act on it.
   // We use either the locally cached rollResult OR the server-stored one (for
   // reloads), but only if legal moves have been hydrated — otherwise the pass
   // button would appear incorrectly before hydration completes.
   const serverRoll = match?.board.rollResult ?? null;
   const rollPending =
+    activeClash === null &&
     (rollResult !== null || serverRoll !== null) &&
     (rollResult !== null || legalMoves.length > 0 || canActivateSupport.canActivate);
 
@@ -579,6 +653,7 @@ export function JousturBoard() {
         // Summarise the most recent event for the player.
         const ev = result.events?.[result.events.length - 1] as Record<string, unknown> | undefined;
         if (ev?.type === "capture") setLastEvent("🎯 Captured an opponent rider!");
+        else if (ev?.type === "clashStarted") setLastEvent("⚔️ Joust clash started!");
         else if (ev?.type === "exit") setLastEvent("⚡ Rider scored!");
         else if (ev?.type === "stealthAlcove") setLastEvent("🔒 Stealth Alcove — extra turn!");
         else setLastEvent(null);
@@ -594,6 +669,33 @@ export function JousturBoard() {
   const handlePass = () => handleMove(null, false);
   const handleActivateSupport = (targetCardId?: string) =>
     handleMove(null, true, targetCardId);
+  const handleClashChoice = useCallback(
+    async (stance: JousturClashStance) => {
+      if (!matchId || clashing) return;
+      setClashing(true);
+      setError(null);
+      try {
+        const result = await submitJousturClashChoice(matchId, { stance });
+        setMatch(result.match);
+        const resolvedEvent = result.events?.find((event) => (event as { type?: string }).type === "clashResolved") as
+          | { winnerUid?: string }
+          | undefined;
+        if (resolvedEvent?.winnerUid) {
+          setLastEvent(resolvedEvent.winnerUid === myUid ? "⚔️ You won the joust clash!" : "💥 You lost the joust clash.");
+        } else {
+          setLastEvent("⚔️ Stance locked — waiting for reveal.");
+        }
+        if (result.winner) {
+          navigate(`/joustur/result/${matchId}`);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Clash choice failed.");
+      } finally {
+        setClashing(false);
+      }
+    },
+    [clashing, matchId, myUid, navigate],
+  );
 
   if (loading) return <div className="page joustur-board"><p>Loading match…</p></div>;
   if (!match) return <div className="page joustur-board"><p>{error ?? "Match not found."}</p></div>;
@@ -615,6 +717,25 @@ export function JousturBoard() {
   const oppState      = isChallenger ? match.defenderState   : match.challengerState;
 
   const myLegalMoves = isMyTurn && rollPending ? legalMoves : [];
+  const clashAttacker = activeClash
+    ? (activeClash.attackerUid === myState.uid ? myState : oppState)
+    : null;
+  const clashDefender = activeClash
+    ? (activeClash.defenderUid === myState.uid ? myState : oppState)
+    : null;
+  const clashAttackerName = activeClash
+    ? clashAttacker?.lineup.find((snapshot) => snapshot.cardId === activeClash.attackerCardId)?.name ?? "Attacker"
+    : "";
+  const clashDefenderName = activeClash
+    ? clashDefender?.lineup.find((snapshot) => snapshot.cardId === activeClash.defenderCardId)?.name ?? "Defender"
+    : "";
+  const clashStatus = activeClash
+    ? myClashChoice
+      ? opponentClashChoiceLocked
+        ? "Reveal incoming…"
+        : "Your stance is locked. Waiting for the other rider."
+      : "Choose your hidden joust stance."
+    : null;
 
   return (
     <div className="page joustur-board">
@@ -637,15 +758,53 @@ export function JousturBoard() {
       )}
 
       <div className="joustur-board__status">
-        {isMyTurn
+        {activeClash
+          ? "⚔️ Joust clash active"
+          : isMyTurn
           ? rollPending
             ? "🎯 Pick a rider to move"
             : "🎲 Your turn — roll dice"
           : "⏳ Waiting for opponent…"}
       </div>
 
+      {activeClash && (
+        <section className="joustur-board__clash-panel" aria-label="Active joust clash">
+          <div className="joustur-board__clash-header">
+            <h2>⚔️ Joust Clash — tile {activeClash.tile}</h2>
+            <p>
+              {clashAttackerName} challenges {clashDefenderName}.
+            </p>
+          </div>
+          <div className="joustur-board__clash-meta">
+            <span>
+              Your stance: <strong>{myClashChoice ? myClashChoice.toUpperCase() : "Hidden"}</strong>
+            </span>
+            <span>
+              Opponent: <strong>{opponentClashChoiceLocked ? "Locked in" : "Choosing…"}</strong>
+            </span>
+          </div>
+          {clashStatus && <p className="joustur-board__clash-status">{clashStatus}</p>}
+          {!myClashChoice && (
+            <div className="joustur-board__clash-actions">
+              {CLASH_STANCE_OPTIONS.map((option) => (
+                <button
+                  key={option.stance}
+                  type="button"
+                  className="joustur-board__clash-button"
+                  onClick={() => handleClashChoice(option.stance)}
+                  disabled={clashing}
+                >
+                  <strong>{option.label}</strong>
+                  <span>{option.desc}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Opponent's last dice roll — visible when waiting for opponent */}
-      {!isMyTurn && match.board.lastDiceResults && match.board.lastRollPlayerUid && (
+      {!activeClash && !isMyTurn && match.board.lastDiceResults && match.board.lastRollPlayerUid && (
         <div className="joustur-board__roll-area joustur-board__roll-area--opponent">
           <p className="joustur-board__opponent-roll-label">
             Opponent rolled: {match.board.lastRollResult === 0 ? "0 → Move 4!" : match.board.lastRollResult}
@@ -662,7 +821,7 @@ export function JousturBoard() {
       )}
 
       {/* Animated d4 dice — shown whenever it is the active player's turn */}
-      {isMyTurn && (
+      {!activeClash && isMyTurn && (
         <div className="joustur-board__roll-area">
           <CyberpunkD4Dice
             rolling={rolling}
@@ -676,7 +835,7 @@ export function JousturBoard() {
 
       {/* Pass button — only when roll is pending AND there are truly no legal
           moves and support cannot be activated. */}
-      {isMyTurn && rollPending && myLegalMoves.length === 0 && !canActivateSupport.canActivate && (
+      {!activeClash && isMyTurn && rollPending && myLegalMoves.length === 0 && !canActivateSupport.canActivate && (
         <div className="joustur-board__roll-area">
           <p className="joustur-board__no-moves">No legal moves — you must pass.</p>
           <button
@@ -694,10 +853,11 @@ export function JousturBoard() {
       <VisualBoard
         myState={myState}
         oppState={oppState}
+        clash={activeClash}
         myLegalMoves={myLegalMoves}
         isMyTurn={isMyTurn}
         rollPending={rollPending}
-        moving={moving}
+        moving={moving || clashing}
         onSelectRider={(cardId) => handleMove(cardId, false)}
       />
 
@@ -708,7 +868,7 @@ export function JousturBoard() {
           isMe
           isActive={isMyTurn}
           legalMoves={myLegalMoves}
-          canActivateSupport={isMyTurn && rollPending ? canActivateSupport : { canActivate: false, reason: null }}
+          canActivateSupport={isMyTurn && rollPending && !activeClash ? canActivateSupport : { canActivate: false, reason: null }}
           sideRouteTarget={sideRouteTarget}
           onSideRouteTargetChange={setSideRouteTarget}
           onSelectRider={(cardId) => handleMove(cardId, false)}

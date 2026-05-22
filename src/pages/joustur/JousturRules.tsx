@@ -10,7 +10,7 @@ const FACTIONS = [
     faction: "Rust Kids",
     crew: "Punch Skaters",
     passive: "patchworkRush",
-    support: "recoveryPing — recover a captured rider from off-board back to entry (pos 1)",
+    support: "recoveryPing — recover a bumped rider from off-board back to entry (pos 1)",
   },
   {
     faction: "Neon Saints",
@@ -22,7 +22,7 @@ const FACTIONS = [
     faction: "Signal Ghosts",
     crew: "Qu111s (Quills)",
     passive: "ghostRoute",
-    support: "smokeScreen — your riders in the shared lane are immune to capture for the opponent's next turn",
+    support: "smokeScreen — your riders in the shared lane cannot be challenged for the opponent's next turn",
   },
   {
     faction: "Chrome Syndicate",
@@ -105,12 +105,12 @@ export function JousturRules() {
           <div className="joustur-rules__lane joustur-rules__lane--private">
             <p>Player 1 path: tiles 4→3→2→1→(shared)→6→5</p>
             <p>Player 2 path: tiles 18→17→16→15→(shared)→20→19</p>
-            <p className="joustur-rules__lane-note">Entry &amp; exit tiles are private — no captures</p>
+            <p className="joustur-rules__lane-note">Entry &amp; exit tiles are private — no clashes</p>
           </div>
           <div className="joustur-rules__lane joustur-rules__lane--shared">
             <p>Shared lane: tiles 7→8→9→10→11→12→13→14</p>
             <p className="joustur-rules__lane-note">
-              Both players share these tiles — captures apply · Stealth Alcoves at path indices 6, 8, 12
+              Both players share these tiles — joust clashes happen here · Stealth Alcoves at path indices 6, 8, 12
             </p>
           </div>
         </div>
@@ -120,15 +120,24 @@ export function JousturRules() {
           <li>Landing on a Stealth Alcove grants you an <strong>extra turn</strong>.</li>
           <li>
             Stealth Alcoves in the shared lane also make your rider{" "}
-            <strong>safe from capture</strong> — your opponent cannot land there
+            <strong>safe from clashes</strong> — your opponent cannot land there
             while you occupy it.
           </li>
         </ul>
 
-        <h3>Captures</h3>
+        <h3>Joust Clashes</h3>
         <ul className="joustur-rules__list">
-          <li>Captures only happen in the <strong>shared lane</strong> (tiles 7–14).</li>
-          <li>Landing on an opponent's rider sends it back to off-board.</li>
+          <li>Clashes only happen in the <strong>shared lane</strong> (tiles 7–14).</li>
+          <li>Landing on an opponent starts a hidden stance duel instead of an instant bump.</li>
+          <li>
+            Both riders secretly choose <strong>Charge</strong>, <strong>Guard</strong>, or{" "}
+            <strong>Feint</strong>, then reveal together.
+          </li>
+          <li>
+            Charge beats Feint, Guard beats Charge, and Feint beats Guard. Matching your rider's
+            trait-favoured stance adds a +1 edge.
+          </li>
+          <li>The clash winner keeps the tile. The loser is bumped back to off-board.</li>
           <li>Riders on Stealth Alcoves are safe. Riders protected by smoke screen are safe.</li>
         </ul>
       </section>

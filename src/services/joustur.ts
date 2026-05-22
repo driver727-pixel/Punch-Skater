@@ -13,6 +13,7 @@ import type {
   JousturTurnLogEntry,
   JousturLegalMove,
   JousturMoveChoice,
+  JousturClashChoice,
 } from "../lib/jousturTypes";
 
 const API_BASE = resolveApiUrl(
@@ -150,6 +151,16 @@ export async function submitJousturMove(
   choice: JousturMoveChoice,
 ): Promise<MoveResult> {
   return apiFetch<MoveResult>(`/match/${matchId}/move`, {
+    method: "POST",
+    body: JSON.stringify(choice),
+  });
+}
+
+export async function submitJousturClashChoice(
+  matchId: string,
+  choice: JousturClashChoice,
+): Promise<MoveResult> {
+  return apiFetch<MoveResult>(`/match/${matchId}/clash`, {
     method: "POST",
     body: JSON.stringify(choice),
   });

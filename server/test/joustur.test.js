@@ -5,9 +5,9 @@
  *   – faction/trait/support mappings
  *   – board utility functions
  *   – lineup validation
- *   – legal move generation (entry, overshoot, friendly block, capture,
+ *   – legal move generation (entry, overshoot, friendly block, clash,
  *     stealth alcove, smoke screen, zero roll)
- *   – move application (normal, capture, exit, stealth alcove extra turn,
+ *   – move application (normal, clash start, exit, stealth alcove extra turn,
  *     all support effects)
  *   – win detection
  *   – reward calculation (idempotency via rewardsGranted flag)
@@ -30,6 +30,7 @@ import {
   STEALTH_ALCOVES,
   RIDER_COUNT,
   SHARD_COUNT,
+  JOUST_CLASH_STANCES,
   PLAYER1_PATH,
   PLAYER2_PATH,
   SHARED_TILES,
@@ -55,7 +56,10 @@ import {
   calcRewards,
   canActivateSupportEffect,
   chooseAutomatedMove,
+  chooseAutomatedClashStance,
   buildSoloBotPlayerState,
+  getPreferredClashStance,
+  resolveClashOutcome,
   // RNG
   createSeededRng,
   generateRollSeed,
@@ -202,6 +206,40 @@ test('isStealthAlcove matches exactly {4, 6, 8, 12, 14}', () => {
 
 test('STEALTH_ALCOVES set has exactly 5 entries', () => {
   assert.equal(STEALTH_ALCOVES.size, 5);
+});
+
+test('JOUST_CLASH_STANCES exposes the three hidden duel options', () => {
+  assert.deepEqual([...JOUST_CLASH_STANCES], ['charge', 'guard', 'feint']);
+});
+
+test('getPreferredClashStance maps traits into stance bonuses', () => {
+  assert.equal(getPreferredClashStance('boost'), 'charge');
+  assert.equal(getPreferredClashStance('strike'), 'charge');
+  assert.equal(getPreferredClashStance('guard'), 'guard');
+  assert.equal(getPreferredClashStance('anchor'), 'guard');
+  assert.equal(getPreferredClashStance('feint'), 'feint');
+  assert.equal(getPreferredClashStance('slip'), 'feint');
+  assert.equal(getPreferredClashStance('echo'), 'feint');
+});
+
+test('resolveClashOutcome uses stance triangle and trait bonus, with defender winning ties', () => {
+  const attackerFavoured = resolveClashOutcome({
+    attackerTrait: 'boost',
+    defenderTrait: 'guard',
+    attackerStance: 'charge',
+    defenderStance: 'feint',
+  });
+  assert.equal(attackerFavoured.winner, 'attacker');
+  assert.equal(attackerFavoured.attackerTraitBonus, 1);
+
+  const defenderTie = resolveClashOutcome({
+    attackerTrait: 'boost',
+    defenderTrait: 'echo',
+    attackerStance: 'charge',
+    defenderStance: 'guard',
+  });
+  assert.equal(defenderTie.attackerScore, defenderTie.defenderScore);
+  assert.equal(defenderTie.winner, 'defender');
 });
 
 // ── Faction mapping ───────────────────────────────────────────────────────────
@@ -409,7 +447,7 @@ test('getLegalMoves — friendly blockade prevents landing on own rider', () => 
   assert.equal(blockedMoves.length, 0);
 });
 
-test('getLegalMoves — capture in shared lane is legal when opponent is not on alcove', () => {
+test('getLegalMoves — clash move in shared lane is legal when opponent is not on alcove', () => {
   let playerA = makePlayer('A');
   let playerB = makePlayer('B');
   // Rider A at pos 5, roll 2 → pos 7.  Opponent rider at pos 7 (shared, not alcove).
@@ -417,13 +455,13 @@ test('getLegalMoves — capture in shared lane is legal when opponent is not on 
   playerB = setRiderPositions(playerB, [7, 0, 0, 0, 0, 0]);
   const board = makeBoard('A', 2);
   const moves = getLegalMoves(board, playerA, playerB);
-  const capMove = moves.find((m) => m.toPosition === 7);
-  assert.ok(capMove, 'capture move at pos 7 should be legal');
-  assert.equal(capMove.wouldCapture, true);
-  assert.equal(capMove.capturedCardId, playerB.riders[0].cardId);
+  const clashMove = moves.find((m) => m.toPosition === 7);
+  assert.ok(clashMove, 'clash-starting move at pos 7 should be legal');
+  assert.equal(clashMove.wouldCapture, true);
+  assert.equal(clashMove.capturedCardId, playerB.riders[0].cardId);
 });
 
-test('getLegalMoves — cannot capture opponent on stealth alcove in shared lane', () => {
+test('getLegalMoves — cannot challenge opponent on stealth alcove in shared lane', () => {
   let playerA = makePlayer('A');
   let playerB = makePlayer('B');
   // Rider A-0 at pos 4, roll 2 → pos 6 (stealth alcove, shared).
@@ -437,7 +475,7 @@ test('getLegalMoves — cannot capture opponent on stealth alcove in shared lane
   assert.equal(moves.length, 0, 'landing on occupied stealth alcove should be illegal');
 });
 
-test('getLegalMoves — smoke screen protects opponent from capture', () => {
+test('getLegalMoves — smoke screen protects opponent from clashes', () => {
   let playerA = makePlayer('A');
   let playerB = makePlayer('B');
   // Rider A-0 at pos 5, roll 2 → pos 7 (shared, not alcove). Opponent at 7.
@@ -448,7 +486,7 @@ test('getLegalMoves — smoke screen protects opponent from capture', () => {
   // Smoke screen protecting opponent B.
   const board = { ...makeBoard('A', 2), smokeScreenUid: 'B', smokeScreenExpiresAfterTurn: 99 };
   const moves = getLegalMoves(board, playerA, playerB);
-  assert.equal(moves.length, 0, 'smoke screen should block the capture move');
+  assert.equal(moves.length, 0, 'smoke screen should block the clash move');
 });
 
 // ── Move application ──────────────────────────────────────────────────────────
@@ -468,21 +506,25 @@ test('applyMove — normal move updates rider position', () => {
   assert.equal(extraTurn, false);
 });
 
-test('applyMove — capture sends opponent rider to OFF_BOARD', () => {
+test('applyMove — landing on an occupied shared tile starts a joust clash', () => {
   let playerA = makePlayer('A');
   let playerB = makePlayer('B');
   playerA = setRiderPositions(playerA, [5, 0, 0, 0, 0, 0]);
   playerB = setRiderPositions(playerB, [7, 0, 0, 0, 0, 0]);
   const board = makeBoard('A', 2); // 5+2=7
 
-  const { active, opponent, capturedCardId } = applyMove(board, playerA, playerB, {
+  const { board: nextBoard, active, opponent, capturedCardId, events } = applyMove(board, playerA, playerB, {
     cardId: playerA.riders[0].cardId,
     activateSupport: false,
   });
 
   assert.equal(active.riders[0].position, 7);
-  assert.equal(opponent.riders[0].position, OFF_BOARD);
-  assert.equal(capturedCardId, playerB.riders[0].cardId);
+  assert.equal(opponent.riders[0].position, 7);
+  assert.equal(capturedCardId, null);
+  assert.equal(nextBoard.clash?.tile, 9);
+  assert.equal(nextBoard.clash?.attackerCardId, playerA.riders[0].cardId);
+  assert.equal(nextBoard.clash?.defenderCardId, playerB.riders[0].cardId);
+  assert.equal(events[0]?.type, 'clashStarted');
 });
 
 test('applyMove — landing on stealth alcove grants extra turn', () => {
@@ -769,6 +811,7 @@ test('initial board state sets challenger as first active player', () => {
   assert.equal(board.activePlayerUid, 'challenger-uid');
   assert.equal(board.rollResult, null);
   assert.equal(board.turn, 1);
+  assert.equal(board.clash, null);
 });
 
 test('turn advances after a normal move', () => {
@@ -794,23 +837,23 @@ test('buildInitialPlayerState — isCaptured starts as false for all riders', ()
   player.riders.forEach((r) => assert.equal(r.isCaptured, false));
 });
 
-test('applyMove — capture sets isCaptured=true on the opponent rider', () => {
+test('applyMove — clash start leaves both riders on the disputed tile until reveal', () => {
   const playerA = makePlayer('A');
   const playerB = makePlayer('B');
-  // Place B's first rider in the shared lane at position 7.
   playerB.riders[0].position = 7;
-  // Place A's first rider so it can land on 7 with roll 2.
   playerA.riders[0].position = 5;
   const board = makeBoard('A', 2);
 
-  const { opponent } = applyMove(board, playerA, playerB, {
+  const { board: nextBoard, active, opponent } = applyMove(board, playerA, playerB, {
     cardId: playerA.riders[0].cardId,
     activateSupport: false,
   });
 
-  const capturedRider = opponent.riders[0];
-  assert.equal(capturedRider.position, OFF_BOARD);
-  assert.equal(capturedRider.isCaptured, true);
+  assert.equal(active.riders[0].position, 7);
+  assert.equal(active.riders[0].isCaptured, false);
+  assert.equal(opponent.riders[0].position, 7);
+  assert.equal(opponent.riders[0].isCaptured, false);
+  assert.ok(nextBoard.clash, 'board should store the pending clash');
 });
 
 test('applyMove — riders that never entered the board are NOT isCaptured', () => {
@@ -939,6 +982,28 @@ test('chooseAutomatedMove uses support when no legal moves exist', () => {
   const choice = chooseAutomatedMove(makeBoard('A', 2), playerA, playerB);
   assert.equal(choice.activateSupport, true);
   assert.equal(choice.cardId, null);
+});
+
+test('chooseAutomatedClashStance picks a legal hidden stance', () => {
+  const attacker = makePlayer('A');
+  const defender = makePlayer('B');
+  attacker.lineup[0].jousturTrait = 'guard';
+  defender.lineup[0].jousturTrait = 'boost';
+  const clash = {
+    attackerUid: attacker.uid,
+    defenderUid: defender.uid,
+    attackerCardId: attacker.riders[0].cardId,
+    defenderCardId: defender.riders[0].cardId,
+    tile: 9,
+    attackerChoice: null,
+    defenderChoice: null,
+    attackerChoiceLocked: false,
+    defenderChoiceLocked: false,
+    startedOnTurn: 3,
+  };
+
+  const choice = chooseAutomatedClashStance(clash, attacker, defender);
+  assert.ok(JOUST_CLASH_STANCES.includes(choice));
 });
 
 test('buildSoloBotPlayerState mirrors a player with unique echo card ids', () => {
