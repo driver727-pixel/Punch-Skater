@@ -80,6 +80,7 @@ body {
 
 .joustur-visual-board__snap,
 .joustur-visual-board__move-target,
+.joustur-visual-board__clash,
 .joustur-board-piece {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -121,6 +122,21 @@ body {
   box-shadow: 0 0 22px rgba(0, 204, 255, 0.55);
 }
 
+.joustur-visual-board__clash {
+  width: clamp(44px, 6vw, 84px);
+  aspect-ratio: 1;
+  border: 2px solid var(--purple);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(204, 68, 255, 0.32), transparent 60%);
+  box-shadow:
+    0 0 22px rgba(204, 68, 255, 0.65),
+    0 0 38px rgba(255, 68, 68, 0.35);
+  pointer-events: none;
+  z-index: 3;
+  animation: joustur-clash-pulse 1.1s ease-in-out infinite alternate;
+}
+
 .joustur-board-piece {
   width: clamp(42px, 5vw, 72px);
   aspect-ratio: var(--card-aspect-ratio);
@@ -157,6 +173,13 @@ body {
 
 .joustur-board-piece--captured {
   opacity: 0.82;
+}
+
+.joustur-board-piece--clashing {
+  filter:
+    drop-shadow(0 7px 7px rgba(0, 0, 0, 0.65))
+    drop-shadow(0 0 14px rgba(204, 68, 255, 0.9));
+  z-index: 6;
 }
 
 .joustur-board-piece--scored {
@@ -250,6 +273,118 @@ body {
 .joustur-visual-board__legend-dot--move {
   border: 2px solid var(--accent);
   background: rgba(0, 255, 136, 0.18);
+}
+
+.joustur-visual-board__legend-dot--clash {
+  border: 2px solid var(--purple);
+  background: rgba(204, 68, 255, 0.18);
+  box-shadow: 0 0 8px rgba(204, 68, 255, 0.4);
+}
+
+.joustur-board__status,
+.joustur-board__clash-panel {
+  width: min(100%, 980px);
+  margin: 0 auto 18px;
+}
+
+.joustur-board__status {
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 204, 255, 0.3);
+  border-radius: 14px;
+  background: rgba(7, 10, 24, 0.88);
+  color: var(--accent2);
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.joustur-board__clash-panel {
+  border: 1px solid rgba(204, 68, 255, 0.45);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(20, 8, 36, 0.96), rgba(11, 12, 34, 0.92));
+  box-shadow:
+    0 0 26px rgba(204, 68, 255, 0.18),
+    inset 0 0 22px rgba(255, 255, 255, 0.03);
+  padding: 18px;
+}
+
+.joustur-board__clash-header h2 {
+  font-size: 1.15rem;
+  color: #ffd8ff;
+  margin-bottom: 4px;
+}
+
+.joustur-board__clash-header p,
+.joustur-board__clash-status,
+.joustur-board__clash-meta {
+  color: var(--text-dim);
+}
+
+.joustur-board__clash-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 12px;
+}
+
+.joustur-board__clash-status {
+  margin-top: 10px;
+}
+
+.joustur-board__clash-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.joustur-board__clash-button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 88px;
+  padding: 14px;
+  border: 1px solid rgba(204, 68, 255, 0.48);
+  border-radius: 14px;
+  background: rgba(16, 12, 32, 0.94);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.joustur-board__clash-button strong {
+  color: #ffd8ff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.joustur-board__clash-button span {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.joustur-board__clash-button:hover,
+.joustur-board__clash-button:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--accent2);
+  box-shadow: 0 0 18px rgba(0, 204, 255, 0.22);
+  outline: none;
+}
+
+.joustur-board__clash-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+@keyframes joustur-clash-pulse {
+  from {
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
 }
 
 @media (max-width: 720px) {

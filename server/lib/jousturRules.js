@@ -34,6 +34,7 @@ export const STEALTH_ALCOVES = Object.freeze(new Set([4, 6, 8, 12, 14]));
 export const RIDER_COUNT = 6;
 export const SHARD_COUNT = 3; // tetrahedral binary dice per roll
 const RIDER_NUMBER_OFFSET = 1;
+export const JOUST_CLASH_STANCES = Object.freeze(['charge', 'guard', 'feint']);
 
 /**
  * Ordered tile paths for each player side.
@@ -76,6 +77,63 @@ export function isPrivatePosition(position) {
 /** Check if a path index is a Stealth Alcove (indices 4, 6, 8, 12, 14). */
 export function isStealthAlcove(position) {
   return STEALTH_ALCOVES.has(position);
+}
+
+export function getPreferredClashStance(trait) {
+  switch (trait) {
+    case 'guard':
+    case 'anchor':
+      return 'guard';
+    case 'feint':
+    case 'slip':
+    case 'echo':
+      return 'feint';
+    case 'boost':
+    case 'strike':
+    case 'surge':
+    default:
+      return 'charge';
+  }
+}
+
+export function getTraitClashBonus(trait, stance) {
+  return getPreferredClashStance(trait) === stance ? 1 : 0;
+}
+
+function compareStances(attackerStance, defenderStance) {
+  if (attackerStance === defenderStance) return 0;
+  if (
+    (attackerStance === 'charge' && defenderStance === 'feint') ||
+    (attackerStance === 'feint' && defenderStance === 'guard') ||
+    (attackerStance === 'guard' && defenderStance === 'charge')
+  ) {
+    return 1;
+  }
+  return -1;
+}
+
+export function resolveClashOutcome({
+  attackerTrait,
+  defenderTrait,
+  attackerStance,
+  defenderStance,
+}) {
+  const attackerTraitBonus = getTraitClashBonus(attackerTrait, attackerStance);
+  const defenderTraitBonus = getTraitClashBonus(defenderTrait, defenderStance);
+  const stanceResult = compareStances(attackerStance, defenderStance);
+  const attackerScore = (stanceResult === 1 ? 1 : 0) + attackerTraitBonus;
+  const defenderScore = (stanceResult === -1 ? 1 : 0) + defenderTraitBonus;
+  const winner = attackerScore > defenderScore ? 'attacker' : 'defender';
+
+  return {
+    winner,
+    attackerScore,
+    defenderScore,
+    attackerTraitBonus,
+    defenderTraitBonus,
+    attackerPreferredStance: getPreferredClashStance(attackerTrait),
+    defenderPreferredStance: getPreferredClashStance(defenderTrait),
+  };
 }
 
 // ── Faction / trait / support mappings ───────────────────────────────────────
@@ -318,6 +376,7 @@ export function buildInitialBoardState(challengerUid) {
     lastRollPlayerUid: null,
     smokeScreenUid: null,
     smokeScreenExpiresAfterTurn: null,
+    clash: null,
   };
 }
 
@@ -546,6 +605,49 @@ export function chooseAutomatedMove(boardState, activePlayer, opponentPlayer) {
   return { cardId: null, activateSupport: false };
 }
 
+function getLineupSnapshot(playerState, cardId) {
+  return playerState.lineup.find((snapshot) => snapshot.cardId === cardId) ?? null;
+}
+
+export function chooseAutomatedClashStance(clash, playerState, opponentPlayer) {
+  const isAttacker = clash.attackerUid === playerState.uid;
+  const myCardId = isAttacker ? clash.attackerCardId : clash.defenderCardId;
+  const opponentCardId = isAttacker ? clash.defenderCardId : clash.attackerCardId;
+  const myTrait = getLineupSnapshot(playerState, myCardId)?.jousturTrait ?? 'boost';
+  const opponentTrait = getLineupSnapshot(opponentPlayer, opponentCardId)?.jousturTrait ?? 'boost';
+  const preferred = getPreferredClashStance(myTrait);
+  const opponentPreferred = getPreferredClashStance(opponentTrait);
+  const orderedStances = [preferred, ...JOUST_CLASH_STANCES.filter((stance) => stance !== preferred)];
+  const scored = orderedStances.map((stance) => {
+    const outcome = isAttacker
+      ? resolveClashOutcome({
+          attackerTrait: myTrait,
+          defenderTrait: opponentTrait,
+          attackerStance: stance,
+          defenderStance: opponentPreferred,
+        })
+      : resolveClashOutcome({
+          attackerTrait: opponentTrait,
+          defenderTrait: myTrait,
+          attackerStance: opponentPreferred,
+          defenderStance: stance,
+        });
+    const myScore = isAttacker ? outcome.attackerScore : outcome.defenderScore;
+    const oppScore = isAttacker ? outcome.defenderScore : outcome.attackerScore;
+    return { stance, myScore, oppScore };
+  });
+
+  scored.sort((a, b) => {
+    if (a.myScore !== b.myScore) return b.myScore - a.myScore;
+    if (a.oppScore !== b.oppScore) return a.oppScore - b.oppScore;
+    if (a.stance === preferred) return -1;
+    if (b.stance === preferred) return 1;
+    return JOUST_CLASH_STANCES.indexOf(a.stance) - JOUST_CLASH_STANCES.indexOf(b.stance);
+  });
+
+  return scored[0]?.stance ?? preferred;
+}
+
 /**
  * Clone a player state into a solo-bot mirror with unique card IDs.
  *
@@ -604,6 +706,17 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
   const events = [];
   let extraTurn = false;
   let capturedCardId = null;
+  const finishRiderMove = (rider, toPos) => {
+    rider.position = toPos;
+    if (toPos === EXIT_POSITION) {
+      rider.isScored = true;
+      newActive.scoredCount = newActive.riders.filter((r) => r.isScored).length;
+      events.push({ type: 'exit', cardId: rider.cardId });
+    } else if (isStealthAlcove(toPos)) {
+      extraTurn = true;
+      events.push({ type: 'stealthAlcove', cardId: rider.cardId, position: toPos });
+    }
+  };
 
   // ── Support activation ────────────────────────────────────────────────────
   if (moveChoice.activateSupport && !newActive.supportRuntime.activated) {
@@ -712,23 +825,34 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
             return oppTile === activeTile;
           });
           const opponentProtected = newBoard.smokeScreenUid === newOpp.uid;
-          if (oppRider && !isStealthAlcove(toPos) && !opponentProtected) {
-            capturedCardId = oppRider.cardId;
-            oppRider.position = OFF_BOARD;
-            oppRider.isCaptured = true;
-            events.push({ type: 'capture', capturedCardId: oppRider.cardId, atPosition: toPos });
+          const blockedByOpponent = oppRider && (isStealthAlcove(toPos) || opponentProtected);
+          if (oppRider && !blockedByOpponent) {
+            finishRiderMove(rider, toPos);
+            newBoard.clash = {
+              attackerUid: newActive.uid,
+              defenderUid: newOpp.uid,
+              attackerCardId: rider.cardId,
+              defenderCardId: oppRider.cardId,
+              tile: activeTile,
+              attackerChoice: null,
+              defenderChoice: null,
+              attackerChoiceLocked: false,
+              defenderChoiceLocked: false,
+              startedOnTurn: newBoard.turn,
+            };
+            events.push({
+              type: 'clashStarted',
+              attackerUid: newActive.uid,
+              defenderUid: newOpp.uid,
+              attackerCardId: rider.cardId,
+              defenderCardId: oppRider.cardId,
+              tile: activeTile,
+            });
+          } else if (!blockedByOpponent) {
+            finishRiderMove(rider, toPos);
           }
-        }
-
-        rider.position = toPos;
-
-        if (toPos === EXIT_POSITION) {
-          rider.isScored = true;
-          newActive.scoredCount = newActive.riders.filter((r) => r.isScored).length;
-          events.push({ type: 'exit', cardId: rider.cardId });
-        } else if (isStealthAlcove(toPos)) {
-          extraTurn = true;
-          events.push({ type: 'stealthAlcove', cardId: rider.cardId, position: toPos });
+        } else {
+          finishRiderMove(rider, toPos);
         }
       }
     }
@@ -875,7 +999,16 @@ export function buildTurnLogEntry(opts) {
   if (opts.rollResult === 0) {
     parts.push('rolled zero — moved 4 tiles');
   }
-  const summary = parts.length ? parts.join(', ') : 'turn taken';
+  const eventList = Array.isArray(opts.events) ? opts.events : [];
+  const clashStartEvent = eventList.find((event) => event?.type === 'clashStarted');
+  if (clashStartEvent) {
+    parts.push(`joust clash started on tile ${clashStartEvent.tile}`);
+  }
+  const clashResolveEvent = eventList.find((event) => event?.type === 'clashResolved');
+  if (clashResolveEvent) {
+    parts.push(`joust clash resolved — ${clashResolveEvent.winnerLabel}`);
+  }
+  const summary = opts.summaryOverride ?? (parts.length ? parts.join(', ') : 'turn taken');
 
   return {
     id: opts.id,
@@ -890,6 +1023,7 @@ export function buildTurnLogEntry(opts) {
     extraTurn: opts.extraTurn ?? false,
     supportActivated: opts.supportActivated ?? false,
     supportEffect: opts.supportEffect ?? null,
+    events: eventList,
     summary,
     timestamp: opts.timestamp,
   };

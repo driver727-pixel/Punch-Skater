@@ -59,6 +59,8 @@ export type JousturSupportEffect =
   | "overclock"     // Voltage Vultures
   | "sideRoute";    // Alley Wraiths
 
+export type JousturClashStance = "charge" | "guard" | "feint";
+
 export type JousturChallengeStatus =
   | "pending"
   | "accepted"
@@ -173,6 +175,20 @@ export interface JousturBoardState {
   smokeScreenUid: string | null;
   /** The turn number after which the smoke screen expires. */
   smokeScreenExpiresAfterTurn: number | null;
+  clash: JousturClashState | null;
+}
+
+export interface JousturClashState {
+  attackerUid: string;
+  defenderUid: string;
+  attackerCardId: string;
+  defenderCardId: string;
+  tile: number;
+  attackerChoice: JousturClashStance | null;
+  defenderChoice: JousturClashStance | null;
+  attackerChoiceLocked: boolean;
+  defenderChoiceLocked: boolean;
+  startedOnTurn: number;
 }
 
 // ── Match ─────────────────────────────────────────────────────────────────────
@@ -223,6 +239,7 @@ export interface JousturTurnLogEntry {
   extraTurn: boolean;
   supportActivated: boolean;
   supportEffect?: JousturSupportEffect;
+  events?: Array<Record<string, unknown>>;
   summary: string;
   timestamp: string;
 }
@@ -262,6 +279,10 @@ export interface JousturMoveChoice {
   activateSupport: boolean;
   /** Required by sideRoute — which rider to teleport. */
   supportTargetCardId?: string;
+}
+
+export interface JousturClashChoice {
+  stance: JousturClashStance;
 }
 
 /** Reward values granted to one player after a completed match. */

@@ -13,6 +13,7 @@
  *   GET    /api/joustur/match/:id           — fetch a specific match.
  *   POST   /api/joustur/match/:id/roll      — (step 1) generate dice roll.
  *   POST   /api/joustur/match/:id/move      — (step 2) submit rider move / support.
+ *   POST   /api/joustur/match/:id/clash     — submit a hidden clash stance.
  */
 
 import rateLimit from 'express-rate-limit';
@@ -33,6 +34,9 @@ import {
   rollUsbShards,
   createSeededRng,
   chooseAutomatedMove,
+  chooseAutomatedClashStance,
+  resolveClashOutcome,
+  JOUST_CLASH_STANCES,
   PLAYER1_PATH,
   PLAYER2_PATH,
   buildSoloBotPlayerState,
@@ -88,6 +92,136 @@ function buildNotification({ uid, type, title, body, link, data, randomUUID }) {
 
 function notifRef(db, uid, id) {
   return db.collection('notifications').doc(uid).collection('items').doc(id);
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function getMatchPlayerState(match, uid) {
+  if (match?.challengerState?.uid === uid) return match.challengerState;
+  if (match?.defenderState?.uid === uid) return match.defenderState;
+  return null;
+}
+
+function getOpponentState(match, uid) {
+  if (match?.challengerState?.uid === uid) return match.defenderState;
+  if (match?.defenderState?.uid === uid) return match.challengerState;
+  return null;
+}
+
+function getRiderSnapshot(playerState, cardId) {
+  return playerState?.lineup?.find((snapshot) => snapshot.cardId === cardId) ?? null;
+}
+
+function sanitizeMatchForCaller(match, callerUid) {
+  const sanitized = cloneJson(match);
+  const clash = sanitized?.board?.clash;
+  if (!clash) return sanitized;
+  const bothLocked = clash.attackerChoiceLocked && clash.defenderChoiceLocked;
+  if (!bothLocked) {
+    if (callerUid !== clash.attackerUid) clash.attackerChoice = null;
+    if (callerUid !== clash.defenderUid) clash.defenderChoice = null;
+  }
+  return sanitized;
+}
+
+function maybeLockSoloBotClashChoice(match) {
+  if (
+    match.mode !== 'solo' ||
+    !match.board?.clash ||
+    !String(match.defenderUid ?? '').startsWith(SOLO_BOT_UID_PREFIX)
+  ) {
+    return match;
+  }
+  const nextMatch = cloneJson(match);
+  const clash = nextMatch.board.clash;
+  const botUid = nextMatch.defenderUid;
+  const botState = getMatchPlayerState(nextMatch, botUid);
+  const opponentState = getOpponentState(nextMatch, botUid);
+  if (!botState || !opponentState) return nextMatch;
+
+  if (clash.attackerUid === botUid && !clash.attackerChoiceLocked) {
+    clash.attackerChoice = chooseAutomatedClashStance(clash, botState, opponentState);
+    clash.attackerChoiceLocked = true;
+  }
+  if (clash.defenderUid === botUid && !clash.defenderChoiceLocked) {
+    clash.defenderChoice = chooseAutomatedClashStance(clash, botState, opponentState);
+    clash.defenderChoiceLocked = true;
+  }
+  return nextMatch;
+}
+
+function resolvePendingClash(match) {
+  const nextMatch = cloneJson(match);
+  const clash = nextMatch?.board?.clash;
+  if (!clash || !clash.attackerChoiceLocked || !clash.defenderChoiceLocked) {
+    return { match: nextMatch, events: [], capturedCardId: null, summary: null };
+  }
+
+  const attackerState = getMatchPlayerState(nextMatch, clash.attackerUid);
+  const defenderState = getMatchPlayerState(nextMatch, clash.defenderUid);
+  const attackerRider = attackerState?.riders?.find((rider) => rider.cardId === clash.attackerCardId);
+  const defenderRider = defenderState?.riders?.find((rider) => rider.cardId === clash.defenderCardId);
+  const attackerSnapshot = getRiderSnapshot(attackerState, clash.attackerCardId);
+  const defenderSnapshot = getRiderSnapshot(defenderState, clash.defenderCardId);
+  if (!attackerState || !defenderState || !attackerRider || !defenderRider) {
+    throw badRequest('The active joust clash is missing one of its riders.', 409);
+  }
+
+  const outcome = resolveClashOutcome({
+    attackerTrait: attackerSnapshot?.jousturTrait ?? 'boost',
+    defenderTrait: defenderSnapshot?.jousturTrait ?? 'boost',
+    attackerStance: clash.attackerChoice,
+    defenderStance: clash.defenderChoice,
+  });
+  const attackerWins = outcome.winner === 'attacker';
+  const winningUid = attackerWins ? clash.attackerUid : clash.defenderUid;
+  const losingUid = attackerWins ? clash.defenderUid : clash.attackerUid;
+  const losingCardId = attackerWins ? clash.defenderCardId : clash.attackerCardId;
+  const losingRider = attackerWins ? defenderRider : attackerRider;
+  const winnerName = attackerWins
+    ? (attackerSnapshot?.name ?? 'Attacker')
+    : (defenderSnapshot?.name ?? 'Defender');
+  const loserName = attackerWins
+    ? (defenderSnapshot?.name ?? 'Defender')
+    : (attackerSnapshot?.name ?? 'Attacker');
+
+  losingRider.position = 0;
+  losingRider.isCaptured = true;
+  nextMatch.board.clash = null;
+  nextMatch.updatedAt = nowIso();
+
+  const events = [
+    {
+      type: 'clashReveal',
+      tile: clash.tile,
+      attackerStance: clash.attackerChoice,
+      defenderStance: clash.defenderChoice,
+      attackerTraitBonus: outcome.attackerTraitBonus,
+      defenderTraitBonus: outcome.defenderTraitBonus,
+      attackerPreferredStance: outcome.attackerPreferredStance,
+      defenderPreferredStance: outcome.defenderPreferredStance,
+    },
+    {
+      type: 'clashResolved',
+      tile: clash.tile,
+      winnerUid: winningUid,
+      loserUid,
+      winnerCardId: attackerWins ? clash.attackerCardId : clash.defenderCardId,
+      loserCardId,
+      capturedCardId: losingCardId,
+      winnerLabel: attackerWins ? 'attacker seized the tile' : 'defender held the tile',
+    },
+  ];
+  const summary = `Joust clash on tile ${clash.tile}: ${winnerName} outdueled ${loserName}.`;
+
+  return {
+    match: nextMatch,
+    events,
+    capturedCardId: losingCardId,
+    summary,
+  };
 }
 
 /**
@@ -215,12 +349,13 @@ function applyMatchRewards(tx, db, match, FieldValue) {
 }
 
 function resolveSoloBotTurns(match, matchId, randomUUID) {
-  const nextMatch = JSON.parse(JSON.stringify(match));
+  const nextMatch = cloneJson(match);
   const turnEntries = [];
 
   while (
     nextMatch.mode === 'solo' &&
     nextMatch.status === 'active' &&
+    nextMatch.board.clash === null &&
     nextMatch.board.activePlayerUid === nextMatch.defenderUid
   ) {
     const activeState = nextMatch.defenderState;
@@ -251,6 +386,13 @@ function resolveSoloBotTurns(match, matchId, randomUUID) {
     nextMatch.defenderState = active;
     nextMatch.challengerState = opponent;
     nextMatch.updatedAt = nowIso();
+    if (nextMatch.board.clash) {
+      const locked = maybeLockSoloBotClashChoice(nextMatch);
+      nextMatch.board = locked.board;
+      nextMatch.defenderState = locked.defenderState;
+      nextMatch.challengerState = locked.challengerState;
+      nextMatch.updatedAt = locked.updatedAt;
+    }
 
     if (detectWinner(active)) {
       nextMatch.status = 'completed';
@@ -275,6 +417,7 @@ function resolveSoloBotTurns(match, matchId, randomUUID) {
         extraTurn,
         supportActivated: choice.activateSupport,
         supportEffect,
+        events,
         timestamp: nowIso(),
       }),
       events,
@@ -756,7 +899,7 @@ export function registerJousturRoutes(app, {
         }
       });
       matches.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      res.json(matches);
+      res.json(matches.map((match) => sanitizeMatchForCaller(match, caller.uid)));
     } catch (e) {
       res.status(e.statusCode ?? 500).json({ error: e.message });
     }
@@ -785,7 +928,11 @@ export function registerJousturRoutes(app, {
 
       // P1-A: If a roll is already pending for this player, hydrate legalMoves
       // and canActivateSupport so a page reload doesn't lose that context.
-      if (match.board.rollResult !== null && match.board.activePlayerUid === caller.uid) {
+      if (
+        match.board.clash === null &&
+        match.board.rollResult !== null &&
+        match.board.activePlayerUid === caller.uid
+      ) {
         const isChallenger = match.challengerUid === caller.uid;
         const activeState   = isChallenger ? match.challengerState : match.defenderState;
         const opponentState = isChallenger ? match.defenderState   : match.challengerState;
@@ -796,7 +943,7 @@ export function registerJousturRoutes(app, {
         );
       }
 
-      res.json(match);
+      res.json(sanitizeMatchForCaller(match, caller.uid));
     } catch (e) {
       res.status(e.statusCode ?? 500).json({ error: e.message });
     }
@@ -831,6 +978,9 @@ export function registerJousturRoutes(app, {
           throw badRequest('Access denied.', 403);
         }
         if (match.status !== 'active') throw badRequest('This match is not active.', 409);
+        if (match.board.clash) {
+          throw badRequest('Resolve the active joust clash before rolling again.', 409);
+        }
         if (match.board.activePlayerUid !== caller.uid) {
           throw badRequest('It is not your turn.', 403);
         }
@@ -911,6 +1061,9 @@ export function registerJousturRoutes(app, {
           throw badRequest('Access denied.', 403);
         }
         if (match.status !== 'active') throw badRequest('This match is not active.', 409);
+        if (match.board.clash) {
+          throw badRequest('Resolve the active joust clash before making another move.', 409);
+        }
         if (match.board.activePlayerUid !== caller.uid) {
           throw badRequest('It is not your turn.', 403);
         }
@@ -968,6 +1121,9 @@ export function registerJousturRoutes(app, {
           newMatch.defenderState   = newActive;
           newMatch.challengerState = newOpp;
         }
+        if (newMatch.board.clash) {
+          newMatch = maybeLockSoloBotClashChoice(newMatch);
+        }
 
         // Win detection.
         let winner = null;
@@ -981,6 +1137,7 @@ export function registerJousturRoutes(app, {
         if (
           newMatch.mode === 'solo' &&
           newMatch.status === 'active' &&
+          newMatch.board.clash === null &&
           newMatch.board.activePlayerUid === newMatch.defenderUid
         ) {
           const soloResolution = resolveSoloBotTurns(newMatch, matchId, randomUUID);
@@ -1007,6 +1164,7 @@ export function registerJousturRoutes(app, {
           extraTurn,
           supportActivated: activateSupport,
           supportEffect,
+          events,
           timestamp: nowIso(),
         });
         tx.set(
@@ -1031,7 +1189,158 @@ export function registerJousturRoutes(app, {
         // Persist match (single write — includes rewardsGranted if applicable).
         tx.set(matchRef, newMatch);
 
-        responseData = { match: newMatch, turnEntry, events, extraTurn, winner };
+        responseData = {
+          match: sanitizeMatchForCaller(newMatch, caller.uid),
+          turnEntry,
+          events,
+          extraTurn,
+          winner,
+        };
+      });
+
+      res.json(responseData);
+    } catch (e) {
+      res.status(e.statusCode ?? 500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /api/joustur/match/:id/clash ───────────────────────────────────────
+  app.post('/api/joustur/match/:id/clash', limiter, async (req, res) => {
+    if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
+    let caller;
+    try { caller = await authenticateFirebaseUser(req); }
+    catch (e) { res.status(e.statusCode ?? 500).json({ error: e.message }); return; }
+
+    const matchId = String(req.params?.id ?? '').trim();
+    const stance = String(req.body?.stance ?? '').trim().toLowerCase();
+    if (!JOUST_CLASH_STANCES.includes(stance)) {
+      res.status(422).json({ error: 'Choose a valid clash stance: charge, guard, or feint.' });
+      return;
+    }
+
+    try {
+      const matchRef = adminDb.collection(MATCHES_COL).doc(matchId);
+      let responseData;
+
+      await adminDb.runTransaction(async (tx) => {
+        const snap = await tx.get(matchRef);
+        if (!snap.exists) throw badRequest('Match not found.', 404);
+        let match = snap.data();
+
+        if (match.challengerUid !== caller.uid && match.defenderUid !== caller.uid) {
+          throw badRequest('Access denied.', 403);
+        }
+        if (match.status !== 'active') throw badRequest('This match is not active.', 409);
+        if (!match.board.clash) throw badRequest('There is no active joust clash to resolve.', 409);
+
+        match = maybeLockSoloBotClashChoice(match);
+        const clash = match.board.clash;
+        const isAttacker = clash.attackerUid === caller.uid;
+        const isDefender = clash.defenderUid === caller.uid;
+        if (!isAttacker && !isDefender) {
+          throw badRequest('Only the riders in this joust clash may submit a stance.', 403);
+        }
+        if (isAttacker && clash.attackerChoiceLocked) {
+          throw badRequest('You have already locked in your clash stance.', 409);
+        }
+        if (isDefender && clash.defenderChoiceLocked) {
+          throw badRequest('You have already locked in your clash stance.', 409);
+        }
+
+        const nextMatch = cloneJson(match);
+        if (isAttacker) {
+          nextMatch.board.clash.attackerChoice = stance;
+          nextMatch.board.clash.attackerChoiceLocked = true;
+        } else {
+          nextMatch.board.clash.defenderChoice = stance;
+          nextMatch.board.clash.defenderChoiceLocked = true;
+        }
+
+        let events = [{
+          type: 'clashChoiceLocked',
+          playerUid: caller.uid,
+          role: isAttacker ? 'attacker' : 'defender',
+        }];
+        let capturedCardId = null;
+        let clashSummary = `Joust clash stance locked by ${isAttacker ? 'the attacker' : 'the defender'}.`;
+        let finalMatch = maybeLockSoloBotClashChoice(nextMatch);
+
+        if (finalMatch.board.clash?.attackerChoiceLocked && finalMatch.board.clash?.defenderChoiceLocked) {
+          const resolved = resolvePendingClash(finalMatch);
+          finalMatch = resolved.match;
+          events = [...events, ...resolved.events];
+          capturedCardId = resolved.capturedCardId;
+          clashSummary = resolved.summary;
+        }
+
+        let winner = finalMatch.winnerUid;
+        const botTurnEntries = [];
+        if (
+          finalMatch.mode === 'solo' &&
+          finalMatch.status === 'active' &&
+          finalMatch.board.clash === null &&
+          finalMatch.board.activePlayerUid === finalMatch.defenderUid
+        ) {
+          const soloResolution = resolveSoloBotTurns(finalMatch, matchId, randomUUID);
+          finalMatch = soloResolution.match;
+          botTurnEntries.push(...soloResolution.turnEntries);
+          winner = finalMatch.winnerUid;
+        }
+
+        if (
+          finalMatch.status === 'completed' &&
+          finalMatch.winnerUid &&
+          !match.rewardsGranted
+        ) {
+          finalMatch.rewardsGranted = true;
+          applyMatchRewards(tx, adminDb, finalMatch, FieldValue);
+        }
+
+        const clashActorCardId = isAttacker
+          ? clash.attackerCardId
+          : clash.defenderCardId;
+        const clashActorState = getMatchPlayerState(match, caller.uid);
+        const clashActorPosition = clashActorState?.riders?.find(
+          (rider) => rider.cardId === clashActorCardId,
+        )?.position ?? 0;
+
+        const turnEntry = buildTurnLogEntry({
+          id: `turn-${randomUUID()}`,
+          matchId,
+          turn: match.board.turn,
+          playerUid: caller.uid,
+          rollResult: match.board.lastRollResult ?? 0,
+          movedCardId: clashActorCardId,
+          fromPosition: clashActorPosition,
+          toPosition: clashActorPosition,
+          capturedCardId,
+          extraTurn: false,
+          supportActivated: false,
+          events,
+          summaryOverride: clashSummary,
+          timestamp: nowIso(),
+        });
+        tx.set(
+          matchRef.collection(TURNS_SUBCOL).doc(turnEntry.id),
+          turnEntry,
+        );
+
+        botTurnEntries.forEach(({ turnEntry: botTurnEntry }) => {
+          tx.set(
+            matchRef.collection(TURNS_SUBCOL).doc(botTurnEntry.id),
+            botTurnEntry,
+          );
+        });
+
+        finalMatch.updatedAt = nowIso();
+        tx.set(matchRef, finalMatch);
+        responseData = {
+          match: sanitizeMatchForCaller(finalMatch, caller.uid),
+          turnEntry,
+          events,
+          extraTurn: false,
+          winner,
+        };
       });
 
       res.json(responseData);
