@@ -109,7 +109,7 @@ export function JousturRules() {
           <div className="joustur-rules__lane joustur-rules__lane--shared">
             <p>Shared lane: tiles 7→8→9→10→11→12→13→14</p>
             <p className="joustur-rules__lane-note">
-              Both players share these tiles — captures apply · Stealth Alcoves at positions 6, 8, 12
+              Both players share these tiles — captures apply · Stealth Alcoves at path indices 6, 8, 12
             </p>
           </div>
         </div>

@@ -282,6 +282,7 @@ function buildRiderRuntime(snapshot) {
  * @param {object}  support  JousturSupportSnapshot.
  * @param {string}  faction  Resolved JousturFaction key.
  * @param {number[]} playerPath  PLAYER1_PATH or PLAYER2_PATH.
+ *   Defaults to PLAYER1_PATH — callers MUST pass PLAYER2_PATH for the defender.
  */
 export function buildInitialPlayerState(uid, lineup, support, faction, playerPath = PLAYER1_PATH) {
   return {
