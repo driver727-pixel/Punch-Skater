@@ -128,6 +128,7 @@ export async function getJousturMatch(matchId: string): Promise<JousturMatch> {
 
 export interface RollResult {
   roll: number;
+  dice?: number[];
   legalMoves: JousturLegalMove[];
   canActivateSupport: { canActivate: boolean; reason: string | null };
 }

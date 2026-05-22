@@ -126,7 +126,7 @@ test('board constants are consistent', () => {
   assert.equal(PRIVATE_EXIT_MIN, 13);
   assert.equal(PRIVATE_EXIT_MAX, 14);
   assert.equal(RIDER_COUNT, 6);
-  assert.equal(SHARD_COUNT, 4);
+  assert.equal(SHARD_COUNT, 3);
 });
 
 test('PLAYER1_PATH and PLAYER2_PATH have 14 tiles each', () => {
@@ -307,13 +307,18 @@ test('validateLineup — missing support', () => {
   assert.equal(valid, false);
 });
 
-// ── USB Shard roll ─────────────────────────────────────────────────────────────
+// ── Tetrahedral Dice roll ──────────────────────────────────────────────────────
 
-test('rollUsbShards always returns a value in [0, SHARD_COUNT]', () => {
+test('rollUsbShards always returns total in [0, SHARD_COUNT] and dice array', () => {
   for (let seed = 0; seed < 500; seed++) {
     const rng = createSeededRng(`test-seed-${seed}`);
-    const roll = rollUsbShards(rng);
-    assert.ok(roll >= 0 && roll <= SHARD_COUNT, `roll ${roll} out of range for seed ${seed}`);
+    const { total, dice } = rollUsbShards(rng);
+    assert.ok(total >= 0 && total <= SHARD_COUNT, `total ${total} out of range for seed ${seed}`);
+    assert.equal(dice.length, SHARD_COUNT);
+    assert.equal(dice.reduce((a, b) => a + b, 0), total);
+    for (const d of dice) {
+      assert.ok(d === 0 || d === 1, `die value ${d} is not binary`);
+    }
   }
 });
 
@@ -321,13 +326,14 @@ test('rollUsbShards is deterministic for the same seed', () => {
   const seed = generateRollSeed('match-1', 5, 1234567890);
   const a = rollUsbShards(createSeededRng(seed));
   const b = rollUsbShards(createSeededRng(seed));
-  assert.equal(a, b);
+  assert.equal(a.total, b.total);
+  assert.deepEqual(a.dice, b.dice);
 });
 
 test('rollUsbShards produces different results for different seeds', () => {
   const results = new Set();
   for (let i = 0; i < 30; i++) {
-    results.add(rollUsbShards(createSeededRng(`seed-${i}`)));
+    results.add(rollUsbShards(createSeededRng(`seed-${i}`)).total);
   }
   // With 30 different seeds we should see more than just one value.
   assert.ok(results.size > 1);
@@ -335,11 +341,15 @@ test('rollUsbShards produces different results for different seeds', () => {
 
 // ── Legal move generation ─────────────────────────────────────────────────────
 
-test('getLegalMoves — roll 0 returns empty', () => {
+test('getLegalMoves — roll 0 means move 4 tiles', () => {
   const playerA = makePlayer('A');
   const playerB = makePlayer('B');
   const board = makeBoard('A', 0);
-  assert.deepEqual(getLegalMoves(board, playerA, playerB), []);
+  const moves = getLegalMoves(board, playerA, playerB);
+  // Roll 0 = effective move of 4, so riders at pos 0 should target pos 4.
+  assert.ok(moves.length > 0);
+  assert.equal(moves[0].toPosition, 4);
+  assert.equal(moves[0].fromPosition, 0);
 });
 
 test('getLegalMoves — off-board rider enters at roll position', () => {
@@ -921,10 +931,12 @@ test('chooseAutomatedMove prefers an exit over other legal moves', () => {
   assert.equal(choice.cardId, playerA.riders[0].cardId);
 });
 
-test('chooseAutomatedMove uses support when a zero roll leaves no legal moves', () => {
-  const playerA = makePlayer('A', RIDER_COUNT, 'Ne0n Legion');
+test('chooseAutomatedMove uses support when no legal moves exist', () => {
+  // Position all riders at 14 with roll 2 — overshoots (no legal moves).
+  let playerA = makePlayer('A', RIDER_COUNT, 'Ne0n Legion');
+  playerA = setRiderPositions(playerA, [14, 14, 14, 14, 14, 14]);
   const playerB = makePlayer('B');
-  const choice = chooseAutomatedMove(makeBoard('A', 0), playerA, playerB);
+  const choice = chooseAutomatedMove(makeBoard('A', 2), playerA, playerB);
   assert.equal(choice.activateSupport, true);
   assert.equal(choice.cardId, null);
 });

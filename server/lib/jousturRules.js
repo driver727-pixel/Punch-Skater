@@ -32,7 +32,7 @@ export const PRIVATE_EXIT_MIN = 13;
 export const PRIVATE_EXIT_MAX = 14;
 export const STEALTH_ALCOVES = Object.freeze(new Set([4, 6, 8, 12, 14]));
 export const RIDER_COUNT = 6;
-export const SHARD_COUNT = 4; // binary dice per roll
+export const SHARD_COUNT = 3; // tetrahedral binary dice per roll
 const RIDER_NUMBER_OFFSET = 1;
 
 /**
@@ -192,7 +192,7 @@ export function resolveRiderTrait(traitNames) {
   return 'boost';
 }
 
-// ── Seeded PRNG & USB Shard roll ──────────────────────────────────────────────
+// ── Seeded PRNG & Tetrahedral Dice roll ───────────────────────────────────────
 
 function fnv1a32(str) {
   let h = 0x811c9dc5;
@@ -233,15 +233,20 @@ export function generateRollSeed(matchId, turn, timestamp) {
 }
 
 /**
- * Roll SHARD_COUNT binary dice, return their sum (0–SHARD_COUNT).
+ * Roll SHARD_COUNT tetrahedral binary dice.
+ * Each die has 2 marked corners and 2 unmarked corners — 50% chance of 1.
+ * Returns an object: { total, dice } where dice is an array of individual results (0 or 1).
  * @param {{ range: (min: number, max: number) => number }} rng
  */
 export function rollUsbShards(rng) {
+  const dice = [];
   let total = 0;
   for (let i = 0; i < SHARD_COUNT; i++) {
-    total += rng.range(0, 1);
+    const d = rng.range(0, 1);
+    dice.push(d);
+    total += d;
   }
-  return total;
+  return { total, dice };
 }
 
 // ── Lineup validation ─────────────────────────────────────────────────────────
@@ -307,6 +312,10 @@ export function buildInitialBoardState(challengerUid) {
     turn: 1,
     activePlayerUid: challengerUid,
     rollResult: null,
+    diceResults: null,
+    lastRollResult: null,
+    lastDiceResults: null,
+    lastRollPlayerUid: null,
     smokeScreenUid: null,
     smokeScreenExpiresAfterTurn: null,
   };
@@ -330,7 +339,10 @@ export function buildInitialBoardState(challengerUid) {
  */
 export function getLegalMoves(boardState, activePlayer, opponentPlayer) {
   const { rollResult } = boardState;
-  if (typeof rollResult !== 'number' || rollResult === 0) return [];
+  if (typeof rollResult !== 'number') return [];
+
+  // A roll of 0 means the player moves 4 tiles (tetrahedral dice special rule).
+  const effectiveRoll = rollResult === 0 ? 4 : rollResult;
 
   const opponentProtected = boardState.smokeScreenUid === opponentPlayer.uid;
   const activePath = activePlayer.playerPath || PLAYER1_PATH;
@@ -341,7 +353,7 @@ export function getLegalMoves(boardState, activePlayer, opponentPlayer) {
     if (rider.isScored) continue;
 
     const fromPos = rider.position;
-    const toPos = fromPos + rollResult;
+    const toPos = fromPos + effectiveRoll;
 
     // Overshooting the exit is not allowed (exact exit required).
     if (toPos > EXIT_POSITION) continue;
@@ -518,7 +530,7 @@ export function chooseAutomatedMove(boardState, activePlayer, opponentPlayer) {
         supportTargetCardId: sideRouteTarget.cardId,
       };
     }
-    if (legalMoves.length === 0 || boardState.rollResult === 0) {
+    if (legalMoves.length === 0) {
       return {
         cardId: null,
         activateSupport: true,
@@ -634,6 +646,7 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
           // player rolls and moves again.
           extraTurn = true;
           newBoard.rollResult = null; // forces a fresh /roll call
+          newBoard.diceResults = null;
           events.push({ type: 'reroll' });
           break;
 
@@ -673,7 +686,9 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
     const rider = newActive.riders.find((r) => r.cardId === moveChoice.cardId);
     if (rider && !rider.isScored) {
       const fromPos = rider.position;
-      const toPos = fromPos + (newBoard.rollResult ?? 0);
+      const rawRoll = newBoard.rollResult ?? 0;
+      const effectiveRoll = rawRoll === 0 ? 4 : rawRoll;
+      const toPos = fromPos + effectiveRoll;
 
       // Friendly blockade — mirrors the getLegalMoves check so applyMove
       // is safe when called directly (e.g., replay engine, future modes).
@@ -729,6 +744,10 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
   }
 
   // ── Advance turn ──────────────────────────────────────────────────────────
+  // Store the current roll as the last roll so the opponent can see it.
+  newBoard.lastRollResult = newBoard.rollResult;
+  newBoard.lastDiceResults = newBoard.diceResults;
+  newBoard.lastRollPlayerUid = activePlayer.uid;
   newBoard.turn += 1;
 
   // For overclock, the boosted roll is preserved so the player can use it on
@@ -738,6 +757,7 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
     : null;
   if (supportEffectUsed !== 'overclock') {
     newBoard.rollResult = null;
+    newBoard.diceResults = null;
   }
 
   if (!extraTurn) {
@@ -853,7 +873,7 @@ export function buildTurnLogEntry(opts) {
     parts.push(`support activated (${opts.supportEffect ?? ''})`);
   }
   if (opts.rollResult === 0) {
-    parts.push('passed (zero roll)');
+    parts.push('rolled zero — moved 4 tiles');
   }
   const summary = parts.length ? parts.join(', ') : 'turn taken';
 

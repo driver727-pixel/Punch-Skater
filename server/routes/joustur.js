@@ -11,7 +11,7 @@
  *   DELETE /api/joustur/queue              — leave the casual queue.
  *   GET    /api/joustur/matches             — list matches involving the caller.
  *   GET    /api/joustur/match/:id           — fetch a specific match.
- *   POST   /api/joustur/match/:id/roll      — (step 1) generate USB Shard roll.
+ *   POST   /api/joustur/match/:id/roll      — (step 1) generate dice roll.
  *   POST   /api/joustur/match/:id/move      — (step 2) submit rider move / support.
  */
 
@@ -225,12 +225,13 @@ function resolveSoloBotTurns(match, matchId, randomUUID) {
   ) {
     const activeState = nextMatch.defenderState;
     const opponentState = nextMatch.challengerState;
-    const roll = rollUsbShards(
+    const { total: roll, dice: botDice } = rollUsbShards(
       createSeededRng(generateRollSeed(matchId, nextMatch.board.turn, 'solo-bot')),
     );
     const boardWithRoll = {
       ...nextMatch.board,
       rollResult: roll,
+      diceResults: botDice,
     };
     const choice = chooseAutomatedMove(boardWithRoll, activeState, opponentState);
     const fromPosition = choice.cardId
@@ -802,7 +803,7 @@ export function registerJousturRoutes(app, {
   });
 
   // ── POST /api/joustur/match/:id/roll ────────────────────────────────────────
-  // Step 1 of the two-step turn flow: generate the USB Shard roll for the
+  // Step 1 of the two-step turn flow: generate the dice roll for the
   // active player.  The roll is stored in the match document before being
   // returned so both players can always read the canonical result.
   //
@@ -840,21 +841,22 @@ export function registerJousturRoutes(app, {
         // Generate deterministic roll.
         const seed = generateRollSeed(matchId, match.board.turn, timestamp);
         const rng  = createSeededRng(seed);
-        const roll = rollUsbShards(rng);
+        const { total: roll, dice } = rollUsbShards(rng);
 
         // Compute legal moves for the client.
         const isChallenger = match.challengerUid === caller.uid;
         const activeState   = isChallenger ? match.challengerState : match.defenderState;
         const opponentState = isChallenger ? match.defenderState   : match.challengerState;
-        const boardWithRoll = { ...match.board, rollResult: roll };
+        const boardWithRoll = { ...match.board, rollResult: roll, diceResults: dice };
         const legalMoves = getLegalMoves(boardWithRoll, activeState, opponentState);
 
         tx.update(matchRef, {
           'board.rollResult': roll,
+          'board.diceResults': dice,
           updatedAt: nowIso(),
         });
 
-        return { roll, legalMoves, canActivateSupport: canActivateSupportEffect(
+        return { roll, dice, legalMoves, canActivateSupport: canActivateSupportEffect(
           activeState.support.supportEffect,
           activeState,
         ) };
@@ -926,8 +928,8 @@ export function registerJousturRoutes(app, {
           if (!legal.some((m) => m.cardId === cardId)) {
             throw badRequest('That move is not legal for the current roll.', 422);
           }
-        } else if (!activateSupport && match.board.rollResult !== 0) {
-          // Player must either move a rider or activate support (unless roll is 0).
+        } else if (!activateSupport) {
+          // Player must either move a rider or activate support when legal moves exist.
           const legal = getLegalMoves(match.board, activeState, opponentState);
           if (legal.length > 0) {
             throw badRequest('You must move a rider (or activate support) when legal moves exist.', 422);

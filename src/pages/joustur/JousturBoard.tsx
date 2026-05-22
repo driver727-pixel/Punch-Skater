@@ -2,7 +2,7 @@
  * JousturBoard.tsx — Async game board for an active Joustur Skatur match.
  *
  * Turn flow:
- *   1. Active player clicks "Roll USB Shards" → rolls are fetched from server.
+ *   1. Active player clicks "Roll Dice" → rolls are fetched from server.
  *   2. Active player clicks a legal rider (or activates support).
  *   3. Server applies the move; board state refreshes.
  *
@@ -483,6 +483,7 @@ export function JousturBoard() {
     reason: string | null;
   }>({ canActivate: false, reason: null });
   const [rollResult, setRollResult] = useState<number | null>(null);
+  const [diceResults, setDiceResults] = useState<number[] | null>(null);
   const [lastEvent, setLastEvent] = useState<string | null>(null);
   // sideRoute target selection — kept in JousturBoard so it survives re-renders
   // of PlayerPanel during polling.
@@ -505,6 +506,7 @@ export function JousturBoard() {
         m.canActivateSupport !== undefined
       ) {
         setRollResult(m.board.rollResult);
+        setDiceResults(m.board.diceResults ?? null);
         setLegalMoves(m.legalMoves);
         setCanActivateSupport(m.canActivateSupport);
       }
@@ -542,9 +544,10 @@ export function JousturBoard() {
     try {
       const result = await rollJousturShards(matchId);
       setRollResult(result.roll);
+      setDiceResults(result.dice ?? null);
       setLegalMoves(result.legalMoves);
       setCanActivateSupport(result.canActivateSupport);
-      setMatch((m) => m ? { ...m, board: { ...m.board, rollResult: result.roll } } : m);
+      setMatch((m) => m ? { ...m, board: { ...m.board, rollResult: result.roll, diceResults: result.dice ?? null } } : m);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Roll failed.");
     } finally {
@@ -565,6 +568,7 @@ export function JousturBoard() {
         });
         setMatch(result.match);
         setRollResult(null);
+        setDiceResults(null);
         setLegalMoves([]);
         setCanActivateSupport({ canActivate: false, reason: null });
         setSideRouteTarget("");
@@ -636,9 +640,26 @@ export function JousturBoard() {
         {isMyTurn
           ? rollPending
             ? "🎯 Pick a rider to move"
-            : "🎲 Your turn — roll the USB Shards"
+            : "🎲 Your turn — roll dice"
           : "⏳ Waiting for opponent…"}
       </div>
+
+      {/* Opponent's last dice roll — visible when waiting for opponent */}
+      {!isMyTurn && match.board.lastDiceResults && match.board.lastRollPlayerUid && (
+        <div className="joustur-board__roll-area joustur-board__roll-area--opponent">
+          <p className="joustur-board__opponent-roll-label">
+            Opponent rolled: {match.board.lastRollResult === 0 ? "0 → Move 4!" : match.board.lastRollResult}
+          </p>
+          <CyberpunkD4Dice
+            rolling={false}
+            result={match.board.lastRollResult}
+            dice={match.board.lastDiceResults}
+            onRoll={() => {}}
+            disabled
+            displayOnly
+          />
+        </div>
+      )}
 
       {/* Animated d4 dice — shown whenever it is the active player's turn */}
       {isMyTurn && (
@@ -646,6 +667,7 @@ export function JousturBoard() {
           <CyberpunkD4Dice
             rolling={rolling}
             result={rollPending && !rolling ? (rollResult ?? match.board.rollResult) : null}
+            dice={rollPending && !rolling ? (diceResults ?? match.board.diceResults ?? null) : null}
             onRoll={handleRoll}
             disabled={rolling}
           />

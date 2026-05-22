@@ -26,7 +26,7 @@ const SUPPORT_EFFECT_LABELS: Record<string, string> = {
   rustKids:        "recoveryPing — recover a captured rider",
   neonSaints:      "crowdRoar — extra turn",
   signalGhosts:    "smokeScreen — immune to capture for 1 opponent turn",
-  chromeSyndicate: "reroll — regenerate the USB Shard roll",
+  chromeSyndicate: "reroll — regenerate the dice roll",
   voltageVultures: "overclock — +1 to current roll",
   alleyWraiths:    "sideRoute — teleport a rider from entry to exit zone",
 };

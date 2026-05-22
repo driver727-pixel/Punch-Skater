@@ -28,13 +28,13 @@ const FACTIONS = [
     faction: "Chrome Syndicate",
     crew: "The Team",
     passive: "precisionCast",
-    support: "reroll — regenerate the USB Shard roll; extra turn to act on the new result",
+    support: "reroll — regenerate the dice roll; extra turn to act on the new result",
   },
   {
     faction: "Voltage Vultures",
     crew: "Iron Curtains",
     passive: "surgeTrigger",
-    support: "overclock — add +1 to the current roll; extra turn",
+    support: "overclock — add +1 to the current roll (can exceed 3); extra turn",
   },
   {
     faction: "Alley Wraiths",
@@ -82,9 +82,10 @@ export function JousturRules() {
             the same time.
           </li>
           <li>
-            On your turn, first <strong>roll the USB Shards</strong> (4 binary
-            dice → 0–4 steps). Then pick one of your riders to advance by that
-            many positions.
+            On your turn, first <strong>roll dice</strong> (3 tetrahedral
+            dice — each with 2 marked corners and 2 unmarked corners. Count
+            marked corners facing up → 0–3 steps). A roll of 0 lets you
+            move <strong>4 tiles</strong> instead of skipping your turn!
           </li>
           <li>
             Once per match, instead of moving a rider, you may{" "}
