@@ -706,6 +706,17 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
   const events = [];
   let extraTurn = false;
   let capturedCardId = null;
+  const finishRiderMove = (rider, toPos) => {
+    rider.position = toPos;
+    if (toPos === EXIT_POSITION) {
+      rider.isScored = true;
+      newActive.scoredCount = newActive.riders.filter((r) => r.isScored).length;
+      events.push({ type: 'exit', cardId: rider.cardId });
+    } else if (isStealthAlcove(toPos)) {
+      extraTurn = true;
+      events.push({ type: 'stealthAlcove', cardId: rider.cardId, position: toPos });
+    }
+  };
 
   // ── Support activation ────────────────────────────────────────────────────
   if (moveChoice.activateSupport && !newActive.supportRuntime.activated) {
@@ -816,7 +827,7 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
           const opponentProtected = newBoard.smokeScreenUid === newOpp.uid;
           const blockedByOpponent = oppRider && (isStealthAlcove(toPos) || opponentProtected);
           if (oppRider && !blockedByOpponent) {
-            rider.position = toPos;
+            finishRiderMove(rider, toPos);
             newBoard.clash = {
               attackerUid: newActive.uid,
               defenderUid: newOpp.uid,
@@ -837,30 +848,11 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
               defenderCardId: oppRider.cardId,
               tile: activeTile,
             });
-          } else {
-            if (!blockedByOpponent) {
-              rider.position = toPos;
-              if (toPos === EXIT_POSITION) {
-                rider.isScored = true;
-                newActive.scoredCount = newActive.riders.filter((r) => r.isScored).length;
-                events.push({ type: 'exit', cardId: rider.cardId });
-              } else if (isStealthAlcove(toPos)) {
-                extraTurn = true;
-                events.push({ type: 'stealthAlcove', cardId: rider.cardId, position: toPos });
-              }
-            }
+          } else if (!blockedByOpponent) {
+            finishRiderMove(rider, toPos);
           }
-        }
-        if (!isSharedPosition(toPos)) {
-          rider.position = toPos;
-          if (toPos === EXIT_POSITION) {
-            rider.isScored = true;
-            newActive.scoredCount = newActive.riders.filter((r) => r.isScored).length;
-            events.push({ type: 'exit', cardId: rider.cardId });
-          } else if (isStealthAlcove(toPos)) {
-            extraTurn = true;
-            events.push({ type: 'stealthAlcove', cardId: rider.cardId, position: toPos });
-          }
+        } else {
+          finishRiderMove(rider, toPos);
         }
       }
     }

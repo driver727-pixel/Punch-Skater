@@ -1296,15 +1296,23 @@ export function registerJousturRoutes(app, {
           applyMatchRewards(tx, adminDb, finalMatch, FieldValue);
         }
 
+        const clashActorCardId = isAttacker
+          ? clash.attackerCardId
+          : clash.defenderCardId;
+        const clashActorState = getMatchPlayerState(match, caller.uid);
+        const clashActorPosition = clashActorState?.riders?.find(
+          (rider) => rider.cardId === clashActorCardId,
+        )?.position ?? 0;
+
         const turnEntry = buildTurnLogEntry({
           id: `turn-${randomUUID()}`,
           matchId,
           turn: match.board.turn,
           playerUid: caller.uid,
           rollResult: match.board.lastRollResult ?? 0,
-          movedCardId: null,
-          fromPosition: 0,
-          toPosition: 0,
+          movedCardId: clashActorCardId,
+          fromPosition: clashActorPosition,
+          toPosition: clashActorPosition,
           capturedCardId,
           extraTurn: false,
           supportActivated: false,
