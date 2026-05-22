@@ -215,6 +215,7 @@ test('JOUST_CLASH_STANCES exposes the three hidden duel options', () => {
 test('getPreferredClashStance maps traits into stance bonuses', () => {
   assert.equal(getPreferredClashStance('boost'), 'charge');
   assert.equal(getPreferredClashStance('strike'), 'charge');
+  assert.equal(getPreferredClashStance('surge'), 'charge');
   assert.equal(getPreferredClashStance('guard'), 'guard');
   assert.equal(getPreferredClashStance('anchor'), 'guard');
   assert.equal(getPreferredClashStance('feint'), 'feint');

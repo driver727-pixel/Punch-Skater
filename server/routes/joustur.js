@@ -1262,7 +1262,7 @@ export function registerJousturRoutes(app, {
           role: isAttacker ? 'attacker' : 'defender',
         }];
         let capturedCardId = null;
-        let summaryOverride = `Joust clash stance locked by ${isAttacker ? 'the attacker' : 'the defender'}.`;
+        let clashSummary = `Joust clash stance locked by ${isAttacker ? 'the attacker' : 'the defender'}.`;
         let finalMatch = maybeLockSoloBotClashChoice(nextMatch);
 
         if (finalMatch.board.clash?.attackerChoiceLocked && finalMatch.board.clash?.defenderChoiceLocked) {
@@ -1270,7 +1270,7 @@ export function registerJousturRoutes(app, {
           finalMatch = resolved.match;
           events = [...events, ...resolved.events];
           capturedCardId = resolved.capturedCardId;
-          summaryOverride = resolved.summary;
+          clashSummary = resolved.summary;
         }
 
         let winner = finalMatch.winnerUid;
@@ -1301,7 +1301,7 @@ export function registerJousturRoutes(app, {
           matchId,
           turn: match.board.turn,
           playerUid: caller.uid,
-          rollResult: match.board.lastRollResult ?? match.board.rollResult ?? 0,
+          rollResult: match.board.lastRollResult ?? 0,
           movedCardId: null,
           fromPosition: 0,
           toPosition: 0,
@@ -1309,7 +1309,7 @@ export function registerJousturRoutes(app, {
           extraTurn: false,
           supportActivated: false,
           events,
-          summaryOverride,
+          summaryOverride: clashSummary,
           timestamp: nowIso(),
         });
         tx.set(

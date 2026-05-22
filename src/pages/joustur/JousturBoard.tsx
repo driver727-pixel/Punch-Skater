@@ -155,6 +155,12 @@ function getPieceInitials(name: string): string {
   return chars.filter(Boolean).join("").toUpperCase() || "??";
 }
 
+function isClashResolvedEvent(
+  event: unknown,
+): event is { type: "clashResolved"; winnerUid?: string } {
+  return Boolean(event && typeof event === "object" && (event as { type?: string }).type === "clashResolved");
+}
+
 const POS_LABELS: Record<number, string> = {
   0: "Off board",
   15: "Scored",
@@ -677,9 +683,7 @@ export function JousturBoard() {
       try {
         const result = await submitJousturClashChoice(matchId, { stance });
         setMatch(result.match);
-        const resolvedEvent = result.events?.find((event) => (event as { type?: string }).type === "clashResolved") as
-          | { winnerUid?: string }
-          | undefined;
+        const resolvedEvent = result.events?.find(isClashResolvedEvent);
         if (resolvedEvent?.winnerUid) {
           setLastEvent(resolvedEvent.winnerUid === myUid ? "⚔️ You won the joust clash!" : "💥 You lost the joust clash.");
         } else {
