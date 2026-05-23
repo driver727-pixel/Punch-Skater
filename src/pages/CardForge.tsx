@@ -4,7 +4,6 @@ import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
 import { ForgeObjectivePanel } from "../components/ForgeObjectivePanel";
-import { RetroWireframeTunnel } from "../components/RetroWireframeTunnel";
 import {
   ACCENT_PRESETS,
   AGE_GROUPS,
@@ -125,29 +124,13 @@ export function CardForge() {
           </section>
         </div>
 
-        <aside className="forge-hero__art" aria-hidden="true">
+        <aside className="forge-hero__art">
           <div className="forge-hero__art-frame">
-            <RetroWireframeTunnel className="forge-hero__tunnel" />
-            <div className="forge-hero__sun" />
-            <div className="forge-hero__laser" />
-            <div className="forge-hero__dish" />
-            <div className="forge-hero__cassette">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="forge-hero__rover">
-              <span className="forge-hero__rover-eye" />
-              <span className="forge-hero__rover-wheel forge-hero__rover-wheel--front" />
-              <span className="forge-hero__rover-wheel forge-hero__rover-wheel--rear" />
-            </div>
-            <div className="forge-hero__switches">
-              <span className="forge-hero__switch forge-hero__switch--on" />
-              <span className="forge-hero__switch" />
-              <span className="forge-hero__switch forge-hero__switch--hot" />
-            </div>
-            <div className="forge-hero__cable forge-hero__cable--one" />
-            <div className="forge-hero__cable forge-hero__cable--two" />
+            <img
+              src="/Welcome-Skater.jpg"
+              alt="Welcome Skater"
+              className="forge-hero__art-img"
+            />
           </div>
         </aside>
       </section>
