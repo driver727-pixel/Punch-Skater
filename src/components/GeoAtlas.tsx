@@ -410,7 +410,7 @@ export function GeoAtlas({
                 className="geo-atlas__map geo-atlas__map--australia"
                 data-testid="australia-overmap"
                 role="img"
-                aria-label="The Continental Australian overmap showing Punch Skater district hubs and subway corridors"
+                aria-label="The Continental Australian overmap showing Punch Skater™ district hubs and subway corridors"
               >
                 <svg className="geo-atlas__svg" viewBox="0 0 100 100" aria-hidden="true">
                   <path

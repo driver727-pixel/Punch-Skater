@@ -1,11 +1,11 @@
-# Joustur Skatur — MVP Technical Spec
+# Joustur Skatur™ — MVP Technical Spec
 
-> Async Royal Game of Ur-inspired board mode for Punch Skater.
+> Async Royal Game of Ur-inspired board mode for Punch Skater™.
 > Last updated: 2026-05-20
 
 ## Summary
 
-Joustur Skatur is an async board game mode where two players race their rider
+Joustur Skatur™ is an async board game mode where two players race their rider
 crews across a shared track.  Each player selects **6 rider cards + 1 support
 card**.  Riders move by rolling 4 USB Shards (0–4 total steps).  Stealth
 Alcoves are safe zones that also grant an extra turn.  The first player to
@@ -15,9 +15,9 @@ score all 6 riders wins.
 
 ## Faction mapping
 
-| Punch Skater crew       | Joustur faction    |
+| Punch Skater™ crew       | Joustur faction    |
 |-------------------------|--------------------|
-| Punch Skaters           | Rust Kids          |
+| Punch Skater™s           | Rust Kids          |
 | Ne0n Legion             | Neon Saints        |
 | Qu111s (Quills)         | Signal Ghosts      |
 | The Team                | Chrome Syndicate   |

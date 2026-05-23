@@ -1,5 +1,5 @@
 /**
- * joustur.ts — Client-side HTTP wrapper for the Joustur Skatur API.
+ * joustur.ts — Client-side HTTP wrapper for the Joustur Skatur™ API.
  *
  * All requests are authenticated with the current Firebase user's ID token.
  */

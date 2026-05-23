@@ -5,10 +5,10 @@ import type { CardPayload, Faction, Rarity } from "../../lib/types";
 import type { LayerState } from "./useForgeLayers";
 
 const RARITY_REVEAL_CONFIG: Record<Rarity, { emoji: string; title: string; message: string; cssKey: string }> = {
-  "Punch Skater": {
+  "Punch Skater™": {
     emoji: "🛹",
     title: "Card Forged!",
-    message: "Punch Skater class. Lace up and hit the streets.",
+    message: "Punch Skater™ class. Lace up and hit the streets.",
     cssKey: "punch-skater",
   },
   Apprentice: {

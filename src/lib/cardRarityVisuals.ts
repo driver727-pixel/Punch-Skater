@@ -1,7 +1,7 @@
 import type { Rarity } from "./types";
 
 export const RARITY_COLORS: Record<Rarity, string> = {
-  "Punch Skater": "#aa9988",
+  "Punch Skater™": "#aa9988",
   Apprentice: "#44ddaa",
   Master: "#cc44ff",
   Rare: "#4488ff",

@@ -281,7 +281,7 @@ service cloud.firestore {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // Joustur Skatur collections — all writes are server-only (Admin SDK).
+    // Joustur Skatur™ collections — all writes are server-only (Admin SDK).
     // Clients may read only their own documents or documents they participate in.
     // ══════════════════════════════════════════════════════════════════════════
 

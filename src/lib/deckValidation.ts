@@ -3,12 +3,12 @@
  *
  * Enforces the "5:1 initiation rule" for a player's first deck:
  *
- *   PRE-INITIATION  (deck has fewer than MIN_PUNCH_SKATERS Punch Skater cards)
- *     • Only Punch Skater rarity cards may be added.
+ *   PRE-INITIATION  (deck has fewer than MIN_PUNCH_SKATERS Punch Skater™ cards)
+ *     • Only Punch Skater™ rarity cards may be added.
  *     • One Legendary card is permitted alongside them.
  *     • Apprentice / Master / Rare cards are blocked until initiation is met.
  *
- *   POST-INITIATION (deck has ≥ MIN_PUNCH_SKATERS Punch Skater cards)
+ *   POST-INITIATION (deck has ≥ MIN_PUNCH_SKATERS Punch Skater™ cards)
  *     • All card types — including additional Legendaries — may be added freely.
  *
  * These rules apply **only** to the player's first deck (index 0 in the list).
@@ -17,7 +17,7 @@
 
 import type { CardPayload, DeckPayload, Rarity } from "./types";
 
-/** Minimum number of Punch Skater cards required to initiate the first deck. */
+/** Minimum number of Punch Skater™ cards required to initiate the first deck. */
 export const FIRST_DECK_MIN_PUNCH_SKATERS = 5;
 
 /** Maximum Legendary cards allowed while the first deck is still pre-initiation. */
@@ -28,9 +28,9 @@ export function isFirstDeck(deck: DeckPayload, allDecks: DeckPayload[]): boolean
   return allDecks.length > 0 && allDecks[0].id === deck.id;
 }
 
-/** Returns the number of Punch Skater rarity cards in a card list. */
+/** Returns the number of Punch Skater™ rarity cards in a card list. */
 export function countPunchSkaters(cards: CardPayload[]): number {
-  return cards.filter((c) => c.prompts.rarity === "Punch Skater").length;
+  return cards.filter((c) => c.prompts.rarity === "Punch Skater™").length;
 }
 
 /** Returns the number of Legendary rarity cards in a card list. */
@@ -40,7 +40,7 @@ export function countLegendaries(cards: CardPayload[]): number {
 
 /**
  * Returns true when the first deck has met its initiation requirement
- * (≥ FIRST_DECK_MIN_PUNCH_SKATERS Punch Skater cards present).
+ * (≥ FIRST_DECK_MIN_PUNCH_SKATERS Punch Skater™ cards present).
  */
 export function isFirstDeckInitiated(cards: CardPayload[]): boolean {
   return countPunchSkaters(cards) >= FIRST_DECK_MIN_PUNCH_SKATERS;
@@ -68,7 +68,7 @@ export function canAddToFirstDeck(
   const punchSkatersNeeded =
     FIRST_DECK_MIN_PUNCH_SKATERS - countPunchSkaters(existingCards);
 
-  if (rarity === "Punch Skater") {
+  if (rarity === "Punch Skater™") {
     return { allowed: true };
   }
 
@@ -76,7 +76,7 @@ export function canAddToFirstDeck(
     if (countLegendaries(existingCards) >= FIRST_DECK_MAX_LEGENDARY_BEFORE_INIT) {
       return {
         allowed: false,
-        reason: `Your first deck is still forming. You can only include ${FIRST_DECK_MAX_LEGENDARY_BEFORE_INIT} Legendary card${FIRST_DECK_MAX_LEGENDARY_BEFORE_INIT !== 1 ? "s" : ""} until the deck has ${FIRST_DECK_MIN_PUNCH_SKATERS} Punch Skaters (${punchSkatersNeeded} more needed).`,
+        reason: `Your first deck is still forming. You can only include ${FIRST_DECK_MAX_LEGENDARY_BEFORE_INIT} Legendary card${FIRST_DECK_MAX_LEGENDARY_BEFORE_INIT !== 1 ? "s" : ""} until the deck has ${FIRST_DECK_MIN_PUNCH_SKATERS} Punch Skater™s (${punchSkatersNeeded} more needed).`,
       };
     }
     return { allowed: true };
@@ -85,7 +85,7 @@ export function canAddToFirstDeck(
   // Apprentice / Master / Rare — blocked until initiation.
   return {
     allowed: false,
-    reason: `Your first deck needs ${punchSkatersNeeded} more Punch Skater card${punchSkatersNeeded !== 1 ? "s" : ""} before you can add ${rarity} cards.`,
+    reason: `Your first deck needs ${punchSkatersNeeded} more Punch Skater™ card${punchSkatersNeeded !== 1 ? "s" : ""} before you can add ${rarity} cards.`,
   };
 }
 

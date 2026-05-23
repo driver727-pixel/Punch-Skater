@@ -1,4 +1,4 @@
-# Punch Skater — Internal Story Bible
+# Punch Skater™ — Internal Story Bible
 
 This directory is the human-readable companion to the live Codex data in
 `/home/runner/work/Punch-Skater/Punch-Skater/src/lib/lore.ts`.

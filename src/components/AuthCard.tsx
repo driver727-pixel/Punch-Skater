@@ -234,9 +234,9 @@ export function AuthCard({
       {showBranding ? (
         <>
           <div className="login-logo">⚡</div>
-          <HeadingTag className="login-title">Punch Skater</HeadingTag>
+          <HeadingTag className="login-title">Punch Skater™</HeadingTag>
           <p className="login-subtitle">CARD GAME</p>
-          <p className="login-game-badge"><a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer">A Sk8r Punk Game</a></p>
+          <p className="login-game-badge"><a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer">A Sk8r Punk™ Game</a></p>
         </>
       ) : (
         <div className="login-panel-intro">

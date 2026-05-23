@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Punch Skater is a continuously deployed web application. Only the latest
+Punch Skater™ is a continuously deployed web application. Only the latest
 production release at [punchskater.com](https://punchskater.com) receives
 security updates.
 
@@ -15,7 +15,7 @@ security updates.
 
 **Please do not open a public GitHub issue for security vulnerabilities.**
 
-Email **driver727@gmail.com** with the subject line `[Punch Skater] Security
+Email **driver727@gmail.com** with the subject line `[Punch Skater™] Security
 Vulnerability`. Include:
 
 - A description of the vulnerability and its potential impact

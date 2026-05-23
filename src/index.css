@@ -8538,7 +8538,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
 }
 
-/* Front face name overlay — keep the skater name clear of the Punch Skater
+/* Front face name overlay — keep the skater name clear of the Punch Skater™
  * frame treatment by lifting it above the frame and nudging it into the top
  * header space. */
 .print-front-name-overlay {
@@ -9690,12 +9690,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
  * data-theme is set on <html> by ThemeApplier based on the current tier.
  * data-time ("day" | "night") is also set by ThemeApplier based on current hour.
  *
- * Free  → Punch Skater "bandaged" aesthetic: muted tans & worn browns
+ * Free  → Punch Skater™ "bandaged" aesthetic: muted tans & worn browns
  * Tier2 → Apprentice aesthetic: teal & energetic greens
  * Tier3 → Legendary aesthetic: rich gold & amber
  */
 
-/* Free / Punch Skater ─────────────────────────────────────────────── */
+/* Free / Punch Skater™ ─────────────────────────────────────────────── */
 [data-theme="free"] {
   --bg:     #06050f;
   --bg2:    #0b0920;

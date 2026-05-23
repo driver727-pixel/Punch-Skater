@@ -1,5 +1,5 @@
 /**
- * JousturBoard.tsx — Async game board for an active Joustur Skatur match.
+ * JousturBoard.tsx — Async game board for an active Joustur Skatur™ match.
  *
  * Turn flow:
  *   1. Active player clicks "Roll Dice" → rolls are fetched from server.
@@ -825,7 +825,7 @@ export function JousturBoard() {
 
   return (
     <div className="page joustur-board">
-      <p className="page-eyebrow">Joustur Skatur</p>
+      <p className="page-eyebrow">Joustur Skatur™</p>
       <h1 className="page-title">
         {JOUSTUR_FACTION_LABELS[myState.faction] ?? myState.faction}
         {" vs "}

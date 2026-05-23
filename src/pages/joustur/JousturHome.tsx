@@ -1,5 +1,5 @@
 /**
- * JousturHome.tsx — Hub page for Joustur Skatur.
+ * JousturHome.tsx — Hub page for Joustur Skatur™.
  *
  * Shows active matches, pending challenges, and quick-action buttons
  * (Challenge a Friend, Find Casual Match, View Rules, Build Lineup).
@@ -156,7 +156,7 @@ export function JousturHome() {
   return (
     <div className="page joustur-home">
       <p className="page-eyebrow">Game Mode</p>
-      <h1 className="page-title">Joustur Skatur</h1>
+      <h1 className="page-title">Joustur Skatur™</h1>
       <p className="page-sub">
         An async board game for couriers. Race your crew of 6 riders to the finish.
         Roll dice. Capture opponents. Hit a Stealth Alcove for an extra turn.

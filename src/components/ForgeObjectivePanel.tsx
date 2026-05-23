@@ -125,7 +125,7 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
   const missionXp = Number(userProfile?.missionXp ?? 0);
   const missionOzzies = Number(userProfile?.missionOzzies ?? 0);
   const forgeOptions = getForgeClassOptions({ missionXp, missionOzzies, deckPower });
-  const highestUnlockedForge = [...forgeOptions].reverse().find((option) => option.unlocked)?.rarity ?? "Punch Skater";
+  const highestUnlockedForge = [...forgeOptions].reverse().find((option) => option.unlocked)?.rarity ?? "Punch Skater™";
   const nextUnlock = forgeOptions.find((option) => !option.unlocked) ?? null;
   const objective = getObjectiveState({
     signedIn: Boolean(user),

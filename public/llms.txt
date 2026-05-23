@@ -1,10 +1,10 @@
-# Punch Skater
+# Punch Skater™
 
-> Punch Skater is a free-to-play cyberpunk card deck builder game developed by SP Digital LLC, available at https://punchskater.com.
+> Punch Skater™ is a free-to-play cyberpunk card deck builder game developed by SP Digital LLC, available at https://punchskater.com.
 
 ## About
 
-Punch Skater lets players forge unique AI-generated courier trading cards set in a dystopian cyberpunk universe. Players choose a character archetype, rarity tier, visual style, vibe, and city district to create a one-of-a-kind card with AI-generated artwork. Cards can be collected into decks and traded with other players.
+Punch Skater™ lets players forge unique AI-generated courier trading cards set in a dystopian cyberpunk universe. Players choose a character archetype, rarity tier, visual style, vibe, and city district to create a one-of-a-kind card with AI-generated artwork. Cards can be collected into decks and traded with other players.
 
 The game is built as a progressive web app (PWA) and works entirely in the browser with no download required.
 
@@ -21,7 +21,7 @@ The game is set across five city districts:
 
 Each card has:
 - **Archetype**: Ninja, Punk Rocker, Ex Military, Hacker, Chef, Olympic, or Fash
-- **Rarity**: Punch Skater (Common), Apprentice, Master, Rare, or Legendary
+- **Rarity**: Punch Skater™ (Common), Apprentice, Master, Rare, or Legendary
 - **Style**: Corporate, Street, Off-grid, Military, or Union
 - **Vibe**: Grunge, Neon, Chrome, Plastic, or Recycled
 - **Stats**: Speed, Stealth, Tech, Grit, Rep
@@ -44,7 +44,7 @@ Built with React 18, TypeScript, Vite, Firebase (Auth + Firestore), and Fal.ai-h
 
 © 2025–2026 SP Digital LLC. All Rights Reserved.
 
-"Punch Skater", the Punch Skater game, card mechanics, artwork concepts, and all associated intellectual property are owned exclusively by SP Digital LLC. Unauthorized reproduction or distribution is prohibited.
+"Punch Skater™", the Punch Skater™ game, card mechanics, artwork concepts, and all associated intellectual property are owned exclusively by SP Digital LLC. Unauthorized reproduction or distribution is prohibited.
 
 ## Contact
 

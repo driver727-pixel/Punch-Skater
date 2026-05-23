@@ -16,9 +16,9 @@
   var schema = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'Punch Skater',
-    alternateName: 'Skater Punk Deck Builder',
-    description: 'Punch Skater is a free cyberpunk card game where you forge unique AI-powered courier trading cards, build competitive decks, and trade with other skaters across five dystopian city districts.',
+    name: 'Punch Skater™',
+    alternateName: 'Skater Punk™ Deck Builder',
+    description: 'Punch Skater™ is a free cyberpunk card game where you forge unique AI-powered courier trading cards, build competitive decks, and trade with other skaters across five dystopian city districts.',
     url: toAbsoluteUrl('/'),
     applicationCategory: 'GameApplication',
     operatingSystem: 'Web',

@@ -1,5 +1,5 @@
 /**
- * rivals.ts — First five Punch Skater district rivals.
+ * rivals.ts — First five Punch Skater™ district rivals.
  *
  * This is the canonical, data-driven catalogue referenced by
  * docs/JOUSTING_LITE_DESIGN.md ("Rival catalogue"). Each entry carries a

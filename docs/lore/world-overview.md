@@ -6,7 +6,7 @@
 - **Reveal** — story material meant to land later.
 
 ## The City
-**Public:** The world of **Punch Skater** is mostly unified under the
+**Public:** The world of **Punch Skater™** is mostly unified under the
 **United Corporate Alliance (UCA)**. Its public face is **Airaway**: a Blue Mountains
 sky-city suspended above Greater Western Sydney, where executives live in polished towers
 while the basin below chokes on industrial smog. Below that canopy stretches a courier
@@ -27,10 +27,10 @@ carrying critical data, contraband, medicine, or relics by hand.
 Digital networks are too easy to hack, intercept, poison, or surveil. Physical delivery is trust.
 
 ## Australian Jousting Doctrine
-**Public:** In the Australian theatre, **Punch Skaters did not evolve around firearms as standard
+**Public:** In the Australian theatre, **Punch Skater™s did not evolve around firearms as standard
 weapons**. Guns exist, but they are treated as extreme-circumstance tools rather than everyday kit.
 
-**Public:** Australian Punch Skaters instead evolved around **jousting on Esk8**. They fight,
+**Public:** Australian Punch Skater™s instead evolved around **jousting on Esk8**. They fight,
 perform, and settle prize disputes with **cyber lances and shields**. Jousting is battle doctrine,
 street spectacle, and prize fighting culture all at once.
 
@@ -53,8 +53,8 @@ stays behind the curtain unless a future story beat makes it worth dramatizing.
 - Scratch talks; corps walk.
 - Airaway is not for you — unless you've got a contractor pass or nerve.
 - Data on a thumb drive beats data on a server.
-- Australian Punch Skaters do not rely on firearms except in extreme circumstances — cyber lances and shields define battle, entertainment, and prize fighting.
-- A Punch Skater owes nothing to nobody. Until they owe everything.
+- Australian Punch Skater™s do not rely on firearms except in extreme circumstances — cyber lances and shields define battle, entertainment, and prize fighting.
+- A Punch Skater™ owes nothing to nobody. Until they owe everything.
 
 ## Major Power Blocs
 - **United Corporate Alliance (UCA)** — the infrastructure empire in Airaway.
@@ -69,7 +69,7 @@ stays behind the curtain unless a future story beat makes it worth dramatizing.
 - **UCPS Workers** — sanctioned board-riding postal labor.
 - **Moonrisers** — rave-born agitators looking for a spark.
 - **The Wooders** — off-grid deck purists living beyond the grid.
-- **Punch Skaters** — the bruised, bloodied bottom rung that gives the world its name.
+- **Punch Skater™s** — the bruised, bloodied bottom rung that gives the world its name.
 - **The Team** — ex-athlete operators whose coordination rivals the corps.
 
 ## Current Story Pressure

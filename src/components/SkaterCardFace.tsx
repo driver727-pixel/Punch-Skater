@@ -617,7 +617,7 @@ function CardBack({
 // ── Public component ──────────────────────────────────────────────────────────
 
 /**
- * The single source of truth for rendering one face of a Punch Skater card.
+ * The single source of truth for rendering one face of a Punch Skater™ card.
  * Wrap in a `div.print-card` (with appropriate modifier classes) and a
  * `CardContainer` carrying the right CSS-variable token set.
  */

@@ -36,7 +36,7 @@ export const featureFlags = {
   /** Shareable card / deck links. @owner charlie */
   SHARE_LINKS: envFlag("VITE_FF_SHARE_LINKS", false),
 
-  /** Joustur Skatur async board mode. @owner gamma */
+  /** Joustur Skatur™ async board mode. @owner gamma */
   JOUSTUR_SKATUR: envFlag("VITE_FF_JOUSTUR_SKATUR", false),
 } as const;
 

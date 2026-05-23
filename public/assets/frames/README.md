@@ -2,7 +2,7 @@
 
 Place rarity-tier border frame images here for the legacy raster frame fallback.
 
-The live app now prefers the built-in SVG cable borders for Punch Skater, Apprentice,
+The live app now prefers the built-in SVG cable borders for Punch Skater™, Apprentice,
 Master, Rare, and Legendary. These files are only used when older saved cards still
 reference the registered PNG overlay paths.
 
@@ -10,7 +10,7 @@ reference the registered PNG overlay paths.
 
 | Rarity        | Filename                |
 |---------------|-------------------------|
-| Punch Skater  | `punch-skater.webp`      |
+| Punch Skater™  | `punch-skater.webp`      |
 | Apprentice    | `apprentice.webp`        |
 | Master        | `master.webp`            |
 | Rare          | `rare.webp`              |
@@ -56,7 +56,7 @@ const FRAME_ASSETS: Partial<Record<Rarity, string>> = {
   Master:         { url: "/assets/frames/master.webp" },
   Rare:           { url: "/assets/frames/rare.webp" },
   Legendary:      { url: "/assets/frames/legendary.webp" },
-  "Punch Skater": { url: "/assets/frames/punch-skater.webp" },
+  "Punch Skater™": { url: "/assets/frames/punch-skater.webp" },
 };
 ```
 

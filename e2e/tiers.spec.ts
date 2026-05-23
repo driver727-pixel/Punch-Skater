@@ -225,7 +225,7 @@ test.describe('Referral link via URL param', () => {
   test('visiting with ?ref= param does not show an error', async ({ page }) => {
     // Should load normally — referral param is silently processed
     await page.goto('/?ref=testReferrerUid123');
-    await expect(page).toHaveTitle(/Punch Skater/i);
+    await expect(page).toHaveTitle(/Punch Skater™/i);
     await expect(page.locator('.page-title')).toBeVisible();
   });
 

@@ -37,7 +37,7 @@ const VALID_FACTIONS = new Set([
   'The Team',
   'Moonrisers',
   'The Wooders',
-  'Punch Skaters',
+  'Punch Skater™s',
 ]);
 const KNOWN_JOUST_TRAITS = new Set([
   'Boost Charge',
