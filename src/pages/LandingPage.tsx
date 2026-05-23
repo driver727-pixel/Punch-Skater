@@ -32,10 +32,8 @@ export function LandingPage() {
     <div className="page landing-page">
       <section className="landing-hero">
         <div className="landing-hero__copy">
-          <p className="landing-hero__eyebrow">Welcome Landing</p>
-          <h1 className="landing-hero__title">Punch Skater</h1>
-          <p className="landing-hero__subtitle">CARD GAME</p>
-          <p className="landing-hero__badge">A Sk8r Punk Game</p>
+          <h1 className="landing-hero__title">Punch Skater™</h1>
+          <p className="landing-hero__subtitle">a Sk8r Punk™ Card Game!</p>
           <p className="landing-hero__lede">
             Start in the forge, build a crew, sign in when you are ready to save progress, and race into the neon districts.
           </p>
