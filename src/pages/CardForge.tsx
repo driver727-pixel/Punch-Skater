@@ -94,7 +94,6 @@ export function CardForge() {
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <section className="forge-hero">
         <div className="forge-hero__copy">
-          <p className="forge-hero__eyebrow">Dirty Future Card Lab</p>
           <h1 className="page-title forge-hero__title">CARD FORGE</h1>
           <p className="page-sub forge-hero__sub">Forge your skater — then build a 6-card crew, run missions, win jousts, and climb the neon leaderboard</p>
           <div className="forge-quick-actions">
@@ -124,12 +123,6 @@ export function CardForge() {
               Build {__BUILD_NUMBER__}: smoother collection navigation, improved keyboard access, and refreshed loading UX.
             </p>
           </section>
-          <div className="forge-hero__tags" aria-label="Forge atmosphere">
-            <span>Glass toggles</span>
-            <span>Mag cassettes</span>
-            <span>Neon relay wires</span>
-            <span>Greasy rover rigs</span>
-          </div>
         </div>
 
         <aside className="forge-hero__art" aria-hidden="true">
@@ -155,10 +148,6 @@ export function CardForge() {
             </div>
             <div className="forge-hero__cable forge-hero__cable--one" />
             <div className="forge-hero__cable forge-hero__cable--two" />
-            <div className="forge-hero__art-copy">
-              <strong>SK8R PUNK UPLINK</strong>
-              <span>satellite grit • cassette hiss • neon dust</span>
-            </div>
           </div>
         </aside>
       </section>
