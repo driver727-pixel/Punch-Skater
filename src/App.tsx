@@ -67,6 +67,7 @@ function PlayerRewardBanner() {
 }
 
 const CardForge  = lazy(() => import("./pages/CardForge").then(m => ({ default: m.CardForge })));
+const LandingPage = lazy(() => import("./pages/LandingPage").then(m => ({ default: m.LandingPage })));
 const Collection = lazy(() => import("./pages/Collection").then(m => ({ default: m.Collection })));
 const EditCard   = lazy(() => import("./pages/EditCard").then(m => ({ default: m.EditCard })));
 const Trades     = lazy(() => import("./pages/Trades").then(m => ({ default: m.Trades })));
@@ -133,7 +134,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
             <button type="button" className="btn-primary btn-sm" onClick={() => this.setState({ hasError: false })}>
               Retry View
             </button>
-            <a href="/" className="btn-outline btn-sm">Go to Card Forge</a>
+            <a href="/forge" className="btn-outline btn-sm">Go to Card Forge</a>
             <button type="button" className="btn-outline btn-sm" onClick={() => window.location.reload()}>
               Reload App
             </button>
@@ -282,7 +283,8 @@ function App() {
                 <main id="main-content" className="main" tabIndex={-1}>
                   <Suspense fallback={<AppLoadingState />}>
                     <Routes>
-                      <Route path="/" element={<CardForge />} />
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/forge" element={<CardForge />} />
                       <Route path="/login" element={<Login />} />
                       <Route path="/credits" element={<Credits />} />
                       <Route path="/factions" element={<Factions />} />

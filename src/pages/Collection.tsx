@@ -406,7 +406,7 @@ export function Collection() {
             <div className="empty-state">
               <span className="empty-icon">🔒</span>
               <p>Account saving requires a paid tier.</p>
-              <button className="btn-outline" onClick={() => navigate("/")}>Back to Card Forge</button>
+              <button className="btn-outline" onClick={() => navigate("/forge")}>Back to Card Forge</button>
               <button className="btn-primary" onClick={openUpgradeModal}>Upgrade to Save Cards</button>
             </div>
           </>
@@ -464,7 +464,7 @@ export function Collection() {
         <div className="empty-state">
           <span className="empty-icon">📦</span>
           <p>No cards yet. Head to the Card Forge to create your first courier.</p>
-          <button className="btn-primary btn-sm" onClick={() => navigate("/")}>Open Card Forge</button>
+          <button className="btn-primary btn-sm" onClick={() => navigate("/forge")}>Open Card Forge</button>
         </div>
       ) : (
         <>

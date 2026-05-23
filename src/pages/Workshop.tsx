@@ -472,7 +472,7 @@ export function Workshop() {
           <h1 className="page-title">Workshop</h1>
           <p className="page-sub">Save bench builds, inspect paper-doll boards, and marry a new skateboard to a forged card.</p>
         </div>
-        <button className="btn-outline" type="button" onClick={() => navigate("/")}>
+        <button className="btn-outline" type="button" onClick={() => navigate("/forge")}>
           ← Back to Card Forge
         </button>
       </div>
