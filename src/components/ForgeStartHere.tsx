@@ -8,14 +8,6 @@ interface ForgeStartHereProps {
   titleId?: string;
 }
 
-const RARITY_TIERS = [
-  { label: "Punch Skater™", chance: "82%", note: "most common" },
-  { label: "Apprentice", chance: "12%", note: "uncommon pull" },
-  { label: "Master", chance: "4%", note: "rare pull" },
-  { label: "Rare", chance: "2%", note: "ultra-rare pull" },
-  { label: "Legendary", chance: "—", note: "reward-only, earned through gameplay" },
-] as const;
-
 const GAME_LOOP_STEPS = [
   { icon: "⚡", label: "Forge", desc: "Roll a fresh skater card from a blind drop." },
   { icon: "👥", label: "Build a Crew", desc: "Pick your best 6 cards into one active crew." },
@@ -56,19 +48,6 @@ export function ForgeStartHere({
           </li>
         ))}
       </ol>
-
-      <div className="forge-welcome__odds">
-        <h3 className="forge-welcome__odds-title">Forge Class Odds</h3>
-        <ul className="forge-welcome__odds-list">
-          {RARITY_TIERS.map((tier) => (
-            <li key={tier.label} className="forge-welcome__odds-row">
-              <span className="forge-welcome__odds-label">{tier.label}</span>
-              <span className="forge-welcome__odds-chance">{tier.chance}</span>
-              <span className="forge-welcome__odds-note">{tier.note}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
 
       {actions ? <div className="forge-welcome__actions">{actions}</div> : null}
     </div>
