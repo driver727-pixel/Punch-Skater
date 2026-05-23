@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { BattlePassPanel } from "../components/BattlePassPanel";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
@@ -21,6 +22,7 @@ import { useBattlePass } from "../hooks/useBattlePass";
 import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
+  const navigate = useNavigate();
   const {
     boardError,
     boardConfig,
@@ -116,6 +118,14 @@ export function CardForge() {
               data-testid="random-punch-skater-button"
             >
               Random Skater
+            </button>
+            <button
+              type="button"
+              className="btn-outline btn-glass btn-sm"
+              onClick={() => navigate("/workshop")}
+              aria-label="Go to Workshop"
+            >
+              🛹 Workshop
             </button>
           </div>
           <section className="forge-whats-new" aria-label="Build updates">
