@@ -75,6 +75,14 @@ export const FORGE_RARITY_ROLLS: readonly ForgeRarityRoll[] = [
   { rarity: "Master", weight: 4, label: "rare pull" },
   { rarity: "Rare", weight: 2, label: "ultra-rare pull" },
 ] as const;
+export const FORGE_CLASS_ODDS: ReadonlyArray<{ label: Rarity; chance: string; note: string }> = [
+  ...FORGE_RARITY_ROLLS.map((roll) => ({
+    label: roll.rarity,
+    chance: `${roll.weight}%`,
+    note: roll.label,
+  })),
+  { label: "Legendary", chance: "—", note: "reward-only, earned through gameplay" },
+];
 export const FORGE_CLASS_REVEAL_NOTICE = "Class stays hidden until the forge resolves.";
 export const FORGE_CLASS_ODDS_SUMMARY =
   "Most forge rolls land Punch Skater. Apprentice drops more often than Master, and Rare is the hardest forge hit. Legendary stays reward-only.";
