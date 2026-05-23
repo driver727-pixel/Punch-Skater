@@ -230,12 +230,17 @@ body {
   z-index: 1;
 }
 
-.joustur-board-piece__layer--character {
+.joustur-board-piece__layer--board {
   z-index: 2;
+  object-fit: contain;
+}
+
+.joustur-board-piece__layer--character {
+  z-index: 3;
 }
 
 .joustur-board-piece__layer--frame {
-  z-index: 3;
+  z-index: 4;
   mix-blend-mode: screen;
 }
 

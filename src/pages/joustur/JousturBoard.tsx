@@ -217,6 +217,7 @@ function RiderCardPiece({
   const hasLayers = Boolean(
     snapshot?.backgroundImageUrl ||
     snapshot?.characterImageUrl ||
+    snapshot?.boardImageUrl ||
     snapshot?.frameImageUrl,
   );
   const name = snapshot?.name ?? "Rider";
@@ -230,6 +231,15 @@ function RiderCardPiece({
               src={snapshot.backgroundImageUrl}
               alt=""
               className="joustur-board-piece__layer joustur-board-piece__layer--background"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+          {snapshot?.boardImageUrl && (
+            <img
+              src={snapshot.boardImageUrl}
+              alt=""
+              className="joustur-board-piece__layer joustur-board-piece__layer--board"
               loading="lazy"
               decoding="async"
             />
