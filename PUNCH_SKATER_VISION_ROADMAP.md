@@ -1,10 +1,10 @@
-# Punch Skater Vision Roadmap
+# Punch Skater™ Vision Roadmap
 
-Punch Skater is the first playable game inside the broader Sk8r Punk universe. It began as a card creator, but the new direction is to make it a fun, rewarding, cyberpunk electric-skate card game built around creation, collection, crews, missions, trading, leaderboards, and jousting-lite encounters.
+Punch Skater™ is the first playable game inside the broader Sk8r Punk™ universe. It began as a card creator, but the new direction is to make it a fun, rewarding, cyberpunk electric-skate card game built around creation, collection, crews, missions, trading, leaderboards, and jousting-lite encounters.
 
 ## North Star
 
-**Punch Skater is a collectible Sk8r Punk card game where players create cyberpunk electric skateboard warriors, equip lances and shields, race through neon districts, win jousts, trade rare cards, uncover lore, and climb the underground leaderboard.**
+**Punch Skater™ is a collectible Sk8r Punk™ card game where players create cyberpunk electric skateboard warriors, equip lances and shields, race through neon districts, win jousts, trade rare cards, uncover lore, and climb the underground leaderboard.**
 
 Short version:
 
@@ -12,7 +12,7 @@ Short version:
 
 ## Product Role
 
-Punch Skater should be the gateway into the Sk8r Punk IP. It should not contain every future game idea. It should prove the core fantasy and make players care about cards, crews, factions, districts, rivals, and reputation.
+Punch Skater™ should be the gateway into the Sk8r Punk™ IP. It should not contain every future game idea. It should prove the core fantasy and make players care about cards, crews, factions, districts, rivals, and reputation.
 
 ## Core Gameplay Loop
 
@@ -27,7 +27,7 @@ Loop summary:
 
 > Forge → Crew → Mission/Race/Joust → Reward → Upgrade/Trade → Unlock → Flex
 
-## What Belongs in Punch Skater Now
+## What Belongs in Punch Skater™ Now
 
 Add jousting as a simple card-based mechanic because it gives the game a unique identity.
 
@@ -41,11 +41,11 @@ Include now:
 - Rival joust bosses
 - Card visuals for weapons and gear
 
-Do not build full real-time jousting combat yet. Save that for a future Sk8r Punk game.
+Do not build full real-time jousting combat yet. Save that for a future Sk8r Punk™ game.
 
 ## What Should Wait
 
-Save these for later or for other Sk8r Punk games:
+Save these for later or for other Sk8r Punk™ games:
 
 - Full physics-based jousting combat
 - Complex real-time action combat
@@ -54,7 +54,7 @@ Save these for later or for other Sk8r Punk games:
 - Tabletop-scale rules systems
 - Large faction-war metagame
 
-Punch Skater can later include a light dice side mode, but it should not become the center of the game until the core loop is fun.
+Punch Skater™ can later include a light dice side mode, but it should not become the center of the game until the core loop is fun.
 
 ## Phase Roadmap
 
@@ -69,9 +69,9 @@ Punch Skater can later include a light dice side mode, but it should not become 
 **Tasks:**
 
 1. Update product copy to explain the new fantasy clearly.
-2. Define Punch Skater as a Sk8r Punk card game.
+2. Define Punch Skater™ as a Sk8r Punk™ card game.
 3. Add the tagline: "Create your skater. Build your crew. Win the joust. Rule the neon streets."
-4. Clarify that the player goal is to become a legendary underground Punch Skater.
+4. Clarify that the player goal is to become a legendary underground Punch Skater™.
 5. Document what is in-scope and out-of-scope.
 
 **Deliverables:**
@@ -391,14 +391,14 @@ Punch Skater can later include a light dice side mode, but it should not become 
 3. A roll chooses the active card for an encounter.
 4. Let players influence randomness through crew construction or weighted sides.
 5. Keep rewards limited until balance is proven.
-6. If it is fun, preserve it as a future Sk8r Punk casino game candidate.
+6. If it is fun, preserve it as a future Sk8r Punk™ casino game candidate.
 
 **Deliverables:**
 
 - Dice side-mode prototype
 - Balance notes
 - Player feedback notes
-- Decision: keep in Punch Skater or spin off later
+- Decision: keep in Punch Skater™ or spin off later
 
 ## Agent Assignment Rules
 
@@ -425,13 +425,13 @@ Punch Skater can later include a light dice side mode, but it should not become 
 - Do not make the player lose because of random generation failure.
 - Do not make rarity automatically beat strategy.
 - Do not make the permanent leaderboard the only goal.
-- Do not overbuild full jousting combat inside Punch Skater.
+- Do not overbuild full jousting combat inside Punch Skater™.
 - Do not make dice gambling the main game until the core identity is proven.
 - Do not add more features until the first 10 minutes are understandable and fun.
 
 ## Guiding Principle
 
-Punch Skater should make players feel like they are building their own underground neon skating legend.
+Punch Skater™ should make players feel like they are building their own underground neon skating legend.
 
 The game wins when players think:
 

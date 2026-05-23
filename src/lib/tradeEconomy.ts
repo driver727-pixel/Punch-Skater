@@ -25,7 +25,7 @@ const REPUTATION_CANCELLED_WEIGHT = 5;
 const REPUTATION_PENDING_WEIGHT = 2;
 
 const RARITY_VALUES: Record<CardPayload["prompts"]["rarity"], number> = {
-  "Punch Skater": 160,
+  "Punch Skater™": 160,
   Apprentice: 220,
   Master: 360,
   Rare: 520,

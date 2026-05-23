@@ -2,7 +2,7 @@
 
 To set this up in your [Punch-Skater repository](https://github.com/driver727-pixel/Punch-Skater), you should create or update these three files inside the `src/lib/` directory. 
 
-1.  **`src/lib/types.ts`**: Save this first. It defines the "shape" of your data (Factions, Districts, etc.) and ensures the other files follow the rules of the [Skater Punk doc](https://docs.google.com/document/d/16pxUvBdtA6rDoL2IG6jlDxOwAjFO3WNVmfqG9SzfT4c/edit?tab=t.0).
+1.  **`src/lib/types.ts`**: Save this first. It defines the "shape" of your data (Factions, Districts, etc.) and ensures the other files follow the rules of the [Skater Punk™ doc](https://docs.google.com/document/d/16pxUvBdtA6rDoL2IG6jlDxOwAjFO3WNVmfqG9SzfT4c/edit?tab=t.0).
 2.  **`src/lib/lore.ts`**: Save this second. It holds the actual lists of names, abilities, and flavor text.
 3.  **`src/lib/generator.ts`**: Save this last. It is the "engine" that imports the types and lore to create a random character.
 
@@ -30,7 +30,7 @@ export type Faction =
   | "UCPS Workers"
   | "Moonrisers"
   | "The Wooders"
-  | "Punch Skaters";
+  | "Punch Skater™s";
 
 export type District = 
   | "Airaway" 

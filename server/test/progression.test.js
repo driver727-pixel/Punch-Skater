@@ -48,7 +48,7 @@ test('assignBaseOzzies returns value within rarity range', () => {
 });
 
 test('assignBaseOzzies returns min when normRng is 0', () => {
-  assert.equal(assignBaseOzzies('Punch Skater', 0), OZZY_BASE_RANGE['Punch Skater'].min);
+  assert.equal(assignBaseOzzies('Punch Skater™', 0), OZZY_BASE_RANGE['Punch Skater™'].min);
 });
 
 test('assignBaseOzzies returns max when normRng is ~1', () => {
@@ -57,8 +57,8 @@ test('assignBaseOzzies returns max when normRng is ~1', () => {
   assert.ok(result >= min && result <= max);
 });
 
-test('assignBaseOzzies falls back to Punch Skater range for unknown rarity', () => {
-  const { min, max } = OZZY_BASE_RANGE['Punch Skater'];
+test('assignBaseOzzies falls back to Punch Skater™ range for unknown rarity', () => {
+  const { min, max } = OZZY_BASE_RANGE['Punch Skater™'];
   const result = assignBaseOzzies('Unknown', 0.5);
   assert.ok(result >= min && result <= max);
 });
@@ -145,15 +145,15 @@ test('computeLeaderboardScore does not let XP dominate (maxed card)', () => {
 });
 
 test('resolveGameplayCardRarity promotes cards through Apprentice, Master, and Rare thresholds', () => {
-  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 150, ozzies: 95 }), 'Apprentice');
-  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 400, ozzies: 240 }), 'Master');
-  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater' }, class: { rarity: 'Punch Skater' }, xp: 950, ozzies: 520 }), 'Rare');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater™' }, class: { rarity: 'Punch Skater™' }, xp: 150, ozzies: 95 }), 'Apprentice');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater™' }, class: { rarity: 'Punch Skater™' }, xp: 400, ozzies: 240 }), 'Master');
+  assert.equal(resolveGameplayCardRarity({ prompts: { rarity: 'Punch Skater™' }, class: { rarity: 'Punch Skater™' }, xp: 950, ozzies: 520 }), 'Rare');
 });
 
 test('promoteCardClass preserves earned reward tiers and refreshes class metadata', () => {
   const card = promoteCardClass({
-    prompts: { rarity: 'Punch Skater' },
-    class: { rarity: 'Punch Skater', multiplier: 1, badgeLabel: 'Punch Skater' },
+    prompts: { rarity: 'Punch Skater™' },
+    class: { rarity: 'Punch Skater™', multiplier: 1, badgeLabel: 'Punch Skater™' },
     xp: 950,
     ozzies: 520,
     maintenance: { state: 'repairing', chargePct: 10, repairMinutes: 15, fastTrackCreditCost: 25 },

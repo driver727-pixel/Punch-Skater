@@ -1,6 +1,6 @@
 # Credits & Attributions
 
-Punch Skater is developed by **SP Digital LLC** and relies on the following
+Punch Skater™ is developed by **SP Digital LLC** and relies on the following
 open-source libraries, services, and tools. We are grateful to every project
 listed here.
 

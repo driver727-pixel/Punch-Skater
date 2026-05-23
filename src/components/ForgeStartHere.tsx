@@ -22,7 +22,7 @@ export function ForgeStartHere({
   actions,
   className = "",
   eyebrow = "Start Here",
-  title = "Welcome to Punch Skater, Rookie.",
+  title = "Welcome to Punch Skater™, Rookie.",
   titleId,
 }: ForgeStartHereProps) {
   return (

@@ -1,5 +1,5 @@
 /**
- * Joustur Skatur — server routes.
+ * Joustur Skatur™ — server routes.
  *
  * Endpoints:
  *   GET    /api/joustur/lineup              — load the caller's saved lineup.
@@ -641,7 +641,7 @@ export function registerJousturRoutes(app, {
       const notif = buildNotification({
         uid: defenderUid,
         type: 'joustur_challenge',
-        title: `${challenge.challengerDisplayName} challenged you to Joustur Skatur!`,
+        title: `${challenge.challengerDisplayName} challenged you to Joustur Skatur™!`,
         body: 'Accept or decline in Joustur.',
         link: '/joustur',
         data: { challengeId: id },

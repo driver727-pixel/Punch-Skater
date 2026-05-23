@@ -954,7 +954,7 @@ function CardCharacter({ cx, cy, accentColor, archetype, style, vibe, storagePac
 }
 
 const RARITY_STARS: Record<string, number> = {
-  "Punch Skater": 1,
+  "Punch Skater™": 1,
   Apprentice: 2,
   Master: 3,
   Rare: 4,
@@ -962,7 +962,7 @@ const RARITY_STARS: Record<string, number> = {
 };
 
 const RARITY_STAR_COLOR: Record<string, string> = {
-  "Punch Skater": "#aa9988",
+  "Punch Skater™": "#aa9988",
   Apprentice:     "#44ddaa",
   Master:         "#cc44ff",
   Rare:           "#4488ff",

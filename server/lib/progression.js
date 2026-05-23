@@ -1,11 +1,11 @@
 /**
- * progression.js — Server-side progression helpers for Punch Skater.
+ * progression.js — Server-side progression helpers for Punch Skater™.
  *
  * Mirrors the constants and pure logic from src/lib/progression.ts.
  * Keep in sync with the client-side version.
  */
 
-/** An active Crew consists of exactly this many Punch Skater cards. */
+/** An active Crew consists of exactly this many Punch Skater™ cards. */
 export const CREW_SIZE = 6;
 
 /** Maximum XP a single card can accumulate through gameplay. */
@@ -30,7 +30,7 @@ export const DECK_POWER_UPGRADE_THRESHOLDS = {
 
 /** Base Ozzy ranges per rarity tier. */
 export const OZZY_BASE_RANGE = {
-  'Punch Skater': { min: 5,   max: 50   },
+  'Punch Skater™': { min: 5,   max: 50   },
   Apprentice:     { min: 25,  max: 100  },
   Master:         { min: 75,  max: 200  },
   Rare:           { min: 150, max: 500  },
@@ -45,7 +45,7 @@ export const OZZY_BASE_RANGE = {
  * @returns {number}
  */
 export function assignBaseOzzies(rarity, normRng) {
-  const range = OZZY_BASE_RANGE[rarity] ?? OZZY_BASE_RANGE['Punch Skater'];
+  const range = OZZY_BASE_RANGE[rarity] ?? OZZY_BASE_RANGE['Punch Skater™'];
   return Math.round(range.min + normRng * (range.max - range.min));
 }
 

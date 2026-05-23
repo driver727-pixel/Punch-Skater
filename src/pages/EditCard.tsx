@@ -44,7 +44,7 @@ import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 
 const AUTO_PREVIEW_DELAY_MS = 350;
 
-const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare", "Legendary"];
+const RARITIES: Rarity[] = ["Punch Skater™", "Apprentice", "Master", "Rare", "Legendary"];
 const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
 const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];

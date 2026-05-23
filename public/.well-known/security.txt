@@ -1,4 +1,4 @@
-# Punch Skater — Security Policy
+# Punch Skater™ — Security Policy
 # https://punchskater.com/.well-known/security.txt
 # Conforms to RFC 9116 (https://www.rfc-editor.org/rfc/rfc9116)
 

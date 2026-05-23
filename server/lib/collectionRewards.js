@@ -41,7 +41,7 @@ export const COLLECTION_REWARD_FACTIONS = [
   'The Team',
   'Moonrisers',
   'The Wooders',
-  'Punch Skaters',
+  'Punch Skater™s',
 ];
 
 export const COLLECTION_REWARD_ARCHETYPES = [
@@ -58,7 +58,7 @@ export const COLLECTION_REWARD_ARCHETYPES = [
 ];
 
 export const COLLECTION_REWARD_DISTRICTS = ['Airaway', 'Batteryville', 'The Grid', 'Nightshade', 'The Forest', 'Glass City'];
-export const COLLECTION_REWARD_RARITIES = ['Punch Skater', 'Apprentice', 'Master', 'Rare', 'Legendary'];
+export const COLLECTION_REWARD_RARITIES = ['Punch Skater™', 'Apprentice', 'Master', 'Rare', 'Legendary'];
 
 export const COLLECTION_REWARDS = [
   { id: 'badge-starter-stack', kind: 'badge', safetyTier: 'safe', name: 'Starter Stack', description: 'Collected five unique cards.' },

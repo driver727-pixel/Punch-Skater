@@ -35,7 +35,7 @@ const RARITY_ORDER: Record<Rarity, number> = {
   "Rare": 1,
   "Master": 2,
   "Apprentice": 3,
-  "Punch Skater": 4,
+  "Punch Skater™": 4,
 };
 const UNKNOWN_RARITY_ORDER = 5;
 
