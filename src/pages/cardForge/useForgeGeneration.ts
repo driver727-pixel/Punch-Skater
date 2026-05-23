@@ -100,7 +100,7 @@ export function useForgeGeneration() {
   const skipNextSessionPersistRef = useRef(false);
   const craftlinguaSyncKeyRef = useRef("");
   const [prompts, setPrompts] = useState<CardPrompts>({
-    archetype: "Qu111s", rarity: "Punch Skater", style: "Corporate",
+    archetype: "Qu111s", rarity: "Punch Skater™", style: "Corporate",
     district: "Nightshade", accentColor: "#00ff88",
     gender: "Non-binary", ageGroup: "Adult", bodyType: "Athletic",
     hairLength: "Short", skinTone: "Medium", faceCharacter: "Conventional",

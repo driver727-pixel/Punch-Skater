@@ -33,9 +33,9 @@ export function LandingPage() {
       <section className="landing-hero">
         <div className="landing-hero__copy">
           <p className="landing-hero__eyebrow">Welcome Landing</p>
-          <h1 className="landing-hero__title">Punch Skater</h1>
+          <h1 className="landing-hero__title">Punch Skater™</h1>
           <p className="landing-hero__subtitle">CARD GAME</p>
-          <p className="landing-hero__badge">A Sk8r Punk Game</p>
+          <p className="landing-hero__badge">A Sk8r Punk™ Game</p>
           <p className="landing-hero__lede">
             Start in the forge, build a crew, sign in when you are ready to save progress, and race into the neon districts.
           </p>
@@ -94,7 +94,7 @@ export function LandingPage() {
               className="landing-auth-card"
               hint="Sign in to save cards, build a Crew, run Missions, race rivals, and trade across the districts."
               panelEyebrow="Login"
-              panelTitle="Use your existing Punch Skater sign-in"
+              panelTitle="Use your existing Punch Skater™ sign-in"
               panelSubtitle="Email, Google, and phone login all work here."
               showBranding={false}
               showGuestLink={false}

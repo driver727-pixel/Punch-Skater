@@ -1,12 +1,12 @@
 const CARD_CLASS_PROMOTION_RULES = [
-  { rarity: 'Punch Skater', minXp: 0, minOzzies: 0 },
+  { rarity: 'Punch Skater™', minXp: 0, minOzzies: 0 },
   { rarity: 'Apprentice', minXp: 120, minOzzies: 90 },
   { rarity: 'Master', minXp: 360, minOzzies: 220 },
   { rarity: 'Rare', minXp: 900, minOzzies: 500 },
 ];
 
 const CLASS_MULTIPLIERS = {
-  'Punch Skater': 1,
+  'Punch Skater™': 1,
   Apprentice: 1,
   Master: 1.25,
   Rare: 1.5,
@@ -23,7 +23,7 @@ function getRepairMinutesForRarity(rarity) {
     case 'Rare': return 90;
     case 'Master': return 45;
     case 'Apprentice':
-    case 'Punch Skater':
+    case 'Punch Skater™':
     default: return 15;
   }
 }
@@ -34,7 +34,7 @@ function getFastTrackCreditCost(rarity) {
     case 'Rare': return 250;
     case 'Master': return 100;
     case 'Apprentice': return 40;
-    case 'Punch Skater':
+    case 'Punch Skater™':
     default: return 25;
   }
 }
@@ -44,7 +44,7 @@ function getPromotionRarityOrder(rarity) {
 }
 
 export function resolveGameplayCardRarity(card) {
-  const currentRarity = String(card?.class?.rarity ?? card?.prompts?.rarity ?? 'Punch Skater');
+  const currentRarity = String(card?.class?.rarity ?? card?.prompts?.rarity ?? 'Punch Skater™');
   if (currentRarity === 'Legendary') {
     return currentRarity;
   }
@@ -53,14 +53,14 @@ export function resolveGameplayCardRarity(card) {
   const currentIndex = Math.max(0, getPromotionRarityOrder(currentRarity));
   const earnedRarity = CARD_CLASS_PROMOTION_RULES.reduce((highest, rule) => (
     xp >= rule.minXp && ozzies >= rule.minOzzies ? rule.rarity : highest
-  ), 'Punch Skater');
+  ), 'Punch Skater™');
   const earnedIndex = Math.max(0, getPromotionRarityOrder(earnedRarity));
   return CARD_CLASS_PROMOTION_RULES[Math.max(currentIndex, earnedIndex)]?.rarity ?? currentRarity;
 }
 
 export function promoteCardClass(card) {
   const nextRarity = resolveGameplayCardRarity(card);
-  const currentRarity = String(card?.class?.rarity ?? card?.prompts?.rarity ?? 'Punch Skater');
+  const currentRarity = String(card?.class?.rarity ?? card?.prompts?.rarity ?? 'Punch Skater™');
   if (nextRarity === currentRarity) {
     return card;
   }
@@ -73,7 +73,7 @@ export function promoteCardClass(card) {
     },
     class: {
       rarity: nextRarity,
-      multiplier: CLASS_MULTIPLIERS[nextRarity] ?? CLASS_MULTIPLIERS['Punch Skater'],
+      multiplier: CLASS_MULTIPLIERS[nextRarity] ?? CLASS_MULTIPLIERS['Punch Skater™'],
       badgeLabel: nextRarity,
     },
     maintenance: {

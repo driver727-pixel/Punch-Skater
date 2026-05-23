@@ -490,8 +490,8 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                   <div className="deck-initiation-text">
                     <strong>First Deck Initiation</strong>
                     <span>
-                      Add {firstDeckInitStatus.punchSkatersNeeded} more Punch Skater card{firstDeckInitStatus.punchSkatersNeeded !== 1 ? "s" : ""} to unlock all card types.
-                      {" "}You currently have {firstDeckInitStatus.punchSkaterCount}/{FIRST_DECK_MIN_PUNCH_SKATERS} Punch Skaters
+                      Add {firstDeckInitStatus.punchSkatersNeeded} more Punch Skater™ card{firstDeckInitStatus.punchSkatersNeeded !== 1 ? "s" : ""} to unlock all card types.
+                      {" "}You currently have {firstDeckInitStatus.punchSkaterCount}/{FIRST_DECK_MIN_PUNCH_SKATERS} Punch Skater™s
                       {firstDeckInitStatus.legendaryCount > 0 && " · 1 Legendary slot used"}.
                     </span>
                   </div>

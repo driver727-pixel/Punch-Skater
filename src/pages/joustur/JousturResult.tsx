@@ -55,7 +55,7 @@ export function JousturResult() {
 
   return (
     <div className="page joustur-result">
-      <p className="page-eyebrow">Joustur Skatur</p>
+      <p className="page-eyebrow">Joustur Skatur™</p>
 
       <div className={`joustur-result__banner ${didWin ? "joustur-result__banner--win" : "joustur-result__banner--loss"}`}>
         {didWin ? "⚡ Victory!" : match.winnerUid ? "💀 Defeated" : "— Draw —"}

@@ -129,7 +129,7 @@ function createRewardCard(index, overrides = {}) {
     id: `card-${index}`,
     identity: {
       name: `Skater ${index}`,
-      crew: 'Punch Skaters',
+      crew: 'Punch Skater™s',
       serialNumber: `PS-${index}`,
       ...overrides.identity,
     },

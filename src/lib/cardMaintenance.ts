@@ -6,7 +6,7 @@ export function getRepairMinutesForRarity(rarity: Rarity): number {
     case "Rare":      return 90;
     case "Master":    return 45;
     case "Apprentice":
-    case "Punch Skater":
+    case "Punch Skater™":
     default:          return 15;
   }
 }
@@ -17,7 +17,7 @@ export function getFastTrackCreditCost(rarity: Rarity): number {
     case "Rare":      return 250;
     case "Master":    return 100;
     case "Apprentice": return 40;
-    case "Punch Skater":
+    case "Punch Skater™":
     default:          return 25;
   }
 }

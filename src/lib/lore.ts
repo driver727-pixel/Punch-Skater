@@ -117,7 +117,7 @@ export const WORLD_LORE = {
     "(Esk8) are the dominant transport — cheaper than flying cars and perfect for decayed " +
     "roads. The Skater Courier is the most valuable information mule in the city, fought " +
     "over by every faction. Information — stored on thumb drives to dodge hackers — is the " +
-    "most precious commodity in this world. In the Australian theatre, Punch Skaters " +
+    "most precious commodity in this world. In the Australian theatre, Punch Skater™s " +
     "evolved without firearms as a standard weapon culture; they fight, perform, and " +
     "settle prize disputes through high-speed jousts using cyber lances and shields.",
   factions: [
@@ -133,7 +133,7 @@ export const WORLD_LORE = {
     "UCPS Workers",
     "Moonrisers",
     "The Wooders",
-    "Punch Skaters",
+    "Punch Skater™s",
     "The Team",
   ],
   code: [
@@ -144,8 +144,8 @@ export const WORLD_LORE = {
     "Scratch talks; corps walk.",
     "Airaway is not for you — unless you've got a contractor pass or nerve.",
     "Data on a thumb drive beats data on a server.",
-    "Australian Punch Skaters do not rely on firearms except in extreme circumstances — cyber lances and shields define battle, entertainment, and prize fighting.",
-    "A Punch Skater owes nothing to nobody. Until they owe everything.",
+    "Australian Punch Skater™s do not rely on firearms except in extreme circumstances — cyber lances and shields define battle, entertainment, and prize fighting.",
+    "A Punch Skater™ owes nothing to nobody. Until they owe everything.",
   ],
 };
 
@@ -178,7 +178,7 @@ export const DISTRICT_LORE: DistrictLoreEntry[] = [
       "catch the colder mountain air while the basin below chokes. Motorized vehicles are " +
       "outlawed; the only ground transport is the electric skateboard. Access requires a " +
       "verified corporate badge, a contractor pass, or the kind of nerve that makes other " +
-      "couriers nervous. Punch Skaters are explicitly outlawed here.",
+      "couriers nervous. Punch Skater™s are explicitly outlawed here.",
     atmosphere: "Blue Mountains cold air, polished steel, pressurised walkways, automated maintenance drones, basin smog below.",
     crews: ["Chrome Blades", "Phantom Riders"],
     flavorTexts: [
@@ -440,7 +440,7 @@ export const ARCHETYPE_LORE: ArchetypeLoreEntry[] = [
     tagline: "Sanctioned delivery. Corporate rates. No questions.",
     description:
       "The postal service officially sanctioned by the Airaway governing body. The UCPS uses " +
-      "board-riding workers and is known to hire from Punch Skater crowds because of their " +
+      "board-riding workers and is known to hire from Punch Skater™ crowds because of their " +
       "knowledge of the 'ropes'. Working for the UCPS is a common cover identity for couriers " +
       "who need to move through high-security checkpoints without drawing scrutiny.",
     strengths: "Good Speed, solid Rep. Moves through corp-controlled districts with reduced scrutiny.",
@@ -562,7 +562,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
     tagline: "Sanctioned delivery. Corporate rates. No questions.",
     description:
       "The postal service officially sanctioned by the Airaway governing body. The UCPS uses " +
-      "board-riding workers and is known to hire from Punch Skater crowds because of their " +
+      "board-riding workers and is known to hire from Punch Skater™ crowds because of their " +
       "street knowledge. Working for the UCPS is a common cover identity for couriers who " +
       "need to move through high-security checkpoints without drawing scrutiny.",
   },
@@ -586,7 +586,7 @@ export const FACTION_LORE: FactionLoreEntry[] = [
       "self-governed. Their hand-built boards are legendarily durable.",
   },
   {
-    name: "Punch Skaters",
+    name: "Punch Skater™s",
     districts: ["Nightshade", "The Roads", "Batteryville"],
     tagline: "We are the lowest rung. And we are everywhere.",
     description:
@@ -660,12 +660,12 @@ export const LORE_UPDATES: LoreUpdateEntry[] = [
     changedAt: "2026-05",
     title: "Australian jousting doctrine entered the Codex",
     summary:
-      "Punch Skaters in the Australian theatre now explicitly operate without firearms as " +
+      "Punch Skater™s in the Australian theatre now explicitly operate without firearms as " +
       "standard kit, favoring cyber lances and shields in combat, spectacle, and prize fights.",
     highlights: [
-      "Jousting is now core public knowledge of the Punch Skater universe.",
+      "Jousting is now core public knowledge of the Punch Skater™ universe.",
       "Firearms remain rare and reserved for extreme circumstances.",
-      "Cyber lances and shields define Australian Punch Skater battle culture.",
+      "Cyber lances and shields define Australian Punch Skater™ battle culture.",
     ],
   },
   {
@@ -689,7 +689,7 @@ export const LORE_UPDATES: LoreUpdateEntry[] = [
     highlights: [
       "The Codex tracks the wider power blocs without exposing every dossier up front.",
       "Card Forge discoveries unlock faction-specific lore in a separate Factions tab.",
-      "Punch Skaters, Moonrisers, and other crews stay in the canon even when undiscovered.",
+      "Punch Skater™s, Moonrisers, and other crews stay in the canon even when undiscovered.",
     ],
   },
   {

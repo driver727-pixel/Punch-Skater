@@ -10,7 +10,7 @@ import type {
 } from "../../lib/types";
 import type { ImageGenOptions } from "../../services/imageGen";
 
-export const RARITIES: Rarity[] = ["Punch Skater", "Apprentice", "Master", "Rare"];
+export const RARITIES: Rarity[] = ["Punch Skater™", "Apprentice", "Master", "Rare"];
 export const DISTRICTS: District[] = ["Airaway", "Nightshade", "Batteryville", "The Grid", "The Forest", "Glass City"];
 export const GENDERS: Gender[] = ["Woman", "Man", "Non-binary"];
 export const AGE_GROUPS: AgeGroup[] = ["Young Adult", "Adult", "Middle-aged", "Senior"];

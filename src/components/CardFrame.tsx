@@ -7,10 +7,10 @@ export const FRAME_RENDER_HEIGHT = 1050;
 
 export const STANDARD_FRAME_RARITIES = [
   "Legendary",
-] as const satisfies readonly Exclude<Rarity, "Punch Skater">[];
+] as const satisfies readonly Exclude<Rarity, "Punch Skater™">[];
 
 export const FRAME_PREVIEW_RARITIES = [
-  "Punch Skater",
+  "Punch Skater™",
   ...STANDARD_FRAME_RARITIES,
 ] as const satisfies readonly Rarity[];
 
@@ -341,7 +341,7 @@ function CardFrameComponent({ width, height, rarity, frameSeed, uid }: FrameProp
 
   return (
     <g transform={`scale(${scaleX} ${scaleY})`}>
-      {rarity === "Punch Skater" && <PunchSkaterFrame uid={uid} frameSeed={frameSeed} />}
+      {rarity === "Punch Skater™" && <PunchSkaterFrame uid={uid} frameSeed={frameSeed} />}
       {rarity === "Legendary" && <LegendaryFrame uid={uid} frameSeed={frameSeed} />}
     </g>
   );

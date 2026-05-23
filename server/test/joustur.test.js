@@ -1,5 +1,5 @@
 /**
- * joustur.test.js — Tests for the Joustur Skatur pure rules engine.
+ * joustur.test.js — Tests for the Joustur Skatur™ pure rules engine.
  *
  * Covers:
  *   – faction/trait/support mappings
@@ -68,7 +68,7 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeRiderSnapshot(cardId, trait = 'boost', crew = 'Punch Skaters') {
+function makeRiderSnapshot(cardId, trait = 'boost', crew = 'Punch Skater™s') {
   return {
     cardId,
     name: `Card ${cardId}`,
@@ -79,7 +79,7 @@ function makeRiderSnapshot(cardId, trait = 'boost', crew = 'Punch Skaters') {
   };
 }
 
-function makeSupportSnapshot(cardId, crew = 'Punch Skaters') {
+function makeSupportSnapshot(cardId, crew = 'Punch Skater™s') {
   const faction = resolveFactionForCrew(crew);
   return {
     cardId,
@@ -91,7 +91,7 @@ function makeSupportSnapshot(cardId, crew = 'Punch Skaters') {
   };
 }
 
-function makePlayer(uid, riderCount = RIDER_COUNT, crew = 'Punch Skaters', playerPath) {
+function makePlayer(uid, riderCount = RIDER_COUNT, crew = 'Punch Skater™s', playerPath) {
   const riders = Array.from({ length: riderCount }, (_, i) =>
     makeRiderSnapshot(`r${i + 1}-${uid}`, 'boost', crew),
   );
@@ -246,7 +246,7 @@ test('resolveClashOutcome uses stance triangle and trait bonus, with defender wi
 // ── Faction mapping ───────────────────────────────────────────────────────────
 
 test('resolveFactionForCrew maps all 6 known crews', () => {
-  assert.equal(resolveFactionForCrew('Punch Skaters'),   'rustKids');
+  assert.equal(resolveFactionForCrew('Punch Skater™s'),   'rustKids');
   assert.equal(resolveFactionForCrew('Ne0n Legion'),     'neonSaints');
   assert.equal(resolveFactionForCrew('Qu111s (Quills)'), 'signalGhosts');
   assert.equal(resolveFactionForCrew('The Team'),        'chromeSyndicate');
@@ -603,7 +603,7 @@ test('applyMove — pass (cardId null) advances turn', () => {
 // Support effect tests
 
 test('applyMove — recoveryPing moves a captured rider to pos 1', () => {
-  const playerA = makePlayer('A', RIDER_COUNT, 'Punch Skaters');
+  const playerA = makePlayer('A', RIDER_COUNT, 'Punch Skater™s');
   // Mark one rider as captured (position 0, isCaptured=true) — as happens after
   // an opponent capture event.
   playerA.riders[0].isCaptured = true;
@@ -880,7 +880,7 @@ test('applyMove — recoveryPing only recovers a captured rider, not an unentere
   // rider[1] at OFF_BOARD and IS captured.
   playerB.riders[1].isCaptured = true;
 
-  const support = makeSupportSnapshot(`sup-B`, 'Punch Skaters'); // recoveryPing
+  const support = makeSupportSnapshot(`sup-B`, 'Punch Skater™s'); // recoveryPing
   playerB.support = support;
   const board = makeBoard('B', 1);
 
@@ -901,7 +901,7 @@ test('applyMove — recoveryPing only recovers a captured rider, not an unentere
 test('applyMove — recoveryPing does nothing when no captured riders exist', () => {
   const playerB = makePlayer('B');
   // No riders are captured (all at OFF_BOARD but isCaptured=false).
-  const support = makeSupportSnapshot(`sup-B`, 'Punch Skaters');
+  const support = makeSupportSnapshot(`sup-B`, 'Punch Skater™s');
   playerB.support = support;
   const board = makeBoard('B', 1);
 

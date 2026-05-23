@@ -16,7 +16,7 @@ export type Faction =
   | "The Team"
   | "Moonrisers"
   | "The Wooders"
-  | "Punch Skaters";
+  | "Punch Skater™s";
 
 export type District = "Airaway" | "Batteryville" | "The Grid" | "Nightshade" | "The Forest" | "Glass City";
 export type HiddenDistrict = "Electropolis";
@@ -34,8 +34,8 @@ export type Archetype =
   | "Hermes' Squirmies"
   | "UCPS"
   | "The Team";
-export type Rarity = "Punch Skater" | "Apprentice" | "Master" | "Rare" | "Legendary";
-export const PUNCH_SKATER_RARITY: Rarity = "Punch Skater";
+export type Rarity = "Punch Skater™" | "Apprentice" | "Master" | "Rare" | "Legendary";
+export const PUNCH_SKATER_RARITY: Rarity = "Punch Skater™";
 /** @deprecated Vibe was removed from the forge UI. */
 export type Vibe = "Grunge" | "Neon" | "Chrome" | "Plastic" | "Recycled";
 export type Style =
@@ -255,7 +255,7 @@ export interface CardPayload {
    * Earned Ozzy value for this card.
    * Assigned randomly at forge time (seeded by card prompts) and can increase
    * through missions and special events.
-   * Ozzies show how valuable and respected a card is in the world of Sk8rpunk.
+   * Ozzies show how valuable and respected a card is in the world of Sk8rpunk™.
    * Account Ozzies = sum across the entire collection.
    * Crew Ozzies = sum across the active 6-card Crew.
    */

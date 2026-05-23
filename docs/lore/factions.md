@@ -16,7 +16,7 @@ aligned with `FACTION_LORE` in `src/lib/lore.ts`.
 - **Tagline:** *"Infrastructure, security, compliance. In that order."*
 
 **Public:** The dominant governing consortium. Their identical white bikes make perfect symbols of
-sanctioned transit, which is exactly why Punch Skaters target them.
+sanctioned transit, which is exactly why Punch Skater™s target them.
 
 **Reveal:** Their covert relationship to the Iron Curtains is not public canon up front.
 
@@ -133,7 +133,7 @@ for wealthy patrons.
 
 ---
 
-## Punch Skaters
+## Punch Skater™s
 - **Districts:** Nightshade, The Roads, Batteryville
 - **Tagline:** *"We are the lowest rung. And we are everywhere."*
 

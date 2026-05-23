@@ -1,6 +1,6 @@
 /**
  * useJousturLineup.ts — Hook for loading, saving, and reflecting the player's
- * Joustur Skatur lineup.
+ * Joustur Skatur™ lineup.
  */
 
 import { useState, useEffect, useCallback } from "react";

@@ -1,5 +1,5 @@
 /**
- * jousturRules.js — Pure, deterministic rules engine for Joustur Skatur.
+ * jousturRules.js — Pure, deterministic rules engine for Joustur Skatur™.
  *
  * This module has NO I/O or side-effects.  Every function is a pure
  * transformation of data, making it trivially testable.
@@ -139,11 +139,11 @@ export function resolveClashOutcome({
 // ── Faction / trait / support mappings ───────────────────────────────────────
 
 /**
- * Maps existing Punch Skater crew strings to Joustur factions.
+ * Maps existing Punch Skater™ crew strings to Joustur factions.
  * All crews not listed here fall back to 'rustKids'.
  */
 const CREW_TO_FACTION = Object.freeze({
-  'Punch Skaters':   'rustKids',
+  'Punch Skater™s':   'rustKids',
   'Ne0n Legion':     'neonSaints',
   'Qu111s (Quills)': 'signalGhosts',
   'The Team':        'chromeSyndicate',

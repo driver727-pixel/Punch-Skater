@@ -9,7 +9,7 @@ export function TermsOfService() {
       <section className="credits-section">
         <h2 className="credits-heading">Agreement</h2>
         <p className="legal-body">
-          By accessing or using Punch Skater (operated by SP Digital LLC at{" "}
+          By accessing or using Punch Skater™ (operated by SP Digital LLC at{" "}
           <a href="https://punchskater.com" target="_blank" rel="noopener noreferrer" className="credits-link">
             punchskater.com
           </a>
@@ -41,7 +41,7 @@ export function TermsOfService() {
       <section className="credits-section">
         <h2 className="credits-heading">Paid Tiers</h2>
         <p className="legal-body">
-          Punch Skater offers optional subscriptions (Street Creator and Deck Master) and seasonal
+          Punch Skater™ offers optional subscriptions (Street Creator and Deck Master) and seasonal
           digital passes that unlock creator tools, collection capacity, cosmetic rewards, and
           forge-credit allowances. Payments are processed by Stripe and are subject to Stripe's
           terms. Subscription access remains available while the subscription is active. All
@@ -53,7 +53,7 @@ export function TermsOfService() {
         <h2 className="credits-heading">Refund Policy</h2>
         <div className="credits-card">
           <p className="credits-desc">
-            All purchases on Punch Skater are for <strong>digital goods and services</strong> and
+            All purchases on Punch Skater™ are for <strong>digital goods and services</strong> and
             are <strong>non-refundable</strong> once payment is completed and access is granted,
             except where required by applicable law.
           </p>
@@ -67,7 +67,7 @@ export function TermsOfService() {
       <section className="credits-section">
         <h2 className="credits-heading">Intellectual Property</h2>
         <p className="legal-body">
-          "Punch Skater", the game, card mechanics, artwork concepts, and all associated
+          "Punch Skater™", the game, card mechanics, artwork concepts, and all associated
           intellectual property are owned exclusively by SP Digital LLC. You may not reproduce,
           distribute, or create derivative works without written permission.
         </p>

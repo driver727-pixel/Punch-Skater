@@ -9,7 +9,7 @@ interface ForgeStartHereProps {
 }
 
 const RARITY_TIERS = [
-  { label: "Punch Skater", chance: "82%", note: "most common" },
+  { label: "Punch Skater™", chance: "82%", note: "most common" },
   { label: "Apprentice", chance: "12%", note: "uncommon pull" },
   { label: "Master", chance: "4%", note: "rare pull" },
   { label: "Rare", chance: "2%", note: "ultra-rare pull" },
@@ -30,7 +30,7 @@ export function ForgeStartHere({
   actions,
   className = "",
   eyebrow = "Start Here",
-  title = "Welcome to Punch Skater, Rookie.",
+  title = "Welcome to Punch Skater™, Rookie.",
   titleId,
 }: ForgeStartHereProps) {
   return (

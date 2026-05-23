@@ -1,6 +1,6 @@
 # Jousting Lite — Design
 
-> Punch Skater jousting design — the authoritative reference for the
+> Punch Skater™ jousting design — the authoritative reference for the
 > **lance-and-shield, card-based, cyberpunk Australian** joust mechanic.
 >
 > Companion to: `PUNCH_SKATER_VISION_ROADMAP.md` (Phases 2–4) and
@@ -10,7 +10,7 @@
 
 ## Design Pillars
 
-Jousting Lite is the unique identity hook for Punch Skater. It must stay
+Jousting Lite is the unique identity hook for Punch Skater™. It must stay
 **simple, card-based, cyberpunk, Australian, lance-and-shield focused, and
 expandable** — and it must **not** become full real-time combat in this game.
 
@@ -25,7 +25,7 @@ expandable** — and it must **not** become full real-time combat in this game.
 | Not real-time | All resolution is turn-based card maths. | Physics rigs, real-time collisions, controller input loops. |
 
 If a future change breaks one of these pillars, it belongs in a different
-Sk8r Punk game, not in Punch Skater.
+Sk8r Punk™ game, not in Punch Skater™.
 
 ---
 
@@ -178,7 +178,7 @@ Failure is **interesting, not punishing** (per Phase 3 of the roadmap).
 - Small chance to **discover a glitch variant** — a flavoured re-roll seed
   that can be used in the forge later.
 
-No card destruction, no permanent stat loss, no Ozzy theft. Punch Skater is
+No card destruction, no permanent stat loss, no Ozzy theft. Punch Skater™ is
 collection-positive.
 
 ### On draw
@@ -285,7 +285,7 @@ the implementation phase and must be mirrored across `src/lib/` and
 ## What This Spec Does **Not** Cover (yet)
 
 These are explicit non-goals for the lite scope. They live in later phases or
-in different Sk8r Punk games.
+in different Sk8r Punk™ games.
 
 - Real-time, physics-based jousting combat.
 - Aim, timing, or input-skill mechanics.
@@ -296,7 +296,7 @@ in different Sk8r Punk games.
 - Lance/shield durability that can permanently destroy gear.
 
 If a feature request reads as "let's make jousting deeper," check this list
-first. Most "deeper" requests belong in a sibling Sk8r Punk product.
+first. Most "deeper" requests belong in a sibling Sk8r Punk™ product.
 
 ---
 
