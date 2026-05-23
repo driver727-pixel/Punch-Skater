@@ -36,6 +36,7 @@ const PRIVATE_ENTRY_MIN = 1;
 const PRIVATE_ENTRY_MAX = 4;
 const EXIT_POSITION = 15;
 type BoardSide = "top" | "bottom";
+type ClashCinematicStage = "charge" | "impact" | "resolve";
 const CLASH_STANCE_OPTIONS: Array<{
   stance: JousturClashStance;
   label: string;
@@ -157,8 +158,37 @@ function getPieceInitials(name: string): string {
 
 function isClashResolvedEvent(
   event: unknown,
-): event is { type: "clashResolved"; winnerUid?: string } {
+): event is {
+  type: "clashResolved";
+  tile: number;
+  winnerUid?: string;
+  loserUid?: string;
+  winnerCardId?: string;
+  loserCardId?: string;
+} {
   return Boolean(event && typeof event === "object" && (event as { type?: string }).type === "clashResolved");
+}
+
+interface StatusMessage {
+  message: string;
+  tone: "ok" | "clash-win" | "clash-loss";
+}
+
+interface ClashCinematicState {
+  id: number;
+  stage: ClashCinematicStage;
+  outcome: "win" | "loss";
+  tile: number;
+  attackerName: string;
+  defenderName: string;
+  attackerOwnerLabel: string;
+  defenderOwnerLabel: string;
+  winnerName: string;
+  loserName: string;
+  winnerCardId: string;
+  loserCardId: string;
+  attackerSnapshot?: JousturRiderSnapshot;
+  defenderSnapshot?: JousturRiderSnapshot;
 }
 
 const POS_LABELS: Record<number, string> = {
@@ -230,6 +260,111 @@ function RiderCardPiece({
       )}
       <span className="joustur-board-piece__owner">{ownerLabel}</span>
     </span>
+  );
+}
+
+function buildClashCinematicState(
+  match: JousturMatch | null,
+  clash: JousturClashState | null,
+  resolvedEvent: {
+    tile: number;
+    winnerUid?: string;
+    winnerCardId?: string;
+    loserCardId?: string;
+  },
+  myUid: string,
+): ClashCinematicState | null {
+  if (!match || !clash || !match.challengerState || !match.defenderState || !resolvedEvent.winnerUid || !resolvedEvent.winnerCardId || !resolvedEvent.loserCardId) {
+    return null;
+  }
+
+  const states = [match.challengerState, match.defenderState];
+  const attackerState = states.find((state) => state.uid === clash.attackerUid);
+  const defenderState = states.find((state) => state.uid === clash.defenderUid);
+  if (!attackerState || !defenderState) return null;
+
+  const attackerSnapshot = attackerState.lineup.find((snapshot) => snapshot.cardId === clash.attackerCardId);
+  const defenderSnapshot = defenderState.lineup.find((snapshot) => snapshot.cardId === clash.defenderCardId);
+  const attackerName = attackerSnapshot?.name ?? "Attacker";
+  const defenderName = defenderSnapshot?.name ?? "Defender";
+  const winnerName = resolvedEvent.winnerCardId === clash.attackerCardId ? attackerName : defenderName;
+  const loserName = resolvedEvent.loserCardId === clash.attackerCardId ? attackerName : defenderName;
+
+  return {
+    id: Date.now(),
+    stage: "charge",
+    outcome: resolvedEvent.winnerUid === myUid ? "win" : "loss",
+    tile: resolvedEvent.tile,
+    attackerName,
+    defenderName,
+    attackerOwnerLabel: clash.attackerUid === myUid ? "YOU" : "OPP",
+    defenderOwnerLabel: clash.defenderUid === myUid ? "YOU" : "OPP",
+    winnerName,
+    loserName,
+    winnerCardId: resolvedEvent.winnerCardId,
+    loserCardId: resolvedEvent.loserCardId,
+    attackerSnapshot,
+    defenderSnapshot,
+  };
+}
+
+function ClashCinematicOverlay({
+  cinematic,
+}: {
+  cinematic: ClashCinematicState;
+}) {
+  const winnerIsAttacker = cinematic.winnerCardId === cinematic.attackerSnapshot?.cardId;
+  const winnerSnapshot = winnerIsAttacker ? cinematic.attackerSnapshot : cinematic.defenderSnapshot;
+  const winnerOwnerLabel = winnerIsAttacker ? cinematic.attackerOwnerLabel : cinematic.defenderOwnerLabel;
+
+  return (
+    <div
+      className={`joustur-clash-cinematic joustur-clash-cinematic--${cinematic.outcome} joustur-clash-cinematic--${cinematic.stage}`}
+      role="status"
+      aria-live="assertive"
+    >
+      <div className="joustur-clash-cinematic__backdrop" />
+      <div className="joustur-clash-cinematic__content">
+        <p className="joustur-clash-cinematic__eyebrow">Tile {cinematic.tile} showdown</p>
+        <div className="joustur-clash-cinematic__arena" aria-hidden="true">
+          <div className="joustur-clash-cinematic__burst" />
+          <div className="joustur-clash-cinematic__shockwave" />
+          <figure className="joustur-clash-cinematic__card joustur-clash-cinematic__card--attacker">
+            <div className="joustur-clash-cinematic__piece">
+              <RiderCardPiece snapshot={cinematic.attackerSnapshot} ownerLabel={cinematic.attackerOwnerLabel} />
+            </div>
+            <figcaption>{cinematic.attackerName}</figcaption>
+          </figure>
+          <figure className="joustur-clash-cinematic__card joustur-clash-cinematic__card--defender">
+            <div className="joustur-clash-cinematic__piece">
+              <RiderCardPiece snapshot={cinematic.defenderSnapshot} ownerLabel={cinematic.defenderOwnerLabel} />
+            </div>
+            <figcaption>{cinematic.defenderName}</figcaption>
+          </figure>
+          <figure className="joustur-clash-cinematic__winner">
+            <div className="joustur-clash-cinematic__piece joustur-clash-cinematic__piece--winner">
+              <RiderCardPiece snapshot={winnerSnapshot} ownerLabel={winnerOwnerLabel} />
+            </div>
+            <figcaption>
+              <strong>{cinematic.winnerName}</strong>
+              <span>Seizes the tile</span>
+            </figcaption>
+          </figure>
+        </div>
+        <div className="joustur-clash-cinematic__result">
+          <h2>
+            {cinematic.outcome === "win"
+              ? "⚔️ You won the joust clash!"
+              : "💥 You lost the joust clash."}
+          </h2>
+          <p>
+            {cinematic.outcome === "win"
+              ? `${cinematic.winnerName} blasted past ${cinematic.loserName} and held the lane.`
+              : `${cinematic.winnerName} smashed through ${cinematic.loserName} and claimed the lane.`}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -616,7 +751,9 @@ export function JousturBoard() {
   }>({ canActivate: false, reason: null });
   const [rollResult, setRollResult] = useState<number | null>(null);
   const [diceResults, setDiceResults] = useState<number[] | null>(null);
-  const [lastEvent, setLastEvent] = useState<string | null>(null);
+  const [lastEvent, setLastEvent] = useState<StatusMessage | null>(null);
+  const [clashCinematic, setClashCinematic] = useState<ClashCinematicState | null>(null);
+  const [pendingResultRoute, setPendingResultRoute] = useState<string | null>(null);
   // sideRoute target selection — kept in JousturBoard so it survives re-renders
   // of PlayerPanel during polling.
   const [sideRouteTarget, setSideRouteTarget] = useState<string>("");
@@ -665,6 +802,37 @@ export function JousturBoard() {
     }, 15_000);
     return () => clearInterval(interval);
   }, [loadMatch]);
+
+  useEffect(() => {
+    if (!clashCinematic) return;
+
+    const cinematicId = clashCinematic.id;
+    const impactTimer = window.setTimeout(() => {
+      setClashCinematic((current) =>
+        current?.id === cinematicId ? { ...current, stage: "impact" } : current,
+      );
+    }, 420);
+    const resolveTimer = window.setTimeout(() => {
+      setClashCinematic((current) =>
+        current?.id === cinematicId ? { ...current, stage: "resolve" } : current,
+      );
+    }, 980);
+    const clearTimer = window.setTimeout(() => {
+      setClashCinematic((current) => (current?.id === cinematicId ? null : current));
+    }, 2300);
+
+    return () => {
+      window.clearTimeout(impactTimer);
+      window.clearTimeout(resolveTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [clashCinematic?.id]);
+
+  useEffect(() => {
+    if (!pendingResultRoute || clashCinematic) return;
+    navigate(pendingResultRoute);
+    setPendingResultRoute(null);
+  }, [clashCinematic, navigate, pendingResultRoute]);
 
   const isMyTurn = match?.board.activePlayerUid === myUid;
   const activeClash = match?.board.clash ?? null;
@@ -740,10 +908,10 @@ export function JousturBoard() {
         }
         // Summarise the most recent event for the player.
         const ev = result.events?.[result.events.length - 1] as Record<string, unknown> | undefined;
-        if (ev?.type === "capture") setLastEvent("🎯 Captured an opponent rider!");
-        else if (ev?.type === "clashStarted") setLastEvent("⚔️ Joust clash started!");
-        else if (ev?.type === "exit") setLastEvent("⚡ Rider scored!");
-        else if (ev?.type === "stealthAlcove") setLastEvent("🔒 Stealth Alcove — extra turn!");
+        if (ev?.type === "capture") setLastEvent({ message: "🎯 Captured an opponent rider!", tone: "ok" });
+        else if (ev?.type === "clashStarted") setLastEvent({ message: "⚔️ Joust clash started!", tone: "ok" });
+        else if (ev?.type === "exit") setLastEvent({ message: "⚡ Rider scored!", tone: "ok" });
+        else if (ev?.type === "stealthAlcove") setLastEvent({ message: "🔒 Stealth Alcove — extra turn!", tone: "ok" });
         else setLastEvent(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Move failed.");
@@ -764,15 +932,24 @@ export function JousturBoard() {
       setError(null);
       try {
         const result = await submitJousturClashChoice(matchId, { stance });
-        setMatch(result.match);
         const resolvedEvent = result.events?.find(isClashResolvedEvent);
         if (resolvedEvent?.winnerUid) {
-          setLastEvent(resolvedEvent.winnerUid === myUid ? "⚔️ You won the joust clash!" : "💥 You lost the joust clash.");
+          const cinematic = buildClashCinematicState(match, activeClash, resolvedEvent, myUid);
+          if (cinematic) setClashCinematic(cinematic);
+          setLastEvent({
+            message: resolvedEvent.winnerUid === myUid ? "⚔️ You won the joust clash!" : "💥 You lost the joust clash.",
+            tone: resolvedEvent.winnerUid === myUid ? "clash-win" : "clash-loss",
+          });
         } else {
-          setLastEvent("⚔️ Stance locked — waiting for reveal.");
+          setLastEvent({ message: "⚔️ Stance locked — waiting for reveal.", tone: "ok" });
         }
+        setMatch(result.match);
         if (result.winner) {
-          navigate(`/joustur/result/${matchId}`);
+          if (resolvedEvent?.winnerUid) {
+            setPendingResultRoute(`/joustur/result/${matchId}`);
+          } else {
+            navigate(`/joustur/result/${matchId}`);
+          }
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Clash choice failed.");
@@ -780,7 +957,7 @@ export function JousturBoard() {
         setClashing(false);
       }
     },
-    [clashing, matchId, myUid, navigate],
+    [activeClash, clashing, match, matchId, myUid, navigate],
   );
 
   if (loading) return <div className="page joustur-board"><p>Loading match…</p></div>;
@@ -825,6 +1002,7 @@ export function JousturBoard() {
 
   return (
     <div className="page joustur-board">
+      {clashCinematic && <ClashCinematicOverlay cinematic={clashCinematic} />}
       <p className="page-eyebrow">Joustur Skatur™</p>
       <h1 className="page-title">
         {JOUSTUR_FACTION_LABELS[myState.faction] ?? myState.faction}
@@ -838,8 +1016,8 @@ export function JousturBoard() {
         </div>
       )}
       {lastEvent && (
-        <div className="status-banner status-banner--ok" role="status">
-          {lastEvent}
+        <div className={`status-banner status-banner--${lastEvent.tone}`} role="status" aria-live="polite">
+          {lastEvent.message}
         </div>
       )}
 

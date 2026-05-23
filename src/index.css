@@ -302,6 +302,76 @@ body {
   box-shadow: 0 0 8px rgba(204, 68, 255, 0.4);
 }
 
+.status-banner {
+  position: relative;
+  width: min(100%, 980px);
+  margin: 0 auto 18px;
+  padding: 14px 18px;
+  border: 1px solid rgba(0, 204, 255, 0.3);
+  border-radius: 18px;
+  background: rgba(7, 10, 24, 0.9);
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 0.24),
+    inset 0 0 20px rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+.status-banner--error {
+  border-color: rgba(255, 68, 68, 0.45);
+  background: linear-gradient(135deg, rgba(42, 10, 18, 0.96), rgba(18, 10, 18, 0.92));
+  color: #ffd6dc;
+}
+
+.status-banner--ok {
+  border-color: rgba(0, 204, 255, 0.34);
+  color: #dffaff;
+}
+
+.status-banner--clash-win,
+.status-banner--clash-loss {
+  overflow: hidden;
+  padding: 18px 22px;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.4vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  animation: joustur-outcome-banner 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.status-banner--clash-win {
+  border-color: rgba(0, 255, 136, 0.55);
+  background:
+    linear-gradient(135deg, rgba(4, 42, 36, 0.96), rgba(8, 16, 40, 0.92));
+  box-shadow:
+    0 0 28px rgba(0, 255, 136, 0.18),
+    inset 0 0 26px rgba(255, 255, 255, 0.05);
+  color: #f1fff7;
+}
+
+.status-banner--clash-loss {
+  border-color: rgba(255, 120, 68, 0.55);
+  background:
+    linear-gradient(135deg, rgba(52, 14, 12, 0.96), rgba(26, 8, 24, 0.92));
+  box-shadow:
+    0 0 28px rgba(255, 92, 36, 0.22),
+    inset 0 0 26px rgba(255, 255, 255, 0.04);
+  color: #fff1eb;
+}
+
+.status-banner--clash-win::after,
+.status-banner--clash-loss::after {
+  content: "";
+  position: absolute;
+  inset: -40% auto auto -10%;
+  width: 45%;
+  height: 180%;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  pointer-events: none;
+}
+
 .joustur-board__status,
 .joustur-board__clash-panel {
   width: min(100%, 980px);
@@ -399,6 +469,266 @@ body {
   cursor: wait;
 }
 
+.joustur-clash-cinematic {
+  position: fixed;
+  inset: 0;
+  z-index: 9800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.joustur-clash-cinematic__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, rgba(32, 30, 76, 0.62), rgba(3, 4, 12, 0.96) 68%);
+  backdrop-filter: blur(10px);
+}
+
+.joustur-clash-cinematic--loss .joustur-clash-cinematic__backdrop {
+  background:
+    radial-gradient(circle at center, rgba(96, 24, 22, 0.56), rgba(5, 2, 10, 0.97) 68%);
+}
+
+.joustur-clash-cinematic__content {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 980px);
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  text-align: center;
+}
+
+.joustur-clash-cinematic__eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.joustur-clash-cinematic__arena {
+  position: relative;
+  width: 100%;
+  min-height: clamp(320px, 54vh, 460px);
+  isolation: isolate;
+}
+
+.joustur-clash-cinematic__card,
+.joustur-clash-cinematic__winner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.joustur-clash-cinematic__card {
+  width: clamp(160px, 20vw, 230px);
+  transition:
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms ease,
+    filter 260ms ease;
+}
+
+.joustur-clash-cinematic__card figcaption,
+.joustur-clash-cinematic__winner figcaption {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 0 16px rgba(0, 0, 0, 0.55);
+}
+
+.joustur-clash-cinematic__piece {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--card-aspect-ratio);
+  filter:
+    drop-shadow(0 18px 30px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 20px rgba(255, 255, 255, 0.12));
+}
+
+.joustur-clash-cinematic__piece .joustur-board-piece__card {
+  border-width: 3px;
+  border-radius: 18px;
+}
+
+.joustur-clash-cinematic__piece .joustur-board-piece__owner {
+  padding: 4px 8px;
+  font-size: 0.7rem;
+}
+
+.joustur-clash-cinematic__card--attacker {
+  z-index: 2;
+}
+
+.joustur-clash-cinematic__card--defender {
+  z-index: 3;
+}
+
+.joustur-clash-cinematic__winner {
+  z-index: 5;
+  width: clamp(180px, 23vw, 260px);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.42);
+  transition:
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 240ms ease;
+}
+
+.joustur-clash-cinematic__winner figcaption {
+  display: grid;
+  gap: 4px;
+}
+
+.joustur-clash-cinematic__winner span {
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.joustur-clash-cinematic__burst,
+.joustur-clash-cinematic__shockwave {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.15);
+  opacity: 0;
+}
+
+.joustur-clash-cinematic__burst {
+  width: clamp(90px, 13vw, 150px);
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 18%, rgba(255, 210, 120, 0.9) 22%, rgba(255, 116, 51, 0.65) 55%, transparent 72%);
+  mix-blend-mode: screen;
+  z-index: 4;
+}
+
+.joustur-clash-cinematic__shockwave {
+  width: clamp(220px, 32vw, 360px);
+  aspect-ratio: 1;
+  border: 4px solid rgba(0, 255, 200, 0.7);
+  box-shadow:
+    0 0 28px rgba(0, 255, 200, 0.28),
+    inset 0 0 28px rgba(255, 255, 255, 0.12);
+  z-index: 1;
+}
+
+.joustur-clash-cinematic--loss .joustur-clash-cinematic__shockwave {
+  border-color: rgba(255, 116, 51, 0.72);
+  box-shadow:
+    0 0 30px rgba(255, 116, 51, 0.32),
+    inset 0 0 26px rgba(255, 255, 255, 0.08);
+}
+
+.joustur-clash-cinematic__result {
+  width: min(100%, 760px);
+  padding: 18px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background: rgba(6, 8, 18, 0.68);
+  box-shadow:
+    0 0 30px rgba(0, 0, 0, 0.28),
+    inset 0 0 18px rgba(255, 255, 255, 0.04);
+}
+
+.joustur-clash-cinematic__result h2 {
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4vw, 2.8rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.joustur-clash-cinematic__result p {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.joustur-clash-cinematic--win .joustur-clash-cinematic__result h2 {
+  color: #d6fff2;
+  text-shadow:
+    0 0 18px rgba(0, 255, 170, 0.35),
+    0 0 42px rgba(0, 204, 255, 0.2);
+}
+
+.joustur-clash-cinematic--loss .joustur-clash-cinematic__result h2 {
+  color: #ffe5dd;
+  text-shadow:
+    0 0 18px rgba(255, 116, 51, 0.38),
+    0 0 42px rgba(255, 68, 68, 0.2);
+}
+
+.joustur-clash-cinematic--charge .joustur-clash-cinematic__card--attacker {
+  animation: joustur-clash-grow-left 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.joustur-clash-cinematic--charge .joustur-clash-cinematic__card--defender {
+  animation: joustur-clash-grow-right 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.joustur-clash-cinematic--impact .joustur-clash-cinematic__card--attacker {
+  transform: translate(-58%, -50%) scale(1.42) rotate(6deg);
+}
+
+.joustur-clash-cinematic--impact .joustur-clash-cinematic__card--defender {
+  transform: translate(-42%, -50%) scale(1.42) rotate(-6deg);
+}
+
+.joustur-clash-cinematic--impact .joustur-clash-cinematic__burst {
+  animation: joustur-clash-burst 520ms ease-out forwards;
+}
+
+.joustur-clash-cinematic--impact .joustur-clash-cinematic__shockwave {
+  animation: joustur-clash-shockwave 620ms ease-out forwards;
+}
+
+.joustur-clash-cinematic--resolve .joustur-clash-cinematic__card--attacker {
+  transform: translate(-92%, -48%) scale(0.56) rotate(-26deg);
+  opacity: 0;
+  filter: blur(2px) saturate(0.8);
+}
+
+.joustur-clash-cinematic--resolve .joustur-clash-cinematic__card--defender {
+  transform: translate(-8%, -52%) scale(0.56) rotate(26deg);
+  opacity: 0;
+  filter: blur(2px) saturate(0.8);
+}
+
+.joustur-clash-cinematic--resolve .joustur-clash-cinematic__winner {
+  opacity: 1;
+}
+
+.joustur-clash-cinematic--win.joustur-clash-cinematic--resolve .joustur-clash-cinematic__winner {
+  transform: translate(-50%, -56%) scale(1.14);
+}
+
+.joustur-clash-cinematic--loss.joustur-clash-cinematic--resolve .joustur-clash-cinematic__winner {
+  transform: translate(-50%, -46%) scale(1.2);
+}
+
+.joustur-clash-cinematic--win.joustur-clash-cinematic--resolve .joustur-clash-cinematic__piece--winner {
+  filter:
+    drop-shadow(0 18px 36px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 34px rgba(0, 255, 170, 0.82));
+}
+
+.joustur-clash-cinematic--loss.joustur-clash-cinematic--resolve .joustur-clash-cinematic__piece--winner {
+  filter:
+    drop-shadow(0 20px 38px rgba(0, 0, 0, 0.52))
+    drop-shadow(0 0 34px rgba(255, 104, 64, 0.82));
+}
+
 @keyframes joustur-clash-pulse {
   from {
     transform: translate(-50%, -50%) scale(0.96);
@@ -419,6 +749,64 @@ body {
   }
 }
 
+@keyframes joustur-outcome-banner {
+  from {
+    transform: translateY(-8px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes joustur-clash-grow-left {
+  from {
+    transform: translate(calc(-50% - min(32vw, 340px)), -50%) scale(0.74) rotate(-16deg);
+    opacity: 0.35;
+  }
+  to {
+    transform: translate(calc(-50% - min(16vw, 190px)), -50%) scale(1.18) rotate(-7deg);
+    opacity: 1;
+  }
+}
+
+@keyframes joustur-clash-grow-right {
+  from {
+    transform: translate(calc(-50% + min(32vw, 340px)), -50%) scale(0.74) rotate(16deg);
+    opacity: 0.35;
+  }
+  to {
+    transform: translate(calc(-50% + min(16vw, 190px)), -50%) scale(1.18) rotate(7deg);
+    opacity: 1;
+  }
+}
+
+@keyframes joustur-clash-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0.15);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes joustur-clash-shockwave {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0;
+  }
+}
+
 @media (max-width: 720px) {
   .joustur-visual-board {
     width: calc(100% + 24px);
@@ -436,6 +824,59 @@ body {
 
   .joustur-board-piece__owner {
     display: none;
+  }
+
+  .joustur-clash-cinematic {
+    padding: 16px;
+  }
+
+  .joustur-clash-cinematic__arena {
+    min-height: 300px;
+  }
+
+  .joustur-clash-cinematic__card {
+    width: clamp(130px, 34vw, 180px);
+  }
+
+  .joustur-clash-cinematic__winner {
+    width: clamp(150px, 40vw, 210px);
+  }
+
+  .joustur-clash-cinematic__result {
+    padding: 14px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-banner--clash-win,
+  .status-banner--clash-loss,
+  .joustur-clash-cinematic__card,
+  .joustur-clash-cinematic__winner,
+  .joustur-clash-cinematic__burst,
+  .joustur-clash-cinematic__shockwave {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .joustur-clash-cinematic--charge .joustur-clash-cinematic__card--attacker {
+    transform: translate(calc(-50% - min(16vw, 190px)), -50%) scale(1.08) rotate(-4deg);
+    opacity: 1;
+  }
+
+  .joustur-clash-cinematic--charge .joustur-clash-cinematic__card--defender {
+    transform: translate(calc(-50% + min(16vw, 190px)), -50%) scale(1.08) rotate(4deg);
+    opacity: 1;
+  }
+
+  .joustur-clash-cinematic--impact .joustur-clash-cinematic__burst,
+  .joustur-clash-cinematic--impact .joustur-clash-cinematic__shockwave,
+  .joustur-clash-cinematic--resolve .joustur-clash-cinematic__card {
+    opacity: 0;
+  }
+
+  .joustur-clash-cinematic--resolve .joustur-clash-cinematic__winner {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
   }
 }
 
