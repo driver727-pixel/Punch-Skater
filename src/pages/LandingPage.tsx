@@ -92,7 +92,7 @@ export function LandingPage() {
               className="landing-auth-card"
               hint="Sign in to save cards, build a Crew, run Missions, race rivals, and trade across the districts."
               panelEyebrow="Login"
-              panelTitle="Use your existing Punch Skater sign-in"
+              panelTitle="Use your existing Punch Skater™ sign-in"
               panelSubtitle="Email, Google, and phone login all work here."
               showBranding={false}
               showGuestLink={false}

@@ -19,7 +19,7 @@ future-facing contradiction.
 - **Known crews:** Chrome Blades, Phantom Riders
 
 **Public:** The corporate penthouse of the setting. Airaway is all glass, chrome, contractor badges,
-and biometric checkpoints. Punch Skaters are explicitly outlawed here.
+and biometric checkpoints. Punch Skater™s are explicitly outlawed here.
 
 ---
 

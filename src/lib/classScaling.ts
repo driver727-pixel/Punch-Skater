@@ -1,7 +1,7 @@
 import type { Rarity } from "./types";
 
 export const CLASS_MULTIPLIERS: Record<Rarity, number> = {
-  "Punch Skater": 1.0,
+  "Punch Skater™": 1.0,
   Apprentice: 1.0,
   Master: 1.25,
   Rare: 1.5,
@@ -9,7 +9,7 @@ export const CLASS_MULTIPLIERS: Record<Rarity, number> = {
 };
 
 export const CLASS_BADGE_LABELS: Record<Rarity, string> = {
-  "Punch Skater": "Punch Skater",
+  "Punch Skater™": "Punch Skater™",
   Apprentice: "Apprentice",
   Master: "Master",
   Rare: "Rare",

@@ -34,7 +34,7 @@ interface FrameAssetConfig {
   /**
    * Optional back-face frame image.  When set, this image is overlaid on top
    * of the rendered card-back so the border can wrap continuously around the
-   * front and back faces (e.g. corner bandages on the Punch Skater frame).
+   * front and back faces (e.g. corner bandages on the Punch Skater™ frame).
    */
   backUrl?: string;
   blendMode?: FrameBlendMode;
@@ -65,7 +65,7 @@ const BACKGROUND_ASSETS: Partial<Record<District, string>> = {
 //   Legendary: { url: "/assets/frames/legendary.webp" },
 
 const FRAME_ASSETS: Partial<Record<Rarity, FrameAssetConfig>> = {
-  "Punch Skater": {
+  "Punch Skater™": {
     url:     "/assets/frames/punch-skater-front.png",
     backUrl: "/assets/frames/punch-skater-rear.png",
     // blendMode defaults to "normal" — PNG has a transparent center, no screen blend needed.
@@ -176,7 +176,7 @@ const FACTION_ASSETS: Partial<Record<Faction, string>> = {
   "The Wooders":                          "/assets/factions/the_wooders.webp",
   "United Corporate Alliance (UCA)": "/assets/factions/uca.webp",
   "UCPS Workers":                         "/assets/factions/ucps_workers.webp",
-  "Punch Skaters":                        "/assets/factions/punch_skaters.png",
+  "Punch Skater™s":                        "/assets/factions/punch_skaters.png",
 };
 
 /**

@@ -168,9 +168,9 @@ export function Nav() {
         <nav className="nav">
           <div className="nav-inner">
           <div className="nav-brand">
-            <span className="nav-title">Punch Skater</span>
+            <span className="nav-title">Punch Skater™</span>
             <span className="nav-subtitle">CARD GAME</span>
-            <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk Game</a>
+            <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk™ Game</a>
           </div>
 
           <GeoAtlas compact section="neon" className="nav-neon-map" />

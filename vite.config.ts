@@ -94,7 +94,7 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'Punch Skater',
+        name: 'Punch Skater™',
         short_name: 'PunchSkater',
         description: 'Forge unique AI-powered courier trading cards, build competitive decks, and trade with other skaters across five dystopian districts.',
         theme_color: '#000000',

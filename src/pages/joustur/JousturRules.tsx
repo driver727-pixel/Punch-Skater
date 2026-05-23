@@ -1,5 +1,5 @@
 /**
- * JousturRules.tsx — Reference page covering Joustur Skatur rules, traits,
+ * JousturRules.tsx — Reference page covering Joustur Skatur™ rules, traits,
  * faction passives, support effects, and rewards.
  */
 
@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 const FACTIONS = [
   {
     faction: "Rust Kids",
-    crew: "Punch Skaters",
+    crew: "Punch Skater™s",
     passive: "patchworkRush",
     support: "recoveryPing — recover a bumped rider from off-board back to entry (pos 1)",
   },
@@ -67,7 +67,7 @@ const REWARDS_TABLE = [
 export function JousturRules() {
   return (
     <div className="page joustur-rules">
-      <p className="page-eyebrow">Joustur Skatur</p>
+      <p className="page-eyebrow">Joustur Skatur™</p>
       <h1 className="page-title">Rules</h1>
 
       <section className="joustur-rules__section">

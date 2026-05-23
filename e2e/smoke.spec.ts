@@ -23,7 +23,7 @@ test.describe('Home page (Card Forge)', () => {
 
   test('has correct page title', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/Punch Skater/i);
+    await expect(page).toHaveTitle(/Punch Skater™/i);
   });
 
   test('shows the nav brand', async ({ page }) => {
@@ -177,7 +177,7 @@ test.describe('Home page (Card Forge)', () => {
 test.describe('Login page', () => {
   test('loads the login page', async ({ page }) => {
     await page.goto('/login');
-    await expect(page).toHaveTitle(/Punch Skater/i);
+    await expect(page).toHaveTitle(/Punch Skater™/i);
   });
 
   test('shows Sign In and Create Account tabs', async ({ page }) => {
@@ -231,7 +231,7 @@ test.describe('Login page', () => {
 test.describe('Credits page', () => {
   test('loads the credits page', async ({ page }) => {
     await page.goto('/credits');
-    await expect(page).toHaveTitle(/Punch Skater/i);
+    await expect(page).toHaveTitle(/Punch Skater™/i);
   });
 
   test('shows Credits & Attributions heading', async ({ page }) => {
@@ -367,7 +367,7 @@ test.describe('SEO & meta tags', () => {
   test('home page has og:title', async ({ page }) => {
     await page.goto('/');
     const ogTitle = page.locator('meta[property="og:title"]');
-    await expect(ogTitle).toHaveAttribute('content', /Punch Skater/i);
+    await expect(ogTitle).toHaveAttribute('content', /Punch Skater™/i);
   });
 
   test('home page has og:description', async ({ page }) => {

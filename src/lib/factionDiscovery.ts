@@ -72,9 +72,9 @@ const FACTION_BRANDING: Partial<Record<Faction, { logoMark: string; flavorText: 
     logoMark: "🌲 The Wooders",
     flavorText: "No screens. No trackers. The Wooders have acknowledged this rider from the canopy.",
   },
-  "Punch Skaters": {
-    logoMark: "🛹 Punch Skaters",
-    flavorText: "Bloodied knuckles, battered board. Another Punch Skater hits the streets.",
+  "Punch Skater™s": {
+    logoMark: "🛹 Punch Skater™s",
+    flavorText: "Bloodied knuckles, battered board. Another Punch Skater™ hits the streets.",
   },
   "The Team": {
     logoMark: "🏅 The Team",

@@ -1,6 +1,6 @@
 # Player Progression Model
 
-> Punch Skater progression design — the authoritative reference for XP, Points,
+> Punch Skater™ progression design — the authoritative reference for XP, Points,
 > Deck Power, Ozzies, upgrade tiers, missions, and leaderboard scoring.
 >
 > Code references: `src/lib/progression.ts` (client) · `server/lib/progression.js` (server)
@@ -20,7 +20,7 @@ No pay-to-win. Progression comes from play.
 
 ## The Crew
 
-A player's active **Crew** is exactly **6 Punch Skater cards** chosen from their
+A player's active **Crew** is exactly **6 Punch Skater™ cards** chosen from their
 collection and given a player-defined name.
 
 - The deck IS the Crew — the terms are interchangeable in code; "Crew" is the
@@ -133,7 +133,7 @@ satisfying **any one** of the three criteria.
 ## Ozzies
 
 Ozzies represent the **earned cultural and world value** of a player's
-collection and Crew in Sk8rpunk.
+collection and Crew in Sk8rpunk™.
 
 ### Card Ozzies
 
@@ -142,7 +142,7 @@ determined by rarity:
 
 | Rarity | Ozzy Range |
 |---|---|
-| Punch Skater | 5 – 50 |
+| Punch Skater™ | 5 – 50 |
 | Apprentice | 25 – 100 |
 | Master | 75 – 200 |
 | Rare | 150 – 500 |

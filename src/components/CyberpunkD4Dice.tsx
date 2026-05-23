@@ -1,7 +1,7 @@
 /**
  * CyberpunkD4Dice.tsx
  *
- * Animated tetrahedral dice (d4) for Joustur Skatur, rendered in
+ * Animated tetrahedral dice (d4) for Joustur Skatur™, rendered in
  * cyberpunk neon art style using inline SVG and CSS 3D transforms.
  *
  * Each die is a triangular pyramid with 2 marked (white) corners and 2 unmarked

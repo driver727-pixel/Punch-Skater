@@ -9,7 +9,7 @@ export function PrivacyPolicy() {
       <section className="credits-section">
         <h2 className="credits-heading">Overview</h2>
         <p className="legal-body">
-          SP Digital LLC ("we", "us", or "our") operates the Punch Skater web application at{" "}
+          SP Digital LLC ("we", "us", or "our") operates the Punch Skater™ web application at{" "}
           <a href="https://punchskater.com" target="_blank" rel="noopener noreferrer" className="credits-link">
             punchskater.com
           </a>
@@ -20,7 +20,7 @@ export function PrivacyPolicy() {
 
       <section className="credits-section">
         <h2 className="credits-heading">Information We Collect</h2>
-        <p className="legal-body">We collect the following information when you use Punch Skater:</p>
+        <p className="legal-body">We collect the following information when you use Punch Skater™:</p>
         <ul className="legal-list">
           <li>
             <strong>Account information</strong> — when you register, we collect your email address
@@ -46,7 +46,7 @@ export function PrivacyPolicy() {
       <section className="credits-section">
         <h2 className="credits-heading">How We Use Your Information</h2>
         <ul className="legal-list">
-          <li>To operate, maintain, and improve the Punch Skater service.</li>
+          <li>To operate, maintain, and improve the Punch Skater™ service.</li>
           <li>To associate your saved cards and decks with your account.</li>
           <li>To process payments and verify purchase status for paid tiers.</li>
           <li>To respond to support requests sent to our support email.</li>
@@ -85,7 +85,7 @@ export function PrivacyPolicy() {
       <section className="credits-section">
         <h2 className="credits-heading">Children's Privacy</h2>
         <p className="legal-body">
-          Punch Skater is not directed to children under the age of 13. We do not knowingly collect
+          Punch Skater™ is not directed to children under the age of 13. We do not knowingly collect
           personal information from children under 13. If you believe a child has provided us with
           personal information, please contact us and we will delete it.
         </p>

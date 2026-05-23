@@ -29,7 +29,7 @@ function createCard(id: string, name: string) {
     characterSeed: `char-${id}`,
     prompts: {
       archetype: 'The Team',
-      rarity: 'Punch Skater',
+      rarity: 'Punch Skater™',
       style: 'Street',
       district: 'Nightshade',
       accentColor: '#00ff88',
@@ -44,7 +44,7 @@ function createCard(id: string, name: string) {
     },
     identity: {
       name,
-      crew: 'Punch Skaters',
+      crew: 'Punch Skater™s',
       serialNumber: `SN-${id}`,
       age: '24',
     },

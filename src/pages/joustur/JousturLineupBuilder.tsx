@@ -32,7 +32,7 @@ const SUPPORT_EFFECT_LABELS: Record<string, string> = {
 };
 
 const CREW_TO_FACTION: Record<string, string> = {
-  "Punch Skaters":   "rustKids",
+  "Punch Skater™s":   "rustKids",
   "Ne0n Legion":     "neonSaints",
   "Qu111s (Quills)": "signalGhosts",
   "The Team":        "chromeSyndicate",
@@ -179,7 +179,7 @@ export function JousturLineupBuilder() {
 
   return (
     <div className="page joustur-lineup">
-      <p className="page-eyebrow">Joustur Skatur</p>
+      <p className="page-eyebrow">Joustur Skatur™</p>
       <h1 className="page-title">Build Your Lineup</h1>
       <p className="page-sub">
         Pick <strong>6 riders</strong> and <strong>1 support card</strong>.

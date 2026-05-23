@@ -1,5 +1,5 @@
 /**
- * progression.ts — Player progression model for Punch Skater.
+ * progression.ts — Player progression model for Punch Skater™.
  *
  * Defines the four core progression axes and helper calculations:
  *
@@ -16,7 +16,7 @@ import type { CardPayload, LeaderboardEntry, Rarity } from "./types";
 
 // ── Crew size ─────────────────────────────────────────────────────────────────
 
-/** An active Crew consists of exactly this many Punch Skater cards. */
+/** An active Crew consists of exactly this many Punch Skater™ cards. */
 export const CREW_SIZE = 6;
 
 // ── XP ────────────────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ export const DECK_POWER_UPGRADE_THRESHOLDS = {
 
 /** Base Ozzy ranges per rarity tier (inclusive min / max). */
 export const OZZY_BASE_RANGE: Record<Rarity, { min: number; max: number }> = {
-  "Punch Skater": { min: 5,   max: 50   },
+  "Punch Skater™": { min: 5,   max: 50   },
   Apprentice:     { min: 25,  max: 100  },
   Master:         { min: 75,  max: 200  },
   Rare:           { min: 150, max: 500  },
@@ -111,7 +111,7 @@ export const OZZY_BASE_RANGE: Record<Rarity, { min: number; max: number }> = {
  * @param normRng — a pre-seeded normalised RNG value in [0, 1)
  */
 export function assignBaseOzzies(rarity: Rarity, normRng: number): number {
-  const { min, max } = OZZY_BASE_RANGE[rarity] ?? OZZY_BASE_RANGE["Punch Skater"];
+  const { min, max } = OZZY_BASE_RANGE[rarity] ?? OZZY_BASE_RANGE["Punch Skater™"];
   return Math.round(min + normRng * (max - min));
 }
 

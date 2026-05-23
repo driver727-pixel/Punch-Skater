@@ -35,7 +35,7 @@ const STYLE_CLOTHING: Record<string, string> = {
 };
 
 const RARITY_MOOD: Record<string, string> = {
-  "Punch Skater": "gritty and low-budget",
+  "Punch Skater™": "gritty and low-budget",
   Apprentice:     "energetic and hopeful",
   Master:         "confident and polished",
   Rare:           "dynamic and striking",
@@ -43,7 +43,7 @@ const RARITY_MOOD: Record<string, string> = {
 };
 
 const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
-  "Punch Skater":
+  "Punch Skater™":
     "an edge-to-edge frame that looks like a real poker card literally wrapped in oversized beige Band-Aid strips and adhesive bandages. " +
     "Perforated adhesive rails run up the full left and right edges with evenly spaced punch holes. " +
     "Chunky fabric bandage pads bunch up and fold over multiple corners like a slapped-together first-aid wrap. " +

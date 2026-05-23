@@ -1716,6 +1716,86 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin: 0;
   color: rgba(236, 228, 255, 0.82);
   font-size: 12px;
+}
+
+.forge-class-odds {
+  position: relative;
+  display: inline-flex;
+  align-self: flex-start;
+  margin: 6px 0 10px;
+}
+
+.forge-class-odds__trigger {
+  margin-top: 0;
+}
+
+.forge-class-odds__popup {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  min-width: min(420px, calc(100vw - 48px));
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 204, 255, 0.28);
+  background: linear-gradient(135deg, rgba(6, 16, 30, 0.96), rgba(16, 8, 24, 0.94));
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 40;
+}
+
+.forge-class-odds:hover .forge-class-odds__popup,
+.forge-class-odds:focus-within .forge-class-odds__popup {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.forge-class-odds__title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--accent2);
+  text-transform: uppercase;
+}
+
+.forge-class-odds__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forge-class-odds__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(110px, auto);
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+}
+
+.forge-class-odds__label {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.forge-class-odds__chance {
+  color: var(--accent);
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+}
+
+.forge-class-odds__note {
+  color: var(--text-dim);
+  text-align: right;
   line-height: 1.6;
 }
 .forge-hero__tags {
@@ -2304,61 +2384,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-}
-
-.forge-welcome__odds {
-  margin-top: 20px;
-  width: 100%;
-}
-
-.forge-welcome__odds-title {
-  font-family: var(--font-display);
-  font-size: 13px;
-  letter-spacing: 2px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  margin: 0 0 8px;
-}
-
-.forge-welcome__odds-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.forge-welcome__odds-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-}
-
-.forge-welcome__odds-label {
-  font-weight: bold;
-  color: var(--text);
-  flex: 1;
-}
-
-.forge-welcome__odds-chance {
-  font-family: var(--font-display);
-  letter-spacing: 1px;
-  color: var(--accent);
-  min-width: 36px;
-  text-align: right;
-}
-
-.forge-welcome__odds-note {
-  color: var(--text-dim);
-  font-size: 11px;
-  min-width: 100px;
-  text-align: right;
 }
 
 .forge-randomize-button {
@@ -8527,7 +8552,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
 }
 
-/* Front face name overlay — keep the skater name clear of the Punch Skater
+/* Front face name overlay — keep the skater name clear of the Punch Skater™
  * frame treatment by lifting it above the frame and nudging it into the top
  * header space. */
 .print-front-name-overlay {
@@ -9679,12 +9704,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
  * data-theme is set on <html> by ThemeApplier based on the current tier.
  * data-time ("day" | "night") is also set by ThemeApplier based on current hour.
  *
- * Free  → Punch Skater "bandaged" aesthetic: muted tans & worn browns
+ * Free  → Punch Skater™ "bandaged" aesthetic: muted tans & worn browns
  * Tier2 → Apprentice aesthetic: teal & energetic greens
  * Tier3 → Legendary aesthetic: rich gold & amber
  */
 
-/* Free / Punch Skater ─────────────────────────────────────────────── */
+/* Free / Punch Skater™ ─────────────────────────────────────────────── */
 [data-theme="free"] {
   --bg:     #06050f;
   --bg2:    #0b0920;

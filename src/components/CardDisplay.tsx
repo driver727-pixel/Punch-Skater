@@ -261,7 +261,7 @@ function CompositeArt({
         </div>
       ) : null}
 
-      {/* Layer 4 – Frame (ornate rarity border, screen-blended AI image — used for Punch Skater) */}
+      {/* Layer 4 – Frame (ornate rarity border, screen-blended AI image — used for Punch Skater™) */}
       {frameImageUrl && !showSvgFrame ? (
         <img
           src={frameImageUrl}

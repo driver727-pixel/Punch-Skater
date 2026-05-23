@@ -13,6 +13,7 @@ import { BoardBuilder } from "../../components/BoardBuilder";
 import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
 import { ReferralPanel } from "../../components/ReferralPanel";
 import type { BoardConfig } from "../../lib/boardBuilder";
+import { FORGE_CLASS_ODDS } from "../../lib/cardClassProgression";
 import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
@@ -259,6 +260,24 @@ export function ForgeControlsPanel({
           accentColor={prompts.accentColor}
           onSave={onBoardConfigChange}
         />
+      </div>
+
+      <div className="forge-class-odds">
+        <button type="button" className="forge-class-odds__trigger btn-outline btn-glass btn-sm">
+          Forge Class Odds
+        </button>
+        <div className="forge-class-odds__popup" aria-label="Forge class odds">
+          <p className="forge-class-odds__title">Forge Class Odds</p>
+          <ul className="forge-class-odds__list">
+            {FORGE_CLASS_ODDS.map((tier) => (
+              <li key={tier.label} className="forge-class-odds__row">
+                <span className="forge-class-odds__label">{tier.label}</span>
+                <span className="forge-class-odds__chance">{tier.chance}</span>
+                <span className="forge-class-odds__note">{tier.note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       <button

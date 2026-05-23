@@ -1,5 +1,5 @@
 /**
- * jousturTypes.ts — Shared TypeScript types for Joustur Skatur.
+ * jousturTypes.ts — Shared TypeScript types for Joustur Skatur™.
  *
  * These types mirror the server-side JavaScript structures in
  * server/lib/jousturRules.js exactly so the client can consume match state
@@ -21,9 +21,9 @@
 
 // ── Enums / union types ───────────────────────────────────────────────────────
 
-/** Six Joustur factions mapped from existing Punch Skater crews. */
+/** Six Joustur factions mapped from existing Punch Skater™ crews. */
 export type JousturFaction =
-  | "rustKids"         // Punch Skaters
+  | "rustKids"         // Punch Skater™s
   | "neonSaints"       // Ne0n Legion
   | "signalGhosts"     // Qu111s (Quills)
   | "chromeSyndicate"  // The Team
@@ -89,7 +89,7 @@ export interface JousturRiderSnapshot {
   cardId: string;
   name: string;
   rarity: string;
-  /** Original Punch Skater crew string (e.g. "Ne0n Legion"). */
+  /** Original Punch Skater™ crew string (e.g. "Ne0n Legion"). */
   crew: string;
   jousturTrait: JousturTrait;
   jousturFaction: JousturFaction;
