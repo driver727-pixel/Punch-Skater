@@ -5002,12 +5002,16 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   align-items: center;
   margin-bottom: 24px;
   padding: 28px;
-  border: 1px solid rgba(0, 255, 136, 0.18);
+  border: 1px solid rgba(32, 244, 255, 0.26);
   border-radius: 18px;
   background:
-    linear-gradient(145deg, rgba(7, 12, 18, 0.94), rgba(20, 11, 29, 0.88)),
-    radial-gradient(circle at top left, rgba(0, 204, 255, 0.18), transparent 42%);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    linear-gradient(145deg, rgba(11, 8, 24, 0.96), rgba(25, 8, 28, 0.9)),
+    radial-gradient(circle at top left, rgba(255, 46, 169, 0.24), transparent 42%),
+    radial-gradient(circle at right center, rgba(32, 244, 255, 0.2), transparent 48%);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(255, 46, 169, 0.12),
+    0 0 34px rgba(32, 244, 255, 0.1);
   overflow: hidden;
   position: relative;
 }
@@ -5017,46 +5021,28 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   z-index: 1;
 }
 
-.landing-hero__eyebrow {
-  margin: 0 0 10px;
-  color: var(--accent2);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
 .landing-hero__title {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(40px, 7vw, 78px);
   line-height: 0.9;
-  color: var(--accent);
+  color: #ff8bd4;
   letter-spacing: 4px;
-  text-shadow: 0 0 20px rgba(0, 255, 136, 0.35);
+  text-shadow:
+    0 0 12px rgba(255, 46, 169, 0.7),
+    0 0 28px rgba(32, 244, 255, 0.34);
 }
 
 .landing-hero__subtitle {
-  margin: 10px 0 0;
+  margin: 14px 0 18px;
   font-family: var(--font-display);
-  font-size: clamp(16px, 2.8vw, 24px);
-  letter-spacing: 6px;
-  color: #f4ffcb;
-}
-
-.landing-hero__badge {
-  display: inline-flex;
-  align-items: center;
-  margin: 16px 0 14px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  color: #05080e;
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--purple));
-  box-shadow: 0 0 18px rgba(0, 255, 136, 0.28);
-  font-size: 12px;
+  font-size: clamp(20px, 3vw, 32px);
   font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #8ffbff;
+  text-shadow:
+    0 0 12px rgba(32, 244, 255, 0.7),
+    0 0 24px rgba(255, 46, 169, 0.3);
 }
 
 .landing-hero__lede {
@@ -5081,24 +5067,24 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   inset: 12px 28px auto auto;
   width: 160px;
   height: 160px;
-  background: radial-gradient(circle, rgba(0, 255, 136, 0.55), rgba(0, 255, 136, 0));
+  background: radial-gradient(circle, rgba(255, 46, 169, 0.58), rgba(255, 46, 169, 0));
 }
 
 .landing-hero__glow-orb--secondary {
   inset: auto auto 12px 24px;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(0, 204, 255, 0.42), rgba(0, 204, 255, 0));
+  background: radial-gradient(circle, rgba(32, 244, 255, 0.48), rgba(32, 244, 255, 0));
 }
 
 .landing-hero__grid {
   position: absolute;
   inset: 18px;
-  border: 1px solid rgba(0, 204, 255, 0.18);
+  border: 1px solid rgba(32, 244, 255, 0.26);
   border-radius: 18px;
   background:
-    linear-gradient(rgba(0, 204, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 204, 255, 0.12) 1px, transparent 1px);
+    linear-gradient(rgba(32, 244, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 46, 169, 0.12) 1px, transparent 1px);
   background-size: 22px 22px;
   transform: perspective(700px) rotateX(58deg);
   transform-origin: bottom center;
@@ -5132,12 +5118,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .landing-account-card {
   padding: 28px 24px;
-  border: 1px solid rgba(0, 204, 255, 0.18);
+  border: 1px solid rgba(255, 46, 169, 0.22);
   border-radius: 18px;
   background:
-    linear-gradient(145deg, rgba(8, 14, 22, 0.92), rgba(18, 10, 30, 0.88)),
-    radial-gradient(circle at top right, rgba(0, 255, 136, 0.16), transparent 40%);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+    linear-gradient(145deg, rgba(9, 13, 25, 0.92), rgba(28, 9, 33, 0.9)),
+    radial-gradient(circle at top right, rgba(32, 244, 255, 0.16), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(255, 46, 169, 0.14), transparent 44%);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(255, 46, 169, 0.08);
 }
 
 .landing-account-card__eyebrow {
