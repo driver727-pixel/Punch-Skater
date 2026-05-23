@@ -804,7 +804,7 @@ export function JousturBoard() {
   }, [loadMatch]);
 
   useEffect(() => {
-    if (!clashCinematic) return;
+    if (!clashCinematic || clashCinematic.stage !== "charge") return;
 
     const cinematicId = clashCinematic.id;
     const impactTimer = window.setTimeout(() => {
@@ -826,7 +826,7 @@ export function JousturBoard() {
       window.clearTimeout(resolveTimer);
       window.clearTimeout(clearTimer);
     };
-  }, [clashCinematic?.id]);
+  }, [clashCinematic]);
 
   useEffect(() => {
     if (!pendingResultRoute || clashCinematic) return;
