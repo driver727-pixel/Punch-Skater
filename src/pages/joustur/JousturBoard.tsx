@@ -9,7 +9,7 @@
  * Non-active players see the board in read-only mode.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -233,6 +233,21 @@ function RiderCardPiece({
   );
 }
 
+interface DragState {
+  cardId: string;
+  /** Board-percent coords where the drag started (to distinguish tap from drag). */
+  startX: number;
+  startY: number;
+  /** Current board-percent coords of the pointer (card follows this). */
+  x: number;
+  y: number;
+}
+
+/** Distance in board-percent below which a drop snaps to the destination tile. */
+const SNAP_THRESHOLD_PCT = 13;
+/** Distance in board-percent below which a release is treated as a tap, not a drag. */
+const TAP_THRESHOLD_PCT = 2;
+
 function VisualBoard({
   myState,
   oppState,
@@ -272,9 +287,58 @@ function VisualBoard({
     }
   }
 
+  // ── Drag-and-drop state ──────────────────────────────────────────────────────
+  const boardFrameRef = useRef<HTMLDivElement>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+
+  /** Convert page/client coordinates to board-percentage coordinates. */
+  const toPercent = (clientX: number, clientY: number): { x: number; y: number } => {
+    const rect = boardFrameRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return { x: 50, y: 50 };
+    return {
+      x: ((clientX - rect.left) / rect.width) * 100,
+      y: ((clientY - rect.top) / rect.height) * 100,
+    };
+  };
+
+  const handleFramePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragState || moving) return;
+    const pos = toPercent(e.clientX, e.clientY);
+    setDragState((prev) => (prev ? { ...prev, ...pos } : null));
+  };
+
+  const handleFramePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragState) return;
+    const pos = toPercent(e.clientX, e.clientY);
+    if (!moving) {
+      const move = legalMoveByCardId.get(dragState.cardId);
+      if (move) {
+        const travelDist = Math.hypot(pos.x - dragState.startX, pos.y - dragState.startY);
+        if (travelDist < TAP_THRESHOLD_PCT) {
+          // Treat as a tap — confirm move immediately.
+          onSelectRider(dragState.cardId);
+        } else {
+          // Treat as a drag — snap only if dropped near the legal destination.
+          const dest = getBoardPoint(move.toPosition, "bottom");
+          const snapDist = Math.hypot(pos.x - dest.x, pos.y - dest.y);
+          if (snapDist < SNAP_THRESHOLD_PCT) {
+            onSelectRider(dragState.cardId);
+          }
+        }
+      }
+    }
+    setDragState(null);
+  };
+
   return (
     <section className="joustur-visual-board" aria-label="Joustur gameplay board">
-      <div className="joustur-visual-board__frame">
+      <div
+        ref={boardFrameRef}
+        className="joustur-visual-board__frame"
+        onPointerMove={handleFramePointerMove}
+        onPointerUp={handleFramePointerUp}
+        onPointerCancel={() => setDragState(null)}
+      >
         <img
           src={JOUSTUR_BOARD_IMAGE_URL}
           alt="Joustur gameplay board with numbered movement tiles"
@@ -308,15 +372,16 @@ function VisualBoard({
         )}
 
         {isMyTurn && rollPending && myLegalMoves.map((move) => {
+          const isActiveTarget = dragState?.cardId === move.cardId;
           const target = getBoardPoint(move.toPosition, "bottom");
           return (
             <button
               key={`${move.cardId}-${move.toPosition}`}
               type="button"
-              className={`joustur-visual-board__move-target${move.wouldCapture ? " joustur-visual-board__move-target--capture" : ""}${move.isExitMove ? " joustur-visual-board__move-target--exit" : ""}`}
+              className={`joustur-visual-board__move-target${move.wouldCapture ? " joustur-visual-board__move-target--capture" : ""}${move.isExitMove ? " joustur-visual-board__move-target--exit" : ""}${isActiveTarget ? " joustur-visual-board__move-target--active" : ""}`}
               style={{ left: `${target.x}%`, top: `${target.y}%` }}
               onClick={() => onSelectRider(move.cardId)}
-              disabled={moving}
+              disabled={moving || (dragState !== null && !isActiveTarget)}
               aria-label={`Move ${move.cardId} to ${posLabel(move.toPosition)}`}
               title={`Move to ${posLabel(move.toPosition)}${move.wouldCapture ? " and start a joust clash" : ""}`}
             />
@@ -329,7 +394,7 @@ function VisualBoard({
             const stackIndex = stackIndexes.get(key) ?? 0;
             stackIndexes.set(key, stackIndex + 1);
             const stackTotal = stackCounts.get(key) ?? 1;
-            const point = getBoardPoint(rider.position, player.side);
+            const naturalPoint = getBoardPoint(rider.position, player.side);
             const offset = getStackOffset(stackIndex, stackTotal);
             const legalMove = player.side === "bottom" ? legalMoveByCardId.get(rider.cardId) : undefined;
             const isLegal = Boolean(legalMove);
@@ -338,17 +403,34 @@ function VisualBoard({
               clash &&
               (clash.attackerCardId === rider.cardId || clash.defenderCardId === rider.cardId),
             );
+            const isDragging = dragState?.cardId === rider.cardId;
+            const displayX = isDragging ? dragState!.x : naturalPoint.x + offset.x;
+            const displayY = isDragging ? dragState!.y : naturalPoint.y + offset.y;
             return (
               <button
                 key={`${player.side}-${rider.cardId}`}
                 type="button"
-                className={`joustur-board-piece joustur-board-piece--${player.side}${rider.isScored ? " joustur-board-piece--scored" : ""}${rider.isCaptured ? " joustur-board-piece--captured" : ""}${isLegal ? " joustur-board-piece--legal" : ""}${isClashing ? " joustur-board-piece--clashing" : ""}`}
+                className={`joustur-board-piece joustur-board-piece--${player.side}${rider.isScored ? " joustur-board-piece--scored" : ""}${rider.isCaptured ? " joustur-board-piece--captured" : ""}${isLegal ? " joustur-board-piece--legal" : ""}${isClashing ? " joustur-board-piece--clashing" : ""}${isDragging ? " joustur-board-piece--dragging" : ""}`}
                 style={{
-                  left: `${point.x + offset.x}%`,
-                  top: `${point.y + offset.y}%`,
+                  left: `${displayX}%`,
+                  top: `${displayY}%`,
                 }}
                 disabled={!isLegal || moving}
-                onClick={() => isLegal && onSelectRider(rider.cardId)}
+                onPointerDown={isLegal && !moving ? (e) => {
+                  e.preventDefault();
+                  // Capture pointer on the frame so pointermove/up fire there even
+                  // when the cursor leaves the button area during a fast drag.
+                  boardFrameRef.current?.setPointerCapture(e.pointerId);
+                  const pos = toPercent(e.clientX, e.clientY);
+                  setDragState({ cardId: rider.cardId, startX: pos.x, startY: pos.y, ...pos });
+                } : undefined}
+                onClick={(e) => {
+                  // Handle keyboard-initiated clicks (Enter/Space).
+                  // Pointer-originated interactions are handled via onPointerDown/Up.
+                  if (e.detail === 0 && isLegal && !moving) {
+                    onSelectRider(rider.cardId);
+                  }
+                }}
                 aria-label={`${player.label} ${snapshot?.name ?? rider.cardId} at ${posLabel(rider.position)}${isLegal && legalMove ? `, legal move to ${posLabel(legalMove.toPosition)}` : ""}`}
                 title={`${snapshot?.name ?? rider.cardId} · ${posLabel(rider.position)}`}
               >
