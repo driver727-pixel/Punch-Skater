@@ -698,6 +698,21 @@ body {
   animation: joustur-clash-shockwave 620ms ease-out forwards;
 }
 
+.joustur-clash-cinematic--impact .joustur-clash-cinematic__card--loser {
+  opacity: 0;
+  transform: scale(1.6) rotate(0deg);
+  filter: blur(8px) brightness(2);
+  transition:
+    transform 300ms ease-out,
+    opacity 300ms ease-out,
+    filter 300ms ease-out;
+}
+
+.joustur-clash-cinematic--resolve .joustur-clash-cinematic__card--loser {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .joustur-clash-cinematic--resolve .joustur-clash-cinematic__card--attacker {
   transform: translate(-92%, -48%) scale(0.56) rotate(-26deg);
   opacity: 0;
@@ -732,6 +747,40 @@ body {
   filter:
     drop-shadow(0 20px 38px rgba(0, 0, 0, 0.52))
     drop-shadow(0 0 34px rgba(255, 104, 64, 0.82));
+}
+
+.joustur-clash-cinematic__dismiss {
+  margin-top: 1.2rem;
+  padding: 0.6rem 2rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.25), rgba(0, 200, 255, 0.25));
+  border: 2px solid rgba(0, 255, 170, 0.6);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, transform 120ms ease;
+}
+
+.joustur-clash-cinematic__dismiss:hover,
+.joustur-clash-cinematic__dismiss:focus-visible {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.4), rgba(0, 200, 255, 0.4));
+  border-color: rgba(0, 255, 170, 0.9);
+  transform: scale(1.04);
+}
+
+.joustur-clash-cinematic--loss .joustur-clash-cinematic__dismiss {
+  background: linear-gradient(135deg, rgba(255, 116, 51, 0.25), rgba(255, 68, 68, 0.25));
+  border-color: rgba(255, 116, 51, 0.6);
+}
+
+.joustur-clash-cinematic--loss .joustur-clash-cinematic__dismiss:hover,
+.joustur-clash-cinematic--loss .joustur-clash-cinematic__dismiss:focus-visible {
+  background: linear-gradient(135deg, rgba(255, 116, 51, 0.4), rgba(255, 68, 68, 0.4));
+  border-color: rgba(255, 116, 51, 0.9);
 }
 
 @keyframes joustur-clash-pulse {
