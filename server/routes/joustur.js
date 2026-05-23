@@ -238,6 +238,7 @@ function riderSnapshotFromCard(card) {
     jousturFaction: resolveFactionForCrew(crew),
     characterImageUrl: card.characterImageUrl ?? null,
     backgroundImageUrl: card.backgroundImageUrl ?? null,
+    boardImageUrl: card.board?.imageUrl ?? null,
     frameImageUrl: card.frameImageUrl ?? null,
   };
 }
@@ -257,6 +258,7 @@ function supportSnapshotFromCard(card) {
     supportEffect: FACTION_SUPPORT_EFFECT[faction],
     characterImageUrl: card.characterImageUrl ?? null,
     backgroundImageUrl: card.backgroundImageUrl ?? null,
+    boardImageUrl: card.board?.imageUrl ?? null,
     frameImageUrl: card.frameImageUrl ?? null,
   };
 }

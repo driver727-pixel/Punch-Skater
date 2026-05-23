@@ -217,6 +217,7 @@ function RiderCardPiece({
   const hasLayers = Boolean(
     snapshot?.backgroundImageUrl ||
     snapshot?.characterImageUrl ||
+    snapshot?.boardImageUrl ||
     snapshot?.frameImageUrl,
   );
   const name = snapshot?.name ?? "Rider";
@@ -230,6 +231,15 @@ function RiderCardPiece({
               src={snapshot.backgroundImageUrl}
               alt=""
               className="joustur-board-piece__layer joustur-board-piece__layer--background"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+          {snapshot?.boardImageUrl && (
+            <img
+              src={snapshot.boardImageUrl}
+              alt=""
+              className="joustur-board-piece__layer joustur-board-piece__layer--board"
               loading="lazy"
               decoding="async"
             />
@@ -310,12 +320,16 @@ function buildClashCinematicState(
 
 function ClashCinematicOverlay({
   cinematic,
+  onDismiss,
 }: {
   cinematic: ClashCinematicState;
+  onDismiss: () => void;
 }) {
   const winnerIsAttacker = cinematic.winnerCardId === cinematic.attackerSnapshot?.cardId;
   const winnerSnapshot = winnerIsAttacker ? cinematic.attackerSnapshot : cinematic.defenderSnapshot;
   const winnerOwnerLabel = winnerIsAttacker ? cinematic.attackerOwnerLabel : cinematic.defenderOwnerLabel;
+  const attackerIsLoser = !winnerIsAttacker;
+  const defenderIsLoser = winnerIsAttacker;
 
   return (
     <div
@@ -329,13 +343,13 @@ function ClashCinematicOverlay({
         <div className="joustur-clash-cinematic__arena" aria-hidden="true">
           <div className="joustur-clash-cinematic__burst" />
           <div className="joustur-clash-cinematic__shockwave" />
-          <figure className="joustur-clash-cinematic__card joustur-clash-cinematic__card--attacker">
+          <figure className={`joustur-clash-cinematic__card joustur-clash-cinematic__card--attacker${attackerIsLoser ? " joustur-clash-cinematic__card--loser" : ""}`}>
             <div className="joustur-clash-cinematic__piece">
               <RiderCardPiece snapshot={cinematic.attackerSnapshot} ownerLabel={cinematic.attackerOwnerLabel} />
             </div>
             <figcaption>{cinematic.attackerName}</figcaption>
           </figure>
-          <figure className="joustur-clash-cinematic__card joustur-clash-cinematic__card--defender">
+          <figure className={`joustur-clash-cinematic__card joustur-clash-cinematic__card--defender${defenderIsLoser ? " joustur-clash-cinematic__card--loser" : ""}`}>
             <div className="joustur-clash-cinematic__piece">
               <RiderCardPiece snapshot={cinematic.defenderSnapshot} ownerLabel={cinematic.defenderOwnerLabel} />
             </div>
@@ -363,6 +377,15 @@ function ClashCinematicOverlay({
               : `${cinematic.winnerName} smashed through ${cinematic.loserName} and claimed the lane.`}
           </p>
         </div>
+        {cinematic.stage === "resolve" && (
+          <button
+            className="joustur-clash-cinematic__dismiss"
+            onClick={onDismiss}
+            aria-label="Dismiss clash result"
+          >
+            Continue
+          </button>
+        )}
       </div>
     </div>
   );
@@ -817,14 +840,10 @@ export function JousturBoard() {
         current?.id === cinematicId ? { ...current, stage: "resolve" } : current,
       );
     }, 980);
-    const clearTimer = window.setTimeout(() => {
-      setClashCinematic((current) => (current?.id === cinematicId ? null : current));
-    }, 2300);
 
     return () => {
       window.clearTimeout(impactTimer);
       window.clearTimeout(resolveTimer);
-      window.clearTimeout(clearTimer);
     };
   }, [clashCinematic]);
 
@@ -1002,7 +1021,7 @@ export function JousturBoard() {
 
   return (
     <div className="page joustur-board">
-      {clashCinematic && <ClashCinematicOverlay cinematic={clashCinematic} />}
+      {clashCinematic && <ClashCinematicOverlay cinematic={clashCinematic} onDismiss={() => setClashCinematic(null)} />}
       <p className="page-eyebrow">Joustur Skatur™</p>
       <h1 className="page-title">
         {JOUSTUR_FACTION_LABELS[myState.faction] ?? myState.faction}

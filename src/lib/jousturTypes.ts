@@ -95,6 +95,7 @@ export interface JousturRiderSnapshot {
   jousturFaction: JousturFaction;
   characterImageUrl?: string | null;
   backgroundImageUrl?: string | null;
+  boardImageUrl?: string | null;
   frameImageUrl?: string | null;
 }
 
@@ -107,6 +108,7 @@ export interface JousturSupportSnapshot {
   supportEffect: JousturSupportEffect;
   characterImageUrl?: string | null;
   backgroundImageUrl?: string | null;
+  boardImageUrl?: string | null;
   frameImageUrl?: string | null;
 }
 
