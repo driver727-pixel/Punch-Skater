@@ -17,6 +17,7 @@ import { GeoAtlas } from "./GeoAtlas";
 import { useAmbience } from "../hooks/useAmbience";
 import { isEnabled } from "../lib/featureFlags";
 import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
+import { warmRoutes, type RoutePrefetchKey } from "../lib/routePrefetch";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
@@ -76,6 +77,12 @@ export function Nav() {
     return () => document.removeEventListener("mousedown", handler);
   }, [navOpen]);
 
+  useEffect(() => {
+    if (menuOpen) {
+      warmRoutes(["trades", "profile", "account"]);
+    }
+  }, [menuOpen]);
+
   const handleLogout = async () => {
     setMenuOpen(false);
     tierLogout();
@@ -86,13 +93,27 @@ export function Nav() {
   const renderNavLinks = (onClick?: () => void, options?: { mobile?: boolean }) => {
     const isMobile = options?.mobile === true;
     const handleNav = () => { sfxNavigate(); onClick?.(); };
+    const bindIntentWarm = (keys: RoutePrefetchKey[]) => ({
+      onFocus: () => warmRoutes(keys),
+      onMouseEnter: () => warmRoutes(keys),
+    });
     return (
     <>
-      <NavLink to="/" end className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+      <NavLink
+        to="/forge"
+        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        onClick={handleNav}
+        {...bindIntentWarm(["forge"])}
+      >
         Forge
       </NavLink>
       {user && (
-        <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+        <NavLink
+          to="/arena"
+          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+          onClick={handleNav}
+          {...bindIntentWarm(["arena", "joustur"])}
+        >
           Arena
         </NavLink>
       )}
@@ -109,8 +130,21 @@ export function Nav() {
           Rankings
         </NavLink>
       )}
-      <NavLink to="/collection" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+      <NavLink
+        to="/collection"
+        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        onClick={handleNav}
+        {...bindIntentWarm(["collection"])}
+      >
         Collection
+      </NavLink>
+      <NavLink
+        to="/workshop"
+        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        onClick={handleNav}
+        {...bindIntentWarm(["workshop"])}
+      >
+        Workshop
       </NavLink>
       {isAdmin && (
         <>
@@ -212,6 +246,8 @@ export function Nav() {
               <button
                 className="btn-outline nav-logout"
                 onClick={() => navigate("/login")}
+                onFocus={() => warmRoutes(["login"])}
+                onMouseEnter={() => warmRoutes(["login"])}
               >
                 Sign In
               </button>

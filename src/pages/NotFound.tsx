@@ -10,7 +10,7 @@ export function NotFound() {
           That page does not exist. Head back to the forge, rebuild your route, and keep the Crew moving.
         </p>
         <div className="not-found-actions">
-          <Link className="btn-primary" to="/">Back to Card Forge</Link>
+          <Link className="btn-primary" to="/forge">Back to Card Forge</Link>
           <Link className="btn-outline" to="/collection">Open Collection</Link>
         </div>
       </div>

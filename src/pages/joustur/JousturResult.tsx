@@ -102,7 +102,7 @@ export function JousturResult() {
         <button
           type="button"
           className="btn-outline"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/forge")}
         >
           Back to Forge
         </button>
