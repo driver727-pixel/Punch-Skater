@@ -377,21 +377,6 @@ export function BattleArena() {
       setActionMessage("Pick one of your primary deck cards to start a solo race.");
       return;
     }
-
-    async function handleFreeSoloStart() {
-      setSoloLoading(true);
-      setActionMessage(null);
-      try {
-        const race = await startFreeSoloRace({
-          district: soloDistrict,
-        });
-        navigate(`/race/${race.id}`);
-      } catch (err) {
-        setActionMessage(err instanceof Error ? err.message : "Failed to start the free solo trial.");
-      } finally {
-        setSoloLoading(false);
-      }
-    }
     setSoloLoading(true);
     setActionMessage(null);
     try {
@@ -405,6 +390,21 @@ export function BattleArena() {
       navigate(`/race/${race.id}`);
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Failed to start solo race.");
+    } finally {
+      setSoloLoading(false);
+    }
+  }
+
+  async function handleFreeSoloStart() {
+    setSoloLoading(true);
+    setActionMessage(null);
+    try {
+      const race = await startFreeSoloRace({
+        district: soloDistrict,
+      });
+      navigate(`/race/${race.id}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to start the free solo trial.");
     } finally {
       setSoloLoading(false);
     }
