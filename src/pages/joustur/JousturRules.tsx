@@ -74,27 +74,30 @@ export function JousturRules() {
         <h2>How to play</h2>
         <ol className="joustur-rules__list">
           <li>
-            Build a lineup of <strong>6 rider cards</strong> and{" "}
-            <strong>1 support card</strong> before starting a match.
+            Build a lineup with <strong>6 rider cards</strong> and{" "}
+            <strong>1 support card</strong>.
           </li>
           <li>
-            Two players take turns asynchronously — no need to be online at
-            the same time.
+            Joustur Skatur™ is asynchronous, so each player can take their turn
+            whenever they next log in.
           </li>
           <li>
-            On your turn, first <strong>roll dice</strong> (3 tetrahedral
-            dice — each with 2 marked corners and 2 unmarked corners. Count
-            marked corners facing up → 0–3 steps). A roll of 0 lets you
-            move <strong>4 tiles</strong> instead of skipping your turn!
+            On your turn, first <strong>roll 3 USB Shards</strong>. Count the
+            marked faces that land up for a result of 0–3. A roll of{" "}
+            <strong>0 becomes a 4-tile burst</strong>.
+          </li>
+          <li>
+            Then move <strong>one glowing rider</strong>. On the match board
+            you can click it to move instantly or drag it forward into place.
           </li>
           <li>
             Once per match, instead of moving a rider, you may{" "}
-            <strong>activate your support card</strong> for a special effect.
+            <strong>activate your support card</strong> for its faction effect.
           </li>
           <li>
-            The first player to get all 6 riders off the board (past position
-            14) wins. An <strong>exact roll is required to exit</strong> — you
-            cannot overshoot.
+            The first player to score all 6 riders wins. You need an{" "}
+            <strong>exact result to exit</strong> — overshooting the finish is
+            not allowed.
           </li>
         </ol>
       </section>
@@ -110,16 +113,18 @@ export function JousturRules() {
           <div className="joustur-rules__lane joustur-rules__lane--shared">
             <p>Shared lane: tiles 7→8→9→10→11→12→13→14</p>
             <p className="joustur-rules__lane-note">
-              Both players share these tiles — joust clashes happen here · Stealth Alcoves at path indices 6, 8, 12
+              Both players share these tiles — joust clashes happen here. Safe
+              shared-lane Stealth Alcoves are at path indices 6, 8, and 12.
             </p>
           </div>
         </div>
 
         <h3>Stealth Alcoves ⚡</h3>
         <ul className="joustur-rules__list">
+          <li>Stealth Alcoves appear at path indices <strong>4, 6, 8, 12, and 14</strong>.</li>
           <li>Landing on a Stealth Alcove grants you an <strong>extra turn</strong>.</li>
           <li>
-            Stealth Alcoves in the shared lane also make your rider{" "}
+            Shared-lane Stealth Alcoves (6, 8, 12) also make your rider{" "}
             <strong>safe from clashes</strong> — your opponent cannot land there
             while you occupy it.
           </li>
@@ -137,7 +142,7 @@ export function JousturRules() {
             Charge beats Feint, Guard beats Charge, and Feint beats Guard. Matching your rider's
             trait-favoured stance adds a +1 edge.
           </li>
-          <li>The clash winner keeps the tile. The loser is bumped back to off-board.</li>
+          <li>The clash winner keeps the tile. The loser is bumped back to off-board, and ties go to the defender already on the tile.</li>
           <li>Riders on Stealth Alcoves are safe. Riders protected by smoke screen are safe.</li>
         </ul>
       </section>

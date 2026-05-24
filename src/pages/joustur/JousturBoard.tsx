@@ -35,6 +35,7 @@ const STEALTH_ALCOVES = new Set([4, 6, 8, 12, 14]);
 const PRIVATE_ENTRY_MIN = 1;
 const PRIVATE_ENTRY_MAX = 4;
 const EXIT_POSITION = 15;
+const MOVE_HINT_DELAY_MS = 9000;
 type BoardSide = "top" | "bottom";
 type ClashCinematicStage = "charge" | "impact" | "resolve";
 const CLASH_STANCE_OPTIONS: Array<{
@@ -205,6 +206,60 @@ function posLabel(pos: number, side: BoardSide = "bottom"): string {
     return `${zone} (tile ${tile})${STEALTH_ALCOVES.has(pos) ? " ⚡" : ""}`;
   }
   return `${pos}`;
+}
+
+function compareMovePriority(a: JousturLegalMove, b: JousturLegalMove): number {
+  const scoreA = [
+    a.isExitMove ? 1 : 0,
+    a.wouldCapture ? 1 : 0,
+    STEALTH_ALCOVES.has(a.toPosition) ? 1 : 0,
+    a.toPosition,
+    a.fromPosition,
+  ];
+  const scoreB = [
+    b.isExitMove ? 1 : 0,
+    b.wouldCapture ? 1 : 0,
+    STEALTH_ALCOVES.has(b.toPosition) ? 1 : 0,
+    b.toPosition,
+    b.fromPosition,
+  ];
+  for (let i = 0; i < scoreA.length; i += 1) {
+    if (scoreA[i] !== scoreB[i]) return scoreB[i] - scoreA[i];
+  }
+  return String(a.cardId).localeCompare(String(b.cardId));
+}
+
+function describeMoveHint(move: JousturLegalMove, riderName: string, side: BoardSide = "bottom"): string {
+  const destination = posLabel(move.toPosition, side);
+  if (move.isExitMove) {
+    return `${riderName} can score now by moving to ${destination}.`;
+  }
+  if (move.wouldCapture) {
+    return `${riderName} can move to ${destination} and start a joust clash.`;
+  }
+  if (STEALTH_ALCOVES.has(move.toPosition)) {
+    return `${riderName} can move to ${destination} for cover and an extra turn.`;
+  }
+  return `${riderName} can advance to ${destination}.`;
+}
+
+function describeSupportHint(effect: string): string {
+  switch (effect) {
+    case "recoveryPing":
+      return "Activate Support to bring one captured rider back into your entry lane.";
+    case "crowdRoar":
+      return "Activate Support to take an extra turn after this one.";
+    case "smokeScreen":
+      return "Activate Support to keep your shared-lane riders safe for the opponent's next turn.";
+    case "reroll":
+      return "Activate Support to reroll your USB Shards and play the better result.";
+    case "overclock":
+      return "Activate Support to add +1 to the current roll and stretch the turn.";
+    case "sideRoute":
+      return "Activate Support to jump one entry-lane rider straight into the exit lane.";
+    default:
+      return "Activate Support for your once-per-match faction effect.";
+  }
 }
 
 function RiderCardPiece({
@@ -402,7 +457,7 @@ interface DragState {
 }
 
 /** Distance in board-percent below which a drop snaps to the destination tile. */
-const SNAP_THRESHOLD_PCT = 13;
+const SNAP_THRESHOLD_PCT = 18;
 /** Distance in board-percent below which a release is treated as a tap, not a drag. */
 const TAP_THRESHOLD_PCT = 2;
 
@@ -411,19 +466,23 @@ function VisualBoard({
   oppState,
   clash,
   myLegalMoves,
-  isMyTurn,
-  rollPending,
   moving,
+  showMoveHints,
+  suggestedCardId,
+  helperText,
   onSelectRider,
+  onUserIntent,
 }: {
   myState: JousturPlayerState;
   oppState: JousturPlayerState;
   clash: JousturClashState | null;
   myLegalMoves: JousturLegalMove[];
-  isMyTurn: boolean;
-  rollPending: boolean;
   moving: boolean;
+  showMoveHints: boolean;
+  suggestedCardId: string | null;
+  helperText: string | null;
   onSelectRider: (cardId: string) => void;
+  onUserIntent: () => void;
 }) {
   const legalMoveByCardId = new Map(myLegalMoves.map((move) => [move.cardId, move]));
   const stackCounts = new Map<string, number>();
@@ -461,6 +520,7 @@ function VisualBoard({
 
   const handleFramePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragState || moving) return;
+    onUserIntent();
     const pos = toPercent(e.clientX, e.clientY);
     setDragState((prev) => (prev ? { ...prev, ...pos } : null));
   };
@@ -474,12 +534,24 @@ function VisualBoard({
         const travelDist = Math.hypot(pos.x - dragState.startX, pos.y - dragState.startY);
         if (travelDist < TAP_THRESHOLD_PCT) {
           // Treat as a tap — confirm move immediately.
+          onUserIntent();
           onSelectRider(dragState.cardId);
         } else {
-          // Treat as a drag — snap only if dropped near the legal destination.
+          // Treat as a drag — allow a forgiving release once the card clearly
+          // moves toward its only legal destination.
+          const origin = getBoardPoint(move.fromPosition, "bottom");
           const dest = getBoardPoint(move.toPosition, "bottom");
+          const originDist = Math.hypot(origin.x - dest.x, origin.y - dest.y);
           const snapDist = Math.hypot(pos.x - dest.x, pos.y - dest.y);
-          if (snapDist < SNAP_THRESHOLD_PCT) {
+          const progressTowardTarget = originDist - snapDist;
+          const releaseLooksIntentional =
+            snapDist < SNAP_THRESHOLD_PCT ||
+            (
+              progressTowardTarget >= Math.max(4, originDist * 0.35) &&
+              snapDist <= Math.max(SNAP_THRESHOLD_PCT, originDist * 0.62)
+            );
+          if (releaseLooksIntentional) {
+            onUserIntent();
             onSelectRider(dragState.cardId);
           }
         }
@@ -505,18 +577,6 @@ function VisualBoard({
           decoding="async"
         />
 
-        {Array.from({ length: 14 }, (_, i) => i + 1).map((position) => {
-          const point = getBoardPoint(position, "bottom");
-          return (
-            <span
-              key={position}
-              className={`joustur-visual-board__snap${STEALTH_ALCOVES.has(position) ? " joustur-visual-board__snap--alcove" : ""}`}
-              style={{ left: `${point.x}%`, top: `${point.y}%` }}
-              aria-hidden="true"
-            />
-          );
-        })}
-
         {clash && TILE_POSITIONS[clash.tile] && (
           <span
             className="joustur-visual-board__clash"
@@ -528,23 +588,6 @@ function VisualBoard({
             title={`Joust clash on tile ${clash.tile}`}
           />
         )}
-
-        {isMyTurn && rollPending && myLegalMoves.map((move) => {
-          const isActiveTarget = dragState?.cardId === move.cardId;
-          const target = getBoardPoint(move.toPosition, "bottom");
-          return (
-            <button
-              key={`${move.cardId}-${move.toPosition}`}
-              type="button"
-              className={`joustur-visual-board__move-target${move.wouldCapture ? " joustur-visual-board__move-target--capture" : ""}${move.isExitMove ? " joustur-visual-board__move-target--exit" : ""}${isActiveTarget ? " joustur-visual-board__move-target--active" : ""}`}
-              style={{ left: `${target.x}%`, top: `${target.y}%` }}
-              onClick={() => onSelectRider(move.cardId)}
-              disabled={moving || (dragState !== null && !isActiveTarget)}
-              aria-label={`Move ${move.cardId} to ${posLabel(move.toPosition)}`}
-              title={`Move to ${posLabel(move.toPosition)}${move.wouldCapture ? " and start a joust clash" : ""}`}
-            />
-          );
-        })}
 
         {players.flatMap((player) =>
           player.state.riders.map((rider) => {
@@ -564,11 +607,14 @@ function VisualBoard({
             const isDragging = dragState?.cardId === rider.cardId;
             const displayX = isDragging ? dragState!.x : naturalPoint.x + offset.x;
             const displayY = isDragging ? dragState!.y : naturalPoint.y + offset.y;
+            const moveHint = legalMove && showMoveHints
+              ? describeMoveHint(legalMove, snapshot?.name ?? "This rider")
+              : null;
             return (
               <button
                 key={`${player.side}-${rider.cardId}`}
                 type="button"
-                className={`joustur-board-piece joustur-board-piece--${player.side}${rider.isScored ? " joustur-board-piece--scored" : ""}${rider.isCaptured ? " joustur-board-piece--captured" : ""}${isLegal ? " joustur-board-piece--legal" : ""}${isClashing ? " joustur-board-piece--clashing" : ""}${isDragging ? " joustur-board-piece--dragging" : ""}`}
+                className={`joustur-board-piece joustur-board-piece--${player.side}${rider.isScored ? " joustur-board-piece--scored" : ""}${rider.isCaptured ? " joustur-board-piece--captured" : ""}${isLegal ? " joustur-board-piece--legal" : ""}${isClashing ? " joustur-board-piece--clashing" : ""}${isDragging ? " joustur-board-piece--dragging" : ""}${showMoveHints && suggestedCardId === rider.cardId ? " joustur-board-piece--hinting" : ""}`}
                 style={{
                   left: `${displayX}%`,
                   top: `${displayY}%`,
@@ -576,6 +622,7 @@ function VisualBoard({
                 disabled={!isLegal || moving}
                 onPointerDown={isLegal && !moving ? (e) => {
                   e.preventDefault();
+                  onUserIntent();
                   // Capture pointer on the frame so pointermove/up fire there even
                   // when the cursor leaves the button area during a fast drag.
                   boardFrameRef.current?.setPointerCapture(e.pointerId);
@@ -586,11 +633,13 @@ function VisualBoard({
                   // Handle keyboard-initiated clicks (Enter/Space).
                   // Pointer-originated interactions are handled via onPointerDown/Up.
                   if (e.detail === 0 && isLegal && !moving) {
+                    onUserIntent();
                     onSelectRider(rider.cardId);
                   }
                 }}
                 aria-label={`${player.label} ${snapshot?.name ?? rider.cardId} at ${posLabel(rider.position)}${isLegal && legalMove ? `, legal move to ${posLabel(legalMove.toPosition)}` : ""}`}
-                title={`${snapshot?.name ?? rider.cardId} · ${posLabel(rider.position)}`}
+                title={moveHint ?? `${snapshot?.name ?? rider.cardId} · ${posLabel(rider.position)}`}
+                data-move-hint={moveHint ?? undefined}
               >
                 <RiderCardPiece snapshot={snapshot} ownerLabel={player.label === "You" ? "YOU" : "OPP"} />
               </button>
@@ -598,12 +647,7 @@ function VisualBoard({
           }),
         )}
       </div>
-      <div className="joustur-visual-board__legend">
-        <span><i className="joustur-visual-board__legend-dot" aria-hidden="true" /> Snap tile center</span>
-        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--alcove" aria-hidden="true" /> Stealth Alcove</span>
-        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--move" aria-hidden="true" /> Legal destination</span>
-        <span><i className="joustur-visual-board__legend-dot joustur-visual-board__legend-dot--clash" aria-hidden="true" /> Active clash</span>
-      </div>
+      {helperText && <p className="joustur-visual-board__helper">{helperText}</p>}
     </section>
   );
 }
@@ -615,6 +659,7 @@ function PlayerPanel({
   isActive,
   legalMoves,
   canActivateSupport,
+  showMoveHints,
   sideRouteTarget,
   onSideRouteTargetChange,
   onSelectRider,
@@ -626,6 +671,7 @@ function PlayerPanel({
   isActive: boolean;
   legalMoves: JousturLegalMove[];
   canActivateSupport: { canActivate: boolean; reason: string | null };
+  showMoveHints: boolean;
   sideRouteTarget: string;
   onSideRouteTargetChange: (cardId: string) => void;
   onSelectRider: (cardId: string) => void;
@@ -724,6 +770,7 @@ function PlayerPanel({
                   className="btn-outline btn-sm"
                   disabled={!sideRouteTarget}
                   onClick={() => onActivateSupport(sideRouteTarget)}
+                  title={showMoveHints ? describeSupportHint(player.support.supportEffect) : undefined}
                 >
                   Activate SideRoute
                 </button>
@@ -733,6 +780,7 @@ function PlayerPanel({
                 type="button"
                 className="btn-outline btn-sm"
                 onClick={() => onActivateSupport()}
+                title={showMoveHints ? describeSupportHint(player.support.supportEffect) : undefined}
               >
                 Activate Support
               </button>
@@ -777,6 +825,8 @@ export function JousturBoard() {
   const [lastEvent, setLastEvent] = useState<StatusMessage | null>(null);
   const [clashCinematic, setClashCinematic] = useState<ClashCinematicState | null>(null);
   const [pendingResultRoute, setPendingResultRoute] = useState<string | null>(null);
+  const [showMoveHints, setShowMoveHints] = useState(false);
+  const [hintCycle, setHintCycle] = useState(0);
   // sideRoute target selection — kept in JousturBoard so it survives re-renders
   // of PlayerPanel during polling.
   const [sideRouteTarget, setSideRouteTarget] = useState<string>("");
@@ -888,6 +938,7 @@ export function JousturBoard() {
 
   const handleRoll = async () => {
     if (!matchId || rolling) return;
+    setShowMoveHints(false);
     setRolling(true);
     setError(null);
     try {
@@ -907,6 +958,7 @@ export function JousturBoard() {
   const handleMove = useCallback(
     async (cardId: string | null, activateSupport: boolean, supportTargetCardId?: string) => {
       if (!matchId || moving) return;
+      setShowMoveHints(false);
       setMoving(true);
       setError(null);
       try {
@@ -947,6 +999,7 @@ export function JousturBoard() {
   const handleClashChoice = useCallback(
     async (stance: JousturClashStance) => {
       if (!matchId || clashing) return;
+      setShowMoveHints(false);
       setClashing(true);
       setError(null);
       try {
@@ -979,6 +1032,32 @@ export function JousturBoard() {
     [activeClash, clashing, match, matchId, myUid, navigate],
   );
 
+  const registerMoveIntent = useCallback(() => {
+    setShowMoveHints(false);
+    setHintCycle((value) => value + 1);
+  }, []);
+  const hasHintableAction =
+    isMyTurn &&
+    rollPending &&
+    (legalMoves.length > 0 || canActivateSupport.canActivate);
+
+  useEffect(() => {
+    if (!hasHintableAction || activeClash !== null || moving || rolling) {
+      setShowMoveHints(false);
+      return;
+    }
+    setShowMoveHints(false);
+    const timer = window.setTimeout(() => setShowMoveHints(true), MOVE_HINT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [
+    activeClash,
+    hasHintableAction,
+    hintCycle,
+    moving,
+    rolling,
+    match?.board.turn,
+  ]);
+
   if (loading) return <div className="page joustur-board"><p>Loading match…</p></div>;
   if (!match) return <div className="page joustur-board"><p>{error ?? "Match not found."}</p></div>;
 
@@ -999,6 +1078,36 @@ export function JousturBoard() {
   const oppState      = isChallenger ? match.defenderState   : match.challengerState;
 
   const myLegalMoves = isMyTurn && rollPending ? legalMoves : [];
+  const prioritizedMoves = [...myLegalMoves].sort(compareMovePriority);
+  const suggestedMove = prioritizedMoves[0] ?? null;
+  const suggestedCardId = showMoveHints ? suggestedMove?.cardId ?? null : null;
+  const suggestedSnapshot = suggestedMove
+    ? myState.lineup.find((snapshot) => snapshot.cardId === suggestedMove.cardId)
+    : null;
+  const hintBanner = showMoveHints
+    ? suggestedMove
+      ? `Need a nudge? ${describeMoveHint(suggestedMove, suggestedSnapshot?.name ?? "This rider")}`
+      : canActivateSupport.canActivate
+        ? `Need a nudge? ${describeSupportHint(myState.support.supportEffect)}`
+        : null
+    : null;
+  const boardHelperText = showMoveHints
+    ? suggestedMove
+      ? "Hover or focus a glowing rider for a move tooltip."
+      : canActivateSupport.canActivate
+        ? "Support is your best play right now."
+        : null
+    : rollPending && isMyTurn
+      ? "Click a glowing rider to move instantly, or drag it forward and release once it clearly reaches the lane."
+      : null;
+  const turnInstruction = activeClash
+    ? "Choose Charge, Guard, or Feint. Trait-matched stances gain +1, and the defender keeps the tile on ties."
+    : isMyTurn
+      ? rollPending
+        ? "Your support card can replace a move once per match if it helps more than pushing a rider."
+        : "Roll 3 USB Shards. A roll of 0 becomes a 4-tile burst, and you need an exact result to score."
+      : "Joustur Skatur™ is async, so your opponent can take their turn whenever they next log in.";
+
   const clashAttacker = activeClash
     ? (activeClash.attackerUid === myState.uid ? myState : oppState)
     : null;
@@ -1049,6 +1158,12 @@ export function JousturBoard() {
             : "🎲 Your turn — roll dice"
           : "⏳ Waiting for opponent…"}
       </div>
+      <p className="joustur-board__status-note">{turnInstruction}</p>
+      {hintBanner && (
+        <div className="joustur-board__hint-banner" role="status" aria-live="polite">
+          {hintBanner}
+        </div>
+      )}
 
       {activeClash && (
         <section className="joustur-board__clash-panel" aria-label="Active joust clash">
@@ -1138,10 +1253,12 @@ export function JousturBoard() {
         oppState={oppState}
         clash={activeClash}
         myLegalMoves={myLegalMoves}
-        isMyTurn={isMyTurn}
-        rollPending={rollPending}
         moving={moving || clashing}
+        showMoveHints={showMoveHints}
+        suggestedCardId={suggestedCardId}
+        helperText={boardHelperText}
         onSelectRider={(cardId) => handleMove(cardId, false)}
+        onUserIntent={registerMoveIntent}
       />
 
       <div className="joustur-board__panels">
@@ -1152,6 +1269,7 @@ export function JousturBoard() {
           isActive={isMyTurn}
           legalMoves={myLegalMoves}
           canActivateSupport={isMyTurn && rollPending && !activeClash ? canActivateSupport : { canActivate: false, reason: null }}
+          showMoveHints={showMoveHints}
           sideRouteTarget={sideRouteTarget}
           onSideRouteTargetChange={setSideRouteTarget}
           onSelectRider={(cardId) => handleMove(cardId, false)}
@@ -1164,6 +1282,7 @@ export function JousturBoard() {
           isActive={!isMyTurn}
           legalMoves={[]}
           canActivateSupport={{ canActivate: false, reason: null }}
+          showMoveHints={false}
           sideRouteTarget=""
           onSideRouteTargetChange={() => {}}
           onSelectRider={() => {}}

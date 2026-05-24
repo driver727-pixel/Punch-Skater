@@ -57,14 +57,14 @@ body {
 /* ===== Joustur gameplay board ===== */
 .joustur-visual-board {
   margin: 28px auto;
-  width: min(100%, 1180px);
+  width: min(100%, 1260px);
 }
 
 .joustur-visual-board__frame {
   position: relative;
   overflow: hidden;
   border: 2px solid rgba(0, 255, 136, 0.45);
-  border-radius: 24px;
+  border-radius: 28px;
   background: radial-gradient(circle at 50% 50%, rgba(0, 204, 255, 0.18), rgba(4, 4, 12, 0.92) 70%);
   box-shadow:
     0 0 32px rgba(0, 204, 255, 0.28),
@@ -78,57 +78,10 @@ body {
   user-select: none;
 }
 
-.joustur-visual-board__snap,
-.joustur-visual-board__move-target,
 .joustur-visual-board__clash,
 .joustur-board-piece {
   position: absolute;
   transform: translate(-50%, -50%);
-}
-
-.joustur-visual-board__snap {
-  width: clamp(18px, 3vw, 40px);
-  aspect-ratio: 1;
-  border: 1px dashed rgba(255, 255, 255, 0.32);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.joustur-visual-board__snap--alcove {
-  border-color: rgba(0, 255, 136, 0.75);
-  box-shadow: 0 0 18px rgba(0, 255, 136, 0.38);
-}
-
-.joustur-visual-board__move-target {
-  width: clamp(38px, 5.5vw, 74px);
-  aspect-ratio: 1;
-  border: 2px solid var(--accent);
-  border-radius: 50%;
-  background: rgba(0, 255, 136, 0.16);
-  box-shadow: 0 0 22px rgba(0, 255, 136, 0.5);
-  cursor: pointer;
-  z-index: 4;
-}
-
-.joustur-visual-board__move-target--capture {
-  border-color: var(--danger);
-  background: rgba(255, 68, 68, 0.18);
-  box-shadow: 0 0 22px rgba(255, 68, 68, 0.5);
-}
-
-.joustur-visual-board__move-target--exit {
-  border-color: var(--accent2);
-  background: rgba(0, 204, 255, 0.18);
-  box-shadow: 0 0 22px rgba(0, 204, 255, 0.55);
-}
-
-.joustur-visual-board__move-target--active {
-  border-color: var(--accent);
-  background: rgba(0, 255, 136, 0.32);
-  box-shadow:
-    0 0 30px rgba(0, 255, 136, 0.9),
-    0 0 56px rgba(0, 255, 136, 0.4);
-  animation: joustur-target-pulse 0.65s ease-in-out infinite alternate;
 }
 
 .joustur-visual-board__clash {
@@ -147,10 +100,10 @@ body {
 }
 
 .joustur-board-piece {
-  width: clamp(42px, 5vw, 72px);
+  width: clamp(48px, 5.5vw, 84px);
   aspect-ratio: var(--card-aspect-ratio);
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   color: inherit;
   cursor: default;
@@ -214,7 +167,7 @@ body {
   inset: 0;
   overflow: hidden;
   border: 2px solid var(--piece-owner-color, var(--accent));
-  border-radius: 8px;
+  border-radius: 10px;
   background: linear-gradient(145deg, rgba(14, 14, 32, 0.95), rgba(0, 204, 255, 0.24));
 }
 
@@ -269,42 +222,72 @@ body {
   line-height: 1;
 }
 
-.joustur-visual-board__legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 18px;
-  margin-top: 10px;
-  color: var(--text-dim);
-  font-size: 0.86rem;
+.joustur-board-piece[data-move-hint]::after {
+  content: attr(data-move-hint);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(220px, 48vw);
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 204, 255, 0.35);
+  border-radius: 12px;
+  background: rgba(7, 10, 24, 0.96);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: center;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+  z-index: 12;
 }
 
-.joustur-visual-board__legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.joustur-visual-board__legend-dot {
+.joustur-board-piece[data-move-hint]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
   width: 12px;
-  aspect-ratio: 1;
-  border: 1px dashed rgba(255, 255, 255, 0.48);
-  border-radius: 50%;
+  height: 12px;
+  border-right: 1px solid rgba(0, 204, 255, 0.35);
+  border-bottom: 1px solid rgba(0, 204, 255, 0.35);
+  background: rgba(7, 10, 24, 0.96);
+  transform: translateX(-50%) rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+  z-index: 11;
 }
 
-.joustur-visual-board__legend-dot--alcove {
-  border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.45);
+.joustur-board-piece[data-move-hint]:hover::after,
+.joustur-board-piece[data-move-hint]:hover::before,
+.joustur-board-piece[data-move-hint]:focus-visible::after,
+.joustur-board-piece[data-move-hint]:focus-visible::before,
+.joustur-board-piece--hinting[data-move-hint]::after,
+.joustur-board-piece--hinting[data-move-hint]::before {
+  opacity: 1;
 }
 
-.joustur-visual-board__legend-dot--move {
-  border: 2px solid var(--accent);
-  background: rgba(0, 255, 136, 0.18);
+.joustur-board-piece[data-move-hint]:hover::after,
+.joustur-board-piece[data-move-hint]:focus-visible::after,
+.joustur-board-piece--hinting[data-move-hint]::after {
+  transform: translateX(-50%) translateY(-2px);
 }
 
-.joustur-visual-board__legend-dot--clash {
-  border: 2px solid var(--purple);
-  background: rgba(204, 68, 255, 0.18);
-  box-shadow: 0 0 8px rgba(204, 68, 255, 0.4);
+.joustur-visual-board__helper {
+  margin: 12px auto 0;
+  width: min(100%, 980px);
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  text-align: center;
 }
 
 .status-banner {
@@ -379,7 +362,7 @@ body {
 
 .joustur-board__status,
 .joustur-board__clash-panel {
-  width: min(100%, 980px);
+  width: min(100%, 1040px);
   margin: 0 auto 18px;
 }
 
@@ -392,6 +375,28 @@ body {
   text-align: center;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.joustur-board__status-note,
+.joustur-board__hint-banner {
+  width: min(100%, 1040px);
+  margin: -6px auto 18px;
+  text-align: center;
+}
+
+.joustur-board__status-note {
+  color: var(--text-dim);
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.joustur-board__hint-banner {
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 14px;
+  background: rgba(7, 16, 20, 0.84);
+  color: #dcfff0;
+  box-shadow: 0 0 18px rgba(0, 255, 136, 0.12);
 }
 
 .joustur-board__clash-panel {

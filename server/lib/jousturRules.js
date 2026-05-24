@@ -385,8 +385,7 @@ export function buildInitialBoardState(challengerUid) {
 /**
  * Compute all legal moves for the active player given the current roll.
  *
- * Returns an empty array when roll is 0 (player must pass) or when no
- * rider can legally move.
+ * Returns an empty array when no rider can legally move.
  *
  * Captures are determined by tile occupancy: two riders from opposing paths
  * can only collide when they occupy the same shared tile (tiles 7–14).

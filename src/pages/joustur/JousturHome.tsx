@@ -176,8 +176,8 @@ export function JousturHome() {
       <p className="page-eyebrow">Game Mode</p>
       <h1 className="page-title">Joustur Skatur™</h1>
       <p className="page-sub">
-        An async board game for couriers. Race your crew of 6 riders to the finish.
-        Roll dice. Capture opponents. Hit a Stealth Alcove for an extra turn.
+        An async race-and-clash board mode for couriers. Roll 3 USB Shards, move one
+        rider at a time, and chain extra turns through Stealth Alcoves.
       </p>
 
       {error && (
