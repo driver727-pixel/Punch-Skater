@@ -54,12 +54,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: null,
       includeAssets: ['favicon.svg', 'robots.txt', 'LICENSE.txt', 'pwa-192x192.png', 'pwa-512x512.png'],
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        globPatterns: ['**/*.{js,css,html,ico,svg,webp,webmanifest,woff2}'],
+        globPatterns: ['**/*.{js,css,ico,svg,webp,webmanifest,woff2}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
@@ -68,10 +69,10 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'html-cache',
-              networkTimeoutSeconds: 10,
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 86400,
+                maxAgeSeconds: 3600,
               },
             },
           },
