@@ -466,8 +466,6 @@ function VisualBoard({
   oppState,
   clash,
   myLegalMoves,
-  isMyTurn,
-  rollPending,
   moving,
   showMoveHints,
   suggestedCardId,
@@ -479,8 +477,6 @@ function VisualBoard({
   oppState: JousturPlayerState;
   clash: JousturClashState | null;
   myLegalMoves: JousturLegalMove[];
-  isMyTurn: boolean;
-  rollPending: boolean;
   moving: boolean;
   showMoveHints: boolean;
   suggestedCardId: string | null;
@@ -1257,8 +1253,6 @@ export function JousturBoard() {
         oppState={oppState}
         clash={activeClash}
         myLegalMoves={myLegalMoves}
-        isMyTurn={isMyTurn}
-        rollPending={rollPending}
         moving={moving || clashing}
         showMoveHints={showMoveHints}
         suggestedCardId={suggestedCardId}
