@@ -1,13 +1,14 @@
 # Joustur Skatur™ — MVP Technical Spec
 
 > Async Royal Game of Ur-inspired board mode for Punch Skater™.
-> Last updated: 2026-05-20
+> Last updated: 2026-05-24
 
 ## Summary
 
 Joustur Skatur™ is an async board game mode where two players race their rider
 crews across a shared track.  Each player selects **6 rider cards + 1 support
-card**.  Riders move by rolling 4 USB Shards (0–4 total steps).  Stealth
+card**.  Riders move by rolling 3 USB Shards (0–3 marked faces, with a 0
+treated as a 4-tile burst).  Stealth
 Alcoves are safe zones that also grant an extra turn.  The first player to
 score all 6 riders wins.
 
@@ -63,7 +64,8 @@ Shared tiles (7–14) are traversed by both players.
 
 ## USB Shard roll
 
-Four binary dice (each 0 or 1) are summed → **0–4**.  The server generates the
+Three tetrahedral USB Shards are rolled. Each shard contributes **0 or 1**, so
+the raw result is **0–3** and a raw 0 is treated as a **4-tile move**. The server generates the
 roll deterministically using a seeded PRNG keyed to
 `matchId + "::" + turn + "::" + timestamp`.  The roll is stored in the match
 document before being returned to the active player.
@@ -100,7 +102,7 @@ document before being returned to the active player.
 - A rider on a Stealth Alcove **cannot be challenged** (shared-zone alcoves).
 - **Exact roll required to exit** — a rider must land on path index 15 exactly
   (overshoot = illegal).
-- Roll 0 = forced pass (no legal moves).
+- Roll 0 = a 4-tile burst, not a pass.
 - **Support card** may be activated **once per match**, as the player's sole
   action for that turn.
 - Turns are strictly sequential — one player moves, then the other.
