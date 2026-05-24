@@ -115,6 +115,10 @@ export async function startSoloJousturMatch(): Promise<JousturMatch> {
   return apiFetch<JousturMatch>("/solo", { method: "POST" });
 }
 
+export async function startFreeSoloJousturMatch(): Promise<JousturMatch> {
+  return apiFetch<JousturMatch>("/free-solo", { method: "POST" });
+}
+
 // ── Matches ───────────────────────────────────────────────────────────────────
 
 export async function listJousturMatches(): Promise<JousturMatch[]> {

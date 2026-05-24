@@ -13,9 +13,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTier } from "../context/TierContext";
 import { useDecks } from "../hooks/useDecks";
 import { useRaceArena } from "../hooks/useRaceArena";
-import { fetchRaceArena, startSoloRace, type ArenaListEntry } from "../services/race";
+import { fetchRaceArena, startFreeSoloRace, startSoloRace, type ArenaListEntry } from "../services/race";
 import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
@@ -229,6 +230,7 @@ function ChallengeModal({
 
 export function BattleArena() {
   const { user, userProfile } = useAuth();
+  const { tier } = useTier();
   const { decks } = useDecks();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -298,6 +300,7 @@ export function BattleArena() {
   const myOzzies = Number(userProfile?.ozzies ?? 0);
   const soloWagerCap = Math.max(0, Math.min(myOzzies, SOLO_WAGER_MAX));
   const showJousturEntry = isEnabled("JOUSTUR_SKATUR", user);
+  const isSignedInFreeUser = tier === "free" && !!user;
 
   useEffect(() => {
     if (primaryDeckRaceCards.length === 0) {
@@ -392,6 +395,21 @@ export function BattleArena() {
     }
   }
 
+  async function handleFreeSoloStart() {
+    setSoloLoading(true);
+    setActionMessage(null);
+    try {
+      const race = await startFreeSoloRace({
+        district: soloDistrict,
+      });
+      navigate(`/race/${race.id}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to start the free solo trial.");
+    } finally {
+      setSoloLoading(false);
+    }
+  }
+
   async function handleAccept(challengeId: string) {
     sfxClick();
     try {
@@ -436,6 +454,8 @@ export function BattleArena() {
         <div className="race-arena-self">
           {myChallengerCard ? (
             <span>Your Challenger: <strong>{myChallengerCard.name}</strong> (Power {statTotal(myChallengerCard.stats)})</span>
+          ) : isSignedInFreeUser ? (
+            <span>Free Rider trial unlocked. Jump into Solo Sprint with a random house Challenger from the admin vault.</span>
           ) : (
             <span>
               No Challenger set. Open <Link to="/collection?tab=decks">My Decks</Link>, mark a deck as Primary (🌟), and tap "🏁 Make Challenger" on a card.
@@ -564,65 +584,75 @@ export function BattleArena() {
             Race against a bot courier. Low stakes — small risk, small reward.
           </p>
 
-          <div className="race-challenge-row">
-            <label>Pick your racer:</label>
-            <div className="race-solo-card-grid">
-              {primaryDeckRaceCards.map((card) => (
-                <ArenaCardThumb
-                  key={card.id}
-                  snapshot={card}
-                  isChallenger={primaryDeck?.challengerCardId === card.id}
-                  selected={soloCardId === card.id}
-                  onClick={() => setSoloCardId(card.id)}
-                  hideChallengeBorder
-                />
-              ))}
+          {isSignedInFreeUser && (
+            <div className="status-banner status-banner--ok" role="status">
+              <strong>Free Rider trial:</strong> start a friendly solo sprint with a random admin-owned house card. No wager required.
             </div>
-            {primaryDeckRaceCards.length === 0 && (
-              <p className="race-arena-empty">Your primary deck has no cards available for a solo sprint yet.</p>
-            )}
-          </div>
+          )}
+
+          {!isSignedInFreeUser && (
+            <div className="race-challenge-row">
+              <label>Pick your racer:</label>
+              <div className="race-solo-card-grid">
+                {primaryDeckRaceCards.map((card) => (
+                  <ArenaCardThumb
+                    key={card.id}
+                    snapshot={card}
+                    isChallenger={primaryDeck?.challengerCardId === card.id}
+                    selected={soloCardId === card.id}
+                    onClick={() => setSoloCardId(card.id)}
+                    hideChallengeBorder
+                  />
+                ))}
+              </div>
+              {primaryDeckRaceCards.length === 0 && (
+                <p className="race-arena-empty">Your primary deck has no cards available for a solo sprint yet.</p>
+              )}
+            </div>
+          )}
 
           <div className="race-challenge-row">
             <label>Choose district:</label>
             <RaceDistrictPicker district={soloDistrict} onSelect={setSoloDistrict} />
           </div>
 
-          <div className="race-challenge-row">
-            <label>Wager (Ozzies) — your balance: {myOzzies}</label>
-            <div className="race-wager-presets">
-              {SOLO_WAGER_PRESETS.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  className={`btn-outline btn-sm${soloWager === preset ? " btn-outline--active" : ""}`}
-                  disabled={preset > soloWagerCap}
-                  onClick={() => setSoloWager(preset)}
-                >
-                  {preset}
-                </button>
-              ))}
+          {!isSignedInFreeUser && (
+            <div className="race-challenge-row">
+              <label>Wager (Ozzies) — your balance: {myOzzies}</label>
+              <div className="race-wager-presets">
+                {SOLO_WAGER_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`btn-outline btn-sm${soloWager === preset ? " btn-outline--active" : ""}`}
+                    disabled={preset > soloWagerCap}
+                    onClick={() => setSoloWager(preset)}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={SOLO_WAGER_MAX}
+                step={5}
+                value={Math.min(soloWager, soloWagerCap)}
+                onChange={(e) => setSoloWager(Number(e.target.value))}
+                disabled={soloWagerCap === 0}
+                aria-label="Solo race wager amount"
+              />
+              <span className="race-wager-value">Wager: <strong>{Math.min(soloWager, soloWagerCap)}</strong> Ozzies</span>
             </div>
-            <input
-              type="range"
-              min={0}
-              max={SOLO_WAGER_MAX}
-              step={5}
-              value={Math.min(soloWager, soloWagerCap)}
-              onChange={(e) => setSoloWager(Number(e.target.value))}
-              disabled={soloWagerCap === 0}
-              aria-label="Solo race wager amount"
-            />
-            <span className="race-wager-value">Wager: <strong>{Math.min(soloWager, soloWagerCap)}</strong> Ozzies</span>
-          </div>
+          )}
 
           <div className="modal-actions">
             <button
               className="btn-primary"
-              onClick={handleSoloStart}
-              disabled={soloLoading || primaryDeckRaceCards.length === 0}
+              onClick={isSignedInFreeUser ? handleFreeSoloStart : handleSoloStart}
+              disabled={soloLoading || (!isSignedInFreeUser && primaryDeckRaceCards.length === 0)}
             >
-              ▶ Start Solo Race
+              {isSignedInFreeUser ? "🎁 Start Free Solo Trial" : "▶ Start Solo Race"}
             </button>
             {soloLoading && <span className="race-track-status">Starting race…</span>}
           </div>
