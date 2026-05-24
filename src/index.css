@@ -13128,6 +13128,58 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   flex-direction: column;
   gap: 12px;
 }
+.mission-briefing-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mission-launch-brief {
+  border-color: rgba(0,255,136,0.18);
+  background:
+    radial-gradient(ellipse at top left, rgba(0,255,136,0.1), transparent 54%),
+    linear-gradient(160deg, rgba(255,255,255,0.04), rgba(0,0,0,0.22));
+}
+.mission-launch-actions {
+  align-items: stretch;
+}
+.mission-launch-actions .btn-primary,
+.mission-launch-actions .btn-outline {
+  min-width: 180px;
+}
+.mission-briefing-details {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  background: rgba(0,0,0,0.18);
+  overflow: hidden;
+}
+.mission-briefing-details[open] {
+  border-color: rgba(0,255,136,0.2);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 18px rgba(0,255,136,0.08);
+}
+.mission-briefing-details__summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mission-accent, var(--accent));
+  user-select: none;
+}
+.mission-briefing-details__summary::-webkit-details-marker {
+  display: none;
+}
+.mission-briefing-details__summary::after {
+  content: "▾";
+  float: right;
+  color: var(--text-dim);
+}
+.mission-briefing-details[open] .mission-briefing-details__summary::after {
+  content: "▴";
+}
+.mission-briefing-details .mission-intel-grid {
+  padding: 0 14px 14px;
+  margin-bottom: 0;
+}
 .mission-steps {
   list-style: none;
   display: grid;
@@ -14493,6 +14545,9 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     padding: 7px 10px;
   }
   .mission-fork__options {
+    grid-template-columns: 1fr;
+  }
+  .mission-briefing-grid {
     grid-template-columns: 1fr;
   }
   .mission-cinematic,
