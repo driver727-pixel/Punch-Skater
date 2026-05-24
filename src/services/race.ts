@@ -59,6 +59,16 @@ export async function startSoloRace(input: SoloRaceInput): Promise<Race> {
   return parseResponse<Race>(res, "Failed to start solo race.");
 }
 
+export async function startFreeSoloRace(input?: { district?: string }): Promise<Race> {
+  const idToken = await getIdToken();
+  const res = await fetch(`${RACE_BASE}/free-solo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ district: input?.district }),
+  });
+  return parseResponse<Race>(res, "Failed to start free solo race.");
+}
+
 export async function cancelRaceChallenge(challengeId: string): Promise<RaceChallenge> {
   const idToken = await getIdToken();
   const res = await fetch(`${RACE_BASE}/${encodeURIComponent(challengeId)}/cancel`, {

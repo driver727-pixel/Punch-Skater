@@ -90,10 +90,10 @@ export function LandingPage() {
           <div className="landing-auth-shell">
             <AuthCard
               className="landing-auth-card"
-              hint="Sign in to save cards, build a Crew, run Missions, race rivals, and trade across the districts."
+              hint="Sign up free to try solo Arena and Joustur Skatur™ runs with house cards, then save cards, build a Crew, run Missions, race rivals, and trade across the districts."
               panelEyebrow="Login"
-              panelTitle="Use your existing Punch Skater™ sign-in"
-              panelSubtitle="Email, Google, and phone login all work here."
+              panelTitle="Sign in or create your free Punch Skater™ account"
+              panelSubtitle="Email, Google, and phone login all work here — including the free solo house-card trial."
               showBranding={false}
               showGuestLink={false}
             />

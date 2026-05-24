@@ -27,6 +27,7 @@ import {
   STANDARD_RACE_WINNER_OZZIES,
 } from '../lib/race.js';
 import { promoteCardClass } from '../lib/cardClassProgression.js';
+import { loadAdminLoanerCards, requireFreeTierCaller } from '../lib/adminLoaners.js';
 import rateLimit from 'express-rate-limit';
 
 // CodeQL-visible fallback rate limiter. The injected `raceRateLimit` is the
@@ -692,6 +693,70 @@ export function registerRaceRoutes(app, {
     } catch (error) {
       console.error('Solo race error:', error);
       res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to start solo race.' });
+    }
+  });
+
+  // ── POST /api/race/free-solo ─────────────────────────────────────────────
+  // Signed-in free users can sample the Arena with a random admin-owned loaner
+  // card. No wagers, profile payouts, or persistent card progression apply.
+  app.post('/api/race/free-solo', limiter, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Race arena is not configured on this server.' });
+      return;
+    }
+
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    try {
+      await requireFreeTierCaller(adminDb, caller);
+
+      const [loanerCard] = await loadAdminLoanerCards(adminDb, { count: 1 });
+      const district = String(req.body?.district ?? '').trim() || null;
+      const playerSnapshot = createRaceCardSnapshot(loanerCard);
+      const raceSeed = randomUUID();
+      const botSnapshot = generateBotSnapshot(playerSnapshot.stats, raceSeed);
+      const { simulation, result: raw } = resolveRace(playerSnapshot, botSnapshot, {
+        wager: 0,
+        raceSeed,
+      });
+      const raceId = `race-${randomUUID()}`;
+      const race = {
+        id: raceId,
+        challengeId: 'free-solo',
+        challengerUid: caller.uid,
+        defenderUid: 'bot',
+        ...(district ? { district } : {}),
+        isLoanerMatch: true,
+        loanerSource: 'admin',
+        challenger: playerSnapshot,
+        defender: botSnapshot,
+        ozzyWager: 0,
+        laps: 1,
+        tickMs: RACE_TICK_MS,
+        timeline: simulation.timeline,
+        result: {
+          winnerUid: raw.winnerSide === 'challenger' ? caller.uid : null,
+          challengerFinishTick: raw.challengerFinishTick,
+          defenderFinishTick: raw.defenderFinishTick,
+          ozzyTransfer: raw.ozzyTransfer,
+          cardDeltas: raw.cardDeltas,
+          ...(raw.winnerStatBoost ? { winnerStatBoost: raw.winnerStatBoost } : {}),
+          raceSeed,
+        },
+        createdAt: nowIso(),
+      };
+
+      await adminDb.collection(RACES_COLLECTION).doc(raceId).set(race);
+      res.status(201).json(race);
+    } catch (error) {
+      console.error('Free solo race error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to start free solo race.' });
     }
   });
 

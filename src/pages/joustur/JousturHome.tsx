@@ -8,10 +8,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTier } from "../../context/TierContext";
 import {
   listJousturMatches,
   enqueueJoustur,
   dequeueJoustur,
+  startFreeSoloJousturMatch,
   startSoloJousturMatch,
   listJousturChallenges,
   createJousturChallenge,
@@ -38,14 +40,17 @@ function matchModeLabel(mode: JousturMatch["mode"]): string {
 
 export function JousturHome() {
   const { user } = useAuth();
+  const { tier } = useTier();
   const navigate = useNavigate();
   const { lineup } = useJousturLineup();
   const [matches, setMatches] = useState<JousturMatch[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [queueing, setQueueing] = useState(false);
   const [startingSolo, setStartingSolo] = useState(false);
+  const [startingFreeSolo, setStartingFreeSolo] = useState(false);
   const [inQueue, setInQueue] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isSignedInFreeUser = tier === "free" && !!user;
 
   // Challenge state
   const [challenges, setChallenges] = useState<{ sent: JousturChallenge[]; received: JousturChallenge[] }>({ sent: [], received: [] });
@@ -100,6 +105,19 @@ export function JousturHome() {
       setError(e instanceof Error ? e.message : "Failed to start solo match.");
     } finally {
       setStartingSolo(false);
+    }
+  };
+
+  const handleFreeSoloStart = async () => {
+    setError(null);
+    setStartingFreeSolo(true);
+    try {
+      const match = await startFreeSoloJousturMatch();
+      navigate(`/joustur/match/${match.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to start the free solo trial.");
+    } finally {
+      setStartingFreeSolo(false);
     }
   };
 
@@ -213,7 +231,23 @@ export function JousturHome() {
         >
           {startingSolo ? "Booting…" : "🤖 Start Solo Match"}
         </button>
+        {isSignedInFreeUser && (
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleFreeSoloStart}
+            disabled={startingFreeSolo}
+          >
+            {startingFreeSolo ? "Booting…" : "🎁 Try House Lineup"}
+          </button>
+        )}
       </div>
+
+      {isSignedInFreeUser && (
+        <div className="status-banner status-banner--ok" role="status">
+          Signed-in Free Riders can sample Joustur Skatur™ with a random admin-owned house lineup in solo mode.
+        </div>
+      )}
 
       {/* Challenge a Friend */}
       <section className="joustur-home__section">

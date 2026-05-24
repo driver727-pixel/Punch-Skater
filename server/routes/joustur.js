@@ -41,6 +41,7 @@ import {
   PLAYER2_PATH,
   buildSoloBotPlayerState,
 } from '../lib/jousturRules.js';
+import { loadAdminLoanerCards, requireFreeTierCaller } from '../lib/adminLoaners.js';
 
 // ── Fallback rate limiter (production injector overrides this) ────────────────
 
@@ -261,6 +262,15 @@ function supportSnapshotFromCard(card) {
     boardImageUrl: card.board?.imageUrl ?? null,
     frameImageUrl: card.frameImageUrl ?? null,
   };
+}
+
+function buildPlayerStateFromSelectedCards(uid, selectedCards) {
+  const riderCards = selectedCards.slice(0, 6);
+  const supportCard = selectedCards[6];
+  const riderSnapshots = riderCards.map((card) => riderSnapshotFromCard(card));
+  const supportSnap = supportSnapshotFromCard(supportCard);
+  const faction = resolveFactionForCrew(supportCard?.identity?.crew ?? '');
+  return buildInitialPlayerState(uid, riderSnapshots, supportSnap, faction, PLAYER1_PATH);
 }
 
 /**
@@ -861,6 +871,46 @@ export function registerJousturRoutes(app, {
         mode: 'solo',
         challengerUid: caller.uid,
         defenderUid,
+        board: buildInitialBoardState(caller.uid),
+        challengerState,
+        defenderState: buildSoloBotPlayerState(challengerState, defenderUid),
+        winnerUid: null,
+        rewardsGranted: false,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+
+      await adminDb.collection(MATCHES_COL).doc(matchId).set(match);
+      res.status(201).json(match);
+    } catch (e) {
+      res.status(e.statusCode ?? 500).json({ error: e.message });
+    }
+  });
+
+  // ── POST /api/joustur/free-solo ───────────────────────────────────────────
+  // Signed-in free users can sample Joustur Skatur™ with a random admin-owned
+  // loaner lineup. The match is gameplay-only and does not require a saved
+  // personal lineup.
+  app.post('/api/joustur/free-solo', limiter, async (req, res) => {
+    if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
+    let caller;
+    try { caller = await authenticateFirebaseUser(req); }
+    catch (e) { res.status(e.statusCode ?? 500).json({ error: e.message }); return; }
+
+    try {
+      await requireFreeTierCaller(adminDb, caller);
+      const loanerCards = await loadAdminLoanerCards(adminDb, { count: 7 });
+      const challengerState = buildPlayerStateFromSelectedCards(caller.uid, loanerCards);
+      const defenderUid = `${SOLO_BOT_UID_PREFIX}-${randomUUID()}`;
+      const matchId = `jm-${randomUUID()}`;
+      const match = {
+        id: matchId,
+        status: 'active',
+        mode: 'solo',
+        challengerUid: caller.uid,
+        defenderUid,
+        isLoanerMatch: true,
+        loanerSource: 'admin',
         board: buildInitialBoardState(caller.uid),
         challengerState,
         defenderState: buildSoloBotPlayerState(challengerState, defenderUid),

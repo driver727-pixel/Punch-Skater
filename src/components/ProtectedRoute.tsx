@@ -14,6 +14,7 @@ function getFeatureLabel(pathname: string): string {
   if (pathname.startsWith("/profile")) return "Your Profile";
   if (pathname.startsWith("/trash")) return "Trash bin";
   if (pathname.startsWith("/arena")) return "Race Arena";
+  if (pathname.startsWith("/joustur")) return "Joustur Skatur™";
   if (pathname.startsWith("/race/")) return "race replays";
   if (pathname.startsWith("/missions")) return "Missions";
   if (pathname.startsWith("/workshop")) return "Workshop";
@@ -21,6 +22,13 @@ function getFeatureLabel(pathname: string): string {
   if (pathname.startsWith("/admin")) return "Admin";
   if (pathname.startsWith("/dev/asset-generator")) return "Image Assets";
   return "this area";
+}
+
+function getGateMessage(pathname: string, gateLabel: string): string {
+  if (pathname.startsWith("/arena") || pathname.startsWith("/joustur")) {
+    return `Sign in free to try ${gateLabel} solo with house cards from the admin account. Guest mode only covers the Card Forge preview in this browser.`;
+  }
+  return `Sign in to access ${gateLabel}. Guest mode only covers the Card Forge preview in this browser.`;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
@@ -43,7 +51,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         state={{
           from: location.pathname,
           gateLabel,
-          gateMessage: `Sign in to access ${gateLabel}. Guest mode only covers the Card Forge preview in this browser.`,
+          gateMessage: getGateMessage(location.pathname, gateLabel),
         }}
         replace
       />
