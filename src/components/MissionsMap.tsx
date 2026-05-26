@@ -320,10 +320,10 @@ export function MissionsMap({
           spriteUrl ? (
             <image
               href={spriteUrl}
-              x={displayTokenPosition.x - TOKEN_R}
-              y={displayTokenPosition.y - TOKEN_R}
-              width={TOKEN_R * 2}
-              height={TOKEN_R * 2}
+              x={`${displayTokenPosition.x - TOKEN_R}%`}
+              y={`${displayTokenPosition.y - TOKEN_R}%`}
+              width={`${TOKEN_R * 2}%`}
+              height={`${TOKEN_R * 2}%`}
               preserveAspectRatio="xMidYMid meet"
             />
           ) : (

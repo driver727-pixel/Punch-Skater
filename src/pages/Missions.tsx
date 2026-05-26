@@ -210,8 +210,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     }
     const routeNodeIds = activeRun?.routeNodeIds;
     if (routeNodeIds?.length) {
-      const checkpoint = Math.max(0, Math.min(routeNodeIds.length - 1, activeRun?.checkpointNodeIndex ?? 0));
-      const node = world.nodes.find((candidate) => candidate.id === routeNodeIds[checkpoint]);
+      const checkpointIndex = Math.max(0, Math.min(routeNodeIds.length - 1, activeRun?.checkpointNodeIndex ?? 0));
+      const node = world.nodes.find((candidate) => candidate.id === routeNodeIds[checkpointIndex]);
       if (node) return { x: node.x, y: node.y };
     }
     const workshop = world.nodes.find((node) => node.kind === "workshop");

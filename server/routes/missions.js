@@ -343,6 +343,13 @@ function routeUsesValidEdges(edges, routeNodeIds) {
   return true;
 }
 
+function generateSeedFromString(value) {
+  const basis = typeof value === 'string' ? value : String(value ?? '');
+  return basis
+    .split('')
+    .reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 4294967295;
+}
+
 async function requestFalImage({
   FAL_KEY,
   buildFalImageRequest,
@@ -569,6 +576,15 @@ export function registerMissionRoutes(app, {
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message: { error: 'Too many mission image requests — please wait a moment and try again.' },
+    passOnStoreError: true,
+  });
+  const missionCheckpointRateLimit = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    skip: (req) => req?.method === 'OPTIONS',
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many mission checkpoint updates — please wait and retry.' },
     passOnStoreError: true,
   });
 
@@ -1142,7 +1158,7 @@ export function registerMissionRoutes(app, {
             normalizeFalProfile,
             body: {
               prompt: buildMissionsBackdropPrompt(world),
-              seed: Number.parseInt(String(worldId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 4294967295), 10),
+              seed: generateSeedFromString(worldId),
               image_size: MISSION_MAP_IMAGE_SIZE,
               num_inference_steps: 30,
               guidance_scale: 4,
@@ -1169,7 +1185,7 @@ export function registerMissionRoutes(app, {
             normalizeFalProfile,
             body: {
               prompt: buildMissionsSpritePrompt(card),
-              seed: Number.parseInt(String(spriteCacheKey.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 4294967295), 10),
+              seed: generateSeedFromString(spriteCacheKey),
               image_size: COURIER_TOKEN_IMAGE_SIZE,
               num_inference_steps: 24,
               guidance_scale: 3.8,
@@ -1281,7 +1297,7 @@ export function registerMissionRoutes(app, {
     }
   });
 
-  app.post('/api/missions/world/checkpoint', async (req, res) => {
+  app.post('/api/missions/world/checkpoint', missionCheckpointRateLimit, async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Mission world is not configured on this server.' });
       return;
@@ -1316,7 +1332,7 @@ export function registerMissionRoutes(app, {
       }
       const routeNodeIds = Array.isArray(activeRun.routeNodeIds) ? activeRun.routeNodeIds : [];
       const currentIndex = Number.isInteger(activeRun.checkpointNodeIndex) ? activeRun.checkpointNodeIndex : 0;
-      if (!routeNodeIds.length || checkpointNodeIndex <= currentIndex || checkpointNodeIndex >= routeNodeIds.length) {
+      if (!routeNodeIds.length || checkpointNodeIndex !== currentIndex + 1 || checkpointNodeIndex >= routeNodeIds.length) {
         res.status(400).json({ error: 'Invalid checkpoint progression.' });
         return;
       }

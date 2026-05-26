@@ -16,7 +16,8 @@ function toAdjacency(edges: WorldEdge[]): Map<string, Set<string>> {
   return adjacency;
 }
 
-function manhattanDistance(a: WorldNode, b: WorldNode): number {
+function manhattanDistance(a: WorldNode | undefined, b: WorldNode | undefined): number {
+  if (!a || !b) return Number.POSITIVE_INFINITY;
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
