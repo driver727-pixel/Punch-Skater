@@ -133,3 +133,58 @@ export async function trackMissionEvent(): Promise<void> {
   // Restored mission board runs are server-authoritative and no longer depend
   // on client-side event writes.
 }
+
+const MISSION_WORLD_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_API_URL as string | undefined)?.trim(),
+  "/api/missions/world",
+);
+const MISSION_WORLD_RUN_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_RUN_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/run",
+);
+
+export async function getDistrictWorld(uid: string, userEmail?: string | null): Promise<import("./sharedTypes").DistrictWorldPayload> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    return {
+      world: {
+        worldId: "",
+        boardDateKey: "",
+        dailyResetAt: "",
+        nodes: [],
+        edges: [],
+        contracts: [],
+      },
+      activeRun: null,
+    };
+  }
+  const idToken = await getIdToken();
+  return fetchMissionJson<import("./sharedTypes").DistrictWorldPayload>(MISSION_WORLD_API_URL, {
+    headers: { Authorization: ["Bearer", idToken].join(" ") },
+  }, "Failed to load district world.");
+}
+
+export async function startDistrictRun(
+  uid: string,
+  contractId: string,
+  deckId: string,
+  deckName: string,
+  userEmail?: string | null,
+): Promise<import("./sharedTypes").ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: import("./sharedTypes").ActiveDistrictRun }>(
+    MISSION_WORLD_RUN_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ contractId, deckId, deckName }),
+    },
+    "Failed to start district run.",
+  );
+  return payload.activeRun;
+}

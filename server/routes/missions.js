@@ -11,6 +11,7 @@ import {
   getMissionEffectiveRewards,
   resolveMissionCounterChoice,
 } from '../lib/missions.js';
+import { generateDistrictWorld } from '../lib/mazeGenerator.js';
 
 const COLLECTION = 'missions';
 const PROFILE_COLLECTION = 'userProfiles';
@@ -22,6 +23,8 @@ const DEFAULT_FAL_IMAGE_MODEL_URL = 'https://fal.run/fal-ai/flux-lora';
 const MISSION_MAP_IMAGE_SIZE = { width: 1024, height: 1024 };
 const COURIER_TOKEN_IMAGE_SIZE = { width: 512, height: 512 };
 const MIN_FAL_DIMENSION = 64;
+const WORLD_COLLECTION = 'missionWorlds';
+const ACTIVE_RUN_COLLECTION = 'missionActiveRuns';
 const MAX_FAL_DIMENSION = 1536;
 const MIN_INFERENCE_STEPS = 1;
 const MAX_INFERENCE_STEPS = 50;
@@ -829,6 +832,131 @@ export function registerMissionRoutes(app, {
     } catch (error) {
       console.error('Mission run error:', error);
       res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to resolve mission.' });
+    }
+  });
+
+  // ── District world ────────────────────────────────────────────────────────
+  app.use('/api/missions/world', missionRateLimit);
+
+  app.get('/api/missions/world', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const dailyBoard = createDailyMissionBoardPayload(caller.uid, now);
+      const { boardDateKey, dailyResetAt, missions } = dailyBoard;
+
+      const worldId = `${caller.uid}_${boardDateKey}`;
+      const runId = `${worldId}_run`;
+
+      const [worldSnap, runSnap] = await Promise.all([
+        adminDb.collection(WORLD_COLLECTION).doc(worldId).get(),
+        adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId).get(),
+      ]);
+
+      let world;
+      if (worldSnap.exists) {
+        world = worldSnap.data();
+      } else {
+        world = generateDistrictWorld(caller.uid, boardDateKey, missions, dailyResetAt);
+        await adminDb.collection(WORLD_COLLECTION).doc(worldId).set(world);
+      }
+
+      const activeRun = runSnap.exists ? runSnap.data() : null;
+
+      res.json({ world, activeRun: activeRun ?? null });
+    } catch (error) {
+      console.error('Mission world load error:', error);
+      res.status(500).json({ error: 'Failed to load district world.' });
+    }
+  });
+
+  app.post('/api/missions/world/run', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    const contractId = typeof req.body?.contractId === 'string' ? req.body.contractId.trim() : '';
+    // deckId is optional at this phase; deck selection UI is implemented in a later PR.
+    const deckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
+    const deckName = typeof req.body?.deckName === 'string' ? req.body.deckName.trim() : 'Unknown Deck';
+    if (!contractId) {
+      res.status(400).json({ error: 'contractId is required.' });
+      return;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const boardDateKey = now.slice(0, 10);
+      const worldId = `${caller.uid}_${boardDateKey}`;
+      const runId = `${worldId}_run`;
+
+      const worldSnap = await adminDb.collection(WORLD_COLLECTION).doc(worldId).get();
+      if (!worldSnap.exists) {
+        res.status(404).json({ error: 'District world not found. Load /api/missions/world first.' });
+        return;
+      }
+
+      const world = worldSnap.data();
+      const contract = (world.contracts ?? []).find((c) => c.id === contractId);
+      if (!contract) {
+        res.status(404).json({ error: 'Contract not found in today\'s world.' });
+        return;
+      }
+      if (contract.visibility === 'locked') {
+        res.status(400).json({ error: 'This contract is locked and cannot be started yet.' });
+        return;
+      }
+
+      const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
+      const runSnap = await runRef.get();
+
+      // If an active run already exists for today and is not complete/failed, return it.
+      if (runSnap.exists) {
+        const existing = runSnap.data();
+        if (existing.phase !== 'complete' && existing.phase !== 'failed') {
+          res.json({ activeRun: existing });
+          return;
+        }
+      }
+
+      const activeRun = {
+        runId,
+        uid: caller.uid,
+        boardDateKey,
+        phase: 'outbound',
+        contractId,
+        deckId,
+        deckName,
+        launchedAt: now,
+        updatedAt: now,
+      };
+
+      await runRef.set(activeRun);
+      res.status(201).json({ activeRun });
+    } catch (error) {
+      console.error('Mission run start error:', error);
+      res.status(500).json({ error: 'Failed to start district run.' });
     }
   });
 }

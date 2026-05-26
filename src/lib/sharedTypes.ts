@@ -657,3 +657,135 @@ export interface MissionRisk {
   /** Number of cards that may be affected (for multi-card risks). */
   cardCount?: number;
 }
+
+// ── District World (PR1 — Missions Foundation) ────────────────────────────────
+
+/**
+ * Kind of a node in the district world graph.
+ * @sprint 9 @owner pr1
+ */
+export type WorldNodeKind = "workshop" | "poi" | "junction";
+
+/**
+ * A single node in the district world graph.
+ * Workshop is the run origin; poi nodes carry daily contracts; junctions are
+ * path intersections with no contract of their own.
+ * @sprint 9 @owner pr1
+ */
+export interface WorldNode {
+  id: string;
+  kind: WorldNodeKind;
+  /** Normalised grid coordinates in [0, 100] on each axis. */
+  x: number;
+  y: number;
+  /** Human-readable label for the node. */
+  label: string;
+  /**
+   * For poi nodes: the stable mission-board entry id this node carries.
+   * Undefined for workshop and junction nodes.
+   */
+  contractId?: string;
+}
+
+/**
+ * An undirected edge between two world nodes.
+ * @sprint 9 @owner pr1
+ */
+export interface WorldEdge {
+  from: string;
+  to: string;
+}
+
+/**
+ * Visibility state for a daily contract POI.
+ * visible  — the player can see the contract details and attempt it.
+ * locked   — the contract is present on the map but details are hidden until
+ *            an unlock condition is met (e.g. completing another contract first).
+ * @sprint 9 @owner pr1
+ */
+export type WorldContractVisibility = "visible" | "locked";
+
+/**
+ * A daily contract attached to a POI node in the district world.
+ * Combines positional data (from WorldNode) with visibility metadata and a
+ * reference to the underlying MissionBoardEntry.
+ * @sprint 9 @owner pr1
+ */
+export interface WorldContract {
+  /** Matches the `contractId` on the corresponding `WorldNode`. */
+  id: string;
+  /** The node in the world graph that hosts this contract. */
+  nodeId: string;
+  /** Stable mission-board definition id (e.g. "batteryville-breaker-yard"). */
+  definitionId: string;
+  title: string;
+  tagline: string;
+  district: District;
+  rewardXp: number;
+  rewardOzzies: number;
+  visibility: WorldContractVisibility;
+  /**
+   * When locked: a brief hint about what unlocks this contract.
+   * Shown in place of the full tagline.
+   */
+  lockHint?: string;
+  status: MissionStatus;
+}
+
+/**
+ * The complete district world generated for a user on a given day.
+ * Stable for the same uid + boardDateKey combination.
+ * @sprint 9 @owner pr1
+ */
+export interface DistrictWorld {
+  /** Opaque id — format: `{uid}_{boardDateKey}`. */
+  worldId: string;
+  /** YYYY-MM-DD date this world was generated for. */
+  boardDateKey: string;
+  /** ISO timestamp for next daily world reset. */
+  dailyResetAt: string;
+  /** All nodes including Workshop, POIs, and junctions. */
+  nodes: WorldNode[];
+  /** All edges forming the path graph. */
+  edges: WorldEdge[];
+  /** Exactly 6 daily contracts, one per POI node. */
+  contracts: WorldContract[];
+}
+
+/**
+ * Phase of an active district run.
+ * @sprint 9 @owner pr1
+ */
+export type ActiveRunPhase = "outbound" | "at_poi" | "returning" | "complete" | "failed";
+
+/**
+ * Persisted record of an in-progress or recently completed district run.
+ * Created when the player launches a run from the Workshop and reloaded on
+ * page refresh via GET /api/missions/world.
+ * @sprint 9 @owner pr1
+ */
+export interface ActiveDistrictRun {
+  /** Format: `{uid}_{boardDateKey}_run`. */
+  runId: string;
+  uid: string;
+  boardDateKey: string;
+  phase: ActiveRunPhase;
+  /** The contract being targeted on this run. */
+  contractId: string;
+  /** Deck selected for this run. */
+  deckId: string;
+  deckName: string;
+  launchedAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+/**
+ * API payload returned by GET /api/missions/world.
+ * @sprint 9 @owner pr1
+ */
+export interface DistrictWorldPayload {
+  world: DistrictWorld;
+  /** Null when no run is in progress for today's world. */
+  activeRun: ActiveDistrictRun | null;
+}
