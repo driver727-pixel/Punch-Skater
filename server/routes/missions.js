@@ -836,6 +836,7 @@ export function registerMissionRoutes(app, {
   });
 
   // ── District world ────────────────────────────────────────────────────────
+  app.use('/api/missions/world', missionRateLimit);
 
   app.get('/api/missions/world', async (req, res) => {
     if (!adminDb) {
@@ -896,10 +897,11 @@ export function registerMissionRoutes(app, {
     }
 
     const contractId = typeof req.body?.contractId === 'string' ? req.body.contractId.trim() : '';
+    // deckId is optional at this phase; deck selection UI is implemented in a later PR.
     const deckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
     const deckName = typeof req.body?.deckName === 'string' ? req.body.deckName.trim() : 'Unknown Deck';
-    if (!contractId || !deckId) {
-      res.status(400).json({ error: 'contractId and deckId are required.' });
+    if (!contractId) {
+      res.status(400).json({ error: 'contractId is required.' });
       return;
     }
 

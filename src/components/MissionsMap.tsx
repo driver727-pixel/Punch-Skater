@@ -29,6 +29,9 @@ const JUNCTION_STROKE = "rgba(125,231,255,0.18)";
 const COMPLETED_STROKE = NEON_GREEN;
 const COMPLETED_FILL = "#0a1a12";
 
+const POI_TITLE_MAX_LENGTH = 18;
+const POI_TITLE_TRUNCATE_AT = 16;
+
 const WORKSHOP_R = 14;
 const POI_R = 11;
 const JUNCTION_R = 4;
@@ -192,7 +195,7 @@ function PoiMarker({
           fontFamily="monospace"
           letterSpacing="0.04em"
         >
-          {contract.title.length > 18 ? contract.title.slice(0, 16) + "…" : contract.title}
+          {contract.title.length > POI_TITLE_MAX_LENGTH ? contract.title.slice(0, POI_TITLE_TRUNCATE_AT) + "…" : contract.title}
         </text>
       )}
     </g>

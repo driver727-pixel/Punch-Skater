@@ -441,7 +441,7 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
       rewardXp: contract.rewardXp,
       rewardOzzies: contract.rewardOzzies,
       visibility: isLocked ? 'locked' : 'visible',
-      lockHint: isLocked ? 'Complete an adjacent contract to reveal this node.' : undefined,
+      lockHint: isLocked ? 'Complete closer contracts to unlock this deeper node.' : undefined,
       status: contract.status ?? 'active',
     };
   });
