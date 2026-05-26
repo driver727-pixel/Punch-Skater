@@ -665,6 +665,7 @@ export interface MissionRisk {
  * @sprint 9 @owner pr1
  */
 export type WorldNodeKind = "workshop" | "poi" | "junction";
+export type WorldPlacementRole = "workshop" | "dead_end" | "intersection" | "corridor";
 
 /**
  * A single node in the district world graph.
@@ -685,6 +686,12 @@ export interface WorldNode {
    * Undefined for workshop and junction nodes.
    */
   contractId?: string;
+  /** Number of graph edges connected to this node. */
+  graphDegree?: number;
+  /** Shortest-hop depth from Workshop. Workshop is always 0. */
+  graphDepth?: number;
+  /** Maze placement role used by the POI preference rules. */
+  placementRole?: WorldPlacementRole;
 }
 
 /**
@@ -705,6 +712,13 @@ export interface WorldEdge {
  */
 export type WorldContractVisibility = "visible" | "locked";
 
+export interface WorldContractUnlockCondition {
+  kind: "complete_visible_contracts";
+  requiredVisibleCompletions: number;
+  depth: number;
+  message: string;
+}
+
 /**
  * A daily contract attached to a POI node in the district world.
  * Combines positional data (from WorldNode) with visibility metadata and a
@@ -724,12 +738,50 @@ export interface WorldContract {
   rewardXp: number;
   rewardOzzies: number;
   visibility: WorldContractVisibility;
+  /** Human-readable reason this POI is visible or locked today. */
+  visibilityReason?: string;
   /**
    * When locked: a brief hint about what unlocks this contract.
    * Shown in place of the full tagline.
    */
   lockHint?: string;
+  /** Structured lock metadata for future server-validated unlock rules. */
+  unlockCondition?: WorldContractUnlockCondition;
+  /** Shortest-hop depth from Workshop to this contract's POI node. */
+  graphDepth?: number;
+  /** Number of graph edges connected to this contract's POI node. */
+  graphDegree?: number;
+  /** POI placement role chosen by the maze generator. */
+  placementRole?: Exclude<WorldPlacementRole, "workshop">;
   status: MissionStatus;
+}
+
+export interface DistrictWorldSeedMetadata {
+  version: string;
+  strategy: "uid|boardDateKey|purpose";
+  stableFor: "same-user-and-utc-day";
+  uidScoped: boolean;
+  boardDateKey: string;
+  purposes: {
+    world: string;
+    tree: string;
+    loops: string;
+    poi: string;
+    contractAssign: string;
+  };
+}
+
+export interface DistrictWorldGraphMetadata {
+  algorithm: string;
+  grid: {
+    cols: number;
+    rows: number;
+  };
+  loopEdgeRatio: number;
+  workshopNodeId: "workshop";
+  poiCount: number;
+  placementPreference: Array<Exclude<WorldPlacementRole, "workshop">>;
+  reachableFromWorkshop: boolean;
 }
 
 /**
@@ -744,6 +796,10 @@ export interface DistrictWorld {
   boardDateKey: string;
   /** ISO timestamp for next daily world reset. */
   dailyResetAt: string;
+  /** Deterministic seed metadata used to reproduce this daily world. */
+  seed?: DistrictWorldSeedMetadata;
+  /** Graph generation metadata and guarantees for this district world. */
+  graph?: DistrictWorldGraphMetadata;
   /** All nodes including Workshop, POIs, and junctions. */
   nodes: WorldNode[];
   /** All edges forming the path graph. */

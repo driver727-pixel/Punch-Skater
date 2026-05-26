@@ -43,6 +43,15 @@ function bfsReachable(adj, start) {
   return visited;
 }
 
+function degreeByNode(edges) {
+  const degree = new Map();
+  for (const { from, to } of edges) {
+    degree.set(from, (degree.get(from) ?? 0) + 1);
+    degree.set(to, (degree.get(to) ?? 0) + 1);
+  }
+  return degree;
+}
+
 test('generateDistrictWorld returns a world with the correct structure', () => {
   const contracts = buildContracts();
   const world = generateDistrictWorld('user-abc', '2026-05-26', contracts, '2026-05-27T00:00:00.000Z');
@@ -97,12 +106,78 @@ test('generateDistrictWorld: contracts have 4 visible and 2 locked', () => {
   assert.equal(locked.length, 2);
 });
 
+test('generateDistrictWorld records deterministic seed and graph contracts', () => {
+  const world = generateDistrictWorld('user-abc', '2026-05-26', buildContracts(), '2026-05-27T00:00:00.000Z');
+
+  assert.equal(world.seed.version, 'district-world-v2');
+  assert.equal(world.seed.strategy, 'uid|boardDateKey|purpose');
+  assert.equal(world.seed.stableFor, 'same-user-and-utc-day');
+  assert.equal(world.seed.purposes.tree, 'user-abc|2026-05-26|tree');
+  assert.equal(world.graph.algorithm, 'randomized-dfs-spanning-tree-with-loop-edges');
+  assert.deepEqual(world.graph.grid, { cols: 7, rows: 7 });
+  assert.equal(world.graph.workshopNodeId, 'workshop');
+  assert.equal(world.graph.poiCount, POI_COUNT);
+  assert.deepEqual(world.graph.placementPreference, ['dead_end', 'intersection', 'corridor']);
+  assert.equal(world.graph.reachableFromWorkshop, true);
+});
+
+test('generateDistrictWorld annotates graph degree, depth, and placement role', () => {
+  const world = generateDistrictWorld('user-abc', '2026-05-26', buildContracts(), '2026-05-27T00:00:00.000Z');
+  const degree = degreeByNode(world.edges);
+  const adj = buildAdjacency(world.edges);
+  const depths = new Map([['workshop', 0]]);
+  const queue = ['workshop'];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    for (const next of (adj.get(current) ?? [])) {
+      if (depths.has(next)) continue;
+      depths.set(next, depths.get(current) + 1);
+      queue.push(next);
+    }
+  }
+
+  for (const node of world.nodes) {
+    assert.equal(node.graphDegree, degree.get(node.id));
+    assert.equal(node.graphDepth, depths.get(node.id));
+    assert.ok(['workshop', 'dead_end', 'intersection', 'corridor'].includes(node.placementRole));
+  }
+
+  for (const contract of world.contracts) {
+    const node = world.nodes.find((n) => n.id === contract.nodeId);
+    assert.ok(node);
+    assert.equal(contract.graphDepth, node.graphDepth);
+    assert.equal(contract.graphDegree, node.graphDegree);
+    assert.equal(contract.placementRole, node.placementRole);
+    assert.ok(['dead_end', 'intersection', 'corridor'].includes(contract.placementRole));
+  }
+});
+
 test('generateDistrictWorld: locked contracts have a lockHint', () => {
   const world = generateDistrictWorld('user-abc', '2026-05-26', buildContracts(), '2026-05-27T00:00:00.000Z');
   for (const contract of world.contracts.filter((c) => c.visibility === 'locked')) {
     assert.ok(typeof contract.lockHint === 'string' && contract.lockHint.length > 0,
       `Locked contract ${contract.id} is missing lockHint`);
+    assert.equal(contract.unlockCondition?.kind, 'complete_visible_contracts');
+    assert.equal(typeof contract.visibilityReason, 'string');
   }
+});
+
+test('generateDistrictWorld omits lock-only fields from visible contracts for Firestore safety', () => {
+  const world = generateDistrictWorld('user-abc', '2026-05-26', buildContracts(), '2026-05-27T00:00:00.000Z');
+  for (const contract of world.contracts.filter((c) => c.visibility === 'visible')) {
+    assert.equal(Object.hasOwn(contract, 'lockHint'), false);
+    assert.equal(Object.hasOwn(contract, 'unlockCondition'), false);
+    assert.equal(contract.visibilityReason, 'Daily board contract available from the Workshop.');
+  }
+});
+
+test('generateDistrictWorld prefers dead ends and intersections for POI placement', () => {
+  const world = generateDistrictWorld('user-abc', '2026-05-26', buildContracts(), '2026-05-27T00:00:00.000Z');
+  const preferredPoiCount = world.contracts
+    .filter((contract) => contract.placementRole === 'dead_end' || contract.placementRole === 'intersection')
+    .length;
+
+  assert.ok(preferredPoiCount >= 4, `Expected at least 4 POIs in preferred cells, got ${preferredPoiCount}`);
 });
 
 test('generateDistrictWorld is deterministic for the same uid and dateKey', () => {

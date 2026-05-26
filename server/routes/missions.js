@@ -1236,7 +1236,7 @@ export function registerMissionRoutes(app, {
 
     try {
       const now = new Date().toISOString();
-      const boardDateKey = now.slice(0, 10);
+      const { boardDateKey } = createDailyMissionBoardPayload(caller.uid, now);
       const worldId = `${caller.uid}_${boardDateKey}`;
       const runId = `${worldId}_run`;
 

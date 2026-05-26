@@ -61,6 +61,10 @@ function createRng(seed) {
 const GRID_COLS = 7;
 const GRID_ROWS = 7;
 const GRID_TOTAL = GRID_COLS * GRID_ROWS;
+const LOOP_EDGE_RATIO = 0.3;
+const WORLD_SEED_VERSION = 'district-world-v2';
+const SEED_STRATEGY = 'uid|boardDateKey|purpose';
+const PLACEMENT_PREFERENCE = ['dead_end', 'intersection', 'corridor'];
 
 /** Normalised [0, 100] coord for a grid column index. */
 function colToX(col) {
@@ -124,7 +128,7 @@ function carveSpanningTree(startCol, startRow, rng) {
  * Add ~30 % extra edges to create loops (so the map looks like streets not a tree).
  */
 function addLoopEdges(edgeSet, rng) {
-  const extraCount = Math.floor(GRID_TOTAL * 0.3);
+  const extraCount = Math.floor(GRID_TOTAL * LOOP_EDGE_RATIO);
   let attempts = 0;
   while (edgeSet.size < GRID_TOTAL - 1 + extraCount && attempts < 200) {
     attempts++;
@@ -149,28 +153,47 @@ function addLoopEdges(edgeSet, rng) {
  */
 function scoreCells(edgeSet) {
   // Build adjacency count per cell
+  const degree = buildDegreeMap(edgeSet);
+
+  const scored = [];
+  for (let col = 0; col < GRID_COLS; col++) {
+    for (let row = 0; row < GRID_ROWS; row++) {
+      const key = cellKey(col, row);
+      scored.push({
+        col,
+        row,
+        key,
+        degree: degree.get(key) ?? 0,
+        placementRole: placementRoleForDegree(degree.get(key) ?? 0),
+        score: placementScoreForDegree(degree.get(key) ?? 0),
+      });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score || a.col - b.col || a.row - b.row);
+  return scored;
+}
+
+function buildDegreeMap(edgeSet) {
   const degree = new Map();
   for (const key of edgeSet) {
     const [a, b] = key.split('|');
     degree.set(a, (degree.get(a) ?? 0) + 1);
     degree.set(b, (degree.get(b) ?? 0) + 1);
   }
+  return degree;
+}
 
-  const scored = [];
-  for (let col = 0; col < GRID_COLS; col++) {
-    for (let row = 0; row < GRID_ROWS; row++) {
-      const key = cellKey(col, row);
-      const deg = degree.get(key) ?? 0;
-      let score = 0;
-      if (deg === 1) score = 3;       // dead end — best
-      else if (deg >= 3) score = 2;   // intersection
-      else score = 1;                 // corridor
-      scored.push({ col, row, key, score });
-    }
-  }
+function placementRoleForDegree(degree) {
+  if (degree === 1) return 'dead_end';
+  if (degree >= 3) return 'intersection';
+  return 'corridor';
+}
 
-  scored.sort((a, b) => b.score - a.score || a.col - b.col || a.row - b.row);
-  return scored;
+function placementScoreForDegree(degree) {
+  if (degree === 1) return 3;       // dead end — best
+  if (degree >= 3) return 2;        // intersection
+  return 1;                         // corridor
 }
 
 /**
@@ -311,6 +334,23 @@ function assignVisibility(poiKeys, workshopKey, adj) {
   return { locked, depths };
 }
 
+function buildSeedMetadata(uid, boardDateKey) {
+  return {
+    version: WORLD_SEED_VERSION,
+    strategy: SEED_STRATEGY,
+    stableFor: 'same-user-and-utc-day',
+    uidScoped: true,
+    boardDateKey,
+    purposes: {
+      world: `${uid}|${boardDateKey}|world`,
+      tree: `${uid}|${boardDateKey}|tree`,
+      loops: `${uid}|${boardDateKey}|loops`,
+      poi: `${uid}|${boardDateKey}|poi`,
+      contractAssign: `${uid}|${boardDateKey}|contract-assign`,
+    },
+  };
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -352,6 +392,7 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
 
   // ── Build adjacency for visibility ────────────────────────────────────────
   const adj = buildAdjacency(edgeSet);
+  const degree = buildDegreeMap(edgeSet);
   const { locked, depths } = assignVisibility(poiKeys, workshopKey, adj);
 
   // ── Assign contracts to POI cells in depth order ──────────────────────────
@@ -370,6 +411,9 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
     x: colToX(workshopCol),
     y: rowToY(workshopRow),
     label: 'Workshop',
+    graphDegree: degree.get(workshopKey) ?? 0,
+    graphDepth: 0,
+    placementRole: 'workshop',
   });
 
   // POI nodes
@@ -382,6 +426,9 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
       y: rowToY(cell.row),
       label: contract.title,
       contractId: contract.id,
+      graphDegree: degree.get(cell.key) ?? 0,
+      graphDepth: depths.get(cell.key) ?? 0,
+      placementRole: placementRoleForDegree(degree.get(cell.key) ?? 0),
     });
   });
 
@@ -397,6 +444,9 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
       x: colToX(col),
       y: rowToY(row),
       label: '',
+      graphDegree: degree.get(key) ?? 0,
+      graphDepth: depths.get(key) ?? 0,
+      placementRole: placementRoleForDegree(degree.get(key) ?? 0),
     });
     junctionIndex++;
   }
@@ -431,7 +481,10 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
   const worldContracts = poiByDepth.map((cell, index) => {
     const contract = shuffledContracts[index];
     const isLocked = locked.has(cell.key);
-    return {
+    const graphDepth = depths.get(cell.key) ?? 0;
+    const graphDegree = degree.get(cell.key) ?? 0;
+    const placementRole = placementRoleForDegree(graphDegree);
+    const worldContract = {
       id: contract.id,
       nodeId: `poi-${index}`,
       definitionId: contract.definitionId,
@@ -441,15 +494,40 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
       rewardXp: contract.rewardXp,
       rewardOzzies: contract.rewardOzzies,
       visibility: isLocked ? 'locked' : 'visible',
-      lockHint: isLocked ? 'Complete closer contracts to unlock this deeper node.' : undefined,
+      visibilityReason: isLocked
+        ? 'Deep district node reserved behind progression.'
+        : 'Daily board contract available from the Workshop.',
+      graphDepth,
+      graphDegree,
+      placementRole,
       status: contract.status ?? 'active',
     };
+    if (isLocked) {
+      worldContract.lockHint = 'Complete closer contracts to unlock this deeper node.';
+      worldContract.unlockCondition = {
+        kind: 'complete_visible_contracts',
+        requiredVisibleCompletions: 2,
+        depth: graphDepth,
+        message: 'Complete closer visible contracts to reveal this deeper route.',
+      };
+    }
+    return worldContract;
   });
 
   return {
     worldId: `${uid}_${boardDateKey}`,
     boardDateKey,
     dailyResetAt,
+    seed: buildSeedMetadata(uid, boardDateKey),
+    graph: {
+      algorithm: 'randomized-dfs-spanning-tree-with-loop-edges',
+      grid: { cols: GRID_COLS, rows: GRID_ROWS },
+      loopEdgeRatio: LOOP_EDGE_RATIO,
+      workshopNodeId: 'workshop',
+      poiCount: POI_COUNT,
+      placementPreference: PLACEMENT_PREFERENCE,
+      reachableFromWorkshop: true,
+    },
     nodes,
     edges,
     contracts: worldContracts,
