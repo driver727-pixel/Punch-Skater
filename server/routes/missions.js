@@ -22,9 +22,12 @@ const FAL_PROXY_TIMEOUT_MS = 300_000;
 const DEFAULT_FAL_IMAGE_MODEL_URL = 'https://fal.run/fal-ai/flux-lora';
 const MISSION_MAP_IMAGE_SIZE = { width: 1024, height: 1024 };
 const COURIER_TOKEN_IMAGE_SIZE = { width: 512, height: 512 };
+const MISSIONS_BACKDROP_PROMPT_VERSION = 'missions-backdrop-v1';
+const MISSIONS_SPRITE_PROMPT_VERSION = 'missions-sprite-v1';
 const MIN_FAL_DIMENSION = 64;
 const WORLD_COLLECTION = 'missionWorlds';
 const ACTIVE_RUN_COLLECTION = 'missionActiveRuns';
+const WORLD_VISUALS_COLLECTION = 'missionWorldVisuals';
 const MAX_FAL_DIMENSION = 1536;
 const MIN_INFERENCE_STEPS = 1;
 const MAX_INFERENCE_STEPS = 50;
@@ -181,6 +184,191 @@ async function parseFalProxyError(upstream) {
   } catch {
     return { error: text };
   }
+}
+
+function extractFalImageUrl(payload) {
+  if (!isPlainObject(payload)) return null;
+  if (payload.image && typeof payload.image === 'object' && typeof payload.image.url === 'string') {
+    return payload.image.url;
+  }
+  if (typeof payload.image_url === 'string') return payload.image_url;
+  if (Array.isArray(payload.images) && payload.images[0] && typeof payload.images[0] === 'object' && typeof payload.images[0].url === 'string') {
+    return payload.images[0].url;
+  }
+  return null;
+}
+
+function buildMissionsBackdropPrompt(world) {
+  const districtSummary = Array.from(new Set(
+    (world?.contracts ?? [])
+      .map((contract) => typeof contract?.district === 'string' ? contract.district : null)
+      .filter(Boolean),
+  )).join(', ') || 'The Grid';
+  return [
+    'Top-down tactical district map backdrop for a neon courier mission interface.',
+    `District blend: ${districtSummary}.`,
+    `Daily seed context: ${world?.boardDateKey ?? 'undated mission board'}.`,
+    'Show roads, intersections, route-friendly alleys, and landmark silhouettes with readable negative space for route overlays.',
+    'Cyberpunk night mood with electric cyan and magenta accents, subtle scanline texture.',
+    'No characters, no riders, no vehicles, no text labels, no logos, no watermark.',
+    'PG, safe-for-work, high contrast, crisp details.',
+  ].join(' ');
+}
+
+function pickSpriteSourceCard(decks, preferredDeckId) {
+  const normalizedDecks = Array.isArray(decks) ? decks.filter(Boolean) : [];
+  const preferredDeck = normalizedDecks.find((deck) => deck?.id === preferredDeckId);
+  const orderedDecks = preferredDeck ? [preferredDeck, ...normalizedDecks.filter((deck) => deck?.id !== preferredDeckId)] : normalizedDecks;
+  for (const deck of orderedDecks) {
+    if (!Array.isArray(deck?.cards)) continue;
+    const card = deck.cards.find((entry) => entry && typeof entry === 'object');
+    if (card) return card;
+  }
+  return null;
+}
+
+function buildExtractionContract(card) {
+  const sourceImageUrl = typeof card?.characterImageUrl === 'string' && card.characterImageUrl
+    ? card.characterImageUrl
+    : typeof card?.backgroundImageUrl === 'string' && card.backgroundImageUrl
+      ? card.backgroundImageUrl
+      : typeof card?.frameImageUrl === 'string' && card.frameImageUrl
+        ? card.frameImageUrl
+        : null;
+  return {
+    version: 'character-layer-contract-v1',
+    sourceType: card ? 'forged_card' : 'fallback',
+    sourceCardId: typeof card?.id === 'string' ? card.id : null,
+    sourceImageUrl,
+    extractionStatus: sourceImageUrl ? 'pass_through' : 'fallback_marker',
+    subjectBounds: {
+      x: 0.25,
+      y: 0.1,
+      width: 0.5,
+      height: 0.8,
+    },
+  };
+}
+
+function buildMissionsSpritePrompt(card) {
+  const identityName = typeof card?.identity?.name === 'string' && card.identity.name ? card.identity.name : 'District Courier';
+  const crew = typeof card?.identity?.crew === 'string' && card.identity.crew ? card.identity.crew : 'independent crew';
+  const archetype = typeof card?.prompts?.archetype === 'string' && card.prompts.archetype ? card.prompts.archetype : 'street runner';
+  const style = typeof card?.prompts?.style === 'string' && card.prompts.style ? card.prompts.style : 'Street';
+  return [
+    'Single full-body courier sprite for map traversal UI.',
+    `Character: ${identityName}, ${archetype}, crew ${crew}, outfit style ${style}.`,
+    'Pose angled forward as if actively moving between checkpoints.',
+    'Transparent or flat neutral background, centered silhouette, no props, no extra people, no text, no logo.',
+    'Clean comic-book rendering, high readability at small sizes.',
+    'SFW, PG rated.',
+  ].join(' ');
+}
+
+function toGraphAdjacency(edges) {
+  const adjacency = new Map();
+  for (const edge of Array.isArray(edges) ? edges : []) {
+    if (!edge?.from || !edge?.to) continue;
+    if (!adjacency.has(edge.from)) adjacency.set(edge.from, new Set());
+    if (!adjacency.has(edge.to)) adjacency.set(edge.to, new Set());
+    adjacency.get(edge.from).add(edge.to);
+    adjacency.get(edge.to).add(edge.from);
+  }
+  return adjacency;
+}
+
+function manhattanDistance(a, b) {
+  return Math.abs((Number(a?.x) || 0) - (Number(b?.x) || 0)) + Math.abs((Number(a?.y) || 0) - (Number(b?.y) || 0));
+}
+
+function findRouteAStar(nodes, edges, startId, goalId) {
+  if (!startId || !goalId) return [];
+  if (startId === goalId) return [startId];
+  const nodeById = new Map((Array.isArray(nodes) ? nodes : []).map((node) => [node?.id, node]));
+  if (!nodeById.has(startId) || !nodeById.has(goalId)) return [];
+  const adjacency = toGraphAdjacency(edges);
+  if (!adjacency.has(startId) || !adjacency.has(goalId)) return [];
+  const openSet = new Set([startId]);
+  const cameFrom = new Map();
+  const gScore = new Map([[startId, 0]]);
+  const fScore = new Map([[startId, manhattanDistance(nodeById.get(startId), nodeById.get(goalId))]]);
+
+  while (openSet.size > 0) {
+    let currentId = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (const candidateId of openSet) {
+      const score = fScore.get(candidateId) ?? Number.POSITIVE_INFINITY;
+      if (score < bestScore) {
+        bestScore = score;
+        currentId = candidateId;
+      }
+    }
+    if (!currentId) break;
+    if (currentId === goalId) {
+      const path = [goalId];
+      let cursor = goalId;
+      while (cameFrom.has(cursor)) {
+        cursor = cameFrom.get(cursor);
+        path.unshift(cursor);
+      }
+      return path;
+    }
+    openSet.delete(currentId);
+    for (const neighborId of (adjacency.get(currentId) ?? [])) {
+      const tentativeG = (gScore.get(currentId) ?? Number.POSITIVE_INFINITY) + 1;
+      if (tentativeG >= (gScore.get(neighborId) ?? Number.POSITIVE_INFINITY)) continue;
+      cameFrom.set(neighborId, currentId);
+      gScore.set(neighborId, tentativeG);
+      fScore.set(neighborId, tentativeG + manhattanDistance(nodeById.get(neighborId), nodeById.get(goalId)));
+      openSet.add(neighborId);
+    }
+  }
+  return [];
+}
+
+function routeUsesValidEdges(edges, routeNodeIds) {
+  if (!Array.isArray(routeNodeIds) || routeNodeIds.length < 2) return true;
+  const edgeSet = new Set();
+  for (const edge of Array.isArray(edges) ? edges : []) {
+    if (!edge?.from || !edge?.to) continue;
+    const key = edge.from < edge.to ? `${edge.from}|${edge.to}` : `${edge.to}|${edge.from}`;
+    edgeSet.add(key);
+  }
+  for (let i = 1; i < routeNodeIds.length; i++) {
+    const from = routeNodeIds[i - 1];
+    const to = routeNodeIds[i];
+    const key = from < to ? `${from}|${to}` : `${to}|${from}`;
+    if (!edgeSet.has(key)) return false;
+  }
+  return true;
+}
+
+async function requestFalImage({
+  FAL_KEY,
+  buildFalImageRequest,
+  resolveFalProfile,
+  normalizeFalProfile,
+  body,
+  profile = 'default',
+}) {
+  const normalizedProfile = normalizeFalProfile(profile);
+  const profileSettings = resolveFalProfile(normalizedProfile);
+  const upstream = await fetch(profileSettings.modelUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Key ${FAL_KEY}`,
+    },
+    body: JSON.stringify(await buildFalImageRequest({ ...body, fal_profile: normalizedProfile })),
+    signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
+  });
+  if (!upstream.ok) {
+    throw Object.assign(new Error(`fal.ai request failed with ${upstream.status}.`), { statusCode: upstream.status });
+  }
+  const payload = await upstream.json();
+  const imageUrl = extractFalImageUrl(payload);
+  if (!imageUrl) throw new Error('fal.ai response did not include an image URL.');
+  return imageUrl;
 }
 
 async function handleMissionFalProxyRequest(req, res, {
@@ -860,9 +1048,10 @@ export function registerMissionRoutes(app, {
       const worldId = `${caller.uid}_${boardDateKey}`;
       const runId = `${worldId}_run`;
 
-      const [worldSnap, runSnap] = await Promise.all([
+      const [worldSnap, runSnap, visualsSnap] = await Promise.all([
         adminDb.collection(WORLD_COLLECTION).doc(worldId).get(),
         adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId).get(),
+        adminDb.collection(WORLD_VISUALS_COLLECTION).doc(worldId).get(),
       ]);
 
       let world;
@@ -874,11 +1063,135 @@ export function registerMissionRoutes(app, {
       }
 
       const activeRun = runSnap.exists ? runSnap.data() : null;
+      const visuals = visualsSnap.exists ? visualsSnap.data() : null;
 
-      res.json({ world, activeRun: activeRun ?? null });
+      res.json({ world, activeRun: activeRun ?? null, visuals: visuals ?? null });
     } catch (error) {
       console.error('Mission world load error:', error);
       res.status(500).json({ error: 'Failed to load district world.' });
+    }
+  });
+
+  app.post('/api/missions/world/visuals', missionFalProxyRateLimit, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    try {
+      const rawBoardDateKey = typeof req.body?.boardDateKey === 'string' ? req.body.boardDateKey.trim() : '';
+      const boardDateKey = /^\d{4}-\d{2}-\d{2}$/.test(rawBoardDateKey) ? rawBoardDateKey : new Date().toISOString().slice(0, 10);
+      const worldId = `${caller.uid}_${boardDateKey}`;
+      const preferredDeckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
+      const visualsRef = adminDb.collection(WORLD_VISUALS_COLLECTION).doc(worldId);
+      const [worldSnap, visualsSnap, decksSnap] = await Promise.all([
+        adminDb.collection(WORLD_COLLECTION).doc(worldId).get(),
+        visualsRef.get(),
+        adminDb.collection('users').doc(caller.uid).collection('decks').get(),
+      ]);
+      if (!worldSnap.exists) {
+        res.status(404).json({ error: 'District world not found. Load /api/missions/world first.' });
+        return;
+      }
+
+      const world = worldSnap.data();
+      const decks = decksSnap.docs.map((doc) => doc.data()).filter(Boolean);
+      const card = pickSpriteSourceCard(decks, preferredDeckId);
+      const extraction = buildExtractionContract(card);
+      const spriteCacheKey = [
+        caller.uid,
+        extraction.sourceCardId ?? 'fallback',
+        MISSIONS_SPRITE_PROMPT_VERSION,
+      ].join(':');
+      const backdropCacheKey = [
+        caller.uid,
+        boardDateKey,
+        MISSIONS_BACKDROP_PROMPT_VERSION,
+      ].join(':');
+
+      const previous = visualsSnap.exists ? visualsSnap.data() : {};
+      const visuals = {
+        backdrop: {
+          url: previous?.backdrop?.cacheKey === backdropCacheKey ? previous?.backdrop?.url ?? null : null,
+          cacheKey: backdropCacheKey,
+          generatedAt: previous?.backdrop?.cacheKey === backdropCacheKey ? previous?.backdrop?.generatedAt : undefined,
+          fallback: true,
+        },
+        sprite: {
+          url: previous?.sprite?.cacheKey === spriteCacheKey ? previous?.sprite?.url ?? null : null,
+          cacheKey: spriteCacheKey,
+          generatedAt: previous?.sprite?.cacheKey === spriteCacheKey ? previous?.sprite?.generatedAt : undefined,
+          fallback: true,
+        },
+        extraction,
+      };
+
+      if (!visuals.backdrop.url && FAL_KEY) {
+        try {
+          const imageUrl = await requestFalImage({
+            FAL_KEY,
+            buildFalImageRequest,
+            resolveFalProfile,
+            normalizeFalProfile,
+            body: {
+              prompt: buildMissionsBackdropPrompt(world),
+              seed: Number.parseInt(String(worldId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 4294967295), 10),
+              image_size: MISSION_MAP_IMAGE_SIZE,
+              num_inference_steps: 30,
+              guidance_scale: 4,
+            },
+            profile: 'default',
+          });
+          visuals.backdrop = {
+            url: imageUrl,
+            cacheKey: backdropCacheKey,
+            generatedAt: new Date().toISOString(),
+            fallback: false,
+          };
+        } catch (error) {
+          console.warn('Mission backdrop generation failed, using fallback:', error?.message ?? error);
+        }
+      }
+
+      if (!visuals.sprite.url && FAL_KEY && card) {
+        try {
+          const imageUrl = await requestFalImage({
+            FAL_KEY,
+            buildFalImageRequest,
+            resolveFalProfile,
+            normalizeFalProfile,
+            body: {
+              prompt: buildMissionsSpritePrompt(card),
+              seed: Number.parseInt(String(spriteCacheKey.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 4294967295), 10),
+              image_size: COURIER_TOKEN_IMAGE_SIZE,
+              num_inference_steps: 24,
+              guidance_scale: 3.8,
+            },
+            profile: 'character',
+          });
+          visuals.sprite = {
+            url: imageUrl,
+            cacheKey: spriteCacheKey,
+            generatedAt: new Date().toISOString(),
+            fallback: false,
+          };
+        } catch (error) {
+          console.warn('Mission sprite generation failed, using fallback token:', error?.message ?? error);
+        }
+      }
+
+      await visualsRef.set(visuals, { merge: true });
+      res.json({ visuals });
+    } catch (error) {
+      console.error('Mission visuals error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to load mission visuals.' });
     }
   });
 
@@ -927,6 +1240,11 @@ export function registerMissionRoutes(app, {
         res.status(400).json({ error: 'This contract is locked and cannot be started yet.' });
         return;
       }
+      const routeNodeIds = findRouteAStar(world.nodes ?? [], world.edges ?? [], 'workshop', contract.nodeId);
+      if (routeNodeIds.length < 2 || !routeUsesValidEdges(world.edges ?? [], routeNodeIds)) {
+        res.status(422).json({ error: 'Unable to calculate a valid route to this contract.' });
+        return;
+      }
 
       const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
       const runSnap = await runRef.get();
@@ -948,6 +1266,9 @@ export function registerMissionRoutes(app, {
         contractId,
         deckId,
         deckName,
+        routeNodeIds,
+        checkpointNodeIndex: 0,
+        lastCheckpointAt: now,
         launchedAt: now,
         updatedAt: now,
       };
@@ -957,6 +1278,66 @@ export function registerMissionRoutes(app, {
     } catch (error) {
       console.error('Mission run start error:', error);
       res.status(500).json({ error: 'Failed to start district run.' });
+    }
+  });
+
+  app.post('/api/missions/world/checkpoint', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    const runId = typeof req.body?.runId === 'string' ? req.body.runId.trim() : '';
+    const nodeId = typeof req.body?.nodeId === 'string' ? req.body.nodeId.trim() : '';
+    const checkpointNodeIndex = Number.isInteger(req.body?.checkpointNodeIndex) ? req.body.checkpointNodeIndex : null;
+    if (!runId || !nodeId || checkpointNodeIndex == null) {
+      res.status(400).json({ error: 'runId, nodeId, and checkpointNodeIndex are required.' });
+      return;
+    }
+
+    try {
+      const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
+      const snapshot = await runRef.get();
+      if (!snapshot.exists) {
+        res.status(404).json({ error: 'Run not found.' });
+        return;
+      }
+      const activeRun = snapshot.data();
+      if (activeRun.uid !== caller.uid) {
+        res.status(403).json({ error: 'This run does not belong to the current user.' });
+        return;
+      }
+      const routeNodeIds = Array.isArray(activeRun.routeNodeIds) ? activeRun.routeNodeIds : [];
+      const currentIndex = Number.isInteger(activeRun.checkpointNodeIndex) ? activeRun.checkpointNodeIndex : 0;
+      if (!routeNodeIds.length || checkpointNodeIndex <= currentIndex || checkpointNodeIndex >= routeNodeIds.length) {
+        res.status(400).json({ error: 'Invalid checkpoint progression.' });
+        return;
+      }
+      if (routeNodeIds[checkpointNodeIndex] !== nodeId) {
+        res.status(400).json({ error: 'Checkpoint node does not match active route.' });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const nextRun = {
+        ...activeRun,
+        checkpointNodeIndex,
+        lastCheckpointAt: now,
+        updatedAt: now,
+        phase: checkpointNodeIndex >= routeNodeIds.length - 1 ? 'at_poi' : activeRun.phase,
+      };
+      await runRef.set(nextRun, { merge: true });
+      res.json({ activeRun: nextRun });
+    } catch (error) {
+      console.error('Mission checkpoint update error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to persist checkpoint.' });
     }
   });
 }

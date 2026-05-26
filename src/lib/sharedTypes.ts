@@ -750,6 +750,8 @@ export interface DistrictWorld {
   edges: WorldEdge[];
   /** Exactly 6 daily contracts, one per POI node. */
   contracts: WorldContract[];
+  /** Optional generated visuals for this world. */
+  visuals?: DistrictWorldVisuals;
 }
 
 /**
@@ -757,6 +759,33 @@ export interface DistrictWorld {
  * @sprint 9 @owner pr1
  */
 export type ActiveRunPhase = "outbound" | "at_poi" | "returning" | "complete" | "failed";
+
+export interface CharacterLayerExtractionContract {
+  version: string;
+  sourceType: "forged_card" | "fallback";
+  sourceCardId: string | null;
+  sourceImageUrl: string | null;
+  extractionStatus: "pass_through" | "fallback_marker";
+  subjectBounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface DistrictWorldVisualAsset {
+  url: string | null;
+  cacheKey: string;
+  generatedAt?: string;
+  fallback: boolean;
+}
+
+export interface DistrictWorldVisuals {
+  backdrop: DistrictWorldVisualAsset;
+  sprite: DistrictWorldVisualAsset;
+  extraction: CharacterLayerExtractionContract;
+}
 
 /**
  * Persisted record of an in-progress or recently completed district run.
@@ -778,6 +807,9 @@ export interface ActiveDistrictRun {
   launchedAt: string;
   updatedAt: string;
   completedAt?: string;
+  routeNodeIds?: string[];
+  checkpointNodeIndex?: number;
+  lastCheckpointAt?: string;
 }
 
 /**
@@ -788,4 +820,5 @@ export interface DistrictWorldPayload {
   world: DistrictWorld;
   /** Null when no run is in progress for today's world. */
   activeRun: ActiveDistrictRun | null;
+  visuals?: DistrictWorldVisuals;
 }
