@@ -179,7 +179,7 @@ async function parseFalProxyError(upstream) {
   }
 }
 
-function createMissionFalProxyHandler({
+async function handleMissionFalProxyRequest(req, res, {
   FAL_KEY,
   authenticateFirebaseUser,
   buildFalImageRequest,
@@ -188,38 +188,36 @@ function createMissionFalProxyHandler({
   imageSize,
   label,
 }) {
-  return async (req, res) => {
-    try {
-      if (!FAL_KEY) {
-        res.status(503).json({ error: `${label} generation is not configured.` });
-        return;
-      }
-
-      await authenticateFirebaseUser(req);
-      const sanitizedBody = sanitizeMissionFalProxyBody(req.body, { imageSize });
-      const normalizedProfile = normalizeFalProfile('default');
-      const profileSettings = resolveFalProfile(normalizedProfile);
-      const upstream = await fetch(profileSettings.modelUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Key ${FAL_KEY}`,
-        },
-        body: JSON.stringify(await buildFalImageRequest(sanitizedBody)),
-        signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
-      });
-
-      if (!upstream.ok) {
-        res.status(upstream.status).json(await parseFalProxyError(upstream));
-        return;
-      }
-
-      res.json(await upstream.json());
-    } catch (error) {
-      console.error(`${label} proxy error:`, error);
-      res.status(error.statusCode ?? 500).json({ error: error.message ?? `${label} proxy failed.` });
+  try {
+    if (!FAL_KEY) {
+      res.status(503).json({ error: `${label} generation is not configured.` });
+      return;
     }
-  };
+
+    await authenticateFirebaseUser(req);
+    const sanitizedBody = sanitizeMissionFalProxyBody(req.body, { imageSize });
+    const normalizedProfile = normalizeFalProfile('default');
+    const profileSettings = resolveFalProfile(normalizedProfile);
+    const upstream = await fetch(profileSettings.modelUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Key ${FAL_KEY}`,
+      },
+      body: JSON.stringify(await buildFalImageRequest(sanitizedBody)),
+      signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
+    });
+
+    if (!upstream.ok) {
+      res.status(upstream.status).json(await parseFalProxyError(upstream));
+      return;
+    }
+
+    res.json(await upstream.json());
+  } catch (error) {
+    console.error(`${label} proxy error:`, error);
+    res.status(error.statusCode ?? 500).json({ error: error.message ?? `${label} proxy failed.` });
+  }
 }
 
 function getProgression(profile) {
@@ -366,7 +364,7 @@ export function registerMissionRoutes(app, {
   app.use('/api/missions/board', missionRateLimit);
   app.use('/api/missions/run', missionRateLimit);
 
-  app.post('/api/missions/map', missionRateLimit, createMissionFalProxyHandler({
+  const missionMapProxyOptions = {
     FAL_KEY,
     authenticateFirebaseUser,
     buildFalImageRequest,
@@ -374,9 +372,8 @@ export function registerMissionRoutes(app, {
     resolveFalProfile,
     imageSize: MISSION_MAP_IMAGE_SIZE,
     label: 'Mission map',
-  }));
-
-  const courierTokenProxyHandler = createMissionFalProxyHandler({
+  };
+  const courierTokenProxyOptions = {
     FAL_KEY,
     authenticateFirebaseUser,
     buildFalImageRequest,
@@ -384,9 +381,16 @@ export function registerMissionRoutes(app, {
     resolveFalProfile,
     imageSize: COURIER_TOKEN_IMAGE_SIZE,
     label: 'Mission courier token',
+  };
+  app.post('/api/missions/map', missionRateLimit, async (req, res) => {
+    await handleMissionFalProxyRequest(req, res, missionMapProxyOptions);
   });
-  app.post('/api/missions/token', missionRateLimit, courierTokenProxyHandler);
-  app.post('/api/missions/courier-token', missionRateLimit, courierTokenProxyHandler);
+  app.post('/api/missions/token', missionRateLimit, async (req, res) => {
+    await handleMissionFalProxyRequest(req, res, courierTokenProxyOptions);
+  });
+  app.post('/api/missions/courier-token', missionRateLimit, async (req, res) => {
+    await handleMissionFalProxyRequest(req, res, courierTokenProxyOptions);
+  });
 
   app.get('/api/missions/board', async (req, res) => {
     if (!adminDb) {
