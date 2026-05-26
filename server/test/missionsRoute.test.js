@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildMissionCardOutcomeUpdate, buildMissionResolutionRisk, registerMissionRoutes } from '../routes/missions.js';
+import { createMissionBoardEntries } from '../lib/missions.js';
 
 function createAppHarness() {
   const middleware = [];
@@ -98,12 +99,86 @@ function registerMissionHarness(options = {}) {
   return app;
 }
 
+function cloneData(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
+function createSnapshot(value) {
+  return {
+    exists: value !== undefined,
+    data: () => cloneData(value),
+  };
+}
+
+function createFirestoreHarness(initialData = {}) {
+  const store = new Map(Object.entries(initialData).map(([path, value]) => [path, cloneData(value)]));
+  const writeLog = [];
+
+  function createRef(path) {
+    return {
+      path,
+      collection(name) {
+        return createCollection(`${path}/${name}`);
+      },
+    };
+  }
+
+  function createCollection(path) {
+    return {
+      doc(id) {
+        return createRef(`${path}/${id}`);
+      },
+    };
+  }
+
+  return {
+    store,
+    writeLog,
+    collection: createCollection,
+    async runTransaction(callback) {
+      return callback({
+        async get(ref) {
+          return createSnapshot(store.get(ref.path));
+        },
+        set(ref, data, options = {}) {
+          const previous = store.get(ref.path);
+          const next = options.merge
+            ? { ...(previous ?? {}), ...cloneData(data) }
+            : cloneData(data);
+          store.set(ref.path, next);
+          writeLog.push({ path: ref.path, data: next, options });
+        },
+      });
+    },
+  };
+}
+
 function buildCard(overrides = {}) {
   return {
     id: overrides.id ?? 'card-default',
+    prompts: {
+      archetype: 'The Knights Technarchy',
+      district: 'The Grid',
+      ...overrides.prompts,
+    },
     identity: {
       name: 'Signal Flash',
+      crew: 'The Knights Technarchy',
       ...overrides.identity,
+    },
+    stats: {
+      speed: 8,
+      range: 6,
+      stealth: 4,
+      grit: 5,
+      ...overrides.stats,
+    },
+    board: {
+      config: {
+        boardType: 'Street',
+        wheels: 'Urethane',
+        ...overrides.board?.config,
+      },
     },
     maintenance: {
       state: 'active',
@@ -111,6 +186,44 @@ function buildCard(overrides = {}) {
       repairMinutes: 15,
       ...overrides.maintenance,
     },
+  };
+}
+
+function buildGridDeck(overrides = {}) {
+  return {
+    id: overrides.id ?? 'deck-grid-ready',
+    name: overrides.name ?? 'Grid Ready Stack',
+    cards: [
+      buildCard({
+        id: 'grid-runner-1',
+        prompts: { archetype: 'The Knights Technarchy', district: 'The Grid' },
+        identity: { crew: 'The Knights Technarchy', name: 'Trace Lead' },
+        stats: { speed: 8, range: 8, stealth: 7, grit: 5 },
+        board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+      }),
+      buildCard({
+        id: 'grid-runner-2',
+        prompts: { archetype: 'Qu111s', district: 'The Grid' },
+        identity: { crew: 'Qu111s', name: 'Ghost Pivot' },
+        stats: { speed: 8, range: 7, stealth: 7, grit: 5 },
+        board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+      }),
+      buildCard({
+        id: 'grid-runner-3',
+        prompts: { archetype: 'The Knights Technarchy', district: 'The Grid' },
+        identity: { crew: 'The Knights Technarchy', name: 'Camera Breaker' },
+        stats: { speed: 7, range: 7, stealth: 6, grit: 5 },
+        board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+      }),
+      ...Array.from({ length: 3 }, (_, index) => buildCard({
+        id: `grid-runner-extra-${index + 1}`,
+        prompts: { archetype: 'Qu111s', district: 'The Grid' },
+        identity: { crew: 'Qu111s', name: `Trace Support ${index + 1}` },
+        stats: { speed: 6, range: 6, stealth: 5, grit: 5 },
+        board: { config: { boardType: 'Street', wheels: 'Urethane' } },
+      })),
+    ],
+    ...overrides,
   };
 }
 
@@ -252,4 +365,102 @@ test('mission courier token proxy validates prompt before forwarding', async () 
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('mission run forces blind-entry failureRisk fallout when traveling to an un-scanned node', async () => {
+  const mission = {
+    ...createMissionBoardEntries('user-1').find((entry) => entry.definitionId === 'grid-trace'),
+    isScanned: false,
+    gridPos: { x: 44, y: 38 },
+  };
+  const deck = buildGridDeck({ id: 'deck-blind-entry', name: 'Blind Entry Stack' });
+  const adminDb = createFirestoreHarness({
+    [`missions/${mission.id}`]: mission,
+    'users/user-1/decks/deck-blind-entry': deck,
+    'userProfiles/user-1': { missionXp: 10, missionOzzies: 20 },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/run');
+
+  const res = await invokeRoute(route, {
+    body: {
+      missionId: mission.id,
+      deckId: deck.id,
+    },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.rewardGranted, false);
+  assert.equal(res.body.awaitingChoice, undefined);
+  assert.equal(res.body.mission.lastRunSucceeded, false);
+  assert.equal(res.body.mission.activeRun, null);
+  assert.match(res.body.mission.lastRunSummary, /Blind entry failed/i);
+  assert.ok(res.body.mission.lastRunFailureReasons.some((reason) => /Blind entry/i.test(reason)));
+  assert.equal(res.body.mission.lastRunCardOutcomes.length, 1);
+  assert.equal(res.body.mission.lastRunCardOutcomes[0].cardId, 'grid-runner-1');
+
+  const updatedDeck = adminDb.store.get('users/user-1/decks/deck-blind-entry');
+  assert.equal(updatedDeck.cards[0].maintenance.state, 'in_shop');
+  assert.equal(updatedDeck.cards[0].maintenance.repairMinutes, 15);
+  assert.ok(adminDb.writeLog.some((write) => write.path === 'users/user-1/cards/grid-runner-1'));
+});
+
+test('mission run launches then resolves live encounter payloads through the transaction pipeline', async () => {
+  const mission = {
+    ...createMissionBoardEntries('user-1').find((entry) => entry.definitionId === 'grid-parent-trace'),
+    isScanned: true,
+    gridPos: { x: 50, y: 42 },
+  };
+  const deck = buildGridDeck({ id: 'deck-live-pipeline', name: 'Live Pipeline Stack' });
+  const adminDb = createFirestoreHarness({
+    [`missions/${mission.id}`]: mission,
+    'users/user-1/decks/deck-live-pipeline': deck,
+    'userProfiles/user-1': {
+      missionXp: 10,
+      missionOzzies: 20,
+      districtReputation: 0,
+      defeatedRivalIds: [],
+      codexUnlockIds: [],
+      rivalRecords: {},
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/run');
+
+  const launch = await invokeRoute(route, {
+    body: {
+      missionId: mission.id,
+      deckId: deck.id,
+    },
+  });
+
+  assert.equal(launch.statusCode, 200);
+  assert.equal(launch.body.awaitingChoice, true);
+  assert.equal(launch.body.rewardGranted, false);
+  assert.equal(launch.body.mission.activeRun.phase, 'event');
+  assert.ok(launch.body.mission.activeRun.availableCounterOptionIds.includes('archive-heist'));
+
+  const resolve = await invokeRoute(route, {
+    body: {
+      missionId: mission.id,
+      deckId: deck.id,
+      counterOptionId: 'archive-heist',
+    },
+  });
+
+  assert.equal(resolve.statusCode, 200);
+  assert.equal(resolve.body.rewardGranted, true);
+  assert.equal(resolve.body.awaitingChoice, undefined);
+  assert.equal(resolve.body.mission.status, 'completed');
+  assert.equal(resolve.body.mission.selectedCounterOptionId, 'archive-heist');
+  assert.equal(resolve.body.mission.activeRun.phase, 'resolved');
+  assert.equal(resolve.body.mission.lastRunSucceeded, true);
+  assert.equal(resolve.body.mission.lastRunRewardOzzies, 140);
+  assert.equal(resolve.body.progression.missionXp, 330);
+  assert.equal(resolve.body.progression.missionOzzies, 160);
+  assert.ok(resolve.body.mission.lastRunStoryBeats.length > 0);
+
+  const persistedMission = adminDb.store.get(`missions/${mission.id}`);
+  assert.equal(persistedMission.status, 'completed');
+  assert.equal(persistedMission.activeRun.selectedCounterOptionId, 'archive-heist');
 });

@@ -257,6 +257,15 @@ function getMissionDefinitionFields(entry) {
   };
 }
 
+function isMissionBlindEntry(mission) {
+  return mission?.isScanned === false;
+}
+
+function getMissionBlindEntryDetail(mission) {
+  const title = typeof mission?.title === 'string' ? mission.title : 'this mission node';
+  return `Blind entry: ${title} has not been scanned, so the courier route fails before the live counter can open.`;
+}
+
 function isMissionCardReady(card, nowMs = Date.now()) {
   const maintenance = card?.maintenance;
   if (!maintenance || maintenance.state === 'active') return true;
@@ -685,9 +694,18 @@ export function registerMissionRoutes(app, {
           throw Object.assign(new Error('Launch the crew before trying to resolve the live event.'), { statusCode: 400 });
         }
 
-        if (!evaluation.eligible) {
+        const blindEntry = isMissionBlindEntry(mission);
+        if (blindEntry || !evaluation.eligible) {
           const failureRisk = buildMissionFailureRisk(mission, deck, now);
-          const failureReasons = evaluation.results.filter((result) => !result.met).map((result) => result.detail);
+          const failureReasons = [
+            ...evaluation.results.filter((result) => !result.met).map((result) => result.detail),
+            ...(blindEntry ? [getMissionBlindEntryDetail(mission)] : []),
+          ];
+          const failureSummary = [
+            ...(blindEntry ? ['Blind entry failed: scan the node before traveling there.'] : []),
+            ...(!evaluation.eligible ? [evaluation.summary] : []),
+            ...(failureRisk ? [failureRisk.summary] : []),
+          ].join(' ');
           const updatedMission = {
             ...mission,
             selectedDeckId: deckId,
@@ -696,7 +714,7 @@ export function registerMissionRoutes(app, {
             activeRun: null,
             lastRunAt: now,
             lastRunSucceeded: false,
-            lastRunSummary: failureRisk ? `${evaluation.summary} ${failureRisk.summary}` : evaluation.summary,
+            lastRunSummary: failureSummary || evaluation.summary,
             lastRunFailureReasons: failureRisk ? [...failureReasons, failureRisk.detail] : failureReasons,
             lastRunEffects: evaluation.statusEffects ?? [],
             lastRunCardOutcomes: failureRisk?.outcomes ?? [],
