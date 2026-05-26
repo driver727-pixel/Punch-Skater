@@ -22,7 +22,7 @@ export interface GeoAtlasMarker {
   offsetX?: number;
   offsetY?: number;
   onClick?: () => void;
-});
+}
 
 export interface GeoAtlasCorridorMarker {
   id: string;
@@ -331,7 +331,7 @@ export const GeoAtlas = memo(function GeoAtlas({
                 boardConfig.wheels,
               )
             : null,
-        });
+        }
       : {
           name: activeDistrictEntry.name,
           weatherSummary: "Corridor exchange hub connecting district routes.",
@@ -746,4 +746,4 @@ export const GeoAtlas = memo(function GeoAtlas({
       )}
     </div>
   );
-}
+});
