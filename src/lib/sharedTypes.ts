@@ -366,6 +366,14 @@ export interface MissionBoardEntry {
   lastRunBoardPlaystyles?: MissionBoardPlaystyle[];
   /** @sprint 7 @owner gamma — Rival memory snapshot attached to the last run. */
   lastRunRivalPressure?: MissionRivalPressure | null;
+  /** @sprint 8 @owner gamma — Grid coordinates for this mission entry on the board. */
+  coordinates?: { x: number; y: number };
+  /** @sprint 8 @owner gamma — Point of interest type for this location. */
+  poiType?: string;
+  /** @sprint 8 @owner gamma — Whether this location has been scanned. */
+  isScanned?: boolean;
+  /** @sprint 8 @owner gamma — Threat level indicator for this location. */
+  threatLevel?: number;
 }
 
 /**
@@ -411,6 +419,8 @@ export interface MissionBoardPayload {
   dailyResetAt?: string;
   /** @sprint 4 @owner gamma — Weekly layer that flavors the current mission cycle. */
   weeklyTheme?: MissionBoardTheme;
+  /** @sprint 8 @owner gamma — ID of the active courier card being tracked on the board. */
+  activeCourierCardId?: string;
 }
 
 /**
