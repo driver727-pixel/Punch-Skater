@@ -567,3 +567,147 @@ test('district world checkpoint route persists sequential travel and marks poi a
   assert.equal(second.body.activeRun.phase, 'at_poi');
   assert.equal(second.body.activeRun.checkpointNodeIndex, 2);
 });
+
+test('district world GET generates and persists a new world with workshop origin and 6 contracts', async () => {
+  const adminDb = createFirestoreHarness();
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('GET', '/api/missions/world');
+  assert.ok(route, 'GET /api/missions/world route must be registered');
+
+  const res = await invokeRoute(route);
+
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.world, 'world payload returned');
+  assert.equal(typeof res.body.world.worldId, 'string');
+  assert.ok(res.body.world.worldId.startsWith('user-1_'));
+  assert.equal(typeof res.body.world.boardDateKey, 'string');
+
+  const workshopNodes = res.body.world.nodes.filter((n) => n.kind === 'workshop');
+  assert.equal(workshopNodes.length, 1, 'exactly one Workshop origin node');
+
+  assert.equal(res.body.world.contracts.length, 6, 'six daily contract POIs');
+  for (const contract of res.body.world.contracts) {
+    assert.equal(typeof contract.nodeId, 'string');
+    assert.ok(['visible', 'locked'].includes(contract.visibility));
+  }
+
+  // Clean separation: no active run yet returns null, world is its own document.
+  assert.equal(res.body.activeRun, null);
+
+  const worldWrites = adminDb.writeLog.filter((entry) => entry.path.startsWith('missionWorlds/'));
+  assert.equal(worldWrites.length, 1, 'generated world persisted exactly once');
+  const runWrites = adminDb.writeLog.filter((entry) => entry.path.startsWith('missionActiveRuns/'));
+  assert.equal(runWrites.length, 0, 'no active-run writes on world hydration');
+});
+
+test('district world GET hydrates a cached world without regenerating it', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const cachedWorld = {
+    worldId,
+    boardDateKey,
+    dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+    nodes: [
+      { id: 'workshop', kind: 'workshop', x: 50, y: 50, label: 'Workshop' },
+      { id: 'poi-0', kind: 'poi', x: 60, y: 60, label: 'Cached POI', contractId: 'contract-cached' },
+    ],
+    edges: [{ from: 'workshop', to: 'poi-0' }],
+    contracts: [
+      {
+        id: 'contract-cached',
+        nodeId: 'poi-0',
+        definitionId: 'def-cached',
+        title: 'Cached Contract',
+        tagline: 'Hydrated from cache',
+        district: 'The Grid',
+        rewardXp: 10,
+        rewardOzzies: 20,
+        visibility: 'visible',
+        status: 'active',
+      },
+    ],
+  };
+  const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: cachedWorld,
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('GET', '/api/missions/world');
+
+  const res = await invokeRoute(route);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.world.worldId, worldId);
+  assert.equal(res.body.world.contracts.length, 1);
+  assert.equal(res.body.world.contracts[0].id, 'contract-cached');
+  assert.equal(res.body.activeRun, null);
+
+  const worldWrites = adminDb.writeLog.filter((entry) => entry.path.startsWith('missionWorlds/'));
+  assert.equal(worldWrites.length, 0, 'cached world must not be re-persisted');
+});
+
+test('district world GET restores a persisted ActiveDistrictRun alongside the world (refresh-safe)', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const cachedWorld = {
+    worldId,
+    boardDateKey,
+    dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+    nodes: [
+      { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+      { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+      { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+    ],
+    edges: [
+      { from: 'workshop', to: 'junction-0' },
+      { from: 'junction-0', to: 'poi-0' },
+    ],
+    contracts: [
+      {
+        id: 'contract-1',
+        nodeId: 'poi-0',
+        definitionId: 'def-1',
+        title: 'Contract One',
+        tagline: 'Restore me',
+        district: 'The Grid',
+        rewardXp: 100,
+        rewardOzzies: 80,
+        visibility: 'visible',
+        status: 'active',
+      },
+    ],
+  };
+  const persistedRun = {
+    runId,
+    uid: 'user-1',
+    worldId,
+    boardDateKey,
+    contractId: 'contract-1',
+    deckId: 'deck-1',
+    deckName: 'Deck One',
+    phase: 'outbound',
+    routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+    checkpointNodeIndex: 1,
+    launchedAt: `${boardDateKey}T01:00:00.000Z`,
+    updatedAt: `${boardDateKey}T01:05:00.000Z`,
+  };
+  const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: cachedWorld,
+    [`missionActiveRuns/${runId}`]: persistedRun,
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('GET', '/api/missions/world');
+
+  const res = await invokeRoute(route);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.world.worldId, worldId, 'world hydrated from cache');
+  assert.ok(res.body.activeRun, 'active run restored');
+  assert.equal(res.body.activeRun.runId, runId);
+  assert.equal(res.body.activeRun.contractId, 'contract-1');
+  assert.equal(res.body.activeRun.phase, 'outbound');
+  assert.equal(res.body.activeRun.checkpointNodeIndex, 1);
+  assert.deepEqual(res.body.activeRun.routeNodeIds, ['workshop', 'junction-0', 'poi-0']);
+
+  assert.equal(adminDb.writeLog.length, 0, 'pure read must not mutate world or run documents');
+});
