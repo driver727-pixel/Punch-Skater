@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { memo, useMemo, useState, type CSSProperties } from "react";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { DISTRICT_LORE } from "../lib/lore";
 import type { District, RoadCorridor, WorldLocation } from "../lib/types";
@@ -22,7 +22,7 @@ export interface GeoAtlasMarker {
   offsetX?: number;
   offsetY?: number;
   onClick?: () => void;
-}
+});
 
 export interface GeoAtlasCorridorMarker {
   id: string;
@@ -242,7 +242,7 @@ function getRoutePath(
   return `M ${start.x} ${start.y} L ${p1x} ${p1y} Q ${via.x} ${via.y} ${p2x} ${p2y} L ${end.x} ${end.y}`;
 }
 
-export function GeoAtlas({
+export const GeoAtlas = memo(function GeoAtlas({
   compact = false,
   className,
   markers = [],
@@ -331,7 +331,7 @@ export function GeoAtlas({
                 boardConfig.wheels,
               )
             : null,
-        }
+        });
       : {
           name: activeDistrictEntry.name,
           weatherSummary: "Corridor exchange hub connecting district routes.",
