@@ -542,3 +542,46 @@ test('district rival progression awards only unlock on mission-joust wins', () =
     assert.equal(resolution.joustResult?.districtReputationDelta, undefined);
   }
 });
+
+test('createDailyMissionBoardPayload attaches a valid gridPos to every mission', () => {
+  const payload = createDailyMissionBoardPayload('user-123', '2026-04-26T12:00:00.000Z');
+  assert.equal(payload.missions.length, 6);
+  for (const mission of payload.missions) {
+    assert.ok(mission.gridPos, `mission ${mission.definitionId} is missing gridPos`);
+    assert.equal(typeof mission.gridPos.x, 'number', `gridPos.x must be a number for ${mission.definitionId}`);
+    assert.equal(typeof mission.gridPos.y, 'number', `gridPos.y must be a number for ${mission.definitionId}`);
+    assert.ok(mission.gridPos.x >= 0 && mission.gridPos.x <= 100, `gridPos.x out of range for ${mission.definitionId}`);
+    assert.ok(mission.gridPos.y >= 0 && mission.gridPos.y <= 100, `gridPos.y out of range for ${mission.definitionId}`);
+  }
+});
+
+test('createDailyMissionBoardPayload produces stable gridPos for the same uid and date', () => {
+  const first = createDailyMissionBoardPayload('user-abc', '2026-05-05T08:00:00.000Z');
+  const second = createDailyMissionBoardPayload('user-abc', '2026-05-05T22:59:00.000Z');
+  const firstPositions = first.missions.map((m) => `${m.definitionId}:${m.gridPos.x},${m.gridPos.y}`);
+  const secondPositions = second.missions.map((m) => `${m.definitionId}:${m.gridPos.x},${m.gridPos.y}`);
+  assert.deepEqual(firstPositions, secondPositions);
+});
+
+test('createDailyMissionBoardPayload produces non-overlapping gridPos across all 6 contracts', () => {
+  const payload = createDailyMissionBoardPayload('user-123', '2026-04-26T12:00:00.000Z');
+  const positions = payload.missions.map((m) => `${m.gridPos.x},${m.gridPos.y}`);
+  const unique = new Set(positions);
+  assert.equal(unique.size, positions.length, `Duplicate gridPos detected: ${positions.join(' | ')}`);
+});
+
+test('createDailyMissionBoardPayload places featured missions in different grid zones than non-featured', () => {
+  // 'open-territory' theme (week of 2026-04-26) features Glass City + The Grid.
+  // Featured anchors are centre-ish (x≈32-55, y≈28-30), rest are near corners.
+  const payload = createDailyMissionBoardPayload('user-123', '2026-04-26T12:00:00.000Z');
+  const theme = payload.weeklyTheme;
+  const featured = payload.missions.filter((m) => theme.featuredDistricts.includes(m.district));
+  const rest = payload.missions.filter((m) => !theme.featuredDistricts.includes(m.district));
+  // Verify featured and non-featured sets are both non-empty.
+  assert.ok(featured.length > 0, 'No featured missions found in payload');
+  assert.ok(rest.length > 0, 'No non-featured missions found in payload');
+  // The x-centroid of featured contracts must differ from the rest.
+  const avgFeaturedX = featured.reduce((s, m) => s + m.gridPos.x, 0) / featured.length;
+  const avgRestX = rest.reduce((s, m) => s + m.gridPos.x, 0) / rest.length;
+  assert.notEqual(Math.round(avgFeaturedX), Math.round(avgRestX), 'Featured and rest contracts share the same x-centroid');
+});

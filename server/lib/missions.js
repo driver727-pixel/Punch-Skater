@@ -1528,6 +1528,77 @@ export function resolveMissionCounterChoice(mission, deck, activeRun, counterOpt
   };
 }
 
+// Zone anchors for each weekly theme on the 100×100 relative grid.
+// Featured districts land in theme-specific prominent zones; the remaining
+// four contracts fill the rest. Anchors are spaced >= 20 units apart so that
+// the ±4 jitter applied per mission never produces overlapping positions.
+const GRID_ZONE_LAYOUTS = {
+  'breaker-week': {
+    // Batteryville + Forest: industrial feel — featured contracts in the lower half.
+    featuredAnchors: [{ x: 12, y: 58 }, { x: 62, y: 65 }],
+    restAnchors: [{ x: 12, y: 10 }, { x: 62, y: 10 }, { x: 12, y: 35 }, { x: 62, y: 35 }],
+  },
+  'ghost-lights': {
+    // Nightshade + Airaway: shadowed edges — featured contracts pushed to opposing corners.
+    featuredAnchors: [{ x: 8, y: 8 }, { x: 65, y: 68 }],
+    restAnchors: [{ x: 40, y: 8 }, { x: 65, y: 35 }, { x: 8, y: 55 }, { x: 40, y: 65 }],
+  },
+  'open-territory': {
+    // Glass City + Grid: open map — featured contracts centred, rest pushed to corners.
+    featuredAnchors: [{ x: 32, y: 28 }, { x: 55, y: 30 }],
+    restAnchors: [{ x: 8, y: 8 }, { x: 72, y: 8 }, { x: 5, y: 65 }, { x: 68, y: 65 }],
+  },
+};
+
+const GRID_JITTER_RANGE = 4;
+const GRID_MAX_COORD = 94; // leave room for a node at the far edge
+
+/**
+ * Assigns a deterministic, non-overlapping `gridPos: { x, y }` to each mission
+ * on a 100×100 relative layout. Featured-district missions land in the theme's
+ * prominent zone anchors; the rest fill the remaining anchors. A small
+ * hash-seeded jitter (±GRID_JITTER_RANGE units) is applied so the board looks
+ * organic rather than rigidly grid-locked, while all positions remain at least
+ * ~12 units apart.
+ */
+function distributeMissionsOnGrid(missions, weeklyTheme, uid, boardDateKey) {
+  const layout = GRID_ZONE_LAYOUTS[weeklyTheme?.id] ?? GRID_ZONE_LAYOUTS['open-territory'];
+  const featuredDistricts = new Set(weeklyTheme?.featuredDistricts ?? []);
+
+  const featured = missions.filter((m) => featuredDistricts.has(m.district));
+  const rest = missions.filter((m) => !featuredDistricts.has(m.district));
+
+  // Sort each group deterministically so the anchor assignment is stable for the
+  // same uid + date, regardless of the order missions were passed in.
+  const gridSortKey = (m) => hashString(`${uid}|${boardDateKey}|grid-order|${m.definitionId}`);
+  featured.sort((a, b) => gridSortKey(a) - gridSortKey(b));
+  rest.sort((a, b) => gridSortKey(a) - gridSortKey(b));
+
+  // Map each mission to an anchor index.
+  const anchorByMissionId = new Map();
+  featured.forEach((m, i) => {
+    anchorByMissionId.set(m.id, layout.featuredAnchors[i % layout.featuredAnchors.length]);
+  });
+  rest.forEach((m, i) => {
+    anchorByMissionId.set(m.id, layout.restAnchors[i % layout.restAnchors.length]);
+  });
+
+  return missions.map((m) => {
+    const anchor = anchorByMissionId.get(m.id) ?? { x: 10, y: 10 };
+    // Hash-based jitter in [-GRID_JITTER_RANGE, +GRID_JITTER_RANGE] on each axis.
+    const jitterSpan = GRID_JITTER_RANGE * 2 + 1;
+    const jx = (hashString(`${uid}|${boardDateKey}|grid-jx|${m.definitionId}`) % jitterSpan) - GRID_JITTER_RANGE;
+    const jy = (hashString(`${uid}|${boardDateKey}|grid-jy|${m.definitionId}`) % jitterSpan) - GRID_JITTER_RANGE;
+    return {
+      ...m,
+      gridPos: {
+        x: Math.max(0, Math.min(GRID_MAX_COORD, anchor.x + jx)),
+        y: Math.max(0, Math.min(GRID_MAX_COORD, anchor.y + jy)),
+      },
+    };
+  });
+}
+
 function applyWeeklyThemeToDefinition(definition, theme) {
   const isFeatured = theme.featuredDistricts.includes(definition.district);
   if (!isFeatured) {
@@ -1652,13 +1723,15 @@ export function createDailyMissionBoardPayload(uid, now = new Date().toISOString
     weatherPayload,
   );
 
+  const missions = selectedDefinitions.map((definition) => (
+    createDailyMissionBoardEntry(uid, boardDateKey, now, definition)
+  ));
+
   return {
     boardDateKey,
     dailyResetAt,
     weeklyTheme,
-    missions: selectedDefinitions.map((definition) => (
-      createDailyMissionBoardEntry(uid, boardDateKey, now, definition)
-    )),
+    missions: distributeMissionsOnGrid(missions, weeklyTheme, uid, boardDateKey),
   };
 }
 
