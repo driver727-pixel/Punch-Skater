@@ -366,6 +366,7 @@ export function registerMissionRoutes(app, {
   app.use('/api/missions/board', missionRateLimit);
   app.use('/api/missions/run', missionRateLimit);
   app.use('/api/missions/map', missionRateLimit);
+  app.use('/api/missions/token', missionRateLimit);
   app.use('/api/missions/courier-token', missionRateLimit);
 
   app.post('/api/missions/map', createMissionFalProxyHandler({
@@ -378,7 +379,7 @@ export function registerMissionRoutes(app, {
     label: 'Mission map',
   }));
 
-  app.post('/api/missions/courier-token', createMissionFalProxyHandler({
+  const courierTokenProxyHandler = createMissionFalProxyHandler({
     FAL_KEY,
     authenticateFirebaseUser,
     buildFalImageRequest,
@@ -386,7 +387,9 @@ export function registerMissionRoutes(app, {
     resolveFalProfile,
     imageSize: COURIER_TOKEN_IMAGE_SIZE,
     label: 'Mission courier token',
-  }));
+  });
+  app.post('/api/missions/token', courierTokenProxyHandler);
+  app.post('/api/missions/courier-token', courierTokenProxyHandler);
 
   app.get('/api/missions/board', async (req, res) => {
     if (!adminDb) {
