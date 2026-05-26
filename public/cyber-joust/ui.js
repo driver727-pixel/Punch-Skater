@@ -11,6 +11,19 @@ try {
 }
 
 const labelSize = (value) => `${Math.round(value)}px`;
+const fallbackScores = [
+  { playerName: 'CyberGrip', score: 3250 },
+  { playerName: 'NeonLance', score: 2100 },
+  { playerName: 'RampFiend', score: 1750 }
+];
+
+const createLobbyId = () => {
+  if (window.crypto?.randomUUID) {
+    return `room-${window.crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+  }
+
+  return `room-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -254,11 +267,7 @@ export class MenuScene extends Phaser.Scene {
 
   fetchLeaderboard() {
     if (!db) {
-      this.highScores = [
-        { playerName: 'CyberGrip', score: 3250 },
-        { playerName: 'NeonLance', score: 2100 },
-        { playerName: 'RampFiend', score: 1750 }
-      ];
+      this.highScores = fallbackScores;
       this.renderLeaderboardText();
       return;
     }
@@ -274,11 +283,7 @@ export class MenuScene extends Phaser.Scene {
       });
     } catch (error) {
       console.warn('Could not load high scores from database.', error);
-      this.highScores = [
-        { playerName: 'CyberGrip', score: 3250 },
-        { playerName: 'NeonLance', score: 2100 },
-        { playerName: 'RampFiend', score: 1750 }
-      ];
+      this.highScores = fallbackScores;
       this.renderLeaderboardText();
     }
   }
@@ -367,7 +372,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   copyRoomLink() {
-    const lobbyId = `room-${Math.random().toString(36).slice(2, 7)}`;
+    const lobbyId = createLobbyId();
     const shareUrl = `${window.location.origin}${window.location.pathname}?room=${lobbyId}`;
 
     const onSuccess = () => this.showToast('ROOM LINK COPIED! SHARE WITH A FRIEND!', '#39ff14');

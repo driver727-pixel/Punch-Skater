@@ -20,25 +20,28 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
-    const roomId = new URLSearchParams(window.location.search).get('room');
+    this.roomId = new URLSearchParams(window.location.search).get('room');
 
-    const bg = this.add.image(width / 2, height / 2, 'cyber-bg');
-    bg.setDisplaySize(width, height).setAlpha(0.72);
-    this.add.rectangle(width / 2, height / 2, width, height, 0x04040c, 0.45);
+    this.bg = this.add.image(width / 2, height / 2, 'cyber-bg')
+      .setDisplaySize(width, height)
+      .setAlpha(0.72)
+      .setDepth(-3);
+    this.overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x04040c, 0.45)
+      .setDepth(-2);
 
     this.drawArena(width, height);
 
-    this.infoText = this.add.text(width / 2, 34, roomId ? `ROOM ${roomId.toUpperCase()}` : 'SOLO GRID', {
+    this.infoText = this.add.text(width / 2, 34, this.roomId ? `ROOM ${this.roomId.toUpperCase()}` : 'SOLO GRID', {
       fontFamily: '"Press Start 2P"',
       fontSize: '12px',
       color: '#ffea00'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(3);
 
     this.statusText = this.add.text(width / 2, height - 28, `DECK ${this.cosmetics.deck.toUpperCase()} • ${this.cosmetics.weapon.toUpperCase()}`, {
       fontFamily: '"Press Start 2P"',
       fontSize: '10px',
       color: '#ffffff'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(3);
 
     this.createPlayer(width, height);
     this.createUi(width, height);
@@ -53,6 +56,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   drawArena(width, height) {
+    this.arenaElements?.forEach((element) => element.destroy());
+
     const grid = this.add.graphics();
     grid.lineStyle(1, 0x00f0ff, 0.22);
 
@@ -64,9 +69,13 @@ export class GameScene extends Phaser.Scene {
       grid.lineBetween(width * 0.08, y, width * 0.92, y);
     }
 
-    this.add.rectangle(width / 2, height / 2, width * 0.84, height * 0.62)
+    const frame = this.add.rectangle(width / 2, height / 2, width * 0.84, height * 0.62)
       .setStrokeStyle(4, 0xff007f, 0.8)
       .setFillStyle(0x0c1026, 0.2);
+
+    grid.setDepth(-1);
+    frame.setDepth(-1);
+    this.arenaElements = [grid, frame];
   }
 
   createPlayer(width, height) {
@@ -75,6 +84,7 @@ export class GameScene extends Phaser.Scene {
     this.redrawPlayer();
     this.player.add(this.playerBoard);
     this.physics.add.existing(this.player);
+    this.player.setDepth(2);
     this.player.body.setCircle(26).setOffset(-26, -26).setCollideWorldBounds(true).setDrag(520, 520).setMaxVelocity(340, 340);
   }
 
@@ -129,22 +139,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   createUi(width, height) {
-    const backButton = this.add.text(22, 22, '← MENU', {
+    this.backButton = this.add.text(22, 22, '← MENU', {
       fontFamily: '"Press Start 2P"',
       fontSize: '12px',
       color: '#00f0ff'
-    }).setOrigin(0, 0.5).setInteractive({ cursor: 'pointer' });
+    }).setOrigin(0, 0.5).setInteractive({ cursor: 'pointer' }).setDepth(3);
 
-    backButton.on('pointerdown', () => {
+    this.backButton.on('pointerdown', () => {
       window.history.replaceState({}, '', window.location.pathname);
       this.scene.start('MenuScene');
     });
 
-    this.add.text(width - 22, 22, `${this.cosmetics.colorName.toUpperCase()} RIDER`, {
+    this.riderText = this.add.text(width - 22, 22, `${this.cosmetics.colorName.toUpperCase()} RIDER`, {
       fontFamily: '"Press Start 2P"',
       fontSize: '10px',
       color: '#ff007f'
-    }).setOrigin(1, 0.5);
+    }).setOrigin(1, 0.5).setDepth(3);
   }
 
   createControls() {
@@ -166,12 +176,18 @@ export class GameScene extends Phaser.Scene {
       follow: this.player,
       followOffset: { x: -12, y: 18 }
     });
+    this.particles.setDepth(1);
   }
 
   createMobileControls(width, height) {
+    this.mobileControlsGroup?.destroy(true);
+    this.mobileControlsGroup = null;
+
     if (!this.sys.game.device.input.touch) {
       return;
     }
+
+    this.mobileControlsGroup = this.add.container(0, 0).setDepth(4);
 
     const makeButton = (x, y, label, key, fill) => {
       const circle = this.add.circle(x, y, 28, fill, 0.72).setStrokeStyle(2, 0xffffff, 0.65);
@@ -196,6 +212,7 @@ export class GameScene extends Phaser.Scene {
       text.on('pointerup', press(false));
       text.on('pointerout', press(false));
       text.on('pointerupoutside', press(false));
+      this.mobileControlsGroup.add([circle, text]);
     };
 
     makeButton(60, height - 88, '◀', 'left', 0x00f0ff);
@@ -206,7 +223,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   handleResize(gameSize) {
-    this.scene.restart({ cosmetics: this.cosmetics, width: gameSize.width, height: gameSize.height });
+    const { width, height } = gameSize;
+
+    this.bg.setPosition(width / 2, height / 2).setDisplaySize(width, height);
+    this.overlay.setPosition(width / 2, height / 2).setSize(width, height);
+    this.drawArena(width, height);
+    this.infoText.setPosition(width / 2, 34);
+    this.statusText.setPosition(width / 2, height - 28);
+    this.backButton.setPosition(22, 22);
+    this.riderText.setPosition(width - 22, 22);
+    this.player.setPosition(
+      Phaser.Math.Clamp(this.player.x, width * 0.08, width * 0.92),
+      Phaser.Math.Clamp(this.player.y, height * 0.18, height * 0.82)
+    );
+    this.createMobileControls(width, height);
   }
 
   triggerBurst(targetX, targetY) {
