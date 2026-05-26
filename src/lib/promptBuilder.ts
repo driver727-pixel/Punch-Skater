@@ -1,7 +1,8 @@
 import { createSeededRandom } from "./prng";
 import { resolveBoardPoseScene } from "./boardPoseScenes";
 import { getCoverIdentityProfile } from "./coverIdentity";
-import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
+import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity, type District } from "./types";
+import type { MissionBoardTheme } from "./sharedTypes";
 
 // ── Lookup tables ──────────────────────────────────────────────────────────────
 
@@ -462,5 +463,186 @@ export function buildImagePrompt(prompts: CardPrompts): string {
     `Adult subject (21+), fully clothed, SFW, LGBTQIA+ inclusive.`,
     `Grounded human likeness only — believable adult courier, readable eyes, natural nose and mouth, coherent facial structure, no body-horror distortions.`,
     CRITICAL_HUMAN_CHARACTER_CONSTRAINT,
+  );
+}
+
+// ── Procedural map prompt ───────────────────────────────────────────────────────
+
+/**
+ * Tactical environment descriptor keyed by lore district.
+ *
+ * Each entry captures the top-down grid geometry that distinguishes that
+ * district: landmark silhouettes, path topology, and cover arrangement as
+ * they would appear in a strict overhead satellite readout.
+ */
+const MAP_DISTRICT_TACTICAL: Record<District, string> = {
+  Airaway:
+    "floating sky-city platform suspended above the cloud layer — " +
+    "elevated mag-rail bridges radiating from a central hub, pressurised walkway rings, " +
+    "tiered corporate tower blocks, sharply delineated drop-off ledges at every platform edge, " +
+    "and automated maintenance drone pads at the periphery",
+  Batteryville:
+    "heavy industrial complex — parallel rail yard tracks converging on a central freight hub, " +
+    "rectangular refinery modules, cylindrical storage silos, open-air switchway junctions, " +
+    "three-dimensional scaffold scaffolding casting hard overhead shadows, " +
+    "and wide loading corridors flanked by pipeline runs",
+  "The Grid":
+    "hyper-ordered surveillance district — perfect orthogonal street grid, " +
+    "federal block perimeters with no irregular corners, omnipresent sensor-array pylons at every intersection, " +
+    "fiber-conduit trenches running flush with every avenue, " +
+    "and a central server farm compound subdivided into symmetric quadrants",
+  Nightshade:
+    "underground tunnel labyrinth — narrow branching laneways with tight choke-point intersections, " +
+    "irregular vault chambers used as meeting nodes, " +
+    "rave-hall alcoves recessed into tunnel walls, " +
+    "dead-end maintenance shafts, and hidden crew safe-house cells clustered near the deeper tunnels",
+  "The Forest":
+    "elevated canopy settlement — irregular organic paths winding between massive trunk columns, " +
+    "rope-bridge connectors spanning open canopy gaps, " +
+    "circular platform nodes at treetop level, " +
+    "natural root barrier walls offering hard cover, " +
+    "and ground-level ruins half-swallowed by bioluminescent undergrowth",
+  "Glass City":
+    "deserted glass-tower megalopolis — wide empty boulevards forming a canyon grid between skyscraper footprints, " +
+    "holographic-ad-tower bases as hard obstacle blocks, " +
+    "rain-slicked plaza zones with long unobstructed sightlines, " +
+    "drone-corridor airspace lanes marked as restricted zones, " +
+    "and sparse utility-conduit covers as the only ground-level break in the open pavement",
+};
+
+/**
+ * Maps a numeric threat level (1 – 5) to a tactical annotation layer description.
+ *
+ * The description controls how many enemy indicators, patrol routes, and
+ * hazard zones appear in the generated map image.
+ */
+function buildThreatAnnotation(threatLevel: number): string {
+  const clamped = Math.min(5, Math.max(1, Math.round(threatLevel)));
+  switch (clamped) {
+    case 1:
+      return (
+        "Threat level: minimal. " +
+        "Sparse enemy markers at distant patrol waypoints only. " +
+        "Clear open routing with no blocked corridors. " +
+        "One small hazard zone shown in pale grey near the map edge."
+      );
+    case 2:
+      return (
+        "Threat level: low. " +
+        "Two or three enemy patrol-route lines shown as dashed vectors. " +
+        "One restricted zone boundary outlined in dark grey. " +
+        "Majority of corridors are passable."
+      );
+    case 3:
+      return (
+        "Threat level: elevated. " +
+        "Multiple patrol circuit lines with overlap at chokepoints. " +
+        "Two defined restricted sectors with hatched fill. " +
+        "Checkpoint markers at key intersections. " +
+        "A minority of corridors are blocked."
+      );
+    case 4:
+      return (
+        "Threat level: high. " +
+        "Dense interlocking patrol circuits covering most routing corridors. " +
+        "Three or more restricted sectors. " +
+        "Reinforced-position markers at tactical nodes. " +
+        "Flanking-vector indicators pointing inward. " +
+        "Only narrow passage windows remain uncontested."
+      );
+    case 5:
+      return (
+        "Threat level: critical lockdown. " +
+        "Maximum enemy saturation — overlapping patrol zones blanket almost every corridor. " +
+        "Reinforced barricade symbols on all major access routes. " +
+        "Multiple overlapping restricted sectors with cross-hatched fill. " +
+        "Only a single stealth-window gap is visible in the coverage net."
+      );
+    default:
+      return "Threat level: unknown. No patrol annotations.";
+  }
+}
+
+/**
+ * Builds a fal.ai image generation prompt for a **procedural tactical map tile**.
+ *
+ * The resulting image is a strict top-down, high-contrast monochrome satellite
+ * vector grid readout of the lore district(s) associated with the current weekly
+ * theme, annotated with threat-level overlays.  It is intended to be used as a
+ * backdrop for the Joustur Skatur™ and Race Arena tactical grid environments.
+ *
+ * @param weeklyTheme  - The active weekly mission-board theme, which supplies
+ *                       the label, flavor summary, and featured districts.
+ * @param threatLevel  - Integer from 1 (minimal) to 5 (critical lockdown) that
+ *                       controls the density of patrol and hazard overlays.
+ * @returns             A complete prompt string ready for {@link generateImage}.
+ */
+export function buildProceduralMapPrompt(
+  weeklyTheme: MissionBoardTheme,
+  threatLevel: number,
+): string {
+  // Resolve the primary district to drive environmental geometry.
+  const primaryDistrict: District =
+    weeklyTheme.featuredDistricts?.[0] ?? "The Grid";
+  const districtTactical =
+    MAP_DISTRICT_TACTICAL[primaryDistrict] ??
+    MAP_DISTRICT_TACTICAL["The Grid"];
+
+  // Optional secondary district for a split-zone composite map.
+  const secondaryDistrict: District | undefined =
+    weeklyTheme.featuredDistricts?.[1];
+  const secondaryTactical = secondaryDistrict
+    ? MAP_DISTRICT_TACTICAL[secondaryDistrict]
+    : undefined;
+
+  const districtZoneBlock = secondaryTactical
+    ? `Primary zone: ${districtTactical}. Secondary zone divided by a bold boundary line: ${secondaryTactical}.`
+    : `Zone: ${districtTactical}.`;
+
+  const threatBlock = buildThreatAnnotation(threatLevel);
+
+  return joinPromptBlocks(
+    // Core visual style
+    "Top-down orthographic tactical map, strict overhead satellite view, " +
+      "monochrome vector graphic, high-contrast black and white ink, " +
+      "clean geometric line work, no perspective distortion, no isometric angle. " +
+      "Style: military-grade battlefield readout crossed with punk underground zine — " +
+      "thick black borders, sharp white fill, micro-detail hatching for terrain variation.",
+
+    // Grid overlay
+    "A precise square tactical grid overlaid across the entire image. " +
+      "Grid lines are thin, evenly spaced, and rendered in mid-grey so they read " +
+      "as a navigation aid without overwhelming the terrain silhouettes beneath them. " +
+      "Grid squares are uniform and axis-aligned.",
+
+    // Lore environment geometry
+    districtZoneBlock,
+
+    // Theme flavor — drives subtle environmental detail choices
+    `Weekly operational theme: "${weeklyTheme.label}" — ${weeklyTheme.summary}`,
+
+    // Threat level annotation overlay
+    threatBlock,
+
+    // Tactical landmark icons
+    "Include minimal icon set rendered as bold flat symbols: " +
+      "two circular spawn-point markers (P1 and P2) on opposite map edges, " +
+      "one diamond objective marker at the map centre, " +
+      "and up to four square cover-block outlines scattered across mid-map. " +
+      "All icons use the same monochrome ink palette as the terrain.",
+
+    // Stealth Alcove markers (matching the five path-position alcoves in the game rules)
+    "Mark five Stealth Alcove positions with small inverted-triangle symbols " +
+      "placed at path positions 1, 5, 10, 15, and 19 relative to the P1 spawn edge.",
+
+    // Strict exclusions
+    "No characters, no people, no skateboards, no vehicles, no text labels, no watermarks. " +
+      "No colour, no gradients, no shading washes — strictly black, white, and mid-grey only. " +
+      "No perspective, no 3D rendering, no isometric projection. " +
+      "No photographic elements, no textures derived from photographs.",
+
+    // Safety and output quality
+    "Clean vector-art readout, 4K, print-ready resolution. " +
+      "SFW, family friendly, PG rated.",
   );
 }
