@@ -859,6 +859,10 @@ registerMissionRoutes(app, {
   missionRateLimit,
   authenticateFirebaseUser,
   districtWeatherService,
+  FAL_KEY,
+  buildFalImageRequest,
+  normalizeFalProfile,
+  resolveFalProfile,
 });
 
 registerRewardRoutes(app, {
