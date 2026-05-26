@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { MissionTransitScene } from "./MissionTransitScene";
 import { ProceduralMap } from "./ProceduralMap";
 import { useAuth } from "../context/AuthContext";
@@ -544,6 +544,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [resultPhase, setResultPhase] = useState<1 | 2 | 3>(2);
   const [logExpanded, setLogExpanded] = useState(false);
   const [deckPickerExpanded, setDeckPickerExpanded] = useState(false);
+  const commsLogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isEnabled("MISSIONS", user)) return;
@@ -633,6 +634,12 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   useEffect(() => {
     setDeckPickerExpanded(false);
   }, [selectedMissionId]);
+
+  useEffect(() => {
+    if (commsLogRef.current) {
+      commsLogRef.current.scrollTop = commsLogRef.current.scrollHeight;
+    }
+  }, [selectedStoryBeats]);
 
   const selectedDeck = useMemo(
     () => decks.find((deck) => deck.id === selectedDeckId) ?? decks[0] ?? null,
@@ -1330,56 +1337,81 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                         )}
                       </div>
                     </div>
-                    <div className="mission-fork__header">
-                      <span className="mission-fork__badge">{selectedEncounter.badge}</span>
-                      <p className="mission-fork__prompt">
-                        {selectedAwaitingChoice
-                          ? selectedMission.activeRun?.summary ?? selectedEncounter.threat
-                          : selectedEncounter.prompt}
-                      </p>
-                    </div>
+                    {/* Comms Console — heads-up dialogue when awaiting counter choice */}
                     {selectedAwaitingChoice && (
-                      <>
-                        <div className="mission-intel-tags">
-                          <span className="mission-intel-tag">Current deck: {selectedDeck?.name ?? "No deck selected"}</span>
-                          {liveEncounterRecommendation && (
-                            <span className="mission-intel-tag">Recommended response: {liveEncounterRecommendation.label}</span>
-                          )}
+                      <div className="comms-console">
+                        <div className="comms-console__hud">
+                          <span className="comms-console__badge">{selectedEncounter.badge}</span>
+                          <p className="comms-console__threat">
+                            {selectedMission.activeRun?.summary ?? selectedEncounter.threat}
+                          </p>
+                          <div className="comms-console__meta-row">
+                            <span className="comms-console__meta-tag">{selectedDeck?.name ?? "No deck selected"}</span>
+                            {liveEncounterRecommendation && (
+                              <span className="comms-console__meta-tag comms-console__meta-tag--tip">
+                                ↳ {liveEncounterRecommendation.label}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="mission-intel-tags">
-                          {selectedActiveCards.map((card) => (
-                            <span key={`${selectedMission.id}-${card.id}`} className="mission-intel-tag">
-                              {card.identity.name}
-                            </span>
+
+                        <div
+                          className="comms-console__log"
+                          ref={commsLogRef}
+                          aria-live="polite"
+                          aria-label="Mission comms log"
+                        >
+                          {selectedActiveCards.length > 0
+                            ? selectedActiveCards.map((card) => (
+                              <div
+                                key={`${selectedMission.id}-cc-${card.id}`}
+                                className="comms-console__log-entry comms-console__log-entry--card"
+                              >
+                                <span className="comms-console__log-prompt" aria-hidden="true">&gt;</span>
+                                <span className="comms-console__log-text">{card.identity.name} — active</span>
+                              </div>
+                            ))
+                            : (
+                              <div className="comms-console__log-entry">
+                                <span className="comms-console__log-prompt" aria-hidden="true">·</span>
+                                <span className="comms-console__log-text">No active hand revealed</span>
+                              </div>
+                            )}
+                          {(selectedMission.activeRun?.statusEffects ?? []).map((effect) => (
+                            <div
+                              key={`${selectedMission.id}-cc-fx-${effect.id}`}
+                              className="comms-console__log-entry comms-console__log-entry--effect"
+                            >
+                              <span className="comms-console__log-prompt" aria-hidden="true">!</span>
+                              <span className="comms-console__log-text">{formatStatusEffect(effect)}</span>
+                            </div>
                           ))}
-                          {selectedActiveCards.length === 0 && (
-                            <span className="mission-intel-tag">No active hand revealed</span>
+                          {selectedPlaystyles.map((playstyle) => (
+                            <div
+                              key={`${selectedMission.id}-cc-ps-${playstyle.id}`}
+                              className="comms-console__log-entry"
+                            >
+                              <span className="comms-console__log-prompt" aria-hidden="true">·</span>
+                              <span className="comms-console__log-text">{formatPlaystyle(playstyle)}</span>
+                            </div>
+                          ))}
+                          {selectedStoryBeats.map((beat) => (
+                            <div
+                              key={`${selectedMission.id}-cc-${beat.id}`}
+                              className={`comms-console__log-entry comms-console__log-entry--${beat.tone ?? "neutral"}`}
+                            >
+                              <span className="comms-console__log-label">{beat.label}</span>
+                              <span className="comms-console__log-text">{beat.summary}</span>
+                            </div>
+                          ))}
+                          {selectedRivalPressure && (
+                            <div className="comms-console__log-entry comms-console__log-entry--risk">
+                              <span className="comms-console__log-prompt" aria-hidden="true">⚠</span>
+                              <span className="comms-console__log-text">{formatRivalPressure(selectedRivalPressure)}</span>
+                            </div>
                           )}
                         </div>
-                        {(selectedMission.activeRun?.statusEffects?.length ?? 0) > 0 && (
-                          <ul className="mission-intel-list">
-                            {(selectedMission.activeRun?.statusEffects ?? []).map((effect) => (
-                              <li key={`${selectedMission.id}-${effect.id}`}>{formatStatusEffect(effect)}</li>
-                            ))}
-                          </ul>
-                        )}
-                        {selectedPlaystyles.length > 0 && (
-                          <ul className="mission-intel-list">
-                            {selectedPlaystyles.map((playstyle) => (
-                              <li key={`${selectedMission.id}-${playstyle.id}`}>{formatPlaystyle(playstyle)}</li>
-                            ))}
-                          </ul>
-                        )}
-                        {selectedStoryBeats.length > 0 && (
-                          <ul className="mission-intel-list">
-                            {selectedStoryBeats.map((beat) => (
-                              <li key={`${selectedMission.id}-${beat.id}`}>{formatStoryBeat(beat)}</li>
-                            ))}
-                          </ul>
-                        )}
-                        {selectedRivalPressure && (
-                          <p className="mission-intel-card__quote">{formatRivalPressure(selectedRivalPressure)}</p>
-                        )}
+
                         {selectedJoustOption && availableJoustTactics.length > 0 && (
                           <div className="mission-joust-picker">
                             <div>
@@ -1403,78 +1435,125 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                             </div>
                           </div>
                         )}
+
+                        <div className="comms-console__responses" role="group" aria-label="Counter responses">
+                          {selectedEncounter.options.map((option, idx) => {
+                            const isAvailable = (selectedMission.activeRun?.availableCounterOptionIds ?? []).includes(option.id);
+                            const isPending = pendingCounterOptionId === option.id;
+                            const rewardType = option.rewardXpDelta ? "xp" : option.rewardOzziesDelta ? "ozzies" : null;
+                            return (
+                              <button
+                                key={`${selectedMission.id}-${option.id}`}
+                                type="button"
+                                className={[
+                                  "comms-console__response",
+                                  !isAvailable
+                                    ? "comms-console__response--blocked"
+                                    : rewardType === "xp"
+                                      ? "comms-console__response--xp"
+                                      : rewardType === "ozzies"
+                                        ? "comms-console__response--ozzies"
+                                        : "",
+                                  isPending ? "comms-console__response--pending" : "",
+                                ].filter(Boolean).join(" ")}
+                                onClick={() => handleResolveEncounter(
+                                  option.id,
+                                  option.encounterType === "joust" ? selectedJoustTactic : null,
+                                )}
+                                aria-pressed={selectedCounterOption?.id === option.id}
+                                disabled={!isAvailable || runningMissionId === selectedMission.id}
+                              >
+                                <span className="comms-console__response-key" aria-hidden="true">
+                                  [{String.fromCharCode(65 + idx)}]
+                                </span>
+                                <span className="comms-console__response-body">
+                                  <span className="comms-console__response-label">
+                                    {option.encounterType === "joust" ? "⚔️ " : rewardType === "ozzies" ? "💰 " : rewardType === "xp" ? "⚡ " : ""}
+                                    {option.label}
+                                  </span>
+                                  <span className="comms-console__response-meta">
+                                    {getEncounterOptionMetaText({ ...option, available: isAvailable }, true)}
+                                    {(option.rewardXpDelta || option.rewardOzziesDelta) ? (
+                                      <>
+                                        {" · "}
+                                        {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
+                                        {option.rewardXpDelta && option.rewardOzziesDelta ? " / " : null}
+                                        {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
+                                      </>
+                                    ) : null}
+                                  </span>
+                                  <span className="comms-console__response-desc">{getCounterOptionRequirementText(option)}</span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            className={`comms-console__response comms-console__response--exit${pendingCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " comms-console__response--pending" : ""}`}
+                            onClick={() => handleResolveEncounter(HARD_CUTOUT_COUNTER_ID)}
+                            disabled={runningMissionId === selectedMission.id}
+                          >
+                            <span className="comms-console__response-key" aria-hidden="true">[X]</span>
+                            <span className="comms-console__response-body">
+                              <span className="comms-console__response-label">🚪 Emergency exit</span>
+                              <span className="comms-console__response-meta">Always available</span>
+                              <span className="comms-console__response-desc">Finish safely with smaller rewards.</span>
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fork review — encounter options shown read-only after result resolves */}
+                    {!selectedAwaitingChoice && (
+                      <>
+                        <div className="mission-fork__header">
+                          <span className="mission-fork__badge">{selectedEncounter.badge}</span>
+                          <p className="mission-fork__prompt">{selectedEncounter.prompt}</p>
+                        </div>
+                        <div className="mission-fork__options">
+                          {selectedEncounter.options.map((option) => {
+                            const isActive = selectedCounterOption?.id === option.id;
+                            const rewardType = option.rewardXpDelta ? "xp" : option.rewardOzziesDelta ? "ozzies" : null;
+                            const toneClass = option.available === false
+                              ? "mission-fork__option--tone-blocked"
+                              : rewardType === "xp"
+                                ? "mission-fork__option--tone-xp"
+                                : rewardType === "ozzies"
+                                  ? "mission-fork__option--tone-ozzies"
+                                  : "mission-fork__option--tone-neutral";
+                            return (
+                              <button
+                                key={`${selectedMission.id}-${option.id}`}
+                                type="button"
+                                className={[
+                                  "mission-fork__option",
+                                  toneClass,
+                                  isActive ? "mission-fork__option--active" : "",
+                                ].filter(Boolean).join(" ")}
+                                aria-pressed={isActive}
+                                disabled
+                              >
+                                <span className="mission-fork__option-label">
+                                  {option.encounterType === "joust" ? "⚔️ " : rewardType === "ozzies" ? "💰 " : rewardType === "xp" ? "⚡ " : ""}
+                                  {option.label}
+                                </span>
+                                <span className="mission-fork__option-meta">{getEncounterOptionMetaText(option, false)}</span>
+                                <span className="mission-fork__option-desc">{option.description}</span>
+                                <span className="mission-fork__option-desc">{getCounterOptionRequirementText(option)}</span>
+                                {(option.rewardXpDelta || option.rewardOzziesDelta) && (
+                                  <span className="mission-fork__option-desc">
+                                    {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
+                                    {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
+                                    {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </>
                     )}
-                    <div className="mission-fork__options">
-                      {selectedEncounter.options.map((option) => {
-                        const isAvailable = selectedAwaitingChoice
-                          ? (selectedMission.activeRun?.availableCounterOptionIds ?? []).includes(option.id)
-                          : option.available !== false;
-                        const isActive = selectedCounterOption?.id === option.id || pendingCounterOptionId === option.id;
-                        const isPending = pendingCounterOptionId === option.id;
-                        const rewardType = option.rewardXpDelta ? "xp" : option.rewardOzziesDelta ? "ozzies" : null;
-                        const toneClass = !isAvailable
-                          ? "mission-fork__option--tone-blocked"
-                          : rewardType === "xp"
-                            ? "mission-fork__option--tone-xp"
-                            : rewardType === "ozzies"
-                              ? "mission-fork__option--tone-ozzies"
-                              : "mission-fork__option--tone-neutral";
-                        return (
-                          <button
-                            key={`${selectedMission.id}-${option.id}`}
-                            type="button"
-                            className={[
-                              "mission-fork__option",
-                              toneClass,
-                              isActive ? "mission-fork__option--active" : "",
-                              isPending ? "mission-fork__option--pending" : "",
-                            ].filter(Boolean).join(" ")}
-                            onClick={() => handleResolveEncounter(
-                              option.id,
-                              option.encounterType === "joust" ? selectedJoustTactic : null,
-                            )}
-                            aria-pressed={selectedCounterOption?.id === option.id}
-                            disabled={selectedAwaitingChoice ? !isAvailable || runningMissionId === selectedMission.id : true}
-                          >
-                            <span className="mission-fork__option-label">
-                              {option.encounterType === "joust" ? "⚔️ " : rewardType === "ozzies" ? "💰 " : rewardType === "xp" ? "⚡ " : ""}
-                              {option.label}
-                            </span>
-                            <span className="mission-fork__option-meta">
-                              {selectedAwaitingChoice
-                                ? getEncounterOptionMetaText({ ...option, available: isAvailable }, true)
-                                : getEncounterOptionMetaText(option, false)}
-                            </span>
-                            <span className="mission-fork__option-desc">{option.description}</span>
-                            {(selectedAwaitingChoice || selectedResultRevealed) && (
-                              <span className="mission-fork__option-desc">
-                                {getCounterOptionRequirementText(option)}
-                              </span>
-                            )}
-                            {(selectedAwaitingChoice || selectedResultRevealed) && (option.rewardXpDelta || option.rewardOzziesDelta) && (
-                              <span className="mission-fork__option-desc">
-                                {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}
-                                {option.rewardXpDelta && option.rewardOzziesDelta ? " · " : null}
-                                {option.rewardOzziesDelta ? `${formatForkRewardDelta(option.rewardOzziesDelta)} Oz` : null}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                      {selectedAwaitingChoice && (
-                        <button
-                          type="button"
-                          className={`mission-fork__option mission-fork__option--tone-exit${pendingCounterOptionId === HARD_CUTOUT_COUNTER_ID ? " mission-fork__option--active mission-fork__option--pending" : ""}`}
-                          onClick={() => handleResolveEncounter(HARD_CUTOUT_COUNTER_ID)}
-                          disabled={runningMissionId === selectedMission.id}
-                        >
-                          <span className="mission-fork__option-label">🚪 Emergency exit</span>
-                          <span className="mission-fork__option-meta">Always available</span>
-                          <span className="mission-fork__option-desc">Finish safely with smaller rewards.</span>
-                        </button>
-                      )}
-                    </div>
                   </section>
                 )}
 

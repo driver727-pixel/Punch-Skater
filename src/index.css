@@ -14750,6 +14750,243 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     box-shadow: 0 0 0 1px rgba(255,200,50,0.42), 0 0 22px rgba(255,200,50,0.24);
   }
 }
+
+/* ── Comms Console Dialogue Wrapper ─────────────────────────────────── */
+.comms-console {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,220,200,0.28);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,220,200,0.018) 3px,
+      rgba(0,220,200,0.018) 4px
+    ),
+    linear-gradient(180deg, rgba(8,14,24,0.96), rgba(6,10,20,0.98));
+  box-shadow: 0 0 24px rgba(0,220,200,0.08), inset 0 0 40px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+.comms-console__hud {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.comms-console__badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: rgba(0,220,200,0.14);
+  border: 1px solid rgba(0,220,200,0.36);
+  color: #00dcc8;
+  text-shadow: 0 0 10px rgba(0,220,200,0.5);
+  box-shadow: 0 0 10px rgba(0,220,200,0.1);
+}
+.comms-console__threat {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(180,240,230,0.88);
+}
+.comms-console__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.comms-console__meta-tag {
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  background: rgba(0,220,200,0.1);
+  border: 1px solid rgba(0,220,200,0.2);
+  color: rgba(0,220,200,0.78);
+}
+.comms-console__meta-tag--tip {
+  color: #a0f8ee;
+  background: rgba(0,220,200,0.16);
+  border-color: rgba(0,220,200,0.32);
+}
+/* Scrollable story-beat log */
+.comms-console__log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,220,200,0.16);
+  background: rgba(0,6,14,0.6);
+  scroll-behavior: smooth;
+  font-family: "Courier New", "Lucida Console", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.comms-console__log::-webkit-scrollbar {
+  width: 4px;
+}
+.comms-console__log::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(0,220,200,0.3);
+}
+.comms-console__log-entry {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: rgba(160,248,238,0.76);
+}
+.comms-console__log-entry--neutral {
+  color: rgba(160,248,238,0.82);
+}
+.comms-console__log-entry--reward {
+  color: rgba(0,255,136,0.9);
+}
+.comms-console__log-entry--risk {
+  color: rgba(255,100,120,0.9);
+}
+.comms-console__log-entry--effect {
+  color: #c07bff;
+}
+.comms-console__log-entry--card {
+  color: rgba(130,220,255,0.8);
+}
+.comms-console__log-prompt {
+  flex-shrink: 0;
+  width: 14px;
+  color: rgba(0,220,200,0.5);
+  user-select: none;
+}
+.comms-console__log-label {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #00dcc8;
+  margin-right: 4px;
+}
+.comms-console__log-label::after {
+  content: ":";
+}
+.comms-console__log-text {
+  flex: 1;
+}
+/* Terminal response buttons */
+.comms-console__responses {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.comms-console__response {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,220,200,0.22);
+  background: rgba(0,14,28,0.7);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, box-shadow 0.14s, transform 0.1s;
+}
+.comms-console__response:hover:not(:disabled) {
+  border-color: rgba(0,220,200,0.5);
+  background: rgba(0,220,200,0.06);
+  transform: translateX(2px);
+  box-shadow: 0 2px 12px rgba(0,220,200,0.1);
+}
+.comms-console__response:active:not(:disabled) {
+  transform: translateX(0);
+  box-shadow: 0 0 0 1px rgba(0,220,200,0.3), 0 0 16px rgba(0,220,200,0.14);
+}
+.comms-console__response:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+.comms-console__response--pending {
+  animation: comms-response-pending 0.8s ease-in-out infinite alternate;
+}
+.comms-console__response--xp {
+  border-color: rgba(0,255,136,0.28);
+}
+.comms-console__response--xp:hover:not(:disabled) {
+  border-color: rgba(0,255,136,0.5);
+  background: rgba(0,255,136,0.04);
+}
+.comms-console__response--ozzies {
+  border-color: rgba(255,201,77,0.28);
+}
+.comms-console__response--ozzies:hover:not(:disabled) {
+  border-color: rgba(255,201,77,0.5);
+  background: rgba(255,201,77,0.04);
+}
+.comms-console__response--blocked {
+  border-color: rgba(255,80,100,0.2);
+  opacity: 0.5;
+}
+.comms-console__response--exit {
+  border-color: rgba(255,200,50,0.22);
+}
+.comms-console__response--exit:hover:not(:disabled) {
+  border-color: rgba(255,200,50,0.45);
+  background: rgba(255,200,50,0.04);
+}
+.comms-console__response-key {
+  flex-shrink: 0;
+  font-family: "Courier New", "Lucida Console", monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #00dcc8;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 8px rgba(0,220,200,0.5);
+  padding-top: 1px;
+}
+.comms-console__response-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.comms-console__response-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.comms-console__response-meta {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(0,220,200,0.72);
+}
+.comms-console__response-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+@keyframes comms-response-pending {
+  from { box-shadow: 0 0 0 1px rgba(0,220,200,0.2), 0 0 10px rgba(0,220,200,0.1); }
+  to   { box-shadow: 0 0 0 1px rgba(0,220,200,0.5), 0 0 20px rgba(0,220,200,0.22); }
+}
+@media (max-width: 600px) {
+  .comms-console__response {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .comms-console__log {
+    max-height: 180px;
+  }
+}
 @media (max-width: 800px) {
   .mission-panel__header {
     flex-direction: column;
