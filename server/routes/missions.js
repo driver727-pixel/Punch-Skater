@@ -16,6 +16,16 @@ const PROFILE_COLLECTION = 'userProfiles';
 const SYSTEM = 'mission_board';
 const SCHEMA_VERSION = 2;
 const DEFAULT_FAILURE_LOCK_MINUTES = 15;
+const FAL_PROXY_TIMEOUT_MS = 300_000;
+const DEFAULT_FAL_IMAGE_MODEL_URL = 'https://fal.run/fal-ai/flux-lora';
+const MISSION_MAP_IMAGE_SIZE = { width: 1024, height: 1024 };
+const COURIER_TOKEN_IMAGE_SIZE = { width: 512, height: 512 };
+const MIN_FAL_DIMENSION = 64;
+const MAX_FAL_DIMENSION = 1536;
+const MIN_INFERENCE_STEPS = 1;
+const MAX_INFERENCE_STEPS = 50;
+const MIN_GUIDANCE_SCALE = 1;
+const MAX_GUIDANCE_SCALE = 20;
 
 const MISSION_FAILURE_CONSEQUENCES = {
   Airaway: {
@@ -69,6 +79,147 @@ function sortMissionBoardEntries(missions) {
     if (aOrder !== bOrder) return aOrder - bOrder;
     return String(a.title ?? '').localeCompare(String(b.title ?? ''));
   });
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function sanitizeMissionProxyText(value, fieldName, { required = false, maxLength = 4_000 } = {}) {
+  const trimmed = typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+  if (!trimmed) {
+    if (required) {
+      throw Object.assign(new Error(`${fieldName} is required.`), { statusCode: 400 });
+    }
+    return undefined;
+  }
+  return trimmed;
+}
+
+function sanitizeMissionProxyInteger(value, { fieldName, minimum, maximum } = {}) {
+  if (value == null || value === '') return undefined;
+  const parsed = Number.parseInt(String(value), 10);
+  if (!Number.isInteger(parsed) || parsed < minimum || parsed > maximum) {
+    throw Object.assign(new Error(`${fieldName} must be an integer between ${minimum} and ${maximum}.`), { statusCode: 400 });
+  }
+  return parsed;
+}
+
+function sanitizeMissionProxyNumber(value, { fieldName, minimum, maximum } = {}) {
+  if (value == null || value === '') return undefined;
+  const parsed = Number.parseFloat(String(value));
+  if (!Number.isFinite(parsed) || parsed < minimum || parsed > maximum) {
+    throw Object.assign(new Error(`${fieldName} must be a number between ${minimum} and ${maximum}.`), { statusCode: 400 });
+  }
+  return parsed;
+}
+
+function sanitizeMissionProxyImageSize(value, fallback) {
+  if (value == null || value === '') return fallback;
+  if (typeof value === 'string') return value.trim().slice(0, 64) || fallback;
+  if (!isPlainObject(value)) {
+    throw Object.assign(new Error('image_size must be a preset string or a width/height object.'), { statusCode: 400 });
+  }
+  const width = sanitizeMissionProxyInteger(value.width, {
+    fieldName: 'image_size.width',
+    minimum: MIN_FAL_DIMENSION,
+    maximum: MAX_FAL_DIMENSION,
+  });
+  const height = sanitizeMissionProxyInteger(value.height, {
+    fieldName: 'image_size.height',
+    minimum: MIN_FAL_DIMENSION,
+    maximum: MAX_FAL_DIMENSION,
+  });
+  if (!width || !height) {
+    throw Object.assign(new Error('image_size.width and image_size.height are required.'), { statusCode: 400 });
+  }
+  return {
+    width,
+    height,
+  };
+}
+
+function sanitizeMissionFalProxyBody(body = {}, defaults = {}) {
+  if (!isPlainObject(body)) {
+    throw Object.assign(new Error('Request body must be a JSON object.'), { statusCode: 400 });
+  }
+
+  return {
+    prompt: sanitizeMissionProxyText(body.prompt, 'prompt', { required: true }),
+    negative_prompt: sanitizeMissionProxyText(body.negative_prompt, 'negative_prompt'),
+    seed: sanitizeMissionProxyInteger(body.seed, {
+      fieldName: 'seed',
+      minimum: 0,
+      maximum: 4_294_967_295,
+    }),
+    image_size: sanitizeMissionProxyImageSize(body.image_size, defaults.imageSize),
+    num_inference_steps: sanitizeMissionProxyInteger(body.num_inference_steps, {
+      fieldName: 'num_inference_steps',
+      minimum: MIN_INFERENCE_STEPS,
+      maximum: MAX_INFERENCE_STEPS,
+    }),
+    guidance_scale: sanitizeMissionProxyNumber(body.guidance_scale, {
+      fieldName: 'guidance_scale',
+      minimum: MIN_GUIDANCE_SCALE,
+      maximum: MAX_GUIDANCE_SCALE,
+    }),
+    fal_profile: 'default',
+    output_format: 'png',
+    enable_safety_checker: true,
+    num_images: 1,
+  };
+}
+
+async function parseFalProxyError(upstream) {
+  const text = await upstream.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+}
+
+function createMissionFalProxyHandler({
+  FAL_KEY,
+  authenticateFirebaseUser,
+  buildFalImageRequest,
+  resolveFalProfile,
+  normalizeFalProfile,
+  imageSize,
+  label,
+}) {
+  return async (req, res) => {
+    try {
+      if (!FAL_KEY) {
+        res.status(503).json({ error: `${label} generation is not configured.` });
+        return;
+      }
+
+      await authenticateFirebaseUser(req);
+      const sanitizedBody = sanitizeMissionFalProxyBody(req.body, { imageSize });
+      const normalizedProfile = normalizeFalProfile('default');
+      const profileSettings = resolveFalProfile(normalizedProfile);
+      const upstream = await fetch(profileSettings.modelUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Key ${FAL_KEY}`,
+        },
+        body: JSON.stringify(await buildFalImageRequest(sanitizedBody)),
+        signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
+      });
+
+      if (!upstream.ok) {
+        res.status(upstream.status).json(await parseFalProxyError(upstream));
+        return;
+      }
+
+      res.json(await upstream.json());
+    } catch (error) {
+      console.error(`${label} proxy error:`, error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? `${label} proxy failed.` });
+    }
+  };
 }
 
 function getProgression(profile) {
@@ -207,9 +358,35 @@ export function registerMissionRoutes(app, {
   missionRateLimit,
   authenticateFirebaseUser,
   districtWeatherService,
+  FAL_KEY = '',
+  buildFalImageRequest = async (body) => body,
+  normalizeFalProfile = () => 'default',
+  resolveFalProfile = () => ({ modelUrl: process.env.FAL_IMAGE_MODEL_URL || DEFAULT_FAL_IMAGE_MODEL_URL }),
 }) {
   app.use('/api/missions/board', missionRateLimit);
   app.use('/api/missions/run', missionRateLimit);
+  app.use('/api/missions/map', missionRateLimit);
+  app.use('/api/missions/courier-token', missionRateLimit);
+
+  app.post('/api/missions/map', createMissionFalProxyHandler({
+    FAL_KEY,
+    authenticateFirebaseUser,
+    buildFalImageRequest,
+    normalizeFalProfile,
+    resolveFalProfile,
+    imageSize: MISSION_MAP_IMAGE_SIZE,
+    label: 'Mission map',
+  }));
+
+  app.post('/api/missions/courier-token', createMissionFalProxyHandler({
+    FAL_KEY,
+    authenticateFirebaseUser,
+    buildFalImageRequest,
+    normalizeFalProfile,
+    resolveFalProfile,
+    imageSize: COURIER_TOKEN_IMAGE_SIZE,
+    label: 'Mission courier token',
+  }));
 
   app.get('/api/missions/board', async (req, res) => {
     if (!adminDb) {
