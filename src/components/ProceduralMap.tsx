@@ -146,6 +146,18 @@ export function ProceduralMap({
     };
   }, [cacheKey, effectiveTheme, missions.length, threatLevel]);
 
+  const activePosition = useMemo(() => {
+    if (selectedMissionId) {
+      const found = missions.find((m) => m.id === selectedMissionId);
+      if (found) {
+        const index = missions.indexOf(found);
+        return getMissionPosition(found, index);
+      }
+    }
+    if (missions.length > 0) return getMissionPosition(missions[0], 0);
+    return { x: 50, y: 50 };
+  }, [missions, selectedMissionId]);
+
   const missionNodes = useMemo(() => missions.map((mission, index) => {
     const districtTheme = DISTRICT_MAP_THEME[mission.district];
     const eligible = missionEligibilityByMissionId.get(mission.id);
@@ -224,6 +236,12 @@ export function ProceduralMap({
             </span>
           </button>
         ))}
+
+        <div
+          className="procedural-map__courier-token"
+          style={{ left: `${activePosition.x}%`, top: `${activePosition.y}%` }}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="procedural-map__console" role="listbox" aria-label="Mission comms console">
