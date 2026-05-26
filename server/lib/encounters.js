@@ -142,4 +142,3 @@ export function resolveCheckpointEncounter(encounter, optionId) {
     resolvedAt: new Date().toISOString(),
   };
 }
-
