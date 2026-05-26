@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 
-const CONTROL_KEYS = ['left', 'right', 'up', 'down', 'boost'];
+const VIRTUAL_CONTROL_KEYS = ['left', 'right', 'up', 'down', 'boost'];
 
 export class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
-    this.virtualControls = Object.fromEntries(CONTROL_KEYS.map((key) => [key, false]));
+    this.virtualControls = Object.fromEntries(VIRTUAL_CONTROL_KEYS.map((key) => [key, false]));
     this.boostCooldown = 0;
+    this.pendingBoost = false;
   }
 
   init(data) {
@@ -199,6 +200,9 @@ export class GameScene extends Phaser.Scene {
 
       const press = (value) => () => {
         this.virtualControls[key] = value;
+        if (key === 'boost' && value) {
+          this.pendingBoost = true;
+        }
         circle.setAlpha(value ? 1 : 0.72);
       };
 
@@ -284,7 +288,7 @@ export class GameScene extends Phaser.Scene {
     this.boostCooldown -= delta;
     const wantsBoost = Phaser.Input.Keyboard.JustDown(this.wasd.SHIFT)
       || Phaser.Input.Keyboard.JustDown(this.wasd.SPACE)
-      || this.virtualControls.boost;
+      || this.pendingBoost;
 
     if (wantsBoost && this.boostCooldown <= 0) {
       const facing = new Phaser.Math.Vector2(1, 0).setAngle(this.player.rotation || 0).scale(180);
@@ -297,5 +301,7 @@ export class GameScene extends Phaser.Scene {
         // Ignore audio failures.
       }
     }
+
+    this.pendingBoost = false;
   }
 }
