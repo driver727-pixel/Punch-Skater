@@ -156,6 +156,18 @@ const MISSION_WORLD_CHECKPOINT_API_URL = resolveApiUrl(
   (import.meta.env.VITE_MISSIONS_WORLD_CHECKPOINT_API_URL as string | undefined)?.trim(),
   "/api/missions/world/checkpoint",
 );
+const MISSION_WORLD_POI_RESOLVE_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_POI_RESOLVE_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/poi/resolve",
+);
+const MISSION_WORLD_INBOUND_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_INBOUND_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/inbound/start",
+);
+const MISSION_WORLD_ENCOUNTER_RESOLVE_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_ENCOUNTER_RESOLVE_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/encounter/resolve",
+);
 
 export async function getDistrictWorld(uid: string, userEmail?: string | null): Promise<DistrictWorldPayload> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
@@ -249,6 +261,80 @@ export async function persistDistrictCheckpoint(
       body: JSON.stringify({ runId, nodeId, checkpointNodeIndex }),
     },
     "Failed to persist checkpoint.",
+  );
+  return payload.activeRun;
+}
+
+export async function resolveDistrictPoiFork(
+  uid: string,
+  runId: string,
+  optionId: string,
+  userEmail?: string | null,
+): Promise<ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
+    MISSION_WORLD_POI_RESOLVE_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId, optionId }),
+    },
+    "Failed to resolve POI fork.",
+  );
+  return payload.activeRun;
+}
+
+export async function startDistrictInboundTravel(
+  uid: string,
+  runId: string,
+  userEmail?: string | null,
+): Promise<ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
+    MISSION_WORLD_INBOUND_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId }),
+    },
+    "Failed to begin inbound travel.",
+  );
+  return payload.activeRun;
+}
+
+export async function resolveDistrictEncounter(
+  uid: string,
+  runId: string,
+  optionId: string,
+  userEmail?: string | null,
+): Promise<ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
+    MISSION_WORLD_ENCOUNTER_RESOLVE_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId, optionId }),
+    },
+    "Failed to resolve encounter.",
   );
   return payload.activeRun;
 }

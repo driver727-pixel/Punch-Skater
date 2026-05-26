@@ -758,7 +758,59 @@ export interface DistrictWorld {
  * Phase of an active district run.
  * @sprint 9 @owner pr1
  */
-export type ActiveRunPhase = "outbound" | "at_poi" | "returning" | "complete" | "failed";
+export type ActiveRunPhase =
+  | "IDLE_AT_BASE"
+  | "TRAVELING_OUTBOUND"
+  | "ENCOUNTER_RESOLUTION"
+  | "AT_POI_FORK"
+  | "TRAVELING_INBOUND"
+  | "MISSION_COMPLETE";
+
+export interface ActiveRunEncounterOption {
+  id: string;
+  label: string;
+  summary: string;
+  rewardXpDelta?: number;
+  rewardOzziesDelta?: number;
+  outcomeTag?: string | null;
+}
+
+export interface ActiveRunEncounter {
+  encounterId: string;
+  definitionId: string;
+  title: string;
+  badge: string;
+  prompt: string;
+  options: ActiveRunEncounterOption[];
+  trigger: {
+    travelPhase: "TRAVELING_OUTBOUND" | "TRAVELING_INBOUND";
+    checkpointNodeIndex: number;
+    nodeId: string;
+    triggeredAt: string;
+  };
+  startedAt: string;
+}
+
+export interface ActiveRunEncounterResult {
+  selectedOptionId: string | null;
+  summary: string;
+  rewardXpDelta: number;
+  rewardOzziesDelta: number;
+  outcomeTag?: string | null;
+  resolvedAt: string;
+}
+
+export interface ActiveRunPoiForkOption {
+  id: string;
+  label: string;
+  summary: string;
+}
+
+export interface ActiveRunPoiForkResolution {
+  selectedOptionId: string;
+  summary: string;
+  resolvedAt: string;
+}
 
 export interface CharacterLayerExtractionContract {
   version: string;
@@ -810,6 +862,22 @@ export interface ActiveDistrictRun {
   routeNodeIds?: string[];
   checkpointNodeIndex?: number;
   lastCheckpointAt?: string;
+  poiForkOptions?: ActiveRunPoiForkOption[];
+  poiForkResolution?: ActiveRunPoiForkResolution;
+  encounterResumePhase?: "TRAVELING_OUTBOUND" | "TRAVELING_INBOUND";
+  activeEncounter?: ActiveRunEncounter | null;
+  encounterLog?: Array<{
+    encounterId: string;
+    definitionId: string;
+    title: string;
+    trigger: ActiveRunEncounter["trigger"];
+    result: ActiveRunEncounterResult;
+  }>;
+  missionProgress?: {
+    poiResolved: boolean;
+    inboundStarted: boolean;
+    returnedToBase: boolean;
+  };
 }
 
 /**

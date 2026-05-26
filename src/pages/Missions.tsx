@@ -3,12 +3,28 @@ import { useAuth } from "../context/AuthContext";
 import { isEnabled } from "../lib/featureFlags";
 import { findAStarRoute, routeUsesValidEdges } from "../lib/pathfinding";
 import type { ActiveDistrictRun, DistrictWorld, DistrictWorldVisuals, WorldContract } from "../lib/sharedTypes";
-import { getDistrictWorld, getDistrictWorldVisuals, persistDistrictCheckpoint, startDistrictRun } from "../services/missions";
+import {
+  getDistrictWorld,
+  getDistrictWorldVisuals,
+  persistDistrictCheckpoint,
+  resolveDistrictEncounter,
+  resolveDistrictPoiFork,
+  startDistrictInboundTravel,
+  startDistrictRun,
+} from "../services/missions";
 import { MissionsMap } from "../components/MissionsMap";
 import { MissionsPanel } from "../components/MissionsPanel";
 
 const PANEL_WIDTH = 320;
 const SEGMENT_DURATION_MS = 700;
+const PHASE_LABELS: Record<string, string> = {
+  IDLE_AT_BASE: "Idle at Base",
+  TRAVELING_OUTBOUND: "Traveling Outbound",
+  ENCOUNTER_RESOLUTION: "Encounter",
+  AT_POI_FORK: "POI Fork",
+  TRAVELING_INBOUND: "Traveling Inbound",
+  MISSION_COMPLETE: "Mission Complete",
+};
 
 function ContractDetailPanel({
   contract,
@@ -94,6 +110,9 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const [error, setError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
   const [segmentTravel, setSegmentTravel] = useState<SegmentTravel | null>(null);
+  const [resolvingEncounterOptionId, setResolvingEncounterOptionId] = useState<string | null>(null);
+  const [resolvingPoiOptionId, setResolvingPoiOptionId] = useState<string | null>(null);
+  const [startingInbound, setStartingInbound] = useState(false);
   const fetchedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const lastCheckpointSyncRef = useRef<string>("");
@@ -107,7 +126,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         setWorld(w);
         setActiveRun(run);
         setVisuals(payloadVisuals ?? w.visuals ?? null);
-        if (run && run.phase !== "complete" && run.phase !== "failed") {
+        if (run && run.phase !== "MISSION_COMPLETE") {
           const contract = w.contracts.find((c) => c.id === run.contractId);
           if (contract) setSelectedContractId(contract.id);
         }
@@ -151,7 +170,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const previewRouteNodeIds = activeRouteNodeIds.length > 1 ? activeRouteNodeIds : selectedRouteNodeIds;
 
   useEffect(() => {
-    if (!world || !activeRun?.routeNodeIds?.length || activeRun.phase !== "outbound") return;
+    if (!world || !activeRun?.routeNodeIds?.length) return;
+    if (activeRun.phase !== "TRAVELING_OUTBOUND" && activeRun.phase !== "TRAVELING_INBOUND") return;
     const routeNodeIds = activeRun.routeNodeIds;
     const checkpointNodeIndex = Math.max(0, Math.min(routeNodeIds.length - 1, activeRun.checkpointNodeIndex ?? 0));
     if (checkpointNodeIndex >= routeNodeIds.length - 1) return;
@@ -224,6 +244,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
 
   const handleLaunch = useCallback(async () => {
     if (!world || !selectedContractId || selectedRouteNodeIds.length < 2 || !routeUsesValidEdges(world.edges, selectedRouteNodeIds)) return;
+    if (activeRun && activeRun.phase !== "MISSION_COMPLETE") return;
     setLaunching(true);
     try {
       const run = await startDistrictRun(uid, selectedContractId, "", "Default Deck", userEmail);
@@ -234,7 +255,47 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     } finally {
       setLaunching(false);
     }
-  }, [uid, world, selectedContractId, selectedRouteNodeIds, userEmail]);
+  }, [uid, world, selectedContractId, selectedRouteNodeIds, userEmail, activeRun]);
+
+  const handleResolveEncounter = useCallback(async (optionId: string) => {
+    if (!activeRun) return;
+    setResolvingEncounterOptionId(optionId);
+    try {
+      const run = await resolveDistrictEncounter(uid, activeRun.runId, optionId, userEmail);
+      setActiveRun(run);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to resolve encounter.");
+    } finally {
+      setResolvingEncounterOptionId(null);
+    }
+  }, [activeRun, uid, userEmail]);
+
+  const handleResolvePoi = useCallback(async (optionId: string) => {
+    if (!activeRun) return;
+    setResolvingPoiOptionId(optionId);
+    try {
+      const run = await resolveDistrictPoiFork(uid, activeRun.runId, optionId, userEmail);
+      setActiveRun(run);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to resolve POI fork.");
+    } finally {
+      setResolvingPoiOptionId(null);
+    }
+  }, [activeRun, uid, userEmail]);
+
+  const handleStartInbound = useCallback(async () => {
+    if (!activeRun) return;
+    setStartingInbound(true);
+    try {
+      const run = await startDistrictInboundTravel(uid, activeRun.runId, userEmail);
+      setActiveRun(run);
+      lastCheckpointSyncRef.current = "";
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to begin inbound travel.");
+    } finally {
+      setStartingInbound(false);
+    }
+  }, [activeRun, uid, userEmail]);
 
   if (loading) {
     return (
@@ -253,8 +314,15 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   }
 
   const activeTraveling = Boolean(
-    activeRun && activeRun.phase === "outbound" && (activeRun.checkpointNodeIndex ?? 0) < ((activeRun.routeNodeIds?.length ?? 0) - 1),
+    activeRun
+    && (activeRun.phase === "TRAVELING_OUTBOUND" || activeRun.phase === "TRAVELING_INBOUND")
+    && (activeRun.checkpointNodeIndex ?? 0) < ((activeRun.routeNodeIds?.length ?? 0) - 1),
   );
+  const runInProgress = Boolean(activeRun && activeRun.phase !== "MISSION_COMPLETE");
+  const phaseLabel = activeRun ? (PHASE_LABELS[activeRun.phase] ?? activeRun.phase) : PHASE_LABELS.IDLE_AT_BASE;
+  const activeEncounter = activeRun?.phase === "ENCOUNTER_RESOLUTION" ? activeRun.activeEncounter : null;
+  const showPoiForkOverlay = activeRun?.phase === "AT_POI_FORK";
+  const poiResolved = Boolean(activeRun?.poiForkResolution?.selectedOptionId);
 
   return (
     <div style={{ display: "flex", width: "100%", height: "100%", background: "#03070e" }}>
@@ -269,17 +337,75 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
           spriteUrl={visuals?.sprite.fallback ? null : visuals?.sprite.url}
           tokenPosition={tokenPosition}
         />
+        {activeEncounter && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(2,6,12,0.82)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ width: "min(520px, 100%)", border: "1px solid rgba(255,58,242,0.45)", background: "rgba(5,10,20,0.97)", padding: 16, color: "#fff", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.1em", color: "#ff3af2", textTransform: "uppercase" }}>{activeEncounter.badge}</div>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{activeEncounter.title}</h3>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.75)", fontSize: 12 }}>{activeEncounter.prompt}</p>
+              <div style={{ display: "grid", gap: 8 }}>
+                {activeEncounter.options.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => handleResolveEncounter(option.id)}
+                    disabled={Boolean(resolvingEncounterOptionId)}
+                    style={{ padding: "10px 12px", border: "1px solid rgba(125,231,255,0.4)", background: "rgba(9,18,28,0.95)", color: "#fff", textAlign: "left", cursor: "pointer" }}
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 700 }}>{option.label}</div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)" }}>{option.summary}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {showPoiForkOverlay && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(2,6,12,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ width: "min(520px, 100%)", border: "1px solid rgba(125,231,255,0.4)", background: "rgba(5,10,20,0.97)", padding: 16, color: "#fff", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.1em", color: "#7de7ff", textTransform: "uppercase" }}>Destination fork</div>
+              <h3 style={{ margin: 0, fontSize: 16 }}>Resolve POI operation</h3>
+              {!poiResolved ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {(activeRun?.poiForkOptions ?? []).map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleResolvePoi(option.id)}
+                      disabled={Boolean(resolvingPoiOptionId)}
+                      style={{ padding: "10px 12px", border: "1px solid rgba(125,231,255,0.4)", background: "rgba(9,18,28,0.95)", color: "#fff", textAlign: "left", cursor: "pointer" }}
+                    >
+                      <div style={{ fontSize: 11, fontWeight: 700 }}>{option.label}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)" }}>{option.summary}</div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <p style={{ margin: 0, color: "rgba(255,255,255,0.8)", fontSize: 12 }}>
+                    {activeRun?.poiForkResolution?.summary ?? "POI resolved."}
+                  </p>
+                  <button
+                    onClick={handleStartInbound}
+                    disabled={startingInbound}
+                    style={{ padding: "10px 12px", border: "1px solid #7de7ff", background: "rgba(125,231,255,0.12)", color: "#7de7ff", textTransform: "uppercase", letterSpacing: "0.08em", cursor: startingInbound ? "wait" : "pointer" }}
+                  >
+                    {startingInbound ? "Starting…" : "Begin inbound travel"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <div style={{ width: PANEL_WIDTH, flexShrink: 0, borderLeft: "1px solid rgba(125,231,255,0.18)", background: "rgba(5,10,20,0.97)", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(125,231,255,0.15)", fontFamily: "monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7de7ff" }}>
-          {world.boardDateKey} · {world.contracts.filter((c) => c.status === "completed").length}/{world.contracts.length} Cleared
+          {world.boardDateKey} · {world.contracts.filter((c) => c.status === "completed").length}/{world.contracts.length} Cleared · {phaseLabel}
         </div>
         {selectedContract ? (
           <ContractDetailPanel
             contract={selectedContract}
             onLaunch={handleLaunch}
             launching={launching}
-            disabled={activeTraveling}
+            disabled={activeTraveling || runInProgress}
           />
         ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.3)", fontFamily: "monospace", fontSize: 11 }}>

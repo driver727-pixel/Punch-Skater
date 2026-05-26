@@ -535,7 +535,7 @@ test('district world checkpoint route persists sequential travel and marks poi a
       runId,
       uid: 'user-1',
       boardDateKey,
-      phase: 'outbound',
+      phase: 'TRAVELING_OUTBOUND',
       contractId: 'contract-1',
       deckId: 'deck-1',
       deckName: 'Deck One',
@@ -558,12 +558,136 @@ test('district world checkpoint route persists sequential travel and marks poi a
   });
   assert.equal(first.statusCode, 200);
   assert.equal(first.body.activeRun.checkpointNodeIndex, 1);
-  assert.equal(first.body.activeRun.phase, 'outbound');
+  assert.equal(first.body.activeRun.phase, 'TRAVELING_OUTBOUND');
 
   const second = await invokeRoute(route, {
     body: { runId, nodeId: 'poi-0', checkpointNodeIndex: 2 },
   });
   assert.equal(second.statusCode, 200);
-  assert.equal(second.body.activeRun.phase, 'at_poi');
+  assert.equal(second.body.activeRun.phase, 'AT_POI_FORK');
   assert.equal(second.body.activeRun.checkpointNodeIndex, 2);
+});
+
+test('district world run rejects checkpoint updates in non-travel phases', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'AT_POI_FORK',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 2,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:00:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/checkpoint');
+
+  const res = await invokeRoute(route, {
+    body: { runId, nodeId: 'workshop', checkpointNodeIndex: 3 },
+  });
+
+  assert.equal(res.statusCode, 409);
+});
+
+test('district world poi resolve + inbound start transitions run phases', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'AT_POI_FORK',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 2,
+      poiForkOptions: [
+        { id: 'silent-handoff', label: 'Silent handoff', summary: 'Quiet resolution.' },
+        { id: 'loud-smash-grab', label: 'Loud smash-and-grab', summary: 'Fast but noisy.' },
+      ],
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:00:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const resolveRoute = app.getRoute('POST', '/api/missions/world/poi/resolve');
+  const inboundRoute = app.getRoute('POST', '/api/missions/world/inbound/start');
+
+  const resolveRes = await invokeRoute(resolveRoute, {
+    body: { runId, optionId: 'silent-handoff' },
+  });
+  assert.equal(resolveRes.statusCode, 200);
+  assert.equal(resolveRes.body.activeRun.phase, 'AT_POI_FORK');
+  assert.equal(resolveRes.body.activeRun.poiForkResolution.selectedOptionId, 'silent-handoff');
+
+  const inboundRes = await invokeRoute(inboundRoute, {
+    body: { runId },
+  });
+  assert.equal(inboundRes.statusCode, 200);
+  assert.equal(inboundRes.body.activeRun.phase, 'TRAVELING_INBOUND');
+  assert.deepEqual(inboundRes.body.activeRun.routeNodeIds, ['poi-0', 'junction-0', 'workshop']);
+  assert.equal(inboundRes.body.activeRun.checkpointNodeIndex, 0);
+});
+
+test('district world encounter resolution resumes prior travel phase', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'ENCOUNTER_RESOLUTION',
+      encounterResumePhase: 'TRAVELING_OUTBOUND',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 1,
+      activeEncounter: {
+        encounterId: 'enc-1',
+        definitionId: 'drone-sweep',
+        title: 'Drone Sweep',
+        badge: 'AIR RISK',
+        prompt: 'Security drones lock onto your lane.',
+        options: [
+          { id: 'duck-service-tunnel', label: 'Duck into service tunnel', summary: 'Clean escape.', rewardXpDelta: 8, rewardOzziesDelta: 10 },
+        ],
+        trigger: {
+          travelPhase: 'TRAVELING_OUTBOUND',
+          checkpointNodeIndex: 1,
+          nodeId: 'junction-0',
+          triggeredAt: `${boardDateKey}T01:03:00.000Z`,
+        },
+        startedAt: `${boardDateKey}T01:03:00.000Z`,
+      },
+      encounterLog: [],
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:03:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/encounter/resolve');
+
+  const res = await invokeRoute(route, {
+    body: { runId, optionId: 'duck-service-tunnel' },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun.phase, 'TRAVELING_OUTBOUND');
+  assert.equal(res.body.activeRun.activeEncounter, null);
+  assert.equal(res.body.activeRun.encounterLog.length, 1);
+  assert.equal(res.body.activeRun.encounterLog[0].result.selectedOptionId, 'duck-service-tunnel');
 });
