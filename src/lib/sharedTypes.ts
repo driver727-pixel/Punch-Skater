@@ -796,9 +796,9 @@ export interface DistrictWorld {
   boardDateKey: string;
   /** ISO timestamp for next daily world reset. */
   dailyResetAt: string;
-  /** Deterministic seed contract used to reproduce this daily world. */
+  /** Deterministic seed metadata used to reproduce this daily world. */
   seed?: DistrictWorldSeedMetadata;
-  /** Graph generation contract and guarantees for this district world. */
+  /** Graph generation metadata and guarantees for this district world. */
   graph?: DistrictWorldGraphMetadata;
   /** All nodes including Workshop, POIs, and junctions. */
   nodes: WorldNode[];
