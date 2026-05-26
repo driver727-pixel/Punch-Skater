@@ -22,6 +22,7 @@ const DISTRICT_MAP_THEME: Record<District, { accent: string; glow: string }> = {
   "The Forest": { accent: "#8cff8a", glow: "rgba(140,255,138,0.24)" },
   "Glass City": { accent: "#ffd98f", glow: "rgba(255,217,143,0.24)" },
 };
+const DEFAULT_MAP_THEME = { accent: "#7de7ff", glow: "rgba(125,231,255,0.24)" };
 
 const FALLBACK_GRID_POSITIONS = [
   { x: 16, y: 18 },
@@ -79,6 +80,24 @@ function getMissionStatusLabel(mission: MissionBoardEntry, eligible: boolean | u
   return "Ready";
 }
 
+function getCachedMapImage(cacheKey: string): string | null {
+  try {
+    return typeof window !== "undefined" ? window.sessionStorage.getItem(cacheKey) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedMapImage(cacheKey: string, imageUrl: string): void {
+  try {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(cacheKey, imageUrl);
+    }
+  } catch {
+    // Cache writes are best-effort; the map can still render without session storage.
+  }
+}
+
 export function ProceduralMap({
   missions,
   selectedMissionId,
@@ -111,7 +130,7 @@ export function ProceduralMap({
       return;
     }
     let cancelled = false;
-    const cachedUrl = typeof window !== "undefined" ? window.sessionStorage.getItem(cacheKey) : null;
+    const cachedUrl = getCachedMapImage(cacheKey);
     if (cachedUrl) {
       setMapImageUrl(cachedUrl);
       setMapImageError(null);
@@ -127,9 +146,7 @@ export function ProceduralMap({
       .then((imageUrl) => {
         if (cancelled) return;
         setMapImageUrl(imageUrl);
-        if (typeof window !== "undefined") {
-          window.sessionStorage.setItem(cacheKey, imageUrl);
-        }
+        setCachedMapImage(cacheKey, imageUrl);
       })
       .catch((error) => {
         if (cancelled) return;
@@ -159,13 +176,15 @@ export function ProceduralMap({
   }, [missions, selectedMissionId]);
 
   const missionNodes = useMemo(() => missions.map((mission, index) => {
-    const districtTheme = DISTRICT_MAP_THEME[mission.district];
+    const districtTheme = DISTRICT_MAP_THEME[mission.district] ?? DEFAULT_MAP_THEME;
     const eligible = missionEligibilityByMissionId.get(mission.id);
+    const sortOrder = typeof mission.sortOrder === "number" ? mission.sortOrder : index;
     return {
       mission,
       eligible,
       statusLabel: getMissionStatusLabel(mission, eligible),
       position: getMissionPosition(mission, index),
+      sortOrder,
       style: {
         "--map-node-accent": districtTheme.accent,
         "--map-node-glow": districtTheme.glow,
@@ -175,7 +194,7 @@ export function ProceduralMap({
 
   const routePath = useMemo(() => missionNodes
     .slice()
-    .sort((left, right) => left.mission.sortOrder - right.mission.sortOrder)
+    .sort((left, right) => left.sortOrder - right.sortOrder)
     .map(({ position }, index) => `${index === 0 ? "M" : "L"} ${position.x} ${position.y}`)
     .join(" "), [missionNodes]);
 
@@ -208,7 +227,7 @@ export function ProceduralMap({
           <span>{mapImageLoading ? "Uplink syncing…" : mapImageError ? "Fallback vector mode" : "fal.ai sector live"}</span>
         </div>
 
-        {missionNodes.map(({ mission, eligible, statusLabel, position, style }) => (
+        {missionNodes.map(({ mission, eligible, statusLabel, position, sortOrder, style }) => (
           <button
             key={mission.id}
             type="button"
@@ -230,7 +249,7 @@ export function ProceduralMap({
             <span className="procedural-map__target-core" aria-hidden="true" />
             <span className="procedural-map__target-pulse" aria-hidden="true" />
             <span className="procedural-map__target-label">
-              <span className="procedural-map__target-code">S-{mission.sortOrder + 1}</span>
+              <span className="procedural-map__target-code">S-{sortOrder + 1}</span>
               <strong>{mission.title}</strong>
               <span>{statusLabel} · {mission.district}</span>
             </span>
@@ -245,7 +264,7 @@ export function ProceduralMap({
       </div>
 
       <div className="procedural-map__console" role="listbox" aria-label="Mission comms console">
-        {missionNodes.map(({ mission, statusLabel, eligible, style }) => (
+        {missionNodes.map(({ mission, statusLabel, eligible, sortOrder, style }) => (
           <button
             key={`${mission.id}-console`}
             type="button"
@@ -260,7 +279,7 @@ export function ProceduralMap({
             style={style}
             onClick={() => onSelectMission(mission.id)}
           >
-            <span className="procedural-map__console-code">[{mission.sortOrder + 1}]</span>
+            <span className="procedural-map__console-code">[{sortOrder + 1}]</span>
             <span className="procedural-map__console-copy">
               <strong>{mission.title}</strong>
               <span>{mission.district} // {statusLabel} // +{mission.rewardXp} XP // +{mission.rewardOzzies} Oz</span>

@@ -635,12 +635,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     setDeckPickerExpanded(false);
   }, [selectedMissionId]);
 
-  useEffect(() => {
-    if (commsLogRef.current) {
-      commsLogRef.current.scrollTop = commsLogRef.current.scrollHeight;
-    }
-  }, [selectedStoryBeats]);
-
   const selectedDeck = useMemo(
     () => decks.find((deck) => deck.id === selectedDeckId) ?? decks[0] ?? null,
     [decks, selectedDeckId],
@@ -708,6 +702,11 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       ?? [],
     [selectedMission],
   );
+  useEffect(() => {
+    if (commsLogRef.current) {
+      commsLogRef.current.scrollTop = commsLogRef.current.scrollHeight;
+    }
+  }, [selectedStoryBeats]);
   const selectedRewardSignals = useMemo(
     () => selectedMission?.lastRunRewardSignals ?? selectedMission?.lastRunJoustResult?.rewardSignals ?? [],
     [selectedMission],
