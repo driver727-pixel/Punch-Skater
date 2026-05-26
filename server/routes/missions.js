@@ -1,4 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore';
+import rateLimit from 'express-rate-limit';
 import {
   HARD_CUTOUT_COUNTER_ID,
   applyMissionRivalRecord,
@@ -361,6 +362,16 @@ export function registerMissionRoutes(app, {
   normalizeFalProfile = () => 'default',
   resolveFalProfile = () => ({ modelUrl: process.env.FAL_IMAGE_MODEL_URL || DEFAULT_FAL_IMAGE_MODEL_URL }),
 }) {
+  const missionFalProxyRateLimit = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    skip: (req) => req?.method === 'OPTIONS',
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many mission image requests — please wait a moment and try again.' },
+    passOnStoreError: true,
+  });
+
   app.use('/api/missions/board', missionRateLimit);
   app.use('/api/missions/run', missionRateLimit);
 
@@ -382,13 +393,13 @@ export function registerMissionRoutes(app, {
     imageSize: COURIER_TOKEN_IMAGE_SIZE,
     label: 'Mission courier token',
   };
-  app.post('/api/missions/map', missionRateLimit, async (req, res) => {
+  app.post('/api/missions/map', missionRateLimit, missionFalProxyRateLimit, async (req, res) => {
     await handleMissionFalProxyRequest(req, res, missionMapProxyOptions);
   });
-  app.post('/api/missions/token', missionRateLimit, async (req, res) => {
+  app.post('/api/missions/token', missionRateLimit, missionFalProxyRateLimit, async (req, res) => {
     await handleMissionFalProxyRequest(req, res, courierTokenProxyOptions);
   });
-  app.post('/api/missions/courier-token', missionRateLimit, async (req, res) => {
+  app.post('/api/missions/courier-token', missionRateLimit, missionFalProxyRateLimit, async (req, res) => {
     await handleMissionFalProxyRequest(req, res, courierTokenProxyOptions);
   });
 

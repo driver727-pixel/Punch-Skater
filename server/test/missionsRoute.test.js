@@ -32,11 +32,27 @@ function createAppHarness() {
 }
 
 async function invokeRoute(route, { body = {}, headers = {} } = {}) {
-  const req = { body, headers };
+  const responseHeaders = new Map();
+  const req = {
+    body,
+    headers,
+    method: 'POST',
+    ip: '127.0.0.1',
+    app: { get: () => false },
+  };
   const res = {
     statusCode: 200,
     body: undefined,
     ended: false,
+    setHeader(name, value) {
+      responseHeaders.set(String(name).toLowerCase(), value);
+    },
+    getHeader(name) {
+      return responseHeaders.get(String(name).toLowerCase());
+    },
+    removeHeader(name) {
+      responseHeaders.delete(String(name).toLowerCase());
+    },
     status(code) {
       this.statusCode = code;
       return this;
