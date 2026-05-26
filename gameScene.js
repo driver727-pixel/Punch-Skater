@@ -10,6 +10,11 @@ const DEFAULT_COSMETICS = {
     deck: 'Speedline',
     weapon: 'Crutch Lance'
 };
+const OCTAGON_SIDES = 8;
+const FLIP_VELOCITY_THRESHOLD = 300;
+const BOT_CHASE_PROBABILITY = 65;
+const CLASH_THRESHOLD = 48;
+const BOUNCE_HEIGHT_MARGIN = 12;
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -57,13 +62,16 @@ export class GameScene extends Phaser.Scene {
         const params = new URLSearchParams(window.location.search);
         this.roomId = params.get('room') || 'cyber-joust-lobby';
         if (!params.get('room')) {
-            window.history.replaceState({}, '', `?room=${this.roomId}`);
+            window.history.replaceState({}, null, `?room=${this.roomId}`);
         }
 
         this.setupSoundButton();
         this.createEnvironment(width, height);
 
-        this.myPlayerId = 'rider_' + Math.random().toString(36).slice(2, 9);
+        const uniqueSegment = typeof crypto?.randomUUID === 'function'
+            ? crypto.randomUUID().slice(0, 8)
+            : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 12);
+        this.myPlayerId = `rider_${uniqueSegment}`;
         this.player = this.spawnSkater(width / 4, height - 250, true, this.myPlayerId);
         this.player.name = 'You';
         this.player.cosmetics = { ...this.myCosmetics };
@@ -278,8 +286,8 @@ export class GameScene extends Phaser.Scene {
             const signX = 25;
             const signY = -5;
             const radius = 14;
-            for (let i = 0; i < 8; i++) {
-                const angle = (i * Math.PI) / 4;
+            for (let i = 0; i < OCTAGON_SIDES; i++) {
+                const angle = (i * Math.PI) / (OCTAGON_SIDES / 2);
                 const px = signX + radius * Math.cos(angle);
                 const py = signY + radius * Math.sin(angle);
                 if (i === 0) {
@@ -444,11 +452,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        const speed = this.myCosmetics.weapon === 'Hockey Stick'
-            ? 380
-            : this.myCosmetics.weapon === 'Street Sign'
-                ? 290
-                : 330;
+        const speed = this.getWeaponThrustSpeed(this.myCosmetics.weapon);
         const upForce = -240;
         const horizForce = this.player.facing === 'right' ? speed * 0.75 : -speed * 0.75;
 
@@ -460,7 +464,7 @@ export class GameScene extends Phaser.Scene {
         const flareY = this.player.y + 15;
         this.thrusterEmitter?.emitParticleAt(flareX, flareY, 15);
 
-        if (Math.abs(this.player.body.velocity.x) > 300) {
+        if (Math.abs(this.player.body.velocity.x) > FLIP_VELOCITY_THRESHOLD) {
             this.tweens.add({
                 targets: this.player,
                 angle: this.player.facing === 'right' ? 360 : -360,
@@ -592,7 +596,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        this.handlePlayerMovement(delta);
+        this.handlePlayerMovement();
         this.checkRampLaunches(this.player);
         this.handleBotsAI(delta);
         this.checkJoustClashes();
@@ -709,7 +713,7 @@ export class GameScene extends Phaser.Scene {
             bot.aiTimer -= delta;
             if (bot.aiTimer <= 0) {
                 bot.aiTimer = Phaser.Math.Between(800, 2200);
-                const chasePlayer = Phaser.Math.Between(0, 100) < 65;
+                const chasePlayer = Phaser.Math.Between(0, 100) < BOT_CHASE_PROBABILITY;
                 bot.aiTargetX = chasePlayer ? this.player.x : Phaser.Math.Between(50, this.scale.width - 50);
 
                 const shouldThrust =
@@ -762,12 +766,9 @@ export class GameScene extends Phaser.Scene {
             }
 
             const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, opponent.x, opponent.y);
-            const clashThreshold = 48;
-            if (dist < clashThreshold) {
+            if (dist < CLASH_THRESHOLD) {
                 const heightDiff = opponent.y - this.player.y;
-                const bounceHeightMargin = 12;
-
-                if (Math.abs(heightDiff) < bounceHeightMargin) {
+                if (Math.abs(heightDiff) < BOUNCE_HEIGHT_MARGIN) {
                     this.executeJoustBounce(this.player, opponent);
                 } else if (heightDiff > 0) {
                     this.executeJoustVictory(this.player, opponent);
@@ -786,9 +787,9 @@ export class GameScene extends Phaser.Scene {
                 }
 
                 const dist = Phaser.Math.Distance.Between(b1.x, b1.y, b2.x, b2.y);
-                if (dist < 45) {
+                if (dist < CLASH_THRESHOLD) {
                     const heightDiff = b2.y - b1.y;
-                    if (Math.abs(heightDiff) < 12) {
+                    if (Math.abs(heightDiff) < BOUNCE_HEIGHT_MARGIN) {
                         this.executeJoustBounce(b1, b2);
                     } else if (heightDiff > 0) {
                         this.executeJoustVictory(b1, b2);
@@ -810,8 +811,8 @@ export class GameScene extends Phaser.Scene {
 
         this.playSfx('sfx-clash', 0.65);
         this.triggerClashVFX((rider1.x + rider2.x) / 2, (rider1.y + rider2.y) / 2, 'medium');
-        this.flashRider(rider1, 0xffffff);
-        this.flashRider(rider2, 0xffffff);
+        this.flashRider(rider1);
+        this.flashRider(rider2);
 
         if (this.room) {
             this.room.publishTopic('game_clash', {
@@ -844,7 +845,7 @@ export class GameScene extends Phaser.Scene {
         loser.body.setVelocity(0, 0);
         loser.body.setAccelerationX(0);
         loser.setAlpha(0.35);
-        this.flashRider(loser, 0xff0055);
+        this.flashRider(loser);
 
         if (winner?.body) {
             winner.body.setVelocityY(-220);
@@ -865,7 +866,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     recoverRider(rider) {
-        if (!rider || !rider.scene) {
+        if (!rider || !rider.active || !rider.scene) {
             return;
         }
 
@@ -997,6 +998,18 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.sound.play(key, { volume });
+    }
+
+    getWeaponThrustSpeed(weaponType) {
+        if (weaponType === 'Hockey Stick') {
+            return 380;
+        }
+
+        if (weaponType === 'Street Sign') {
+            return 290;
+        }
+
+        return 330;
     }
 
     triggerClashVFX(x, y, intensity = 'medium') {
