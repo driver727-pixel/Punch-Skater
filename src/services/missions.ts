@@ -11,6 +11,10 @@ const MISSION_RUN_API_URL = resolveApiUrl(
   (import.meta.env.VITE_MISSIONS_RUN_API_URL as string | undefined)?.trim(),
   "/api/missions/run",
 );
+const MISSION_MAP_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_MAP_API_URL as string | undefined)?.trim(),
+  "/api/missions/map",
+);
 
 async function getIdToken(): Promise<string> {
   const idToken = await auth?.currentUser?.getIdToken();
@@ -84,6 +88,45 @@ export async function runMission(
     },
     body: JSON.stringify({ missionId, deckId, counterOptionId, joustTactic }),
   }, "Failed to resolve mission.");
+}
+
+function extractMissionMapUrl(payload: Record<string, unknown>): string | null {
+  const image = payload.image;
+  if (image && typeof image === "object" && typeof (image as { url?: unknown }).url === "string") {
+    return (image as { url: string }).url;
+  }
+  if (typeof payload.image_url === "string") {
+    return payload.image_url;
+  }
+  const images = payload.images;
+  if (Array.isArray(images) && images[0] && typeof images[0] === "object" && typeof (images[0] as { url?: unknown }).url === "string") {
+    return (images[0] as { url: string }).url;
+  }
+  return null;
+}
+
+export async function generateMissionMapImage(prompt: string, seed: number): Promise<string> {
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<Record<string, unknown>>(MISSION_MAP_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({
+      prompt,
+      seed,
+      image_size: { width: 1024, height: 1024 },
+      num_inference_steps: 28,
+      guidance_scale: 4,
+    }),
+  }, "Failed to generate mission map.");
+
+  const imageUrl = extractMissionMapUrl(payload);
+  if (!imageUrl) {
+    throw new Error("Mission map generation succeeded but no image URL was returned.");
+  }
+  return imageUrl;
 }
 
 export async function trackMissionEvent(): Promise<void> {

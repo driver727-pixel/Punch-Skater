@@ -368,6 +368,8 @@ export interface MissionBoardEntry {
   lastRunRivalPressure?: MissionRivalPressure | null;
   /** @sprint 8 @owner gamma — Grid coordinates for this mission entry on the board. */
   coordinates?: { x: number; y: number };
+  /** @sprint 8 @owner gamma — Deterministic board position used by the procedural sector canvas. */
+  gridPos?: { x: number; y: number };
   /** @sprint 8 @owner gamma — Point of interest type for this location. */
   poiType?: string;
   /** @sprint 8 @owner gamma — Whether this location has been scanned. */

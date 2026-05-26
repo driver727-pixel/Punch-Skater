@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { MissionTransitScene } from "./MissionTransitScene";
-import { GeoAtlas } from "./GeoAtlas";
-import type { GeoAtlasMarker } from "./GeoAtlas";
+import { ProceduralMap } from "./ProceduralMap";
 import { useAuth } from "../context/AuthContext";
 import { DECK_CARD_LIMIT, useDecks } from "../hooks/useDecks";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
@@ -96,13 +95,6 @@ const DISTRICT_THEMES: Record<District, { accent: string; accentSoft: string; gl
   },
 };
 
-/** Pixel offsets applied to mission map markers that share the same district, so pins don't overlap. */
-const SAME_DISTRICT_OFFSETS: Array<{ x: number; y: number }> = [
-  { x: -12, y: -8 },
-  { x: 12, y: -8 },
-  { x: -12, y: 12 },
-  { x: 12, y: 12 },
-];
 const MISSION_DECK_PREVIEW_OFFSET_PER_CARD = 18;
 const MISSION_DECK_PREVIEW_ROTATION_PER_CARD = 6;
 const IMPACT_FRAME_DURATION_MS = 2200;
@@ -817,38 +809,6 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     ]));
   }, [missions, selectedDeck, weatherByDistrict]);
 
-  const missionDistricts = useMemo(
-    (): WorldLocation[] => missions.map((m) => m.district),
-    [missions],
-  );
-
-  const missionMarkers = useMemo((): GeoAtlasMarker[] => {
-    const seenDistricts = new Map<string, number>();
-    return missions.map((mission) => {
-      const seen = seenDistricts.get(mission.district) ?? 0;
-      seenDistricts.set(mission.district, seen + 1);
-      const offset = SAME_DISTRICT_OFFSETS[seen] ?? { x: 0, y: 0 };
-      const presentation = getMissionPresentation(mission);
-      const eligible = missionEligibilityByMissionId.get(mission.id);
-      const tone: GeoAtlasMarker["tone"] = mission.status === "completed"
-        ? "completed"
-        : eligible === false
-          ? "blocked"
-          : undefined;
-      return {
-        id: mission.id,
-        district: mission.district,
-        label: presentation.operation,
-        title: mission.title,
-        active: mission.id === selectedMissionId,
-        tone,
-        offsetX: offset.x,
-        offsetY: offset.y,
-        onClick: () => setSelectedMissionId(mission.id),
-      };
-    });
-  }, [missions, selectedMissionId, missionEligibilityByMissionId]);
-
   const applyMissionRunResult = useCallback((result: MissionRunResponse, fallbackDeckId: string) => {
     setMissions((current) => current.map((mission) => (
       mission.id === result.mission.id ? result.mission : mission
@@ -1020,63 +980,14 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
       {!loading && !error && missions.length > 0 && (
         <div className="mission-grid">
           <div className="mission-atlas-layout">
-            <div className="mission-atlas">
-              <GeoAtlas
-                section="australia"
-                defaultAustraliaExpanded
-                markers={missionMarkers}
-                selectedDistrict={selectedMission?.district ?? null}
-                focusDistricts={missionDistricts}
-                showMarkerLabels="active"
-              />
-            </div>
-            <div className="mission-selector-grid" role="listbox" aria-label="Select a mission">
-              {missions.map((mission) => {
-                const presentation = getMissionPresentation(mission);
-                const eligible = missionEligibilityByMissionId.get(mission.id);
-                const theme = DISTRICT_THEMES[mission.district];
-                return (
-                  <button
-                    key={mission.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selectedMission?.id === mission.id}
-                    className={[
-                      "mission-selector-card",
-                      selectedMission?.id === mission.id ? "mission-selector-card--active" : "",
-                      mission.status === "completed" ? "mission-selector-card--completed" : "",
-                      eligible === false && mission.status !== "completed" ? "mission-selector-card--blocked" : "",
-                    ].filter(Boolean).join(" ")}
-                    style={getMissionThemeStyle(mission.district)}
-                    onClick={() => setSelectedMissionId(mission.id)}
-                  >
-                    <div className="mission-selector-card__scene" aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                      <span className="mission-selector-card__scene-glyph">
-                        {mission.status === "completed" ? "✓" : theme.glyph}
-                      </span>
-                    </div>
-                    <div className="mission-selector-card__topline">
-                      <span className="mission-selector-card__operation">{presentation.operation}</span>
-                      <span className={`mission-selector-card__state${eligible !== false || mission.status === "completed" ? " mission-selector-card__state--available" : ""}`}>
-                        {mission.status === "completed" ? "Cleared" : eligible === false ? "At risk" : "Ready"}
-                      </span>
-                    </div>
-                    <strong className="mission-selector-card__name">{mission.title}</strong>
-                    <p className="mission-selector-card__tagline">{mission.tagline}</p>
-                    <div className="mission-selector-card__stats">
-                      <span className="mission-selector-card__stat mission-selector-card__stat--reward">+{mission.rewardOzzies} Oz</span>
-                      <span className="mission-selector-card__stat">+{mission.rewardXp} XP</span>
-                    </div>
-                    {selectedMission?.id === mission.id && (
-                      <span className="mission-selector-card__check">✓</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <ProceduralMap
+              missions={missions}
+              selectedMissionId={selectedMission?.id ?? null}
+              onSelectMission={setSelectedMissionId}
+              missionEligibilityByMissionId={missionEligibilityByMissionId}
+              weeklyTheme={weeklyTheme}
+              boardDateKey={boardDateKey}
+            />
           </div>
           {selectedMission && (
             <div className="mission-panel mission-panel--detail" style={getMissionThemeStyle(selectedMission.district)}>
