@@ -1,7 +1,13 @@
 import { auth } from "../lib/firebase";
 import { isEnabled } from "../lib/featureFlags";
 import { resolveApiUrl } from "../lib/apiUrls";
-import type { MissionBoardPayload, MissionRunResponse } from "../lib/sharedTypes";
+import type {
+  ActiveDistrictRun,
+  DistrictWorldPayload,
+  DistrictWorldVisuals,
+  MissionBoardPayload,
+  MissionRunResponse,
+} from "../lib/sharedTypes";
 
 const MISSION_BOARD_API_URL = resolveApiUrl(
   (import.meta.env.VITE_MISSIONS_API_URL as string | undefined)?.trim(),
@@ -142,8 +148,16 @@ const MISSION_WORLD_RUN_API_URL = resolveApiUrl(
   (import.meta.env.VITE_MISSIONS_WORLD_RUN_API_URL as string | undefined)?.trim(),
   "/api/missions/world/run",
 );
+const MISSION_WORLD_VISUALS_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_VISUALS_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/visuals",
+);
+const MISSION_WORLD_CHECKPOINT_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_CHECKPOINT_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/checkpoint",
+);
 
-export async function getDistrictWorld(uid: string, userEmail?: string | null): Promise<import("./sharedTypes").DistrictWorldPayload> {
+export async function getDistrictWorld(uid: string, userEmail?: string | null): Promise<DistrictWorldPayload> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
     return {
       world: {
@@ -158,7 +172,7 @@ export async function getDistrictWorld(uid: string, userEmail?: string | null): 
     };
   }
   const idToken = await getIdToken();
-  return fetchMissionJson<import("./sharedTypes").DistrictWorldPayload>(MISSION_WORLD_API_URL, {
+  return fetchMissionJson<DistrictWorldPayload>(MISSION_WORLD_API_URL, {
     headers: { Authorization: ["Bearer", idToken].join(" ") },
   }, "Failed to load district world.");
 }
@@ -169,12 +183,12 @@ export async function startDistrictRun(
   deckId: string,
   deckName: string,
   userEmail?: string | null,
-): Promise<import("./sharedTypes").ActiveDistrictRun> {
+): Promise<ActiveDistrictRun> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
     throw new Error("Missions are not enabled.");
   }
   const idToken = await getIdToken();
-  const payload = await fetchMissionJson<{ activeRun: import("./sharedTypes").ActiveDistrictRun }>(
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
     MISSION_WORLD_RUN_API_URL,
     {
       method: "POST",
@@ -185,6 +199,56 @@ export async function startDistrictRun(
       body: JSON.stringify({ contractId, deckId, deckName }),
     },
     "Failed to start district run.",
+  );
+  return payload.activeRun;
+}
+
+export async function getDistrictWorldVisuals(
+  uid: string,
+  boardDateKey: string,
+  userEmail?: string | null,
+): Promise<DistrictWorldVisuals> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ visuals: DistrictWorldVisuals }>(
+    MISSION_WORLD_VISUALS_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ boardDateKey }),
+    },
+    "Failed to load mission visuals.",
+  );
+  return payload.visuals;
+}
+
+export async function persistDistrictCheckpoint(
+  uid: string,
+  runId: string,
+  nodeId: string,
+  checkpointNodeIndex: number,
+  userEmail?: string | null,
+): Promise<ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
+    MISSION_WORLD_CHECKPOINT_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId, nodeId, checkpointNodeIndex }),
+    },
+    "Failed to persist checkpoint.",
   );
   return payload.activeRun;
 }

@@ -117,6 +117,17 @@ function createFirestoreHarness(initialData = {}) {
   function createRef(path) {
     return {
       path,
+      async get() {
+        return createSnapshot(store.get(path));
+      },
+      async set(data, options = {}) {
+        const previous = store.get(path);
+        const next = options.merge
+          ? { ...(previous ?? {}), ...cloneData(data) }
+          : cloneData(data);
+        store.set(path, next);
+        writeLog.push({ path, data: next, options });
+      },
       collection(name) {
         return createCollection(`${path}/${name}`);
       },
@@ -463,4 +474,96 @@ test('mission run launches then resolves live encounter payloads through the tra
   const persistedMission = adminDb.store.get(`missions/${mission.id}`);
   assert.equal(persistedMission.status, 'completed');
   assert.equal(persistedMission.activeRun.selectedCounterOptionId, 'archive-heist');
+});
+
+test('district world run start returns an A* edge-valid route and checkpoint state', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const world = {
+    worldId,
+    boardDateKey,
+    dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+    nodes: [
+      { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+      { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+      { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+    ],
+    edges: [
+      { from: 'workshop', to: 'junction-0' },
+      { from: 'junction-0', to: 'poi-0' },
+    ],
+    contracts: [
+      {
+        id: 'contract-1',
+        nodeId: 'poi-0',
+        definitionId: 'def-1',
+        title: 'Contract One',
+        tagline: 'First route',
+        district: 'The Grid',
+        rewardXp: 100,
+        rewardOzzies: 80,
+        visibility: 'visible',
+        status: 'active',
+      },
+    ],
+  };
+  const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: world,
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/run');
+
+  const res = await invokeRoute(route, {
+    body: {
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+    },
+  });
+
+  assert.equal(res.statusCode, 201);
+  assert.deepEqual(res.body.activeRun.routeNodeIds, ['workshop', 'junction-0', 'poi-0']);
+  assert.equal(res.body.activeRun.checkpointNodeIndex, 0);
+});
+
+test('district world checkpoint route persists sequential travel and marks poi arrival', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'outbound',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 0,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:00:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/checkpoint');
+
+  const invalidSkip = await invokeRoute(route, {
+    body: { runId, nodeId: 'poi-0', checkpointNodeIndex: 2 },
+  });
+  assert.equal(invalidSkip.statusCode, 400);
+
+  const first = await invokeRoute(route, {
+    body: { runId, nodeId: 'junction-0', checkpointNodeIndex: 1 },
+  });
+  assert.equal(first.statusCode, 200);
+  assert.equal(first.body.activeRun.checkpointNodeIndex, 1);
+  assert.equal(first.body.activeRun.phase, 'outbound');
+
+  const second = await invokeRoute(route, {
+    body: { runId, nodeId: 'poi-0', checkpointNodeIndex: 2 },
+  });
+  assert.equal(second.statusCode, 200);
+  assert.equal(second.body.activeRun.phase, 'at_poi');
+  assert.equal(second.body.activeRun.checkpointNodeIndex, 2);
 });

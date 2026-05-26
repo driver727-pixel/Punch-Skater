@@ -646,3 +646,51 @@ export function buildProceduralMapPrompt(
       "SFW, family friendly, PG rated.",
   );
 }
+
+export const MISSIONS_BACKDROP_PROMPT_VERSION = "missions-backdrop-v1";
+export const MISSIONS_SPRITE_PROMPT_VERSION = "missions-sprite-v1";
+
+export function buildMissionsBackdropPrompt(
+  districts: readonly District[],
+  boardDateKey: string,
+): string {
+  const districtBlock = districts.length
+    ? districts
+      .map((district) => DISTRICT_DESCRIPTIONS[district] ?? district)
+      .join("; ")
+    : DISTRICT_DESCRIPTIONS["The Grid"];
+  return joinPromptBlocks(
+    "Top-down tactical district map backdrop for a neon courier mission interface.",
+    `District blend: ${districtBlock}.`,
+    `Daily seed context: ${boardDateKey || "undated mission board"}.`,
+    "Show roads, intersections, route-friendly alleys, and landmark silhouettes with readable negative space for route overlays.",
+    "Cyberpunk night mood with electric cyan and magenta accents, soft haze, and subtle scanline texture.",
+    "No characters, no riders, no vehicles, no text labels, no logos, no watermark.",
+    "PG, safe-for-work, high contrast, crisp details.",
+  );
+}
+
+export interface MissionsSpritePromptCardInput {
+  name?: string;
+  crew?: string;
+  archetype?: string;
+  style?: string;
+  accentColor?: string;
+}
+
+export function buildMissionsSpritePrompt(card: MissionsSpritePromptCardInput): string {
+  const name = card.name?.trim() || "District Courier";
+  const crew = card.crew?.trim() || "independent crew";
+  const archetype = card.archetype?.trim() || "street runner";
+  const style = card.style?.trim() || "Street";
+  const accent = describeAccentColor(card.accentColor);
+  return joinPromptBlocks(
+    "Single full-body courier sprite for map traversal UI.",
+    `Character: ${name}, ${archetype}, crew ${crew}, outfit style ${style}.`,
+    `Accent palette emphasis: ${accent}.`,
+    "Pose angled forward as if actively moving between checkpoints.",
+    "Transparent or flat neutral background, centered silhouette, no props, no extra people, no text, no logo.",
+    "Clean comic-book rendering, high readability at small sizes.",
+    "SFW, PG rated.",
+  );
+}
