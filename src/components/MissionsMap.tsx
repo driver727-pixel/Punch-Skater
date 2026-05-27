@@ -1,11 +1,26 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
+  getBoardPlacementBox,
+  getCharacterPlacementBox,
+  normalizeBoardPlacement,
+  normalizeCharacterPlacement,
+  resolveBoardLayerOrder,
+} from "../lib/boardPlacement";
+import {
   MISSION_PHASE,
   MISSION_PHASE_LABELS,
   isTerminalMissionPhase,
   normalizeMissionPhase,
 } from "../lib/missionPhaseMachine";
-import type { ActiveDistrictRun, DistrictWorld, WorldContract, WorldEdge, WorldNode } from "../lib/sharedTypes";
+import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
+import type {
+  ActiveDistrictRun,
+  CharacterLayerExtractionContract,
+  DistrictWorld,
+  WorldContract,
+  WorldEdge,
+  WorldNode,
+} from "../lib/sharedTypes";
 
 interface MissionsMapProps {
   world: DistrictWorld;
@@ -15,6 +30,7 @@ interface MissionsMapProps {
   routeNodeIds: string[];
   backdropUrl?: string | null;
   spriteUrl?: string | null;
+  spriteExtraction?: CharacterLayerExtractionContract | null;
   tokenPosition?: { x: number; y: number } | null;
 }
 
@@ -48,6 +64,9 @@ const TOKEN_R = 10;
 // Sprite tokens are rendered larger than the fallback circle so the character
 // art remains legible at the map scale.
 const SPRITE_TOKEN_HALF = 18;
+const FIGURINE_TOKEN_W = 56;
+const FIGURINE_TOKEN_H = 56;
+const FIGURINE_CHARACTER_SCALE = 0.8;
 const LABEL_OFFSET = 14;
 const POI_TITLE_MAX_LENGTH = 18;
 const POI_TITLE_TRUNCATE_AT = 16;
@@ -62,6 +81,72 @@ const DEFAULT_SVG_H = 600;
 // so the viewBox matches the container and all markers stay circular.
 function spx(pct: number, dim: number): number {
   return (pct / 100) * dim;
+}
+
+function renderFigurineLayer(
+  extraction: CharacterLayerExtractionContract,
+  centerX: number,
+  centerY: number,
+) {
+  const tokenLeft = centerX - FIGURINE_TOKEN_W / 2;
+  const tokenTop = centerY - FIGURINE_TOKEN_H / 2;
+  const scene = resolveBoardPoseScene(extraction.sceneSeed ?? extraction.sourceCardId ?? "missions-map");
+  const boardPlacement = normalizeBoardPlacement(scene.key, extraction.boardPlacement);
+  const boardBox = getBoardPlacementBox(scene.key, boardPlacement.scale);
+  const characterPlacement = normalizeCharacterPlacement(extraction.characterPlacement);
+  const characterBox = getCharacterPlacementBox(characterPlacement.scale);
+  const resolvedBoardLayerOrder = resolveBoardLayerOrder(extraction.boardLayerOrder);
+  const boardW = (boardBox.widthPercent / 100) * FIGURINE_TOKEN_W;
+  const boardH = (boardBox.heightPercent / 100) * FIGURINE_TOKEN_H;
+  const boardX = (boardPlacement.xPercent / 100) * FIGURINE_TOKEN_W - boardW / 2;
+  const boardY = (boardPlacement.yPercent / 100) * FIGURINE_TOKEN_H - boardH / 2;
+  const characterTargetW = (characterBox.widthPercent / 100) * FIGURINE_TOKEN_W;
+  const characterTargetH = (characterBox.heightPercent / 100) * FIGURINE_TOKEN_H;
+  const characterW = characterTargetW * FIGURINE_CHARACTER_SCALE;
+  const characterH = characterTargetH * FIGURINE_CHARACTER_SCALE;
+  const characterTargetX = (characterPlacement.xPercent / 100) * FIGURINE_TOKEN_W - characterTargetW / 2;
+  const characterTargetY = (characterPlacement.yPercent / 100) * FIGURINE_TOKEN_H - characterTargetH / 2;
+  const characterX = characterTargetX + (characterTargetW - characterW) / 2;
+  const characterY = characterTargetY + characterTargetH - characterH;
+  const hasBoard = Boolean(extraction.boardImageUrl);
+  const hasCharacter = Boolean(extraction.characterImageUrl);
+
+  if (!hasBoard && !hasCharacter) return null;
+
+  return (
+    <g transform={`translate(${tokenLeft} ${tokenTop})`}>
+      {resolvedBoardLayerOrder === "behind-character" && extraction.boardImageUrl && (
+        <image
+          href={extraction.boardImageUrl}
+          x={boardX}
+          y={boardY}
+          width={boardW}
+          height={boardH}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      )}
+      {extraction.characterImageUrl && (
+        <image
+          href={extraction.characterImageUrl}
+          x={characterX}
+          y={characterY}
+          width={characterW}
+          height={characterH}
+          preserveAspectRatio="xMidYMax meet"
+        />
+      )}
+      {resolvedBoardLayerOrder === "in-front" && extraction.boardImageUrl && (
+        <image
+          href={extraction.boardImageUrl}
+          x={boardX}
+          y={boardY}
+          width={boardW}
+          height={boardH}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      )}
+    </g>
+  );
 }
 
 // ── Graph helpers ──────────────────────────────────────────────────────────
@@ -410,6 +495,7 @@ export function MissionsMap({
   routeNodeIds,
   backdropUrl,
   spriteUrl,
+  spriteExtraction,
   tokenPosition,
 }: MissionsMapProps) {
   const { nodes, edges, contracts } = world;
@@ -502,7 +588,13 @@ export function MissionsMap({
         })}
         {workshopNode && <WorkshopMarker node={workshopNode} svgW={svgW} svgH={svgH} />}
         {displayTokenPosition ? (
-          spriteUrl ? (
+          spriteExtraction?.characterImageUrl || spriteExtraction?.boardImageUrl ? (
+            renderFigurineLayer(
+              spriteExtraction,
+              spx(displayTokenPosition.x, svgW),
+              spx(displayTokenPosition.y, svgH),
+            )
+          ) : spriteUrl ? (
             <image
               href={spriteUrl}
               x={spx(displayTokenPosition.x, svgW) - SPRITE_TOKEN_HALF}

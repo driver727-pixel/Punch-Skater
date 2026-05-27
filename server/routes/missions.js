@@ -34,7 +34,8 @@ const DEFAULT_FAL_IMAGE_MODEL_URL = 'https://fal.run/fal-ai/flux-lora';
 const MISSION_MAP_IMAGE_SIZE = { width: 1024, height: 1024 };
 const COURIER_TOKEN_IMAGE_SIZE = { width: 512, height: 512 };
 const MISSIONS_BACKDROP_PROMPT_VERSION = 'missions-backdrop-v1';
-const MISSIONS_SPRITE_PROMPT_VERSION = 'missions-sprite-v1';
+const MISSIONS_SPRITE_PROMPT_VERSION = 'missions-sprite-v2';
+const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 const MIN_FAL_DIMENSION = 64;
 const WORLD_COLLECTION = 'missionWorlds';
 const ACTIVE_RUN_COLLECTION = 'missionActiveRuns';
@@ -258,17 +259,29 @@ function pickSpriteSourceCard(decks, preferredDeckId) {
 function buildExtractionContract(card) {
   const sourceImageUrl = typeof card?.characterImageUrl === 'string' && card.characterImageUrl
     ? card.characterImageUrl
+    : typeof card?.board?.imageUrl === 'string' && card.board.imageUrl
+      ? card.board.imageUrl
     : typeof card?.backgroundImageUrl === 'string' && card.backgroundImageUrl
       ? card.backgroundImageUrl
       : typeof card?.frameImageUrl === 'string' && card.frameImageUrl
         ? card.frameImageUrl
         : null;
   return {
-    version: 'character-layer-contract-v1',
+    version: 'character-layer-contract-v2',
     sourceType: card ? 'forged_card' : 'fallback',
     sourceCardId: typeof card?.id === 'string' ? card.id : null,
     sourceImageUrl,
     extractionStatus: sourceImageUrl ? 'pass_through' : 'fallback_marker',
+    characterImageUrl: typeof card?.characterImageUrl === 'string' && card.characterImageUrl ? card.characterImageUrl : null,
+    boardImageUrl: typeof card?.board?.imageUrl === 'string' && card.board.imageUrl ? card.board.imageUrl : null,
+    characterPlacement: card?.characterPlacement && typeof card.characterPlacement === 'object'
+      ? card.characterPlacement
+      : undefined,
+    boardPlacement: card?.board?.placement && typeof card.board.placement === 'object'
+      ? card.board.placement
+      : undefined,
+    boardLayerOrder: card?.board?.layerOrder === 'behind-character' ? 'behind-character' : 'in-front',
+    sceneSeed: typeof card?.characterSeed === 'string' && card.characterSeed ? card.characterSeed : null,
     subjectBounds: {
       x: 0.25,
       y: 0.1,
@@ -424,6 +437,25 @@ async function requestFalImage({
   const imageUrl = extractFalImageUrl(payload);
   if (!imageUrl) throw new Error('fal.ai response did not include an image URL.');
   return imageUrl;
+}
+
+async function removeSpriteBackground(FAL_KEY, imageUrl) {
+  const upstream = await fetch(BIREFNET_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Key ${FAL_KEY}`,
+    },
+    body: JSON.stringify({ image_url: imageUrl }),
+    signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
+  });
+  if (!upstream.ok) {
+    throw Object.assign(new Error(`Background removal failed with ${upstream.status}.`), { statusCode: upstream.status });
+  }
+  const data = await upstream.json();
+  const removedUrl = data?.image?.url;
+  if (!removedUrl) throw new Error('Background removal response did not include an image URL.');
+  return removedUrl;
 }
 
 async function handleMissionFalProxyRequest(req, res, {
@@ -1364,9 +1396,9 @@ export function registerMissionRoutes(app, {
         }
       }
 
-      if (!visuals.sprite.url && FAL_KEY && card) {
+      if (!visuals.sprite.url && FAL_KEY && card && !extraction.characterImageUrl) {
         try {
-          const imageUrl = await requestFalImage({
+          const generatedUrl = await requestFalImage({
             FAL_KEY,
             buildFalImageRequest,
             resolveFalProfile,
@@ -1380,8 +1412,14 @@ export function registerMissionRoutes(app, {
             },
             profile: 'character',
           });
+          let spriteUrl = generatedUrl;
+          try {
+            spriteUrl = await removeSpriteBackground(FAL_KEY, generatedUrl);
+          } catch (bgError) {
+            console.warn('Mission sprite background removal failed, using original:', bgError?.message ?? bgError);
+          }
           visuals.sprite = {
-            url: imageUrl,
+            url: spriteUrl,
             cacheKey: spriteCacheKey,
             generatedAt: new Date().toISOString(),
             fallback: false,
