@@ -754,6 +754,10 @@ export interface WorldContract {
   /** POI placement role chosen by the maze generator. */
   placementRole?: Exclude<WorldPlacementRole, "workshop">;
   status: MissionStatus;
+  /** Optional live encounter that interrupts travel when defined on this contract. */
+  encounter?: MissionEncounter | null;
+  /** Optional fork-path prompt shown when the player arrives at the POI. */
+  fork?: MissionFork | null;
 }
 
 export interface DistrictWorldSeedMetadata {

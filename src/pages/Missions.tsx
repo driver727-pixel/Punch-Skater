@@ -3,11 +3,27 @@ import { useAuth } from "../context/AuthContext";
 import { isEnabled } from "../lib/featureFlags";
 import {
   MISSION_PHASE,
+  MISSION_PHASE_LABELS,
   normalizeMissionPhase,
 } from "../lib/missionPhaseMachine";
 import { findAStarRoute, routeUsesGraphEdges } from "../lib/pathfinding";
-import type { ActiveDistrictRun, DistrictWorld, DistrictWorldVisuals, WorldContract } from "../lib/sharedTypes";
-import { getDistrictWorld, getDistrictWorldVisuals, persistDistrictCheckpoint, startDistrictRun } from "../services/missions";
+import type {
+  ActiveDistrictRun,
+  DistrictWorld,
+  DistrictWorldVisuals,
+  MissionEncounter,
+  MissionFork,
+  WorldContract,
+} from "../lib/sharedTypes";
+import {
+  getDistrictWorld,
+  getDistrictWorldVisuals,
+  persistDistrictCheckpoint,
+  resolveEncounter,
+  resolvePoiFork,
+  startDistrictRun,
+  startEncounter,
+} from "../services/missions";
 import { MissionsMap } from "../components/MissionsMap";
 import { MissionsPanel } from "../components/MissionsPanel";
 
@@ -19,6 +35,45 @@ function smoothstep(t: number): number {
   const clamped = Math.max(0, Math.min(1, t));
   return clamped * clamped * (3 - 2 * clamped);
 }
+
+// ── Phase badge ────────────────────────────────────────────────────────────
+
+const PHASE_COLORS: Record<string, string> = {
+  [MISSION_PHASE.IDLE_AT_BASE]: "rgba(125,231,255,0.7)",
+  [MISSION_PHASE.TRAVELING_OUTBOUND]: "#ffe44d",
+  [MISSION_PHASE.ENCOUNTER_RESOLUTION]: "#ff3af2",
+  [MISSION_PHASE.AT_POI_FORK]: "#7dffb6",
+  [MISSION_PHASE.TRAVELING_INBOUND]: "#ffe44d",
+  [MISSION_PHASE.MISSION_COMPLETE]: "#7dffb6",
+};
+
+function RunPhaseBadge({ phase }: { phase: string }) {
+  const normalized = normalizeMissionPhase(phase);
+  const label = MISSION_PHASE_LABELS[normalized] ?? normalized;
+  const color = PHASE_COLORS[normalized] ?? "rgba(125,231,255,0.7)";
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "2px 8px",
+        background: `${color}18`,
+        border: `1px solid ${color}`,
+        borderRadius: 3,
+        color,
+        fontFamily: "monospace",
+        fontSize: 9,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        verticalAlign: "middle",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+// ── Contract detail panel (pre-launch) ────────────────────────────────────
 
 function ContractDetailPanel({
   contract,
@@ -88,6 +143,225 @@ function ContractDetailPanel({
   );
 }
 
+// ── Encounter overlay ──────────────────────────────────────────────────────
+
+function EncounterOverlay({
+  encounter,
+  onResolve,
+  resolving,
+}: {
+  encounter: MissionEncounter;
+  onResolve: (choiceId: string) => void;
+  resolving: boolean;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 20,
+        background: "rgba(3,7,14,0.92)",
+        display: "flex",
+        flexDirection: "column",
+        backdropFilter: "blur(2px)",
+      }}
+    >
+      {/* Header stripe */}
+      <div
+        style={{
+          padding: "12px 20px",
+          borderBottom: "1px solid rgba(255,58,242,0.4)",
+          background: "rgba(255,58,242,0.08)",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexShrink: 0,
+        }}
+      >
+        <span style={{ fontSize: 18, lineHeight: 1 }}>{encounter.badge}</span>
+        <div>
+          <p style={{ margin: 0, fontSize: 9, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "#ff3af2" }}>
+            ⚡ Encounter
+          </p>
+          <p style={{ margin: "2px 0 0", fontSize: 11, fontFamily: "monospace", color: "#ff8af8", fontWeight: 700 }}>
+            {encounter.threat}
+          </p>
+        </div>
+      </div>
+
+      {/* Prompt */}
+      <div style={{ padding: "14px 20px", flexShrink: 0 }}>
+        <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.6, fontFamily: "monospace" }}>
+          {encounter.prompt}
+        </p>
+      </div>
+
+      {/* Options */}
+      <div style={{ padding: "0 20px 20px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", flex: 1 }}>
+        <p style={{ margin: "0 0 4px", fontSize: 9, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(125,231,255,0.6)" }}>
+          Choose your response
+        </p>
+        {encounter.options.map((opt) => {
+          const unavailable = opt.available === false;
+          return (
+            <button
+              key={opt.id}
+              onClick={() => onResolve(opt.id)}
+              disabled={resolving || unavailable}
+              title={unavailable ? "Requirements not met" : opt.description}
+              style={{
+                textAlign: "left",
+                padding: "10px 14px",
+                background: unavailable ? "rgba(255,255,255,0.03)" : "rgba(255,58,242,0.07)",
+                border: `1px solid ${unavailable ? "rgba(255,255,255,0.12)" : "rgba(255,58,242,0.5)"}`,
+                borderRadius: 4,
+                color: unavailable ? "rgba(255,255,255,0.3)" : "#ffffff",
+                fontFamily: "monospace",
+                fontSize: 11,
+                cursor: resolving || unavailable ? "not-allowed" : "pointer",
+                opacity: resolving ? 0.6 : 1,
+                transition: "background 0.15s",
+              }}
+            >
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>{opt.label}</div>
+              <div style={{ fontSize: 10, color: unavailable ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
+                {opt.description}
+              </div>
+              {(opt.rewardXpDelta != null || opt.rewardOzziesDelta != null) && !unavailable && (
+                <div style={{ marginTop: 6, display: "flex", gap: 10 }}>
+                  {opt.rewardXpDelta != null && opt.rewardXpDelta !== 0 && (
+                    <span style={{ fontSize: 9, color: opt.rewardXpDelta > 0 ? "#7dffb6" : "#ff6b6b" }}>
+                      {opt.rewardXpDelta > 0 ? "+" : ""}{opt.rewardXpDelta} XP
+                    </span>
+                  )}
+                  {opt.rewardOzziesDelta != null && opt.rewardOzziesDelta !== 0 && (
+                    <span style={{ fontSize: 9, color: opt.rewardOzziesDelta > 0 ? "#7dffb6" : "#ff6b6b" }}>
+                      {opt.rewardOzziesDelta > 0 ? "+" : ""}{opt.rewardOzziesDelta} Ozzies
+                    </span>
+                  )}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── POI fork panel ─────────────────────────────────────────────────────────
+
+function PoiForkPanel({
+  contract,
+  fork,
+  onResolve,
+  resolving,
+}: {
+  contract: WorldContract;
+  fork: MissionFork | null;
+  onResolve: (choiceId: string) => void;
+  resolving: boolean;
+}) {
+  if (!fork) {
+    return (
+      <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14, height: "100%", boxSizing: "border-box" }}>
+        <p style={{ margin: 0, fontSize: 9, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "#7dffb6" }}>
+          ◆ Contract reached
+        </p>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }}>
+          {contract.title}
+        </h2>
+        <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
+          {contract.tagline}
+        </p>
+        <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
+          <div>
+            <div style={{ fontSize: 9, fontFamily: "monospace", color: "#7de7ff", marginBottom: 2 }}>XP</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>{contract.rewardXp}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, fontFamily: "monospace", color: "#7de7ff", marginBottom: 2 }}>OZZIES</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>{contract.rewardOzzies}</div>
+          </div>
+        </div>
+        <button
+          onClick={() => onResolve("default")}
+          disabled={resolving}
+          style={{
+            marginTop: "auto",
+            padding: "10px 0",
+            background: "rgba(125,255,182,0.1)",
+            border: "1px solid #7dffb6",
+            borderRadius: 4,
+            color: "#7dffb6",
+            fontFamily: "monospace",
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            cursor: resolving ? "wait" : "pointer",
+            opacity: resolving ? 0.6 : 1,
+          }}
+        >
+          {resolving ? "Returning…" : "Begin Return"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12, height: "100%", boxSizing: "border-box", overflowY: "auto" }}>
+      <p style={{ margin: 0, fontSize: 9, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "#7dffb6" }}>
+        {fork.badge} Fork
+      </p>
+      <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, fontFamily: "monospace" }}>
+        {fork.prompt}
+      </p>
+      <p style={{ margin: "4px 0 2px", fontSize: 9, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(125,231,255,0.6)" }}>
+        Choose your route
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {fork.options.map((opt) => (
+          <button
+            key={opt.id}
+            onClick={() => onResolve(opt.id)}
+            disabled={resolving}
+            style={{
+              textAlign: "left",
+              padding: "10px 14px",
+              background: "rgba(125,255,182,0.06)",
+              border: "1px solid rgba(125,255,182,0.45)",
+              borderRadius: 4,
+              color: "#ffffff",
+              fontFamily: "monospace",
+              fontSize: 11,
+              cursor: resolving ? "wait" : "pointer",
+              opacity: resolving ? 0.6 : 1,
+            }}
+          >
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>{opt.label}</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>{opt.description}</div>
+            {(opt.rewardXpDelta != null || opt.rewardOzziesDelta != null) && (
+              <div style={{ marginTop: 6, display: "flex", gap: 10 }}>
+                {opt.rewardXpDelta != null && opt.rewardXpDelta !== 0 && (
+                  <span style={{ fontSize: 9, color: opt.rewardXpDelta > 0 ? "#7dffb6" : "#ff6b6b" }}>
+                    {opt.rewardXpDelta > 0 ? "+" : ""}{opt.rewardXpDelta} XP
+                  </span>
+                )}
+                {opt.rewardOzziesDelta != null && opt.rewardOzziesDelta !== 0 && (
+                  <span style={{ fontSize: 9, color: opt.rewardOzziesDelta > 0 ? "#7dffb6" : "#ff6b6b" }}>
+                    {opt.rewardOzziesDelta > 0 ? "+" : ""}{opt.rewardOzziesDelta} Ozzies
+                  </span>
+                )}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type SegmentTravel = {
   routeNodeIds: string[];
   fromIndex: number;
@@ -103,11 +377,14 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
+  const [resolvingEncounter, setResolvingEncounter] = useState(false);
+  const [resolvingFork, setResolvingFork] = useState(false);
   const [segmentTravel, setSegmentTravel] = useState<SegmentTravel | null>(null);
   const fetchedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const lastCheckpointSyncRef = useRef<string>("");
   const animatingRef = useRef(false);
+  const encounterTriggeredRef = useRef<string>("");
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -161,12 +438,32 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   );
   const previewRouteNodeIds = activeRouteNodeIds.length > 1 ? activeRouteNodeIds : selectedRouteNodeIds;
 
+  // ── Outbound travel animation ────────────────────────────────────────────
   useEffect(() => {
     if (!world || !activeRun?.routeNodeIds?.length) return;
     if (normalizeMissionPhase(activeRun.phase) !== MISSION_PHASE.TRAVELING_OUTBOUND) return;
     const routeNodeIds = activeRun.routeNodeIds;
     const checkpointNodeIndex = Math.max(0, Math.min(routeNodeIds.length - 1, activeRun.checkpointNodeIndex ?? 0));
     if (checkpointNodeIndex >= routeNodeIds.length - 1) return;
+
+    // Mid-route encounter trigger: fire at midpoint if contract has an encounter
+    // and this run has not yet started one.
+    const midpoint = Math.floor(routeNodeIds.length / 2);
+    const canTriggerEncounter =
+      selectedContract?.encounter &&
+      !activeRun.encounter &&
+      checkpointNodeIndex === midpoint;
+    const triggerKey = `${activeRun.runId}:encounter`;
+    if (canTriggerEncounter && encounterTriggeredRef.current !== triggerKey) {
+      encounterTriggeredRef.current = triggerKey;
+      const currentNodeId = routeNodeIds[checkpointNodeIndex];
+      startEncounter(uid, activeRun.runId, selectedContract!.encounter!.id, currentNodeId, userEmail)
+        .then((run) => setActiveRun(run))
+        .catch((err: unknown) => {
+          console.warn("Encounter trigger failed; travel continues.", err instanceof Error ? err.message : err);
+        });
+      return;
+    }
 
     const fromIndex = checkpointNodeIndex;
     const toIndex = checkpointNodeIndex + 1;
@@ -179,10 +476,60 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     const startedAt = performance.now();
     const tick = (now: number) => {
       if (cancelled) return;
-    const raw = Math.min(1, (now - startedAt) / SEGMENT_DURATION_MS);
-    const progress = smoothstep(raw);
-    setSegmentTravel({ routeNodeIds, fromIndex, toIndex, progress });
-    if (raw < 1) {
+      const raw = Math.min(1, (now - startedAt) / SEGMENT_DURATION_MS);
+      const progress = smoothstep(raw);
+      setSegmentTravel({ routeNodeIds, fromIndex, toIndex, progress });
+      if (raw < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const nextNodeId = routeNodeIds[toIndex];
+      persistDistrictCheckpoint(uid, activeRun.runId, nextNodeId, toIndex, userEmail)
+        .then((run) => {
+          setActiveRun(run);
+          setSegmentTravel(null);
+          animatingRef.current = false;
+        })
+        .catch(() => {
+          setSegmentTravel(null);
+          animatingRef.current = false;
+        });
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      cancelled = true;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      animatingRef.current = false;
+    };
+  }, [activeRun, uid, userEmail, world, selectedContract]);
+
+  // ── Inbound travel animation ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!world || !activeRun?.routeNodeIds?.length) return;
+    if (normalizeMissionPhase(activeRun.phase) !== MISSION_PHASE.TRAVELING_INBOUND) return;
+    const routeNodeIds = activeRun.routeNodeIds;
+    const checkpointNodeIndex = Math.max(0, Math.min(routeNodeIds.length - 1, activeRun.checkpointNodeIndex ?? 0));
+    if (checkpointNodeIndex <= 0) return;
+
+    const fromIndex = checkpointNodeIndex;
+    const toIndex = checkpointNodeIndex - 1;
+    const syncKey = `${activeRun.runId}:inbound:${fromIndex}`;
+    if (animatingRef.current || lastCheckpointSyncRef.current === syncKey) return;
+    lastCheckpointSyncRef.current = syncKey;
+    animatingRef.current = true;
+
+    let cancelled = false;
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+      if (cancelled) return;
+      const raw = Math.min(1, (now - startedAt) / SEGMENT_DURATION_MS);
+      const progress = smoothstep(raw);
+      setSegmentTravel({ routeNodeIds, fromIndex, toIndex, progress });
+      if (raw < 1) {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
@@ -247,12 +594,40 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       const run = await startDistrictRun(uid, selectedContractId, "", "Default Deck", userEmail);
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
+      encounterTriggeredRef.current = "";
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to start run.");
     } finally {
       setLaunching(false);
     }
   }, [uid, world, selectedContractId, selectedRouteNodeIds, userEmail]);
+
+  const handleResolveEncounter = useCallback(async (choiceId: string) => {
+    if (!activeRun) return;
+    setResolvingEncounter(true);
+    try {
+      const run = await resolveEncounter(uid, activeRun.runId, { choiceId }, userEmail);
+      setActiveRun(run);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to resolve encounter.");
+    } finally {
+      setResolvingEncounter(false);
+    }
+  }, [uid, activeRun, userEmail]);
+
+  const handleResolvePoiFork = useCallback(async (choiceId: string) => {
+    if (!activeRun) return;
+    setResolvingFork(true);
+    try {
+      const run = await resolvePoiFork(uid, activeRun.runId, choiceId, userEmail);
+      setActiveRun(run);
+      lastCheckpointSyncRef.current = "";
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to resolve POI fork.");
+    } finally {
+      setResolvingFork(false);
+    }
+  }, [uid, activeRun, userEmail]);
 
   if (loading) {
     return (
@@ -270,11 +645,35 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     );
   }
 
+  const phase = normalizeMissionPhase(activeRun?.phase);
   const activeTraveling = Boolean(
     activeRun
-      && normalizeMissionPhase(activeRun.phase) === MISSION_PHASE.TRAVELING_OUTBOUND
-      && (activeRun.checkpointNodeIndex ?? 0) < ((activeRun.routeNodeIds?.length ?? 0) - 1),
+      && (phase === MISSION_PHASE.TRAVELING_OUTBOUND || phase === MISSION_PHASE.TRAVELING_INBOUND)
+      && (phase === MISSION_PHASE.TRAVELING_OUTBOUND
+        ? (activeRun.checkpointNodeIndex ?? 0) < ((activeRun.routeNodeIds?.length ?? 0) - 1)
+        : (activeRun.checkpointNodeIndex ?? 0) > 0),
   );
+
+  // Encounter data: use the full definition from the contract when available,
+  // or fall back to a minimal stub built from the run record so the overlay
+  // can always be shown after a page reload.
+  let activeEncounter: MissionEncounter | null = null;
+  if (phase === MISSION_PHASE.ENCOUNTER_RESOLUTION && activeRun?.encounter) {
+    activeEncounter = selectedContract?.encounter ?? {
+      id: activeRun.encounter.encounterId,
+      badge: "⚡",
+      prompt: "An unexpected situation has interrupted your run.",
+      threat: "Unknown threat",
+      options: [
+        {
+          id: "dismiss",
+          label: "Push through",
+          description: "Continue without engaging.",
+          available: true,
+        },
+      ],
+    };
+  }
 
   return (
     <div style={{ display: "flex", width: "100%", height: "100%", background: "#03070e" }}>
@@ -290,11 +689,55 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
           tokenPosition={tokenPosition}
         />
       </div>
-      <div style={{ width: PANEL_WIDTH, flexShrink: 0, borderLeft: "1px solid rgba(125,231,255,0.18)", background: "rgba(5,10,20,0.97)", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(125,231,255,0.15)", fontFamily: "monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7de7ff" }}>
-          {world.boardDateKey} · {world.contracts.filter((c) => c.status === "completed").length}/{world.contracts.length} Cleared
+
+      {/* Right panel */}
+      <div style={{ width: PANEL_WIDTH, flexShrink: 0, borderLeft: "1px solid rgba(125,231,255,0.18)", background: "rgba(5,10,20,0.97)", display: "flex", flexDirection: "column", position: "relative" }}>
+
+        {/* Panel header: date, clear count, and active phase badge */}
+        <div style={{ padding: "10px 20px", borderBottom: "1px solid rgba(125,231,255,0.15)", fontFamily: "monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7de7ff", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <span>{world.boardDateKey} · {world.contracts.filter((c) => c.status === "completed").length}/{world.contracts.length} Cleared</span>
+          {activeRun && phase !== MISSION_PHASE.IDLE_AT_BASE && (
+            <RunPhaseBadge phase={phase} />
+          )}
         </div>
-        {selectedContract ? (
+
+        {/* Panel body: varies by active phase */}
+        {phase === MISSION_PHASE.ENCOUNTER_RESOLUTION && activeEncounter ? (
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            {selectedContract && (
+              <ContractDetailPanel
+                contract={selectedContract}
+                onLaunch={handleLaunch}
+                launching={launching}
+                disabled
+              />
+            )}
+            <EncounterOverlay
+              encounter={activeEncounter}
+              onResolve={handleResolveEncounter}
+              resolving={resolvingEncounter}
+            />
+          </div>
+        ) : phase === MISSION_PHASE.AT_POI_FORK && selectedContract ? (
+          <PoiForkPanel
+            contract={selectedContract}
+            fork={selectedContract.fork ?? null}
+            onResolve={handleResolvePoiFork}
+            resolving={resolvingFork}
+          />
+        ) : phase === MISSION_PHASE.MISSION_COMPLETE ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24 }}>
+            <div style={{ fontSize: 32 }}>🏁</div>
+            <p style={{ margin: 0, fontFamily: "monospace", fontSize: 13, fontWeight: 700, color: "#7dffb6", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>
+              Run Complete
+            </p>
+            {selectedContract && (
+              <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.55)", textAlign: "center" }}>
+                {selectedContract.title}
+              </p>
+            )}
+          </div>
+        ) : selectedContract ? (
           <ContractDetailPanel
             contract={selectedContract}
             onLaunch={handleLaunch}
