@@ -12,6 +12,12 @@ import {
   resolveMissionCounterChoice,
 } from '../lib/missions.js';
 import { generateDistrictWorld } from '../lib/mazeGenerator.js';
+import {
+  MISSION_PHASE,
+  canTransition,
+  normalizePhase,
+  transition as transitionPhase,
+} from '../lib/missionPhaseMachine.js';
 
 const COLLECTION = 'missions';
 const PROFILE_COLLECTION = 'userProfiles';
@@ -90,6 +96,21 @@ function sortMissionBoardEntries(missions) {
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Return a shallow copy of the persisted active-run record with its `phase`
+ * normalized through the mission phase state machine. Legacy lower-case
+ * phases (`outbound`, `at_poi`, `returning`, `complete`, `failed`) are
+ * mapped to their canonical MISSION_PHASE counterparts so that clients see
+ * a single set of phase strings and refresh-restored runs always slot back
+ * into the explicit machine.
+ */
+function normalizeActiveRunPhase(run) {
+  if (!run || typeof run !== 'object') return run;
+  const normalized = normalizePhase(run.phase);
+  if (normalized === run.phase) return run;
+  return { ...run, phase: normalized };
 }
 
 function sanitizeMissionProxyText(value, fieldName, { required = false, maxLength = 4_000 } = {}) {
@@ -1098,7 +1119,7 @@ export function registerMissionRoutes(app, {
         await adminDb.collection(WORLD_COLLECTION).doc(worldId).set(world);
       }
 
-      const activeRun = runSnap.exists ? runSnap.data() : null;
+      const activeRun = runSnap.exists ? normalizeActiveRunPhase(runSnap.data()) : null;
       const visuals = visualsSnap.exists ? visualsSnap.data() : null;
 
       res.json({ world, activeRun: activeRun ?? null, visuals: visuals ?? null });
@@ -1292,20 +1313,28 @@ export function registerMissionRoutes(app, {
       const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
       const runSnap = await runRef.get();
 
-      // If an active run already exists for today and is not complete/failed, return it.
+      // If an active run already exists for today and is not yet complete, return it.
       if (runSnap.exists) {
-        const existing = runSnap.data();
-        if (existing.phase !== 'complete' && existing.phase !== 'failed') {
+        const existing = normalizeActiveRunPhase(runSnap.data());
+        if (existing.phase !== MISSION_PHASE.MISSION_COMPLETE) {
           res.json({ activeRun: existing });
           return;
         }
+      }
+
+      let phase;
+      try {
+        phase = transitionPhase(MISSION_PHASE.IDLE_AT_BASE, MISSION_PHASE.TRAVELING_OUTBOUND);
+      } catch (transitionError) {
+        res.status(transitionError.statusCode ?? 409).json({ error: transitionError.message });
+        return;
       }
 
       const activeRun = {
         runId,
         uid: caller.uid,
         boardDateKey,
-        phase: 'outbound',
+        phase,
         contractId,
         deckId,
         deckName,
@@ -1314,6 +1343,8 @@ export function registerMissionRoutes(app, {
         lastCheckpointAt: now,
         launchedAt: now,
         updatedAt: now,
+        encounter: null,
+        poiOutcome: null,
       };
 
       await runRef.set(activeRun);
@@ -1352,14 +1383,36 @@ export function registerMissionRoutes(app, {
         res.status(404).json({ error: 'Run not found.' });
         return;
       }
-      const activeRun = snapshot.data();
+      const activeRun = normalizeActiveRunPhase(snapshot.data());
       if (activeRun.uid !== caller.uid) {
         res.status(403).json({ error: 'This run does not belong to the current user.' });
         return;
       }
+      // Only travel phases accept checkpoint progression; encounters and the
+      // POI fork must be resolved through their dedicated endpoints first.
+      if (
+        activeRun.phase !== MISSION_PHASE.TRAVELING_OUTBOUND
+        && activeRun.phase !== MISSION_PHASE.TRAVELING_INBOUND
+      ) {
+        res.status(409).json({
+          error: `Checkpoint updates are not allowed in phase ${activeRun.phase}.`,
+          phase: activeRun.phase,
+        });
+        return;
+      }
       const routeNodeIds = Array.isArray(activeRun.routeNodeIds) ? activeRun.routeNodeIds : [];
       const currentIndex = Number.isInteger(activeRun.checkpointNodeIndex) ? activeRun.checkpointNodeIndex : 0;
-      if (!routeNodeIds.length || checkpointNodeIndex !== currentIndex + 1 || checkpointNodeIndex >= routeNodeIds.length) {
+      const expectedIndex = activeRun.phase === MISSION_PHASE.TRAVELING_INBOUND
+        ? currentIndex - 1
+        : currentIndex + 1;
+      const minIndex = 0;
+      const maxIndex = routeNodeIds.length - 1;
+      if (
+        !routeNodeIds.length
+        || checkpointNodeIndex !== expectedIndex
+        || checkpointNodeIndex < minIndex
+        || checkpointNodeIndex > maxIndex
+      ) {
         res.status(400).json({ error: 'Invalid checkpoint progression.' });
         return;
       }
@@ -1368,19 +1421,220 @@ export function registerMissionRoutes(app, {
         return;
       }
 
+      // Decide whether this checkpoint completes a leg and triggers a phase
+      // transition. Reaching the POI (last node on outbound) parks the run
+      // at AT_POI_FORK; reaching the Workshop (first node on inbound) marks
+      // the run MISSION_COMPLETE. Card mutation is intentionally deferred
+      // to PR 4 (#633) — this endpoint never writes to the player card.
+      let nextPhase = activeRun.phase;
+      if (activeRun.phase === MISSION_PHASE.TRAVELING_OUTBOUND && checkpointNodeIndex === maxIndex) {
+        try {
+          nextPhase = transitionPhase(activeRun.phase, MISSION_PHASE.AT_POI_FORK);
+        } catch (transitionError) {
+          res.status(transitionError.statusCode ?? 409).json({ error: transitionError.message });
+          return;
+        }
+      } else if (activeRun.phase === MISSION_PHASE.TRAVELING_INBOUND && checkpointNodeIndex === minIndex) {
+        try {
+          nextPhase = transitionPhase(activeRun.phase, MISSION_PHASE.MISSION_COMPLETE);
+        } catch (transitionError) {
+          res.status(transitionError.statusCode ?? 409).json({ error: transitionError.message });
+          return;
+        }
+      }
+
       const now = new Date().toISOString();
       const nextRun = {
         ...activeRun,
         checkpointNodeIndex,
         lastCheckpointAt: now,
         updatedAt: now,
-        phase: checkpointNodeIndex >= routeNodeIds.length - 1 ? 'at_poi' : activeRun.phase,
+        phase: nextPhase,
+        ...(nextPhase === MISSION_PHASE.MISSION_COMPLETE ? { completedAt: now } : {}),
       };
       await runRef.set(nextRun, { merge: true });
       res.json({ activeRun: nextRun });
     } catch (error) {
       console.error('Mission checkpoint update error:', error);
       res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to persist checkpoint.' });
+    }
+  });
+
+  /**
+   * Resolve the POI mission fork after the player reaches the contract POI.
+   * Transitions AT_POI_FORK -> TRAVELING_INBOUND and records the chosen
+   * outcome on the active run. Per the design constraint carried across
+   * Issues #630-#633, this must NOT mutate the player card; aggregation and
+   * Firestore card mutation happen only on successful return (PR 4 / #633).
+   */
+  app.post('/api/missions/world/resolve-poi', missionCheckpointRateLimit, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    const runId = typeof req.body?.runId === 'string' ? req.body.runId.trim() : '';
+    const choiceId = typeof req.body?.choiceId === 'string' ? req.body.choiceId.trim() : '';
+    const outcome = isPlainObject(req.body?.outcome) ? req.body.outcome : null;
+    if (!runId || !choiceId) {
+      res.status(400).json({ error: 'runId and choiceId are required.' });
+      return;
+    }
+
+    try {
+      const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
+      const snapshot = await runRef.get();
+      if (!snapshot.exists) {
+        res.status(404).json({ error: 'Run not found.' });
+        return;
+      }
+      const activeRun = normalizeActiveRunPhase(snapshot.data());
+      if (activeRun.uid !== caller.uid) {
+        res.status(403).json({ error: 'This run does not belong to the current user.' });
+        return;
+      }
+      let nextPhase;
+      try {
+        nextPhase = transitionPhase(activeRun.phase, MISSION_PHASE.TRAVELING_INBOUND);
+      } catch (transitionError) {
+        res.status(transitionError.statusCode ?? 409).json({
+          error: transitionError.message,
+          phase: activeRun.phase,
+        });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const nextRun = {
+        ...activeRun,
+        phase: nextPhase,
+        poiOutcome: { choiceId, resolvedAt: now, outcome: outcome ?? null },
+        updatedAt: now,
+      };
+      await runRef.set(nextRun, { merge: true });
+      res.json({ activeRun: nextRun });
+    } catch (error) {
+      console.error('Mission POI resolve error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to resolve POI fork.' });
+    }
+  });
+
+  /**
+   * Encounter interruption / resolution endpoint. `action: 'start'` moves a
+   * travel phase into ENCOUNTER_RESOLUTION and remembers the resume phase;
+   * `action: 'resolve'` returns to the resume phase and records the outcome.
+   * Card mutation remains deferred to PR 4 (#633); only run-scoped state
+   * (active-run record) is written here so that refreshing during an
+   * encounter restores the player to the encounter overlay.
+   */
+  app.post('/api/missions/world/encounter', missionCheckpointRateLimit, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    const runId = typeof req.body?.runId === 'string' ? req.body.runId.trim() : '';
+    const action = typeof req.body?.action === 'string' ? req.body.action.trim() : '';
+    if (!runId || (action !== 'start' && action !== 'resolve')) {
+      res.status(400).json({ error: "runId and action ('start' | 'resolve') are required." });
+      return;
+    }
+
+    try {
+      const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
+      const snapshot = await runRef.get();
+      if (!snapshot.exists) {
+        res.status(404).json({ error: 'Run not found.' });
+        return;
+      }
+      const activeRun = normalizeActiveRunPhase(snapshot.data());
+      if (activeRun.uid !== caller.uid) {
+        res.status(403).json({ error: 'This run does not belong to the current user.' });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      let nextRun;
+
+      if (action === 'start') {
+        const encounterId = typeof req.body?.encounterId === 'string' ? req.body.encounterId.trim() : '';
+        const triggeredAtNodeId = typeof req.body?.nodeId === 'string' ? req.body.nodeId.trim() : '';
+        if (!encounterId || !triggeredAtNodeId) {
+          res.status(400).json({ error: 'encounterId and nodeId are required to start an encounter.' });
+          return;
+        }
+        const resumePhase = activeRun.phase;
+        let nextPhase;
+        try {
+          nextPhase = transitionPhase(resumePhase, MISSION_PHASE.ENCOUNTER_RESOLUTION);
+        } catch (transitionError) {
+          res.status(transitionError.statusCode ?? 409).json({
+            error: transitionError.message,
+            phase: activeRun.phase,
+          });
+          return;
+        }
+        nextRun = {
+          ...activeRun,
+          phase: nextPhase,
+          encounter: {
+            encounterId,
+            resumePhase,
+            triggeredAtNodeId,
+            startedAt: now,
+            resolvedAt: null,
+            outcome: null,
+          },
+          updatedAt: now,
+        };
+      } else {
+        // resolve
+        if (activeRun.phase !== MISSION_PHASE.ENCOUNTER_RESOLUTION || !activeRun.encounter) {
+          res.status(409).json({
+            error: 'No encounter is currently being resolved on this run.',
+            phase: activeRun.phase,
+          });
+          return;
+        }
+        const resumePhase = activeRun.encounter.resumePhase;
+        const outcome = isPlainObject(req.body?.outcome) ? req.body.outcome : null;
+        let nextPhase;
+        try {
+          nextPhase = transitionPhase(activeRun.phase, resumePhase);
+        } catch (transitionError) {
+          res.status(transitionError.statusCode ?? 409).json({
+            error: transitionError.message,
+            phase: activeRun.phase,
+          });
+          return;
+        }
+        nextRun = {
+          ...activeRun,
+          phase: nextPhase,
+          encounter: { ...activeRun.encounter, resolvedAt: now, outcome },
+          updatedAt: now,
+        };
+      }
+
+      await runRef.set(nextRun, { merge: true });
+      res.json({ activeRun: nextRun });
+    } catch (error) {
+      console.error('Mission encounter transition error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to update encounter state.' });
     }
   });
 }

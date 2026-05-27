@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { isEnabled } from "../lib/featureFlags";
+import {
+  MISSION_PHASE,
+  normalizeMissionPhase,
+} from "../lib/missionPhaseMachine";
 import { findAStarRoute, routeUsesGraphEdges } from "../lib/pathfinding";
 import type { ActiveDistrictRun, DistrictWorld, DistrictWorldVisuals, WorldContract } from "../lib/sharedTypes";
 import { getDistrictWorld, getDistrictWorldVisuals, persistDistrictCheckpoint, startDistrictRun } from "../services/missions";
@@ -158,7 +162,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const previewRouteNodeIds = activeRouteNodeIds.length > 1 ? activeRouteNodeIds : selectedRouteNodeIds;
 
   useEffect(() => {
-    if (!world || !activeRun?.routeNodeIds?.length || activeRun.phase !== "outbound") return;
+    if (!world || !activeRun?.routeNodeIds?.length) return;
+    if (normalizeMissionPhase(activeRun.phase) !== MISSION_PHASE.TRAVELING_OUTBOUND) return;
     const routeNodeIds = activeRun.routeNodeIds;
     const checkpointNodeIndex = Math.max(0, Math.min(routeNodeIds.length - 1, activeRun.checkpointNodeIndex ?? 0));
     if (checkpointNodeIndex >= routeNodeIds.length - 1) return;
@@ -266,7 +271,9 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   }
 
   const activeTraveling = Boolean(
-    activeRun && activeRun.phase === "outbound" && (activeRun.checkpointNodeIndex ?? 0) < ((activeRun.routeNodeIds?.length ?? 0) - 1),
+    activeRun
+      && normalizeMissionPhase(activeRun.phase) === MISSION_PHASE.TRAVELING_OUTBOUND
+      && (activeRun.checkpointNodeIndex ?? 0) < ((activeRun.routeNodeIds?.length ?? 0) - 1),
   );
 
   return (

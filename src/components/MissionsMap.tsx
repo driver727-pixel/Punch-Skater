@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  MISSION_PHASE,
+  MISSION_PHASE_LABELS,
+  isTerminalMissionPhase,
+  normalizeMissionPhase,
+} from "../lib/missionPhaseMachine";
 import type { ActiveDistrictRun, DistrictWorld, WorldContract, WorldEdge, WorldNode } from "../lib/sharedTypes";
 
 interface MissionsMapProps {
@@ -335,14 +341,12 @@ function MapLegend() {
   );
 }
 
-const PHASE_LABELS: Record<string, string> = {
-  outbound: "▶ OUTBOUND",
-  at_poi: "◆ AT CONTRACT",
-  returning: "◀ RETURNING",
-};
+const PHASE_LABELS: Record<string, string> = MISSION_PHASE_LABELS;
 
 function ActiveRunBanner({ activeRun, contracts }: { activeRun: ActiveDistrictRun; contracts: WorldContract[] }) {
-  const phase = PHASE_LABELS[activeRun.phase];
+  const normalizedPhase = normalizeMissionPhase(activeRun.phase);
+  if (normalizedPhase === MISSION_PHASE.IDLE_AT_BASE) return null;
+  const phase = PHASE_LABELS[normalizedPhase];
   if (!phase) return null;
   const contract = contracts.find((c) => c.id === activeRun.contractId);
   return (
@@ -433,7 +437,7 @@ export function MissionsMap({
     return () => ro.disconnect();
   }, []);
 
-  const showBanner = activeRun !== null && activeRun.phase !== "complete" && activeRun.phase !== "failed";
+  const showBanner = activeRun !== null && !isTerminalMissionPhase(activeRun.phase);
 
   return (
     <div ref={containerRef} style={containerStyle}>

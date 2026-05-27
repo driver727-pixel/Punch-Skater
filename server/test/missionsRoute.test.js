@@ -583,7 +583,7 @@ test('district world checkpoint route persists sequential travel and marks poi a
       runId,
       uid: 'user-1',
       boardDateKey,
-      phase: 'outbound',
+      phase: 'TRAVELING_OUTBOUND',
       contractId: 'contract-1',
       deckId: 'deck-1',
       deckName: 'Deck One',
@@ -606,13 +606,13 @@ test('district world checkpoint route persists sequential travel and marks poi a
   });
   assert.equal(first.statusCode, 200);
   assert.equal(first.body.activeRun.checkpointNodeIndex, 1);
-  assert.equal(first.body.activeRun.phase, 'outbound');
+  assert.equal(first.body.activeRun.phase, 'TRAVELING_OUTBOUND');
 
   const second = await invokeRoute(route, {
     body: { runId, nodeId: 'poi-0', checkpointNodeIndex: 2 },
   });
   assert.equal(second.statusCode, 200);
-  assert.equal(second.body.activeRun.phase, 'at_poi');
+  assert.equal(second.body.activeRun.phase, 'AT_POI_FORK');
   assert.equal(second.body.activeRun.checkpointNodeIndex, 2);
 });
 
@@ -753,9 +753,206 @@ test('district world GET restores a persisted ActiveDistrictRun alongside the wo
   assert.ok(res.body.activeRun, 'active run restored');
   assert.equal(res.body.activeRun.runId, runId);
   assert.equal(res.body.activeRun.contractId, 'contract-1');
-  assert.equal(res.body.activeRun.phase, 'outbound');
+  // Legacy 'outbound' is normalized to the canonical machine phase on read so
+  // refresh restoration slots back into the explicit state machine.
+  assert.equal(res.body.activeRun.phase, 'TRAVELING_OUTBOUND');
   assert.equal(res.body.activeRun.checkpointNodeIndex, 1);
   assert.deepEqual(res.body.activeRun.routeNodeIds, ['workshop', 'junction-0', 'poi-0']);
 
   assert.equal(adminDb.writeLog.length, 0, 'pure read must not mutate world or run documents');
+});
+
+test('district world checkpoint route rejects updates from non-travel phases', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'AT_POI_FORK',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 2,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:01:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/checkpoint');
+
+  // From AT_POI_FORK the only legal next phase is TRAVELING_INBOUND via the
+  // POI resolve endpoint — direct checkpoint progression must be refused.
+  const res = await invokeRoute(route, {
+    body: { runId, nodeId: 'junction-0', checkpointNodeIndex: 1 },
+  });
+  assert.equal(res.statusCode, 409);
+  assert.match(res.body.error, /Checkpoint updates are not allowed/);
+});
+
+test('district world resolve-poi advances AT_POI_FORK to TRAVELING_INBOUND and records the choice', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'AT_POI_FORK',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 2,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:01:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/resolve-poi');
+  assert.ok(route, 'POST /api/missions/world/resolve-poi route must be registered');
+
+  const res = await invokeRoute(route, {
+    body: { runId, choiceId: 'archive-heist', outcome: { tokensEarned: 3 } },
+  });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun.phase, 'TRAVELING_INBOUND');
+  assert.equal(res.body.activeRun.poiOutcome.choiceId, 'archive-heist');
+  assert.deepEqual(res.body.activeRun.poiOutcome.outcome, { tokensEarned: 3 });
+});
+
+test('district world resolve-poi rejects calls outside AT_POI_FORK', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'TRAVELING_OUTBOUND',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 1,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:01:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/resolve-poi');
+  const res = await invokeRoute(route, {
+    body: { runId, choiceId: 'archive-heist' },
+  });
+  assert.equal(res.statusCode, 409);
+});
+
+test('district world encounter route brackets travel with start/resolve and survives refresh', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'TRAVELING_OUTBOUND',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 1,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:01:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const encounterRoute = app.getRoute('POST', '/api/missions/world/encounter');
+  assert.ok(encounterRoute, 'POST /api/missions/world/encounter route must be registered');
+
+  const start = await invokeRoute(encounterRoute, {
+    body: { runId, action: 'start', encounterId: 'rival-ambush', nodeId: 'junction-0' },
+  });
+  assert.equal(start.statusCode, 200);
+  assert.equal(start.body.activeRun.phase, 'ENCOUNTER_RESOLUTION');
+  assert.equal(start.body.activeRun.encounter.encounterId, 'rival-ambush');
+  assert.equal(start.body.activeRun.encounter.resumePhase, 'TRAVELING_OUTBOUND');
+
+  // Refresh-safe restoration: a fresh GET must return the ENCOUNTER_RESOLUTION phase
+  // and the persisted encounter record so the overlay can be re-shown after a reload.
+  const worldId2 = `user-1_${boardDateKey}`;
+  adminDb.store.set(`missionWorlds/${worldId2}`, {
+    worldId: worldId2,
+    boardDateKey,
+    dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+    nodes: [
+      { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+      { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+      { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+    ],
+    edges: [
+      { from: 'workshop', to: 'junction-0' },
+      { from: 'junction-0', to: 'poi-0' },
+    ],
+    contracts: [
+      {
+        id: 'contract-1', nodeId: 'poi-0', definitionId: 'def-1', title: 'C1',
+        tagline: 't', district: 'The Grid', rewardXp: 10, rewardOzzies: 10,
+        visibility: 'visible', status: 'active',
+      },
+    ],
+  });
+  const getRoute = app.getRoute('GET', '/api/missions/world');
+  const refresh = await invokeRoute(getRoute);
+  assert.equal(refresh.statusCode, 200);
+  assert.equal(refresh.body.activeRun.phase, 'ENCOUNTER_RESOLUTION');
+  assert.equal(refresh.body.activeRun.encounter.encounterId, 'rival-ambush');
+
+  const resolve = await invokeRoute(encounterRoute, {
+    body: { runId, action: 'resolve', outcome: { hpDelta: -1 } },
+  });
+  assert.equal(resolve.statusCode, 200);
+  assert.equal(resolve.body.activeRun.phase, 'TRAVELING_OUTBOUND');
+  assert.equal(resolve.body.activeRun.encounter.encounterId, 'rival-ambush');
+  assert.deepEqual(resolve.body.activeRun.encounter.outcome, { hpDelta: -1 });
+});
+
+test('district world inbound travel reaching workshop transitions to MISSION_COMPLETE without card mutation', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'TRAVELING_INBOUND',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 1,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:01:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/checkpoint');
+
+  const res = await invokeRoute(route, {
+    body: { runId, nodeId: 'workshop', checkpointNodeIndex: 0 },
+  });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun.phase, 'MISSION_COMPLETE');
+  assert.equal(res.body.activeRun.checkpointNodeIndex, 0);
+  assert.ok(res.body.activeRun.completedAt, 'completedAt timestamp is recorded');
+
+  // Card mutation is deferred to PR 4 (#633): no writes to user decks/cards.
+  const cardWrites = adminDb.writeLog.filter((entry) => entry.path.startsWith('users/'));
+  assert.equal(cardWrites.length, 0, 'mission completion must not mutate player cards yet');
 });
