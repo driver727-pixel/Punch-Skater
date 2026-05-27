@@ -811,10 +811,52 @@ export interface DistrictWorld {
 }
 
 /**
- * Phase of an active district run.
+ * Phase of an active district run. The canonical names are emitted by the
+ * server's mission phase state machine (see server/lib/missionPhaseMachine.js);
+ * the lower-case strings are kept as a backward-compatibility alias for
+ * runs persisted before that machine was introduced.
  * @sprint 9 @owner pr1
  */
-export type ActiveRunPhase = "outbound" | "at_poi" | "returning" | "complete" | "failed";
+export type ActiveRunPhase =
+  | "IDLE_AT_BASE"
+  | "TRAVELING_OUTBOUND"
+  | "ENCOUNTER_RESOLUTION"
+  | "AT_POI_FORK"
+  | "TRAVELING_INBOUND"
+  | "MISSION_COMPLETE"
+  // Legacy phase strings; normalized via normalizeMissionPhase() on read.
+  | "outbound"
+  | "at_poi"
+  | "returning"
+  | "complete"
+  | "failed";
+
+/**
+ * Optional metadata persisted alongside the phase to support refresh-safe
+ * encounter and POI fork resolution flows. Card mutation is intentionally
+ * deferred to PR 4 (#633) — these fields only record run-scoped outcomes.
+ * @sprint 9 @owner pr3
+ */
+export interface MissionEncounterRecord {
+  /** Stable id for the encounter being resolved. */
+  encounterId: string;
+  /** Phase the run was in before the encounter interrupted it. */
+  resumePhase: "TRAVELING_OUTBOUND" | "TRAVELING_INBOUND";
+  /** Node where the encounter triggered. */
+  triggeredAtNodeId: string;
+  startedAt: string;
+  resolvedAt?: string;
+  /** Free-form outcome blob set by the resolution endpoint. */
+  outcome?: Record<string, unknown> | null;
+}
+
+export interface MissionPoiOutcome {
+  /** Stable id for the resolved POI mission fork option. */
+  choiceId: string;
+  resolvedAt: string;
+  /** Free-form outcome blob; aggregated on successful return in PR 4. */
+  outcome?: Record<string, unknown> | null;
+}
 
 export interface CharacterLayerExtractionContract {
   version: string;
@@ -866,6 +908,10 @@ export interface ActiveDistrictRun {
   routeNodeIds?: string[];
   checkpointNodeIndex?: number;
   lastCheckpointAt?: string;
+  /** Active encounter being resolved, when phase === "ENCOUNTER_RESOLUTION". */
+  encounter?: MissionEncounterRecord | null;
+  /** Result of the POI fork resolution; set once on AT_POI_FORK -> TRAVELING_INBOUND. */
+  poiOutcome?: MissionPoiOutcome | null;
 }
 
 /**
