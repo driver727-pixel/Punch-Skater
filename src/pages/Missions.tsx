@@ -22,7 +22,6 @@ import {
   resolveEncounter,
   resolvePoiFork,
   startDistrictRun,
-  startEncounter,
 } from "../services/missions";
 import { MissionsMap } from "../components/MissionsMap";
 import { MissionsPanel } from "../components/MissionsPanel";
@@ -384,7 +383,6 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const rafRef = useRef<number | null>(null);
   const lastCheckpointSyncRef = useRef<string>("");
   const animatingRef = useRef(false);
-  const encounterTriggeredRef = useRef<string>("");
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -446,25 +444,6 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     const checkpointNodeIndex = Math.max(0, Math.min(routeNodeIds.length - 1, activeRun.checkpointNodeIndex ?? 0));
     if (checkpointNodeIndex >= routeNodeIds.length - 1) return;
 
-    // Mid-route encounter trigger: fire at midpoint if contract has an encounter
-    // and this run has not yet started one.
-    const midpoint = Math.floor(routeNodeIds.length / 2);
-    const canTriggerEncounter =
-      selectedContract?.encounter &&
-      !activeRun.encounter &&
-      checkpointNodeIndex === midpoint;
-    const triggerKey = `${activeRun.runId}:encounter`;
-    if (canTriggerEncounter && encounterTriggeredRef.current !== triggerKey) {
-      encounterTriggeredRef.current = triggerKey;
-      const currentNodeId = routeNodeIds[checkpointNodeIndex];
-      startEncounter(uid, activeRun.runId, selectedContract!.encounter!.id, currentNodeId, userEmail)
-        .then((run) => setActiveRun(run))
-        .catch((err: unknown) => {
-          console.warn("Encounter trigger failed; travel continues.", err instanceof Error ? err.message : err);
-        });
-      return;
-    }
-
     const fromIndex = checkpointNodeIndex;
     const toIndex = checkpointNodeIndex + 1;
     const syncKey = `${activeRun.runId}:${fromIndex}`;
@@ -505,7 +484,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       }
       animatingRef.current = false;
     };
-  }, [activeRun, uid, userEmail, world, selectedContract]);
+  }, [activeRun, uid, userEmail, world]);
 
   // ── Inbound travel animation ─────────────────────────────────────────────
   useEffect(() => {
@@ -594,7 +573,6 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       const run = await startDistrictRun(uid, selectedContractId, "", "Default Deck", userEmail);
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
-      encounterTriggeredRef.current = "";
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to start run.");
     } finally {
@@ -606,7 +584,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     if (!activeRun) return;
     setResolvingEncounter(true);
     try {
-      const run = await resolveEncounter(uid, activeRun.runId, { choiceId }, userEmail);
+      const run = await resolveEncounter(uid, activeRun.runId, choiceId, userEmail);
       setActiveRun(run);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to resolve encounter.");
@@ -659,7 +637,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   // can always be shown after a page reload.
   let activeEncounter: MissionEncounter | null = null;
   if (phase === MISSION_PHASE.ENCOUNTER_RESOLUTION && activeRun?.encounter) {
-    activeEncounter = selectedContract?.encounter ?? {
+    activeEncounter = activeRun.encounter.contract ?? selectedContract?.encounter ?? {
       id: activeRun.encounter.encounterId,
       badge: "⚡",
       prompt: "An unexpected situation has interrupted your run.",

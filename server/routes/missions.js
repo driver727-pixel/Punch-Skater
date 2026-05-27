@@ -13,8 +13,13 @@ import {
 } from '../lib/missions.js';
 import { generateDistrictWorld } from '../lib/mazeGenerator.js';
 import {
+  buildEncounterResultPayload,
+  buildPoiResultPayload,
+  pickCheckpointEncounter,
+  sanitizeEncounterContract,
+} from '../lib/missionEncounterDefinitions.js';
+import {
   MISSION_PHASE,
-  canTransition,
   normalizePhase,
   transition as transitionPhase,
 } from '../lib/missionPhaseMachine.js';
@@ -1344,7 +1349,9 @@ export function registerMissionRoutes(app, {
         launchedAt: now,
         updatedAt: now,
         encounter: null,
+        encounterHistory: [],
         poiOutcome: null,
+        missionResults: [],
       };
 
       await runRef.set(activeRun);
@@ -1421,6 +1428,10 @@ export function registerMissionRoutes(app, {
         return;
       }
 
+      const worldSnap = await adminDb.collection(WORLD_COLLECTION).doc(`${caller.uid}_${activeRun.boardDateKey}`).get();
+      const world = worldSnap.exists ? worldSnap.data() : null;
+      const contract = world?.contracts?.find((candidate) => candidate.id === activeRun.contractId) ?? null;
+
       // Decide whether this checkpoint completes a leg and triggers a phase
       // transition. Reaching the POI (last node on outbound) parks the run
       // at AT_POI_FORK; reaching the Workshop (first node on inbound) marks
@@ -1443,6 +1454,25 @@ export function registerMissionRoutes(app, {
         }
       }
 
+      const checkpointEncounter = nextPhase === activeRun.phase
+        ? pickCheckpointEncounter({
+          activeRun,
+          world,
+          contract,
+          nodeId,
+          checkpointNodeIndex,
+          routeNodeIds,
+        })
+        : null;
+      if (checkpointEncounter) {
+        try {
+          nextPhase = transitionPhase(activeRun.phase, MISSION_PHASE.ENCOUNTER_RESOLUTION);
+        } catch (transitionError) {
+          res.status(transitionError.statusCode ?? 409).json({ error: transitionError.message });
+          return;
+        }
+      }
+
       const now = new Date().toISOString();
       const nextRun = {
         ...activeRun,
@@ -1450,6 +1480,20 @@ export function registerMissionRoutes(app, {
         lastCheckpointAt: now,
         updatedAt: now,
         phase: nextPhase,
+        ...(checkpointEncounter ? {
+          encounter: {
+            encounterId: checkpointEncounter.encounter.id,
+            contract: checkpointEncounter.encounter,
+            resumePhase: activeRun.phase,
+            leg: checkpointEncounter.leg,
+            triggerKey: checkpointEncounter.triggerKey,
+            triggeredAtNodeId: nodeId,
+            checkpointNodeIndex,
+            startedAt: now,
+            resolvedAt: null,
+            outcome: null,
+          },
+        } : {}),
         ...(nextPhase === MISSION_PHASE.MISSION_COMPLETE ? { completedAt: now } : {}),
       };
       await runRef.set(nextRun, { merge: true });
@@ -1482,7 +1526,6 @@ export function registerMissionRoutes(app, {
 
     const runId = typeof req.body?.runId === 'string' ? req.body.runId.trim() : '';
     const choiceId = typeof req.body?.choiceId === 'string' ? req.body.choiceId.trim() : '';
-    const outcome = isPlainObject(req.body?.outcome) ? req.body.outcome : null;
     if (!runId || !choiceId) {
       res.status(400).json({ error: 'runId and choiceId are required.' });
       return;
@@ -1511,11 +1554,30 @@ export function registerMissionRoutes(app, {
         return;
       }
 
+      const worldSnap = await adminDb.collection(WORLD_COLLECTION).doc(`${caller.uid}_${activeRun.boardDateKey}`).get();
+      const world = worldSnap.exists ? worldSnap.data() : null;
+      const contract = world?.contracts?.find((candidate) => candidate.id === activeRun.contractId) ?? null;
+      if (!contract) {
+        res.status(404).json({ error: 'Active run contract was not found in today\'s world.' });
+        return;
+      }
+
       const now = new Date().toISOString();
+      let resultPayload;
+      try {
+        resultPayload = buildPoiResultPayload(contract, choiceId, now);
+      } catch (payloadError) {
+        res.status(payloadError.statusCode ?? 400).json({ error: payloadError.message });
+        return;
+      }
       const nextRun = {
         ...activeRun,
         phase: nextPhase,
-        poiOutcome: { choiceId, resolvedAt: now, outcome: outcome ?? null },
+        poiOutcome: { choiceId, resolvedAt: now, outcome: resultPayload },
+        missionResults: [
+          ...(Array.isArray(activeRun.missionResults) ? activeRun.missionResults : []),
+          resultPayload,
+        ],
         updatedAt: now,
       };
       await runRef.set(nextRun, { merge: true });
@@ -1577,6 +1639,14 @@ export function registerMissionRoutes(app, {
           res.status(400).json({ error: 'encounterId and nodeId are required to start an encounter.' });
           return;
         }
+        const worldSnap = await adminDb.collection(WORLD_COLLECTION).doc(`${caller.uid}_${activeRun.boardDateKey}`).get();
+        const world = worldSnap.exists ? worldSnap.data() : null;
+        const contract = world?.contracts?.find((candidate) => candidate.id === activeRun.contractId) ?? null;
+        const encounterContract = sanitizeEncounterContract(contract?.encounter ?? null);
+        if (!encounterContract || encounterContract.id !== encounterId) {
+          res.status(400).json({ error: 'Encounter is not valid for this active contract.' });
+          return;
+        }
         const resumePhase = activeRun.phase;
         let nextPhase;
         try {
@@ -1593,7 +1663,10 @@ export function registerMissionRoutes(app, {
           phase: nextPhase,
           encounter: {
             encounterId,
+            contract: encounterContract,
             resumePhase,
+            leg: resumePhase === MISSION_PHASE.TRAVELING_INBOUND ? 'inbound' : 'outbound',
+            triggerKey: `${activeRun.runId}:manual:${triggeredAtNodeId}`,
             triggeredAtNodeId,
             startedAt: now,
             resolvedAt: null,
@@ -1611,7 +1684,22 @@ export function registerMissionRoutes(app, {
           return;
         }
         const resumePhase = activeRun.encounter.resumePhase;
-        const outcome = isPlainObject(req.body?.outcome) ? req.body.outcome : null;
+        const choiceId = typeof req.body?.choiceId === 'string'
+          ? req.body.choiceId.trim()
+          : typeof req.body?.outcome?.choiceId === 'string'
+            ? req.body.outcome.choiceId.trim()
+            : '';
+        if (!choiceId) {
+          res.status(400).json({ error: 'choiceId is required to resolve an encounter.' });
+          return;
+        }
+        let outcome;
+        try {
+          outcome = buildEncounterResultPayload(activeRun.encounter.contract, choiceId, now);
+        } catch (payloadError) {
+          res.status(payloadError.statusCode ?? 400).json({ error: payloadError.message });
+          return;
+        }
         let nextPhase;
         try {
           nextPhase = transitionPhase(activeRun.phase, resumePhase);
@@ -1626,6 +1714,14 @@ export function registerMissionRoutes(app, {
           ...activeRun,
           phase: nextPhase,
           encounter: { ...activeRun.encounter, resolvedAt: now, outcome },
+          encounterHistory: [
+            ...(Array.isArray(activeRun.encounterHistory) ? activeRun.encounterHistory : []),
+            { ...activeRun.encounter, resolvedAt: now, outcome },
+          ],
+          missionResults: [
+            ...(Array.isArray(activeRun.missionResults) ? activeRun.missionResults : []),
+            outcome,
+          ],
           updatedAt: now,
         };
       }
