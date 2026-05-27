@@ -31,13 +31,14 @@ import { MissionsPanel } from "../components/MissionsPanel";
 
 const PANEL_WIDTH = 320;
 const SEGMENT_DURATION_MS = 700;
+const ACTION_ERROR_REFRESH_SUFFIX = "Please try again or refresh the Missions page.";
 const ACTION_ERROR_BANNER_STYLE: CSSProperties = {
   padding: "8px 20px",
   borderBottom: "1px solid rgba(255,138,138,0.22)",
   background: "rgba(255,80,80,0.08)",
   color: "#ffb0b0",
   fontFamily: "monospace",
-  fontSize: 10,
+  fontSize: 12,
   lineHeight: 1.45,
   flexShrink: 0,
 };
@@ -684,25 +685,34 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const lastCheckpointSyncRef = useRef<string>("");
   const animatingRef = useRef(false);
 
+  const loadDistrictWorld = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setActionError(null);
+    setSegmentTravel(null);
+    lastCheckpointSyncRef.current = "";
+    try {
+      const { world: w, activeRun: run, visuals: payloadVisuals } = await getDistrictWorld(uid, userEmail);
+      setWorld(w);
+      setActiveRun(run);
+      setVisuals(payloadVisuals ?? w.visuals ?? null);
+      const restoredPhase = normalizeMissionPhase(run?.phase);
+      if (run && restoredPhase !== MISSION_PHASE.MISSION_FAILED) {
+        const contract = w.contracts.find((c) => c.id === run.contractId);
+        if (contract) setSelectedContractId(contract.id);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load district world.");
+    } finally {
+      setLoading(false);
+    }
+  }, [uid, userEmail]);
+
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
-    getDistrictWorld(uid, userEmail)
-      .then(({ world: w, activeRun: run, visuals: payloadVisuals }) => {
-        setWorld(w);
-        setActiveRun(run);
-        setVisuals(payloadVisuals ?? w.visuals ?? null);
-        const restoredPhase = normalizeMissionPhase(run?.phase);
-        if (run && restoredPhase !== MISSION_PHASE.MISSION_FAILED) {
-          const contract = w.contracts.find((c) => c.id === run.contractId);
-          if (contract) setSelectedContractId(contract.id);
-        }
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "Failed to load district world.");
-      })
-      .finally(() => setLoading(false));
-  }, [uid, userEmail]);
+    void loadDistrictWorld();
+  }, [loadDistrictWorld]);
 
   useEffect(() => {
     if (!world) return;
@@ -773,7 +783,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         })
         .catch(() => {
           lastCheckpointSyncRef.current = "";
-          setActionError("Failed to sync outbound checkpoint. Please try again or refresh the Missions page.");
+          setActionError(`Failed to sync outbound checkpoint. ${ACTION_ERROR_REFRESH_SUFFIX}`);
           setSegmentTravel(null);
           animatingRef.current = false;
         });
@@ -826,7 +836,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         })
         .catch(() => {
           lastCheckpointSyncRef.current = "";
-          setActionError("Failed to sync return checkpoint. Please try again or refresh the Missions page.");
+          setActionError(`Failed to sync return checkpoint. ${ACTION_ERROR_REFRESH_SUFFIX}`);
           setSegmentTravel(null);
           animatingRef.current = false;
         });
@@ -884,7 +894,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to start run.";
-      setActionError(`${message} Please try again or refresh the Missions page.`);
+      setActionError(`${message} ${ACTION_ERROR_REFRESH_SUFFIX}`);
     } finally {
       setLaunching(false);
     }
@@ -899,7 +909,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       setActiveRun(run);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to resolve encounter.";
-      setActionError(`${message} Please try again or refresh the Missions page.`);
+      setActionError(`${message} ${ACTION_ERROR_REFRESH_SUFFIX}`);
     } finally {
       setResolvingEncounter(false);
     }
@@ -915,7 +925,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to resolve POI fork.";
-      setActionError(`${message} Please try again or refresh the Missions page.`);
+      setActionError(`${message} ${ACTION_ERROR_REFRESH_SUFFIX}`);
     } finally {
       setResolvingFork(false);
     }
@@ -940,8 +950,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   }, [activeRun, uid, userEmail]);
 
   const handleRefreshMissions = useCallback(() => {
-    window.location.reload();
-  }, []);
+    void loadDistrictWorld();
+  }, [loadDistrictWorld]);
 
   if (loading) {
     return (
