@@ -13,6 +13,7 @@ import type {
   DistrictWorldVisuals,
   MissionEncounter,
   MissionFork,
+  MissionRunDebrief,
   WorldContract,
 } from "../lib/sharedTypes";
 import {
@@ -44,6 +45,7 @@ const PHASE_COLORS: Record<string, string> = {
   [MISSION_PHASE.AT_POI_FORK]: "#7dffb6",
   [MISSION_PHASE.TRAVELING_INBOUND]: "#ffe44d",
   [MISSION_PHASE.MISSION_COMPLETE]: "#7dffb6",
+  [MISSION_PHASE.MISSION_FAILED]: "#ff6b6b",
 };
 
 function RunPhaseBadge({ phase }: { phase: string }) {
@@ -69,6 +71,88 @@ function RunPhaseBadge({ phase }: { phase: string }) {
     >
       {label}
     </span>
+  );
+}
+
+function MissionDebriefPanel({
+  debrief,
+  contract,
+  onDismiss,
+}: {
+  debrief?: MissionRunDebrief;
+  contract?: WorldContract;
+  onDismiss: () => void;
+}) {
+  const success = debrief?.success !== false;
+  const title = debrief?.contractTitle ?? contract?.title ?? "Mission run";
+  const results = debrief?.results ?? [];
+  return (
+    <div style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ fontSize: 32 }}>{success ? "🏁" : "🗂️"}</div>
+        <div>
+          <p style={{ margin: 0, fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: success ? "#7dffb6" : "#ff8a8a" }}>
+            {success ? "Successful return debrief" : "Failed-run record"}
+          </p>
+          <h2 style={{ margin: "4px 0 0", fontFamily: "monospace", fontSize: 16, color: "#fff" }}>{title}</h2>
+        </div>
+      </div>
+
+      <p style={{ margin: 0, fontFamily: "monospace", fontSize: 12, color: "rgba(255,255,255,0.72)", lineHeight: 1.55 }}>
+        {debrief?.summary ?? (success ? "Run complete." : "Run logged with no gameplay penalties.")}
+      </p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {[
+          ["XP", debrief?.totalRewardXp ?? 0],
+          ["Ozzies", debrief?.totalRewardOzzies ?? 0],
+          ["Bonus XP", debrief?.bonusRewardXp ?? 0],
+          ["Bonus Ozzies", debrief?.bonusRewardOzzies ?? 0],
+        ].map(([label, value]) => (
+          <div key={label} style={{ padding: 10, border: "1px solid rgba(125,231,255,0.18)", borderRadius: 4, background: "rgba(125,231,255,0.05)" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 9, color: "#7de7ff", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</div>
+            <div style={{ marginTop: 4, fontFamily: "monospace", fontSize: 18, fontWeight: 700, color: "#fff" }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding: 12, border: "1px solid rgba(255,58,242,0.22)", borderRadius: 5, background: "rgba(255,58,242,0.05)" }}>
+        <p style={{ margin: 0, fontFamily: "monospace", fontSize: 9, color: "#ff8af8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+          Card record
+        </p>
+        <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: 12, color: "rgba(255,255,255,0.72)" }}>
+          {debrief?.cardName ? `${debrief.cardName} · ${debrief.cardId}` : "No card mutation was available for this run."}
+        </p>
+        {!success && (
+          <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: 11, color: "#ffb0b0" }}>
+            Failure history only — no XP, Ozzies, stat loss, repair, or lockout applied.
+          </p>
+        )}
+      </div>
+
+      {results.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ margin: 0, fontFamily: "monospace", fontSize: 9, color: "#7de7ff", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+            Route events
+          </p>
+          {results.map((result, index) => (
+            <div key={`${result.resultType}-${result.choiceId}-${index}`} style={{ padding: 10, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, background: "rgba(255,255,255,0.035)" }}>
+              <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "#fff", fontWeight: 700 }}>{result.label}</p>
+              <p style={{ margin: "4px 0 0", fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.62)", lineHeight: 1.45 }}>{result.summary}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        aria-label="Return to map"
+        onClick={onDismiss}
+        style={{ marginTop: "auto", padding: "10px 0", background: "rgba(125,231,255,0.08)", border: "1px solid rgba(125,231,255,0.55)", borderRadius: 4, color: "#7de7ff", fontFamily: "monospace", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer" }}
+      >
+        Return to map
+      </button>
+    </div>
   );
 }
 
@@ -392,7 +476,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         setWorld(w);
         setActiveRun(run);
         setVisuals(payloadVisuals ?? w.visuals ?? null);
-        if (run && run.phase !== "complete" && run.phase !== "failed") {
+        const restoredPhase = normalizeMissionPhase(run?.phase);
+        if (run && restoredPhase !== MISSION_PHASE.MISSION_FAILED) {
           const contract = w.contracts.find((c) => c.id === run.contractId);
           if (contract) setSelectedContractId(contract.id);
         }
@@ -607,6 +692,12 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     }
   }, [uid, activeRun, userEmail]);
 
+  const handleDismissDebrief = useCallback(() => {
+    setActiveRun(null);
+    setSegmentTravel(null);
+    lastCheckpointSyncRef.current = "";
+  }, []);
+
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#7de7ff", fontFamily: "monospace", fontSize: 13 }}>
@@ -703,18 +794,12 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
             onResolve={handleResolvePoiFork}
             resolving={resolvingFork}
           />
-        ) : phase === MISSION_PHASE.MISSION_COMPLETE ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24 }}>
-            <div style={{ fontSize: 32 }}>🏁</div>
-            <p style={{ margin: 0, fontFamily: "monospace", fontSize: 13, fontWeight: 700, color: "#7dffb6", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>
-              Run Complete
-            </p>
-            {selectedContract && (
-              <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.55)", textAlign: "center" }}>
-                {selectedContract.title}
-              </p>
-            )}
-          </div>
+        ) : phase === MISSION_PHASE.MISSION_COMPLETE || phase === MISSION_PHASE.MISSION_FAILED ? (
+          <MissionDebriefPanel
+            debrief={activeRun?.debrief}
+            contract={selectedContract}
+            onDismiss={handleDismissDebrief}
+          />
         ) : selectedContract ? (
           <ContractDetailPanel
             contract={selectedContract}

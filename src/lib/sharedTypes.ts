@@ -828,6 +828,7 @@ export type ActiveRunPhase =
   | "AT_POI_FORK"
   | "TRAVELING_INBOUND"
   | "MISSION_COMPLETE"
+  | "MISSION_FAILED"
   // Legacy phase strings; normalized via normalizeMissionPhase() on read.
   | "outbound"
   | "at_poi"
@@ -882,6 +883,53 @@ export interface MissionRunResultPayload {
   summary: string;
   rewardXpDelta: number;
   rewardOzziesDelta: number;
+}
+
+/** @sprint 9 @owner pr4 — Aggregated round-trip mission debrief shown after return/failure. */
+export interface MissionRunDebrief {
+  runId: string;
+  contractId: string;
+  contractTitle: string;
+  district: District;
+  success: boolean;
+  summary: string;
+  routeSummary: string;
+  launchedAt: string;
+  completedAt: string;
+  deckId?: string;
+  deckName?: string;
+  cardId?: string | null;
+  cardName?: string | null;
+  baseRewardXp: number;
+  baseRewardOzzies: number;
+  bonusRewardXp: number;
+  bonusRewardOzzies: number;
+  totalRewardXp: number;
+  totalRewardOzzies: number;
+  resultCount: number;
+  results: MissionRunResultPayload[];
+  failureReason?: string;
+}
+
+/** @sprint 9 @owner pr4 — Non-punitive card/deck history record for mission runs. */
+export interface MissionRunRecord {
+  schemaVersion: 1;
+  runId: string;
+  contractId: string;
+  contractTitle: string;
+  district: District;
+  success: boolean;
+  completedAt: string;
+  deckId?: string;
+  deckName?: string;
+  cardId?: string | null;
+  cardName?: string | null;
+  rewardXp: number;
+  rewardOzzies: number;
+  resultCount: number;
+  routeNodeIds?: string[];
+  summary: string;
+  failureReason?: string;
 }
 
 export interface CharacterLayerExtractionContract {
@@ -942,6 +990,14 @@ export interface ActiveDistrictRun {
   poiOutcome?: MissionPoiOutcome | null;
   /** Server-authored POI and encounter result payloads accumulated on this run. */
   missionResults?: MissionRunResultPayload[];
+  /** @sprint 9 @owner pr4 — Aggregated debrief written exactly once on successful return/failure. */
+  debrief?: MissionRunDebrief;
+  /** @sprint 9 @owner pr4 — Timestamp when final rewards/history were committed. */
+  completionFinalizedAt?: string;
+  /** @sprint 9 @owner pr4 — Archive timestamp after terminal run cleanup. */
+  archivedAt?: string;
+  /** @sprint 9 @owner pr4 — Non-punitive failure reason for terminal failed runs. */
+  failureReason?: string;
 }
 
 /**

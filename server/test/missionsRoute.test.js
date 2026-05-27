@@ -950,6 +950,13 @@ test('district world checkpoint route rejects updates from non-travel phases', a
       launchedAt: `${boardDateKey}T01:00:00.000Z`,
       updatedAt: `${boardDateKey}T01:01:00.000Z`,
     },
+    'users/user-1/decks/deck-1': buildGridDeck({ id: 'deck-1', challengerCardId: 'grid-runner-1' }),
+    'users/user-1/cards/grid-runner-1': {
+      ...buildCard({ id: 'grid-runner-1', identity: { name: 'Trace Lead' } }),
+      xp: 10,
+      ozzies: 5,
+    },
+    'userProfiles/user-1': { missionXp: 20, missionOzzies: 30 },
   });
   const app = registerMissionHarness({ adminDb });
   const route = app.getRoute('POST', '/api/missions/world/checkpoint');
@@ -1169,7 +1176,7 @@ test('district world encounter route brackets travel with start/resolve and surv
   assert.equal(resolve.body.activeRun.encounterHistory.length, 1);
 });
 
-test('district world inbound travel reaching workshop transitions to MISSION_COMPLETE without card mutation', async () => {
+test('district world inbound travel reaching workshop finalizes rewards exactly once', async () => {
   const boardDateKey = new Date().toISOString().slice(0, 10);
   const worldId = `user-1_${boardDateKey}`;
   const runId = `${worldId}_run`;
@@ -1187,6 +1194,39 @@ test('district world inbound travel reaching workshop transitions to MISSION_COM
       launchedAt: `${boardDateKey}T01:00:00.000Z`,
       updatedAt: `${boardDateKey}T01:01:00.000Z`,
     },
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [
+        { from: 'workshop', to: 'junction-0' },
+        { from: 'junction-0', to: 'poi-0' },
+      ],
+      contracts: [{
+        id: 'contract-1',
+        nodeId: 'poi-0',
+        definitionId: 'def-1',
+        title: 'Contract One',
+        tagline: 'Return route',
+        district: 'The Grid',
+        rewardXp: 100,
+        rewardOzzies: 80,
+        visibility: 'visible',
+        status: 'active',
+      }],
+    },
+    'users/user-1/decks/deck-1': buildGridDeck({ id: 'deck-1', challengerCardId: 'grid-runner-1' }),
+    'users/user-1/cards/grid-runner-1': {
+      ...buildCard({ id: 'grid-runner-1', identity: { name: 'Trace Lead' } }),
+      xp: 10,
+      ozzies: 5,
+    },
+    'userProfiles/user-1': { missionXp: 20, missionOzzies: 30 },
   });
   const app = registerMissionHarness({ adminDb });
   const route = app.getRoute('POST', '/api/missions/world/checkpoint');
@@ -1198,8 +1238,92 @@ test('district world inbound travel reaching workshop transitions to MISSION_COM
   assert.equal(res.body.activeRun.phase, 'MISSION_COMPLETE');
   assert.equal(res.body.activeRun.checkpointNodeIndex, 0);
   assert.ok(res.body.activeRun.completedAt, 'completedAt timestamp is recorded');
+  assert.ok(res.body.activeRun.completionFinalizedAt, 'completion finalization timestamp is recorded');
+  assert.equal(res.body.activeRun.debrief.totalRewardXp, 100);
+  assert.equal(res.body.activeRun.debrief.totalRewardOzzies, 80);
 
-  // Card mutation is deferred to PR 4 (#633): no writes to user decks/cards.
-  const cardWrites = adminDb.writeLog.filter((entry) => entry.path.startsWith('users/'));
-  assert.equal(cardWrites.length, 0, 'mission completion must not mutate player cards yet');
+  const persistedCard = adminDb.store.get('users/user-1/cards/grid-runner-1');
+  assert.equal(persistedCard.xp, 110);
+  assert.equal(persistedCard.ozzies, 85);
+  assert.equal(persistedCard.missionStats.completedRuns, 1);
+  assert.equal(persistedCard.missionRunRecords[0].runId, runId);
+  assert.equal(persistedCard.missionRunRecords[0].success, true);
+  assert.ok(adminDb.store.get(`missionRunArchives/${runId}`), 'completed run is archived');
+  assert.equal(adminDb.store.get(`missionWorlds/${worldId}`).contracts[0].status, 'completed');
+
+  const retry = await invokeRoute(route, {
+    body: { runId, nodeId: 'workshop', checkpointNodeIndex: 0 },
+  });
+  assert.equal(retry.statusCode, 200);
+  assert.equal(adminDb.store.get('users/user-1/cards/grid-runner-1').xp, 110);
+});
+
+test('district world fail route records non-punitive card history without rewards', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [{ from: 'workshop', to: 'poi-0' }],
+      contracts: [{
+        id: 'contract-1',
+        nodeId: 'poi-0',
+        definitionId: 'def-1',
+        title: 'Contract One',
+        tagline: 'Failed route',
+        district: 'The Grid',
+        rewardXp: 100,
+        rewardOzzies: 80,
+        visibility: 'visible',
+        status: 'active',
+      }],
+    },
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'TRAVELING_OUTBOUND',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'poi-0'],
+      checkpointNodeIndex: 0,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:00:00.000Z`,
+    },
+    'users/user-1/decks/deck-1': buildGridDeck({ id: 'deck-1', challengerCardId: 'grid-runner-1' }),
+    'users/user-1/cards/grid-runner-1': {
+      ...buildCard({ id: 'grid-runner-1', identity: { name: 'Trace Lead' } }),
+      xp: 10,
+      ozzies: 5,
+    },
+    'userProfiles/user-1': { missionXp: 20, missionOzzies: 30 },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/fail');
+  assert.ok(route, 'POST /api/missions/world/fail route must be registered');
+
+  const res = await invokeRoute(route, {
+    body: { runId, reason: 'Player bailed before return.' },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun.phase, 'MISSION_FAILED');
+  assert.equal(res.body.activeRun.debrief.success, false);
+  assert.equal(res.body.activeRun.debrief.totalRewardXp, 0);
+  assert.equal(res.body.activeRun.debrief.totalRewardOzzies, 0);
+  const persistedCard = adminDb.store.get('users/user-1/cards/grid-runner-1');
+  assert.equal(persistedCard.xp, 10);
+  assert.equal(persistedCard.ozzies, 5);
+  assert.equal(persistedCard.missionStats.failedRuns, 1);
+  assert.equal(persistedCard.missionRunRecords[0].success, false);
+  assert.equal(adminDb.store.get('userProfiles/user-1').missionXp, 20);
+  assert.ok(adminDb.store.get(`missionRunArchives/${runId}`), 'failed run is archived');
 });
