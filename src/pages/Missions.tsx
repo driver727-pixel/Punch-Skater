@@ -122,7 +122,8 @@ function MissionDebriefPanel({
   contract?: WorldContract;
   onDismiss: () => void;
 }) {
-  const success = debrief?.success !== false;
+  const hasDebrief = Boolean(debrief);
+  const success = debrief?.success === true;
   const title = debrief?.contractTitle ?? contract?.title ?? "Mission run";
   const district = debrief?.district ?? contract?.district ?? "The Grid";
   const results = debrief?.results ?? [];
@@ -186,7 +187,7 @@ function MissionDebriefPanel({
       {/* ── Summary text ── */}
       <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
         <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>
-          {debrief?.summary ?? (success ? "Run complete." : "Run logged with no gameplay penalties.")}
+          {debrief?.summary ?? (hasDebrief ? "Run logged with no gameplay penalties." : "Run record unavailable. Refresh the Missions page before dismissing this run.")}
         </p>
       </div>
 
@@ -231,7 +232,7 @@ function MissionDebriefPanel({
                   style={{
                     padding: "8px 10px",
                     border: `1px solid ${isPoi ? `${accent.color}30` : "rgba(255,255,255,0.09)"}`,
-                    borderLeft: `2px solid ${isPoi ? accent.color : (result.success !== false ? "rgba(125,255,182,0.5)" : "rgba(255,138,138,0.35)")}`,
+                    borderLeft: `2px solid ${isPoi ? accent.color : (result.success === true ? "rgba(125,255,182,0.5)" : "rgba(255,138,138,0.35)")}`,
                     borderRadius: "0 4px 4px 0",
                     background: isPoi ? `${accent.color}08` : "rgba(255,255,255,0.02)",
                   }}
@@ -659,6 +660,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const [visuals, setVisuals] = useState<DistrictWorldVisuals | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
   const [resolvingEncounter, setResolvingEncounter] = useState(false);
   const [resolvingFork, setResolvingFork] = useState(false);
@@ -750,11 +752,14 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       const nextNodeId = routeNodeIds[toIndex];
       persistDistrictCheckpoint(uid, activeRun.runId, nextNodeId, toIndex, userEmail)
         .then((run) => {
+          setActionError(null);
           setActiveRun(run);
           setSegmentTravel(null);
           animatingRef.current = false;
         })
         .catch(() => {
+          lastCheckpointSyncRef.current = "";
+          setActionError("Failed to sync outbound checkpoint. Please try refreshing Missions.");
           setSegmentTravel(null);
           animatingRef.current = false;
         });
@@ -800,11 +805,14 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       const nextNodeId = routeNodeIds[toIndex];
       persistDistrictCheckpoint(uid, activeRun.runId, nextNodeId, toIndex, userEmail)
         .then((run) => {
+          setActionError(null);
           setActiveRun(run);
           setSegmentTravel(null);
           animatingRef.current = false;
         })
         .catch(() => {
+          lastCheckpointSyncRef.current = "";
+          setActionError("Failed to sync return checkpoint. Please try refreshing Missions.");
           setSegmentTravel(null);
           animatingRef.current = false;
         });
@@ -843,6 +851,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   }, [activeRun, segmentTravel, world]);
 
   const handleSelectContract = useCallback((contractId: string) => {
+    setActionError(null);
     setSelectedContractId(contractId);
   }, []);
 
@@ -854,12 +863,13 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       || !routeUsesGraphEdges({ nodes: world.nodes, edges: world.edges }, selectedRouteNodeIds)
     ) return;
     setLaunching(true);
+    setActionError(null);
     try {
       const run = await startDistrictRun(uid, selectedContractId, "", "Default Deck", userEmail);
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to start run.");
+      setActionError(err instanceof Error ? err.message : "Failed to start run.");
     } finally {
       setLaunching(false);
     }
@@ -868,11 +878,12 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const handleResolveEncounter = useCallback(async (choiceId: string) => {
     if (!activeRun) return;
     setResolvingEncounter(true);
+    setActionError(null);
     try {
       const run = await resolveEncounter(uid, activeRun.runId, choiceId, userEmail);
       setActiveRun(run);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to resolve encounter.");
+      setActionError(err instanceof Error ? err.message : "Failed to resolve encounter.");
     } finally {
       setResolvingEncounter(false);
     }
@@ -881,12 +892,13 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const handleResolvePoiFork = useCallback(async (choiceId: string) => {
     if (!activeRun) return;
     setResolvingFork(true);
+    setActionError(null);
     try {
       const run = await resolvePoiFork(uid, activeRun.runId, choiceId, userEmail);
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to resolve POI fork.");
+      setActionError(err instanceof Error ? err.message : "Failed to resolve POI fork.");
     } finally {
       setResolvingFork(false);
     }
@@ -896,6 +908,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     const runId = activeRun?.runId;
     setActiveRun(null);
     setSegmentTravel(null);
+    setActionError(null);
     lastCheckpointSyncRef.current = "";
     if (runId) {
       // Best-effort: drop the terminal run from the active-runs collection so
@@ -980,6 +993,12 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
             <RunPhaseBadge phase={phase} />
           )}
         </div>
+
+        {actionError && (
+          <div style={{ padding: "8px 20px", borderBottom: "1px solid rgba(255,138,138,0.22)", background: "rgba(255,80,80,0.08)", color: "#ffb0b0", fontFamily: "monospace", fontSize: 10, lineHeight: 1.45, flexShrink: 0 }}>
+            {actionError}
+          </div>
+        )}
 
         {/* Panel body: varies by active phase */}
         {phase === MISSION_PHASE.ENCOUNTER_RESOLUTION && activeEncounter ? (
