@@ -10,6 +10,12 @@ import { MissionsPanel } from "../components/MissionsPanel";
 const PANEL_WIDTH = 320;
 const SEGMENT_DURATION_MS = 700;
 
+/** Smoothstep easing — eliminates the harsh linear start/stop of token travel. */
+function smoothstep(t: number): number {
+  const clamped = Math.max(0, Math.min(1, t));
+  return clamped * clamped * (3 - 2 * clamped);
+}
+
 function ContractDetailPanel({
   contract,
   onLaunch,
@@ -167,9 +173,10 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     const startedAt = performance.now();
     const tick = (now: number) => {
       if (cancelled) return;
-      const progress = Math.min(1, (now - startedAt) / SEGMENT_DURATION_MS);
-      setSegmentTravel({ routeNodeIds, fromIndex, toIndex, progress });
-      if (progress < 1) {
+    const raw = Math.min(1, (now - startedAt) / SEGMENT_DURATION_MS);
+    const progress = smoothstep(raw);
+    setSegmentTravel({ routeNodeIds, fromIndex, toIndex, progress });
+    if (raw < 1) {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }

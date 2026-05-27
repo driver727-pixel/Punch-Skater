@@ -357,16 +357,20 @@ async function requestFalImage({
   normalizeFalProfile,
   body,
   profile = 'default',
+  rawBody = false,
 }) {
   const normalizedProfile = normalizeFalProfile(profile);
   const profileSettings = resolveFalProfile(normalizedProfile);
+  const resolvedBody = rawBody
+    ? body
+    : await buildFalImageRequest({ ...body, fal_profile: normalizedProfile });
   const upstream = await fetch(profileSettings.modelUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Key ${FAL_KEY}`,
     },
-    body: JSON.stringify(await buildFalImageRequest({ ...body, fal_profile: normalizedProfile })),
+    body: JSON.stringify(resolvedBody),
     signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
   });
   if (!upstream.ok) {
@@ -1133,18 +1137,20 @@ export function registerMissionRoutes(app, {
       ].join(':');
 
       const previous = visualsSnap.exists ? visualsSnap.data() : {};
+      const cachedBackdropUrl = previous?.backdrop?.cacheKey === backdropCacheKey ? previous?.backdrop?.url ?? null : null;
+      const cachedSpriteUrl = previous?.sprite?.cacheKey === spriteCacheKey ? previous?.sprite?.url ?? null : null;
       const visuals = {
         backdrop: {
-          url: previous?.backdrop?.cacheKey === backdropCacheKey ? previous?.backdrop?.url ?? null : null,
+          url: cachedBackdropUrl,
           cacheKey: backdropCacheKey,
           generatedAt: previous?.backdrop?.cacheKey === backdropCacheKey ? previous?.backdrop?.generatedAt : undefined,
-          fallback: true,
+          fallback: !cachedBackdropUrl,
         },
         sprite: {
-          url: previous?.sprite?.cacheKey === spriteCacheKey ? previous?.sprite?.url ?? null : null,
+          url: cachedSpriteUrl,
           cacheKey: spriteCacheKey,
           generatedAt: previous?.sprite?.cacheKey === spriteCacheKey ? previous?.sprite?.generatedAt : undefined,
-          fallback: true,
+          fallback: !cachedSpriteUrl,
         },
         extraction,
       };
@@ -1160,10 +1166,14 @@ export function registerMissionRoutes(app, {
               prompt: buildMissionsBackdropPrompt(world),
               seed: generateSeedFromString(worldId),
               image_size: MISSION_MAP_IMAGE_SIZE,
-              num_inference_steps: 30,
-              guidance_scale: 4,
+              thinking_level: 'high',
+              enable_web_search: false,
+              enable_safety_checker: true,
+              num_images: 1,
+              output_format: 'png',
             },
-            profile: 'default',
+            profile: 'backdrop',
+            rawBody: true,
           });
           visuals.backdrop = {
             url: imageUrl,

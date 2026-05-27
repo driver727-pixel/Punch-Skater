@@ -39,6 +39,9 @@ const WORKSHOP_R = 14;
 const POI_R = 11;
 const JUNCTION_R = 4;
 const TOKEN_R = 10;
+// Sprite tokens are rendered larger than the fallback circle so the character
+// art remains legible at the map scale.
+const SPRITE_TOKEN_HALF = 18;
 const LABEL_OFFSET = 14;
 const POI_TITLE_MAX_LENGTH = 18;
 const POI_TITLE_TRUNCATE_AT = 16;
@@ -498,10 +501,10 @@ export function MissionsMap({
           spriteUrl ? (
             <image
               href={spriteUrl}
-              x={spx(displayTokenPosition.x, svgW) - TOKEN_R}
-              y={spx(displayTokenPosition.y, svgH) - TOKEN_R}
-              width={TOKEN_R * 2}
-              height={TOKEN_R * 2}
+              x={spx(displayTokenPosition.x, svgW) - SPRITE_TOKEN_HALF}
+              y={spx(displayTokenPosition.y, svgH) - SPRITE_TOKEN_HALF}
+              width={SPRITE_TOKEN_HALF * 2}
+              height={SPRITE_TOKEN_HALF * 2}
               preserveAspectRatio="xMidYMid meet"
             />
           ) : (
