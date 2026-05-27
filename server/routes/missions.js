@@ -34,7 +34,7 @@ const DEFAULT_FAL_IMAGE_MODEL_URL = 'https://fal.run/fal-ai/flux-lora';
 const MISSION_MAP_IMAGE_SIZE = { width: 1024, height: 1024 };
 const COURIER_TOKEN_IMAGE_SIZE = { width: 512, height: 512 };
 const MISSIONS_BACKDROP_PROMPT_VERSION = 'missions-backdrop-v1';
-const MISSIONS_SPRITE_PROMPT_VERSION = 'missions-sprite-v2';
+const MISSIONS_SPRITE_PROMPT_VERSION = 'missions-sprite-v3';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
 const MIN_FAL_DIMENSION = 64;
 const WORLD_COLLECTION = 'missionWorlds';
@@ -244,36 +244,39 @@ function buildMissionsBackdropPrompt(world) {
   ].join(' ');
 }
 
-function pickSpriteSourceCard(decks, preferredDeckId) {
+function getNonEmptyString(value) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function hydrateDeckCard(deckCard, cardsById) {
+  const cardId = getNonEmptyString(deckCard?.id);
+  return (cardId && cardsById.get(cardId)) || deckCard;
+}
+
+function pickSpriteSourceCard(decks, preferredDeckId, cardsById = new Map()) {
   const normalizedDecks = Array.isArray(decks) ? decks.filter(Boolean) : [];
   const preferredDeck = normalizedDecks.find((deck) => deck?.id === preferredDeckId);
   const orderedDecks = preferredDeck ? [preferredDeck, ...normalizedDecks.filter((deck) => deck?.id !== preferredDeckId)] : normalizedDecks;
   for (const deck of orderedDecks) {
     if (!Array.isArray(deck?.cards)) continue;
     const card = deck.cards.find((entry) => entry && typeof entry === 'object');
-    if (card) return card;
+    if (card) return hydrateDeckCard(card, cardsById);
   }
   return null;
 }
 
 function buildExtractionContract(card) {
-  const sourceImageUrl = typeof card?.characterImageUrl === 'string' && card.characterImageUrl
-    ? card.characterImageUrl
-    : typeof card?.board?.imageUrl === 'string' && card.board.imageUrl
-      ? card.board.imageUrl
-    : typeof card?.backgroundImageUrl === 'string' && card.backgroundImageUrl
-      ? card.backgroundImageUrl
-      : typeof card?.frameImageUrl === 'string' && card.frameImageUrl
-        ? card.frameImageUrl
-        : null;
+  const characterImageUrl = getNonEmptyString(card?.characterImageUrl) || getNonEmptyString(card?.imageUrl);
+  const boardImageUrl = getNonEmptyString(card?.board?.imageUrl);
+  const sourceImageUrl = characterImageUrl || boardImageUrl;
   return {
     version: 'character-layer-contract-v2',
     sourceType: card ? 'forged_card' : 'fallback',
-    sourceCardId: typeof card?.id === 'string' ? card.id : null,
+    sourceCardId: getNonEmptyString(card?.id),
     sourceImageUrl,
     extractionStatus: sourceImageUrl ? 'pass_through' : 'fallback_marker',
-    characterImageUrl: typeof card?.characterImageUrl === 'string' && card.characterImageUrl ? card.characterImageUrl : null,
-    boardImageUrl: typeof card?.board?.imageUrl === 'string' && card.board.imageUrl ? card.board.imageUrl : null,
+    characterImageUrl,
+    boardImageUrl,
     characterPlacement: card?.characterPlacement && typeof card.characterPlacement === 'object'
       ? card.characterPlacement
       : undefined,
@@ -1321,10 +1324,11 @@ export function registerMissionRoutes(app, {
       const worldId = `${caller.uid}_${boardDateKey}`;
       const preferredDeckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
       const visualsRef = adminDb.collection(WORLD_VISUALS_COLLECTION).doc(worldId);
-      const [worldSnap, visualsSnap, decksSnap] = await Promise.all([
+      const [worldSnap, visualsSnap, decksSnap, cardsSnap] = await Promise.all([
         adminDb.collection(WORLD_COLLECTION).doc(worldId).get(),
         visualsRef.get(),
         adminDb.collection('users').doc(caller.uid).collection('decks').get(),
+        adminDb.collection('users').doc(caller.uid).collection('cards').get(),
       ]);
       if (!worldSnap.exists) {
         res.status(404).json({ error: 'District world not found. Load /api/missions/world first.' });
@@ -1333,12 +1337,21 @@ export function registerMissionRoutes(app, {
 
       const world = worldSnap.data();
       const decks = decksSnap.docs.map((doc) => doc.data()).filter(Boolean);
-      const card = pickSpriteSourceCard(decks, preferredDeckId);
-      const extraction = buildExtractionContract(card);
+      const cardsById = new Map(
+        cardsSnap.docs
+          .map((doc) => doc.data())
+          .filter((card) => card && typeof card === 'object' && getNonEmptyString(card.id))
+          .map((card) => [card.id, card]),
+      );
+      const card = pickSpriteSourceCard(decks, preferredDeckId, cardsById);
+      let extraction = buildExtractionContract(card);
+      const originalCharacterImageUrl = extraction.characterImageUrl;
       const spriteCacheKey = [
         caller.uid,
         extraction.sourceCardId ?? 'fallback',
         MISSIONS_SPRITE_PROMPT_VERSION,
+        extraction.sourceImageUrl ?? 'no-source',
+        extraction.boardImageUrl ?? 'no-board',
       ].join(':');
       const backdropCacheKey = [
         caller.uid,
@@ -1349,6 +1362,13 @@ export function registerMissionRoutes(app, {
       const previous = visualsSnap.exists ? visualsSnap.data() : {};
       const cachedBackdropUrl = previous?.backdrop?.cacheKey === backdropCacheKey ? previous?.backdrop?.url ?? null : null;
       const cachedSpriteUrl = previous?.sprite?.cacheKey === spriteCacheKey ? previous?.sprite?.url ?? null : null;
+      if (originalCharacterImageUrl && cachedSpriteUrl) {
+        extraction = {
+          ...extraction,
+          characterImageUrl: cachedSpriteUrl,
+          extractionStatus: 'background_removed',
+        };
+      }
       const visuals = {
         backdrop: {
           url: cachedBackdropUrl,
@@ -1396,7 +1416,27 @@ export function registerMissionRoutes(app, {
         }
       }
 
-      if (!visuals.sprite.url && FAL_KEY && card && !extraction.characterImageUrl) {
+      if (!visuals.sprite.url && FAL_KEY && originalCharacterImageUrl) {
+        try {
+          const transparentCharacterUrl = await removeSpriteBackground(FAL_KEY, originalCharacterImageUrl);
+          extraction = {
+            ...extraction,
+            characterImageUrl: transparentCharacterUrl,
+            extractionStatus: 'background_removed',
+          };
+          visuals.extraction = extraction;
+          visuals.sprite = {
+            url: transparentCharacterUrl,
+            cacheKey: spriteCacheKey,
+            generatedAt: new Date().toISOString(),
+            fallback: false,
+          };
+        } catch (bgError) {
+          console.warn('Mission card character background removal failed, using saved character layer:', bgError?.message ?? bgError);
+        }
+      }
+
+      if (!visuals.sprite.url && FAL_KEY && card && !originalCharacterImageUrl) {
         try {
           const generatedUrl = await requestFalImage({
             FAL_KEY,

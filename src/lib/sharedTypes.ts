@@ -980,7 +980,7 @@ export interface CharacterLayerExtractionContract {
   sourceType: "forged_card" | "fallback";
   sourceCardId: string | null;
   sourceImageUrl: string | null;
-  extractionStatus: "pass_through" | "fallback_marker";
+  extractionStatus: "pass_through" | "background_removed" | "fallback_marker";
   characterImageUrl?: string | null;
   boardImageUrl?: string | null;
   characterPlacement?: CharacterPlacement;
