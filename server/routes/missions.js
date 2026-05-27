@@ -1766,7 +1766,7 @@ export function registerMissionRoutes(app, {
           const freshWorld = freshWorldSnap.exists ? freshWorldSnap.data() : world;
           const freshContract = freshWorld?.contracts?.find((candidate) => candidate.id === currentRun.contractId) ?? contract;
           const deck = deckSnap?.exists ? deckSnap.data() : null;
-          const soloCard = soloCardSnap?.exists ? { ...soloCardSnap.data(), id: currentRun.cardId } : null;
+          const soloCard = soloCardSnap?.exists && currentRun.cardId ? { ...soloCardSnap.data(), id: currentRun.cardId } : null;
           const deckCard = soloCard ?? (deck ? pickMissionRewardCard(deck) : null);
           let cardRef = null;
           let cardSnap = soloCard ? soloCardSnap : null;
@@ -1899,7 +1899,7 @@ export function registerMissionRoutes(app, {
         const world = worldSnap.exists ? worldSnap.data() : null;
         const contract = world?.contracts?.find((candidate) => candidate.id === activeRun.contractId) ?? null;
         const deck = deckSnap?.exists ? deckSnap.data() : null;
-        const soloCard = soloCardSnap?.exists ? { ...soloCardSnap.data(), id: activeRun.cardId } : null;
+        const soloCard = soloCardSnap?.exists && activeRun.cardId ? { ...soloCardSnap.data(), id: activeRun.cardId } : null;
         const deckCard = soloCard ?? (deck ? pickMissionRewardCard(deck) : null);
         let cardRef = null;
         let cardSnap = soloCard ? soloCardSnap : null;

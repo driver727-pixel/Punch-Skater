@@ -808,27 +808,6 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     void loadDistrictWorld();
   }, [loadDistrictWorld]);
 
-  useEffect(() => {
-    if (!world) return;
-    let cancelled = false;
-    const visualRunner = activeRun
-      ? { deckId: activeRun.deckId ?? null, cardId: activeRun.cardId ?? null }
-      : {
-        deckId: selectedRunner?.runnerType === "deck" ? selectedRunner.deck?.id ?? null : null,
-        cardId: selectedRunner?.runnerType === "card" ? selectedRunner.card?.id ?? null : null,
-      };
-    getDistrictWorldVisuals(uid, world.boardDateKey, visualRunner, userEmail)
-      .then((payload) => {
-        if (!cancelled) setVisuals(payload);
-      })
-      .catch(() => {
-        // Fallback visuals are already safe; keep gameplay uninterrupted.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeRun, selectedRunner, uid, world, userEmail]);
-
   const selectedContract: WorldContract | undefined = useMemo(
     () => world?.contracts.find((c) => c.id === selectedContractId),
     [world, selectedContractId],
@@ -885,6 +864,28 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       runnerOptions.some((runner) => runner.id === current) ? current : runnerOptions[0].id
     ));
   }, [runnerOptions]);
+
+  const visualDeckId = activeRun
+    ? activeRun.deckId ?? null
+    : selectedRunner?.runnerType === "deck" ? selectedRunner.deck?.id ?? null : null;
+  const visualCardId = activeRun
+    ? activeRun.cardId ?? null
+    : selectedRunner?.runnerType === "card" ? selectedRunner.card?.id ?? null : null;
+
+  useEffect(() => {
+    if (!world) return;
+    let cancelled = false;
+    getDistrictWorldVisuals(uid, world.boardDateKey, { deckId: visualDeckId, cardId: visualCardId }, userEmail)
+      .then((payload) => {
+        if (!cancelled) setVisuals(payload);
+      })
+      .catch(() => {
+        // Fallback visuals are already safe; keep gameplay uninterrupted.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [uid, userEmail, visualCardId, visualDeckId, world]);
 
   const selectedRouteNodeIds = useMemo(() => {
     if (!world || !selectedContract) return [];
@@ -1042,7 +1043,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     setLaunching(true);
     setActionError(null);
     try {
-      const run = await startDistrictRun(uid, selectedContractId, selectedRunner.runnerType === "card"
+      const launchRunner = selectedRunner.runnerType === "card"
         ? {
           runnerType: "card",
           cardId: selectedRunner.card?.id ?? null,
@@ -1056,7 +1057,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
           deckName: selectedRunner.label,
           cardId: null,
           cardName: null,
-        }, userEmail);
+        };
+      const run = await startDistrictRun(uid, selectedContractId, launchRunner, userEmail);
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
