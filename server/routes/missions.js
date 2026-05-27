@@ -259,17 +259,29 @@ function pickSpriteSourceCard(decks, preferredDeckId) {
 function buildExtractionContract(card) {
   const sourceImageUrl = typeof card?.characterImageUrl === 'string' && card.characterImageUrl
     ? card.characterImageUrl
+    : typeof card?.board?.imageUrl === 'string' && card.board.imageUrl
+      ? card.board.imageUrl
     : typeof card?.backgroundImageUrl === 'string' && card.backgroundImageUrl
       ? card.backgroundImageUrl
       : typeof card?.frameImageUrl === 'string' && card.frameImageUrl
         ? card.frameImageUrl
         : null;
   return {
-    version: 'character-layer-contract-v1',
+    version: 'character-layer-contract-v2',
     sourceType: card ? 'forged_card' : 'fallback',
     sourceCardId: typeof card?.id === 'string' ? card.id : null,
     sourceImageUrl,
     extractionStatus: sourceImageUrl ? 'pass_through' : 'fallback_marker',
+    characterImageUrl: typeof card?.characterImageUrl === 'string' && card.characterImageUrl ? card.characterImageUrl : null,
+    boardImageUrl: typeof card?.board?.imageUrl === 'string' && card.board.imageUrl ? card.board.imageUrl : null,
+    characterPlacement: card?.characterPlacement && typeof card.characterPlacement === 'object'
+      ? card.characterPlacement
+      : undefined,
+    boardPlacement: card?.board?.placement && typeof card.board.placement === 'object'
+      ? card.board.placement
+      : undefined,
+    boardLayerOrder: card?.board?.layerOrder === 'behind-character' ? 'behind-character' : 'in-front',
+    sceneSeed: typeof card?.characterSeed === 'string' && card.characterSeed ? card.characterSeed : null,
     subjectBounds: {
       x: 0.25,
       y: 0.1,
@@ -1384,7 +1396,7 @@ export function registerMissionRoutes(app, {
         }
       }
 
-      if (!visuals.sprite.url && FAL_KEY && card) {
+      if (!visuals.sprite.url && FAL_KEY && card && !extraction.characterImageUrl) {
         try {
           const generatedUrl = await requestFalImage({
             FAL_KEY,

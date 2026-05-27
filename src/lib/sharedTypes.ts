@@ -10,7 +10,10 @@
 
 import type {
   Archetype,
+  BoardPlacement,
   CardPayload,
+  CharacterPlacement,
+  CompositeLayerOrder,
   District,
   Faction,
   ForgedCardStats,
@@ -950,6 +953,12 @@ export interface CharacterLayerExtractionContract {
   sourceCardId: string | null;
   sourceImageUrl: string | null;
   extractionStatus: "pass_through" | "fallback_marker";
+  characterImageUrl?: string | null;
+  boardImageUrl?: string | null;
+  characterPlacement?: CharacterPlacement;
+  boardPlacement?: BoardPlacement;
+  boardLayerOrder?: CompositeLayerOrder;
+  sceneSeed?: string | null;
   subjectBounds: {
     x: number;
     y: number;

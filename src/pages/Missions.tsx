@@ -1010,6 +1010,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
           routeNodeIds={previewRouteNodeIds}
           backdropUrl={visuals?.backdrop.url}
           spriteUrl={visuals?.sprite.fallback ? null : visuals?.sprite.url}
+          spriteExtraction={visuals?.extraction ?? null}
           tokenPosition={tokenPosition}
         />
       </div>

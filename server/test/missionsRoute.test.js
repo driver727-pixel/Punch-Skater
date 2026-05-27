@@ -139,7 +139,7 @@ function createFirestoreHarness(initialData = {}) {
     };
   }
 
-  test('weighted encounter selection is deterministic and supports no-encounter rolls', () => {
+    test('weighted encounter selection is deterministic and supports no-encounter rolls', () => {
     const candidates = [
       { weight: 10, encounter: { id: 'a', badge: 'A', prompt: 'A', threat: 'A', options: [{ id: 'go', label: 'Go', description: 'Go' }] } },
       { weight: 20, encounter: { id: 'b', badge: 'B', prompt: 'B', threat: 'B', options: [{ id: 'go', label: 'Go', description: 'Go' }] } },
@@ -178,6 +178,80 @@ function createFirestoreHarness(initialData = {}) {
           writeLog.push({ path: ref.path, data: next, options });
         },
       });
+    },
+  };
+}
+
+function createMissionVisualsDb({
+  decksByUser = {},
+  visualsById = {},
+  worldsById = {},
+} = {}) {
+  const deckStore = new Map(Object.entries(decksByUser).map(([key, value]) => [key, cloneData(value)]));
+  const visualsStore = new Map(Object.entries(visualsById).map(([key, value]) => [key, cloneData(value)]));
+  const worldsStore = new Map(Object.entries(worldsById).map(([key, value]) => [key, cloneData(value)]));
+  const writeLog = [];
+
+  return {
+    writeLog,
+    collection(name) {
+      if (name === 'missionWorlds') {
+        return {
+          doc(id) {
+            return {
+              path: `missionWorlds/${id}`,
+              async get() {
+                return createSnapshot(worldsStore.get(id));
+              },
+            };
+          },
+        };
+      }
+
+      if (name === 'missionWorldVisuals') {
+        return {
+          doc(id) {
+            return {
+              path: `missionWorldVisuals/${id}`,
+              async get() {
+                return createSnapshot(visualsStore.get(id));
+              },
+              async set(data, options = {}) {
+                const previous = visualsStore.get(id);
+                const next = options.merge
+                  ? { ...(previous ?? {}), ...cloneData(data) }
+                  : cloneData(data);
+                visualsStore.set(id, next);
+                writeLog.push({ path: `missionWorldVisuals/${id}`, data: next, options });
+              },
+            };
+          },
+        };
+      }
+
+      if (name === 'users') {
+        return {
+          doc(uid) {
+            return {
+              collection(childName) {
+                if (childName !== 'decks') throw new Error(`Unsupported subcollection: ${childName}`);
+                return {
+                  async get() {
+                    const decks = deckStore.get(uid) ?? [];
+                    return {
+                      docs: decks.map((deck) => ({
+                        data: () => cloneData(deck),
+                      })),
+                    };
+                  },
+                };
+              },
+            };
+          },
+        };
+      }
+
+      throw new Error(`Unsupported collection: ${name}`);
     },
   };
 }
@@ -255,6 +329,74 @@ function buildGridDeck(overrides = {}) {
     ...overrides,
   };
 }
+
+test('mission visuals extraction carries saved character and skateboard layers for the map figurine', async () => {
+  const boardDateKey = '2026-05-27';
+  const worldId = `user-1_${boardDateKey}`;
+  const savedCard = {
+    ...buildCard(),
+    characterSeed: 'scene-loadout-seed',
+    characterImageUrl: 'https://example.com/character.png',
+    characterPlacement: {
+      xPercent: 52,
+      yPercent: 57,
+      scale: 1,
+      rotationDeg: 0,
+    },
+    board: {
+      ...buildCard().board,
+      imageUrl: 'https://example.com/board.png',
+      placement: {
+        xPercent: 74,
+        yPercent: 46,
+        scale: 1,
+        rotationDeg: 8,
+      },
+      layerOrder: 'behind-character',
+    },
+  };
+  const adminDb = createMissionVisualsDb({
+    worldsById: {
+      [worldId]: {
+        boardDateKey,
+        contracts: [],
+        nodes: [],
+        edges: [],
+      },
+    },
+    decksByUser: {
+      'user-1': [
+        {
+          id: 'deck-1',
+          name: 'Courier Stack',
+          cards: [savedCard],
+        },
+      ],
+    },
+  });
+  const app = registerMissionHarness({
+    adminDb,
+    FAL_KEY: '',
+  });
+  const route = app.getRoute('POST', '/api/missions/world/visuals');
+
+  assert.ok(route);
+
+  const response = await invokeRoute(route, {
+    body: { boardDateKey },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.visuals.extraction.version, 'character-layer-contract-v2');
+  assert.equal(response.body.visuals.extraction.characterImageUrl, savedCard.characterImageUrl);
+  assert.equal(response.body.visuals.extraction.boardImageUrl, savedCard.board.imageUrl);
+  assert.equal(response.body.visuals.extraction.boardLayerOrder, 'behind-character');
+  assert.deepEqual(response.body.visuals.extraction.characterPlacement, savedCard.characterPlacement);
+  assert.deepEqual(response.body.visuals.extraction.boardPlacement, savedCard.board.placement);
+  assert.equal(response.body.visuals.extraction.sceneSeed, savedCard.characterSeed);
+  assert.equal(response.body.visuals.sprite.fallback, true);
+  assert.equal(adminDb.writeLog.length, 1);
+});
 
 test('buildMissionCardOutcomeUpdate persists Grid fallout as an offline repair state', () => {
   const update = buildMissionCardOutcomeUpdate(
