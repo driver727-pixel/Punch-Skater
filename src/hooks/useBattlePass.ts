@@ -33,14 +33,14 @@ export interface BattlePassHookState {
 
 export function useBattlePass(): BattlePassHookState {
   const enabled = isEnabled("BATTLE_PASS");
-  const { tier } = useTier();
+  const { tier: accountTier } = useTier();
   const [state, setState] = useState<LocalBattlePassState>(loadBattlePassState);
 
   const seasonId = getCurrentSeasonId();
   const bounds = useMemo(() => getSeasonBounds(seasonId), [seasonId]);
   const effectiveState = useMemo(
-    () => (tier === "tier3" ? { ...state, isPremium: true } : state),
-    [state, tier],
+    () => (accountTier === "tier3" ? { ...state, isPremium: true } : state),
+    [state, accountTier],
   );
   const xpProgress = useMemo(() => getXpProgress(effectiveState), [effectiveState]);
 
@@ -48,17 +48,17 @@ export function useBattlePass(): BattlePassHookState {
     setState((prev) => addXpToPass(prev, amount));
   }, []);
 
-  const claimFreeReward = useCallback((tier: number) => {
-    setState((prev) => claimReward(prev, tier, false));
+  const claimFreeReward = useCallback((rewardTier: number) => {
+    setState((prev) => claimReward(prev, rewardTier, false));
   }, []);
 
-  const claimPremiumReward = useCallback((tier: number) => {
+  const claimPremiumReward = useCallback((rewardTier: number) => {
     setState((prev) => claimReward(
-      tier === "tier3" ? { ...prev, isPremium: true } : prev,
-      tier,
+      accountTier === "tier3" ? { ...prev, isPremium: true } : prev,
+      rewardTier,
       true,
     ));
-  }, [tier]);
+  }, [accountTier]);
 
   const isRewardClaimed = useCallback(
     (tier: number, premium: boolean) => {
