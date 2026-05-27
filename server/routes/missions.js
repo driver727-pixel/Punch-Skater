@@ -1454,10 +1454,17 @@ export function registerMissionRoutes(app, {
       const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
       const runSnap = await runRef.get();
 
-      // If an active run already exists for today and is not yet complete, return it.
+      // If an active run already exists for today and is not yet terminal,
+      // return it instead of starting a new one. Both MISSION_COMPLETE (rewards
+      // already banked at the Workshop) and MISSION_FAILED (non-punitive
+      // history logged) are terminal and may be overwritten when the player
+      // launches their next contract. The archive copy preserves history.
       if (runSnap.exists) {
         const existing = normalizeActiveRunPhase(runSnap.data());
-        if (existing.phase !== MISSION_PHASE.MISSION_COMPLETE) {
+        if (
+          existing.phase !== MISSION_PHASE.MISSION_COMPLETE
+          && existing.phase !== MISSION_PHASE.MISSION_FAILED
+        ) {
           res.json({ activeRun: existing });
           return;
         }
@@ -1840,6 +1847,64 @@ export function registerMissionRoutes(app, {
     } catch (error) {
       console.error('Mission fail logging error:', error);
       res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to log failed mission run.' });
+    }
+  });
+
+  /**
+   * Acknowledge a terminal mission run so the player can dismiss the debrief
+   * permanently. Removes the active-run document for runs that are already
+   * MISSION_COMPLETE or MISSION_FAILED and finalized; the archive copy in
+   * RUN_ARCHIVE_COLLECTION is preserved as the historical record. This is
+   * idempotent and is the only way to stop refresh from re-hydrating the
+   * debrief panel after the player has read it.
+   *
+   * The endpoint refuses to drop runs that are still mid-flight (any phase
+   * other than the two terminal phases) to guarantee that an accidental call
+   * cannot bypass completion gating and erase an in-progress run.
+   */
+  app.post('/api/missions/world/acknowledge', missionCheckpointRateLimit, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    const runId = typeof req.body?.runId === 'string' ? req.body.runId.trim() : '';
+    if (!runId) {
+      res.status(400).json({ error: 'runId is required.' });
+      return;
+    }
+
+    try {
+      const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
+      const runSnap = await runRef.get();
+      if (!runSnap.exists) {
+        // Already acknowledged or never created — treat as idempotent success.
+        res.json({ activeRun: null, acknowledged: true });
+        return;
+      }
+      const activeRun = normalizeActiveRunPhase(runSnap.data());
+      if (activeRun.uid !== caller.uid) {
+        res.status(403).json({ error: 'This run does not belong to the current user.' });
+        return;
+      }
+      const isTerminal = activeRun.phase === MISSION_PHASE.MISSION_COMPLETE
+        || activeRun.phase === MISSION_PHASE.MISSION_FAILED;
+      if (!isTerminal) {
+        res.status(409).json({ error: 'Only terminal mission runs can be acknowledged.' });
+        return;
+      }
+      await runRef.delete();
+      res.json({ activeRun: null, acknowledged: true });
+    } catch (error) {
+      console.error('Mission acknowledge error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to acknowledge mission run.' });
     }
   });
 

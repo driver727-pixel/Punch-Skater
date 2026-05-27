@@ -17,6 +17,7 @@ import type {
   WorldContract,
 } from "../lib/sharedTypes";
 import {
+  acknowledgeDistrictRun,
   getDistrictWorld,
   getDistrictWorldVisuals,
   persistDistrictCheckpoint,
@@ -693,10 +694,21 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   }, [uid, activeRun, userEmail]);
 
   const handleDismissDebrief = useCallback(() => {
+    const runId = activeRun?.runId;
     setActiveRun(null);
     setSegmentTravel(null);
     lastCheckpointSyncRef.current = "";
-  }, []);
+    if (runId) {
+      // Best-effort: drop the terminal run from the active-runs collection so
+      // a refresh does not re-hydrate the debrief. The archive copy is kept
+      // server-side as the historical record.
+      acknowledgeDistrictRun(uid, runId, userEmail).catch(() => {
+        // Ignore acknowledge failures; local state is already cleared and a
+        // subsequent refresh will simply re-show the debrief, which the user
+        // can dismiss again.
+      });
+    }
+  }, [activeRun, uid, userEmail]);
 
   if (loading) {
     return (
