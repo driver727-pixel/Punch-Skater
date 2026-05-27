@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { ActiveDistrictRun, DistrictWorld, WorldContract, WorldEdge, WorldNode } from "../lib/sharedTypes";
 
 interface MissionsMapProps {
@@ -12,12 +12,13 @@ interface MissionsMapProps {
   tokenPosition?: { x: number; y: number } | null;
 }
 
+// ── Palette ────────────────────────────────────────────────────────────────
 const NEON_CYAN = "#7de7ff";
 const NEON_PINK = "#ff3af2";
 const NEON_GREEN = "#7dffb6";
 const NEON_GOLD = "#ffc94d";
 
-const EDGE_COLOUR = "rgba(125,231,255,0.28)";
+const EDGE_COLOUR = "rgba(125,231,255,0.22)";
 const EDGE_ACTIVE_COLOUR = "rgba(125,231,255,0.55)";
 const ROUTE_EDGE_COLOUR = "rgba(255,201,77,0.95)";
 
@@ -33,13 +34,28 @@ const JUNCTION_STROKE = "rgba(125,231,255,0.18)";
 const COMPLETED_STROKE = NEON_GREEN;
 const COMPLETED_FILL = "#0a1a12";
 
+// ── Marker sizes (px relative to SVG pixel coordinate space) ──────────────
 const WORKSHOP_R = 14;
 const POI_R = 11;
 const JUNCTION_R = 4;
-const TOKEN_R = 2.2;
+const TOKEN_R = 10;
+const LABEL_OFFSET = 14;
 const POI_TITLE_MAX_LENGTH = 18;
 const POI_TITLE_TRUNCATE_AT = 16;
 
+// Initial SVG dimensions used before the ResizeObserver fires on first render.
+// These are replaced immediately once the container mounts and reports its size.
+const DEFAULT_SVG_W = 800;
+const DEFAULT_SVG_H = 600;
+
+// ── Coordinate projection ──────────────────────────────────────────────────
+// Nodes store x/y as 0-100 percentages; project to actual SVG pixel coords
+// so the viewBox matches the container and all markers stay circular.
+function spx(pct: number, dim: number): number {
+  return (pct / 100) * dim;
+}
+
+// ── Graph helpers ──────────────────────────────────────────────────────────
 function nodeById(nodes: WorldNode[], id: string): WorldNode | undefined {
   return nodes.find((n) => n.id === id);
 }
@@ -64,19 +80,58 @@ function isActiveEdge(edge: WorldEdge, activeRun: ActiveDistrictRun | null, cont
   if (!activeRun) return false;
   const contract = contracts.find((c) => c.id === activeRun.contractId);
   if (!contract) return false;
-  return edge.from === contract.nodeId || edge.to === contract.nodeId || edge.from === "workshop" || edge.to === "workshop";
+  return edge.from === contract.nodeId || edge.to === contract.nodeId ||
+    edge.from === "workshop" || edge.to === "workshop";
 }
+
+// ── SVG defs (filters + grid) ──────────────────────────────────────────────
+function MapDefs() {
+  return (
+    <defs>
+      <filter id="mm-glow-cyan" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="3.5" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="mm-glow-pink" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="2.5" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="mm-glow-gold" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <pattern id="mm-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(125,231,255,0.045)" strokeWidth="0.5" />
+      </pattern>
+    </defs>
+  );
+}
+
+// ── Sub-components (all take svgW/svgH for pixel projection) ──────────────
 
 function MapEdge({
   edge,
   nodes,
   highlighted,
   routeHighlighted,
+  svgW,
+  svgH,
 }: {
   edge: WorldEdge;
   nodes: WorldNode[];
   highlighted: boolean;
   routeHighlighted: boolean;
+  svgW: number;
+  svgH: number;
 }) {
   const fromNode = nodeById(nodes, edge.from);
   const toNode = nodeById(nodes, edge.to);
@@ -84,23 +139,23 @@ function MapEdge({
 
   return (
     <line
-      x1={`${fromNode.x}%`}
-      y1={`${fromNode.y}%`}
-      x2={`${toNode.x}%`}
-      y2={`${toNode.y}%`}
+      x1={spx(fromNode.x, svgW)}
+      y1={spx(fromNode.y, svgH)}
+      x2={spx(toNode.x, svgW)}
+      y2={spx(toNode.y, svgH)}
       stroke={routeHighlighted ? ROUTE_EDGE_COLOUR : highlighted ? EDGE_ACTIVE_COLOUR : EDGE_COLOUR}
       strokeWidth={routeHighlighted ? 3 : highlighted ? 2 : 1.5}
-      strokeDasharray={routeHighlighted ? undefined : highlighted ? undefined : "4 3"}
-      opacity={routeHighlighted ? 1 : undefined}
+      strokeDasharray={routeHighlighted ? undefined : highlighted ? undefined : "5 4"}
+      filter={routeHighlighted ? "url(#mm-glow-gold)" : undefined}
     />
   );
 }
 
-function JunctionMarker({ node }: { node: WorldNode }) {
+function JunctionMarker({ node, svgW, svgH }: { node: WorldNode; svgW: number; svgH: number }) {
   return (
     <circle
-      cx={`${node.x}%`}
-      cy={`${node.y}%`}
+      cx={spx(node.x, svgW)}
+      cy={spx(node.y, svgH)}
       r={JUNCTION_R}
       fill={JUNCTION_FILL}
       stroke={JUNCTION_STROKE}
@@ -109,29 +164,66 @@ function JunctionMarker({ node }: { node: WorldNode }) {
   );
 }
 
-function WorkshopMarker({ node }: { node: WorldNode }) {
-  const cx = `${node.x}%`;
-  const cy = `${node.y}%`;
+function WorkshopMarker({ node, svgW, svgH }: { node: WorldNode; svgW: number; svgH: number }) {
+  const cx = spx(node.x, svgW);
+  const cy = spx(node.y, svgH);
   return (
-    <g>
-      <circle cx={cx} cy={cy} r={WORKSHOP_R + 6} fill="none" stroke={NEON_CYAN} strokeWidth={1} opacity={0.15} />
-      <circle cx={cx} cy={cy} r={WORKSHOP_R + 3} fill="none" stroke={NEON_CYAN} strokeWidth={1} opacity={0.25} />
+    <g filter="url(#mm-glow-cyan)">
+      <circle cx={cx} cy={cy} r={WORKSHOP_R + 8} fill="none" stroke={NEON_CYAN} strokeWidth={1} opacity={0.1} />
+      <circle cx={cx} cy={cy} r={WORKSHOP_R + 4} fill="none" stroke={NEON_CYAN} strokeWidth={1} opacity={0.2} />
       <circle cx={cx} cy={cy} r={WORKSHOP_R} fill={WORKSHOP_FILL} stroke={WORKSHOP_STROKE} strokeWidth={2} />
-      <circle cx={cx} cy={cy} r={5} fill="none" stroke={NEON_CYAN} strokeWidth={1.5} />
-      <circle cx={cx} cy={cy} r={2} fill={NEON_CYAN} />
+      {/* Crosshair forge icon */}
+      <line x1={cx - 5} y1={cy} x2={cx + 5} y2={cy} stroke={NEON_CYAN} strokeWidth={1.2} opacity={0.8} />
+      <line x1={cx} y1={cy - 5} x2={cx} y2={cy + 5} stroke={NEON_CYAN} strokeWidth={1.2} opacity={0.8} />
+      <circle cx={cx} cy={cy} r={2.5} fill={NEON_CYAN} />
       <text
         x={cx}
-        y={`calc(${node.y}% + ${WORKSHOP_R + 12}px)`}
+        y={cy + WORKSHOP_R + LABEL_OFFSET}
         textAnchor="middle"
         fill={NEON_CYAN}
-        fontSize={10}
+        fontSize={9}
         fontFamily="monospace"
         fontWeight="bold"
-        letterSpacing="0.05em"
+        letterSpacing="0.06em"
       >
         WORKSHOP
       </text>
     </g>
+  );
+}
+
+// Simplified padlock icon at (cx, cy) for locked POIs.
+// Arc: "a rx ry x-rotation large-arc-flag sweep-flag dx dy"
+// sweep-flag=1 draws the arch clockwise (top of the shackle).
+function LockIcon({ cx, cy, stroke }: { cx: number; cy: number; stroke: string }) {
+  const bw = 7, bh = 6, bx = cx - bw / 2, by = cy - 1;
+  // archR controls the shackle radius; diameter matches body width
+  const archR = bw / 2 - 0.2;
+  return (
+    <g>
+      <rect x={bx} y={by} width={bw} height={bh} rx={1} fill="none" stroke={stroke} strokeWidth={1.2} />
+      {/* Shackle arch: starts at left edge, sweeps clockwise to right edge */}
+      <path
+        d={`M ${cx - archR} ${by} a ${archR} ${archR} 0 0 1 ${archR * 2} 0`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={1.5}
+      />
+      <circle cx={cx} cy={by + bh * 0.55} r={1.1} fill={stroke} />
+    </g>
+  );
+}
+
+// Diamond icon for visible/active POIs
+function DiamondIcon({ cx, cy, stroke }: { cx: number; cy: number; stroke: string }) {
+  const s = 4.5;
+  return (
+    <path
+      d={`M ${cx} ${cy - s} L ${cx + s} ${cy} L ${cx} ${cy + s} L ${cx - s} ${cy} Z`}
+      fill="none"
+      stroke={stroke}
+      strokeWidth={1.3}
+    />
   );
 }
 
@@ -140,12 +232,18 @@ function PoiMarker({
   contract,
   selected,
   onClick,
+  svgW,
+  svgH,
 }: {
   node: WorldNode;
   contract: WorldContract | undefined;
   selected: boolean;
   onClick: () => void;
+  svgW: number;
+  svgH: number;
 }) {
+  const cx = spx(node.x, svgW);
+  const cy = spx(node.y, svgH);
   const isLocked = !contract || contract.visibility === "locked";
   const isCompleted = contract?.status === "completed";
 
@@ -160,39 +258,40 @@ function PoiMarker({
   }
   if (selected) stroke = POI_SELECTED_STROKE;
 
+  const title = contract?.title ?? "";
+  const displayTitle = title.length > POI_TITLE_MAX_LENGTH
+    ? `${title.slice(0, POI_TITLE_TRUNCATE_AT)}…`
+    : title;
+
   return (
     <g
       style={{ cursor: isLocked ? "default" : "pointer" }}
       onClick={isLocked ? undefined : onClick}
       aria-label={isLocked ? "Locked contract" : (contract?.title ?? "Contract")}
+      filter={isLocked ? undefined : "url(#mm-glow-pink)"}
     >
-      {selected && <circle cx={`${node.x}%`} cy={`${node.y}%`} r={POI_R + 6} fill="none" stroke={NEON_GOLD} strokeWidth={1} opacity={0.4} />}
-      <circle
-        cx={`${node.x}%`}
-        cy={`${node.y}%`}
-        r={POI_R}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth={selected ? 2.5 : 1.5}
-      />
+      {selected && (
+        <circle cx={cx} cy={cy} r={POI_R + 7} fill="none" stroke={NEON_GOLD} strokeWidth={1} opacity={0.35} />
+      )}
+      <circle cx={cx} cy={cy} r={POI_R} fill={fill} stroke={stroke} strokeWidth={selected ? 2.5 : 1.5} />
       {isCompleted ? (
-        <text x={`${node.x}%`} y={`calc(${node.y}% + 4px)`} textAnchor="middle" fill={NEON_GREEN} fontSize={9} fontFamily="monospace">✓</text>
+        <text x={cx} y={cy + 4} textAnchor="middle" fill={NEON_GREEN} fontSize={9} fontFamily="monospace">✓</text>
       ) : isLocked ? (
-        <text x={`${node.x}%`} y={`calc(${node.y}% + 4px)`} textAnchor="middle" fill="rgba(180,180,220,0.5)" fontSize={9} fontFamily="monospace">?</text>
+        <LockIcon cx={cx} cy={cy} stroke={POI_LOCKED_STROKE} />
       ) : (
-        <text x={`${node.x}%`} y={`calc(${node.y}% + 4px)`} textAnchor="middle" fill={NEON_PINK} fontSize={9} fontFamily="monospace">●</text>
+        <DiamondIcon cx={cx} cy={cy} stroke={selected ? NEON_GOLD : NEON_PINK} />
       )}
       {!isLocked && contract && (
         <text
-          x={`${node.x}%`}
-          y={`calc(${node.y}% + ${POI_R + 12}px)`}
+          x={cx}
+          y={cy + POI_R + LABEL_OFFSET - 2}
           textAnchor="middle"
           fill={isCompleted ? NEON_GREEN : stroke}
           fontSize={9}
           fontFamily="monospace"
           letterSpacing="0.04em"
         >
-          {contract.title.length > POI_TITLE_MAX_LENGTH ? `${contract.title.slice(0, POI_TITLE_TRUNCATE_AT)}…` : contract.title}
+          {displayTitle}
         </text>
       )}
     </g>
@@ -205,7 +304,7 @@ function MapLegend() {
     { colour: NEON_PINK, label: "Contract" },
     { colour: NEON_GOLD, label: "Route" },
     { colour: NEON_GREEN, label: "Cleared" },
-    { colour: "rgba(180,180,220,0.5)", label: "Locked" },
+    { colour: "rgba(180,180,220,0.4)", label: "Locked" },
   ];
   return (
     <div
@@ -216,7 +315,7 @@ function MapLegend() {
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        background: "rgba(5,10,20,0.75)",
+        background: "rgba(5,10,20,0.82)",
         border: "1px solid rgba(125,231,255,0.2)",
         borderRadius: 4,
         padding: "8px 12px",
@@ -229,6 +328,46 @@ function MapLegend() {
           <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace" }}>{label}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+const PHASE_LABELS: Record<string, string> = {
+  outbound: "▶ OUTBOUND",
+  at_poi: "◆ AT CONTRACT",
+  returning: "◀ RETURNING",
+};
+
+function ActiveRunBanner({ activeRun, contracts }: { activeRun: ActiveDistrictRun; contracts: WorldContract[] }) {
+  const phase = PHASE_LABELS[activeRun.phase];
+  if (!phase) return null;
+  const contract = contracts.find((c) => c.id === activeRun.contractId);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 30,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "0 14px",
+        background: "rgba(5,10,20,0.88)",
+        borderBottom: "1px solid rgba(125,231,255,0.18)",
+        pointerEvents: "none",
+        zIndex: 2,
+      }}
+    >
+      <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: NEON_CYAN }}>
+        {phase}
+      </span>
+      {contract && (
+        <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.55)", letterSpacing: "0.04em" }}>
+          {contract.title}
+        </span>
+      )}
     </div>
   );
 }
@@ -273,8 +412,28 @@ export function MissionsMap({
   const junctionNodes = nodes.filter((n) => n.kind === "junction");
   const displayTokenPosition = tokenPosition ?? (workshopNode ? { x: workshopNode.x, y: workshopNode.y } : null);
 
+  // Track container pixel dimensions so the SVG viewBox matches the real
+  // container size — this keeps all markers circular regardless of aspect ratio.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [svgW, setSvgW] = useState(DEFAULT_SVG_W);
+  const [svgH, setSvgH] = useState(DEFAULT_SVG_H);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0) setSvgW(width);
+      if (height > 0) setSvgH(height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const showBanner = activeRun !== null && activeRun.phase !== "complete" && activeRun.phase !== "failed";
+
   return (
-    <div style={containerStyle}>
+    <div ref={containerRef} style={containerStyle}>
       {backdropUrl ? (
         <div
           style={{
@@ -288,8 +447,21 @@ export function MissionsMap({
           }}
         />
       ) : null}
-      <div style={{ ...containerStyle, background: SCANLINE_BG, pointerEvents: "none", opacity: 0.6 }} />
-      <svg style={svgStyle} viewBox="0 0 100 100" preserveAspectRatio="none">
+      {/* Scanline overlay — must be absolute so it doesn't affect layout */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: SCANLINE_BG,
+          pointerEvents: "none",
+          opacity: 0.6,
+        }}
+      />
+      {/* SVG graph: viewBox matches container pixels so circles stay round */}
+      <svg style={svgStyle} viewBox={`0 0 ${svgW} ${svgH}`}>
+        <MapDefs />
+        {/* Subtle cyberpunk grid — only visible without a backdrop */}
+        {!backdropUrl && <rect width={svgW} height={svgH} fill="url(#mm-grid)" />}
         {edges.map((edge, i) => {
           const routeHighlighted = routeEdgeSet.has(buildRouteEdgeKey(edge.from, edge.to));
           return (
@@ -299,10 +471,14 @@ export function MissionsMap({
               nodes={nodes}
               highlighted={isActiveEdge(edge, activeRun, contracts)}
               routeHighlighted={routeHighlighted}
+              svgW={svgW}
+              svgH={svgH}
             />
           );
         })}
-        {junctionNodes.map((node) => <JunctionMarker key={node.id} node={node} />)}
+        {junctionNodes.map((node) => (
+          <JunctionMarker key={node.id} node={node} svgW={svgW} svgH={svgH} />
+        ))}
         {poiNodes.map((node) => {
           const contract = contractForNode(contracts, node.id);
           return (
@@ -312,35 +488,37 @@ export function MissionsMap({
               contract={contract}
               selected={selectedContractId === contract?.id}
               onClick={() => contract && onSelectContract(contract.id)}
+              svgW={svgW}
+              svgH={svgH}
             />
           );
         })}
-        {workshopNode && <WorkshopMarker node={workshopNode} />}
+        {workshopNode && <WorkshopMarker node={workshopNode} svgW={svgW} svgH={svgH} />}
         {displayTokenPosition ? (
           spriteUrl ? (
             <image
               href={spriteUrl}
-              x={`${displayTokenPosition.x - TOKEN_R}%`}
-              y={`${displayTokenPosition.y - TOKEN_R}%`}
-              width={`${TOKEN_R * 2}%`}
-              height={`${TOKEN_R * 2}%`}
+              x={spx(displayTokenPosition.x, svgW) - TOKEN_R}
+              y={spx(displayTokenPosition.y, svgH) - TOKEN_R}
+              width={TOKEN_R * 2}
+              height={TOKEN_R * 2}
               preserveAspectRatio="xMidYMid meet"
             />
           ) : (
-            <g>
+            <g filter="url(#mm-glow-pink)">
               <circle
-                cx={`${displayTokenPosition.x}%`}
-                cy={`${displayTokenPosition.y}%`}
-                r={TOKEN_R + 3}
+                cx={spx(displayTokenPosition.x, svgW)}
+                cy={spx(displayTokenPosition.y, svgH)}
+                r={TOKEN_R + 4}
                 fill="none"
-                stroke="rgba(255,58,242,0.5)"
+                stroke="rgba(255,58,242,0.45)"
                 strokeWidth={1}
               />
               <circle
-                cx={`${displayTokenPosition.x}%`}
-                cy={`${displayTokenPosition.y}%`}
+                cx={spx(displayTokenPosition.x, svgW)}
+                cy={spx(displayTokenPosition.y, svgH)}
                 r={TOKEN_R}
-                fill="rgba(255,58,242,0.22)"
+                fill="rgba(255,58,242,0.18)"
                 stroke={NEON_PINK}
                 strokeWidth={1.5}
               />
@@ -348,6 +526,9 @@ export function MissionsMap({
           )
         ) : null}
       </svg>
+      {showBanner && activeRun && (
+        <ActiveRunBanner activeRun={activeRun} contracts={contracts} />
+      )}
       <MapLegend />
     </div>
   );
