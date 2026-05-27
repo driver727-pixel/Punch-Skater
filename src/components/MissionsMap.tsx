@@ -63,9 +63,9 @@ const JUNCTION_R = 4;
 const TOKEN_R = 10;
 // Sprite tokens are rendered larger than the fallback circle so the character
 // art remains legible at the map scale.
-const SPRITE_TOKEN_HALF = 22;
-const FIGURINE_TOKEN_W = 68;
-const FIGURINE_TOKEN_H = 68;
+const SPRITE_TOKEN_HALF = 44;
+const FIGURINE_TOKEN_W = 136;
+const FIGURINE_TOKEN_H = 136;
 const FIGURINE_CHARACTER_SCALE = 0.9;
 const LABEL_OFFSET = 15;
 const POI_TITLE_MAX_LENGTH = 18;

@@ -100,7 +100,7 @@ body {
 }
 
 .joustur-board-piece {
-  width: clamp(96px, 11vw, 168px);
+  width: clamp(48px, 5.5vw, 84px);
   aspect-ratio: var(--card-aspect-ratio);
   border: 0;
   border-radius: 10px;
@@ -878,7 +878,7 @@ body {
   }
 
   .joustur-board-piece {
-    width: clamp(64px, 14vw, 96px);
+    width: clamp(32px, 7vw, 48px);
   }
 
   .joustur-board-piece__owner {
