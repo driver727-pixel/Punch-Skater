@@ -291,7 +291,7 @@ export async function startEncounter(
 export async function resolveEncounter(
   uid: string,
   runId: string,
-  outcome: Record<string, unknown>,
+  choiceId: string,
   userEmail?: string | null,
 ): Promise<ActiveDistrictRun> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
@@ -306,7 +306,7 @@ export async function resolveEncounter(
         "Content-Type": "application/json",
         Authorization: ["Bearer", idToken].join(" "),
       },
-      body: JSON.stringify({ runId, action: "resolve", outcome }),
+      body: JSON.stringify({ runId, action: "resolve", choiceId }),
     },
     "Failed to resolve encounter.",
   );

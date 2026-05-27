@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildMissionCardOutcomeUpdate, buildMissionResolutionRisk, registerMissionRoutes } from '../routes/missions.js';
 import { createMissionBoardEntries } from '../lib/missions.js';
+import { selectWeightedEncounter } from '../lib/missionEncounterDefinitions.js';
 
 function createAppHarness() {
   const middleware = [];
@@ -133,6 +134,19 @@ function createFirestoreHarness(initialData = {}) {
       },
     };
   }
+
+  test('weighted encounter selection is deterministic and supports no-encounter rolls', () => {
+    const candidates = [
+      { weight: 10, encounter: { id: 'a', badge: 'A', prompt: 'A', threat: 'A', options: [{ id: 'go', label: 'Go', description: 'Go' }] } },
+      { weight: 20, encounter: { id: 'b', badge: 'B', prompt: 'B', threat: 'B', options: [{ id: 'go', label: 'Go', description: 'Go' }] } },
+    ];
+
+    assert.deepEqual(
+      selectWeightedEncounter(candidates, 'stable-seed', 0),
+      selectWeightedEncounter(candidates, 'stable-seed', 0),
+    );
+    assert.equal(selectWeightedEncounter(candidates, 'stable-seed', 10_000), null);
+  });
 
   function createCollection(path) {
     return {
@@ -579,6 +593,41 @@ test('district world checkpoint route persists sequential travel and marks poi a
   const worldId = `user-1_${boardDateKey}`;
   const runId = `${worldId}_run`;
   const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [
+        { from: 'workshop', to: 'junction-0' },
+        { from: 'junction-0', to: 'poi-0' },
+      ],
+      contracts: [
+        {
+          id: 'contract-1',
+          nodeId: 'poi-0',
+          definitionId: 'def-1',
+          title: 'Contract One',
+          tagline: 'Fork route',
+          district: 'The Grid',
+          rewardXp: 100,
+          rewardOzzies: 80,
+          visibility: 'visible',
+          status: 'active',
+          fork: {
+            badge: 'Fork',
+            prompt: 'Pick a fork.',
+            options: [
+              { id: 'archive-heist', label: 'Archive Heist', description: 'Pull the archive.', rewardXpDelta: 12, rewardOzziesDelta: 5 },
+            ],
+          },
+        },
+      ],
+    },
     [`missionActiveRuns/${runId}`]: {
       runId,
       uid: 'user-1',
@@ -589,6 +638,15 @@ test('district world checkpoint route persists sequential travel and marks poi a
       deckName: 'Deck One',
       routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
       checkpointNodeIndex: 0,
+      encounterHistory: [{
+        encounterId: 'already-cleared',
+        resumePhase: 'TRAVELING_OUTBOUND',
+        leg: 'outbound',
+        triggeredAtNodeId: 'junction-previous',
+        startedAt: `${boardDateKey}T01:00:30.000Z`,
+        resolvedAt: `${boardDateKey}T01:00:40.000Z`,
+        outcome: { resultType: 'travel_encounter', choiceId: 'safe' },
+      }],
       launchedAt: `${boardDateKey}T01:00:00.000Z`,
       updatedAt: `${boardDateKey}T01:00:00.000Z`,
     },
@@ -614,6 +672,81 @@ test('district world checkpoint route persists sequential travel and marks poi a
   assert.equal(second.statusCode, 200);
   assert.equal(second.body.activeRun.phase, 'AT_POI_FORK');
   assert.equal(second.body.activeRun.checkpointNodeIndex, 2);
+});
+
+test('district world checkpoint can trigger a weighted encounter only at checkpoint moments', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldDocId = `user-1_${boardDateKey}`;
+  const runId = 'user-1_test_run_1';
+  const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldDocId}`]: {
+      worldId: 'world-1',
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [
+        { from: 'workshop', to: 'junction-0' },
+        { from: 'junction-0', to: 'poi-0' },
+      ],
+      contracts: [
+        {
+          id: 'contract-1',
+          nodeId: 'poi-0',
+          definitionId: 'def-1',
+          title: 'Contract One',
+          tagline: 'First route',
+          district: 'The Grid',
+          rewardXp: 100,
+          rewardOzzies: 80,
+          visibility: 'visible',
+          status: 'active',
+          encounter: {
+            id: 'contract-pressure',
+            badge: '!',
+            prompt: 'Contract pressure hits at the checkpoint.',
+            threat: 'Pressure',
+            options: [
+              { id: 'safe', label: 'Safe Line', description: 'Keep the line safe.', rewardXpDelta: 3 },
+            ],
+          },
+        },
+      ],
+    },
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'TRAVELING_OUTBOUND',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'junction-0', 'poi-0'],
+      checkpointNodeIndex: 0,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:00:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/checkpoint');
+
+  const res = await invokeRoute(route, {
+    body: { runId, nodeId: 'junction-0', checkpointNodeIndex: 1 },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun.phase, 'ENCOUNTER_RESOLUTION');
+  assert.equal(res.body.activeRun.checkpointNodeIndex, 1);
+  assert.equal(res.body.activeRun.encounter.encounterId, 'contract-pressure');
+  assert.equal(res.body.activeRun.encounter.triggeredAtNodeId, 'junction-0');
+
+  const blocked = await invokeRoute(route, {
+    body: { runId, nodeId: 'poi-0', checkpointNodeIndex: 2 },
+  });
+  assert.equal(blocked.statusCode, 409);
 });
 
 test('district world GET generates and persists a new world with workshop origin and 6 contracts', async () => {
@@ -767,6 +900,43 @@ test('district world checkpoint route rejects updates from non-travel phases', a
   const worldId = `user-1_${boardDateKey}`;
   const runId = `${worldId}_run`;
   const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [
+        { from: 'workshop', to: 'junction-0' },
+        { from: 'junction-0', to: 'poi-0' },
+      ],
+      contracts: [
+        {
+          id: 'contract-1',
+          nodeId: 'poi-0',
+          definitionId: 'def-1',
+          title: 'C1',
+          tagline: 't',
+          district: 'The Grid',
+          rewardXp: 10,
+          rewardOzzies: 10,
+          visibility: 'visible',
+          status: 'active',
+          encounter: {
+            id: 'rival-ambush',
+            badge: '!',
+            prompt: 'Rival blocks the checkpoint.',
+            threat: 'Rival ambush',
+            options: [
+              { id: 'duck', label: 'Duck', description: 'Duck the ambush.', rewardXpDelta: 6, rewardOzziesDelta: 2 },
+            ],
+          },
+        },
+      ],
+    },
     [`missionActiveRuns/${runId}`]: {
       runId,
       uid: 'user-1',
@@ -798,6 +968,41 @@ test('district world resolve-poi advances AT_POI_FORK to TRAVELING_INBOUND and r
   const worldId = `user-1_${boardDateKey}`;
   const runId = `${worldId}_run`;
   const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [
+        { from: 'workshop', to: 'junction-0' },
+        { from: 'junction-0', to: 'poi-0' },
+      ],
+      contracts: [
+        {
+          id: 'contract-1',
+          nodeId: 'poi-0',
+          definitionId: 'def-1',
+          title: 'Contract One',
+          tagline: 'Fork route',
+          district: 'The Grid',
+          rewardXp: 100,
+          rewardOzzies: 80,
+          visibility: 'visible',
+          status: 'active',
+          fork: {
+            badge: 'Fork',
+            prompt: 'Pick a fork.',
+            options: [
+              { id: 'archive-heist', label: 'Archive Heist', description: 'Pull the archive.', rewardXpDelta: 12, rewardOzziesDelta: 5 },
+            ],
+          },
+        },
+      ],
+    },
     [`missionActiveRuns/${runId}`]: {
       runId,
       uid: 'user-1',
@@ -822,7 +1027,9 @@ test('district world resolve-poi advances AT_POI_FORK to TRAVELING_INBOUND and r
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.activeRun.phase, 'TRAVELING_INBOUND');
   assert.equal(res.body.activeRun.poiOutcome.choiceId, 'archive-heist');
-  assert.deepEqual(res.body.activeRun.poiOutcome.outcome, { tokensEarned: 3 });
+  assert.equal(res.body.activeRun.poiOutcome.outcome.resultType, 'poi_resolution');
+  assert.equal(res.body.activeRun.poiOutcome.outcome.rewardXpDelta, 12);
+  assert.equal(res.body.activeRun.missionResults[0].choiceId, 'archive-heist');
 });
 
 test('district world resolve-poi rejects calls outside AT_POI_FORK', async () => {
@@ -857,6 +1064,43 @@ test('district world encounter route brackets travel with start/resolve and surv
   const worldId = `user-1_${boardDateKey}`;
   const runId = `${worldId}_run`;
   const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'junction-0', kind: 'junction', x: 25, y: 10, label: '' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [
+        { from: 'workshop', to: 'junction-0' },
+        { from: 'junction-0', to: 'poi-0' },
+      ],
+      contracts: [
+        {
+          id: 'contract-1',
+          nodeId: 'poi-0',
+          definitionId: 'def-1',
+          title: 'C1',
+          tagline: 't',
+          district: 'The Grid',
+          rewardXp: 10,
+          rewardOzzies: 10,
+          visibility: 'visible',
+          status: 'active',
+          encounter: {
+            id: 'rival-ambush',
+            badge: '!',
+            prompt: 'Rival blocks the checkpoint.',
+            threat: 'Rival ambush',
+            options: [
+              { id: 'duck', label: 'Duck', description: 'Duck the ambush.', rewardXpDelta: 6, rewardOzziesDelta: 2 },
+            ],
+          },
+        },
+      ],
+    },
     [`missionActiveRuns/${runId}`]: {
       runId,
       uid: 'user-1',
@@ -882,6 +1126,7 @@ test('district world encounter route brackets travel with start/resolve and surv
   assert.equal(start.body.activeRun.phase, 'ENCOUNTER_RESOLUTION');
   assert.equal(start.body.activeRun.encounter.encounterId, 'rival-ambush');
   assert.equal(start.body.activeRun.encounter.resumePhase, 'TRAVELING_OUTBOUND');
+  assert.equal(start.body.activeRun.encounter.contract.options[0].id, 'duck');
 
   // Refresh-safe restoration: a fresh GET must return the ENCOUNTER_RESOLUTION phase
   // and the persisted encounter record so the overlay can be re-shown after a reload.
@@ -914,12 +1159,14 @@ test('district world encounter route brackets travel with start/resolve and surv
   assert.equal(refresh.body.activeRun.encounter.encounterId, 'rival-ambush');
 
   const resolve = await invokeRoute(encounterRoute, {
-    body: { runId, action: 'resolve', outcome: { hpDelta: -1 } },
+    body: { runId, action: 'resolve', choiceId: 'duck' },
   });
   assert.equal(resolve.statusCode, 200);
   assert.equal(resolve.body.activeRun.phase, 'TRAVELING_OUTBOUND');
   assert.equal(resolve.body.activeRun.encounter.encounterId, 'rival-ambush');
-  assert.deepEqual(resolve.body.activeRun.encounter.outcome, { hpDelta: -1 });
+  assert.equal(resolve.body.activeRun.encounter.outcome.resultType, 'travel_encounter');
+  assert.equal(resolve.body.activeRun.encounter.outcome.rewardXpDelta, 6);
+  assert.equal(resolve.body.activeRun.encounterHistory.length, 1);
 });
 
 test('district world inbound travel reaching workshop transitions to MISSION_COMPLETE without card mutation', async () => {

@@ -844,10 +844,18 @@ export type ActiveRunPhase =
 export interface MissionEncounterRecord {
   /** Stable id for the encounter being resolved. */
   encounterId: string;
+  /** @sprint 9 @owner pr4 — Backend-safe encounter contract persisted for refresh restoration. */
+  contract?: MissionEncounter | null;
   /** Phase the run was in before the encounter interrupted it. */
   resumePhase: "TRAVELING_OUTBOUND" | "TRAVELING_INBOUND";
+  /** @sprint 9 @owner pr4 — Travel leg interrupted by this checkpoint encounter. */
+  leg?: "outbound" | "inbound";
+  /** @sprint 9 @owner pr4 — Stable checkpoint trigger key to prevent duplicate rolls. */
+  triggerKey?: string;
   /** Node where the encounter triggered. */
   triggeredAtNodeId: string;
+  /** @sprint 9 @owner pr4 — Route index where the checkpoint encounter fired. */
+  checkpointNodeIndex?: number;
   startedAt: string;
   resolvedAt?: string;
   /** Free-form outcome blob set by the resolution endpoint. */
@@ -860,6 +868,20 @@ export interface MissionPoiOutcome {
   resolvedAt: string;
   /** Free-form outcome blob; aggregated on successful return in PR 4. */
   outcome?: Record<string, unknown> | null;
+}
+
+/** @sprint 9 @owner pr4 — Server-authored active-run result payload. */
+export interface MissionRunResultPayload {
+  resultType: "travel_encounter" | "poi_resolution";
+  encounterId?: string;
+  contractId?: string | null;
+  choiceId: string;
+  label: string;
+  resolvedAt: string;
+  success: boolean;
+  summary: string;
+  rewardXpDelta: number;
+  rewardOzziesDelta: number;
 }
 
 export interface CharacterLayerExtractionContract {
@@ -914,8 +936,12 @@ export interface ActiveDistrictRun {
   lastCheckpointAt?: string;
   /** Active encounter being resolved, when phase === "ENCOUNTER_RESOLUTION". */
   encounter?: MissionEncounterRecord | null;
+  /** Resolved checkpoint encounter records for this run. */
+  encounterHistory?: MissionEncounterRecord[];
   /** Result of the POI fork resolution; set once on AT_POI_FORK -> TRAVELING_INBOUND. */
   poiOutcome?: MissionPoiOutcome | null;
+  /** Server-authored POI and encounter result payloads accumulated on this run. */
+  missionResults?: MissionRunResultPayload[];
 }
 
 /**
