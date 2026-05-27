@@ -459,7 +459,9 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       const currentNodeId = routeNodeIds[checkpointNodeIndex];
       startEncounter(uid, activeRun.runId, selectedContract!.encounter!.id, currentNodeId, userEmail)
         .then((run) => setActiveRun(run))
-        .catch(() => { /* encounter trigger failed; travel continues */ });
+        .catch((err: unknown) => {
+          console.warn("Encounter trigger failed; travel continues.", err instanceof Error ? err.message : err);
+        });
       return;
     }
 
@@ -766,5 +768,3 @@ export function Missions() {
 
   return <MissionsPanel uid={user.uid} />;
 }
-
-
