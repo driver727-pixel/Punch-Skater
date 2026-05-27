@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { isEnabled } from "../lib/featureFlags";
-import { findAStarRoute, routeUsesValidEdges } from "../lib/pathfinding";
+import { findAStarRoute, routeUsesGraphEdges } from "../lib/pathfinding";
 import type { ActiveDistrictRun, DistrictWorld, DistrictWorldVisuals, WorldContract } from "../lib/sharedTypes";
 import { getDistrictWorld, getDistrictWorldVisuals, persistDistrictCheckpoint, startDistrictRun } from "../services/missions";
 import { MissionsMap } from "../components/MissionsMap";
@@ -146,8 +146,9 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
 
   const selectedRouteNodeIds = useMemo(() => {
     if (!world || !selectedContract) return [];
-    const route = findAStarRoute({ nodes: world.nodes, edges: world.edges }, "workshop", selectedContract.nodeId);
-    return routeUsesValidEdges(world.edges, route) ? route : [];
+    const graph = { nodes: world.nodes, edges: world.edges };
+    const route = findAStarRoute(graph, "workshop", selectedContract.nodeId);
+    return routeUsesGraphEdges(graph, route) ? route : [];
   }, [world, selectedContract]);
 
   const activeRouteNodeIds = useMemo(
@@ -230,7 +231,12 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   }, []);
 
   const handleLaunch = useCallback(async () => {
-    if (!world || !selectedContractId || selectedRouteNodeIds.length < 2 || !routeUsesValidEdges(world.edges, selectedRouteNodeIds)) return;
+    if (
+      !world
+      || !selectedContractId
+      || selectedRouteNodeIds.length < 2
+      || !routeUsesGraphEdges({ nodes: world.nodes, edges: world.edges }, selectedRouteNodeIds)
+    ) return;
     setLaunching(true);
     try {
       const run = await startDistrictRun(uid, selectedContractId, "", "Default Deck", userEmail);
