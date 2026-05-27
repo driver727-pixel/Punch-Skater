@@ -63,11 +63,11 @@ const JUNCTION_R = 4;
 const TOKEN_R = 10;
 // Sprite tokens are rendered larger than the fallback circle so the character
 // art remains legible at the map scale.
-const SPRITE_TOKEN_HALF = 18;
-const FIGURINE_TOKEN_W = 56;
-const FIGURINE_TOKEN_H = 56;
-const FIGURINE_CHARACTER_SCALE = 0.8;
-const LABEL_OFFSET = 14;
+const SPRITE_TOKEN_HALF = 22;
+const FIGURINE_TOKEN_W = 68;
+const FIGURINE_TOKEN_H = 68;
+const FIGURINE_CHARACTER_SCALE = 0.9;
+const LABEL_OFFSET = 15;
 const POI_TITLE_MAX_LENGTH = 18;
 const POI_TITLE_TRUNCATE_AT = 16;
 
@@ -275,7 +275,7 @@ function WorkshopMarker({ node, svgW, svgH }: { node: WorldNode; svgW: number; s
         y={cy + WORKSHOP_R + LABEL_OFFSET}
         textAnchor="middle"
         fill={NEON_CYAN}
-        fontSize={9}
+        fontSize={10}
         fontFamily="monospace"
         fontWeight="bold"
         letterSpacing="0.06em"
@@ -369,7 +369,7 @@ function PoiMarker({
       )}
       <circle cx={cx} cy={cy} r={POI_R} fill={fill} stroke={stroke} strokeWidth={selected ? 2.5 : 1.5} />
       {isCompleted ? (
-        <text x={cx} y={cy + 4} textAnchor="middle" fill={NEON_GREEN} fontSize={9} fontFamily="monospace">✓</text>
+        <text x={cx} y={cy + 4} textAnchor="middle" fill={NEON_GREEN} fontSize={10} fontFamily="monospace">✓</text>
       ) : isLocked ? (
         <LockIcon cx={cx} cy={cy} stroke={POI_LOCKED_STROKE} />
       ) : (
@@ -381,7 +381,7 @@ function PoiMarker({
           y={cy + POI_R + LABEL_OFFSET - 2}
           textAnchor="middle"
           fill={isCompleted ? NEON_GREEN : stroke}
-          fontSize={9}
+          fontSize={10}
           fontFamily="monospace"
           letterSpacing="0.04em"
         >

@@ -183,10 +183,12 @@ function createFirestoreHarness(initialData = {}) {
 }
 
 function createMissionVisualsDb({
+  cardsByUser = {},
   decksByUser = {},
   visualsById = {},
   worldsById = {},
 } = {}) {
+  const cardStore = new Map(Object.entries(cardsByUser).map(([key, value]) => [key, cloneData(value)]));
   const deckStore = new Map(Object.entries(decksByUser).map(([key, value]) => [key, cloneData(value)]));
   const visualsStore = new Map(Object.entries(visualsById).map(([key, value]) => [key, cloneData(value)]));
   const worldsStore = new Map(Object.entries(worldsById).map(([key, value]) => [key, cloneData(value)]));
@@ -234,13 +236,15 @@ function createMissionVisualsDb({
           doc(uid) {
             return {
               collection(childName) {
-                if (childName !== 'decks') throw new Error(`Unsupported subcollection: ${childName}`);
+                if (childName !== 'decks' && childName !== 'cards') throw new Error(`Unsupported subcollection: ${childName}`);
                 return {
                   async get() {
-                    const decks = deckStore.get(uid) ?? [];
+                    const items = childName === 'decks'
+                      ? deckStore.get(uid) ?? []
+                      : cardStore.get(uid) ?? [];
                     return {
-                      docs: decks.map((deck) => ({
-                        data: () => cloneData(deck),
+                      docs: items.map((item) => ({
+                        data: () => cloneData(item),
                       })),
                     };
                   },
@@ -396,6 +400,146 @@ test('mission visuals extraction carries saved character and skateboard layers f
   assert.equal(response.body.visuals.extraction.sceneSeed, savedCard.characterSeed);
   assert.equal(response.body.visuals.sprite.fallback, true);
   assert.equal(adminDb.writeLog.length, 1);
+});
+
+test('mission visuals hydrate deck cards from the saved card forge collection before extracting layers', async () => {
+  const boardDateKey = '2026-05-27';
+  const worldId = `user-1_${boardDateKey}`;
+  const staleDeckCard = {
+    ...buildCard({ id: 'card-forge-1' }),
+    characterImageUrl: 'https://example.com/stale-character.png',
+  };
+  const savedForgeCard = {
+    ...staleDeckCard,
+    characterImageUrl: 'https://example.com/forge-character.png',
+    board: {
+      ...staleDeckCard.board,
+      imageUrl: 'https://example.com/forge-board.png',
+      placement: {
+        xPercent: 74,
+        yPercent: 46,
+        scale: 1,
+        rotationDeg: 8,
+      },
+      layerOrder: 'behind-character',
+    },
+  };
+  const adminDb = createMissionVisualsDb({
+    worldsById: {
+      [worldId]: {
+        boardDateKey,
+        contracts: [],
+        nodes: [],
+        edges: [],
+      },
+    },
+    decksByUser: {
+      'user-1': [
+        {
+          id: 'deck-1',
+          name: 'Courier Stack',
+          cards: [staleDeckCard],
+        },
+      ],
+    },
+    cardsByUser: {
+      'user-1': [savedForgeCard],
+    },
+  });
+  const app = registerMissionHarness({
+    adminDb,
+    FAL_KEY: '',
+  });
+  const route = app.getRoute('POST', '/api/missions/world/visuals');
+
+  const response = await invokeRoute(route, {
+    body: { boardDateKey },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.visuals.extraction.characterImageUrl, savedForgeCard.characterImageUrl);
+  assert.equal(response.body.visuals.extraction.boardImageUrl, savedForgeCard.board.imageUrl);
+  assert.equal(response.body.visuals.extraction.boardLayerOrder, 'behind-character');
+});
+
+test('mission visuals background-remove saved card forge character layers and keep the skateboard layer', async () => {
+  const boardDateKey = '2026-05-27';
+  const worldId = `user-1_${boardDateKey}`;
+  const savedCard = {
+    ...buildCard({ id: 'card-forge-2' }),
+    characterImageUrl: 'https://example.com/forge-character-with-bg.png',
+    board: {
+      ...buildCard().board,
+      imageUrl: 'https://example.com/forge-board.png',
+      layerOrder: 'behind-character',
+    },
+  };
+  const adminDb = createMissionVisualsDb({
+    worldsById: {
+      [worldId]: {
+        boardDateKey,
+        contracts: [],
+        nodes: [],
+        edges: [],
+      },
+    },
+    visualsById: {
+      [worldId]: {
+        backdrop: {
+          url: 'https://example.com/cached-backdrop.png',
+          cacheKey: 'user-1:2026-05-27:missions-backdrop-v1',
+          generatedAt: '2026-05-27T00:00:00.000Z',
+          fallback: false,
+        },
+      },
+    },
+    decksByUser: {
+      'user-1': [
+        {
+          id: 'deck-1',
+          name: 'Courier Stack',
+          cards: [savedCard],
+        },
+      ],
+    },
+    cardsByUser: {
+      'user-1': [savedCard],
+    },
+  });
+  const originalFetch = globalThis.fetch;
+  const fetchCalls = [];
+  globalThis.fetch = async (_url, options) => {
+    fetchCalls.push(options);
+    return {
+      ok: true,
+      async json() {
+        return { image: { url: 'https://example.com/transparent-character.png' } };
+      },
+    };
+  };
+
+  try {
+    const app = registerMissionHarness({
+      adminDb,
+      FAL_KEY: 'fal-secret',
+    });
+    const route = app.getRoute('POST', '/api/missions/world/visuals');
+
+    const response = await invokeRoute(route, {
+      body: { boardDateKey },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.visuals.extraction.characterImageUrl, 'https://example.com/transparent-character.png');
+    assert.equal(response.body.visuals.extraction.extractionStatus, 'background_removed');
+    assert.equal(response.body.visuals.extraction.boardImageUrl, savedCard.board.imageUrl);
+    assert.equal(response.body.visuals.sprite.url, 'https://example.com/transparent-character.png');
+    assert.equal(response.body.visuals.sprite.fallback, false);
+    assert.equal(fetchCalls.length, 1);
+    assert.equal(JSON.parse(fetchCalls[0].body).image_url, savedCard.characterImageUrl);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('buildMissionCardOutcomeUpdate persists Grid fallout as an offline repair state', () => {
