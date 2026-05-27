@@ -184,8 +184,13 @@ export async function getDistrictWorld(uid: string, userEmail?: string | null): 
 export async function startDistrictRun(
   uid: string,
   contractId: string,
-  deckId: string,
-  deckName: string,
+  runner: {
+    runnerType: "card" | "deck";
+    deckId?: string | null;
+    deckName?: string | null;
+    cardId?: string | null;
+    cardName?: string | null;
+  },
   userEmail?: string | null,
 ): Promise<ActiveDistrictRun> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
@@ -200,7 +205,7 @@ export async function startDistrictRun(
         "Content-Type": "application/json",
         Authorization: ["Bearer", idToken].join(" "),
       },
-      body: JSON.stringify({ contractId, deckId, deckName }),
+      body: JSON.stringify({ contractId, ...runner }),
     },
     "Failed to start district run.",
   );
@@ -210,6 +215,7 @@ export async function startDistrictRun(
 export async function getDistrictWorldVisuals(
   uid: string,
   boardDateKey: string,
+  runner?: { deckId?: string | null; cardId?: string | null },
   userEmail?: string | null,
 ): Promise<DistrictWorldVisuals> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
@@ -224,7 +230,11 @@ export async function getDistrictWorldVisuals(
         "Content-Type": "application/json",
         Authorization: ["Bearer", idToken].join(" "),
       },
-      body: JSON.stringify({ boardDateKey }),
+      body: JSON.stringify({
+        boardDateKey,
+        deckId: runner?.deckId ?? undefined,
+        cardId: runner?.cardId ?? undefined,
+      }),
     },
     "Failed to load mission visuals.",
   );

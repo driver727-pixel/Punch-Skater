@@ -1025,6 +1025,13 @@ export interface ActiveDistrictRun {
   /** Deck selected for this run. */
   deckId: string;
   deckName: string;
+  /** Whether this run was launched by a single card or a card deck. */
+  runnerType?: "card" | "deck";
+  /** Single-card runner selected for solo jobs. */
+  cardId?: string | null;
+  cardName?: string | null;
+  /** Cards explicitly active on this run for history/debrief display. */
+  activeCardIds?: string[];
   launchedAt: string;
   updatedAt: string;
   completedAt?: string;
