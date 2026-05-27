@@ -187,7 +187,9 @@ function MissionDebriefPanel({
       {/* ── Summary text ── */}
       <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
         <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>
-          {debrief?.summary ?? (hasDebrief ? "Run logged with no gameplay penalties." : "Run record unavailable. Refresh the Missions page before dismissing this run.")}
+          {debrief?.summary ?? (!hasDebrief
+            ? "Run record unavailable. Refresh the Missions page before dismissing this run."
+            : success ? "Run complete." : "Run logged with no gameplay penalties.")}
         </p>
       </div>
 
