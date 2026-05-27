@@ -1,4 +1,3 @@
-import { DailyStreakPanel } from "../components/DailyStreakPanel";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
@@ -16,7 +15,6 @@ import {
   SKIN_TONES,
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
-import { useDailyStreak } from "../hooks/useDailyStreak";
 import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
@@ -66,7 +64,6 @@ export function CardForge() {
     tierCanSave,
     viewing3D,
   } = useCardForgeController();
-  const dailyStreak = useDailyStreak();
 
   return (
     <div className="page">
@@ -97,8 +94,6 @@ export function CardForge() {
           Random Skater
         </button>
       </div>
-
-      <DailyStreakPanel dailyStreak={dailyStreak} />
 
       <div className="forge-layout">
         <ForgeControlsPanel
