@@ -31,7 +31,9 @@ function buildSavedCacheEntry(payload, fetchedAt) {
 }
 
 export function normalizeFalProfile(value) {
-  return value === 'character' ? 'character' : 'default';
+  if (value === 'character') return 'character';
+  if (value === 'backdrop') return 'backdrop';
+  return 'default';
 }
 
 export function readFalRequestConfig(env = process.env, logger = console) {
@@ -46,6 +48,11 @@ export function readFalRequestConfig(env = process.env, logger = console) {
     cacheTtlMs: DEFAULT_FAL_CONFIG_CACHE_TTL_MS,
     maxCacheEntries: DEFAULT_MAX_FAL_CONFIG_CACHE_ENTRIES,
     profiles: {
+      backdrop: {
+        modelUrl: env.FAL_MISSIONS_BACKDROP_MODEL_URL || 'https://fal.run/fal-ai/nano-banana-2',
+        configUrl: '',
+        defaultLoras: [],
+      },
       character: {
         modelUrl: env.FAL_CHARACTER_IMAGE_MODEL_URL || 'https://fal.run/fal-ai/flux-2/lora',
         configUrl: env.FAL_CHARACTER_CONFIG_URL || 'https://v3b.fal.media/files/b/0a962cdb/GvvgV0ByFDT7TB0SNb9Dc_config_cf867d1b-1b55-45d1-a4a4-fe5e223ec932.json',
@@ -75,9 +82,9 @@ export function readFalRequestConfig(env = process.env, logger = console) {
 }
 
 export function resolveFalProfile(profile, profiles) {
-  return normalizeFalProfile(profile) === 'character'
-    ? profiles.character
-    : profiles.default;
+  if (normalizeFalProfile(profile) === 'character') return profiles.character;
+  if (normalizeFalProfile(profile) === 'backdrop') return profiles.backdrop;
+  return profiles.default;
 }
 
 export function createFalRequestConfigLoader({

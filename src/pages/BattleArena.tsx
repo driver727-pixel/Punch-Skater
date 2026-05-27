@@ -1,480 +1,673 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useBattle, MIN_BATTLE_CARDS } from "../hooks/useBattle";
-import { useDecks } from "../hooks/useDecks";
+/**
+ * Race Arena (formerly Battle Arena).
+ *
+ * Two tabs:
+ *   - "Challengers"  — public starting grid of other players' primary-deck
+ *                      Challenger cards. Click → "Issue challenge" modal.
+ *   - "My Race Hub"  — incoming challenges (accept/decline), outgoing pending
+ *                      challenges (cancel), and recent finished races (replay link).
+ *
+ * Replaces the deck-vs-deck battle UI; the underlying race resolution lives
+ * server-side in `/api/race/*` and is animated on the dedicated race page.
+ */
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { ArenaDeckSummary, ArenaEntry, DeckPayload, BattleResult } from "../lib/types";
-import {
-  WAGER_POINTS,
-  WINNER_BONUS,
-  buildArenaDeckSummary,
-  computeDeckScore,
-  formatStatLabel,
-} from "../lib/battle";
-import { CardThumbnail } from "../components/CardThumbnail";
-import {
-  sfxBattleClash,
-  sfxBattleWin,
-  sfxBattleLose,
-  sfxBattleReady,
-  sfxRewardShower,
-  sfxClick,
-} from "../lib/sfx";
-import { spawnCelebrationBurst } from "../lib/celebration";
+import { useTier } from "../context/TierContext";
+import { useDecks } from "../hooks/useDecks";
+import { useRaceArena } from "../hooks/useRaceArena";
+import { fetchRaceArena, startFreeSoloRace, startSoloRace, type ArenaListEntry } from "../services/race";
+import type { RaceCardSnapshot } from "../lib/types";
+import { sfxBattleReady, sfxClick } from "../lib/sfx";
+import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
+import { isEnabled } from "../lib/featureFlags";
 
-// ── Battle animation overlay ────────────────────────────────────────────────
+type TabKey = "challengers" | "hub" | "solo";
 
-interface BattleAnimationProps {
-  challengerName: string;
-  defenderName: string;
-  onComplete: () => void;
+const WAGER_PRESETS = [0, 10, 50, 100];
+const SOLO_WAGER_PRESETS = [0, 5, 10, 25];
+const SOLO_WAGER_MAX = 25;
+
+function statTotal(stats: RaceCardSnapshot["stats"]): number {
+  return stats.speed + stats.range + stats.stealth + stats.grit;
 }
 
-function BattleAnimation({ challengerName, defenderName, onComplete }: BattleAnimationProps) {
-  const [phase, setPhase] = useState<"enter" | "clash" | "done">("enter");
-
-  useEffect(() => {
-    const t1 = setTimeout(() => {
-      setPhase("clash");
-      sfxBattleClash();
-    }, 900);
-    const t2 = setTimeout(() => {
-      setPhase("done");
-      onComplete();
-    }, 2400);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [onComplete]);
-
+function CardMiniStats({ stats }: { stats: RaceCardSnapshot["stats"] }) {
   return (
-    <div className="battle-anim-overlay">
-      <div className={`battle-anim-deck battle-anim-deck--left ${phase !== "enter" ? "battle-anim-deck--clash" : ""}`}>
-        <span className="battle-anim-name">{challengerName}</span>
-        <span className="battle-anim-icon">⚔️</span>
-      </div>
-      <div className={`battle-anim-vs ${phase === "clash" ? "battle-anim-vs--flash" : ""}`}>
-        VS
-      </div>
-      <div className={`battle-anim-deck battle-anim-deck--right ${phase !== "enter" ? "battle-anim-deck--clash" : ""}`}>
-        <span className="battle-anim-name">{defenderName}</span>
-        <span className="battle-anim-icon">🛡️</span>
-      </div>
-      {phase === "clash" && <div className="battle-anim-shockwave" />}
+    <div className="race-card-stats">
+      <span title="Speed">⚡{stats.speed}</span>
+      <span title="Range">🛣️{stats.range}</span>
+      <span title="Stealth">🥷{stats.stealth}</span>
+      <span title="Grit">💪{stats.grit}</span>
     </div>
   );
 }
 
-// ── Outcome popup ───────────────────────────────────────────────────────────
-
-interface OutcomePopupProps {
-  result: BattleResult;
-  myUid: string;
-  onDismiss: () => void;
-}
-
-function OutcomePopup({ result, myUid, onDismiss }: OutcomePopupProps) {
-  const isWinner = result.winnerUid === myUid;
-  const isDraw = result.challengerScore === result.defenderScore;
-  const popupRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const burstTimers: number[] = [];
-
-    if (isDraw) {
-      return () => burstTimers.forEach((timer) => window.clearTimeout(timer));
-    }
-
-    if (isWinner) {
-      sfxBattleWin();
-      sfxRewardShower();
-      if (!popupRef.current) return;
-      spawnCelebrationBurst(popupRef.current, { particles: 86, spreadX: 420, spreadY: 320 });
-      burstTimers.push(
-        window.setTimeout(() => {
-          if (popupRef.current) {
-            spawnCelebrationBurst(popupRef.current, { particles: 54, spreadX: 300, spreadY: 220 });
-          }
-        }, 220),
-        window.setTimeout(() => {
-          if (popupRef.current) {
-            spawnCelebrationBurst(popupRef.current, { particles: 42, spreadX: 260, spreadY: 200 });
-          }
-        }, 520),
-      );
-    } else {
-      sfxBattleLose();
-    }
-
-    return () => burstTimers.forEach((timer) => window.clearTimeout(timer));
-  }, [isWinner, isDraw]);
-
-  const iAmChallenger = result.challengerUid === myUid;
-  const myScore = iAmChallenger ? result.challengerScore : result.defenderScore;
-  const theirScore = iAmChallenger ? result.defenderScore : result.challengerScore;
-
+function ArenaCardThumb({
+  snapshot,
+  isChallenger,
+  selected,
+  onClick,
+  hideChallengeBorder,
+}: {
+  snapshot: RaceCardSnapshot;
+  isChallenger?: boolean;
+  selected?: boolean;
+  onClick?: () => void;
+  /** When true the challenger CSS border is suppressed (e.g. solo picker where
+   *  only the selected-state border should be shown). The 🏁 flag in the card
+   *  name is still rendered so the challenger can still be identified. */
+  hideChallengeBorder?: boolean;
+}) {
+  const hasLayers = snapshot.backgroundImageUrl || snapshot.characterImageUrl || snapshot.frameImageUrl;
   return (
-    <div className="battle-outcome-overlay" onClick={onDismiss}>
-      <div
-        className={`battle-outcome-popup${isWinner && !isDraw ? " battle-outcome-popup--win" : ""}`}
-        ref={popupRef}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {isWinner && !isDraw && (
+    <button
+      type="button"
+      className={`race-arena-card${selected ? " race-arena-card--selected" : ""}${isChallenger && !hideChallengeBorder ? " race-arena-card--challenger" : ""}`}
+      onClick={onClick}
+    >
+      <div className="race-arena-card-art">
+        {hasLayers ? (
           <>
-            <div className="battle-outcome-spotlight" aria-hidden="true" />
-            <div className="battle-outcome-lasers" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
+            {snapshot.backgroundImageUrl && (
+              <img src={snapshot.backgroundImageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
+            )}
+            {snapshot.characterImageUrl && (
+              <img src={snapshot.characterImageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
+            )}
+            {snapshot.frameImageUrl && (
+              <img src={snapshot.frameImageUrl} alt="" className="race-arena-card-art-layer race-arena-card-art-layer--frame" loading="lazy" />
+            )}
           </>
-        )}
-        {isWinner && !isDraw && (
-          <div className="battle-outcome-congrats">
-            <span className="battle-outcome-trophy">🏆</span>
-            <h2 className="battle-outcome-title battle-outcome-title--win">Victory!</h2>
-            <p className="battle-outcome-subtitle">Congratulations, champion!</p>
-          </div>
-        )}
-        {isDraw && (
-          <div className="battle-outcome-congrats">
-            <span className="battle-outcome-trophy">🤝</span>
-            <h2 className="battle-outcome-title">Draw!</h2>
-            <p className="battle-outcome-subtitle">An evenly matched battle.</p>
-          </div>
-        )}
-        {!isWinner && !isDraw && (
-          <div className="battle-outcome-congrats">
-            <span className="battle-outcome-trophy">💀</span>
-            <h2 className="battle-outcome-title battle-outcome-title--lose">Defeat</h2>
-            <p className="battle-outcome-subtitle">Better luck next time, skater.</p>
-          </div>
-        )}
-
-        <div className="battle-outcome-scores">
-          <div className="battle-outcome-score">
-            <span className="battle-outcome-score-label">Your Score</span>
-            <span className="battle-outcome-score-value">{myScore}</span>
-          </div>
-          <span className="battle-outcome-score-vs">vs</span>
-          <div className="battle-outcome-score">
-            <span className="battle-outcome-score-label">Opponent</span>
-            <span className="battle-outcome-score-value">{theirScore}</span>
-          </div>
-        </div>
-
-        {isWinner && !isDraw && (
-          <div className="battle-outcome-rewards">
-            <div className="battle-outcome-reward-card battle-outcome-reward-card--primary">
-              <span className="battle-outcome-reward-label">Wager collected</span>
-              <strong className="battle-outcome-reward-value">+{result.wagerPoints} stats</strong>
-            </div>
-            <div className="battle-outcome-reward-card">
-              <span className="battle-outcome-reward-label">Deck powered up</span>
-              <strong className="battle-outcome-reward-value">{result.winningDeckCardIds.length} winners juiced</strong>
-            </div>
-          </div>
-        )}
-
-        {isWinner && !isDraw && (
-          <p className="battle-outcome-bonus">
-            +{result.wagerPoints} attribute points earned for your battle deck cards!
-          </p>
-        )}
-        {!isWinner && !isDraw && (
-          <p className="battle-outcome-penalty">
-            −{WAGER_POINTS} attribute points lost from your deck.
-          </p>
-        )}
-
-        <button className="btn-primary" onClick={() => { sfxClick(); onDismiss(); }}>
-          Continue
-        </button>
+        ) : snapshot.imageUrl ? (
+          <img src={snapshot.imageUrl} alt="" className="race-arena-card-art-layer" loading="lazy" />
+        ) : null}
       </div>
+      <div className="race-arena-card-meta">
+        <span className="race-arena-card-name">
+          {isChallenger && <span className="race-arena-card-flag" title="Challenger">🏁</span>}
+          {snapshot.name}
+        </span>
+        <span className="race-arena-card-sub">{snapshot.archetype} · {snapshot.rarity}</span>
+        <CardMiniStats stats={snapshot.stats} />
+      </div>
+    </button>
+  );
+}
+
+interface ChallengeModalState {
+  opponent: ArenaListEntry;
+  defenderCardId: string;
+}
+
+function RaceDistrictPicker({
+  district,
+  onSelect,
+}: {
+  district: string;
+  onSelect: (district: string) => void;
+}) {
+  return (
+    <div className="race-district-picker">
+      {RACE_DISTRICT_OPTIONS.map((option) => (
+        <button
+          key={option.slug}
+          type="button"
+          className={`race-district-btn${district === option.slug ? " active btn-outline--active" : ""}`}
+          onClick={() => onSelect(option.slug)}
+        >
+          {option.emoji} {option.displayName}
+        </button>
+      ))}
     </div>
   );
 }
 
-// ── Deck Selector for readying ──────────────────────────────────────────────
+function ChallengeModal({
+  state,
+  onClose,
+  onSubmit,
+  myChallengerCard,
+  busy,
+  myOzzies,
+}: {
+  state: ChallengeModalState;
+  onClose: () => void;
+  onSubmit: (defenderCardId: string, wager: number, district: string) => Promise<void>;
+  myChallengerCard: { id: string; name: string; stats: RaceCardSnapshot["stats"] } | null;
+  busy: boolean;
+  myOzzies: number;
+}) {
+  const [defenderCardId, setDefenderCardId] = useState(state.defenderCardId);
+  const [wager, setWager] = useState(0);
+  const [district, setDistrict] = useState(DEFAULT_RACE_DISTRICT);
+  const defenderCard = state.opponent.cards.find((c) => c.id === defenderCardId);
+  const cap = Math.max(0, Math.min(myOzzies, 10_000));
 
-interface DeckSelectorProps {
-  decks: DeckPayload[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-}
-
-function DeckSelector({ decks, selectedId, onSelect }: DeckSelectorProps) {
-  const eligible = decks.filter((d) => d.cards.length >= MIN_BATTLE_CARDS);
-
-  if (eligible.length === 0) {
+  if (!myChallengerCard) {
     return (
-      <div className="arena-empty-state">
-        <p>You need at least {MIN_BATTLE_CARDS} {MIN_BATTLE_CARDS === 1 ? "card" : "cards"} in a deck to enter the arena.</p>
-        <p className="page-sub">Head to <strong>My Decks</strong> to build one.</p>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <h2>You need a Challenger first</h2>
+          <p>Open <Link to="/collection?tab=decks">My Decks</Link>, mark a deck as Primary (🌟), and tap "🏁 Make Challenger" on the card you want to race with.</p>
+          <button className="btn-primary" onClick={onClose}>Got it</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="arena-deck-selector">
-      <h3>Select a Deck to Ready</h3>
-      <div className="arena-deck-list">
-        {eligible.map((deck) => (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content race-challenge-modal" onClick={(e) => e.stopPropagation()}>
+        <h2>Issue Race Challenge</h2>
+        <p className="race-challenge-summary">
+          <strong>{myChallengerCard.name}</strong> challenges{" "}
+          <strong>{defenderCard?.name ?? "their card"}</strong> from {state.opponent.displayName}'s deck.
+        </p>
+
+        <div className="race-challenge-row">
+          <label>Pick which of their cards to race:</label>
+          <div className="race-arena-card-grid race-arena-card-grid--compact">
+            {state.opponent.cards.map((card) => (
+              <ArenaCardThumb
+                key={card.id}
+                snapshot={card}
+                isChallenger={state.opponent.challengerCardId === card.id}
+                selected={defenderCardId === card.id}
+                onClick={() => setDefenderCardId(card.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="race-challenge-row">
+          <label>Wager (Ozzies) — your balance: {myOzzies}</label>
+          <div className="race-wager-presets">
+            {WAGER_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                className={`btn-outline btn-sm${wager === preset ? " btn-outline--active" : ""}`}
+                disabled={preset > cap}
+                onClick={() => setWager(preset)}
+              >
+                {preset === 0 ? "Friendly (0)" : `${preset}`}
+              </button>
+            ))}
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={cap}
+            step={5}
+            value={Math.min(wager, cap)}
+            onChange={(e) => setWager(Number(e.target.value))}
+            disabled={cap === 0}
+            aria-label="Wager amount"
+          />
+          <span className="race-wager-value">Wager: <strong>{wager}</strong> Ozzies</span>
+        </div>
+
+        <div className="race-challenge-row">
+          <label>Choose district:</label>
+          <RaceDistrictPicker district={district} onSelect={setDistrict} />
+        </div>
+
+        <div className="modal-actions">
+          <button className="btn-outline" onClick={onClose} disabled={busy}>Cancel</button>
           <button
-            key={deck.id}
-            className={`arena-deck-option ${selectedId === deck.id ? "arena-deck-option--active" : ""}`}
-            onClick={() => { sfxClick(); onSelect(deck.id); }}
+            className="btn-primary"
+            onClick={() => { sfxBattleReady(); onSubmit(defenderCardId, wager, district); }}
+            disabled={busy || wager > cap}
           >
-            <span className="arena-deck-option-name">{deck.name}</span>
-            <span className="arena-deck-option-count">{deck.cards.length} cards</span>
-            <span className="arena-deck-option-power">⚡ {computeDeckScore(deck.cards)}</span>
+            {busy ? "Sending…" : "Send Challenge"}
           </button>
-        ))}
+        </div>
       </div>
     </div>
   );
 }
-
-interface ArenaBattleSummaryProps {
-  summary?: ArenaDeckSummary | null;
-  label?: string;
-}
-
-function ArenaBattleSummary({ summary, label }: ArenaBattleSummaryProps) {
-  if (!summary) {
-    return <span className="arena-opponent-stats-hidden">Scout data syncing...</span>;
-  }
-
-  return (
-    <div className="arena-battle-summary">
-      {label && <span className="arena-battle-summary-label">{label}</span>}
-      <span className="arena-battle-summary-line">
-        ⚡ Power {summary.deckPower} · 🎯 Best {formatStatLabel(summary.strongestStat)} {summary.strongestStatTotal}
-      </span>
-      <span className="arena-battle-summary-line">
-        🤝 Synergy +{summary.synergyBonusPct}% · {summary.archetypeHint}
-      </span>
-    </div>
-  );
-}
-
-// ── Main Arena page ─────────────────────────────────────────────────────────
 
 export function BattleArena() {
-  const { user } = useAuth();
-  const uid = user?.uid ?? null;
+  const { user, userProfile } = useAuth();
+  const { tier } = useTier();
   const { decks } = useDecks();
-  const {
-    arenaEntries,
-    hasMoreArenaEntries,
-    loadingMoreArenaEntries,
-    loadMoreArenaEntries,
-    readyDeck,
-    unreadyDeck,
-    challenge,
-    battleResult,
-    dismissResult,
-    battling,
-    refresh,
-    myArenaEntry,
-  } = useBattle();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get("tab") === "hub"
+    ? "hub"
+    : searchParams.get("tab") === "solo"
+      ? "solo"
+      : "challengers") as TabKey;
+  const [tab, setTab] = useState<TabKey>(initialTab);
+  const arena = useRaceArena();
 
-  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
-  const [showAnimation, setShowAnimation] = useState(false);
-  const [pendingResult, setPendingResult] = useState<BattleResult | null>(null);
-  const [showOutcome, setShowOutcome] = useState(false);
+  const [arenaEntries, setArenaEntries] = useState<ArenaListEntry[]>([]);
+  const [arenaLoading, setArenaLoading] = useState(false);
+  const [arenaError, setArenaError] = useState<string | null>(null);
+  const [modal, setModal] = useState<ChallengeModalState | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [soloCardId, setSoloCardId] = useState("");
+  const [soloDistrict, setSoloDistrict] = useState<string>(DEFAULT_RACE_DISTRICT);
+  const [soloWager, setSoloWager] = useState(0);
+  const [soloLoading, setSoloLoading] = useState(false);
 
-  // Auto-select first eligible deck
+  // Discover the player's primary deck + Challenger card.
+  const primaryDeck = useMemo(() => {
+    if (decks.length === 0) return null;
+    return decks.find((d) => d.isPrimary) ?? decks[0];
+  }, [decks]);
+  const myChallengerCard = useMemo(() => {
+    if (!primaryDeck) return null;
+    const challengerId = primaryDeck.challengerCardId;
+    const card = challengerId
+      ? primaryDeck.cards.find((c) => c.id === challengerId)
+      : null;
+    if (!card) return null;
+    return {
+      id: card.id,
+      name: card.identity?.name ?? "Skater",
+      stats: {
+        speed: card.stats.speed,
+        range: card.stats.range,
+        rangeNm: card.stats.rangeNm,
+        stealth: card.stats.stealth,
+        grit: card.stats.grit,
+      },
+    };
+  }, [primaryDeck]);
+
+  const primaryDeckRaceCards = useMemo(() => (
+    primaryDeck?.cards.map((card) => ({
+      id: card.id,
+      name: card.identity?.name ?? "Skater",
+      archetype: card.prompts.archetype,
+      rarity: card.class.rarity,
+      stats: {
+        speed: card.stats.speed,
+        range: card.stats.range,
+        rangeNm: card.stats.rangeNm,
+        stealth: card.stats.stealth,
+        grit: card.stats.grit,
+      },
+      imageUrl: card.characterImageUrl ?? card.backgroundImageUrl ?? card.frameImageUrl,
+      backgroundImageUrl: card.backgroundImageUrl,
+      characterImageUrl: card.characterImageUrl,
+      frameImageUrl: card.frameImageUrl,
+    })) ?? []
+  ), [primaryDeck]);
+
+  const myOzzies = Number(userProfile?.ozzies ?? 0);
+  const soloWagerCap = Math.max(0, Math.min(myOzzies, SOLO_WAGER_MAX));
+  const showJousturEntry = isEnabled("JOUSTUR_SKATUR", user);
+  const isSignedInFreeUser = tier === "free" && !!user;
+
   useEffect(() => {
-    if (!selectedDeckId && decks.length > 0) {
-      const first = decks.find((d) => d.cards.length >= MIN_BATTLE_CARDS);
-      if (first) setSelectedDeckId(first.id);
+    if (primaryDeckRaceCards.length === 0) {
+      setSoloCardId("");
+      return;
     }
-  }, [decks, selectedDeckId]);
+    setSoloCardId((current) => {
+      if (current && primaryDeckRaceCards.some((card) => card.id === current)) {
+        return current;
+      }
+      // Prefer the designated Challenger card as the default selection.
+      const challengerId = primaryDeck?.challengerCardId;
+      const challenger = challengerId && primaryDeckRaceCards.find((c) => c.id === challengerId);
+      return challenger ? challenger.id : primaryDeckRaceCards[0].id;
+    });
+  }, [primaryDeckRaceCards, primaryDeck]);
 
-  // When battle result arrives, show outcome
   useEffect(() => {
-    if (battleResult && !showAnimation) {
-      setShowOutcome(true);
+    if (soloWager > soloWagerCap) {
+      setSoloWager(soloWagerCap);
     }
-  }, [battleResult, showAnimation]);
+  }, [soloWager, soloWagerCap]);
 
-  const selectedDeck = decks.find((d) => d.id === selectedDeckId) ?? null;
-  const selectedDeckSummary = useMemo(
-    () => (selectedDeck ? buildArenaDeckSummary(selectedDeck.cards) : null),
-    [selectedDeck],
-  );
+  // Sync tab → URL.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === "challengers") next.delete("tab");
+    else next.set("tab", tab);
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+  }, [tab, searchParams, setSearchParams]);
 
-  const handleReady = async () => {
-    if (!selectedDeck) return;
-    sfxBattleReady();
-    await readyDeck(selectedDeck);
-  };
+  // Load the public arena grid when entering Challengers tab.
+  useEffect(() => {
+    if (tab !== "challengers" || !user) return;
+    let cancelled = false;
+    setArenaLoading(true);
+    setArenaError(null);
+    fetchRaceArena()
+      .then((entries) => { if (!cancelled) setArenaEntries(entries); })
+      .catch((err) => { if (!cancelled) setArenaError(err instanceof Error ? err.message : "Failed to load arena."); })
+      .finally(() => { if (!cancelled) setArenaLoading(false); });
+    return () => { cancelled = true; };
+  }, [tab, user]);
 
-  const handleUnready = async () => {
-    await unreadyDeck();
-  };
+  const incomingPending = arena.incoming.filter((c) => c.status === "pending");
+  const outgoingPending = arena.outgoing.filter((c) => c.status === "pending");
+  const finishedRaces = useMemo(() =>
+    [...arena.incoming, ...arena.outgoing]
+      .filter((c) => c.status === "resolved" && c.raceId)
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+      .slice(0, 12)
+  , [arena.incoming, arena.outgoing]);
 
-  const handleAnimComplete = useCallback(() => {
-    setShowAnimation(false);
-    if (pendingResult) {
-      setShowOutcome(true);
+  async function handleIssue(defenderCardId: string, wager: number, district: string) {
+    if (!modal || !myChallengerCard) return;
+    try {
+      await arena.issue({
+        challengerCardId: myChallengerCard.id,
+        defenderUid: modal.opponent.uid,
+        defenderCardId,
+        ozzyWager: wager,
+        district,
+      });
+      setModal(null);
+      setActionMessage("Challenge sent!");
+      setTab("hub");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to send challenge.");
     }
-  }, [pendingResult]);
+  }
 
-  const handleChallenge = async (entry: ArenaEntry) => {
-    if (!selectedDeck || !uid) return;
-    if (!entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS) return;
+  async function handleSoloStart() {
+    if (!soloCardId) {
+      setActionMessage("Pick one of your primary deck cards to start a solo race.");
+      return;
+    }
+    setSoloLoading(true);
+    setActionMessage(null);
+    try {
+      // Bot stats are generated server-side seeded by the player's card power level,
+      // so the race stays competitive without any client-side simulation.
+      const race = await startSoloRace({
+        cardId: soloCardId,
+        ozzyWager: Math.min(soloWager, soloWagerCap),
+        district: soloDistrict,
+      });
+      navigate(`/race/${race.id}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to start solo race.");
+    } finally {
+      setSoloLoading(false);
+    }
+  }
 
-    // Start the animation
-    setShowAnimation(true);
-    setPendingResult(null);
+  async function handleFreeSoloStart() {
+    setSoloLoading(true);
+    setActionMessage(null);
+    try {
+      const race = await startFreeSoloRace({
+        district: soloDistrict,
+      });
+      navigate(`/race/${race.id}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to start the free solo trial.");
+    } finally {
+      setSoloLoading(false);
+    }
+  }
 
-    await challenge(entry, selectedDeck);
-  };
-
-  const handleDismissOutcome = () => {
-    setShowOutcome(false);
-    setPendingResult(null);
-    dismissResult();
-  };
-
-  const opponents = arenaEntries.filter((e) => e.uid !== uid);
-
-  if (!uid) {
-    return (
-      <div className="page">
-        <h1 className="page-title">⚔️ Battle Arena</h1>
-        <div className="empty-state">
-          <span className="empty-icon">🛡️</span>
-          <p>Sign in to enter the Battle Arena.</p>
-        </div>
-      </div>
-    );
+  async function handleAccept(challengeId: string) {
+    sfxClick();
+    try {
+      const result = await arena.respond(challengeId, true);
+      setActionMessage(result.race ? "Race accepted — opening replay!" : "Race accepted.");
+      if (result.race) navigate(`/race/${result.race.id}`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to accept.");
+    }
+  }
+  async function handleDecline(challengeId: string) {
+    sfxClick();
+    try {
+      await arena.respond(challengeId, false);
+      setActionMessage("Challenge declined. Wager refunded.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to decline.");
+    }
+  }
+  async function handleCancel(challengeId: string) {
+    sfxClick();
+    try {
+      await arena.cancel(challengeId);
+      setActionMessage("Challenge withdrawn. Wager refunded.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to cancel.");
+    }
   }
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">⚔️ Battle Arena</h1>
-          <p className="page-sub">
-            Ready your deck for battle. Each battle wagers {WAGER_POINTS} random attribute points — the winner takes {WINNER_BONUS}!
+    <div className="page race-arena-page">
+      <header className="race-arena-header">
+        <h1>🏁 Race Arena</h1>
+        <p className="race-arena-subtitle">
+          Pick an opponent's card, set a wager, and watch your Challenger race them on the courier circuit.
+        </p>
+        {showJousturEntry && (
+          <p>
+            <Link to="/joustur" className="btn-outline btn-sm">🛹 Open Joustur</Link>
           </p>
+        )}
+        <div className="race-arena-self">
+          {myChallengerCard ? (
+            <span>Your Challenger: <strong>{myChallengerCard.name}</strong> (Power {statTotal(myChallengerCard.stats)})</span>
+          ) : isSignedInFreeUser ? (
+            <span>Free Rider trial unlocked. Jump into Solo Sprint with a random house Challenger from the admin vault.</span>
+          ) : (
+            <span>
+              No Challenger set. Open <Link to="/collection?tab=decks">My Decks</Link>, mark a deck as Primary (🌟), and tap "🏁 Make Challenger" on a card.
+            </span>
+          )}
+          <span className="race-arena-balance">💰 {myOzzies} Ozzies</span>
         </div>
-        <button className="btn-outline" onClick={() => { sfxClick(); refresh(); }} aria-label="Refresh arena entries">
-          ↻ Refresh
+      </header>
+
+      <nav className="race-arena-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === "challengers"} className={`tab-btn${tab === "challengers" ? " tab-btn--active" : ""}`} onClick={() => { sfxClick(); setTab("challengers"); }}>
+          Challengers
         </button>
-      </div>
+        <button role="tab" aria-selected={tab === "hub"} className={`tab-btn${tab === "hub" ? " tab-btn--active" : ""}`} onClick={() => { sfxClick(); setTab("hub"); }}>
+          My Race Hub
+          {(incomingPending.length + outgoingPending.length) > 0 && (
+            <span className="nav-badge">{incomingPending.length + outgoingPending.length}</span>
+          )}
+        </button>
+        <button role="tab" aria-selected={tab === "solo"} className={`tab-btn${tab === "solo" ? " tab-btn--active" : ""}`} onClick={() => { sfxClick(); setTab("solo"); }}>
+          ⚡ Solo Sprint
+        </button>
+      </nav>
 
-      <div className="arena-layout">
-        {/* Left: my deck / ready status */}
-        <div className="arena-my-deck">
-          <h2 className="arena-section-title">Your Battle Station</h2>
+      {actionMessage && (
+        <div className="race-arena-message" role="status">
+          {actionMessage}
+          <button className="icon-btn" aria-label="Dismiss" onClick={() => setActionMessage(null)}>✕</button>
+        </div>
+      )}
+      {arena.error && <div className="race-arena-message race-arena-message--error">{arena.error}</div>}
 
-          {myArenaEntry ? (
-            <div className="arena-ready-banner">
-              <span className="arena-ready-pulse" />
-              <div className="arena-ready-info">
-                <strong>{myArenaEntry.deckName}</strong> is ready for battle!
-                <br />
-                <span className="arena-ready-hint">Waiting for a challenger…</span>
-                <ArenaBattleSummary summary={myArenaEntry.battleSummary} label="Public arena summary" />
-              </div>
-              <button className="btn-outline btn-sm" onClick={() => { sfxClick(); handleUnready(); }}>
-                Stand Down
-              </button>
-            </div>
-          ) : (
-            <>
-              <DeckSelector decks={decks} selectedId={selectedDeckId} onSelect={setSelectedDeckId} />
-              {selectedDeck && (
-                <>
-                  <div className="arena-deck-preview">
-                    <h4>{selectedDeck.name}</h4>
-                    <ArenaBattleSummary summary={selectedDeckSummary} label="Public arena summary" />
-                    <div className="arena-deck-preview-cards">
-                      {selectedDeck.cards.map((card) => (
-                        <CardThumbnail key={card.id} card={card} width={80} height={56} />
-                      ))}
-                    </div>
-                  </div>
+      {tab === "challengers" && (
+        <section>
+          {arenaLoading && <p className="race-arena-loading">Loading starting grid…</p>}
+          {arenaError && <p className="race-arena-error">{arenaError}</p>}
+          {!arenaLoading && !arenaError && arenaEntries.length === 0 && (
+            <p className="race-arena-empty">No other players have published a primary deck yet. Check back soon!</p>
+          )}
+          <div className="race-arena-opponents">
+            {arenaEntries.map((entry) => {
+              const challengerCard = entry.cards.find((c) => c.id === entry.challengerCardId) ?? entry.cards[0];
+              return (
+                <article key={entry.uid} className="race-arena-opponent">
+                  <header className="race-arena-opponent-header">
+                    <span className="race-arena-opponent-name">{entry.displayName}</span>
+                    <span className="race-arena-opponent-deck">{entry.deckName}</span>
+                  </header>
+                  <ArenaCardThumb snapshot={challengerCard} isChallenger />
                   <button
-                    className="btn-primary arena-ready-btn"
-                    onClick={() => { sfxClick(); handleReady(); }}
-                    disabled={battling}
+                    className="btn-primary"
+                    disabled={!myChallengerCard}
+                    title={myChallengerCard ? undefined : "Set a Challenger card on your primary deck first."}
+                    onClick={() => { sfxClick(); setModal({ opponent: entry, defenderCardId: challengerCard.id }); }}
                   >
-                    ⚔️ Ready for Battle
+                    Issue Challenge
                   </button>
-                </>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Right: opponents in the arena */}
-        <div className="arena-opponents">
-          <h2 className="arena-section-title">Arena Challengers</h2>
-
-          {opponents.length === 0 && !hasMoreArenaEntries ? (
-            <div className="arena-empty-state">
-              <span className="empty-icon">🏟️</span>
-              <p>No opponents in the arena yet.</p>
-              <p className="page-sub">Ready your deck and wait for challengers to appear!</p>
-            </div>
-          ) : (
-            <>
-              <div className="arena-opponent-list">
-                {opponents.map((entry) => (
-                  <div key={entry.uid} className="arena-opponent-card">
-                    <div className="arena-opponent-info">
-                      <span className="arena-opponent-name">{entry.displayName}</span>
-                      <span className="arena-opponent-deck">
-                        {entry.deckName} · {entry.cardCount} cards
-                      </span>
-                      <ArenaBattleSummary summary={entry.battleSummary} label="Scouting report" />
-                    </div>
-                    <button
-                      className="btn-primary btn-sm"
-                      onClick={() => { sfxClick(); handleChallenge(entry); }}
-                      disabled={battling || !myArenaEntry || !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS}
-                      title={
-                        !myArenaEntry
-                          ? "Ready your deck first!"
-                          : !entry.battleDeck || entry.battleDeck.length < MIN_BATTLE_CARDS
-                            ? "Opponent deck sync in progress"
-                            : "Challenge this player"
-                      }
-                    >
-                      ⚔️ Challenge
-                    </button>
-                  </div>
-                ))}
-              </div>
-              {hasMoreArenaEntries && (
-                <button
-                  className="btn-outline"
-                  onClick={() => { sfxClick(); void loadMoreArenaEntries(); }}
-                  disabled={loadingMoreArenaEntries}
-                >
-                  {loadingMoreArenaEntries ? "Loading…" : "Load More Challengers"}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Battle animation overlay */}
-      {showAnimation && selectedDeck && (
-        <BattleAnimation
-          challengerName={selectedDeck.name}
-          defenderName={pendingResult?.defenderDeckName ?? "Opponent"}
-          onComplete={handleAnimComplete}
-        />
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
 
-      {/* Outcome popup */}
-      {showOutcome && battleResult && uid && (
-        <OutcomePopup result={battleResult} myUid={uid} onDismiss={handleDismissOutcome} />
+      {tab === "hub" && (
+        <section className="race-hub">
+          <div className="race-hub-block">
+            <h2>Incoming challenges ({incomingPending.length})</h2>
+            {incomingPending.length === 0 && <p className="race-arena-empty">No incoming challenges.</p>}
+            {incomingPending.map((c) => (
+              <div key={c.id} className="race-hub-row">
+                <div>
+                  <strong>{c.challengerDisplayName}</strong> wants to race <strong>{c.challengerCardName}</strong> against your <strong>{c.defenderCardName}</strong>.
+                  {c.ozzyWager > 0 && <span className="race-hub-wager"> · Wager: {c.ozzyWager} Ozzies</span>}
+                  {c.message && <p className="race-hub-message">"{c.message}"</p>}
+                </div>
+                <div className="race-hub-actions">
+                  <button className="btn-primary" onClick={() => handleAccept(c.id)} disabled={arena.busy}>
+                    Accept{c.ozzyWager > 0 ? ` (${c.ozzyWager} Ozzies)` : ""}
+                  </button>
+                  <button className="btn-outline" onClick={() => handleDecline(c.id)} disabled={arena.busy}>Decline</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="race-hub-block">
+            <h2>Pending outgoing ({outgoingPending.length})</h2>
+            {outgoingPending.length === 0 && <p className="race-arena-empty">No pending outgoing challenges.</p>}
+            {outgoingPending.map((c) => (
+              <div key={c.id} className="race-hub-row">
+                <div>
+                  Awaiting reply from <strong>{c.defenderDisplayName}</strong> · {c.challengerCardName} vs {c.defenderCardName}
+                  {c.ozzyWager > 0 && <span className="race-hub-wager"> · Wager: {c.ozzyWager} Ozzies</span>}
+                </div>
+                <div className="race-hub-actions">
+                  <button className="btn-outline" onClick={() => handleCancel(c.id)} disabled={arena.busy}>Withdraw</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="race-hub-block">
+            <h2>Recent races</h2>
+            {finishedRaces.length === 0 && <p className="race-arena-empty">Your finished races will appear here.</p>}
+            {finishedRaces.map((c) => (
+              <div key={c.id} className="race-hub-row">
+                <div>
+                  <strong>{c.challengerCardName}</strong> vs <strong>{c.defenderCardName}</strong>
+                  {c.ozzyWager > 0 && <span className="race-hub-wager"> · Wager: {c.ozzyWager} Ozzies</span>}
+                </div>
+                <div className="race-hub-actions">
+                  {c.raceId && (
+                    <Link to={`/race/${c.raceId}`} className="btn-primary">▶ Replay</Link>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {tab === "solo" && (
+        <section className="race-solo-panel">
+          <p className="race-solo-description">
+            Race against a bot courier. Low stakes — small risk, small reward.
+          </p>
+
+          {isSignedInFreeUser && (
+            <div className="status-banner status-banner--ok" role="status">
+              <strong>Free Rider trial:</strong> start a friendly solo sprint with a random admin-owned house card. No wager required.
+            </div>
+          )}
+
+          {!isSignedInFreeUser && (
+            <div className="race-challenge-row">
+              <label>Pick your racer:</label>
+              <div className="race-solo-card-grid">
+                {primaryDeckRaceCards.map((card) => (
+                  <ArenaCardThumb
+                    key={card.id}
+                    snapshot={card}
+                    isChallenger={primaryDeck?.challengerCardId === card.id}
+                    selected={soloCardId === card.id}
+                    onClick={() => setSoloCardId(card.id)}
+                    hideChallengeBorder
+                  />
+                ))}
+              </div>
+              {primaryDeckRaceCards.length === 0 && (
+                <p className="race-arena-empty">Your primary deck has no cards available for a solo sprint yet.</p>
+              )}
+            </div>
+          )}
+
+          <div className="race-challenge-row">
+            <label>Choose district:</label>
+            <RaceDistrictPicker district={soloDistrict} onSelect={setSoloDistrict} />
+          </div>
+
+          {!isSignedInFreeUser && (
+            <div className="race-challenge-row">
+              <label>Wager (Ozzies) — your balance: {myOzzies}</label>
+              <div className="race-wager-presets">
+                {SOLO_WAGER_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`btn-outline btn-sm${soloWager === preset ? " btn-outline--active" : ""}`}
+                    disabled={preset > soloWagerCap}
+                    onClick={() => setSoloWager(preset)}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={SOLO_WAGER_MAX}
+                step={5}
+                value={Math.min(soloWager, soloWagerCap)}
+                onChange={(e) => setSoloWager(Number(e.target.value))}
+                disabled={soloWagerCap === 0}
+                aria-label="Solo race wager amount"
+              />
+              <span className="race-wager-value">Wager: <strong>{Math.min(soloWager, soloWagerCap)}</strong> Ozzies</span>
+            </div>
+          )}
+
+          <div className="modal-actions">
+            <button
+              className="btn-primary"
+              onClick={isSignedInFreeUser ? handleFreeSoloStart : handleSoloStart}
+              disabled={soloLoading || (!isSignedInFreeUser && primaryDeckRaceCards.length === 0)}
+            >
+              {isSignedInFreeUser ? "🎁 Start Free Solo Trial" : "▶ Start Solo Race"}
+            </button>
+            {soloLoading && <span className="race-track-status">Starting race…</span>}
+          </div>
+        </section>
+      )}
+
+      {modal && (
+        <ChallengeModal
+          state={modal}
+          myChallengerCard={myChallengerCard}
+          busy={arena.busy}
+          myOzzies={myOzzies}
+          onClose={() => setModal(null)}
+          onSubmit={handleIssue}
+        />
       )}
     </div>
   );

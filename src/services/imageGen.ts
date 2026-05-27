@@ -1,5 +1,5 @@
 import { auth } from "../lib/firebase";
-import { ELECTRIC_SKATEBOARD_EXCLUSIONS } from "../lib/promptBuilder";
+import { CHARACTER_LAYER_BOARD_EXCLUSIONS, ELECTRIC_SKATEBOARD_EXCLUSIONS } from "../lib/promptBuilder";
 import { hashSeedToInt } from "../utils/hash";
 
 // ── Configuration ──────────────────────────────────────────────────────────────
@@ -84,6 +84,12 @@ const NEGATIVE_PROMPT =
   "anime, manga, chibi, super-deformed, mascot costume, toy-like proportions, pixar, disney, cel shading, cel-shaded, " +
   "watercolor, oil painting, painterly, charcoal sketch, pastel drawing, minimalist flat design";
 
+const NON_HUMAN_CHARACTER_EXCLUSIONS =
+  "mutant, mutation, monster, monstrous, alien, extraterrestrial, creature, demon, zombie, ghoul, vampire, werewolf, " +
+  "orc, goblin, troll, reptilian, insectoid, android face, robot face, skull face, animal head, anthro, anthropomorphic, furry, " +
+  "snout, beak, tusks, fangs, horns, antennae, tentacles, gills, scales, fur, feathers, extra eyes, missing eyes, duplicate face, split face, " +
+  "deformed face, malformed mouth, warped jaw, distorted facial features, body horror, grotesque anatomy";
+
 /**
  * MANDATORY positive suffix — automatically appended to every prompt inside
  * generateImage(). These terms can never be removed by editing prompt builders.
@@ -131,11 +137,11 @@ export async function generateImage(
   // of which prompt builder was used or how the prompt was constructed.
   const safePrompt = `${prompt} ${MANDATORY_POSITIVE_SUFFIX}`;
 
-  // For character generations, append skateboard exclusions to the negative prompt
-  // so the model is steered away from non-skateboard vehicles on both axes.
+  // For character generations, append vehicle exclusions and avoid generated
+  // skateboards so the exact board image can be composited as its own layer.
   const negativePrompt =
     options.falProfile === "character"
-      ? `${NEGATIVE_PROMPT} ${ELECTRIC_SKATEBOARD_EXCLUSIONS}`
+      ? `${NEGATIVE_PROMPT} ${NON_HUMAN_CHARACTER_EXCLUSIONS} ${ELECTRIC_SKATEBOARD_EXCLUSIONS} ${CHARACTER_LAYER_BOARD_EXCLUSIONS}`
       : NEGATIVE_PROMPT;
 
   const body = JSON.stringify({

@@ -1,6 +1,9 @@
 import { resolveApiUrl } from "../lib/apiUrls";
+import { resolveApprovedBoardImage } from "../lib/approvedBoardImages";
 import type { BoardConfig } from "../lib/boardBuilder";
-import { normalizeBoardConfig } from "../lib/boardBuilder";
+import { enforceCompatibility, normalizeBoardConfig } from "../lib/boardBuilder";
+import boardImageVersionJson from "../lib/boardImageVersion.json";
+import { buildBoardImagePrompt } from "../lib/boardBuilderPrompt";
 import { getCategoryImages, getMatchingCategoryImages } from "../lib/boardCategoryImages";
 import { auth } from "../lib/firebase";
 import { getCachedImage, setCachedImage } from "./imageCache";
@@ -17,9 +20,23 @@ const BOARD_IMAGE_STATUS_BASE_URL = BOARD_IMAGE_API_URL.replace(
 );
 // Increment when the board-generation prompt, model, or cache-key inputs change
 // in a way that should invalidate previously generated board art.
-const BOARD_IMAGE_CACHE_VERSION = "v4-fal-gouache-board-square";
+// Single source of truth: src/lib/boardImageVersion.json
+export const BOARD_IMAGE_CACHE_VERSION = boardImageVersionJson.BOARD_IMAGE_CACHE_VERSION;
 const BOARD_IMAGE_LOCAL_CACHE_PREFIX = "skpd_board_image_cache::";
-const BOARD_IMAGE_PUBLIC_ORIGIN = "https://punchskater.com";
+const FALLBACK_BOARD_IMAGE_PUBLIC_ORIGIN = "https://driver727-pixel.github.io";
+
+function resolveBoardImagePublicOrigin(): string {
+  if (typeof window !== "undefined") {
+    const browserOrigin = window.location.origin.trim();
+    if (browserOrigin && browserOrigin !== "null") {
+      return browserOrigin;
+    }
+  }
+
+  return FALLBACK_BOARD_IMAGE_PUBLIC_ORIGIN;
+}
+
+const BOARD_IMAGE_PUBLIC_ORIGIN = resolveBoardImagePublicOrigin();
 
 // Maximum wall-clock time (ms) the client will poll before giving up.
 const BOARD_IMAGE_POLL_TIMEOUT_MS = 120_000;
@@ -41,20 +58,19 @@ async function buildAuthorizedJsonHeaders(): Promise<HeadersInit> {
 }
 
 type BoardImageCategoryValue = {
-  category: "deck" | "drivetrain" | "wheels" | "battery";
+  category: "deck" | "drivetrain" | "motor" | "wheels" | "battery";
   value: string;
 };
 
 function getResolvedBoardReferenceUrls(config: BoardConfig): string[] {
-  const normalizedConfig = normalizeBoardConfig(config);
+  const normalizedConfig = enforceCompatibility(normalizeBoardConfig(config));
   const selections: BoardImageCategoryValue[] = [
     { category: "deck", value: normalizedConfig.boardType },
     { category: "drivetrain", value: normalizedConfig.drivetrain },
     { category: "wheels", value: normalizedConfig.wheels },
+    { category: "battery", value: normalizedConfig.battery },
+    { category: "motor", value: normalizedConfig.motor },
   ];
-  if (normalizedConfig.battery !== "SlimStealth") {
-    selections.push({ category: "battery", value: normalizedConfig.battery });
-  }
 
   return selections.map(({ category, value }) => {
     const matchingImage = getMatchingCategoryImages(category, value)[0] ?? null;
@@ -67,30 +83,30 @@ function getResolvedBoardReferenceUrls(config: BoardConfig): string[] {
   });
 }
 
-function buildBoardPrompt(config: BoardConfig): string {
-  const normalizedConfig = normalizeBoardConfig(config);
-  const batterySentence =
-    normalizedConfig.battery === "SlimStealth"
-      ? ""
-      : `A ${normalizedConfig.battery} battery case is securely mounted. `;
-  return (
-    "A stylized, gouache painting of a 'Punch Skater' electric skateboard. " +
-    `The board features a ${normalizedConfig.boardType} deck, ${normalizedConfig.drivetrain} drivetrain, and ${normalizedConfig.wheels} wheels. ` +
-    `It uses ${normalizedConfig.motor} motors matched to the selected performance setup. ` +
-    batterySentence +
-    "The artwork features matte, opaque brushwork, thick textures, and a clean, neutral studio gray background suitable for a UI cutout."
-  );
-}
 
 function toCacheToken(value: string): string {
   return value.trim().replace(/([a-z0-9])([A-Z])/g, "$1-$2").replace(/\s+/g, "-").toLowerCase();
 }
 
-function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string[]): string {
-  const normalizedConfig = normalizeBoardConfig(config);
+function getBoardImageCacheUserScope(uid: string | null | undefined): string {
+  const normalizedUid = uid?.trim();
+  if (!normalizedUid) {
+    throw new Error("Sign in to generate board artwork.");
+  }
+  return normalizedUid;
+}
+
+function getCurrentBoardImageUserScope(): string {
+  const uid = auth?.currentUser?.uid;
+  return getBoardImageCacheUserScope(uid);
+}
+
+function buildBoardImageCacheKey(config: BoardConfig, imageUrls: readonly string[], userScope: string): string {
+  const normalizedConfig = enforceCompatibility(normalizeBoardConfig(config));
   return [
     "board-img",
     BOARD_IMAGE_CACHE_VERSION,
+    `user-${userScope}`,
     toCacheToken(normalizedConfig.boardType),
     toCacheToken(normalizedConfig.drivetrain),
     toCacheToken(normalizedConfig.motor),
@@ -129,6 +145,11 @@ function isBoardImagePollStatus(value: unknown): value is BoardImagePollStatus {
   if (!value || typeof value !== "object") return false;
   const s = (value as { status?: unknown }).status;
   return s === "pending" || s === "completed" || s === "failed";
+}
+
+interface GenerateBoardImageOptions {
+  skipCache?: boolean;
+  variationKey?: string;
 }
 
 async function pollBoardImageJob(jobId: string): Promise<string> {
@@ -177,18 +198,26 @@ async function pollBoardImageJob(jobId: string): Promise<string> {
   }
 }
 
-export async function generateGouacheBoard(config: BoardConfig): Promise<string> {
-  const imageUrls = getResolvedBoardReferenceUrls(config);
-  const cacheKey = buildBoardImageCacheKey(config, imageUrls);
-  const cachedLocal = getLocalCachedBoardImage(cacheKey);
-  if (cachedLocal) {
-    return cachedLocal;
+export async function generateGouacheBoard(config: BoardConfig, options: GenerateBoardImageOptions = {}): Promise<string> {
+  const approvedImage = resolveApprovedBoardImage(config);
+  if (approvedImage) {
+    return approvedImage.imageUrl;
   }
 
-  const cachedRemote = await getCachedImage(cacheKey);
-  if (cachedRemote) {
-    setLocalCachedBoardImage(cacheKey, cachedRemote);
-    return cachedRemote;
+  const resolvedConfig = enforceCompatibility(normalizeBoardConfig(config));
+  const imageUrls = getResolvedBoardReferenceUrls(resolvedConfig);
+  const cacheKey = buildBoardImageCacheKey(resolvedConfig, imageUrls, getCurrentBoardImageUserScope());
+  if (!options.skipCache) {
+    const cachedLocal = getLocalCachedBoardImage(cacheKey);
+    if (cachedLocal) {
+      return cachedLocal;
+    }
+
+    const cachedRemote = await getCachedImage(cacheKey);
+    if (cachedRemote) {
+      setLocalCachedBoardImage(cacheKey, cachedRemote);
+      return cachedRemote;
+    }
   }
 
   // Submit the job — server returns immediately with a jobId so the
@@ -197,7 +226,11 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
     method: "POST",
     headers: await buildAuthorizedJsonHeaders(),
     body: JSON.stringify({
-      prompt: buildBoardPrompt(config),
+      prompt: options.variationKey
+        ? resolvedConfig.boardType === "Mountain"
+          ? `${buildBoardImagePrompt(resolvedConfig)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references. Do not alter mountainboard geometry or hardware.`
+          : `${buildBoardImagePrompt(resolvedConfig)} Variation key: ${options.variationKey}. Keep the same hardware, proportions, and category references while choosing a different composition.`
+        : buildBoardImagePrompt(resolvedConfig),
       imageUrls,
     }),
   });
@@ -223,11 +256,13 @@ export async function generateGouacheBoard(config: BoardConfig): Promise<string>
   // Poll until the job completes (or times out).
   const imageUrl = await pollBoardImageJob(submitData.jobId);
 
-  setLocalCachedBoardImage(cacheKey, imageUrl);
-  await setCachedImage(cacheKey, imageUrl, {
-    prompt: buildBoardPrompt(config),
-    layer: "board-img",
-    seed: cacheKey,
-  });
+  if (!options.skipCache) {
+    setLocalCachedBoardImage(cacheKey, imageUrl);
+    await setCachedImage(cacheKey, imageUrl);
+  }
   return imageUrl;
+}
+
+export function shouldRemoveBoardImageBackground(config: BoardConfig): boolean {
+  return resolveApprovedBoardImage(config)?.backgroundRemovalRequired ?? true;
 }

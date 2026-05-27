@@ -2,6 +2,7 @@ import type { BoardConfig } from "./boardBuilder";
 import { BOARD_TYPE_OPTIONS, getAllowedComponents } from "./boardBuilder";
 
 const BOARD_TYPES = BOARD_TYPE_OPTIONS.map((option) => option.value);
+const DRIVE_ORIENTATIONS: BoardConfig["driveOrientation"][] = ["Rear-Wheel Drive", "Front-Wheel Drive"];
 
 export function getRandomIndex(length: number): number {
   if (length === 0) {
@@ -35,6 +36,7 @@ export function buildRandomBoardConfig(currentConfig: BoardConfig): BoardConfig 
   return {
     boardType,
     drivetrain: getRandomItem(allowed.drivetrains),
+    driveOrientation: getRandomItemExcluding(DRIVE_ORIENTATIONS, currentConfig.driveOrientation),
     motor: getRandomItem(allowed.motors),
     wheels: getRandomItem(allowed.wheels),
     battery: getRandomItem(allowed.batteries),

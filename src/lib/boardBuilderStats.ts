@@ -2,6 +2,7 @@ import { isDistrictAccessibleWithBoardType } from "./districtWeather";
 import { BATTERY_OPTIONS, BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS } from "./boardBuilderOptions";
 import { BATTERY_SEED, BOARD_COMPONENT_CATALOG, BOARD_TYPE_DECK_SEED, DRIVETRAIN_SEED, MOTOR_SEED } from "./boardBuilderCatalog";
 import { normalizeBoardConfig } from "./boardBuilderCompatibility";
+import { computeSkateStats } from "./boardBuilderStatEnvelope";
 import type { BoardConfig, BoardLoadout, BoardStatKey } from "./boardBuilderTypes";
 import { DISTRICT_ACCESS_ORDER } from "./boardBuilderTypes";
 
@@ -30,6 +31,11 @@ export function getBoardStatBonuses(config: BoardConfig): Partial<Record<BoardSt
   }
 
   return totals;
+}
+
+export function calculateBoardTraction(config: BoardConfig): number {
+  const normalizedConfig = normalizeBoardConfig(config);
+  return normalizedConfig.drivetrain === "4WD" ? 10 : 9;
 }
 
 export function getBoardSummary(config: BoardConfig): string {
@@ -78,5 +84,7 @@ export function calculateBoardStats(config: BoardConfig): BoardLoadout {
     acceleration: motorModel?.acceleration ?? DEFAULT_ACCEL,
     accessProfile: getBoardDistrictAccessProfile(normalizedConfig),
     range: batteryModel?.range ?? DEFAULT_RANGE,
+    traction: calculateBoardTraction(normalizedConfig),
+    skateStats: computeSkateStats(normalizedConfig),
   };
 }

@@ -1,6 +1,7 @@
 import type { CardPayload } from "../lib/types";
 import { MAX_SINGLE_STAT } from "../lib/generator";
-import { computeDeckTotalPower, computeDeckWorth } from "../lib/battle";
+import { computeDeckTotalPower } from "../lib/battle";
+import { computeCrewOzzies, computeCrewXp, MAX_DECK_POWER_TARGET, CREW_SIZE } from "../lib/progression";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
 
 interface DeckStatsPanelProps {
@@ -10,10 +11,9 @@ interface DeckStatsPanelProps {
 
 const STAT_DEFS = [
   { key: "speed"   as const, color: "#00ccff", glow: "rgba(0,204,255,0.7)"   },
-  { key: "stealth" as const, color: "#00ff88", glow: "rgba(0,255,136,0.7)"   },
-  { key: "tech"    as const, color: "#cc44ff", glow: "rgba(204,68,255,0.7)"  },
+  { key: "range"   as const, color: "#00ff88", glow: "rgba(0,255,136,0.7)"   },
+  { key: "stealth" as const, color: "#cc44ff", glow: "rgba(204,68,255,0.7)"  },
   { key: "grit"    as const, color: "#ff6644", glow: "rgba(255,102,68,0.7)"  },
-  { key: "rep"     as const, color: "#ffdd00", glow: "rgba(255,221,0,0.7)"   },
 ];
 
 export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {
@@ -30,10 +30,12 @@ export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {
     return { key, label, tooltip, color, glow, total, pct };
   });
 
-  const grandTotal = computeDeckTotalPower(filledCards);
-  const grandMax   = statMax * STAT_DEFS.length;
-  const grandPct   = Math.min((grandTotal / grandMax) * 100, 100);
-  const deckWorth  = computeDeckWorth(filledCards);
+  const grandTotal   = computeDeckTotalPower(filledCards);
+  const grandMax     = statMax * STAT_DEFS.length;
+  const grandPct     = Math.min((grandTotal / grandMax) * 100, 100);
+  const crewOzzies   = computeCrewOzzies(filledCards);
+  const crewXp       = computeCrewXp(filledCards);
+  const isFullCrew   = filledCards.length >= CREW_SIZE;
 
   return (
     <div className="deck-stats-panel">
@@ -80,11 +82,49 @@ export function DeckStatsPanel({ cards, maxCardsInDeck }: DeckStatsPanelProps) {
         >{grandTotal}<span className="deck-stats-total-max" aria-hidden="true">/{grandMax}</span></span>
       </div>
 
-      {/* Ozzycred deck worth */}
+      {/* Crew Ozzies */}
       <div className="deck-stats-ozzies">
-        <span className="deck-stats-ozzies-label">DECK WORTH</span>
-        <span className="deck-stats-ozzies-value" aria-label={`Deck worth ${deckWorth.toFixed(2)} Ozzies`}>${deckWorth.toFixed(2)} Ozzies</span>
+        <span
+          className="deck-stats-ozzies-label"
+          title="Ozzies show how valuable and respected your collection is. Crew Ozzies = sum of all card Ozzy values in your active 6-card Crew."
+        >
+          {isFullCrew ? "CREW OZZIES" : "OZZIES"}
+        </span>
+        <span
+          className="deck-stats-ozzies-value"
+          aria-label={`Crew Ozzies ${crewOzzies}`}
+        >
+          {crewOzzies.toLocaleString()} Ozzies
+        </span>
       </div>
+
+      {/* Crew XP (shown when any card has earned XP) */}
+      {crewXp > 0 && (
+        <div className="deck-stats-ozzies">
+          <span
+            className="deck-stats-ozzies-label"
+            title="Crew XP = sum of all card XP values in your active Crew. XP shows what your Crew has done through gameplay."
+          >
+            {isFullCrew ? "CREW XP" : "TOTAL XP"}
+          </span>
+          <span className="deck-stats-ozzies-value" aria-label={`Crew XP ${crewXp.toLocaleString()}`}>
+            {crewXp.toLocaleString()} XP
+          </span>
+        </div>
+      )}
+
+      {/* Design-target Deck Power cap callout for full Crews */}
+      {isFullCrew && (
+        <div
+          className="deck-stats-ozzies"
+          title={`Design target: ${MAX_DECK_POWER_TARGET.toLocaleString()} max Deck Power. Reaching 1,000 unlocks Apprentice forge, 2,500 Master, 5,000 Rare, and 8,500+ opens Legendary eligibility (earn only).`}
+        >
+          <span className="deck-stats-ozzies-label">POWER TARGET</span>
+          <span className="deck-stats-ozzies-value" style={{ opacity: 0.6 }}>
+            / {MAX_DECK_POWER_TARGET.toLocaleString()}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

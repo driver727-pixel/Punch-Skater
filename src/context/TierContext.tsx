@@ -10,12 +10,15 @@ import {
   saveCheckoutSessionId,
   clearCheckoutSessionId,
   FREE_CARD_USED_KEY,
+  loadFreeForgeReadyAt,
+  saveFreeForgeReadyAt,
   type TierLevel,
 } from "../lib/tiers";
 import { claimReferral, REFERRAL_CREDITS_KEY } from "../services/referrals";
 import { useAuth } from "./AuthContext";
 import { db } from "../lib/firebase";
 import { resolveApiUrl } from "../lib/apiUrls";
+import { FREE_FORGE_COOLDOWN_MS } from "../lib/dailyRewards";
 
 const CHECKOUT_VERIFY_API_URL = resolveApiUrl(
   import.meta.env.VITE_CHECKOUT_VERIFY_API_URL as string | undefined,
@@ -51,12 +54,15 @@ interface TierContextValue {
   canForge: boolean;
   /** True when the free tier's one complimentary card has already been used. */
   freeCardUsed: boolean;
+  freeForgeReadyAt: number | null;
   setTier: (level: TierLevel, email?: string) => void;
   logout: () => void;
   /** Consume one generate credit (call after a successful forge on free tier). */
   consumeCredit: () => void;
   /** Mark the free tier's one complimentary card as used. */
   markFreeCardUsed: () => void;
+  /** Start the cooldown for the next free-tier forge. */
+  startFreeForgeCooldown: () => void;
   showUpgradeModal: boolean;
   openUpgradeModal: () => void;
   closeUpgradeModal: () => void;
@@ -89,6 +95,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
   const [email, setEmailState] = useState<string>(resolveInitialEmail);
   const [generateCredits, setGenerateCredits] = useState<number>(loadStoredCredits);
   const [freeCardUsed, setFreeCardUsed] = useState<boolean>(loadFreeCardUsed);
+  const [freeForgeReadyAt, setFreeForgeReadyAt] = useState<number | null>(loadFreeForgeReadyAt);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [verifiedCheckout, setVerifiedCheckout] = useState<VerifiedCheckout | null>(null);
 
@@ -240,7 +247,12 @@ export function TierProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const canForge = TIERS[tier].canGenerate || generateCredits > 0 || (tier === "free" && !freeCardUsed);
+  const canUseFreeForge = tier === "free" && (
+    !freeCardUsed
+    || freeForgeReadyAt == null
+    || Date.now() >= freeForgeReadyAt
+  );
+  const canForge = TIERS[tier].canGenerate || generateCredits > 0 || canUseFreeForge;
 
   const setTier = useCallback((level: TierLevel, newEmail?: string) => {
     setTierState(level);
@@ -270,13 +282,19 @@ export function TierProvider({ children }: { children: ReactNode }) {
     setFreeCardUsed(true);
   }, []);
 
+  const startFreeForgeCooldown = useCallback(() => {
+    const nextReadyAt = Date.now() + FREE_FORGE_COOLDOWN_MS;
+    saveFreeForgeReadyAt(nextReadyAt);
+    setFreeForgeReadyAt(nextReadyAt);
+  }, []);
+
   const openUpgradeModal = useCallback(() => setShowUpgradeModal(true), []);
   const closeUpgradeModal = useCallback(() => setShowUpgradeModal(false), []);
 
   return (
     <TierContext.Provider value={{
-      tier, email, generateCredits, canForge, freeCardUsed,
-      setTier, logout, consumeCredit, markFreeCardUsed,
+      tier, email, generateCredits, canForge, freeCardUsed, freeForgeReadyAt,
+      setTier, logout, consumeCredit, markFreeCardUsed, startFreeForgeCooldown,
       showUpgradeModal, openUpgradeModal, closeUpgradeModal,
     }}>
       {children}

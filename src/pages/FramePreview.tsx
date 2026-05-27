@@ -35,7 +35,7 @@ export function FramePreview() {
         <div>
           <h1 className="page-title">🖼 Border Frame Preview</h1>
           <p className="page-sub">
-            Fixed 750 × 1050 previews for all five card borders, including Punch Skater.
+            Fixed 750 × 1050 previews for all five card borders, including Punch Skater™.
           </p>
         </div>
       </div>

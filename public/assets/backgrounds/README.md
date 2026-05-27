@@ -2,27 +2,25 @@
 
 Place district background images here to skip AI generation and save fal.ai credits.
 
-## Two Sizes
+## One Size
 
-| Size | Folder | Dimensions | Use |
-|------|--------|------------|-----|
-| **Print / full quality** | `public/assets/backgrounds/` | 1500 × 2100 px | Print modal, JPEG download |
-| **Screen / standard quality** | `public/assets/backgrounds/small/` | 750 × 1050 px | Live card preview, collection thumbnails |
+Each district has a single background image used for every context (live card preview,
+collection thumbnails, print, and JPEG download).
 
-Upload **both** files with the same filename.  The app automatically serves the
-small version to the browser (fast load) and switches to the large version when
-the user prints or downloads the card.
+| Folder | Dimensions | Use |
+|--------|------------|-----|
+| `public/assets/backgrounds/` | Any size | All contexts |
 
 ## Filename Convention
 
 | District      | Filename              |
 |---------------|-----------------------|
-| Airaway       | `airaway.webp`         |
-| Nightshade    | `nightshade.webp`      |
-| Batteryville  | `batteryville.webp`    |
-| The Grid      | `the-grid.webp`        |
-| The Forest    | `the-forest.webp`      |
-| Glass City    | `glass-city.webp`      |
+| Airaway       | `airaway.jpg`          |
+| Nightshade    | `nightshade.jpg`       |
+| Batteryville  | `batteryville.jpg`     |
+| The Grid      | `the-grid.jpg`         |
+| The Forest    | `the-forest.jpg`       |
+| Glass City    | `glass-city.jpg`       |
 
 ## Accepted Formats
 
@@ -35,23 +33,17 @@ the user prints or downloads the card.
    Download that image and save it here with the correct filename, then register it in
    `src/services/staticAssets.ts`.
 
-2. **Custom artwork:** Drop in your own WebP/PNG/JPG that matches the desired district mood.
-   - Print-quality (this folder): **1500 × 2100 px**
-   - Screen-quality (`small/` subfolder): **750 × 1050 px** at 72–96 DPI
+2. **Custom artwork:** Drop in your own JPG/WebP/PNG that matches the desired district mood.
 
 ## Activating Files
 
-After placing the files, open `src/services/staticAssets.ts` and add (or uncomment) the
-corresponding entry in **both** `BACKGROUND_ASSETS` (print) and `BACKGROUND_ASSETS_SMALL`
-(screen):
+After placing a file here, open `src/services/staticAssets.ts` and uncomment the
+corresponding entry in `BACKGROUND_ASSETS`:
 
 ```ts
 const BACKGROUND_ASSETS: Partial<Record<District, string>> = {
-  Airaway: "/assets/backgrounds/airaway.webp",       // print quality
-};
-
-const BACKGROUND_ASSETS_SMALL: Partial<Record<District, string>> = {
-  Airaway: "/assets/backgrounds/small/airaway.webp", // screen quality
+  Airaway: "/assets/backgrounds/airaway.jpg",
+  // ... add other districts as you add files
 };
 ```
 

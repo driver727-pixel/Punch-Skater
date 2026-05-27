@@ -1,6 +1,7 @@
 import { applicationDefault, cert, getApps, initializeApp as initializeAdminApp } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 
 const MAX_SERVICE_ACCOUNT_PARSE_ATTEMPTS = 3;
 
@@ -87,12 +88,14 @@ export function createFirebaseAdminServices({
   applicationDefaultImpl = applicationDefault,
   getAdminAuthImpl = getAdminAuth,
   getAdminFirestoreImpl = getAdminFirestore,
+  getAdminStorageImpl = getAdminStorage,
 } = {}) {
   const existingApp = getAppsImpl()[0];
   if (existingApp) {
     return {
       adminAuth: getAdminAuthImpl(existingApp),
       adminDb: getAdminFirestoreImpl(existingApp),
+      adminStorage: getAdminStorageImpl(existingApp),
     };
   }
 
@@ -110,10 +113,11 @@ export function createFirebaseAdminServices({
     return {
       adminAuth: getAdminAuthImpl(app),
       adminDb: getAdminFirestoreImpl(app),
+      adminStorage: getAdminStorageImpl(app),
     };
   } catch (error) {
     if (!serviceAccount) logger.warn('Firebase Admin initialization failed using optional application default credentials. Verify GOOGLE_APPLICATION_CREDENTIALS or your platform-managed GCP service identity.', error);
     else logger.error('Firebase Admin initialization failed.', error);
-    return { adminAuth: null, adminDb: null };
+    return { adminAuth: null, adminDb: null, adminStorage: null };
   }
 }

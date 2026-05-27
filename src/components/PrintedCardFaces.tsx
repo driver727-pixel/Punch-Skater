@@ -7,6 +7,7 @@
  */
 
 import { SkaterCardFace, type SkaterCardFaceProps } from "./SkaterCardFace";
+import { getStaticFrameBackUrl } from "../services/staticAssets";
 
 // Re-export the shared prop interface so existing imports are unchanged.
 export type { SkaterCardFaceProps as PrintedCardFaceProps };
@@ -38,16 +39,19 @@ export function PrintedCardPreviewPair({
   onBioChange,
   onAgeChange,
   onStatChange,
+  onBoardPlacementChange,
+  onCharacterPlacementChange,
   boardImageLoading,
 }: PrintedCardPreviewPairProps) {
   const previewClassName = className ? `print-preview-area ${className}` : "print-preview-area";
+  const wrapFrameClass = getStaticFrameBackUrl(card.prompts.rarity) != null ? " print-card--wrap-frame" : "";
 
   return (
     <div className={previewClassName}>
       <div className="print-preview-slot">
         <p className="print-preview-label">Front</p>
         <div className="print-card-wrap">
-          <div className="print-card print-card--front">
+          <div className={`print-card print-card--front${wrapFrameClass}`}>
             <SkaterCardFace
               face="front"
               card={card}
@@ -59,6 +63,8 @@ export function PrintedCardPreviewPair({
               onNameChange={onNameChange}
               onBioChange={onBioChange}
               onAgeChange={onAgeChange}
+              onBoardPlacementChange={onBoardPlacementChange}
+              onCharacterPlacementChange={onCharacterPlacementChange}
             />
           </div>
         </div>
@@ -67,11 +73,15 @@ export function PrintedCardPreviewPair({
       <div className="print-preview-slot">
         <p className="print-preview-label">Back</p>
         <div className="print-card-wrap">
-          <div className="print-card print-card--back">
+          <div className={`print-card print-card--back${wrapFrameClass}`}>
             <SkaterCardFace
               face="back"
               card={card}
+              backgroundImageUrl={backgroundImageUrl}
               editable={editable}
+              onNameChange={onNameChange}
+              onBioChange={onBioChange}
+              onAgeChange={onAgeChange}
               onStatChange={onStatChange}
               boardImageLoading={boardImageLoading}
             />
@@ -81,4 +91,3 @@ export function PrintedCardPreviewPair({
     </div>
   );
 }
-

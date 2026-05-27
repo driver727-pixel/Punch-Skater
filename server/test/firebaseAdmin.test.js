@@ -47,6 +47,7 @@ test('createFirebaseAdminServices falls back to application default credentials'
   const initCalls = [];
   const adminAuth = { verifyIdToken: () => {} };
   const adminDb = { collection: () => {} };
+  const adminStorage = { bucket: () => {} };
   const app = { name: 'default-app' };
 
   const services = createFirebaseAdminServices({
@@ -69,6 +70,10 @@ test('createFirebaseAdminServices falls back to application default credentials'
       assert.equal(resolvedApp, app);
       return adminDb;
     },
+    getAdminStorageImpl: (resolvedApp) => {
+      assert.equal(resolvedApp, app);
+      return adminStorage;
+    },
   });
 
   assert.deepEqual(initCalls, [{
@@ -77,4 +82,5 @@ test('createFirebaseAdminServices falls back to application default credentials'
   }]);
   assert.equal(services.adminAuth, adminAuth);
   assert.equal(services.adminDb, adminDb);
+  assert.equal(services.adminStorage, adminStorage);
 });

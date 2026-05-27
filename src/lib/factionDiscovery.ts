@@ -60,8 +60,8 @@ const FACTION_BRANDING: Partial<Record<Faction, { logoMark: string; flavorText: 
     logoMark: "📮 UCPS Workers",
     flavorText: "Sanctioned and stamped. UCPS has cleared this courier for delivery.",
   },
-  "United Corporations of America (UCA)": {
-    logoMark: "🏙 United Corporations of America (UCA)",
+  "United Corporate Alliance (UCA)": {
+    logoMark: "🏙 United Corporate Alliance (UCA)",
     flavorText: "Corporate clearance confirmed. UCA has eyes on this run from Airaway.",
   },
   "Moonrisers": {
@@ -72,9 +72,9 @@ const FACTION_BRANDING: Partial<Record<Faction, { logoMark: string; flavorText: 
     logoMark: "🌲 The Wooders",
     flavorText: "No screens. No trackers. The Wooders have acknowledged this rider from the canopy.",
   },
-  "Punch Skaters": {
-    logoMark: "🛹 Punch Skaters",
-    flavorText: "Bloodied knuckles, battered board. Another Punch Skater hits the streets.",
+  "Punch Skater™s": {
+    logoMark: "🛹 Punch Skater™s",
+    flavorText: "Bloodied knuckles, battered board. Another Punch Skater™ hits the streets.",
   },
   "The Team": {
     logoMark: "🏅 The Team",
@@ -97,7 +97,7 @@ export function resolveSecretFaction(prompts: CardPrompts): Faction | null {
   // 3. UCA: a Corporate or Fascist-styled courier operating out of Airaway
   //    surfaces the governing body before any archetype check fires.
   if (UCA_STYLE_MATCHES.has(remapStyleConnection(prompts.style)) && prompts.district === "Airaway") {
-    return "United Corporations of America (UCA)";
+    return "United Corporate Alliance (UCA)";
   }
 
   // 4. Moonrisers: Apprentice couriers running Street-style packages through
@@ -124,22 +124,15 @@ export function applyFactionBranding(
 
   return {
     ...card,
-    flavorText: branding
-      ? branding.flavorText
-      : `Running packages through ${card.prompts.district}.`,
-    tags: Array.from(
-      new Set([
-        ...card.tags.filter((tag) => tag !== card.prompts.archetype),
-        displayArchetype,
-        ...(revealedFaction ? [revealedFaction, "Secret Faction"] : []),
-      ]),
-    ),
-    discovery: {
-      displayArchetype,
-      isSecretReveal: !!revealedFaction,
-      ...(revealedFaction != null ? { revealedFaction } : {}),
-      ...(branding ? { logoMark: branding.logoMark } : {}),
-      ...(revealedFaction != null ? { unlockedAt: new Date().toISOString() } : {}),
+    front: {
+      ...card.front,
+      flavorText: branding
+        ? branding.flavorText
+        : `Running packages through ${card.prompts.district}.`,
+    },
+    role: {
+      ...card.role,
+      label: displayArchetype,
     },
   };
 }

@@ -1,14 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { sfxClick } from "../lib/sfx";
+import { resolveCraftlinguaShareCode } from "../services/craftlingua";
+import {
+  isStrongPassword,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  PASSWORD_REQUIREMENTS_PLACEHOLDER,
+} from "../lib/passwordRules";
+import { resolveUserDisplayName } from "../lib/userIdentity";
 
 export function AccountSettings() {
-  const { user, changePassword, changeDisplayName, deleteAccount, signOut } = useAuth();
+  const {
+    user,
+    userProfile,
+    changePassword,
+    changeDisplayName,
+    deleteAccount,
+    signOut,
+    updateCraftlinguaLink,
+  } = useAuth();
   const navigate = useNavigate();
 
+  const currentDisplayName = resolveUserDisplayName({
+    profileDisplayName: userProfile?.displayName,
+    authDisplayName: user?.displayName,
+    email: user?.email,
+  });
+
   // Display name
-  const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [displayName, setDisplayName] = useState(currentDisplayName);
+  const [displayNameDirty, setDisplayNameDirty] = useState(false);
   const [nameSuccess, setNameSuccess] = useState("");
   const [nameError, setNameError] = useState("");
   const [nameLoading, setNameLoading] = useState(false);
@@ -30,6 +52,21 @@ export function AccountSettings() {
   const [deleteError, setDeleteError] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [shareCode, setShareCode] = useState(userProfile?.craftlinguaLink?.shareCode ?? "");
+  const [shareCodeError, setShareCodeError] = useState("");
+  const [shareCodeSuccess, setShareCodeSuccess] = useState("");
+  const [shareCodeLoading, setShareCodeLoading] = useState(false);
+
+  useEffect(() => {
+    setShareCode(userProfile?.craftlinguaLink?.shareCode ?? "");
+  }, [userProfile?.craftlinguaLink?.shareCode]);
+
+  useEffect(() => {
+    if (!displayNameDirty) {
+      setDisplayName(currentDisplayName);
+    }
+  }, [currentDisplayName, displayNameDirty]);
+
   const isEmailUser = !!user?.email && user.providerData.some(p => p.providerId === "password");
 
   const handleDisplayNameSubmit = async (e: React.FormEvent) => {
@@ -41,13 +78,14 @@ export function AccountSettings() {
       setNameError("Display name cannot be empty.");
       return;
     }
-    if (trimmed === user?.displayName) {
+    if (trimmed === currentDisplayName) {
       setNameError("That is already your display name.");
       return;
     }
     setNameLoading(true);
     try {
       await changeDisplayName(trimmed);
+      setDisplayNameDirty(false);
       setNameSuccess("Display name updated!");
     } catch (err: unknown) {
       setNameError(friendlyError(err));
@@ -61,8 +99,8 @@ export function AccountSettings() {
     setPwError("");
     setPwSuccess("");
 
-    if (newPassword.length < 6) {
-      setPwError("New password must be at least 6 characters.");
+    if (!isStrongPassword(newPassword)) {
+      setPwError(PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -98,6 +136,43 @@ export function AccountSettings() {
     }
   };
 
+  const handleCraftlinguaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setShareCodeError("");
+    setShareCodeSuccess("");
+    const trimmed = shareCode.trim();
+    if (!trimmed) {
+      setShareCodeError("Paste a CraftLingua share code first.");
+      return;
+    }
+    setShareCodeLoading(true);
+    try {
+      const link = await resolveCraftlinguaShareCode(trimmed);
+      await updateCraftlinguaLink(link);
+      setShareCode(link.shareCode);
+      setShareCodeSuccess(`${link.languageName} linked to your account.`);
+    } catch (err: unknown) {
+      setShareCodeError(friendlyError(err));
+    } finally {
+      setShareCodeLoading(false);
+    }
+  };
+
+  const handleCraftlinguaClear = async () => {
+    setShareCodeError("");
+    setShareCodeSuccess("");
+    setShareCodeLoading(true);
+    try {
+      await updateCraftlinguaLink(null);
+      setShareCode("");
+      setShareCodeSuccess("CraftLingua link removed.");
+    } catch (err: unknown) {
+      setShareCodeError(friendlyError(err));
+    } finally {
+      setShareCodeLoading(false);
+    }
+  };
+
   return (
     <div className="page">
       <h1 className="page-title">Account Settings</h1>
@@ -125,7 +200,13 @@ export function AccountSettings() {
                 className="input"
                 type="text"
                 value={displayName}
-                onChange={(e) => { setDisplayName(e.target.value); setNameSuccess(""); setNameError(""); }}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setDisplayName(nextValue);
+                  setDisplayNameDirty(nextValue !== currentDisplayName);
+                  setNameSuccess("");
+                  setNameError("");
+                }}
                 maxLength={40}
                 required
                 autoComplete="name"
@@ -171,7 +252,7 @@ export function AccountSettings() {
                   <input
                     className="input"
                     type={showNew ? "text" : "password"}
-                    placeholder="Min. 6 characters"
+                    placeholder={PASSWORD_REQUIREMENTS_PLACEHOLDER}
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); setPwError(""); setPwSuccess(""); }}
                     required
@@ -217,6 +298,60 @@ export function AccountSettings() {
             </form>
           </section>
         )}
+
+        <section className="account-section">
+          <h2 className="account-section-title">CraftLingua Language Link</h2>
+          <p className="account-section-copy">
+            Link one of the Codex district languages to use its share code for Rare and Legendary flavor text.
+          </p>
+          {userProfile?.craftlinguaLink && (
+            <div className="account-info-row">
+              <span className="account-info-label">Current language</span>
+              <span className="account-info-value">
+                {userProfile.craftlinguaLink.languageName} ({userProfile.craftlinguaLink.languageCode})
+              </span>
+            </div>
+          )}
+          <form className="account-form" onSubmit={handleCraftlinguaSubmit}>
+            <div className="form-group">
+              <label>CraftLingua Share Code</label>
+              <input
+                className="input"
+                type="text"
+                value={shareCode}
+                onChange={(e) => { setShareCode(e.target.value); setShareCodeError(""); setShareCodeSuccess(""); }}
+                placeholder="CL-GRID-MESH"
+                autoCapitalize="characters"
+                maxLength={64}
+              />
+            </div>
+            {userProfile?.craftlinguaLink?.exploreUrl && (
+              <p className="account-help-text">
+                Explore current link:{" "}
+                <a href={userProfile.craftlinguaLink.exploreUrl} target="_blank" rel="noopener noreferrer">
+                  {userProfile.craftlinguaLink.languageName} ↗
+                </a>
+              </p>
+            )}
+            {shareCodeError && <p className="login-error">{shareCodeError}</p>}
+            {shareCodeSuccess && <p className="login-success">{shareCodeSuccess}</p>}
+            <div className="account-inline-actions">
+              <button className="btn-primary" type="submit" disabled={shareCodeLoading}>
+                {shareCodeLoading ? "⏳ Validating…" : "Link Language"}
+              </button>
+              {userProfile?.craftlinguaLink && (
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={() => { sfxClick(); void handleCraftlinguaClear(); }}
+                  disabled={shareCodeLoading}
+                >
+                  Clear Link
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
 
         {/* Danger Zone */}
         <section className="account-section account-section--danger">
@@ -285,5 +420,6 @@ function friendlyError(err: unknown): string {
   if (msg.includes("requires-recent-login")) return "Please sign out and sign back in, then try again.";
   if (msg.includes("too-many-requests")) return "Too many attempts. Please try again later.";
   if (msg.includes("network-request-failed")) return "Network error. Check your connection.";
+  if (msg.toLowerCase().includes("share code")) return "That CraftLingua share code could not be found.";
   return "Something went wrong. Please try again.";
 }

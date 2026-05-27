@@ -4,13 +4,20 @@ import {
   query,
   where,
   getDocs,
-  doc,
-  setDoc,
 } from "firebase/firestore";
 import type { CardPayload, TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import { CardArt } from "./CardArt";
+import { CardThumbnail } from "./CardThumbnail";
+import {
+  createTradeReputationSnapshot,
+  estimateCardTradeValue,
+  formatTradeValue,
+  getTradeFairnessFlags,
+  getTradeValueBand,
+  MAX_PENDING_OUTGOING_OFFERS,
+} from "../lib/tradeEconomy";
+import { createTradeOffer } from "../services/trades";
 
 interface TradeModalProps {
   cards: CardPayload[];
@@ -22,11 +29,21 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
   const { user } = useAuth();
   const [recipientEmail, setRecipientEmail] = useState("");
   const [selectedCard, setSelectedCard] = useState<CardPayload | null>(preselectedCard ?? null);
-  const [pendingOfferCardIds, setPendingOfferCardIds] = useState<string[]>([]);
+  const [sentTrades, setSentTrades] = useState<TradePayload[]>([]);
   const [loadingPendingOffers, setLoadingPendingOffers] = useState(false);
+  const [confirmedFairTrade, setConfirmedFairTrade] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const pendingTrades = useMemo(() => sentTrades.filter((trade) => trade.status === "pending"), [sentTrades]);
+  const pendingOfferCardIds = useMemo(
+    () => pendingTrades.map((trade) => trade.offeredCardId ?? trade.offeredCard.id),
+    [pendingTrades],
+  );
+  const selectedCardValue = selectedCard ? estimateCardTradeValue(selectedCard) : 0;
+  const selectedCardValueBand = selectedCard ? getTradeValueBand(selectedCardValue) : null;
+  const selectedCardFairnessFlags = selectedCard ? getTradeFairnessFlags(selectedCard, selectedCardValue) : [];
+  const senderReputation = user ? createTradeReputationSnapshot(sentTrades, user.uid) : null;
 
   useEffect(() => {
     if (!user) return;
@@ -35,18 +52,13 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
     const loadPendingOffers = async () => {
       setLoadingPendingOffers(true);
       try {
-        const existingOffersSnap = await getDocs(
-          query(collection(db, "trades"), where("fromUid", "==", user.uid), where("status", "==", "pending"))
+        const sentTradesSnap = await getDocs(
+          query(collection(db, "trades"), where("fromUid", "==", user.uid))
         );
         if (cancelled) return;
-        setPendingOfferCardIds(
-          existingOffersSnap.docs.map((docSnap) => {
-            const trade = docSnap.data() as TradePayload;
-            return trade.offeredCardId ?? trade.offeredCard.id;
-          }),
-        );
+        setSentTrades(sentTradesSnap.docs.map((docSnap) => docSnap.data() as TradePayload));
       } catch {
-        if (!cancelled) setPendingOfferCardIds([]);
+        if (!cancelled) setSentTrades([]);
       } finally {
         if (!cancelled) setLoadingPendingOffers(false);
       }
@@ -78,6 +90,7 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
   const handleSend = async () => {
     if (!user) return;
     if (!selectedCard) { setError("Select a card to offer."); return; }
+    if (!confirmedFairTrade) { setError("Confirm the fair-trade checklist before sending."); return; }
     const email = recipientEmail.trim().toLowerCase();
     if (!email || !email.includes("@")) { setError("Enter a valid recipient email."); return; }
     if (email === (user.email ?? "").toLowerCase()) { setError("You can't trade with yourself."); return; }
@@ -87,29 +100,11 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
     setLoading(true);
     setError("");
     try {
-      // Look up recipient by email
-      const snap = await getDocs(
-        query(collection(db, "userLookup"), where("emailLower", "==", email))
-      );
-      if (snap.empty) {
-        setError("No account found with that email address.");
-        return;
-      }
-      const recipientProfile = snap.docs[0].data();
-      const tradeId = `trade-${Date.now()}`;
-        await setDoc(doc(db, "trades", tradeId), {
-        id: tradeId,
-          fromUid: user.uid,
-          fromEmail: user.email ?? "",
-          toUid: recipientProfile.uid,
-          toEmail: email,
+      const response = await createTradeOffer(user, {
         offeredCardId: selectedCard.id,
-        offeredCard: selectedCard,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        recipientEmail: email,
       });
-      setPendingOfferCardIds((current) => [...current, selectedCard.id]);
+      setSentTrades((current) => [...current, response.trade]);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send trade offer.");
@@ -159,11 +154,11 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
                 key={card.id}
                 type="button"
                 className={`trade-pick-thumb ${selectedCard?.id === card.id ? "trade-pick-thumb--active" : ""}`}
-                onClick={() => setSelectedCard(card)}
+                onClick={() => { setSelectedCard(card); setConfirmedFairTrade(false); }}
                 disabled={pendingOfferCardIds.includes(card.id)}
                 title={pendingOfferCardIds.includes(card.id) ? "This card already has a pending offer." : `Offer ${card.identity.name}`}
               >
-                <CardArt card={card} width={80} height={56} />
+                <CardThumbnail card={card} width={80} height={56} />
                 <span className="trade-pick-name">{card.identity.name}</span>
                 {pendingOfferCardIds.includes(card.id) && (
                   <span className="trade-pick-status">Pending offer</span>
@@ -177,8 +172,15 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
           <div className="trade-selected-info">
             Offering: <strong>{selectedCard.identity.name}</strong>{" "}
             <span style={{ color: "var(--text-dim)", fontSize: "11px" }}>
-              ({selectedCard.prompts.rarity})
+              ({selectedCard.prompts.rarity} · {formatTradeValue(selectedCardValue)} · {selectedCardValueBand})
             </span>
+            {selectedCardFairnessFlags.length > 0 && (
+              <ul className="trade-fairness-list">
+                {selectedCardFairnessFlags.map((flag) => (
+                  <li key={flag}>{flag}</li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
@@ -189,14 +191,29 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
             type="email"
             placeholder="their@email.com"
             value={recipientEmail}
-            onChange={(e) => { setRecipientEmail(e.target.value); setError(""); }}
+            onChange={(e) => { setRecipientEmail(e.target.value); setConfirmedFairTrade(false); setError(""); }}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
         </div>
 
+        <div className="trade-reputation-panel">
+          <strong>{senderReputation?.label ?? "New trader"}</strong>
+          <span>Reputation {senderReputation?.score ?? 55}/100 · {senderReputation?.completedTrades ?? 0} resolved trades</span>
+          <span>Pending offers {pendingTrades.length}/{MAX_PENDING_OUTGOING_OFFERS}</span>
+        </div>
+
+        <label className="trade-confirm-check">
+          <input
+            type="checkbox"
+            checked={confirmedFairTrade}
+            onChange={(e) => { setConfirmedFairTrade(e.target.checked); setError(""); }}
+          />
+          <span>I reviewed the estimated value, verified the recipient, and agree this is a fair card-only trade with no real-money payment.</span>
+        </label>
+
         {error && <p className="tier-error">{error}</p>}
 
-        <button className="btn-primary btn-lg" onClick={handleSend} disabled={loading || loadingPendingOffers || !selectedCard}>
+        <button className="btn-primary btn-lg" onClick={handleSend} disabled={loading || loadingPendingOffers || !selectedCard || !confirmedFairTrade}>
           {loading ? "⏳ Sending…" : "🤝 Send Card Offer"}
         </button>
       </div>

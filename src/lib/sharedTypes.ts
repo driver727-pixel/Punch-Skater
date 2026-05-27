@@ -8,7 +8,20 @@
  *  4. Every addition must include a JSDoc comment with the sprint and owner.
  */
 
-import type { CardPayload } from "./types";
+import type {
+  Archetype,
+  BoardPlacement,
+  CardPayload,
+  CharacterPlacement,
+  CompositeLayerOrder,
+  District,
+  Faction,
+  ForgedCardStats,
+  JoustDifficulty,
+  JoustOutcome,
+  JoustTactic,
+  WheelType,
+} from "./types";
 
 // ── Daily Streaks (Gamma) ────────────────────────────────────────────────────
 
@@ -27,12 +40,34 @@ export interface DailyStreak {
 /** @sprint 0 @owner gamma */
 export type MissionStatus = "active" | "completed" | "expired";
 
+/**
+ * Stat keys that missions may target. Excludes `rangeNm` (internal display
+ * unit) so mission descriptions remain human-readable.
+ * @sprint 1 @owner gamma
+ */
+export type MissionStat = Exclude<keyof ForgedCardStats, "rangeNm">;
+
+/**
+ * Typed union of all mission types. Replaces the old `type: string` field.
+ * @sprint 1 @owner gamma
+ */
+export type MissionType =
+  | "forge_card"             // forge any card
+  | "forge_archetype"        // forge a card of a specific archetype
+  | "win_battle"             // win N battles
+  | "complete_district_run"  // complete a courier run in a specific district
+  | "achieve_stat_threshold" // have a newly-forged card with a stat ≥ target
+  | "daily_login"            // log in N days in a row
+  | "trade_card"             // complete a trade
+  | "build_deck";            // assemble a valid deck
+
 /** @sprint 0 @owner gamma */
 export interface Mission {
   id: string;
   uid: string;
   title: string;
   description: string;
+  /** @sprint 0 @deprecated Use the typed `missionType` field instead. */
   type: string;
   target: number;
   progress: number;
@@ -41,6 +76,450 @@ export interface Mission {
   createdAt: string;
   expiresAt?: string;
   completedAt?: string;
+  /** @sprint 1 @owner gamma — Typed mission kind, supersedes the legacy `type: string` field. */
+  missionType?: MissionType;
+  /** @sprint 1 @owner gamma — District context for district-specific missions. */
+  district?: District;
+  /** @sprint 1 @owner gamma — Archetype context for archetype-specific missions. */
+  archetype?: Archetype;
+  /** @sprint 1 @owner gamma — Faction context for faction-specific missions. */
+  faction?: Faction;
+  /** @sprint 1 @owner gamma — Stat targeted by `achieve_stat_threshold` missions. */
+  stat?: MissionStat;
+  /** @sprint 1 @owner gamma — Ozzies (in-world currency) awarded on completion. */
+  rewardOzzies?: number;
+}
+
+/**
+ * Discriminated union for events that can advance mission progress.
+ * Emit one of these events after the matching user action completes.
+ * @sprint 1 @owner gamma
+ */
+export type MissionEvent =
+  | { type: "forge_card"; archetype: Archetype }
+  | { type: "forge_archetype"; archetype: Archetype }
+  | { type: "win_battle" }
+  | { type: "complete_district_run"; district: District }
+  | { type: "achieve_stat_threshold"; stat: MissionStat; value: number }
+  | { type: "daily_login" }
+  | { type: "trade_card" }
+  | { type: "build_deck" };
+
+/**
+ * Requirement kinds used by the restored mission board.
+ * @sprint 2 @owner gamma
+ */
+export type MissionRequirementType =
+  | "min_cards"
+  | "district_access"
+  | "wheel_type"
+  | "archetype"
+  | "faction"
+  | "stat_total"
+  | "district_card";
+
+/**
+ * Deck-building requirement for a mission board contract.
+ * @sprint 2 @owner gamma
+ */
+export interface MissionRequirement {
+  type: MissionRequirementType;
+  label: string;
+  count?: number;
+  district?: District;
+  wheelTypes?: WheelType[];
+  archetype?: Archetype;
+  faction?: Faction;
+  stat?: MissionStat;
+}
+
+/**
+ * Per-requirement deck evaluation result for a mission board contract.
+ * @sprint 2 @owner gamma
+ */
+export interface MissionRequirementResult {
+  requirement: MissionRequirement;
+  met: boolean;
+  current: number;
+  needed: number;
+  detail: string;
+}
+
+/**
+ * Counter tags used by live mission encounters and deck synergies.
+ * @sprint 5 @owner gamma
+ */
+export type MissionCounterTag =
+  | "mainline_speed"
+  | "rough_route"
+  | "shockproof"
+  | "camera_blind"
+  | "quiet_line"
+  | "long_range"
+  | "heavy_push"
+  | "local_knowledge"
+  | "regen_brake";
+
+/**
+ * Temporary deck modifier generated while a live mission run is active.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionStatusEffect {
+  id: string;
+  label: string;
+  summary: string;
+  kind?: "bonus" | "penalty" | "synergy";
+  stat?: MissionStat;
+  powerDelta?: number;
+  source?: string;
+}
+
+/**
+ * Live counter option shown when a mission encounter interrupts a run.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionEncounterOption {
+  id: string;
+  label: string;
+  description: string;
+  /** @sprint 6 @owner gamma — `counter` uses tag/power checks, while `joust` resolves through jousting-lite with a tactic pick. */
+  encounterType?: "counter" | "joust";
+  requirements?: MissionRequirement[];
+  requiredTags?: MissionCounterTag[];
+  minimumCounterPower?: number;
+  rewardXpDelta?: number;
+  rewardOzziesDelta?: number;
+  joustDifficulty?: JoustDifficulty;
+  joustPrompt?: string;
+  available?: boolean;
+  currentPower?: number;
+  successSummary?: string;
+  failureSummary?: string;
+}
+
+/**
+ * Stored jousting-lite resolution for a mission encounter.
+ * @sprint 6 @owner gamma
+ */
+export interface MissionJoustResult {
+  playerCardId: string;
+  playerName: string;
+  rivalName: string;
+  /** @sprint 6 @owner gamma — Optional named district rival id when the duel maps to the rival catalogue. */
+  rivalId?: string;
+  playerTactic: JoustTactic;
+  rivalTactic: JoustTactic;
+  difficulty: JoustDifficulty;
+  outcome: JoustOutcome;
+  strike: number;
+  narration: string;
+  rewardXpBonus: number;
+  rewardOzziesBonus: number;
+  /** @sprint 6 @owner gamma — Codex unlock ids emitted by a named-rival win. */
+  loreUnlockIds?: string[];
+  /** @sprint 6 @owner gamma — Stable card reward id emitted by a named-rival win. */
+  cardRewardId?: string;
+  /** @sprint 6 @owner gamma — Named-rival district reputation gained on victory. */
+  districtReputationDelta?: number;
+  /** @sprint 7 @owner gamma — Expressive bonus signals attached to this joust resolution. */
+  rewardSignals?: MissionRewardSignal[];
+  /** @sprint 7 @owner gamma — Rival pressure snapshot that framed this joust. */
+  rivalPressure?: MissionRivalPressure | null;
+}
+
+/**
+ * Persisted per-card maintenance fallout emitted when a mission resolves.
+ * @sprint 6 @owner gamma
+ */
+export interface MissionCardOutcome {
+  cardId: string;
+  cardName: string;
+  outcomeKind: "repair" | "impound" | "offline";
+  maintenanceState: "in_shop" | "impounded";
+  recapDisposition: "lag" | "drop" | "offline";
+  label: string;
+  summary: string;
+  detail: string;
+  repairEndsAt?: string;
+}
+
+/**
+ * Mid-run encounter that replaces the old pre-launch blind route pick.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionEncounter {
+  id: string;
+  badge: string;
+  prompt: string;
+  threat: string;
+  options: MissionEncounterOption[];
+}
+
+/**
+ * Phase marker for staged mission runs.
+ * @sprint 5 @owner gamma
+ */
+export type MissionRunPhase = "idle" | "event" | "resolved";
+
+/**
+ * Temporary live state persisted while a mission run waits for a counter choice.
+ * @sprint 5 @owner gamma
+ */
+export interface MissionActiveRunState {
+  phase: MissionRunPhase;
+  launchedAt: string;
+  resolvedAt?: string;
+  deckId: string;
+  deckName: string;
+  encounterId?: string;
+  activeCardIds?: string[];
+  synergyTags?: MissionCounterTag[];
+  statusEffects?: MissionStatusEffect[];
+  availableCounterOptionIds?: string[];
+  selectedCounterOptionId?: string;
+  selectedJoustTactic?: JoustTactic | null;
+  counterPower?: number;
+  summary?: string;
+  /** @sprint 7 @owner gamma — Route-story beats generated for the live run. */
+  storyBeats?: MissionStoryBeat[];
+  /** @sprint 7 @owner gamma — Board-derived crew identities active on this run. */
+  boardPlaystyles?: MissionBoardPlaystyle[];
+  /** @sprint 7 @owner gamma — Rival memory and heat level for named district jousts. */
+  rivalPressure?: MissionRivalPressure | null;
+}
+
+/**
+ * Restored fork-path option on a mission board contract.
+ * @sprint 3 @owner gamma
+ */
+export interface MissionForkOption {
+  id: string;
+  label: string;
+  description: string;
+  requirements?: MissionRequirement[];
+  rewardXpDelta?: number;
+  rewardOzziesDelta?: number;
+}
+
+/**
+ * Fork-path prompt shown before launching a mission run.
+ * @sprint 3 @owner gamma
+ */
+export interface MissionFork {
+  badge: string;
+  prompt: string;
+  options: MissionForkOption[];
+}
+
+/**
+ * Restored server-authored mission board entry.
+ * @sprint 2 @owner gamma
+ */
+export interface MissionBoardEntry {
+  id: string;
+  uid: string;
+  system: "mission_board";
+  schemaVersion: 2;
+  definitionId: string;
+  sortOrder: number;
+  title: string;
+  tagline: string;
+  description: string;
+  district: District;
+  rewardXp: number;
+  rewardOzzies: number;
+  requirements: MissionRequirement[];
+  status: MissionStatus;
+  progress: number;
+  target: number;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  /** @sprint 3 @owner gamma — Optional fork prompt that changes requirements and rewards. */
+  fork?: MissionFork;
+  /** @sprint 5 @owner gamma — Optional live encounter that fires after launch. */
+  encounter?: MissionEncounter;
+  selectedDeckId?: string;
+  selectedDeckName?: string;
+  /** @sprint 3 @owner gamma — Selected fork option used for evaluation and rewards. */
+  selectedForkOptionId?: string;
+  /** @sprint 5 @owner gamma — Selected live counter option used to resolve encounter rewards. */
+  selectedCounterOptionId?: string;
+  /** @sprint 5 @owner gamma — Temporary live run state while the mission waits for player agency. */
+  activeRun?: MissionActiveRunState;
+  lastRunAt?: string;
+  lastRunSucceeded?: boolean;
+  lastRunSummary?: string;
+  lastRunFailureReasons?: string[];
+  /** @sprint 5 @owner gamma — Dynamic hardware and synergy effects observed during the last run. */
+  lastRunEffects?: MissionStatusEffect[];
+  /** @sprint 6 @owner gamma — Locked mission XP actually awarded on the last resolved run. */
+  lastRunRewardXp?: number;
+  /** @sprint 6 @owner gamma — Locked Ozzy payout actually awarded on the last resolved run. */
+  lastRunRewardOzzies?: number;
+  /** @sprint 6 @owner gamma — Optional jousting-lite result for runs that escalated into a duel. */
+  lastRunJoustResult?: MissionJoustResult | null;
+  /** @sprint 6 @owner gamma — Persisted card-level maintenance fallout from the last resolved run. */
+  lastRunCardOutcomes?: MissionCardOutcome[];
+  /** @sprint 7 @owner gamma — Route-story beats captured for the last launch or resolution. */
+  lastRunStoryBeats?: MissionStoryBeat[];
+  /** @sprint 7 @owner gamma — Expressive reward signals earned on the last resolved run. */
+  lastRunRewardSignals?: MissionRewardSignal[];
+  /** @sprint 7 @owner gamma — Board-derived crew identities captured on the last run. */
+  lastRunBoardPlaystyles?: MissionBoardPlaystyle[];
+  /** @sprint 7 @owner gamma — Rival memory snapshot attached to the last run. */
+  lastRunRivalPressure?: MissionRivalPressure | null;
+  /** @sprint 8 @owner gamma — Grid coordinates for this mission entry on the board. */
+  coordinates?: { x: number; y: number };
+  /** @sprint 8 @owner gamma — Deterministic board position used by the procedural sector canvas. */
+  gridPos?: { x: number; y: number };
+  /** @sprint 8 @owner gamma — Point of interest type for this location. */
+  poiType?: string;
+  /** @sprint 8 @owner gamma — Whether this location has been scanned. */
+  isScanned?: boolean;
+  /** @sprint 8 @owner gamma — Threat level indicator for this location. */
+  threatLevel?: number;
+}
+
+/**
+ * Persistent mission-board progression totals stored on the user profile.
+ * @sprint 2 @owner gamma
+ */
+export interface MissionBoardProgression {
+  missionXp: number;
+  missionOzzies: number;
+  /** @sprint 6 @owner gamma — Total district reputation banked from named rival wins. */
+  districtReputation?: number;
+  /** @sprint 6 @owner gamma — Stable rival ids already defeated by this account. */
+  defeatedRivalIds?: string[];
+  /** @sprint 6 @owner gamma — Stable Codex ids unlocked through rival progression. */
+  codexUnlockIds?: string[];
+  /** @sprint 7 @owner gamma — Per-rival memory used to surface rematches and grudges. */
+  rivalRecords?: Record<string, MissionRivalRecord>;
+}
+
+/**
+ * Weekly mission-board flavor and soft reward modifier.
+ * @sprint 4 @owner gamma
+ */
+export interface MissionBoardTheme {
+  id: string;
+  label: string;
+  summary: string;
+  featuredDistricts?: District[];
+  rewardXpBonus?: number;
+  rewardOzziesBonus?: number;
+}
+
+/**
+ * API payload returned when loading the mission board.
+ * @sprint 2 @owner gamma
+ */
+export interface MissionBoardPayload {
+  missions: MissionBoardEntry[];
+  progression: MissionBoardProgression;
+  /** @sprint 4 @owner gamma — Stable YYYY-MM-DD key for today's mission board. */
+  boardDateKey?: string;
+  /** @sprint 4 @owner gamma — ISO timestamp for the next daily mission reset. */
+  dailyResetAt?: string;
+  /** @sprint 4 @owner gamma — Weekly layer that flavors the current mission cycle. */
+  weeklyTheme?: MissionBoardTheme;
+  /** @sprint 8 @owner gamma — ID of the active courier card being tracked on the board. */
+  activeCourierCardId?: string;
+}
+
+/**
+ * Evaluation of a chosen deck against one mission board contract.
+ * @sprint 2 @owner gamma
+ */
+export interface MissionDeckEvaluation {
+  deckId: string;
+  deckName: string;
+  eligible: boolean;
+  eligibleCardCount: number;
+  summary: string;
+  results: MissionRequirementResult[];
+  statusEffects?: MissionStatusEffect[];
+  synergyTags?: MissionCounterTag[];
+  activeCardIds?: string[];
+  counterPower?: number;
+  /** @sprint 7 @owner gamma — Board-derived crew identities inferred during preflight. */
+  boardPlaystyles?: MissionBoardPlaystyle[];
+}
+
+/**
+ * Board-driven crew identity surfaced during mission prep and live runs.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionBoardPlaystyle {
+  id: string;
+  label: string;
+  summary: string;
+  powerDelta?: number;
+}
+
+/**
+ * Structured route beat used to turn a mission run into a short story.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionStoryBeat {
+  id: string;
+  stage: "launch" | "pressure" | "finish";
+  label: string;
+  summary: string;
+  tone?: "neutral" | "risk" | "reward";
+}
+
+/**
+ * Expressive bonus signal that adds texture to mission rewards.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionRewardSignal {
+  id: string;
+  label: string;
+  summary: string;
+  rewardXpDelta?: number;
+  rewardOzziesDelta?: number;
+}
+
+/**
+ * Per-rival history stored on the user profile for rematches and grudges.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionRivalRecord {
+  rivalId: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  seenCount: number;
+  lastOutcome?: JoustOutcome;
+  streak?: number;
+  lastSeenAt?: string;
+}
+
+/**
+ * Snapshot of the current named-rival heat carried into a mission run.
+ * @sprint 7 @owner gamma
+ */
+export interface MissionRivalPressure {
+  rivalId: string;
+  rivalName: string;
+  heat: number;
+  status: "fresh" | "known" | "grudge";
+  summary: string;
+  taunt?: string;
+}
+
+/**
+ * API payload returned after attempting a mission run.
+ * @sprint 2 @owner gamma
+ */
+export interface MissionRunResponse {
+  mission: MissionBoardEntry;
+  evaluation: MissionDeckEvaluation;
+  progression: MissionBoardProgression;
+  rewardGranted: boolean;
+  awaitingChoice?: boolean;
 }
 
 // ── Battle Pass (Gamma) ──────────────────────────────────────────────────────
@@ -153,3 +632,430 @@ export const XP_REWARD = {
 } as const;
 
 export type XpRewardKey = keyof typeof XP_REWARD;
+
+// ── Mission risk/reward types (progression overhaul) ─────────────────────────
+
+/**
+ * Types of rewards a mission can grant to a card, Crew, or account.
+ * @sprint 3 @owner gamma
+ */
+export type MissionRewardKind =
+  | "xp"               // card XP
+  | "stat_increase"    // increase a card's stat Points
+  | "ozzies"           // Ozzy value for a card / the Crew / the account
+  | "card"             // add a card to the player's collection
+  | "component"        // add or upgrade a board component
+  | "district_rep";    // district reputation standing
+
+/**
+ * Types of risks / penalties a mission can apply on failure.
+ * @sprint 3 @owner gamma
+ */
+export type MissionRiskKind =
+  | "stat_damage"       // decrease a card's stat Points (e.g. -10 Range)
+  | "component_damage"  // damage a board component, requiring repair
+  | "card_lockout"      // temporarily lock a card out of play
+  | "repair_cooldown"   // add a repair cooldown to one or more cards
+  | "jail_time"         // narrative lockout event (district-specific)
+  | "event_lockout";    // generic time-based lockout
+
+/**
+ * A single reward item awarded by a mission run.
+ * @sprint 3 @owner gamma
+ */
+export interface MissionReward {
+  kind: MissionRewardKind;
+  /** Human-readable label shown in the mission UI. */
+  label: string;
+  /** Numeric magnitude (e.g. XP amount, stat delta, Ozzy value). */
+  amount?: number;
+  /** Target stat key for stat_increase rewards. */
+  stat?: MissionStat;
+}
+
+/**
+ * A single risk item that may be applied on mission failure.
+ * @sprint 3 @owner gamma
+ */
+export interface MissionRisk {
+  kind: MissionRiskKind;
+  /** Human-readable label shown in the mission UI. */
+  label: string;
+  /** Numeric magnitude (e.g. stat delta, lockout duration in minutes). */
+  amount?: number;
+  /** Target stat key for stat_damage risks. */
+  stat?: MissionStat;
+  /** Number of cards that may be affected (for multi-card risks). */
+  cardCount?: number;
+}
+
+// ── District World (PR1 — Missions Foundation) ────────────────────────────────
+
+/**
+ * Kind of a node in the district world graph.
+ * @sprint 9 @owner pr1
+ */
+export type WorldNodeKind = "workshop" | "poi" | "junction";
+export type WorldPlacementRole = "workshop" | "dead_end" | "intersection" | "corridor";
+
+/**
+ * A single node in the district world graph.
+ * Workshop is the run origin; poi nodes carry daily contracts; junctions are
+ * path intersections with no contract of their own.
+ * @sprint 9 @owner pr1
+ */
+export interface WorldNode {
+  id: string;
+  kind: WorldNodeKind;
+  /** Normalised grid coordinates in [0, 100] on each axis. */
+  x: number;
+  y: number;
+  /** Human-readable label for the node. */
+  label: string;
+  /**
+   * For poi nodes: the stable mission-board entry id this node carries.
+   * Undefined for workshop and junction nodes.
+   */
+  contractId?: string;
+  /** Number of graph edges connected to this node. */
+  graphDegree?: number;
+  /** Shortest-hop depth from Workshop. Workshop is always 0. */
+  graphDepth?: number;
+  /** Maze placement role used by the POI preference rules. */
+  placementRole?: WorldPlacementRole;
+}
+
+/**
+ * An undirected edge between two world nodes.
+ * @sprint 9 @owner pr1
+ */
+export interface WorldEdge {
+  from: string;
+  to: string;
+}
+
+/**
+ * Visibility state for a daily contract POI.
+ * visible  — the player can see the contract details and attempt it.
+ * locked   — the contract is present on the map but details are hidden until
+ *            an unlock condition is met (e.g. completing another contract first).
+ * @sprint 9 @owner pr1
+ */
+export type WorldContractVisibility = "visible" | "locked";
+
+export interface WorldContractUnlockCondition {
+  kind: "complete_visible_contracts";
+  requiredVisibleCompletions: number;
+  depth: number;
+  message: string;
+}
+
+/**
+ * A daily contract attached to a POI node in the district world.
+ * Combines positional data (from WorldNode) with visibility metadata and a
+ * reference to the underlying MissionBoardEntry.
+ * @sprint 9 @owner pr1
+ */
+export interface WorldContract {
+  /** Matches the `contractId` on the corresponding `WorldNode`. */
+  id: string;
+  /** The node in the world graph that hosts this contract. */
+  nodeId: string;
+  /** Stable mission-board definition id (e.g. "batteryville-breaker-yard"). */
+  definitionId: string;
+  title: string;
+  tagline: string;
+  district: District;
+  rewardXp: number;
+  rewardOzzies: number;
+  visibility: WorldContractVisibility;
+  /** Human-readable reason this POI is visible or locked today. */
+  visibilityReason?: string;
+  /**
+   * When locked: a brief hint about what unlocks this contract.
+   * Shown in place of the full tagline.
+   */
+  lockHint?: string;
+  /** Structured lock metadata for future server-validated unlock rules. */
+  unlockCondition?: WorldContractUnlockCondition;
+  /** Shortest-hop depth from Workshop to this contract's POI node. */
+  graphDepth?: number;
+  /** Number of graph edges connected to this contract's POI node. */
+  graphDegree?: number;
+  /** POI placement role chosen by the maze generator. */
+  placementRole?: Exclude<WorldPlacementRole, "workshop">;
+  status: MissionStatus;
+  /** Optional live encounter that interrupts travel when defined on this contract. */
+  encounter?: MissionEncounter | null;
+  /** Optional fork-path prompt shown when the player arrives at the POI. */
+  fork?: MissionFork | null;
+}
+
+export interface DistrictWorldSeedMetadata {
+  version: string;
+  strategy: "uid|boardDateKey|purpose";
+  stableFor: "same-user-and-utc-day";
+  uidScoped: boolean;
+  boardDateKey: string;
+  purposes: {
+    world: string;
+    tree: string;
+    loops: string;
+    poi: string;
+    contractAssign: string;
+  };
+}
+
+export interface DistrictWorldGraphMetadata {
+  algorithm: string;
+  grid: {
+    cols: number;
+    rows: number;
+  };
+  loopEdgeRatio: number;
+  workshopNodeId: "workshop";
+  poiCount: number;
+  placementPreference: Array<Exclude<WorldPlacementRole, "workshop">>;
+  reachableFromWorkshop: boolean;
+}
+
+/**
+ * The complete district world generated for a user on a given day.
+ * Stable for the same uid + boardDateKey combination.
+ * @sprint 9 @owner pr1
+ */
+export interface DistrictWorld {
+  /** Opaque id — format: `{uid}_{boardDateKey}`. */
+  worldId: string;
+  /** YYYY-MM-DD date this world was generated for. */
+  boardDateKey: string;
+  /** ISO timestamp for next daily world reset. */
+  dailyResetAt: string;
+  /** Deterministic seed metadata used to reproduce this daily world. */
+  seed?: DistrictWorldSeedMetadata;
+  /** Graph generation metadata and guarantees for this district world. */
+  graph?: DistrictWorldGraphMetadata;
+  /** All nodes including Workshop, POIs, and junctions. */
+  nodes: WorldNode[];
+  /** All edges forming the path graph. */
+  edges: WorldEdge[];
+  /** Exactly 6 daily contracts, one per POI node. */
+  contracts: WorldContract[];
+  /** Optional generated visuals for this world. */
+  visuals?: DistrictWorldVisuals;
+}
+
+/**
+ * Phase of an active district run. The canonical names are emitted by the
+ * server's mission phase state machine (see server/lib/missionPhaseMachine.js);
+ * the lower-case strings are kept as a backward-compatibility alias for
+ * runs persisted before that machine was introduced.
+ * @sprint 9 @owner pr1
+ */
+export type ActiveRunPhase =
+  | "IDLE_AT_BASE"
+  | "TRAVELING_OUTBOUND"
+  | "ENCOUNTER_RESOLUTION"
+  | "AT_POI_FORK"
+  | "TRAVELING_INBOUND"
+  | "MISSION_COMPLETE"
+  | "MISSION_FAILED"
+  // Legacy phase strings; normalized via normalizeMissionPhase() on read.
+  | "outbound"
+  | "at_poi"
+  | "returning"
+  | "complete"
+  | "failed";
+
+/**
+ * Optional metadata persisted alongside the phase to support refresh-safe
+ * encounter and POI fork resolution flows. Card mutation is intentionally
+ * deferred to PR 4 (#633) — these fields only record run-scoped outcomes.
+ * @sprint 9 @owner pr3
+ */
+export interface MissionEncounterRecord {
+  /** Stable id for the encounter being resolved. */
+  encounterId: string;
+  /** @sprint 9 @owner pr4 — Backend-safe encounter contract persisted for refresh restoration. */
+  contract?: MissionEncounter | null;
+  /** Phase the run was in before the encounter interrupted it. */
+  resumePhase: "TRAVELING_OUTBOUND" | "TRAVELING_INBOUND";
+  /** @sprint 9 @owner pr4 — Travel leg interrupted by this checkpoint encounter. */
+  leg?: "outbound" | "inbound";
+  /** @sprint 9 @owner pr4 — Stable checkpoint trigger key to prevent duplicate rolls. */
+  triggerKey?: string;
+  /** Node where the encounter triggered. */
+  triggeredAtNodeId: string;
+  /** @sprint 9 @owner pr4 — Route index where the checkpoint encounter fired. */
+  checkpointNodeIndex?: number;
+  startedAt: string;
+  resolvedAt?: string;
+  /** Free-form outcome blob set by the resolution endpoint. */
+  outcome?: Record<string, unknown> | null;
+}
+
+export interface MissionPoiOutcome {
+  /** Stable id for the resolved POI mission fork option. */
+  choiceId: string;
+  resolvedAt: string;
+  /** Free-form outcome blob; aggregated on successful return in PR 4. */
+  outcome?: Record<string, unknown> | null;
+}
+
+/** @sprint 9 @owner pr4 — Server-authored active-run result payload. */
+export interface MissionRunResultPayload {
+  resultType: "travel_encounter" | "poi_resolution";
+  encounterId?: string;
+  contractId?: string | null;
+  choiceId: string;
+  label: string;
+  resolvedAt: string;
+  success: boolean;
+  summary: string;
+  rewardXpDelta: number;
+  rewardOzziesDelta: number;
+}
+
+/** @sprint 9 @owner pr4 — Aggregated round-trip mission debrief shown after return/failure. */
+export interface MissionRunDebrief {
+  runId: string;
+  contractId: string;
+  contractTitle: string;
+  district: District;
+  success: boolean;
+  summary: string;
+  routeSummary: string;
+  launchedAt: string;
+  completedAt: string;
+  deckId?: string;
+  deckName?: string;
+  cardId?: string | null;
+  cardName?: string | null;
+  baseRewardXp: number;
+  baseRewardOzzies: number;
+  bonusRewardXp: number;
+  bonusRewardOzzies: number;
+  totalRewardXp: number;
+  totalRewardOzzies: number;
+  resultCount: number;
+  results: MissionRunResultPayload[];
+  failureReason?: string;
+}
+
+/** @sprint 9 @owner pr4 — Non-punitive card/deck history record for mission runs. */
+export interface MissionRunRecord {
+  schemaVersion: 1;
+  runId: string;
+  contractId: string;
+  contractTitle: string;
+  district: District;
+  success: boolean;
+  completedAt: string;
+  deckId?: string;
+  deckName?: string;
+  cardId?: string | null;
+  cardName?: string | null;
+  rewardXp: number;
+  rewardOzzies: number;
+  resultCount: number;
+  routeNodeIds?: string[];
+  summary: string;
+  failureReason?: string;
+}
+
+/**
+ * @sprint 9 @owner pr4 — Non-punitive failed-run history separate from gameplay mission stats/rewards.
+ * Literal success/reward fields enforce that failure records cannot carry gameplay payouts.
+ */
+export interface MissionFailureHistoryRecord extends MissionRunRecord {
+  recordType: "mission_failure";
+  success: false;
+  rewardXp: 0;
+  rewardOzzies: 0;
+  activeCardIds?: string[];
+}
+
+export interface CharacterLayerExtractionContract {
+  version: string;
+  sourceType: "forged_card" | "fallback";
+  sourceCardId: string | null;
+  sourceImageUrl: string | null;
+  extractionStatus: "pass_through" | "fallback_marker";
+  characterImageUrl?: string | null;
+  boardImageUrl?: string | null;
+  characterPlacement?: CharacterPlacement;
+  boardPlacement?: BoardPlacement;
+  boardLayerOrder?: CompositeLayerOrder;
+  sceneSeed?: string | null;
+  subjectBounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface DistrictWorldVisualAsset {
+  url: string | null;
+  cacheKey: string;
+  generatedAt?: string;
+  fallback: boolean;
+}
+
+export interface DistrictWorldVisuals {
+  backdrop: DistrictWorldVisualAsset;
+  sprite: DistrictWorldVisualAsset;
+  extraction: CharacterLayerExtractionContract;
+}
+
+/**
+ * Persisted record of an in-progress or recently completed district run.
+ * Created when the player launches a run from the Workshop and reloaded on
+ * page refresh via GET /api/missions/world.
+ * @sprint 9 @owner pr1
+ */
+export interface ActiveDistrictRun {
+  /** Format: `{uid}_{boardDateKey}_run`. */
+  runId: string;
+  uid: string;
+  boardDateKey: string;
+  phase: ActiveRunPhase;
+  /** The contract being targeted on this run. */
+  contractId: string;
+  /** Deck selected for this run. */
+  deckId: string;
+  deckName: string;
+  launchedAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  routeNodeIds?: string[];
+  checkpointNodeIndex?: number;
+  lastCheckpointAt?: string;
+  /** Active encounter being resolved, when phase === "ENCOUNTER_RESOLUTION". */
+  encounter?: MissionEncounterRecord | null;
+  /** Resolved checkpoint encounter records for this run. */
+  encounterHistory?: MissionEncounterRecord[];
+  /** Result of the POI fork resolution; set once on AT_POI_FORK -> TRAVELING_INBOUND. */
+  poiOutcome?: MissionPoiOutcome | null;
+  /** Server-authored POI and encounter result payloads accumulated on this run. */
+  missionResults?: MissionRunResultPayload[];
+  /** @sprint 9 @owner pr4 — Aggregated debrief written exactly once on successful return/failure. */
+  debrief?: MissionRunDebrief;
+  /** @sprint 9 @owner pr4 — Timestamp when final rewards/history were committed. */
+  completionFinalizedAt?: string;
+  /** @sprint 9 @owner pr4 — Archive timestamp after terminal run cleanup. */
+  archivedAt?: string;
+  /** @sprint 9 @owner pr4 — Non-punitive failure reason for terminal failed runs. */
+  failureReason?: string;
+}
+
+/**
+ * API payload returned by GET /api/missions/world.
+ * @sprint 9 @owner pr1
+ */
+export interface DistrictWorldPayload {
+  world: DistrictWorld;
+  /** Null when no run is in progress for today's world. */
+  activeRun: ActiveDistrictRun | null;
+  visuals?: DistrictWorldVisuals;
+}

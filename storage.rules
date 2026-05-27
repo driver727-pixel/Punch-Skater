@@ -1,13 +1,30 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Faction background images — publicly readable, admin-only writes.
-    match /factionImages/{imageFile} {
-      allow read: if true;
-      allow write, delete: if request.auth != null
+    function isFactionImageAdmin() {
+      return request.auth != null
         && firestore.get(
           /databases/(default)/documents/userProfiles/$(request.auth.uid)
         ).data.isAdmin == true;
+    }
+
+    function canWriteFactionImage() {
+      return isFactionImageAdmin()
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+    }
+
+    // Legacy flat paths kept for deletes of older uploads.
+    match /factionImages/{imageFile} {
+      allow read: if true;
+      allow write: if canWriteFactionImage();
+      allow delete: if isFactionImageAdmin();
+    }
+
+    match /factionImages/{slug}/{imageFile} {
+      allow read: if true;
+      allow write: if canWriteFactionImage();
+      allow delete: if isFactionImageAdmin();
     }
   }
 }

@@ -114,8 +114,30 @@ export function sanitizeFalRequestConfig(candidate) {
   return Object.keys(config).length ? config : null;
 }
 
+// Single source of truth for the number of board reference image URLs that
+// /api/generate-board-image requires.  Changing this constant is the one
+// place to adjust the contract; don't hardcode 5 elsewhere.
+export const BOARD_IMAGE_REQUIRED_URL_COUNT = 5;
+
 export function normalizeBoardReferenceUrls(value, publicOrigin = 'https://punchskater.com') {
-  if (!Array.isArray(value) || value.length !== 4) return null;
+  if (!Array.isArray(value) || value.length !== BOARD_IMAGE_REQUIRED_URL_COUNT) return null;
+
+  const allowedOrigins = new Set(
+    (Array.isArray(publicOrigin) ? publicOrigin : [publicOrigin])
+      .map((origin) => {
+        if (typeof origin !== 'string') return null;
+        const trimmed = origin.trim();
+        if (!trimmed) return null;
+
+        try {
+          return new URL(trimmed).origin;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean),
+  );
+  if (!allowedOrigins.size) return null;
 
   const urls = [];
   for (const entry of value) {
@@ -130,7 +152,7 @@ export function normalizeBoardReferenceUrls(value, publicOrigin = 'https://punch
       return null;
     }
 
-    if (parsed.origin !== publicOrigin) return null;
+    if (!allowedOrigins.has(parsed.origin)) return null;
     if (!BOARD_REFERENCE_IMAGE_PATH_PATTERN.test(parsed.pathname)) return null;
     urls.push(parsed.toString());
   }

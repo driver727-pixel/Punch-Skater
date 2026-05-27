@@ -1,8 +1,9 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { memo, useMemo, useState, type CSSProperties } from "react";
 import type { BoardConfig } from "../lib/boardBuilder";
 import { DISTRICT_LORE } from "../lib/lore";
 import type { District, RoadCorridor, WorldLocation } from "../lib/types";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
+import { DistrictBadge } from "./DistrictBadge";
 import {
   DISTRICT_WEATHER_LOCATIONS,
   getDistrictAccessBlockReason,
@@ -17,7 +18,7 @@ export interface GeoAtlasMarker {
   label: string;
   title?: string;
   active?: boolean;
-  tone?: "available" | "blocked";
+  tone?: "available" | "blocked" | "completed";
   offsetX?: number;
   offsetY?: number;
   onClick?: () => void;
@@ -49,6 +50,8 @@ interface GeoAtlasProps {
   focusDistricts?: WorldLocation[];
   focusCorridors?: RoadCorridor[];
   districtInteractionMode?: "hover" | "press";
+  /** When true, the Australia continental map starts expanded instead of collapsed. Defaults to false. */
+  defaultAustraliaExpanded?: boolean;
 }
 
 const PLAYABLE_DISTRICTS: District[] = [
@@ -61,14 +64,14 @@ const PLAYABLE_DISTRICTS: District[] = [
 ];
 
 const AUSTRALIA_DISTRICT_LAYOUT: Record<WorldLocation, { x: number; y: number; tone: string }> = {
-  Airaway: { x: 70, y: 58, tone: "sky" },
-  Electropolis: { x: 78, y: 41, tone: "signal" },
-  "Glass City": { x: 25, y: 67, tone: "glass" },
+  Airaway: { x: 68, y: 57, tone: "sky" },
+  Electropolis: { x: 74, y: 40, tone: "signal" },
+  "Glass City": { x: 26, y: 67, tone: "glass" },
   "The Grid": { x: 67, y: 64, tone: "grid" },
   Batteryville: { x: 34, y: 36, tone: "industrial" },
   "The Roads": { x: 45, y: 57, tone: "roads" },
-  Nightshade: { x: 67, y: 79, tone: "underground" },
-  "The Forest": { x: 76, y: 25, tone: "wild" },
+  Nightshade: { x: 65, y: 77, tone: "underground" },
+  "The Forest": { x: 72, y: 24, tone: "wild" },
 };
 
 const DISTRICT_ARTERIES: Array<{
@@ -87,7 +90,7 @@ const DISTRICT_ARTERIES: Array<{
     label: "Mag-Rail Spine",
     color: "#00ffb4",
     shadowColor: "rgba(0, 255, 180, 0.72)",
-    via: { x: 70, y: 64 },
+    via: { x: 68, y: 64 },
   },
   {
     from: "The Grid",
@@ -126,9 +129,24 @@ const DISTRICT_ARTERIES: Array<{
     label: "Timber Route",
     color: "#8bffce",
     shadowColor: "rgba(139, 255, 206, 0.68)",
-    via: { x: 45, y: 25 },
+    via: { x: 45, y: 24 },
   },
 ];
+
+const DISTRICT_INITIALS: Partial<Record<WorldLocation, string>> = {
+  Airaway: "AW",
+  Batteryville: "BV",
+  "The Grid": "TG",
+  Nightshade: "NS",
+  "The Forest": "TF",
+  "Glass City": "GC",
+  "The Roads": "TR",
+  Electropolis: "EP",
+};
+
+function getDistrictInitial(name: WorldLocation): string {
+  return DISTRICT_INITIALS[name] ?? name.slice(0, 2).toUpperCase();
+}
 
 const WORLD_CONTINENTS = [
   {
@@ -189,7 +207,7 @@ function getDistrictWeatherSummary(params: {
     return "Delayed weather uplink is syncing.";
   }
   if (error) {
-    return "Weather uplink offline. District access is staying open until fresh telemetry returns.";
+    return "Weather uplink offline. Mission pressure is holding steady until fresh telemetry returns.";
   }
   return `No live weather seed is active for ${district}.`;
 }
@@ -224,7 +242,7 @@ function getRoutePath(
   return `M ${start.x} ${start.y} L ${p1x} ${p1y} Q ${via.x} ${via.y} ${p2x} ${p2y} L ${end.x} ${end.y}`;
 }
 
-export function GeoAtlas({
+export const GeoAtlas = memo(function GeoAtlas({
   compact = false,
   className,
   markers = [],
@@ -237,10 +255,11 @@ export function GeoAtlas({
   focusDistricts = [],
   focusCorridors = [],
   districtInteractionMode = "hover",
+  defaultAustraliaExpanded = false,
 }: GeoAtlasProps) {
   const [hoveredDistrict, setHoveredDistrict] = useState<WorldLocation | null>(null);
   const [inspectedDistrict, setInspectedDistrict] = useState<WorldLocation | null>(null);
-  const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(true);
+  const [isAustraliaCollapsed, setIsAustraliaCollapsed] = useState(!defaultAustraliaExpanded);
   const [isNeonCollapsed, setIsNeonCollapsed] = useState(false);
   const { weather, weatherByDistrict, loading, error } = useDistrictWeather();
   const activeInteractionDistrict =
@@ -352,8 +371,8 @@ export function GeoAtlas({
             <>
               <div className="geo-atlas__callout">
                 <p className="geo-atlas__callout-copy">
-                  Delayed real-world weather updates control live district access, so the overmap shows which skateboard
-                  setups can ride each district while the current weather seed is active.
+                  Delayed real-world weather updates now shape mission pressure in the background, while the overmap still
+                  shows which skateboard setups can ride each district.
                 </p>
                 <div className="geo-atlas__callout-meta">
                   <span className="geo-atlas__callout-pill">
@@ -391,7 +410,7 @@ export function GeoAtlas({
                 className="geo-atlas__map geo-atlas__map--australia"
                 data-testid="australia-overmap"
                 role="img"
-                aria-label="The Continental Australian overmap showing Punch Skater district hubs and subway corridors"
+                aria-label="The Continental Australian overmap showing Punch Skater™ district hubs and subway corridors"
               >
                 <svg className="geo-atlas__svg" viewBox="0 0 100 100" aria-hidden="true">
                   <path
@@ -441,7 +460,15 @@ export function GeoAtlas({
                   })}
                   {districtEntries
                     .filter((d) => d.kind !== "hidden")
-                    .map((district) => (
+                    .flatMap((district) => [
+                      <circle
+                        key={`glow-${district.name}`}
+                        className={`geo-atlas__station-fill geo-atlas__station-fill--${district.layout.tone}`}
+                        cx={district.layout.x}
+                        cy={district.layout.y}
+                        r="5"
+                        aria-hidden="true"
+                      />,
                       <circle
                         key={`station-${district.name}`}
                         className={`geo-atlas__station geo-atlas__station--${district.layout.tone}`}
@@ -449,8 +476,8 @@ export function GeoAtlas({
                         cy={district.layout.y}
                         r="2"
                         aria-hidden="true"
-                      />
-                    ))}
+                      />,
+                    ])}
                 </svg>
 
                 {districtEntries.filter((district) => district.kind !== "hidden").map((district) => {
@@ -519,16 +546,22 @@ export function GeoAtlas({
                         aria-pressed={selectedDistrict === district.name || activeInteractionDistrict === district.name}
                         aria-label={detailText}
                       >
-                        <span className="geo-atlas__district-dot" aria-hidden="true" />
+                        <DistrictBadge location={district.name} size="sm" showLabel={false} decorative />
                         <span className="geo-atlas__district-name">{district.name}</span>
+                        <span className="geo-atlas__district-initial" aria-hidden="true">
+                          {getDistrictInitial(district.name)}
+                        </span>
                       </button>
                     );
                   }
 
                   return (
                     <div key={district.name} {...commonProps} aria-label={detailText}>
-                      <span className="geo-atlas__district-dot" aria-hidden="true" />
+                      <DistrictBadge location={district.name} size="sm" showLabel={false} decorative />
                       <span className="geo-atlas__district-name">{district.name}</span>
+                      <span className="geo-atlas__district-initial" aria-hidden="true">
+                        {getDistrictInitial(district.name)}
+                      </span>
                     </div>
                   );
                 })}
@@ -713,4 +746,4 @@ export function GeoAtlas({
       )}
     </div>
   );
-}
+});

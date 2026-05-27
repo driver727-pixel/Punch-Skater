@@ -2,7 +2,7 @@ export function Credits() {
   return (
     <div className="page credits-page">
       <h1 className="page-title">CREDITS &amp; ATTRIBUTIONS</h1>
-      <p className="page-sub">Tools, services, and libraries that power Punch Skater.</p>
+      <p className="page-sub">Tools, services, and libraries that power Punch Skater™.</p>
 
       <section className="credits-section">
         <h2 className="credits-heading">Developed By</h2>
@@ -144,7 +144,7 @@ export function Credits() {
       <footer className="credits-legal">
         <p>© 2025–{new Date().getFullYear()} SP Digital LLC. All Rights Reserved.</p>
         <p>
-          "Punch Skater", the Punch Skater game, card mechanics, artwork concepts, and all
+          "Punch Skater™", the Punch Skater™ game, card mechanics, artwork concepts, and all
           associated intellectual property are owned exclusively by SP Digital LLC.
         </p>
         <p>

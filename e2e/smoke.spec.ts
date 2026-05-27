@@ -23,13 +23,13 @@ test.describe('Home page (Card Forge)', () => {
 
   test('has correct page title', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/Punch Skater/i);
+    await expect(page).toHaveTitle(/Punch Skater™/i);
   });
 
   test('shows the nav brand', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.nav-title')).toBeVisible();
-    await expect(page.locator('.nav-subtitle')).toHaveText('DECK BUILDER');
+    await expect(page.locator('.nav-subtitle')).toHaveText('CARD GAME');
   });
 
   test('shows the Card Forge nav link as active', async ({ page }) => {
@@ -50,8 +50,9 @@ test.describe('Home page (Card Forge)', () => {
   test('shows the welcome prompt with getting started guidance', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /welcome to punch skater, rookie/i })).toBeVisible();
-    await expect(page.getByText(/5 punch skater class cards and 1 master class card/i)).toBeVisible();
-    await expect(page.getByText(/battle arena/i)).toBeVisible();
+    await expect(page.getByText(/build your crew\. win the joust\. rule the neon streets\./i)).toBeVisible();
+    await expect(page.getByText(/build a 6-card crew/i)).toBeVisible();
+    await expect(page.getByText(/climb the leaderboard/i)).toBeVisible();
   });
 
 
@@ -176,7 +177,7 @@ test.describe('Home page (Card Forge)', () => {
 test.describe('Login page', () => {
   test('loads the login page', async ({ page }) => {
     await page.goto('/login');
-    await expect(page).toHaveTitle(/Punch Skater/i);
+    await expect(page).toHaveTitle(/Punch Skater™/i);
   });
 
   test('shows Sign In and Create Account tabs', async ({ page }) => {
@@ -230,7 +231,7 @@ test.describe('Login page', () => {
 test.describe('Credits page', () => {
   test('loads the credits page', async ({ page }) => {
     await page.goto('/credits');
-    await expect(page).toHaveTitle(/Punch Skater/i);
+    await expect(page).toHaveTitle(/Punch Skater™/i);
   });
 
   test('shows Credits & Attributions heading', async ({ page }) => {
@@ -301,6 +302,9 @@ test.describe('Lore page', () => {
   test('shows the district map and arterial routes', async ({ page }) => {
     await page.goto('/lore');
     await expect(page.getByRole('heading', { name: /australia theater map/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /courier archetypes/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /recent codex revisions/i })).toBeVisible();
+    await expect(page.getByText(/australian theatre dossiers consolidated/i)).toBeVisible();
     await page.getByRole('button', { name: /expand australia overmap/i }).click();
     await expect(page.getByTestId('australia-overmap')).toBeVisible();
     await expect(page.getByTestId('district-node-airaway')).toContainText(/airaway/i);
@@ -363,7 +367,7 @@ test.describe('SEO & meta tags', () => {
   test('home page has og:title', async ({ page }) => {
     await page.goto('/');
     const ogTitle = page.locator('meta[property="og:title"]');
-    await expect(ogTitle).toHaveAttribute('content', /Punch Skater/i);
+    await expect(ogTitle).toHaveAttribute('content', /Punch Skater™/i);
   });
 
   test('home page has og:description', async ({ page }) => {
@@ -375,7 +379,7 @@ test.describe('SEO & meta tags', () => {
   test('home page has canonical link', async ({ page }) => {
     await page.goto('/');
     const canonical = page.locator('link[rel="canonical"]');
-    await expect(canonical).toHaveAttribute('href', 'https://punchskater.com/');
+    await expect(canonical).toHaveAttribute('href', new URL('/', page.url()).toString());
   });
 
   test('home page has JSON-LD structured data', async ({ page }) => {

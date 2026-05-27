@@ -25,7 +25,7 @@ export const WINNER_BONUS = WAGER_POINTS * 2;
 
 // ── Stat keys ────────────────────────────────────────────────────────────────
 
-const STAT_KEYS: StatKey[] = ["speed", "stealth", "tech", "grit", "rep"];
+const STAT_KEYS: StatKey[] = ["speed", "range", "stealth", "grit"];
 const STAT_LABELS: Record<StatKey, string> = Object.fromEntries(
   STAT_KEYS.map((k) => [k, CARD_STAT_LABELS[k].label]),
 ) as Record<StatKey, string>;
@@ -75,15 +75,9 @@ function getSynergyMultiplier(cards: readonly BattleCardInput[]): number {
 
 /**
  * Return the Ozzycred worth of a single card.
- * New cards carry an explicit `ozzies` currency field.  Legacy cards that
- * pre-date the field fall back to the old "sum of five stats" heuristic so
- * existing collections aren't zeroed out.
+ * Sum of the four battle stats as a simple worth heuristic.
  */
 export function computeCardWorth(card: CardPayload): number {
-  if (typeof card.ozzies === "number" && card.ozzies > 0) {
-    return card.ozzies;
-  }
-  // Legacy fallback: sum of stats
   return STAT_KEYS.reduce((sum, key) => sum + (card.stats[key] ?? 0), 0);
 }
 
@@ -92,14 +86,13 @@ export function computeDeckWorth(cards: CardPayload[]): number {
   return Math.round(cards.reduce((sum, card) => sum + computeCardWorth(card), 0) * 100) / 100;
 }
 
-/** Sum total speed, stealth, tech, grit, and rep across the whole deck. */
+/** Sum total speed, range, stealth, and grit across the whole deck. */
 export function getDeckStatTotals(cards: readonly BattleCardInput[]): Record<StatKey, number> {
   const totals: Record<StatKey, number> = {
     speed: 0,
+    range: 0,
     stealth: 0,
-    tech: 0,
     grit: 0,
-    rep: 0,
   };
 
   for (const card of cards) {

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import type { CardPayload, Rarity, Archetype, Faction, District } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
+import { useAuth } from "../context/AuthContext";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { TradeModal } from "../components/TradeModal";
@@ -19,19 +20,31 @@ import { useTier } from "../context/TierContext";
 import { TIERS } from "../lib/tiers";
 import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
 import { DeckBuilder } from "./DeckBuilder";
+import {
+  evaluateCollectionRewards,
+  type CollectionRewardEvaluation,
+  type CollectionRewardFilter,
+} from "../lib/collectionRewards";
+import { claimCollectionReward, fetchCollectionRewards } from "../services/collectionRewards";
 
 type SortOption = "name-asc" | "name-desc" | "newest" | "oldest" | "rarity";
+const COLLECTION_PAGE_SIZE = 24;
 
 const RARITY_ORDER: Record<Rarity, number> = {
   "Legendary": 0,
   "Rare": 1,
   "Master": 2,
   "Apprentice": 3,
-  "Punch Skater": 4,
+  "Punch Skater™": 4,
 };
 const UNKNOWN_RARITY_ORDER = 5;
 
+function formatCollectionRewardMeta(track: string, seasonal?: boolean): string {
+  return seasonal ? `${track} · seasonal` : track;
+}
+
 export function Collection() {
+  const { user } = useAuth();
   const { cards, removeCard, addCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
   const { removeCardFromAllDecks } = useDecks();
   const { tier, openUpgradeModal } = useTier();
@@ -71,8 +84,45 @@ export function Collection() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [rewardFilter, setRewardFilter] = useState<CollectionRewardFilter>("all");
+  const [rewardEvaluation, setRewardEvaluation] = useState<CollectionRewardEvaluation>(() => evaluateCollectionRewards([]));
+  const [rewardLoading, setRewardLoading] = useState(false);
+  const [rewardClaimingId, setRewardClaimingId] = useState<string | null>(null);
+  const [rewardMessage, setRewardMessage] = useState("");
+  const [rewardError, setRewardError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const existingIds = useMemo(() => new Set(cards.map((c) => c.id)), [cards]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRewardError("");
+    setRewardMessage("");
+
+    if (!user) {
+      setRewardEvaluation(evaluateCollectionRewards(cards));
+      return;
+    }
+
+    setRewardLoading(true);
+    fetchCollectionRewards(user)
+      .then((result) => {
+        if (!cancelled) setRewardEvaluation(result.evaluation);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setRewardEvaluation(evaluateCollectionRewards(cards));
+          setRewardError(error instanceof Error ? error.message : "Failed to load collection rewards.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRewardLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cards, user]);
 
   useEffect(() => {
     const validIds = new Set(cards.map((card) => card.id));
@@ -90,6 +140,16 @@ export function Collection() {
     });
     setSelected((prev) => (prev && !validIds.has(prev.id) ? null : prev));
   }, [cards]);
+
+  // Close card detail panel on Escape key
+  useEffect(() => {
+    if (!selected) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [selected]);
 
   // Derive unique values from actual cards for filter dropdowns
   const filterOptions = useMemo(() => {
@@ -137,10 +197,13 @@ export function Collection() {
           c.identity.name,
           getDisplayedArchetype(c),
           c.identity.crew,
+          c.class.badgeLabel,
+          c.role.label,
+          c.role.coverRole,
+          c.identity.serialNumber,
           c.prompts.rarity,
           c.prompts.district,
-          c.flavorText,
-          ...c.tags,
+          c.front.flavorTextEnglish ?? c.front.flavorText ?? "",
         ]
           .join(" ")
           .toLowerCase();
@@ -176,12 +239,69 @@ export function Collection() {
     () => cards.filter((card) => selectedIds.has(card.id)),
     [cards, selectedIds],
   );
+  const pageSize = COLLECTION_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(filteredCards.length / pageSize));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const pagedCards = useMemo(() => {
+    const start = (currentPageSafe - 1) * pageSize;
+    return filteredCards.slice(start, start + pageSize);
+  }, [filteredCards, currentPageSafe, pageSize]);
   const visibleSelectedCount = useMemo(
-    () => filteredCards.reduce((count, card) => count + (selectedIds.has(card.id) ? 1 : 0), 0),
-    [filteredCards, selectedIds],
+    () => pagedCards.reduce((count, card) => count + (selectedIds.has(card.id) ? 1 : 0), 0),
+    [pagedCards, selectedIds],
   );
   const hasSelection = selectedIds.size > 0;
-  const allFilteredSelected = filteredCards.length > 0 && visibleSelectedCount === filteredCards.length;
+  const allPagedSelected = pagedCards.length > 0 && visibleSelectedCount === pagedCards.length;
+  const rewardMilestones = useMemo(() => {
+    const milestones = rewardEvaluation.milestones;
+    switch (rewardFilter) {
+      case "claimable":
+        return milestones.filter((entry) => entry.eligible && !entry.claimed);
+      case "owned":
+        return milestones.filter((entry) => entry.claimed);
+      case "locked":
+        return milestones.filter((entry) => !entry.eligible);
+      case "faction":
+        return milestones.filter((entry) => entry.milestone.track === "faction");
+      case "district":
+        return milestones.filter((entry) => entry.milestone.track === "district");
+      case "seasonal":
+        return milestones.filter((entry) => entry.milestone.seasonal);
+      case "all":
+      default:
+        return milestones;
+    }
+  }, [rewardEvaluation.milestones, rewardFilter]);
+  const claimableRewardCount = rewardEvaluation.milestones.filter((entry) => entry.eligible && !entry.claimed).length;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterRarity, filterArchetype, filterFaction, filterDistrict, sortBy]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const handleClaimReward = async (milestoneId: string) => {
+    if (!user) return;
+    setRewardClaimingId(milestoneId);
+    setRewardError("");
+    setRewardMessage("");
+    try {
+      const result = await claimCollectionReward(user, milestoneId);
+      setRewardEvaluation(result.evaluation);
+      setRewardMessage(
+        result.claimed
+          ? `Claimed ${result.rewards.map((reward) => reward.name).join(", ")}.`
+          : "Milestone was already claimed.",
+      );
+      if (result.claimed) sfxSuccess();
+    } catch (error) {
+      setRewardError(error instanceof Error ? error.message : "Failed to claim collection reward.");
+    } finally {
+      setRewardClaimingId(null);
+    }
+  };
 
   const clearSelection = () => {
     setSelectedIds(new Set());
@@ -202,10 +322,10 @@ export function Collection() {
   const toggleSelectAllFiltered = () => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (allFilteredSelected) {
-        filteredCards.forEach((card) => next.delete(card.id));
+      if (allPagedSelected) {
+        pagedCards.forEach((card) => next.delete(card.id));
       } else {
-        filteredCards.forEach((card) => next.add(card.id));
+        pagedCards.forEach((card) => next.add(card.id));
       }
       return next;
     });
@@ -231,6 +351,13 @@ export function Collection() {
         selected.characterImageUrl,
         selected.frameImageUrl,
         selected.frameSeed,
+        selected.visuals.accentColor,
+        1,
+        selected.board.imageUrl,
+        selected.characterSeed,
+        selected.board.placement,
+        selected.characterPlacement,
+        selected.board.layerOrder,
       );
     } finally {
       setDownloading(false);
@@ -279,6 +406,7 @@ export function Collection() {
             <div className="empty-state">
               <span className="empty-icon">🔒</span>
               <p>Account saving requires a paid tier.</p>
+              <button className="btn-outline" onClick={() => navigate("/forge")}>Back to Card Forge</button>
               <button className="btn-primary" onClick={openUpgradeModal}>Upgrade to Save Cards</button>
             </div>
           </>
@@ -326,7 +454,7 @@ export function Collection() {
             <button className="btn-outline btn-sm" onClick={() => setShowImport(true)}>
               Import JSON
             </button>
-            <button className="btn-outline" onClick={handleExport} disabled={cards.length === 0}>
+            <button className="btn-outline" onClick={() => handleExport()} disabled={cards.length === 0}>
               Export All
             </button>
         </div>
@@ -336,9 +464,92 @@ export function Collection() {
         <div className="empty-state">
           <span className="empty-icon">📦</span>
           <p>No cards yet. Head to the Card Forge to create your first courier.</p>
+          <button className="btn-primary btn-sm" onClick={() => navigate("/forge")}>Open Card Forge</button>
         </div>
       ) : (
         <>
+          <section className="collection-rewards-panel" aria-label="Collection rewards">
+            <div className="collection-rewards-header">
+              <div>
+                <p className="eyebrow">Cosmetic Prestige</p>
+                <h2>Collection Rewards</h2>
+                <p>
+                  Badges, titles, frames, lore, and capped cosmetic reroll tokens. No stat boosts, rarity guarantees,
+                  Deck Power bonuses, or battle advantages.
+                </p>
+              </div>
+              <div className="collection-rewards-score">
+                <span>Collection Score</span>
+                <strong>{rewardEvaluation.score}</strong>
+                <small>{rewardEvaluation.uniqueCardCount} unique  ·  {rewardEvaluation.duplicateVolumeScore} duplicate volume</small>
+              </div>
+            </div>
+
+            <div className="collection-rewards-stats">
+              <span><strong>{rewardEvaluation.state.badgeIds.length}</strong> Badges</span>
+              <span><strong>{rewardEvaluation.state.titleIds.length}</strong> Titles</span>
+              <span><strong>{rewardEvaluation.state.frameIds.length}</strong> Frames</span>
+              <span><strong>{rewardEvaluation.state.loreIds.length}</strong> Lore</span>
+              <span><strong>{rewardEvaluation.state.rerollTokens}</strong> Cosmetic rerolls</span>
+              <span><strong>{claimableRewardCount}</strong> Claimable</span>
+            </div>
+
+            <div className="collection-rewards-filters">
+              {(["all", "claimable", "owned", "locked", "faction", "district", "seasonal"] as CollectionRewardFilter[]).map((filter) => (
+                <button
+                  key={filter}
+                  className={rewardFilter === filter ? "btn-primary btn-sm" : "btn-outline btn-sm"}
+                  type="button"
+                  onClick={() => setRewardFilter(filter)}
+                >
+                  {filter[0].toUpperCase() + filter.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {rewardMessage && <div className="collection-rewards-message collection-rewards-message--ok">{rewardMessage}</div>}
+            {rewardError && <div className="collection-rewards-message collection-rewards-message--error">{rewardError}</div>}
+            {rewardLoading && <div className="collection-rewards-message app-status-banner">Syncing reward claims…</div>}
+
+            <div className="collection-rewards-list">
+              {rewardMilestones.slice(0, 12).map((entry) => (
+                <article
+                  key={entry.milestone.id}
+                  className={`collection-reward-card${entry.claimed ? " collection-reward-card--owned" : ""}${entry.eligible && !entry.claimed ? " collection-reward-card--claimable" : ""}`}
+                >
+                  <div className="collection-reward-card__top">
+                    <div>
+                      <strong>{entry.milestone.name}</strong>
+                      <span>{formatCollectionRewardMeta(entry.milestone.track, entry.milestone.seasonal)}</span>
+                    </div>
+                    <span className="collection-reward-card__status">
+                      {entry.claimed ? "Owned" : entry.eligible ? "Claimable" : `${entry.percent}%`}
+                    </span>
+                  </div>
+                  <p>{entry.milestone.description}</p>
+                  <div className="collection-reward-progress" aria-label={`${entry.current} of ${entry.target}`}>
+                    <span style={{ width: `${entry.percent}%` }} />
+                  </div>
+                  <div className="collection-reward-card__rewards">
+                    {entry.rewards.map((reward) => (
+                      <span key={reward.id} className={`collection-reward-chip collection-reward-chip--${reward.kind}`}>
+                        {reward.kind.replace(/_/g, " ")} · {reward.name}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    className="btn-primary btn-sm"
+                    type="button"
+                    disabled={!entry.eligible || entry.claimed || rewardClaimingId !== null || !user}
+                    onClick={() => handleClaimReward(entry.milestone.id)}
+                  >
+                    {rewardClaimingId === entry.milestone.id ? "Claiming…" : entry.claimed ? "Claimed" : "Claim"}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+
           {/* ── Search / Filter / Sort toolbar ─────────────────────────── */}
           <div className="collection-toolbar">
             <div className="collection-search-row">
@@ -428,19 +639,43 @@ export function Collection() {
               </p>
             )}
 
+            <div className="collection-pagination" role="navigation" aria-label="Collection pages">
+              <button
+                className="btn-outline btn-sm"
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPageSafe <= 1}
+              >
+                Prev
+              </button>
+              <span className="collection-pagination__meta">
+                Page {currentPageSafe} of {totalPages}
+              </span>
+              <button
+                className="btn-outline btn-sm"
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPageSafe >= totalPages}
+              >
+                Next
+              </button>
+            </div>
+
             <div className="collection-bulk-bar">
               <span className="collection-bulk-count">
                 {hasSelection
                   ? `${selectedIds.size} selected`
-                  : `${filteredCards.length} visible`}
+                  : totalPages === 1
+                    ? `${pagedCards.length} visible`
+                    : `${pagedCards.length} on this page`}
               </span>
               <div className="collection-bulk-actions">
                 <button
                   className="btn-outline btn-sm"
                   onClick={toggleSelectAllFiltered}
-                  disabled={filteredCards.length === 0}
+                  disabled={pagedCards.length === 0}
                 >
-                  {allFilteredSelected ? "Clear Visible" : "Select All"}
+                  {allPagedSelected ? "Clear Page" : "Select All on Page"}
                 </button>
                 <button
                   className="btn-outline btn-sm"
@@ -483,20 +718,38 @@ export function Collection() {
               <button className="btn-outline btn-sm" onClick={clearFilters}>Clear Filters</button>
             </div>
           ) : (
+          <>
+          {selected && (
+            <div
+              className="card-detail-backdrop"
+              aria-hidden="true"
+              onClick={() => setSelected(null)}
+            />
+          )}
           <div className="collection-layout">
           <div className="card-grid">
-            {filteredCards.map((card) => {
+            {pagedCards.map((card) => {
               const isCardSelected = selectedIds.has(card.id);
               return (
                 <div
                   key={card.id}
                   className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""} ${isCardSelected ? "card-thumb--selected" : ""}`}
-                 onClick={() => {
-                   const next = selected?.id === card.id ? null : card;
-                   if (next) sfxClick();
-                   setSelected(next);
-                 }}
-               >
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open ${card.identity.name}`}
+                  onClick={() => {
+                    const next = selected?.id === card.id ? null : card;
+                    if (next) sfxClick();
+                    setSelected(next);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    const next = selected?.id === card.id ? null : card;
+                    if (next) sfxClick();
+                    setSelected(next);
+                  }}
+                >
                  <button
                    type="button"
                    className={`card-thumb-select ${isCardSelected ? "card-thumb-select--active" : ""}`}
@@ -524,17 +777,40 @@ export function Collection() {
               <CardContainer cardVars={buildCardVars(selected, "collection")}>
                 <PrintedCardPreviewPair
                   card={selected}
+                  backgroundImageUrl={selected.backgroundImageUrl}
+                  characterImageUrl={selected.characterImageUrl}
+                  frameImageUrl={selected.frameImageUrl}
                   className="print-preview-area--collection"
                 />
               </CardContainer>
               <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {tierData.canSave && (
-                  <button
-                    className="btn-outline btn-sm"
-                    onClick={() => navigate(`/edit/${selected.id}`)}
-                  >
-                    ✎ Edit
-                  </button>
+                  <>
+                    <button
+                      className="btn-primary btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}`)}
+                    >
+                      ✎ Customize Card
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}?mode=identity&focus=name`)}
+                    >
+                      Rename
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}?mode=layout`)}
+                    >
+                      ↔ Reposition Art
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
+                      onClick={() => navigate(`/edit/${selected.id}?mode=art`)}
+                    >
+                      ✨ Refresh Art
+                    </button>
+                  </>
                 )}
                 <button
                   className="btn-outline btn-3d btn-sm"
@@ -564,15 +840,21 @@ export function Collection() {
                 >
                   {downloading ? "⏳ Downloading…" : "⬇ Download"}
                 </button>
-                <button
-                  className="btn-outline btn-sm"
-                  onClick={() => setTradeTarget(selected)}
-                >
-                  🤝 Send Offer
-                </button>
-                {tierData.canEditDecks ? (
+                 <button
+                   className="btn-outline btn-sm"
+                   onClick={() => setTradeTarget(selected)}
+                 >
+                   🤝 Send Offer
+                 </button>
                   <button
-                    className="btn-danger btn-sm"
+                    className="btn-outline btn-sm"
+                    onClick={() => navigate(`/workshop?card=${selected.id}`)}
+                  >
+                    🛹 Swap Board
+                  </button>
+                 {tierData.canEditDecks ? (
+                   <button
+                     className="btn-danger btn-sm"
                     onClick={() => {
                       sfxRemove();
                       removeCardFromAllDecks(selected.id);
@@ -592,6 +874,7 @@ export function Collection() {
             </div>
           )}
         </div>
+          </>
           )}
         </>
       )}

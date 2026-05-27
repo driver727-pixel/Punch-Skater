@@ -30,17 +30,20 @@ const REQUIRED_KEYS: (keyof CardPayload)[] = [
   "seed",
   "identity",
   "stats",
-  "traits",
-  "flavorText",
+  "class",
+  "role",
+  "board",
+  "maintenance",
+  "front",
+  "back",
   "visuals",
-  "tags",
   "createdAt",
 ];
 
 const REQUIRED_PROMPTS = ["archetype", "rarity", "style", "district", "accentColor"] as const;
 const REQUIRED_IDENTITY = ["name", "crew", "serialNumber"] as const;
-const REQUIRED_STATS = ["speed", "stealth", "tech", "grit", "rep"] as const;
-const REQUIRED_VISUALS = ["helmetStyle", "boardStyle", "jacketStyle", "colorScheme", "accentColor", "storagePackStyle"] as const;
+const REQUIRED_STATS = ["speed", "range", "rangeNm", "stealth", "grit"] as const;
+const REQUIRED_VISUALS = ["helmetStyle", "jacketStyle", "colorScheme", "accentColor", "storagePackStyle"] as const;
 
 // ── Per-card validation ───────────────────────────────────────────────────────
 
@@ -95,11 +98,6 @@ function validateCard(raw: unknown, index: number): { card: CardPayload | null; 
     }
   }
 
-  // tags must be an array
-  if (obj.tags !== undefined && !Array.isArray(obj.tags)) {
-    errors.push("tags must be an array");
-  }
-
   if (errors.length > 0) {
     return {
       card: null,
@@ -112,7 +110,7 @@ function validateCard(raw: unknown, index: number): { card: CardPayload | null; 
 
 // ── Envelope detection ────────────────────────────────────────────────────────
 
-function isCraftlinguaEnvelope(obj: Record<string, unknown>): obj is CraftlinguaEnvelope {
+function isCraftlinguaEnvelope(obj: Record<string, unknown>): boolean {
   return obj.source === "craftlingua";
 }
 
@@ -152,9 +150,10 @@ export function validateImport(raw: unknown): ImportResult {
 
     if (isCraftlinguaEnvelope(obj)) {
       // Format 1: Craftlingua envelope
-      language = obj.language;
-      vocabulary = Array.isArray(obj.vocabulary) ? obj.vocabulary : undefined;
-      cardEntries = Array.isArray(obj.cards) ? obj.cards : [];
+      const envelope = obj as unknown as { language?: { name: string; code: string }; vocabulary?: unknown; cards?: unknown[] };
+      language = envelope.language;
+      vocabulary = Array.isArray(envelope.vocabulary) ? envelope.vocabulary : undefined;
+      cardEntries = Array.isArray(envelope.cards) ? envelope.cards : [];
     } else if (isCollectionExport(obj)) {
       // Format 2: Collection export
       cardEntries = obj.cards;

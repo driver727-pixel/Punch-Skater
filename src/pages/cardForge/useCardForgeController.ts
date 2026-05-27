@@ -1,9 +1,11 @@
 import { useMemo } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { useForgeGeneration } from "./useForgeGeneration";
 import { useForgeNavigation } from "./useForgeNavigation";
 import { useForgeSave } from "./useForgeSave";
 
 export function useCardForgeController() {
+  const { user, userProfile } = useAuth();
   const forge = useForgeGeneration();
   const save = useForgeSave({
     characterBlend: forge.characterBlend,
@@ -11,6 +13,8 @@ export function useCardForgeController() {
     layers: forge.layers,
     openUpgradeModal: forge.openUpgradeModal,
     tier: forge.tier,
+    uid: user?.uid ?? null,
+    userEmail: user?.email ?? null,
   });
   const navigation = useForgeNavigation({
     onBeforeCollectionNavigation: save.clearSavedCard,
@@ -18,56 +22,78 @@ export function useCardForgeController() {
   });
 
   return useMemo(() => ({
+    boardError: forge.boardError,
     boardConfig: forge.boardConfig,
     boardImageLoading: forge.boardImageLoading,
+    boardLayerOrder: forge.boardLayerOrder,
+    boardPlacement: forge.boardPlacement,
     canForge: forge.canForge,
+    characterPlacement: forge.characterPlacement,
     characterBlend: forge.characterBlend,
+    clearSavedCard: save.clearSavedCard,
     closeWelcome: navigation.closeWelcome,
     downloading: save.downloading,
     forging: forge.forging,
     freeCardUsed: forge.freeCardUsed,
+    freeForgeReadyAt: forge.freeForgeReadyAt,
     generated: forge.generated,
     generateCredits: forge.generateCredits,
-    ozziesBalance: forge.ozziesBalance,
     handleClose3D: navigation.handleClose3D,
     handleCloseFactionReveal: forge.handleCloseFactionReveal,
+    handleCloseRarityReveal: forge.handleCloseRarityReveal,
     handleClosePrint: navigation.handleClosePrint,
     handleCollectionNavigation: navigation.handleCollectionNavigation,
     handleDownloadJpg: save.handleDownloadJpg,
     handleForge: forge.handleForge,
+    handleForceRegenerateBoard: forge.handleForceRegenerateBoard,
     handleLayerError: forge.handleLayerError,
     handleOpen3D: navigation.handleOpen3D,
     handleOpenFactions: navigation.handleOpenFactions,
     handleOpenPrint: navigation.handleOpenPrint,
     handlePreviewUpdate: forge.handlePreviewUpdate,
     handleRandomSkater: forge.handleRandomSkater,
+    handleReroll: forge.handleReroll,
     handleReopenWelcome: navigation.handleReopenWelcome,
     handleSaveToCollection: save.handleSaveToCollection,
     hasAnyLayerUrl: forge.hasAnyLayerUrl,
     isAnyLayerLoading: forge.isAnyLayerLoading,
+    isAdmin: userProfile?.isAdmin === true,
     isFirstCard: save.isFirstCard,
     layers: forge.layers,
     openUpgradeModal: forge.openUpgradeModal,
+    ozziesBalance: forge.ozziesBalance,
     patchGeneratedCard: forge.patchGeneratedCard,
     patchIdentity: forge.patchIdentity,
     patchStats: forge.patchStats,
     printing: navigation.printing,
     prompts: forge.prompts,
-    revealedFaction: forge.revealedFaction,
+    recoveryError: forge.recoveryError,
+    recoveryMessage: forge.recoveryMessage,
     requiresOzzies: forge.requiresOzzies,
+    revealedFaction: forge.revealedFaction,
+    revealedRarity: forge.revealedRarity,
+    rerollTokens: forge.rerollTokens,
+    rerollingActionId: forge.rerollingActionId,
     saveError: save.saveError,
     savedCard: save.savedCard,
     saving: save.saving,
-    spendingOzzies: forge.spendingOzzies,
     setArchetype: forge.setArchetype,
     setBoardConfig: forge.setBoardConfig,
+    setBoardLayerOrder: forge.setBoardLayerOrder,
+    setBoardPlacement: forge.setBoardPlacement,
+    setBoardRotation: forge.setBoardRotation,
+    setBoardScale: forge.setBoardScale,
+    setCharacterPlacement: forge.setCharacterPlacement,
     setCharacterBlend: forge.setCharacterBlend,
+    setCharacterRotation: forge.setCharacterRotation,
+    setCharacterScale: forge.setCharacterScale,
     setPrompt: forge.setPrompt,
     showWelcome: navigation.showWelcome,
+    spendingOzzies: forge.spendingOzzies,
     tier: forge.tier,
     tierCanSave: save.tierCanSave,
+    viewing3D: navigation.viewing3D,
     walletMessage: forge.walletMessage,
     walletMessageTone: forge.walletMessageTone,
-    viewing3D: navigation.viewing3D,
-  }), [forge, navigation, save]);
+  }), [forge, navigation, save, userProfile?.isAdmin]);
 }

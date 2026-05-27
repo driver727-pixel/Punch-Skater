@@ -2,20 +2,20 @@ import type {
   AgeGroup,
   Archetype,
   BodyType,
-  CardPayload,
   CardPrompts,
   District,
   FaceCharacter,
   Gender,
   HairLength,
-  Rarity,
   SkinTone,
 } from "../../lib/types";
 import { BoardBuilder } from "../../components/BoardBuilder";
-import { GeoAtlas } from "../../components/GeoAtlas";
+import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
 import { ReferralPanel } from "../../components/ReferralPanel";
 import ozziesConfig from "../../lib/ozziesConfig.json";
 import type { BoardConfig } from "../../lib/boardBuilder";
+import { FORGE_CLASS_ODDS } from "../../lib/cardClassProgression";
+import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
 
@@ -58,35 +58,23 @@ interface ForgeControlsPanelProps {
   bodyTypes: BodyType[];
   boardConfig: BoardConfig;
   canForge: boolean;
-  canSaveToCollection: boolean;
-  characterBlend: number;
   districts: District[];
-  downloading: boolean;
   faceCharacters: FaceCharacter[];
   forging: boolean;
   freeCardUsed: boolean;
+  freeForgeReadyAt: number | null;
   genders: Gender[];
   generateCredits: number;
-  generated: CardPayload | null;
   hairLengths: HairLength[];
-  hasAnyLayerUrl: boolean;
   isAnyLayerLoading: boolean;
-  ozziesBalance: number;
   onArchetypeChange: (archetype: Archetype) => void;
-  onBlendChange: (value: number) => void;
   onBoardConfigChange: (config: BoardConfig) => void;
-  onDownloadJpg: () => void;
   onForge: () => void;
-  onOpen3D: () => void;
-  onOpenPrint: () => void;
   onOpenUpgradeModal: () => void;
   onPromptChange: <K extends keyof CardPrompts>(key: K, value: CardPrompts[K]) => void;
-  onSaveToCollection: () => void;
+  ozziesBalance: number;
   prompts: CardPrompts;
-  rarities: Rarity[];
   requiresOzzies: boolean;
-  saveError: string | null;
-  saving: boolean;
   skinTones: SkinTone[];
   spendingOzzies: boolean;
   tier: string;
@@ -100,35 +88,23 @@ export function ForgeControlsPanel({
   bodyTypes,
   boardConfig,
   canForge,
-  canSaveToCollection,
-  characterBlend,
   districts,
-  downloading,
   faceCharacters,
   forging,
   freeCardUsed,
+  freeForgeReadyAt,
   genders,
   generateCredits,
-  generated,
   hairLengths,
-  hasAnyLayerUrl,
   isAnyLayerLoading,
-  ozziesBalance,
   onArchetypeChange,
-  onBlendChange,
   onBoardConfigChange,
-  onDownloadJpg,
   onForge,
-  onOpen3D,
-  onOpenPrint,
   onOpenUpgradeModal,
   onPromptChange,
-  onSaveToCollection,
+  ozziesBalance,
   prompts,
-  rarities,
   requiresOzzies,
-  saveError,
-  saving,
   skinTones,
   spendingOzzies,
   tier,
@@ -137,6 +113,8 @@ export function ForgeControlsPanel({
   ageGroups,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
+  const freeForgeRemainingMs = getRemainingDurationMs(freeForgeReadyAt);
+  const isFreeForgeCoolingDown = isFreeTier && !requiresOzzies && freeForgeRemainingMs > 0 && generateCredits === 0;
 
   return (
     <div className="forge-form">
@@ -161,26 +139,6 @@ export function ForgeControlsPanel({
         <p className="form-hint">Pick the public-facing role your courier presents to the city.</p>
       </div>
 
-      <div className={`form-group${isFreeTier ? " form-group--locked" : ""}`}>
-        <label>
-          Class
-          {isFreeTier && (
-            <ForgeLockBadge onClick={onOpenUpgradeModal} label="Upgrade to unlock Class" />
-          )}
-        </label>
-        <div className="pill-group">
-          {rarities.map((option) => (
-            <PillButton
-              key={option}
-              active={prompts.rarity === option}
-              label={option}
-              disabled={isFreeTier}
-              onClick={() => onPromptChange("rarity", option)}
-            />
-          ))}
-        </div>
-      </div>
-
       <div className="form-group">
         <label>District</label>
         <div className="pill-group">
@@ -195,16 +153,7 @@ export function ForgeControlsPanel({
         </div>
       </div>
 
-      <GeoAtlas
-        boardConfig={boardConfig}
-        selectedDistrict={prompts.district ?? null}
-        onDistrictSelect={(d) => {
-          sfxClick();
-          onPromptChange("district", d);
-        }}
-        districtInteractionMode="press"
-        section="australia"
-      />
+      <LanguageProfilePanel />
 
       <div className="form-group">
         <label>Gender</label>
@@ -324,28 +273,57 @@ export function ForgeControlsPanel({
         />
       </div>
 
+      <div className="forge-class-odds">
+        <button type="button" className="forge-class-odds__trigger btn-outline btn-glass btn-sm">
+          Forge Class Odds
+        </button>
+        <div className="forge-class-odds__popup" aria-label="Forge class odds">
+          <p className="forge-class-odds__title">Forge Class Odds</p>
+          <ul className="forge-class-odds__list">
+            {FORGE_CLASS_ODDS.map((tier) => (
+              <li key={tier.label} className="forge-class-odds__row">
+                <span className="forge-class-odds__label">{tier.label}</span>
+                <span className="forge-class-odds__chance">{tier.chance}</span>
+                <span className="forge-class-odds__note">{tier.note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
       <button
         className="btn-primary btn-lg btn-forge"
         onClick={onForge}
-        disabled={forging || isAnyLayerLoading || spendingOzzies}
+        disabled={forging || isAnyLayerLoading || spendingOzzies || isFreeForgeCoolingDown}
         data-testid="forge-button"
       >
         {isAnyLayerLoading
           ? "✨ Generating…"
           : spendingOzzies
             ? "💰 Spending Ozzies…"
+          : isFreeForgeCoolingDown
+            ? `⚡ Forge Card (ready in ${formatDurationClock(freeForgeRemainingMs)})`
           : !canForge
             ? requiresOzzies
-              ? `💰 NEED ${ozziesConfig.cardForgeCost} OZZIES TO FORGE`
-              : "🔒 FORGE YOUR CARD — Upgrade to Unlock"
-            : tier === "free" && !freeCardUsed
-              ? "⚡ FORGE YOUR CARD (1 free card)"
+              ? `💰 Need ${ozziesConfig.cardForgeCost} Ozzies to Forge`
+              : "🔒 Forge Card — Upgrade to Unlock"
+          : tier === "free" && !freeCardUsed
+              ? "⚡ Forge Card (1 free card)"
               : generateCredits > 0
-                ? `⚡ FORGE YOUR CARD (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
+                ? `⚡ Forge Card (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
                 : requiresOzzies
-                  ? `💰 FORGE YOUR CARD (${ozziesConfig.cardForgeCost} Ozzies)`
-                : "⚡ FORGE YOUR CARD"}
+                  ? `💰 Forge Card (${ozziesConfig.cardForgeCost} Ozzies)`
+                  : "⚡ Forge Card"}
       </button>
+      {isFreeTier && generateCredits === 0 && !requiresOzzies && (
+        <p className="form-hint">
+          {freeForgeRemainingMs > 0
+            ? `Your next free forge unlocks in ${formatDurationClock(freeForgeRemainingMs)}.`
+            : freeCardUsed
+              ? "Your daily free forge is ready."
+              : "Your first free forge is ready right now."}
+        </p>
+      )}
       {requiresOzzies && (
         <p className="forge-wallet-note">
           Wallet balance: <strong>{ozziesBalance}</strong> Ozzies. Card Forge costs {ozziesConfig.cardForgeCost} Ozzies once free/referral credits are spent.
@@ -358,65 +336,6 @@ export function ForgeControlsPanel({
       )}
 
       <ReferralPanel />
-
-      {generated && (
-        <div className="forge-generated-actions">
-          {(hasAnyLayerUrl || isAnyLayerLoading) && (
-            <div className="blend-control">
-              <label className="blend-control__label">
-                <span>Character Blend</span>
-                <span>{Math.round(characterBlend * 100)}%</span>
-              </label>
-              <input
-                type="range"
-                className="range-slider"
-                min={0}
-                max={1}
-                step={0.05}
-                value={characterBlend}
-                onChange={(event) => onBlendChange(Number(event.target.value))}
-              />
-            </div>
-          )}
-          <div className="forge-generated-buttons">
-            <button className="btn-outline btn-3d" onClick={onOpen3D} title="View card in 3D">
-              ◈ 3D
-            </button>
-            <button className="btn-outline" onClick={onOpenPrint} title="Print this card">
-              🖨 Print
-            </button>
-            {canSaveToCollection ? (
-              <button
-                className="btn-primary"
-                onClick={onSaveToCollection}
-                disabled={saving}
-                title="Save card to your Collection"
-              >
-                {saving ? "💾 Saving…" : "💾 Save to Collection"}
-              </button>
-            ) : (
-              <button
-                className="btn-outline"
-                onClick={onOpenUpgradeModal}
-                title="Upgrade to save cards to your Collection"
-              >
-                🔒 Save to Collection
-              </button>
-            )}
-            <button
-              className="btn-outline"
-              onClick={onDownloadJpg}
-              disabled={downloading || isAnyLayerLoading}
-              title="Download composed card as JPG"
-            >
-              {downloading ? "⏳ Saving…" : "⬇ Download JPG"}
-            </button>
-          </div>
-          {saveError && (
-            <p className="forge-image-error" role="alert">{saveError}</p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -11,10 +11,13 @@ import { useAuth } from "../context/AuthContext";
 import { TIERS } from "../lib/tiers";
 import { db } from "../lib/firebase";
 import { TierModal } from "./TierModal";
-import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
+import { NotificationBell } from "./NotificationBell";
 import { sfxNavigate } from "../lib/sfx";
 import { GeoAtlas } from "./GeoAtlas";
 import { useAmbience } from "../hooks/useAmbience";
+import { isEnabled } from "../lib/featureFlags";
+import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
+import { warmRoutes, type RoutePrefetchKey } from "../lib/routePrefetch";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
@@ -23,8 +26,12 @@ export function Nav() {
   const tierData = TIERS[tier];
   const uid = user?.uid ?? null;
   const isAdmin = userProfile?.isAdmin === true;
-  const { discoveredFactions } = useFactionDiscovery();
-
+  const userDisplayName = resolveUserDisplayName({
+    profileDisplayName: userProfile?.displayName,
+    authDisplayName: user?.displayName,
+    email: user?.email,
+  });
+  const userInitial = resolveUserInitial(userDisplayName);
   const [ambienceEnabled, toggleAmbience] = useAmbience();
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -35,6 +42,7 @@ export function Nav() {
   // Count pending incoming trades for the badge
   useEffect(() => {
     if (!uid || !db) { setPendingTrades(0); return; }
+    setPendingTrades(0);
     const unsub = onSnapshot(
       query(
         collection(db, "trades"),
@@ -69,6 +77,12 @@ export function Nav() {
     return () => document.removeEventListener("mousedown", handler);
   }, [navOpen]);
 
+  useEffect(() => {
+    if (menuOpen) {
+      warmRoutes(["trades", "profile", "account"]);
+    }
+  }, [menuOpen]);
+
   const handleLogout = async () => {
     setMenuOpen(false);
     tierLogout();
@@ -76,45 +90,72 @@ export function Nav() {
     navigate("/");
   };
 
-  const renderNavLinks = (onClick?: () => void) => {
+  const renderNavLinks = (onClick?: () => void, options?: { mobile?: boolean }) => {
+    const isMobile = options?.mobile === true;
     const handleNav = () => { sfxNavigate(); onClick?.(); };
+    const bindIntentWarm = (keys: RoutePrefetchKey[]) => ({
+      onFocus: () => warmRoutes(keys),
+      onMouseEnter: () => warmRoutes(keys),
+    });
     return (
     <>
-      <NavLink to="/" end className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-        Card Forge
-      </NavLink>
-      <NavLink to="/collection" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-        Collection
+      <NavLink
+        to="/forge"
+        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        onClick={handleNav}
+        {...bindIntentWarm(["forge"])}
+      >
+        Forge
       </NavLink>
       {user && (
-        <NavLink to="/mission" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Mission
+        <NavLink
+          to="/arena"
+          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+          onClick={handleNav}
+          {...bindIntentWarm(["arena", "joustur"])}
+        >
+          Arena
         </NavLink>
       )}
-      <NavLink to="/trades" className={({ isActive }) => `nav-link${isActive ? " active" : ""}${pendingTrades > 0 ? " nav-link--badge" : ""}`} onClick={handleNav}>
-        Trades{pendingTrades > 0 && <span className="nav-badge">{pendingTrades}</span>}
-      </NavLink>
-      {user && (
-        <NavLink to="/arena" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Arena
+      {isEnabled("MISSIONS", user) && (
+        <NavLink to="/missions" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+          Missions
         </NavLink>
       )}
       <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Codex
       </NavLink>
-      {discoveredFactions.length > 0 && (
-        <NavLink to="/factions" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
-          Factions
+      {user && (
+        <NavLink to="/leaderboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+          Rankings
         </NavLink>
       )}
+      <NavLink
+        to="/collection"
+        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        onClick={handleNav}
+        {...bindIntentWarm(["collection"])}
+      >
+        Collection
+      </NavLink>
+      <NavLink
+        to="/workshop"
+        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        onClick={handleNav}
+        {...bindIntentWarm(["workshop"])}
+      >
+        Workshop
+      </NavLink>
       {isAdmin && (
         <>
           <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
             ⚙ Admin
           </NavLink>
-          <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
-            🎨 Image Assets
-          </NavLink>
+          {!isMobile && (
+            <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
+              🎨 Image Assets
+            </NavLink>
+          )}
         </>
       )}
     </>
@@ -127,9 +168,9 @@ export function Nav() {
         <nav className="nav">
           <div className="nav-inner">
           <div className="nav-brand">
-            <span className="nav-title">Punch Skater</span>
-            <span className="nav-subtitle">DECK BUILDER</span>
-            <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk Game</a>
+            <span className="nav-title">Punch Skater™</span>
+            <span className="nav-subtitle">CARD GAME</span>
+            <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk™ Game</a>
           </div>
 
           <GeoAtlas compact section="neon" className="nav-neon-map" />
@@ -165,22 +206,24 @@ export function Nav() {
             {authLoading ? (
               <span className="nav-auth-loading" aria-label="Loading…" />
             ) : user ? (
-              <div className="user-menu-wrap" ref={menuRef}>
+              <>
+                <NotificationBell />
+                <div className="user-menu-wrap" ref={menuRef}>
                 <button
                   className="user-avatar-btn"
                   onClick={() => setMenuOpen((v) => !v)}
-                  title={user.email ?? "Account"}
+                  title={user.email ?? userDisplayName}
                 >
-                  {(user.displayName ?? user.email ?? "?")[0].toUpperCase()}
+                  {userInitial}
                 </button>
                 {menuOpen && (
                   <div className="user-dropdown">
                     <div className="user-dropdown-email">{user.email}</div>
                     <button
                       className="user-dropdown-item"
-                      onClick={() => { setMenuOpen(false); navigate("/account"); }}
+                      onClick={() => { setMenuOpen(false); navigate("/profile"); }}
                     >
-                      ⚙ Account Settings
+                      👤 My Profile
                     </button>
                     <button
                       className="user-dropdown-item"
@@ -193,6 +236,12 @@ export function Nav() {
                     </div>
                     <button
                       className="user-dropdown-item"
+                      onClick={() => { setMenuOpen(false); navigate("/account"); }}
+                    >
+                      ⚙ Account Settings
+                    </button>
+                    <button
+                      className="user-dropdown-item"
                       onClick={handleLogout}
                     >
                       ⏏ Sign Out
@@ -200,10 +249,13 @@ export function Nav() {
                   </div>
                 )}
               </div>
+              </>
             ) : (
               <button
                 className="btn-outline nav-logout"
                 onClick={() => navigate("/login")}
+                onFocus={() => warmRoutes(["login"])}
+                onMouseEnter={() => warmRoutes(["login"])}
               >
                 Sign In
               </button>
@@ -223,7 +275,7 @@ export function Nav() {
 
         {navOpen && (
           <div className="nav-mobile-menu">
-            {renderNavLinks(() => setNavOpen(false))}
+            {renderNavLinks(() => setNavOpen(false), { mobile: true })}
             <div className="nav-mobile-menu-footer">
               <button
                 className={`ambience-btn${ambienceEnabled ? " ambience-btn--on" : ""}`}

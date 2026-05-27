@@ -11,13 +11,19 @@ import {
 import type { TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import { CardArt } from "../components/CardArt";
+import { CardThumbnail } from "../components/CardThumbnail";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { TradeModal } from "../components/TradeModal";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { formatStatLabel } from "../lib/battle";
+import {
+  ACTIVE_LEADERBOARD_SEASON,
+  SEASONAL_FAIR_PLAY_RULES,
+  SEASONAL_REWARD_TIERS,
+} from "../lib/seasonalLeaderboard";
+import { estimateCardTradeValue, formatTradeValue, getTradeValueBand } from "../lib/tradeEconomy";
 import { sfxSuccess, sfxRemove, sfxClick } from "../lib/sfx";
 
 type Tab = "inbox" | "outbox" | "market" | "leaderboard";
@@ -42,6 +48,11 @@ export function Trades() {
   const resolvedOutboxCount = outbox.length - pendingOutboxCount;
 
   useEffect(() => {
+    setInbox([]);
+    setOutbox([]);
+    setMarket([]);
+    setSelectedLeaderboardDeckId(null);
+    setLeaderboardSuccess(false);
     if (!uid) return;
 
     setError("");
@@ -130,6 +141,10 @@ export function Trades() {
         tx.set(toCardRef, currentOfferedCard);
         tx.update(tradeRef, {
           status: "accepted",
+          confirmations: {
+            ...(currentTrade.confirmations ?? {}),
+            recipient: ["estimated-value-reviewed", "sender-reputation-reviewed", "card-only-trade"],
+          },
           updatedAt: new Date().toISOString(),
         });
       });
@@ -215,12 +230,33 @@ export function Trades() {
     cancelled: "var(--text-dim)",
   };
 
+  const getEstimatedTradeValue = (trade: TradePayload) => trade.estimatedValue ?? estimateCardTradeValue(trade.offeredCard);
+
+  const renderTradeEconomyDetails = (trade: TradePayload) => {
+    const estimatedValue = getEstimatedTradeValue(trade);
+    const valueBand = trade.valueBand ?? getTradeValueBand(estimatedValue);
+    const reputation = trade.senderReputation;
+    return (
+      <div className="trade-economy-details">
+        <span className={`trade-value-pill trade-value-pill--${valueBand}`}>
+          {formatTradeValue(estimatedValue)} · {valueBand}
+        </span>
+        <span className="trade-reputation-chip">
+          {reputation ? `${reputation.label} · ${reputation.score}/100` : "New trader · reputation building"}
+        </span>
+        {(trade.fairPlay?.flags ?? []).map((flag) => (
+          <span key={flag} className="trade-fairplay-flag">{flag}</span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Trades</h1>
-          <p className="page-sub">Send, receive, and manage direct card offers with other players.</p>
+          <p className="page-sub">Send, receive, and manage fair card-only offers with estimated values and trader reputation.</p>
         </div>
         <div className="page-header-actions">
           <button className="btn-outline" onClick={() => setRefreshKey((k) => k + 1)} aria-label="Refresh trades">
@@ -249,6 +285,11 @@ export function Trades() {
           <span className="trade-summary-label">Resolved</span>
           <strong className="trade-summary-value">{resolvedOutboxCount}</strong>
           <span className="trade-summary-note">Accepted, declined, or cancelled offers</span>
+        </div>
+        <div className="trade-summary-card trade-summary-card--fair">
+          <span className="trade-summary-label">Fair economy</span>
+          <strong className="trade-summary-value">0¢</strong>
+          <span className="trade-summary-note">No real-money trades, no pay-to-win boosts, and card value is estimated from earned play.</span>
         </div>
       </div>
 
@@ -290,11 +331,12 @@ export function Trades() {
             <div className="trades-list">
               {inbox.map((trade) => (
                 <div key={trade.id} className="trade-item">
-                  <CardArt card={trade.offeredCard} width={80} height={112} />
+                  <CardThumbnail card={trade.offeredCard} width={80} height={112} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
                     <div className="trade-from">From: <strong>{trade.fromEmail}</strong></div>
+                    {renderTradeEconomyDetails(trade)}
                   </div>
                   <div className="trade-actions-row">
                     <button
@@ -330,11 +372,12 @@ export function Trades() {
             <div className="trades-list">
               {outbox.map((trade) => (
                 <div key={trade.id} className="trade-item">
-                  <CardArt card={trade.offeredCard} width={80} height={112} />
+                  <CardThumbnail card={trade.offeredCard} width={80} height={112} />
                   <div className="trade-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">{getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}</div>
                     <div className="trade-from">To: <strong>{trade.toEmail}</strong></div>
+                    {renderTradeEconomyDetails(trade)}
                   </div>
                   <div className="trade-actions-row">
                     <span
@@ -378,13 +421,14 @@ export function Trades() {
               {market.map((trade) => (
                 <div key={trade.id} className="market-card">
                   <div className="market-card-art">
-                    <CardArt card={trade.offeredCard} width={100} height={140} />
+                    <CardThumbnail card={trade.offeredCard} width={100} height={140} />
                   </div>
                   <div className="market-card-info">
                     <div className="trade-card-name">{trade.offeredCard.identity.name}</div>
                     <div className="trade-card-sub">
                       {getDisplayedArchetype(trade.offeredCard)} · {trade.offeredCard.prompts.rarity}
                     </div>
+                    {renderTradeEconomyDetails(trade)}
                     <div className="market-card-district">
                       {trade.offeredCard.prompts.district}
                     </div>
@@ -411,19 +455,29 @@ export function Trades() {
         <>
           <div className="leaderboard-header">
             <p className="market-desc">
-              Upload your best deck to the online leaderboard and find out who is <strong>The Best Sk8r Punk in the World!</strong>
+              Submit a 6-card Crew for <strong>{ACTIVE_LEADERBOARD_SEASON.label}</strong>. Seasonal rank uses current Deck Power only,
+              while lifetime progress still tracks Crew XP and Ozzies separately.
             </p>
+            <div className="leaderboard-rules">
+              <div>
+                <strong>Fair rewards:</strong>{" "}
+                {SEASONAL_REWARD_TIERS.map((tier) => tier.label).join(" · ")}
+              </div>
+              <div>
+                <strong>Anti-abuse:</strong> {SEASONAL_FAIR_PLAY_RULES.join(" ")}
+              </div>
+            </div>
           </div>
 
           {uid && (
             <div className="leaderboard-upload-section">
-              <h3 className="leaderboard-upload-title">Submit Your Deck</h3>
-              {decks.filter((d) => d.cards.length > 0).length === 0 ? (
-                <p className="trade-helper-text">Build a deck with at least one card to participate.</p>
+              <h3 className="leaderboard-upload-title">Submit Your Seasonal Crew</h3>
+              {decks.filter((d) => d.cards.length === 6).length === 0 ? (
+                <p className="trade-helper-text">Build a deck with exactly 6 unique cards to participate.</p>
               ) : (
                 <>
                   <div className="leaderboard-deck-picker">
-                    {decks.filter((d) => d.cards.length > 0).map((deck) => (
+                    {decks.filter((d) => d.cards.length === 6).map((deck) => (
                       <button
                         key={deck.id}
                         type="button"
@@ -452,10 +506,10 @@ export function Trades() {
                       }
                     }}
                   >
-                    {uploading ? "⏳ Uploading…" : "🏆 Upload to Leaderboard"}
+                    {uploading ? "⏳ Uploading…" : "🏆 Submit Seasonal Crew"}
                   </button>
                   {leaderboardSuccess && (
-                    <p className="leaderboard-success">Your deck stats have been uploaded! 🎉</p>
+                    <p className="leaderboard-success">Your server-verified seasonal entry has been submitted! 🎉</p>
                   )}
                 </>
               )}
@@ -465,8 +519,8 @@ export function Trades() {
           {myEntry && (
             <div className="leaderboard-my-entry">
               <span className="leaderboard-my-entry-label">Your entry:</span>
-              <strong>{myEntry.deckName}</strong> · ⚡ {myEntry.deckPower} ·{" "}
-              💰 {myEntry.ozzies} Ozzies ·{" "}
+              <strong>{myEntry.deckName}</strong> · Seasonal score {myEntry.seasonalRankScore ?? myEntry.deckPower} ·{" "}
+              Lifetime score {myEntry.leaderboardScore ?? myEntry.deckPower} ·{" "}
               🎯 {formatStatLabel(myEntry.strongestStat)} {myEntry.strongestStatTotal} ·{" "}
               🤝 +{myEntry.synergyBonusPct}%
             </div>
@@ -475,7 +529,7 @@ export function Trades() {
           {leaderboardEntries.length === 0 ? (
             <div className="empty-state">
               <span className="empty-icon">🏆</span>
-              <p>No leaderboard entries yet. Be the first to upload your deck!</p>
+              <p>No seasonal entries yet. Be the first to submit a verified 6-card Crew!</p>
             </div>
           ) : (
             <div className="leaderboard-table-wrap">
@@ -486,10 +540,11 @@ export function Trades() {
                     <th className="leaderboard-th">Player</th>
                     <th className="leaderboard-th">Deck</th>
                     <th className="leaderboard-th">Cards</th>
-                    <th className="leaderboard-th">⚡ Power</th>
-                    <th className="leaderboard-th">💰 Ozzies</th>
+                    <th className="leaderboard-th">Season Score</th>
+                    <th className="leaderboard-th">Lifetime</th>
                     <th className="leaderboard-th">Best Stat</th>
                     <th className="leaderboard-th">Synergy</th>
+                    <th className="leaderboard-th">Reward Track</th>
                     <th className="leaderboard-th">Archetype</th>
                   </tr>
                 </thead>
@@ -505,12 +560,15 @@ export function Trades() {
                       <td className="leaderboard-td leaderboard-player">{entry.displayName}</td>
                       <td className="leaderboard-td">{entry.deckName}</td>
                       <td className="leaderboard-td leaderboard-center">{entry.cardCount}</td>
-                      <td className="leaderboard-td leaderboard-power">{entry.deckPower}</td>
-                      <td className="leaderboard-td leaderboard-ozzies">{entry.ozzies ?? 0}</td>
+                      <td className="leaderboard-td leaderboard-power">{entry.seasonalRankScore ?? entry.deckPower}</td>
+                      <td className="leaderboard-td leaderboard-ozzies">{entry.leaderboardScore ?? entry.deckPower}</td>
                       <td className="leaderboard-td">
                         {formatStatLabel(entry.strongestStat)} {entry.strongestStatTotal}
                       </td>
                       <td className="leaderboard-td leaderboard-center">+{entry.synergyBonusPct}%</td>
+                      <td className="leaderboard-td leaderboard-center">
+                        {(entry.projectedRewardTierIds ?? ["participation"]).length} tiers
+                      </td>
                       <td className="leaderboard-td leaderboard-archetype">{entry.archetypeHint}</td>
                     </tr>
                   ))}

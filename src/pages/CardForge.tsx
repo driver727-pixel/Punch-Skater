@@ -1,7 +1,9 @@
+import { BattlePassPanel } from "../components/BattlePassPanel";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
+import { ForgeObjectivePanel } from "../components/ForgeObjectivePanel";
 import { WalletPanel } from "../components/WalletPanel";
 import {
   ACCENT_PRESETS,
@@ -12,94 +14,136 @@ import {
   GENDERS,
   HAIR_LENGTHS,
   RANDOM_SKATER_TOOLTIP,
-  RARITIES,
   SKIN_TONES,
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
+import { useBattlePass } from "../hooks/useBattlePass";
 import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
   const {
+    boardError,
     boardConfig,
     boardImageLoading,
+    boardLayerOrder,
+    boardPlacement,
     canForge,
+    characterPlacement,
     characterBlend,
+    clearSavedCard,
     closeWelcome,
     downloading,
     forging,
     freeCardUsed,
+    freeForgeReadyAt,
     generated,
     generateCredits,
-    ozziesBalance,
     handleClose3D,
     handleCloseFactionReveal,
+    handleCloseRarityReveal,
     handleClosePrint,
     handleCollectionNavigation,
     handleDownloadJpg,
     handleForge,
+    handleForceRegenerateBoard,
     handleOpen3D,
     handleOpenFactions,
     handleOpenPrint,
     handleRandomSkater,
+    handleReroll,
     handleReopenWelcome,
     handleSaveToCollection,
-    hasAnyLayerUrl,
     isAnyLayerLoading,
+    isAdmin,
     isFirstCard,
     layers,
     openUpgradeModal,
+    ozziesBalance,
     patchGeneratedCard,
     patchIdentity,
     patchStats,
     printing,
     prompts,
-    revealedFaction,
+    recoveryError,
+    recoveryMessage,
     requiresOzzies,
+    revealedFaction,
+    revealedRarity,
+    rerollTokens,
+    rerollingActionId,
     saveError,
     savedCard,
     saving,
-    spendingOzzies,
     setArchetype,
+    setBoardPlacement,
+    setBoardScale,
     setBoardConfig,
-    setCharacterBlend,
+    setBoardLayerOrder,
     setPrompt,
+    setBoardRotation,
+    setCharacterPlacement,
+    setCharacterRotation,
+    setCharacterScale,
     showWelcome,
+    spendingOzzies,
     tier,
     tierCanSave,
+    viewing3D,
     walletMessage,
     walletMessageTone,
-    viewing3D,
   } = useCardForgeController();
+  const battlePass = useBattlePass();
 
   return (
-    <div className="page">
+    <div className="page page--forge">
       <span className="build-number">{__BUILD_NUMBER__}</span>
-      <h1 className="page-title">CARD FORGE</h1>
-      <p className="page-sub">Configure your Sk8r and forge a unique card</p>
+      <section className="forge-hero">
+        <div className="forge-hero__copy">
+          <h1 className="page-title forge-hero__title">CARD FORGE</h1>
+          <p className="page-sub forge-hero__sub">Forge your skater — then build a 6-card crew, run missions, win jousts, and climb the neon leaderboard</p>
+          <div className="forge-quick-actions">
+            <button
+              type="button"
+              className="btn-outline btn-glass btn-sm forge-welcome-reopen"
+              onClick={handleReopenWelcome}
+              aria-label="Open Start Here welcome"
+            >
+              Start Here
+            </button>
+            <button
+              type="button"
+              className="btn-outline btn-glass btn-sm forge-randomize-button"
+              onClick={handleRandomSkater}
+              disabled={forging || isAnyLayerLoading}
+              title={RANDOM_SKATER_TOOLTIP}
+              aria-label={`Random Skater. ${RANDOM_SKATER_TOOLTIP}`}
+              data-testid="random-punch-skater-button"
+            >
+              Random Skater
+            </button>
+          </div>
+          <section className="forge-whats-new" aria-label="Build updates">
+            <p className="forge-whats-new__eyebrow">What’s New</p>
+            <p className="forge-whats-new__copy">
+              Build {__BUILD_NUMBER__}: smoother collection navigation, improved keyboard access, and refreshed loading UX.
+            </p>
+          </section>
+        </div>
+
+        <aside className="forge-hero__art">
+          <div className="forge-hero__art-frame">
+            <img
+              src="/Welcome-Skater.jpg"
+              alt="Welcome Skater"
+              className="forge-hero__art-img"
+            />
+          </div>
+        </aside>
+      </section>
 
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
 
-      <div className="forge-quick-actions">
-        <button
-          type="button"
-          className="btn-outline btn-sm forge-welcome-reopen"
-          onClick={handleReopenWelcome}
-          aria-label="Open Start Here welcome"
-        >
-          Start Here
-        </button>
-        <button
-          type="button"
-          className="btn-outline btn-sm forge-randomize-button"
-          onClick={handleRandomSkater}
-          disabled={forging || isAnyLayerLoading}
-          title={RANDOM_SKATER_TOOLTIP}
-          aria-label={`Random Skater. ${RANDOM_SKATER_TOOLTIP}`}
-          data-testid="random-punch-skater-button"
-        >
-          Random Skater
-        </button>
-      </div>
+      <ForgeObjectivePanel onOpenStartHere={handleReopenWelcome} />
 
       <WalletPanel />
 
@@ -110,35 +154,23 @@ export function CardForge() {
           bodyTypes={BODY_TYPES}
           boardConfig={boardConfig}
           canForge={canForge}
-          canSaveToCollection={tierCanSave}
-          characterBlend={characterBlend}
           districts={DISTRICTS}
-          downloading={downloading}
           faceCharacters={FACE_CHARACTERS}
           forging={forging}
           freeCardUsed={freeCardUsed}
+          freeForgeReadyAt={freeForgeReadyAt}
           genders={GENDERS}
           generateCredits={generateCredits}
-          generated={generated}
           hairLengths={HAIR_LENGTHS}
-          hasAnyLayerUrl={hasAnyLayerUrl}
           isAnyLayerLoading={isAnyLayerLoading}
-          ozziesBalance={ozziesBalance}
           onArchetypeChange={setArchetype}
-          onBlendChange={setCharacterBlend}
           onBoardConfigChange={setBoardConfig}
-          onDownloadJpg={handleDownloadJpg}
           onForge={handleForge}
-          onOpen3D={handleOpen3D}
-          onOpenPrint={handleOpenPrint}
           onOpenUpgradeModal={openUpgradeModal}
           onPromptChange={setPrompt}
-          onSaveToCollection={handleSaveToCollection}
+          ozziesBalance={ozziesBalance}
           prompts={prompts}
-          rarities={RARITIES}
           requiresOzzies={requiresOzzies}
-          saveError={saveError}
-          saving={saving}
           skinTones={SKIN_TONES}
           spendingOzzies={spendingOzzies}
           tier={tier}
@@ -147,16 +179,48 @@ export function CardForge() {
         />
 
         <ForgePreviewPanel
+          boardError={boardError}
           boardImageLoading={boardImageLoading}
+          boardLayerOrder={boardLayerOrder}
+          boardRotation={boardPlacement?.rotationDeg ?? 0}
+          boardScale={boardPlacement?.scale ?? 1}
+          canSaveToCollection={tierCanSave}
           card={generated}
           characterBlend={characterBlend}
+          characterRotation={characterPlacement?.rotationDeg ?? 0}
+          characterScale={characterPlacement?.scale ?? 1}
+          downloading={downloading}
+          isAdmin={isAdmin}
+          isAnyLayerLoading={isAnyLayerLoading}
           isImageGenConfigured={isImageGenConfigured}
           layers={layers}
+          onBoardLayerOrderChange={setBoardLayerOrder}
+          onBoardPlacementChange={setBoardPlacement}
+          onBoardRotationChange={setBoardRotation}
+          onBoardScaleChange={setBoardScale}
+          onCharacterPlacementChange={setCharacterPlacement}
+          onCharacterRotationChange={setCharacterRotation}
+          onCharacterScaleChange={setCharacterScale}
+          onDownloadJpg={handleDownloadJpg}
+          onForceRegenerateBoard={handleForceRegenerateBoard}
+          onOpen3D={handleOpen3D}
+          onOpenPrint={handleOpenPrint}
+          onOpenUpgradeModal={openUpgradeModal}
+          onReroll={handleReroll}
+          onSaveToCollection={handleSaveToCollection}
           patchGeneratedCard={patchGeneratedCard}
           patchIdentity={patchIdentity}
           patchStats={patchStats}
+          recoveryError={recoveryError}
+          recoveryMessage={recoveryMessage}
+          rerollTokens={rerollTokens}
+          rerollingActionId={rerollingActionId}
+          saveError={saveError}
+          saving={saving}
         />
       </div>
+
+      <BattlePassPanel battlePass={battlePass} />
 
       <ForgeResultOverlays
         card={generated}
@@ -164,12 +228,15 @@ export function CardForge() {
         isFirstCard={isFirstCard}
         layers={layers}
         onCloseFactionReveal={handleCloseFactionReveal}
+        onCloseRarityReveal={handleCloseRarityReveal}
         onClosePrint={handleClosePrint}
         onCloseViewer3D={handleClose3D}
         onGoToCollection={handleCollectionNavigation}
+        onKeepForging={clearSavedCard}
         onOpenFactions={handleOpenFactions}
         printing={printing}
         revealedFaction={revealedFaction}
+        revealedRarity={revealedRarity}
         savedCard={savedCard}
         viewing3D={viewing3D}
       />

@@ -10,9 +10,11 @@ export type {
   BoardStatKey,
   BoardType,
   CompatibilityError,
+  DriveOrientation,
   Drivetrain,
   MotorOption,
   MotorType,
+  SkateStats,
   WheelType,
 } from "./boardBuilderTypes";
 
@@ -45,9 +47,16 @@ export {
 } from "./boardBuilderCompatibility";
 
 export {
+  calculateBoardTraction,
   calculateBoardStats,
   getBoardStatBonuses,
   getBoardSummary,
 } from "./boardBuilderStats";
 
 export { buildBoardImagePrompt } from "./boardBuilderPrompt";
+
+export {
+  computeSkateStats,
+  CRITICAL_FORGE_CHANCE,
+  CRITICAL_FORGE_WEIGHT_REDUCTION,
+} from "./boardBuilderStatEnvelope";

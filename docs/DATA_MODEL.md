@@ -11,14 +11,16 @@
 |---|---|---|---|
 | `users/{uid}/cards` | Sub-collection | `cardId` | Owner read/write |
 | `users/{uid}/decks` | Sub-collection | `deckId` | Owner read/write |
+| `users/{uid}/rewardClaims` | Sub-collection | `milestoneId` | Server write; owner read |
 | `userProfiles` | Top-level | `uid` | Owner + admin read; validated create/update |
 | `userLookup` | Top-level | `uid` | Any authed read; owner create/update |
 | `imageCache` | Top-level | `cacheKey` (layer+seed hash) | Public read; authed create; no update; admin delete |
-| `trades` | Top-level | `tradeId` | Participant + pending-browse read; offerer create; recipient/offerer update |
+| `trades` | Top-level | `tradeId` | Participant + pending-browse read; server create; recipient/offerer update |
 | `referralClaims` | Top-level | `{referrerUid}_{visitorKey}` | Referrer read; anyone create (no self-referral); immutable |
 | `arena` | Top-level | `uid` | Any authed read; owner write/delete |
 | `battleResults` | Top-level | `resultId` | Participant read; server-only write |
-| `leaderboard` | Top-level | `uid` | Any authed read; owner write |
+| `leaderboard` | Top-level | `uid` | Any authed read; server write |
+| `leaderboardSeasons/{seasonId}/entries` | Sub-collection | `uid` | Any authed read; server write |
 | `factionImages` | Top-level | `factionKey` (slug) | Public read; admin write/delete |
 
 ---
@@ -61,19 +63,27 @@ Owner-only sub-collection. Each document mirrors `CardPayload` from `src/lib/typ
   },
   stats: {
     speed: number,
+    range: number,
+    rangeNm: number,
     stealth: number,
-    tech: number,
     grit: number,
-    rep: number,
   },
-  traits: {
-    passiveTrait: { name: string, description: string },
-    activeAbility: { name: string, description: string },
-    personalityTags: string[],
+  joust?: {
+    lance: number,
+    shield: number,
+    hype: number,
+    gear: {
+      boardType: string,
+      lanceType: string,
+      shieldType: string,
+      armorTag: string,
+    },
+    traits: string[],
   },
+  // UI note: rangeNm is still stored on stats, but the card back now surfaces it
+  // inside the compact joust header instead of as its own standalone stat bar.
   visuals: {
     helmetStyle: string,
-    boardStyle: string,
     jacketStyle: string,
     colorScheme: string,
     accentColor: string,
@@ -81,7 +91,8 @@ Owner-only sub-collection. Each document mirrors `CardPayload` from `src/lib/typ
   },
   flavorText: string,
   tags: string[],
-  ozzies?: number,              // $1.00–$100.00
+  ozzies?: number,              // base Ozzy value assigned at forge time; increases via missions/events
+  xp?: number,                 // accumulated gameplay XP — starts at 0, max 100,000,000
   board?: BoardConfig,
   boardLoadout?: BoardLoadout,
   boardImageUrl?: string,
@@ -129,9 +140,21 @@ Private profile. Owner + admin read. Validated field allowlist on create/update.
   emailLower: string,
   displayName: string,
   discoveredFactions: any,      // faction discovery state
+  collectionRewards?: {
+    badgeIds: string[],          // cosmetic achievement markers
+    titleIds: string[],          // profile/display titles
+    frameIds: string[],          // cosmetic frames
+    loreIds: string[],           // unlocked codex/lore entries
+    rerollTokens: number,        // capped cosmetic reroll token balance
+    claimedMilestoneIds: string[],
+  },
   updatedAt: Timestamp,
 }
 ```
+
+`collectionRewards` is server-managed so players cannot mint cosmetics or reroll tokens from client writes.
+Cosmetic reroll token spend is also server-validated via
+`POST /api/collection-rewards/reroll` before the forge UI triggers paid bypass-cache rerolls.
 
 **Create allowlist:** `uid`, `email`, `emailLower`, `displayName`, `discoveredFactions`, `updatedAt`.
 **Update allowlist:** `email`, `emailLower`, `displayName`, `discoveredFactions`, `updatedAt`.
@@ -148,6 +171,26 @@ Minimal public directory for trade recipient lookup.
   updatedAt: Timestamp,
 }
 ```
+
+### `users/{uid}/rewardClaims/{claimId}`
+
+Server-authored claim receipts for collection reward milestones. The document ID
+is the claimed milestone ID so claims are naturally idempotent.
+
+```
+{
+  milestoneId: string,
+  rewardIds: string[],
+  rewardTypes: ("badge" | "title" | "frame" | "lore" | "reroll_token")[],
+  source: "collection_rewards",
+  seasonId: string | null,
+  grantedAt: Timestamp,
+}
+```
+
+The forge consumes reroll token balance from `userProfiles/{uid}.collectionRewards`
+for three authenticated cosmetic actions: `character` (1 token), `board`
+(1 token), and `full` (2 tokens for portrait + board together).
 
 ### `imageCache/{cacheKey}`
 
@@ -176,11 +219,33 @@ Peer-to-peer card trades and Community Market listings.
   toEmail: string,
   offeredCardId?: string,
   offeredCard: CardPayload,     // embedded snapshot
+  estimatedValue?: number,      // server-estimated earned value, never currency
+  valueBand?: "starter" | "rising" | "prime" | "elite" | "grail",
+  economyVersion?: "fair-trade-v1",
+  senderReputation?: {
+    score: number,              // 0-100 completion/cancellation signal
+    label: string,
+    completedTrades: number,
+    acceptedTrades: number,
+    cancelledTrades: number,
+    pendingOffers: number,
+    updatedAt: string,
+  },
+  fairPlay?: {
+    flags: string[],            // value/maintenance warnings shown before confirmation
+    reviewedAt: string,
+  },
+  confirmations?: {
+    sender: string[],           // sender fair-trade checklist receipts
+    recipient?: string[],       // recipient review receipts on accept
+  },
   status: "pending" | "accepted" | "declined" | "cancelled",
   createdAt: string,
   updatedAt: string,
 }
 ```
+
+Trade creation is server-authored: clients submit offer intent, the server snapshots the stored card, and it computes `estimatedValue`, `valueBand`, `senderReputation`, and `fairPlay`. The metadata is informational and card-only: estimated values are derived from rarity, earned XP/Ozzies, stats, joust profile, board tuning, and maintenance state. They must not be displayed as cash prices or used to sell power.
 
 ### `referralClaims/{referrerUid}_{visitorKey}`
 
@@ -241,18 +306,22 @@ Server-written battle outcomes. Participant read only.
 }
 ```
 
-### `leaderboard/{uid}` — LeaderboardEntry
+### `leaderboard/{uid}` — Lifetime LeaderboardEntry
 
-Public leaderboard. Owner write.
+Public lifetime leaderboard. Server write. Ordered by `leaderboardScore`/`deckPower` for display.
 
 ```
 {
   uid: string,
   displayName: string,
-  deckName: string,
+  deckId?: string,
+  deckName: string,             // player-facing Crew name
   cardCount: number,
-  deckPower: number,
-  ozzies: number,
+  deckPower: number,            // Deck Power = sum of all stat Points across active 6-card Crew
+  ozzies: number,               // legacy stat-based worth (backward compat)
+  crewOzzies?: number,          // sum of card Ozzy values across active 6-card Crew
+  crewXp?: number,              // sum of card XP across active 6-card Crew
+  leaderboardScore?: number,    // deckPower + crewOzzies + (crewXp / 10,000) + districtRep
   strongestStat: StatKey,
   strongestStatTotal: number,
   synergyBonusPct: number,
@@ -260,6 +329,50 @@ Public leaderboard. Owner write.
   updatedAt: string,
 }
 ```
+
+See `docs/PROGRESSION.md` for the full leaderboard scoring formula.
+
+### `leaderboardSeasons/{seasonId}/entries/{uid}` — Seasonal LeaderboardEntry
+
+Public seasonal leaderboard. Server write. Seasonal rank is intentionally
+separated from lifetime progress: `seasonalRankScore` uses the submitted
+Crew's current `deckPower`, while lifetime XP/Ozzies remain on
+`leaderboard/{uid}` and as context fields on the seasonal entry.
+
+```
+{
+  uid: string,
+  seasonId: string,
+  seasonLabel: string,
+  displayName: string,
+  deckId: string,
+  deckName: string,
+  cardCount: 6,
+  deckPower: number,
+  ozzies: number,                // legacy stat-based worth
+  crewOzzies: number,            // lifetime context; not seasonal rank
+  crewXp: number,                // lifetime context; not seasonal rank
+  leaderboardScore: number,      // lifetime score snapshot
+  seasonalRankScore: number,     // deckPower only
+  strongestStat: StatKey,
+  strongestStatTotal: number,
+  synergyBonusPct: number,
+  archetypeHint: string,
+  projectedRewardTierIds: string[],
+  fairPlay: {
+    status: "eligible" | "review",
+    flags: string[],
+  },
+  submittedAt: string,
+  updatedAt: string,
+}
+```
+
+Anti-abuse protections: clients submit only `deckId` to
+`POST /api/leaderboard/submit`; the server authenticates the caller, reads the
+owner's saved deck, requires exactly 6 unique cards, recomputes all scores,
+enforces a 4-hour seasonal refresh cooldown, and writes both lifetime and
+seasonal documents with Admin credentials.
 
 ### `factionImages/{factionKey}`
 
@@ -280,6 +393,7 @@ Faction background images. Public read, admin write.
 |---|---|---|
 | `trades` | `status` ASC, `createdAt` DESC | COLLECTION |
 | `leaderboard` | `deckPower` DESC, `ozzies` DESC | COLLECTION |
+| `leaderboardSeasons/*/entries` | `seasonId` ASC, `seasonalRankScore` DESC, `deckPower` DESC | COLLECTION |
 
 ---
 
@@ -291,7 +405,6 @@ The following collections are defined in `firestore.rules` as read-only stubs
 | Collection | Purpose | Owner |
 |---|---|---|
 | `dailyStreaks/{uid}` | Daily login streak tracking | Gamma |
-| `missions/{missionId}` | Per-user mission / quest progress | Gamma |
 | `battlePass/{uid}` | Battle pass tier + XP state | Gamma |
 | `crews/{crewId}` | Player crew / guild membership | Charlie |
 | `rankedSeasons/{seasonId}` | Ranked season config + standings | Charlie |
@@ -299,3 +412,47 @@ The following collections are defined in `firestore.rules` as read-only stubs
 
 Document shapes for these collections will be defined in `src/lib/sharedTypes.ts`
 as implementation progresses.
+
+---
+
+## Missions Collection (Sprint 2)
+
+### `missions/{missionId}` — Mission
+
+Doc ID format: `{uid}_{definitionId}` (e.g. `abc123_grid-trace`).
+
+Owner-only read. All writes are server-only.
+
+```
+{
+  id: string,                  // same as doc ID
+  uid: string,                 // owner uid
+  system: "mission_board",
+  schemaVersion: 2,
+  definitionId: string,        // stable mission template key
+  sortOrder: number,
+  title: string,
+  tagline: string,
+  description: string,
+  district: District,          // contract destination / district gate
+  rewardXp: number,
+  rewardOzzies: number,
+  requirements: MissionRequirement[],
+  status: "active" | "completed" | "expired",
+  progress: number,            // 0 until cleared, 1 after success
+  target: number,              // currently 1 for route contracts
+  createdAt: string,           // ISO 8601
+  updatedAt: string,           // ISO 8601
+  completedAt?: string,        // ISO 8601
+  selectedDeckId?: string,     // last deck used for this mission
+  selectedDeckName?: string,
+  lastRunAt?: string,          // ISO 8601
+  lastRunSucceeded?: boolean,
+  lastRunSummary?: string,
+  lastRunFailureReasons?: string[],
+}
+```
+
+The server seeds one board per user, validates chosen decks against mission requirements,
+and writes completion / failure state back into these documents. Mission rewards are persisted
+onto `userProfiles/{uid}.missionXp` and `userProfiles/{uid}.missionOzzies`.

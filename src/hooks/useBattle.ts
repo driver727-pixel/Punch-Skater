@@ -33,6 +33,7 @@ import {
   WINNER_BONUS,
 } from "../lib/battle";
 import { resolveApiUrl } from "../lib/apiUrls";
+import { resolveUserDisplayName } from "../lib/userIdentity";
 
 /** Minimum cards required in a deck to ready for battle. */
 export const MIN_BATTLE_CARDS = 1;
@@ -165,7 +166,7 @@ async function applyBattleResultToUserCollections(uid: string, result: BattleRes
 }
 
 export function useBattle() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const uid = user?.uid ?? null;
 
   const [arenaEntries, setArenaEntries] = useState<ArenaEntry[]>([]);
@@ -238,6 +239,7 @@ export function useBattle() {
       return;
     }
 
+    setMyArenaEntry(null);
     return onSnapshot(doc(db, "arena", uid), (snap) => {
       setMyArenaEntry(snap.exists() ? (snap.data() as ArenaEntry) : null);
     });
@@ -270,7 +272,10 @@ export function useBattle() {
 
   // ── Subscribe to battle results for both challenger and defender ──────────
   useEffect(() => {
-    if (!uid || !db) return;
+    if (!uid || !db) {
+      seenBattleResultsRef.current = new Set();
+      return;
+    }
 
     seenBattleResultsRef.current = loadSeenBattleResults(uid);
     const battleResultsRef = collection(db, "battleResults");
@@ -301,7 +306,11 @@ export function useBattle() {
       if (!uid || !db || deck.cards.length < MIN_BATTLE_CARDS) return;
       const entry: ArenaEntry = {
         uid,
-        displayName: user?.displayName ?? user?.email?.split("@")[0] ?? "Skater",
+        displayName: resolveUserDisplayName({
+          profileDisplayName: userProfile?.displayName,
+          authDisplayName: user?.displayName,
+          email: user?.email,
+        }),
         deckId: deck.id,
         deckName: deck.name,
         cardCount: deck.cards.length,
@@ -328,7 +337,7 @@ export function useBattle() {
         throw err;
       }
     },
-    [uid, user],
+    [uid, user?.displayName, user?.email, userProfile?.displayName],
   );
 
   const unreadyDeck = useCallback(async () => {

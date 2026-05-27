@@ -1,0 +1,6 @@
+/*
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.gstatic.com https://*.google.com https://*.fal.media https://firebasestorage.googleapis.com https://storage.googleapis.com https://card-forge-proxy.onrender.com; font-src 'self' https://fonts.gstatic.com data:; form-action 'self'; frame-ancestors 'none'; frame-src 'self' https://www.google.com https://www.gstatic.com https://*.firebaseapp.com; img-src 'self' data: blob: https://*.fal.media https://*.firebaseapp.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.google.com https://www.gstatic.com https://github.com https://*.s3.amazonaws.com; manifest-src 'self'; object-src 'none'; script-src 'self' https://www.google.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; worker-src 'self' blob:; upgrade-insecure-requests
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()

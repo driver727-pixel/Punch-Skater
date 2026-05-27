@@ -1,0 +1,173 @@
+[
+  {
+    "district": "Airaway",
+    "slug": "airaway",
+    "shareCode": "CL-AIRAWAY-ZEPHYR",
+    "language": {
+      "name": "Zephyr Cant",
+      "code": "ZPHR"
+    },
+    "descriptor": "Cold, clipped executive slang spoken across the sky-city bridges.",
+    "summary": "Airaway couriers trade in altitude-clean jargon, corporate euphemisms, and short commands meant to vanish into turbine noise.",
+    "sample": "Vey tal aer.",
+    "phrasebook": {
+      "Running packages through Airaway.": "Vey parcel aer Airaway.",
+      "thumb drive": "glyph shard",
+      "Every route through the Grid is watched.": "Each lane via Grid marked by lenses."
+    },
+    "vocabulary": [
+      { "word": "vey", "meaning": "running", "cardField": "catchphrase" },
+      { "word": "parcel", "meaning": "packages" },
+      { "word": "aer", "meaning": "through" },
+      { "word": "lane", "meaning": "route" },
+      { "word": "lenses", "meaning": "watched" },
+      { "word": "glyph", "meaning": "thumb" },
+      { "word": "shard", "meaning": "drive" },
+      { "word": "crown", "meaning": "city" },
+      { "word": "clear", "meaning": "clean" },
+      { "word": "static", "meaning": "signal" }
+    ]
+  },
+  {
+    "district": "Batteryville",
+    "slug": "batteryville",
+    "shareCode": "CL-BATTERYVILLE-VOLT",
+    "language": {
+      "name": "Volt Trade",
+      "code": "VOLT"
+    },
+    "descriptor": "Industrial barter-speech packed with rail-yard shorthand and recycler slang.",
+    "summary": "Batteryville's language sounds like a shift change: blunt, rhythmic, and built around cargo, amperage, and union trust.",
+    "sample": "Run freight, keep spark.",
+    "phrasebook": {
+      "Running packages through Batteryville.": "Run freight via Batteryville.",
+      "thumb drive": "spark key"
+    },
+    "vocabulary": [
+      { "word": "run", "meaning": "running" },
+      { "word": "freight", "meaning": "packages" },
+      { "word": "via", "meaning": "through" },
+      { "word": "line", "meaning": "route" },
+      { "word": "seen", "meaning": "watched" },
+      { "word": "spark", "meaning": "thumb" },
+      { "word": "key", "meaning": "drive" },
+      { "word": "amp", "meaning": "power" },
+      { "word": "grit", "meaning": "union" },
+      { "word": "yard", "meaning": "city" }
+    ]
+  },
+  {
+    "district": "The Grid",
+    "slug": "the-grid",
+    "shareCode": "CL-GRID-MESH",
+    "language": {
+      "name": "Cipher Mesh",
+      "code": "MESH"
+    },
+    "descriptor": "A surveillance-era code tongue full of clipped technical terms and dead drops.",
+    "summary": "Cipher Mesh grew around chip runs, blind spots, and anti-Cascade courier lore. It reads like a status board that learned how to whisper.",
+    "sample": "Mesh run. Ghost node."
+,
+    "phrasebook": {
+      "Running packages through The Grid.": "Mesh run via Grid.",
+      "thumb drive": "ghost key",
+      "Every route through the Grid is watched.": "Every lane via the Grid is glass-eyed."
+    },
+    "vocabulary": [
+      { "word": "mesh", "meaning": "running" },
+      { "word": "cache", "meaning": "packages" },
+      { "word": "via", "meaning": "through" },
+      { "word": "lane", "meaning": "route" },
+      { "word": "glass-eyed", "meaning": "watched" },
+      { "word": "ghost", "meaning": "thumb" },
+      { "word": "key", "meaning": "drive" },
+      { "word": "node", "meaning": "signal" },
+      { "word": "mask", "meaning": "hidden" },
+      { "word": "relay", "meaning": "city" }
+    ]
+  },
+  {
+    "district": "Nightshade",
+    "slug": "nightshade",
+    "shareCode": "CL-NIGHTSHADE-MURK",
+    "language": {
+      "name": "Murk Argot",
+      "code": "MURK"
+    },
+    "descriptor": "Laneway slang, tunnel nicknames, and rave-scene shorthand from the underground.",
+    "summary": "Murk Argot is all misdirection: half graffiti tag, half whispered dare, with just enough rhythm to survive a chase.",
+    "sample": "Slip dark. Carry loud.",
+    "phrasebook": {
+      "Running packages through Nightshade.": "Slip freight through Nightshade.",
+      "thumb drive": "tag shard"
+    },
+    "vocabulary": [
+      { "word": "slip", "meaning": "running" },
+      { "word": "freight", "meaning": "packages" },
+      { "word": "through", "meaning": "through" },
+      { "word": "cut", "meaning": "route" },
+      { "word": "eyed", "meaning": "watched" },
+      { "word": "tag", "meaning": "thumb" },
+      { "word": "shard", "meaning": "drive" },
+      { "word": "murk", "meaning": "night" },
+      { "word": "bass", "meaning": "signal" },
+      { "word": "crew", "meaning": "city" }
+    ]
+  },
+  {
+    "district": "The Forest",
+    "slug": "the-forest",
+    "shareCode": "CL-FOREST-CANOPY",
+    "language": {
+      "name": "Canopy Tongue",
+      "code": "CNPY"
+    },
+    "descriptor": "Quiet off-grid speech built from trail signs, timber marks, and old survival sayings.",
+    "summary": "Canopy Tongue is steady and patient, more likely to describe roots, weather, and hidden shelters than any corporate map ever would.",
+    "sample": "Carry low. Roots know.",
+    "phrasebook": {
+      "Running packages through The Forest.": "Carry parcels beneath canopy.",
+      "thumb drive": "bark token"
+    },
+    "vocabulary": [
+      { "word": "carry", "meaning": "running" },
+      { "word": "parcels", "meaning": "packages" },
+      { "word": "beneath", "meaning": "through" },
+      { "word": "trail", "meaning": "route" },
+      { "word": "known", "meaning": "watched" },
+      { "word": "bark", "meaning": "thumb" },
+      { "word": "token", "meaning": "drive" },
+      { "word": "roots", "meaning": "hidden" },
+      { "word": "hush", "meaning": "signal" },
+      { "word": "canopy", "meaning": "city" }
+    ]
+  },
+  {
+    "district": "Glass City",
+    "slug": "glass-city",
+    "shareCode": "CL-GLASSCITY-GLEAM",
+    "language": {
+      "name": "Gleam Cant",
+      "code": "GLEAM"
+    },
+    "descriptor": "Neon-bright shorthand from mirrored towers, tourist fronts, and fast-talking fixers.",
+    "summary": "Gleam Cant loves reflection and misdirection. In Glass City, a sentence should sparkle before anyone notices the blade in it.",
+    "sample": "Shine quick. Leave traces elsewhere.",
+    "phrasebook": {
+      "Running packages through Glass City.": "Shine freight across Glass City.",
+      "thumb drive": "prism key"
+    },
+    "vocabulary": [
+      { "word": "shine", "meaning": "running" },
+      { "word": "freight", "meaning": "packages" },
+      { "word": "across", "meaning": "through" },
+      { "word": "glint", "meaning": "route" },
+      { "word": "mirrored", "meaning": "watched" },
+      { "word": "prism", "meaning": "thumb" },
+      { "word": "key", "meaning": "drive" },
+      { "word": "veil", "meaning": "hidden" },
+      { "word": "flare", "meaning": "signal" },
+      { "word": "gleam", "meaning": "city" }
+    ]
+  }
+]

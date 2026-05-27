@@ -4,12 +4,29 @@ service cloud.firestore {
 
     // ── Per-user cards ───────────────────────────────────────────────────────
     match /users/{uid}/cards/{cardId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if request.auth != null
+        && (request.auth.uid == uid || request.auth.token.admin == true);
     }
 
     // ── Per-user decks ───────────────────────────────────────────────────────
     match /users/{uid}/decks/{deckId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if request.auth != null
+        && (request.auth.uid == uid || request.auth.token.admin == true);
+    }
+
+    // ── Per-user workshop boards ─────────────────────────────────────────────
+    match /users/{uid}/workshopBoards/{boardId} {
+      allow read, write: if request.auth != null
+        && (request.auth.uid == uid || request.auth.token.admin == true);
+    }
+
+    // ── Per-user collection reward claim receipts ────────────────────────────
+    // Claims are granted only by trusted server routes. Players can read their
+    // receipts but cannot mint cosmetic rewards or reroll tokens from the client.
+    match /users/{uid}/rewardClaims/{claimId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == uid || request.auth.token.admin == true);
+      allow create, update, delete: if false;
     }
 
     // ── Private user profiles ────────────────────────────────────────────────
@@ -59,49 +76,56 @@ service cloud.firestore {
     // ── Image cache ──────────────────────────────────────────────────────────
     // Stores fal.ai-generated image URLs keyed by layer seed so repeated
     // requests for the same parameters never hit fal.ai again.
-    // Anyone may read or create a cache entry; updates are always blocked.
-    // Admins (isAdmin: true in their userProfile) may delete entries.
-    // The create rule validates document shape to prevent cache poisoning.
+    // Authenticated users may read or create a cache entry; updates are blocked.
+    // Prompt/seed metadata are intentionally excluded from the shared cache.
     match /imageCache/{cacheKey} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null
-        && request.resource.data.keys().hasOnly(['imageUrl', 'createdAt', 'prompt', 'layer', 'seed'])
+        && request.resource.data.keys().hasOnly(['imageUrl', 'createdAt'])
         && request.resource.data.imageUrl is string
         && (
           request.resource.data.imageUrl.matches('https://([a-z0-9-]+\\.)*fal\\.media(/.*)?$')
           || request.resource.data.imageUrl.matches('https://firebasestorage\\.googleapis\\.com(/.*)?$')
           || request.resource.data.imageUrl.matches('https://storage\\.googleapis\\.com(/.*)?$')
-        )
-        && (!request.resource.data.keys().hasAny(['prompt'])
-          || (request.resource.data.prompt is string && request.resource.data.prompt.size() <= 512))
-        && (!request.resource.data.keys().hasAny(['layer'])
-          || (request.resource.data.layer is string && request.resource.data.layer.size() <= 64))
-        && (!request.resource.data.keys().hasAny(['seed'])
-          || (request.resource.data.seed is string && request.resource.data.seed.size() <= 512));
+        );
       allow update: if false;
       allow delete: if request.auth != null && request.auth.token.admin == true;
     }
 
     // ── Trades ───────────────────────────────────────────────────────────────
-    // Both parties can read; only the offerer can create;
-    // only the recipient can update status (accept/decline),
+    // Both parties can read; trade creation is server-only so economy metadata is
+    // authored from persisted card/trade history instead of trusting the client.
+    // Only the recipient can update status (accept/decline),
     // and the offerer can cancel a pending trade.
     match /trades/{tradeId} {
+      function validTradeStatusUpdate(nextStatus) {
+        return resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'updatedAt', 'confirmations'
+          ])
+          && request.resource.data.status == nextStatus
+          && request.resource.data.updatedAt is string
+          && (!request.resource.data.keys().hasAny(['confirmations'])
+            || request.resource.data.confirmations is map);
+      }
+
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.fromUid ||
         request.auth.uid == resource.data.toUid ||
         // Community Market: any signed-in player may browse pending listings
         resource.data.status == 'pending'
       );
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.fromUid;
+      allow create: if false;
       allow update: if request.auth != null && (
         // Recipient accepts/declines
-        request.auth.uid == resource.data.toUid ||
+        (request.auth.uid == resource.data.toUid
+          && (validTradeStatusUpdate('accepted') || validTradeStatusUpdate('declined'))) ||
         // Offerer cancels while still pending
         (request.auth.uid == resource.data.fromUid
-          && resource.data.status == 'pending')
+          && validTradeStatusUpdate('cancelled'))
       );
+      // Trades cannot be deleted so accepted, declined, and cancelled offers retain an audit trail.
+      allow delete: if false;
     }
     // ── Referral Claims ──────────────────────────────────────────────────────
     // Written by any visitor who arrives via a referral link.
@@ -143,12 +167,59 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ── Race Arena: Challenges ───────────────────────────────────────────────
+    // RaceChallenge docs. Both participants can read; all writes are server-only
+    // (the /api/race/* routes own all challenge state transitions).
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid == request.auth.uid
+      );
+      allow create, update, delete: if false;
+    }
+
+    // ── Race Arena: Races ────────────────────────────────────────────────────
+    // Resolved race timelines. Both participants can read for replay; writes
+    // are server-only.
+    match /races/{raceId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid == request.auth.uid
+      );
+      allow create, update, delete: if false;
+    }
+
+    // ── Notifications inbox ──────────────────────────────────────────────────
+    // Per-user inbox. Owner-readable; mark-as-read updates are owner-allowed
+    // and restricted to the `read` boolean field. Creates are server-only.
+    match /notifications/{uid}/items/{notifId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow create: if false;
+    }
+
     // ── Leaderboard ──────────────────────────────────────────────────────────
-    // Public leaderboard entries keyed by uid.
-    // Any signed-in user may read all entries; only the owner can write their own.
+    // Public lifetime leaderboard entries keyed by uid.
+    // Any signed-in user may read all entries; writes are server-only so scores
+    // are recomputed from saved decks instead of trusting client payloads.
     match /leaderboard/{uid} {
       allow read:  if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    // Seasonal leaderboard entries are also server-authored.  Season metadata
+    // and entries are readable by signed-in players, but clients cannot mint
+    // ranks, bypass cooldowns, or submit scores for another uid.
+    match /leaderboardSeasons/{seasonId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+
+      match /entries/{uid} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if false;
+      }
     }
     // ── Faction images ───────────────────────────────────────────────────────
     // Stores the uploaded background image URL for each faction (keyed by
@@ -173,7 +244,8 @@ service cloud.firestore {
     }
 
     // ── Missions ─────────────────────────────────────────────────────────────
-    // Per-user mission / quest progress.
+    // Per-user mission board documents. Owners may read their own contracts and
+    // mission-run state. All writes are server-only (client create/update/delete blocked).
     match /missions/{missionId} {
       allow read: if request.auth != null
         && resource.data.uid == request.auth.uid;
@@ -218,6 +290,57 @@ service cloud.firestore {
     // Publicly viewable card / deck share links.
     match /shareLinks/{linkId} {
       allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Joustur Skatur™ collections — all writes are server-only (Admin SDK).
+    // Clients may read only their own documents or documents they participate in.
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // ── Joustur Lineups ───────────────────────────────────────────────────────
+    // One doc per uid, keyed by uid.  Only the owner may read; server writes.
+    match /jousturLineups/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    // ── Joustur Challenges ────────────────────────────────────────────────────
+    // Challenger and defender may read their own pending challenges.
+    // All state transitions (accept / decline) go through server routes.
+    match /jousturChallenges/{challengeId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid  == request.auth.uid
+      );
+      allow create, update, delete: if false;
+    }
+
+    // ── Joustur Matches ───────────────────────────────────────────────────────
+    // Both participants may read the match document.  All game-state mutations
+    // (roll, move, win detection, rewards) are server-only.
+    match /jousturMatches/{matchId} {
+      allow read: if request.auth != null && (
+        resource.data.challengerUid == request.auth.uid ||
+        resource.data.defenderUid  == request.auth.uid
+      );
+      allow create, update, delete: if false;
+
+      // Turn log sub-collection — both participants may read for replay.
+      match /turns/{turnId} {
+        allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/jousturMatches/$(matchId)).data.challengerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/jousturMatches/$(matchId)).data.defenderUid  == request.auth.uid
+        );
+        allow create, update, delete: if false;
+      }
+    }
+
+    // ── Joustur Queue ─────────────────────────────────────────────────────────
+    // Players may read only their own queue entry.  Enqueue / dequeue is
+    // handled server-side so the matchmaking transaction cannot be bypassed.
+    match /jousturQueue/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
       allow create, update, delete: if false;
     }
 

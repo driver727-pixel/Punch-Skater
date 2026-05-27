@@ -27,24 +27,39 @@ import {
   type ConfirmationResult,
   type ApplicationVerifier,
 } from "firebase/auth";
-import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
+import { deleteField, doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, firebaseUnavailableMessage } from "../lib/firebase";
 import { resolveApiUrl } from "../lib/apiUrls";
 import { syncReferralCredits } from "../services/referrals";
+import { syncPlayerRewards, type PlayerRewardsSyncResult } from "../services/playerRewards";
+import { parseCraftlinguaProfile } from "../lib/languageIngestion";
+import type { CraftlinguaEnvelope, CraftlinguaLink } from "../lib/types";
+import { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } from "../lib/passwordRules";
 
 interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
   isAdmin?: boolean;
+  missionXp?: number;
+  missionOzzies?: number;
+  /** Account-level Ozzy balance — escrow currency for race wagers. */
+  ozzies?: number;
   ozziesBalance?: number;
   ozziesLifetimeEarned?: number;
   ozziesLifetimeSpent?: number;
+  collectionRewards?: {
+    rerollTokens: number;
+  };
+  craftlinguaLink?: CraftlinguaLink | null;
+  craftlinguaProfile?: CraftlinguaEnvelope | null;
+  craftlinguaEnabled?: boolean;
 }
 
 interface AuthContextValue {
   user: User | null;
   userProfile: UserProfile | null;
+  playerRewards: PlayerRewardsSyncResult | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -55,6 +70,9 @@ interface AuthContextValue {
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   changeDisplayName: (newName: string) => Promise<void>;
   deleteAccount: (currentPassword: string) => Promise<void>;
+  updateCraftlinguaLink: (link: CraftlinguaLink | null) => Promise<void>;
+  saveCraftlinguaProfile: (profile: CraftlinguaEnvelope | null) => Promise<void>;
+  setCraftlinguaEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,6 +81,10 @@ const googleProvider = new GoogleAuthProvider();
 const AUTH_SYNC_API_URL = resolveApiUrl(
   import.meta.env.VITE_AUTH_SYNC_API_URL as string | undefined,
   "/api/auth/sync-session",
+);
+const ACCOUNT_DELETE_API_URL = resolveApiUrl(
+  import.meta.env.VITE_ACCOUNT_DELETE_API_URL as string | undefined,
+  "/api/account/delete",
 );
 
 export { RecaptchaVerifier };
@@ -77,6 +99,43 @@ function getProfileString(value: unknown): string | undefined {
 
 function getProfileNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function getProfileBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function getCollectionRewards(value: unknown): UserProfile["collectionRewards"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { rerollTokens: 0 };
+  const candidate = value as { rerollTokens?: unknown };
+  return {
+    rerollTokens: Math.max(0, Number(candidate.rerollTokens) || 0),
+  };
+}
+
+function getCraftlinguaLink(value: unknown): CraftlinguaLink | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = value as Partial<CraftlinguaLink>;
+  if (
+    typeof candidate.shareCode !== "string" ||
+    typeof candidate.district !== "string" ||
+    typeof candidate.languageName !== "string" ||
+    typeof candidate.languageCode !== "string" ||
+    typeof candidate.exploreUrl !== "string"
+  ) {
+    return null;
+  }
+  return {
+    shareCode: candidate.shareCode,
+    district: candidate.district,
+    languageName: candidate.languageName,
+    languageCode: candidate.languageCode,
+    exploreUrl: candidate.exploreUrl,
+    linkedAt:
+      typeof candidate.linkedAt === "string"
+        ? candidate.linkedAt
+        : new Date(0).toISOString(),
+  };
 }
 
 function getFallbackDisplayName(user: User): string {
@@ -129,6 +188,7 @@ async function syncAdminSession(user: User): Promise<boolean> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [playerRewards, setPlayerRewards] = useState<PlayerRewardsSyncResult | null>(null);
   const [adminClaim, setAdminClaim] = useState(false);
   const [loading, setLoading] = useState(true);
   const [walletProfile, setWalletProfile] = useState({
@@ -158,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setUserProfile(null);
+      setPlayerRewards(null);
       setAdminClaim(false);
       if (!u) {
         setLoading(false);
@@ -170,6 +231,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setAdminClaim(admin);
       syncReferralCredits(u.uid).catch(() => {/* non-fatal */});
+      syncPlayerRewards(u)
+        .then((result) => {
+          setPlayerRewards(result);
+          setUserProfile((prev) => prev ? {
+            ...prev,
+            missionXp: result.progression.missionXp,
+            missionOzzies: result.progression.missionOzzies,
+          } : prev);
+        })
+        .catch((error) => {
+          console.warn("[Rewards] Failed to sync player rewards:", error);
+        });
       setLoading(false);
     });
     return unsubscribe;
@@ -217,9 +290,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email ?? "",
           displayName: getFallbackDisplayName(user),
           isAdmin: adminClaim,
+          missionXp: 0,
+          missionOzzies: 0,
+          ozzies: 0,
           ozziesBalance,
           ozziesLifetimeEarned,
           ozziesLifetimeSpent,
+          collectionRewards: { rerollTokens: 0 },
+          craftlinguaLink: null,
+          craftlinguaProfile: null,
+          craftlinguaEnabled: false,
         });
       return;
     }
@@ -229,6 +309,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (snap) => {
         const data = snap.exists() ? (snap.data() as Partial<UserProfile>) : {};
         const email = getProfileString(data.email) ?? user.email ?? "";
+        const craftlinguaProfile = data.craftlinguaProfile
+          ? parseCraftlinguaProfile(data.craftlinguaProfile)
+          : null;
         setUserProfile({
           uid: user.uid,
           email,
@@ -236,9 +319,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             getProfileString(data.displayName)
             ?? getFallbackDisplayName(user),
           isAdmin: adminClaim,
+          missionXp: typeof data.missionXp === "number" ? data.missionXp : 0,
+          missionOzzies: typeof data.missionOzzies === "number" ? data.missionOzzies : 0,
+          ozzies: typeof data.ozzies === "number" ? data.ozzies : 0,
           ozziesBalance,
           ozziesLifetimeEarned,
           ozziesLifetimeSpent,
+          collectionRewards: getCollectionRewards(data.collectionRewards),
+          craftlinguaLink: getCraftlinguaLink(data.craftlinguaLink),
+          craftlinguaProfile,
+          craftlinguaEnabled: getProfileBoolean(data.craftlinguaEnabled) ?? false,
         });
       },
       () => {
@@ -247,19 +337,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email ?? "",
           displayName: getFallbackDisplayName(user),
           isAdmin: adminClaim,
+          missionXp: 0,
+          missionOzzies: 0,
+          ozzies: 0,
           ozziesBalance,
           ozziesLifetimeEarned,
           ozziesLifetimeSpent,
+          collectionRewards: { rerollTokens: 0 },
+          craftlinguaLink: null,
+          craftlinguaProfile: null,
+          craftlinguaEnabled: false,
         });
       },
     );
-  }, [
-    user,
-    adminClaim,
-    ozziesBalance,
-    ozziesLifetimeEarned,
-    ozziesLifetimeSpent,
-  ]);
+  }, [user, adminClaim, ozziesBalance, ozziesLifetimeEarned, ozziesLifetimeSpent]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!auth) throw createAuthUnavailableError();
@@ -268,6 +359,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string) => {
     if (!auth) throw createAuthUnavailableError();
+    if (!isStrongPassword(password)) {
+      throw new Error(PASSWORD_REQUIREMENTS_MESSAGE);
+    }
     await createUserWithEmailAndPassword(auth, email, password);
   }, []);
 
@@ -310,6 +404,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const changePassword = useCallback(
     async (currentPassword: string, newPassword: string) => {
       if (!auth || !auth.currentUser) throw createAuthUnavailableError();
+      if (!isStrongPassword(newPassword)) {
+        throw new Error(PASSWORD_REQUIREMENTS_MESSAGE);
+      }
       const u = auth.currentUser;
       if (!u.email) throw new Error("Password change is only available for email/password accounts.");
       const credential = EmailAuthProvider.credential(u.email, currentPassword);
@@ -338,13 +435,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const credential = EmailAuthProvider.credential(u.email, currentPassword);
         await reauthenticateWithCredential(u, credential);
       }
-      await deleteUser(u);
+      const idToken = await u.getIdToken(true);
+      const response = await fetch(ACCOUNT_DELETE_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(typeof payload.error === "string" ? payload.error : "Failed to delete account.");
+      }
+      await deleteUser(u).catch(() => {
+        /* server-side deletion may already have removed the auth record */
+      });
     },
     []
   );
 
+  const updateCraftlinguaLink = useCallback(async (link: CraftlinguaLink | null) => {
+    if (!auth || !auth.currentUser || !db) throw createAuthUnavailableError();
+    await setDoc(
+      doc(db, "userProfiles", auth.currentUser.uid),
+      {
+        craftlinguaLink: link ?? deleteField(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }, []);
+
+  const saveCraftlinguaProfile = useCallback(async (profile: CraftlinguaEnvelope | null) => {
+    if (!auth || !auth.currentUser || !db) throw createAuthUnavailableError();
+    await setDoc(
+      doc(db, "userProfiles", auth.currentUser.uid),
+      {
+        craftlinguaProfile: profile ?? deleteField(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }, []);
+
+  const setCraftlinguaEnabled = useCallback(async (enabled: boolean) => {
+    if (!auth || !auth.currentUser || !db) throw createAuthUnavailableError();
+    await setDoc(
+      doc(db, "userProfiles", auth.currentUser.uid),
+      {
+        craftlinguaEnabled: enabled,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, signOut, signInWithGoogle, sendPasswordReset, signInWithPhone, changePassword, changeDisplayName, deleteAccount }}>
+    <AuthContext.Provider value={{ user, userProfile, playerRewards, loading, signIn, signUp, signOut, signInWithGoogle, sendPasswordReset, signInWithPhone, changePassword, changeDisplayName, deleteAccount, updateCraftlinguaLink, saveCraftlinguaProfile, setCraftlinguaEnabled }}>
       {children}
     </AuthContext.Provider>
   );

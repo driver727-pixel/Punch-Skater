@@ -1,14 +1,33 @@
-# Punch Skater
+# Punch Skater™
 
-A dense cyberpunk courier card game built with React, TypeScript, Vite, Firebase, and a small Express proxy for paid APIs.
+A cyberpunk electric-skate card game built with React, TypeScript, Vite, Firebase, and a small Express proxy for paid APIs.
 
-## Welcome to Punch Skater
+## Welcome to Punch Skater™
 
-The Card Forge is your jump-off point: build your first deck, discover hidden factions, and explore more than 4 million possible character combinations.
+Create your skater. Build your crew. Win the joust. Rule the neon streets.
 
-- **What** — Forge Punch Skater cards, add a Master card, and assemble a six-card deck for missions, battles, and trades.
-- **How** — Start with 5 Punch Skater class cards and 1 Master class card, then customize each skater's district, style, and board loadout.
-- **Why** — Earn points and power-ups on Missions, take your best deck into the Battle Arena, and trade for the cards that sharpen your strategy.
+Punch Skater™ is a collectible card game set in the Sk8rpunk™ universe, built around forging cyberpunk electric-skate warriors, assembling a 6-card Crew, winning mission jousts, beating district rivals, and climbing seasonal neon leaderboards.
+
+- **What** — Forge skater cards with joust-ready identities, grow your collection, and choose your best 6 cards as your active **Crew**.
+- **How** — Start with a bonus Rare card on signup, then earn more through missions, joust encounters, battles, trades, daily rewards, weekly heat, and seasonal progression.
+- **Why** — Build Deck Power, chase Ozzies and XP, outplay named rivals, unlock cosmetic/status rewards, and prove your Crew belongs at the top of the underground ladder.
+
+### Core game loop
+
+> Forge → Crew → Mission / Joust → Reward → Upgrade / Trade → Unlock → Flex
+
+### Progression at a glance
+
+| Axis | What it means |
+|---|---|
+| **XP** | What your cards have done — earned through missions, battles, and streaks |
+| **Points** | What your cards can do — individual stat numbers (Speed, Range, Stealth, Grit) |
+| **Deck Power** | How strong your Crew is — sum of all stat Points across all 6 active cards |
+| **Ozzies** | How valuable and respected your collection is — earned Ozzy value per card |
+
+No pay-to-win. Legendary status cannot be forged — only earned through gameplay, missions, achievements, battle pass progress, or leaderboard rewards.
+
+See [`docs/PROGRESSION.md`](docs/PROGRESSION.md) for the full progression model.
 
 ## Current Stack
 
@@ -22,12 +41,15 @@ The Card Forge is your jump-off point: build your first deck, discover hidden fa
 
 ## Core Game Systems
 
-- **Card Forge** — deterministic card generation, layered art, factions, referrals, and monetized forge access
-- **Collection** — saved cards in Firestore for signed-in users, local storage for guests
-- **Deck Builder** — up to 6 cards per deck with persistent deck sync
-- **Missions** — district map, mission branches, and live weather restrictions
-- **Trades + Leaderboard** — direct offers, market listings, and public deck rankings
-- **Battle Arena** — public scouting summaries, real opponent deck snapshots, persistent results, and stat resolution syncing for both players
+- **Card Forge** — deterministic card generation, layered art, factions, charge-up access, and joust-ready card identity including lance, shield, hype, gear, and traits
+- **Collection** — saved cards in Firestore for signed-in users, local storage for guests, collection rewards, and a bonus Rare card on signup
+- **Crew / Deck Builder** — choose 6 cards as your active Crew, name it, optimize Deck Power, and prep it for missions, jousts, battles, and seasonal submissions
+- **Missions + Joust Encounters** — server-authored district contracts, live encounter runs, counter choices, tactic-driven rival jousts, and risk/reward stat changes
+- **Rivals + District Progression** — named district rivals, boss-tier rival snapshots, codex unlocks, and reputation hooks woven into mission outcomes
+- **Trades + Ranked Seasons** — direct offers, market listings, lifetime Crew rankings, and a seasonal leaderboard that ranks verified 6-card Crews on submitted Deck Power
+- **Battle Pass + Daily Progression** — daily login streaks, daily missions, weekly heat, and a 6-week seasonal battle pass with free and premium reward tracks
+- **Race Arena** — public scouting summaries, real opponent deck snapshots, persistent results, and stat resolution syncing for both players
+- **CraftLingua Codex** — district language library, account-linked share codes, forge profile uploads, and Rare/Legendary conlang flavor text
 
 ## Environment
 
@@ -42,6 +64,9 @@ Copy `.env.example` to `.env` for local client config.
 - `VITE_ADMIN_API_URL`
 - `VITE_BATTLE_API_URL`
 - `VITE_DISTRICT_WEATHER_API_URL`
+- `VITE_CRAFTLINGUA_DISTRICTS_API_URL`
+- `VITE_CRAFTLINGUA_TRANSLATE_API_URL`
+- `VITE_CRAFTLINGUA_RESOLVE_API_URL`
 
 ### Server-only variables
 
@@ -59,6 +84,7 @@ Copy `.env.example` to `.env` for local client config.
 - `ADMIN_EMAILS`
 - `APP_ORIGINS` (optional; extra CORS / checkout redirect origins)
 - `REDIS_URL` (optional; enables shared Redis-backed rate limiting)
+- `PUNCHSKATER_PARTNER_KEY` (reserved for CraftLingua partner integrations; keep server-only)
 - `FIREBASE_SERVICE_ACCOUNT_JSON` or (`FIREBASE_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`), or platform-provided application default credentials
 
 Do not commit server secrets.

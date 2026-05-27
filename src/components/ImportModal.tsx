@@ -94,6 +94,9 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
               Drop a <code>.json</code> file, click to browse, or paste JSON below.
               Accepts a Craftlingua export, a collection export, or a raw card array.
             </p>
+            <div className="collection-rewards-message">
+              Advanced path: imported JSON can alter stats, layout, saved art, and other card fields outside the regular Customize Card flow.
+            </div>
 
             {/* Drop zone */}
             <div
@@ -150,14 +153,14 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
         {step === "preview" && result && (
           <>
             <h2 className="modal-title">IMPORT PREVIEW</h2>
+            <div className="collection-rewards-message">
+              Treat imports like an advanced restore/edit tool. Only continue if you expect cards to bring their own stats, layout, and saved art state.
+            </div>
 
             {result.language && (
               <div className="import-lang-badge">
                 🌐 Language: <strong>{result.language.name}</strong>{" "}
                 <span className="import-lang-code">({result.language.code})</span>
-                {result.language.description && (
-                  <p className="import-lang-desc">{result.language.description}</p>
-                )}
               </div>
             )}
 

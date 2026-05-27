@@ -954,7 +954,7 @@ function CardCharacter({ cx, cy, accentColor, archetype, style, vibe, storagePac
 }
 
 const RARITY_STARS: Record<string, number> = {
-  "Punch Skater": 1,
+  "Punch Skater™": 1,
   Apprentice: 2,
   Master: 3,
   Rare: 4,
@@ -962,7 +962,7 @@ const RARITY_STARS: Record<string, number> = {
 };
 
 const RARITY_STAR_COLOR: Record<string, string> = {
-  "Punch Skater": "#aa9988",
+  "Punch Skater™": "#aa9988",
   Apprentice:     "#44ddaa",
   Master:         "#cc44ff",
   Rare:           "#4488ff",
@@ -1045,7 +1045,7 @@ function areCardArtPropsEqual(previous: CardArtProps, next: CardArtProps): boole
     previous.card.prompts.vibe === next.card.prompts.vibe &&
     previous.card.visuals.accentColor === next.card.visuals.accentColor &&
     previous.card.visuals.storagePackStyle === next.card.visuals.storagePackStyle &&
-    previous.card.discovery?.displayArchetype === next.card.discovery?.displayArchetype
+    previous.card.role.archetype === next.card.role.archetype
   );
 }
 

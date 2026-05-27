@@ -4,18 +4,38 @@ import type {
   BoardConfig,
   BoardType,
   CompatibilityError,
+  DriveOrientation,
 } from "./boardBuilderTypes";
 
-const LEGACY_FOUR_WHEEL_DRIVE = "A" + "WD";
+// Older saved cards used "AWD" before the UI and prompt stack standardized on
+// "4WD"; keep normalizing it until legacy saved board configs disappear.
+const LEGACY_FOUR_WHEEL_DRIVE = "AWD";
 
 function normalizeDrivetrain(drivetrain: string) {
   return drivetrain === LEGACY_FOUR_WHEEL_DRIVE ? "4WD" : drivetrain;
 }
 
+function normalizeDriveOrientation(driveOrientation: string | undefined): DriveOrientation {
+  switch (driveOrientation) {
+    case "Front-Wheel Drive":
+    case "FWD":
+      return "Front-Wheel Drive";
+    case "Rear-Wheel Drive":
+    case "RWD":
+      return "Rear-Wheel Drive";
+    default:
+      return "Rear-Wheel Drive";
+  }
+}
+
 export function normalizeBoardConfig(config: BoardConfig): BoardConfig {
+  const drivetrain = normalizeDrivetrain(config.drivetrain) as BoardConfig["drivetrain"];
   return {
     ...config,
-    drivetrain: normalizeDrivetrain(config.drivetrain) as BoardConfig["drivetrain"],
+    drivetrain,
+    driveOrientation: drivetrain === "4WD"
+      ? "Rear-Wheel Drive"
+      : normalizeDriveOrientation(config.driveOrientation),
   };
 }
 
@@ -35,11 +55,8 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       }
       break;
     case "Mountain":
-      if (normalizedConfig.wheels === "Urethane") {
-        errors.push({ component: "wheels", message: "Mountain board cannot use Poly (Urethane) wheels." });
-      }
-      if (normalizedConfig.wheels === "Cloud") {
-        errors.push({ component: "wheels", message: "Mountain board cannot use Vapor Wheels." });
+      if (normalizedConfig.wheels !== "Rubber") {
+        errors.push({ component: "wheels", message: "Mountain board must use solid rubber wheels." });
       }
       if (!isTopMount) {
         errors.push({ component: "battery", message: "Mountain board must use a top-mounted battery." });
@@ -47,8 +64,8 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       if (normalizedConfig.drivetrain !== "4WD") {
         errors.push({ component: "drivetrain", message: "Mountain board must use 4WD drivetrain." });
       }
-      if (normalizedConfig.motor === "Micro") {
-        errors.push({ component: "motor", message: "Mountain board cannot use the Micro 5055 motor." });
+      if (normalizedConfig.motor !== "Outrunner") {
+        errors.push({ component: "motor", message: "Mountain board requires the Mtn Runner 10000 motor." });
       }
       break;
     case "Surf":
@@ -64,17 +81,14 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
       if (normalizedConfig.wheels === "Rubber") {
         errors.push({ component: "wheels", message: "Surf skateboard cannot use Solid Rubber wheels." });
       }
-      if (normalizedConfig.drivetrain === "Belt") {
-        errors.push({ component: "drivetrain", message: "Surf skateboard cannot use Belt drive." });
-      }
-      if (normalizedConfig.drivetrain === "4WD") {
-        errors.push({ component: "drivetrain", message: "Surf skateboard cannot use 4WD drivetrain." });
+      if (normalizedConfig.drivetrain !== "Hub") {
+        errors.push({ component: "drivetrain", message: "Surf skateboard can only use Hub drive." });
       }
       if (normalizedConfig.motor === "Torque") {
-        errors.push({ component: "motor", message: "Surf skateboard cannot use the Torque 6374 motor." });
+        errors.push({ component: "motor", message: "Surf skateboard cannot use the Torque 7000 motor." });
       }
       if (normalizedConfig.motor === "Outrunner") {
-        errors.push({ component: "motor", message: "Surf skateboard cannot use the Outrunner 6396 motor." });
+        errors.push({ component: "motor", message: "Surf skateboard cannot use the Mtn Runner 10000 motor." });
       }
       break;
     case "AT":
@@ -85,7 +99,7 @@ export function validateBoardCompatibility(config: BoardConfig): CompatibilityEr
         errors.push({ component: "drivetrain", message: "All-Terrain board cannot use 4WD drivetrain." });
       }
       if (normalizedConfig.motor === "Micro") {
-        errors.push({ component: "motor", message: "All-Terrain board cannot use the Micro 5055 motor." });
+        errors.push({ component: "motor", message: "All-Terrain board cannot use the Micro 500x2 motor." });
       }
       break;
   }
@@ -108,13 +122,13 @@ export function getAllowedComponents(boardType: BoardType): AllowedBoardComponen
     case "Mountain":
       return {
         drivetrains: ["4WD"],
-        motors: allMotors.filter((motor) => motor !== "Micro"),
-        wheels: ["Pneumatic", "Rubber"],
+        motors: ["Outrunner"],
+        wheels: ["Rubber"],
         batteries: topMountBatteries,
       };
     case "Surf":
       return {
-        drivetrains: allDrivetrains.filter((drivetrain) => drivetrain !== "Belt" && drivetrain !== "4WD"),
+        drivetrains: ["Hub"],
         motors: allMotors.filter((motor) => motor !== "Torque" && motor !== "Outrunner"),
         wheels: allWheels.filter((wheel) => wheel !== "Pneumatic" && wheel !== "Rubber"),
         batteries: nonTopMountBatteries.filter((battery) => battery !== "DoubleStack"),
@@ -138,6 +152,7 @@ export function enforceCompatibility(config: BoardConfig): BoardConfig {
   return {
     boardType: normalizedConfig.boardType,
     drivetrain: allowed.drivetrains.includes(normalizedConfig.drivetrain) ? normalizedConfig.drivetrain : allowed.drivetrains[0],
+    driveOrientation: normalizedConfig.driveOrientation,
     motor: allowed.motors.includes(normalizedConfig.motor) ? normalizedConfig.motor : allowed.motors[0],
     wheels: allowed.wheels.includes(normalizedConfig.wheels) ? normalizedConfig.wheels : allowed.wheels[0],
     battery: allowed.batteries.includes(normalizedConfig.battery) ? normalizedConfig.battery : allowed.batteries[0],

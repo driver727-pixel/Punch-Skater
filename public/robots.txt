@@ -1,4 +1,4 @@
-# robots.txt — Punch Skater (https://punchskater.com)
+# robots.txt — Punch Skater™ (https://punchskater.com)
 # © 2025–2026 SP Digital LLC. All Rights Reserved.
 
 # ── Search engines ────────────────────────────────────────────────────────────

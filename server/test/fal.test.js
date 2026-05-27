@@ -42,6 +42,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs including w
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.webp',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.webp',
     'https://punchskater.com/assets/boards/battery/peli.webp',
+    'https://punchskater.com/assets/boards/motor/6354-motor.webp',
   ]);
 
   assert.deepEqual(urls, [
@@ -49,6 +50,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs including w
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.webp',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.webp',
     'https://punchskater.com/assets/boards/battery/peli.webp',
+    'https://punchskater.com/assets/boards/motor/6354-motor.webp',
   ]);
 });
 
@@ -58,6 +60,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with png ex
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
     'https://punchskater.com/assets/boards/battery/slim-battery.png',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png',
   ]);
 
   assert.deepEqual(urls, [
@@ -65,6 +68,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with png ex
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
     'https://punchskater.com/assets/boards/battery/slim-battery.png',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png',
   ]);
 });
 
@@ -74,6 +78,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with versio
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/battery/slim-battery.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png?v=2026-04-20',
   ]);
 
   assert.deepEqual(urls, [
@@ -81,6 +86,7 @@ test('normalizeBoardReferenceUrls accepts canonical board asset URLs with versio
     'https://punchskater.com/assets/boards/drivetrain/gear-drive.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/wheels/cloud-wheels.png?v=2026-04-20',
     'https://punchskater.com/assets/boards/battery/slim-battery.png?v=2026-04-20',
+    'https://punchskater.com/assets/boards/motor/6354-motor.png?v=2026-04-20',
   ]);
 });
 
@@ -91,6 +97,55 @@ test('normalizeBoardReferenceUrls rejects non-canonical origins and paths', () =
       'https://punchskater.com/assets/boards/drivetrain/gear-drive.webp',
       'https://punchskater.com/assets/boards/wheels/cloud-wheels.webp',
       'https://punchskater.com/assets/boards/battery/peli.webp',
+      'https://punchskater.com/assets/boards/motor/6354-motor.webp',
+    ]),
+    null,
+  );
+});
+
+test('normalizeBoardReferenceUrls accepts URLs from configured fallback origins', () => {
+  const urls = normalizeBoardReferenceUrls([
+    'https://driver727-pixel.github.io/assets/boards/deck/street.png',
+    'https://driver727-pixel.github.io/assets/boards/drivetrain/gear-drive.png',
+    'https://driver727-pixel.github.io/assets/boards/wheels/cloud-wheels.png',
+    'https://driver727-pixel.github.io/assets/boards/battery/slim-battery.png',
+    'https://driver727-pixel.github.io/assets/boards/motor/6354-motor.png',
+  ], ['https://punchskater.com', 'https://driver727-pixel.github.io']);
+
+  assert.deepEqual(urls, [
+    'https://driver727-pixel.github.io/assets/boards/deck/street.png',
+    'https://driver727-pixel.github.io/assets/boards/drivetrain/gear-drive.png',
+    'https://driver727-pixel.github.io/assets/boards/wheels/cloud-wheels.png',
+    'https://driver727-pixel.github.io/assets/boards/battery/slim-battery.png',
+    'https://driver727-pixel.github.io/assets/boards/motor/6354-motor.png',
+  ]);
+});
+
+test('normalizeBoardReferenceUrls accepts battery and motor URLs as the fourth and fifth references', () => {
+  const urls = normalizeBoardReferenceUrls([
+    'https://punchskater.com/assets/boards/deck/street.png',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    'https://punchskater.com/assets/boards/battery/top-mount-battery.png',
+    'https://punchskater.com/assets/boards/motor/6396-motor.png',
+  ]);
+
+  assert.deepEqual(urls, [
+    'https://punchskater.com/assets/boards/deck/street.png',
+    'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+    'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+    'https://punchskater.com/assets/boards/battery/top-mount-battery.png',
+    'https://punchskater.com/assets/boards/motor/6396-motor.png',
+  ]);
+});
+
+test('normalizeBoardReferenceUrls rejects fewer than five URLs', () => {
+  assert.equal(
+    normalizeBoardReferenceUrls([
+      'https://punchskater.com/assets/boards/deck/street.png',
+      'https://punchskater.com/assets/boards/drivetrain/gear-drive.png',
+      'https://punchskater.com/assets/boards/wheels/cloud-wheels.png',
+      'https://punchskater.com/assets/boards/battery/slim-battery.png',
     ]),
     null,
   );
@@ -105,12 +160,14 @@ test('readFalRequestConfig normalizes env-backed Fal profiles and warns on inval
     FAL_CHARACTER_IMAGE_MODEL_URL: 'https://fal.run/character-model',
     FAL_CHARACTER_LORA_PATH: 'https://fal.media/character.safetensors',
     FAL_CHARACTER_LORA_SCALE: 'nope',
+    FAL_MISSIONS_BACKDROP_MODEL_URL: 'https://fal.run/backdrop-model',
   }, {
     warn: (message) => warnings.push(message),
   });
 
   assert.equal(normalizeFalProfile('unknown'), 'default');
   assert.equal(normalizeFalProfile('character'), 'character');
+  assert.equal(normalizeFalProfile('backdrop'), 'backdrop');
   assert.deepEqual(resolveFalProfile('character', config.profiles), {
     modelUrl: 'https://fal.run/character-model',
     configUrl: 'https://v3b.fal.media/files/b/0a962cdb/GvvgV0ByFDT7TB0SNb9Dc_config_cf867d1b-1b55-45d1-a4a4-fe5e223ec932.json',
@@ -121,7 +178,18 @@ test('readFalRequestConfig normalizes env-backed Fal profiles and warns on inval
     configUrl: '',
     defaultLoras: [{ path: 'https://fal.media/default.safetensors', scale: 0.75 }],
   });
+  assert.deepEqual(resolveFalProfile('backdrop', config.profiles), {
+    modelUrl: 'https://fal.run/backdrop-model',
+    configUrl: '',
+    defaultLoras: [],
+  });
   assert.deepEqual(warnings, ['⚠️  FAL_CHARACTER_LORA_SCALE is invalid — falling back to 1.']);
+});
+
+test('readFalRequestConfig uses fal-ai/nano-banana-2 as default backdrop model URL', () => {
+  const config = readFalRequestConfig({}, { warn: () => {} });
+  assert.equal(resolveFalProfile('backdrop', config.profiles).modelUrl, 'https://fal.run/fal-ai/nano-banana-2');
+  assert.deepEqual(resolveFalProfile('backdrop', config.profiles).defaultLoras, []);
 });
 
 test('normalizeFalProfile falls back to default for invalid values', () => {

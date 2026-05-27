@@ -33,17 +33,28 @@ import {
 import {
   buildPurchasedTierUpdate,
   buildPendingPurchaseUpdate,
+  buildSubscriptionEntitlementUpdate,
   normalizePaidTier,
   resolveHigherPaidTier,
 } from './lib/payments.js';
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
+import { deleteUserData, migrateUserCards } from './lib/userDeletion.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerAccountRoutes } from './routes/account.js';
 import { registerBattleRoutes } from './routes/battle.js';
+import { registerRaceRoutes } from './routes/race.js';
 import { registerImageRoutes } from './routes/images.js';
 import { registerImportRoutes } from './routes/import.js';
+import { registerMissionRoutes } from './routes/missions.js';
 import { registerPaymentRoutes } from './routes/payments.js';
 import { registerWalletRoutes } from './routes/wallet.js';
-import { registerWeatherRoutes } from './routes/weather.js';
+import { registerBattlePassRoutes } from './battlePass.js';
+import { registerLeaderboardRoutes } from './routes/leaderboard.js';
+import { registerRewardRoutes } from './routes/rewards.js';
+import { registerTradeRoutes } from './routes/trades.js';
+import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
+import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
+import { registerJousturRoutes } from './routes/joustur.js';
 
 // Load the shared pricing config — the single source of truth for Stripe
 // price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
@@ -56,6 +67,7 @@ const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const DEFAULT_ALLOWED_APP_ORIGINS = [
   'https://punchskater.com',
+  'https://www.punchskater.com',
   'https://driver727-pixel.github.io',
   'http://localhost:5173',
 ];
@@ -67,6 +79,9 @@ const ALLOWED_APP_ORIGINS = new Set([
   ...DEFAULT_ALLOWED_APP_ORIGINS,
   ...APP_ORIGINS,
 ]);
+// Cache browser CORS preflight checks for 10 minutes. This trims repeated
+// authenticated OPTIONS traffic while keeping CORS policy changes reasonably quick to propagate.
+const PREFLIGHT_CACHE_SECONDS = 10 * 60;
 const MAX_TEXT_FIELD_LENGTH = 4_000;
 const MAX_BOARD_PROMPT_LENGTH = 1_500;
 const MAX_IMAGE_DIMENSION = 1_536;
@@ -104,9 +119,9 @@ app.use(helmet({
       imgSrc: ["'self'", 'data:', 'https://*.fal.media', 'https://*.firebaseapp.com', 'https://firebasestorage.googleapis.com'],
       manifestSrc: ["'self'"],
       objectSrc: ["'none'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       scriptSrcAttr: ["'none'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      styleSrc: ["'self'", 'https://fonts.googleapis.com'],
       workerSrc: ["'self'", 'blob:'],
       ...(isProduction ? { upgradeInsecureRequests: [] } : {}),
     },
@@ -133,6 +148,7 @@ app.use(cors({
     }
     callback(new Error('CORS origin is not allowed.'));
   },
+  maxAge: PREFLIGHT_CACHE_SECONDS,
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
@@ -186,10 +202,24 @@ const adminUserRateLimit = buildRateLimiter({
   store: sharedRateLimitStore,
 });
 
+const accountDeleteRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'Too many account deletion requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
 const weatherRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 30,
   message: { error: 'Too many weather requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const missionRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many mission requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -200,10 +230,59 @@ const battleRateLimit = buildRateLimiter({
   store: sharedRateLimitStore,
 });
 
+const battlePassRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: 'Too many battle pass requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
 const walletRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 60,
   message: { error: 'Too many wallet requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const raceRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many race requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const jousturRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many Joustur requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const leaderboardRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 12,
+  message: { error: 'Too many leaderboard submissions — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const rewardRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many reward requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const tradeRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many trade requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const craftlinguaRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many CraftLingua requests — please slow down.' },
   store: sharedRateLimitStore,
 });
 
@@ -227,13 +306,31 @@ const buildFalImageRequest = createFalImageRequestBuilder({
 // updating prices only requires editing that one file.
 const ALLOWED_PRICE_IDS = new Set(
   Object.values(tierPricing)
-    .map((t) => t.stripePriceId)
+    .flatMap((t) => [t.stripePriceId, t.stripeAnnualPriceId])
     .filter(Boolean),
 );
 
 function resolveTierFromPriceId(priceId) {
   for (const [tier, config] of Object.entries(tierPricing)) {
-    if (config.stripePriceId === priceId) return tier;
+    if (tier === 'seasonPass') continue;
+    if (config.stripePriceId === priceId || config.stripeAnnualPriceId === priceId) return tier;
+  }
+  return null;
+}
+
+function resolveCheckoutModeFromPriceId(priceId) {
+  for (const config of Object.values(tierPricing)) {
+    if (config.stripePriceId === priceId || config.stripeAnnualPriceId === priceId) {
+      return config.checkoutMode === 'subscription' ? 'subscription' : 'payment';
+    }
+  }
+  return null;
+}
+
+function resolveBillingPeriodFromPriceId(priceId) {
+  for (const config of Object.values(tierPricing)) {
+    if (config.stripeAnnualPriceId && config.stripeAnnualPriceId === priceId) return 'annual';
+    if (config.stripePriceId === priceId) return 'monthly';
   }
   return null;
 }
@@ -395,7 +492,7 @@ function sanitizeBoardImageBody(body = {}) {
       required: true,
       maxLength: MAX_BOARD_PROMPT_LENGTH,
     }),
-    imageUrls: normalizeBoardReferenceUrls(body.imageUrls),
+    imageUrls: normalizeBoardReferenceUrls(body.imageUrls, Array.from(ALLOWED_APP_ORIGINS)),
   };
 }
 
@@ -418,7 +515,17 @@ function pruneBoardImageJobs(now = Date.now()) {
   }
 }
 
-async function syncPurchasedTier({ tier, email, sessionId }) {
+async function syncPurchasedTier({
+  tier,
+  email,
+  sessionId,
+  checkoutMode,
+  stripeCustomerId,
+  stripeSubscriptionId,
+  subscriptionStatus,
+  currentPeriodEnd,
+  billingPeriod,
+}) {
   if (!adminDb) return;
   const normalizedTier = normalizePaidTier(tier);
   if (!normalizedTier) return;
@@ -449,6 +556,12 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
       emailLower: normalizedEmail,
       tier: normalizedTier,
       sessionId,
+      checkoutMode,
+      stripeCustomerId,
+      stripeSubscriptionId,
+      subscriptionStatus,
+      currentPeriodEnd,
+      billingPeriod,
     }, FieldValue.serverTimestamp());
     if (pendingUpdate) {
       batch.set(pendingPurchaseRef, pendingUpdate, { merge: true });
@@ -462,6 +575,12 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
       tier: normalizedTier,
       emailLower: normalizedEmail,
       sessionId,
+      checkoutMode,
+      stripeCustomerId,
+      stripeSubscriptionId,
+      subscriptionStatus,
+      currentPeriodEnd,
+      billingPeriod,
     }, FieldValue.serverTimestamp());
     if (!nextData) return;
     batch.set(docSnap.ref, nextData, { merge: true });
@@ -472,6 +591,12 @@ async function syncPurchasedTier({ tier, email, sessionId }) {
     emailLower: normalizedEmail,
     tier: normalizedTier,
     sessionId,
+    checkoutMode,
+    stripeCustomerId,
+    stripeSubscriptionId,
+    subscriptionStatus,
+    currentPeriodEnd,
+    billingPeriod,
   }, FieldValue.serverTimestamp());
   if (pendingUpdate) {
     batch.set(pendingPurchaseRef, pendingUpdate, { merge: true });
@@ -496,12 +621,38 @@ async function applyPendingPurchasedTierToProfile(uid, email) {
     tier: pendingPurchase?.tier,
     emailLower: normalizedEmail,
     sessionId: pendingPurchase?.lastCheckoutSessionId,
+    checkoutMode: pendingPurchase?.checkoutMode,
+    stripeCustomerId: pendingPurchase?.stripeCustomerId,
+    stripeSubscriptionId: pendingPurchase?.stripeSubscriptionId,
+    subscriptionStatus: pendingPurchase?.subscriptionStatus,
+    currentPeriodEnd: pendingPurchase?.currentPeriodEnd,
+    billingPeriod: pendingPurchase?.billingPeriod,
   }, FieldValue.serverTimestamp());
   if (!nextData) return;
 
   const batch = adminDb.batch();
   batch.set(adminDb.collection('userProfiles').doc(uid), nextData, { merge: true });
   batch.delete(pendingPurchaseRef);
+  await batch.commit();
+}
+
+async function syncSubscriptionEntitlement(subscription) {
+  if (!adminDb || !subscription?.stripeSubscriptionId) return;
+  const profileSnap = await adminDb.collection('userProfiles')
+    .where('stripeSubscriptionId', '==', subscription.stripeSubscriptionId)
+    .limit(25)
+    .get();
+  if (profileSnap.empty) return;
+
+  const batch = adminDb.batch();
+  profileSnap.docs.forEach((docSnap) => {
+    const nextData = buildSubscriptionEntitlementUpdate(
+      docSnap.data(),
+      subscription,
+      FieldValue.serverTimestamp(),
+    );
+    batch.set(docSnap.ref, nextData, { merge: true });
+  });
   await batch.commit();
 }
 
@@ -528,7 +679,10 @@ registerPaymentRoutes(app, {
   stripeWebhookSecret,
   checkoutRateLimit,
   resolveTierFromPriceId,
+  resolveCheckoutModeFromPriceId,
+  resolveBillingPeriodFromPriceId,
   syncPurchasedTier,
+  syncSubscriptionEntitlement,
   isAllowedRedirectUrl,
   normalizeEmail,
   timingSafeEmailMatches,
@@ -550,7 +704,7 @@ if (!stripeWebhookSecret) {
   console.warn('⚠️  STRIPE_WEBHOOK_SECRET environment variable is not set — Stripe webhooks will be unavailable.');
 }
 
-const { adminAuth, adminDb } = createFirebaseAdminServices({
+const { adminAuth, adminDb, adminStorage } = createFirebaseAdminServices({
   env: process.env,
   logger: console,
 });
@@ -672,28 +826,6 @@ async function authenticateAdminRequest(req) {
   return decodedToken;
 }
 
-async function deleteCollectionDocs(collectionRef, pageSize = 200) {
-  while (true) {
-    const snap = await collectionRef.limit(pageSize).get();
-    if (snap.empty) return;
-    const batch = adminDb.batch();
-    snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
-    await batch.commit();
-    if (snap.size < pageSize) return;
-  }
-}
-
-async function deleteQueryDocs(queryRef, pageSize = 200) {
-  while (true) {
-    const snap = await queryRef.limit(pageSize).get();
-    if (snap.empty) return;
-    const batch = adminDb.batch();
-    snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
-    await batch.commit();
-    if (snap.size < pageSize) return;
-  }
-}
-
 registerAdminRoutes(app, {
   adminAuth,
   adminDb,
@@ -706,12 +838,52 @@ registerAdminRoutes(app, {
   isStrongPassword,
   buildUserDisplayName,
   upsertUserLookupRecord,
-  deleteCollectionDocs,
-  deleteQueryDocs,
+  deleteUserData,
+  migrateUserCards,
+  FieldValue,
 });
+
+registerAccountRoutes(app, {
+  adminAuth,
+  adminDb,
+  accountDeleteRateLimit,
+  authenticateFirebaseUser,
+  deleteUserData,
+});
+
+const districtWeatherService = createDistrictWeatherService();
 
 registerWeatherRoutes(app, {
   weatherRateLimit,
+  districtWeatherService,
+});
+
+registerCraftlinguaRoutes(app, {
+  craftlinguaRateLimit,
+});
+
+registerMissionRoutes(app, {
+  adminDb,
+  missionRateLimit,
+  authenticateFirebaseUser,
+  districtWeatherService,
+  FAL_KEY,
+  buildFalImageRequest,
+  normalizeFalProfile,
+  resolveFalProfile,
+});
+
+registerRewardRoutes(app, {
+  adminDb,
+  rewardRateLimit,
+  authenticateFirebaseUser,
+});
+
+registerTradeRoutes(app, {
+  adminDb,
+  tradeRateLimit,
+  authenticateFirebaseUser,
+  randomUUID,
 });
 
 registerBattleRoutes(app, {
@@ -724,11 +896,40 @@ registerBattleRoutes(app, {
   FieldValue,
 });
 
+registerBattlePassRoutes(app, {
+  adminDb,
+  battlePassRateLimit,
+  authenticateFirebaseUser,
+  FieldValue,
+});
+
 registerWalletRoutes(app, {
   adminDb,
   walletRateLimit,
   authenticateFirebaseUser,
   FieldValue,
+});
+
+registerRaceRoutes(app, {
+  adminDb,
+  raceRateLimit,
+  authenticateFirebaseUser,
+  randomUUID,
+  FieldValue,
+});
+
+registerJousturRoutes(app, {
+  adminDb,
+  jousturRateLimit,
+  authenticateFirebaseUser,
+  randomUUID,
+  FieldValue,
+});
+
+registerLeaderboardRoutes(app, {
+  adminDb,
+  leaderboardRateLimit,
+  authenticateFirebaseUser,
 });
 
 registerImageRoutes(app, {
@@ -746,6 +947,8 @@ registerImageRoutes(app, {
   resolveFalProfile,
   boardImageJobs,
   pruneBoardImageJobs,
+  adminStorage,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
 });
 
 registerImportRoutes(app, {

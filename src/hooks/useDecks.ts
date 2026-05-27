@@ -48,18 +48,37 @@ function normalizeDeckOrder(decks: DeckPayload[]): DeckPayload[] {
   ));
 }
 
+function shallowEqualDeckArrays(previous: DeckPayload[], next: DeckPayload[]): boolean {
+  if (previous === next) return true;
+  if (previous.length !== next.length) return false;
+  return previous.every((deck, index) => deck === next[index]);
+}
+
 export function useDecks() {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
 
   const [decks, setDecks] = useState<DeckPayload[]>([]);
+  const lastSavedDecksRef = useRef<DeckPayload[]>([]);
+  const initialGuestDecksRef = useRef<DeckPayload[] | null>(null);
+  const guestHydratingRef = useRef(!uid);
 
   // ── Subscribe to Firestore or localStorage ────────────────────────────────
   useEffect(() => {
     if (!uid) {
-      setDecks(normalizeDeckOrder(loadDecks()));
+      const localDecks = normalizeDeckOrder(loadDecks());
+      guestHydratingRef.current = true;
+      initialGuestDecksRef.current = localDecks;
+      lastSavedDecksRef.current = localDecks;
+      setDecks(localDecks);
       return;
     }
+
+    guestHydratingRef.current = false;
+    initialGuestDecksRef.current = null;
+    lastSavedDecksRef.current = [];
+    setDecks([]);
+
     const colRef = collection(db, "users", uid, "decks");
     const unsub = onSnapshot(colRef, (snap) => {
       const incoming = snap.docs.map((d) => d.data() as DeckPayload);
@@ -81,7 +100,17 @@ export function useDecks() {
 
   // ── Persist to localStorage for guests ────────────────────────────────────
   useEffect(() => {
-    if (!uid) saveDecks(decks);
+    if (uid) return;
+
+    if (guestHydratingRef.current) {
+      if (!initialGuestDecksRef.current || !shallowEqualDeckArrays(initialGuestDecksRef.current, decks)) return;
+      guestHydratingRef.current = false;
+    }
+
+    if (shallowEqualDeckArrays(lastSavedDecksRef.current, decks)) return;
+
+    saveDecks(decks);
+    lastSavedDecksRef.current = decks;
   }, [decks, uid]);
 
   // Keep a ref for synchronous access in callbacks
@@ -250,6 +279,37 @@ export function useDecks() {
     return { deckFull: false };
   }, [uid, addCardToDeck]);
 
+  const setPrimaryDeck = useCallback((deckId: string) => {
+    const now = new Date().toISOString();
+    const updates = decksRef.current.map((deck) => {
+      const shouldBePrimary = deck.id === deckId;
+      if (Boolean(deck.isPrimary) === shouldBePrimary) return null;
+      return { ...deck, isPrimary: shouldBePrimary, updatedAt: now };
+    }).filter((d): d is DeckPayload => d !== null);
+    if (updates.length === 0) return;
+    if (uid) {
+      void Promise.all(updates.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck)))
+        .catch(console.error);
+    } else {
+      setDecks((prev) => prev.map((d) => {
+        const next = updates.find((u) => u.id === d.id);
+        return next ?? d;
+      }));
+    }
+  }, [uid]);
+
+  const setChallengerCard = useCallback((deckId: string, cardId: string | null) => {
+    const deck = decksRef.current.find((d) => d.id === deckId);
+    if (!deck) return;
+    if (cardId && !deck.cards.some((c) => c.id === cardId)) return;
+    const next: DeckPayload = {
+      ...deck,
+      ...(cardId ? { challengerCardId: cardId } : { challengerCardId: undefined }),
+      updatedAt: new Date().toISOString(),
+    };
+    saveDeck(next);
+  }, [saveDeck]);
+
   return {
     decks,
     createDeck,
@@ -262,5 +322,7 @@ export function useDecks() {
     moveCardInDeck,
     moveDeck,
     saveCardToFirstDeck,
+    setPrimaryDeck,
+    setChallengerCard,
   };
 }

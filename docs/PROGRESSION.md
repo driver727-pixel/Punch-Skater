@@ -1,0 +1,365 @@
+# Player Progression Model
+
+> Punch Skater™ progression design — the authoritative reference for XP, Points,
+> Deck Power, Ozzies, upgrade tiers, missions, and leaderboard scoring.
+>
+> Code references: `src/lib/progression.ts` (client) · `server/lib/progression.js` (server)
+
+---
+
+## Core Design Principle
+
+> XP shows what you have done.
+> Points show what your cards can do.
+> Deck Power shows how strong your Crew is.
+> Ozzies show how valuable and respected your collection is.
+
+No pay-to-win. Progression comes from play.
+
+---
+
+## The Crew
+
+A player's active **Crew** is exactly **6 Punch Skater™ cards** chosen from their
+collection and given a player-defined name.
+
+- The deck IS the Crew — the terms are interchangeable in code; "Crew" is the
+  preferred player-facing term.
+- A player builds a collection first, then selects their best 6 for the active Crew.
+- On signup, the player receives **one bonus Rare card** to start their collection
+  (`SIGNUP_BONUS_RARITY = "Rare"` in `progression.ts`).
+
+### How cards are collected
+
+| Source | Notes |
+|---|---|
+| Signup bonus | 1 × Rare card on account creation |
+| Daily login streak | Escalating rewards via the streak system |
+| Missions | Complete district contracts to earn cards |
+| Trades | Peer-to-peer offers and Community Market |
+| Battles | Win arena battles to boost stats |
+| Leaderboard rewards | Top accounts receive bonus cards / Ozzies |
+
+---
+
+## XP
+
+XP measures experience earned by a card through gameplay.
+
+- Belongs to individual cards (and summarised across the Crew as **Crew XP**).
+- Starts at `0`.
+- Maximum: **100,000,000** per card (`MAX_CARD_XP`).
+- Earned from: missions, battles, login streaks, and events.
+- XP represents what a card has _done_, not raw stat strength.
+
+```
+Card XP: 24,500 — completing several missions.
+Crew XP: 87,200 — combined XP across the active 6-card Crew.
+```
+
+---
+
+## Points
+
+Points are the individual **stat numbers** on each card.
+
+Current stat dimensions:
+
+| Stat | Meaning |
+|---|---|
+| Speed | Escape, race, delivery, and chase missions |
+| Range | Battery range, travel distance, district access |
+| Stealth | Avoiding detection, covert routes |
+| Grit | Toughness, endurance, component survival |
+
+Points can go **up or down** through:
+- Upgrades and rarity class advancement
+- Mission rewards (stat increases for success)
+- Mission penalties (stat damage on failure — e.g. -10 Range for a Roads failure)
+- Battle wagers (both sides stake points; the winner claims both wagers)
+- Board component bonuses
+
+---
+
+## Deck Power
+
+Deck Power is the **combined Points of all stats on all 6 Crew cards**.
+
+```
+Deck Power = sum of all stat values across all 6 active Crew cards
+```
+
+Example with current 1–10 stat scale:
+
+```
+Card 1: Speed 8 + Range 6 + Stealth 7 + Grit 5 = 26
+Card 2: Speed 7 + Range 8 + Stealth 6 + Grit 6 = 27
+...
+Deck Power = sum of all six cards
+```
+
+### Deck Power cap
+
+| Target | Value | Notes |
+|---|---|---|
+| Long-term design target | 10,000 | `MAX_DECK_POWER_TARGET` — aspirational, for future stat scaling |
+| Current architectural max | 240 | 6 cards × 4 stats × max 10 — with the 1–10 stat scale |
+
+The 10,000 target is the balancing cap referenced in docs and UI copy. It will
+apply when the stat ceiling is raised in a future sprint. It does **not**
+hard-break existing cards.
+
+### Upgrade thresholds (Deck Power)
+
+Once the active Crew reaches a Deck Power threshold, the corresponding forge
+rarity tier becomes available:
+
+| Tier | Deck Power Required | Notes |
+|---|---:|---|
+| Apprentice | 1,000 | Early progression |
+| Master | 2,500 | Mid-game |
+| Rare | 5,000 | Serious commitment |
+| Legendary eligibility | 8,500+ | Cannot forge directly — earn only |
+
+> **Legendary cannot be forged.** It can only be earned through gameplay,
+> special missions, achievements, events, or leaderboard rewards.
+
+Thresholds also unlock via mission XP and Ozzies (see `FORGE_CLASS_RULES` in
+`cardClassProgression.ts`). A player meets the requirement for a tier by
+satisfying **any one** of the three criteria.
+
+---
+
+## Ozzies
+
+Ozzies represent the **earned cultural and world value** of a player's
+collection and Crew in Sk8rpunk™.
+
+### Card Ozzies
+
+Each card is assigned a **randomly seeded base Ozzy value** at forge time,
+determined by rarity:
+
+| Rarity | Ozzy Range |
+|---|---|
+| Punch Skater™ | 5 – 50 |
+| Apprentice | 25 – 100 |
+| Master | 75 – 200 |
+| Rare | 150 – 500 |
+| Legendary | 500 – 2,000 |
+
+Missions, special events, and achievements can reward additional Ozzies to
+specific cards.
+
+### Account and Crew Ozzies
+
+```
+Account Ozzies = sum of Ozzy values across ALL cards in the collection
+Crew Ozzies    = sum of Ozzy values across the active 6-card Crew
+```
+
+Both values are computed on the client; no separate Firestore document is
+needed — they are derived from card data.
+
+---
+
+## Missions and Districts
+
+Missions are district-based contracts that Crews run for risk/reward.
+
+### Rewards (on success)
+
+- XP — added to participating Crew cards
+- Stat increase — Points added to specific stats
+- Ozzies — added to card/Crew/account value
+- Cards — new cards added to collection
+- Components — board part rewards
+- District reputation / standing
+
+### Risks (on failure)
+
+- Stat damage — e.g. `-10 Range` on 1–2 Crew cards for a Roads failure
+- Component damage — requires repair cooldown
+- Card lockout — temporary card unavailability
+- Jail time — district-specific narrative lockout
+- Event lockout — timed lockout from specific events
+
+### District profiles
+
+| District | Primary Stat | Theme | Example Risk |
+|---|---|---|---|
+| Airaway | Stealth | Aerial routes, hidden paths | Fall damage → Speed reduction |
+| Batteryville | Grit | Tech, batteries, energy | Component burnout → repair cooldown |
+| The Roads | Range | Street travel, territory | -10 Range on mission failure |
+| Nightshade | Stealth | Shadow routes, covert ops | Card impound event |
+| The Grid | Speed | Surveillance, tech | Trace event → lockout |
+| The Forest | Grit | Rough terrain, salvage | Grit damage from rough routes |
+
+Full district risk/reward profiles are defined in `DISTRICT_RISK_REWARD_PROFILES`
+in `progression.ts`.
+
+---
+
+## Component Upgrade Rules
+
+Board components can only be **upgraded within their rarity class**.
+
+```
+✅ Common Battery → Common Battery +1 → Common Battery +2
+❌ Common Battery → Rare Battery  (not allowed via upgrade)
+```
+
+To obtain a higher-class component, it must be **earned, traded, or rewarded**.
+
+This rule prevents infinite power escalation and is defined in
+`COMPONENT_UPGRADE_RULES` in `progression.ts`.
+
+---
+
+## Lifetime Leaderboard
+
+The lifetime leaderboard ranks players' active Crews on a **combined score**:
+
+```
+Leaderboard Score = Deck Power + Crew Ozzies + (Crew XP / 10,000) + district reputation
+```
+
+Crew XP is divided by 10,000 so a fully maxed card (100,000,000 XP) contributes
+only 10,000 to the score — preventing XP from dominating.
+
+Lifetime progress is permanent context: it celebrates collection growth and
+long-term Crew history, but it is not the seasonal rank tiebreaker.
+
+### Lifetime categories
+
+| Category | Field | Description |
+|---|---|---|
+| Combined | `leaderboardScore` | Weighted lifetime composite |
+| Deck Power | `deckPower` | Raw Crew stat strength |
+| Crew Ozzies | `crewOzzies` | Total Ozzy value of the active 6-card Crew |
+| Crew XP | `crewXp` | Total XP earned by all Crew cards |
+| Legacy worth | `ozzies` | Backward-compatible stat-based worth |
+
+## Seasonal Leaderboard
+
+Seasonal rank is reset each season and uses a separate score:
+
+```
+Seasonal Rank Score = submitted Crew Deck Power
+```
+
+The seasonal score deliberately excludes lifetime Crew XP and lifetime Ozzies so
+new, returning, and veteran players compete on their current 6-card Crew rather
+than accumulated account age.  Seasonal entries still show lifetime score as
+context, and the lifetime leaderboard remains permanent.
+
+### Seasonal reward categories
+
+| Reward category | Requirement | Reward philosophy |
+|---|---|---|
+| Season Crew | Submit one eligible 6-card Crew | Cosmetic badge; no power |
+| Top Half | Finish in the top 50% of eligible entrants | Profile title |
+| Top 10% | Finish in the top 10% of eligible entrants | Cosmetic frame |
+| Season Champion | Finish rank #1 | Legendary cosmetic title |
+
+### Anti-abuse protections
+
+- Clients submit only a `deckId`; the server reads the authenticated player's
+  saved deck and recomputes every public score.
+- Seasonal entries require exactly 6 unique cards.
+- Direct Firestore writes to lifetime and seasonal leaderboard documents are
+  blocked for clients.
+- Seasonal refreshes have a 4-hour cooldown plus API rate limiting.
+- Seasonal rewards are cosmetic/status-first, preventing rank rewards from
+  compounding into pay-to-win power.
+
+---
+
+## Collection Acquisition Summary
+
+| Activity | XP | Points | Ozzies | Cards |
+|---|---|---|---|---|
+| Signup | — | — | — | +1 Rare |
+| Daily login streak | ✅ | — | ✅ | Milestones |
+| Mission success | ✅ | ✅ | ✅ | Occasionally |
+| Mission failure | — | ⬇️ risk | — | — |
+| Battle win | ✅ | ✅ | — | — |
+| Battle loss | ✅ small | ⬇️ wager | — | — |
+| Trade | — | — | Transferred | ✅ |
+| Leaderboard reward | ✅ | — | ✅ | ✅ |
+
+---
+
+## Collection Rewards
+
+Collection rewards are account-level prestige and earned convenience rewards.
+They deliberately do **not** modify card stats, Deck Power, rarity odds, battle
+wagers, race resolution, or leaderboard scoring.
+
+### Reward categories
+
+| Category | Purpose | Fairness rule |
+|---|---|---|
+| Badges | Achievement markers for collection, faction, district, rarity, and activity milestones | Cosmetic only |
+| Titles | Profile/display labels such as faction archivist or Legendary Scout | Cosmetic only |
+| Frames | Cosmetic card/profile frame unlocks | Cosmetic only |
+| Lore | Codex chapters, district rumors, and faction dossiers | Cosmetic only |
+| Reroll tokens | Limited non-power rerolls | Capped and restricted to cosmetic rerolls |
+
+### Cosmetic reroll actions
+
+- **Character reroll** — costs 1 token and refreshes only the courier portrait.
+- **Board reroll** — costs 1 token and refreshes only the skateboard artwork.
+- **Full reroll** — costs 2 tokens and refreshes both portrait and skateboard art.
+
+These rerolls are spend-only conveniences for the live forge. They do **not**
+change stats, Deck Power, rarity, identity, or mission/battle outcomes. The
+server validates token spend before the forge UI bypasses cached art so paid AI
+usage stays gated behind authenticated, capped account balances.
+
+### Milestone tracks
+
+- Total unique collection count: 5, 10, 25, 50, and 100 unique cards.
+- Faction breadth: 3 cards, 6 cards, and full archetype spread per faction.
+- District breadth: cards from every live district and district set milestones.
+- Rarity discovery: first Apprentice/Master/Rare/Legendary and a cosmetic
+  multiple-Legendary title.
+- Activity milestones: trades, missions, battles, daily streaks, and events.
+
+Major milestones count unique `name + faction + district + rarity` signatures
+so duplicate farming cannot rapidly unlock high-prestige rewards. Duplicates
+only contribute a small diminishing Collection Score volume bonus.
+
+### Collection Score
+
+Collection Score is separate from Deck Power. It rewards completion, breadth,
+owned cosmetics, lore, and limited event participation. Raw stat totals are not
+included, and the score does not improve competitive battle or race outcomes.
+
+### Claim storage
+
+Claimed rewards live on `userProfiles/{uid}.collectionRewards`; idempotent claim
+receipts live at `users/{uid}/rewardClaims/{milestoneId}`. Claims are validated
+by server routes so clients can preview progress but cannot mint rewards.
+Cosmetic reroll spends are also server-validated through
+`POST /api/collection-rewards/reroll`.
+
+---
+
+## Code Locations
+
+| Concern | File |
+|---|---|
+| All progression constants + helpers | `src/lib/progression.ts` |
+| Server-side progression helpers | `server/lib/progression.js` |
+| Forge unlock rules (Deck Power thresholds) | `src/lib/cardClassProgression.ts` |
+| Card XP + Ozzies fields | `src/lib/types.ts` (`CardPayload`) |
+| Leaderboard entry fields | `src/lib/types.ts` (`LeaderboardEntry`) |
+| Deck stats UI (Crew Ozzies, Crew XP) | `src/components/DeckStatsPanel.tsx` |
+| Leaderboard upload | `src/hooks/useLeaderboard.ts` |
+| Mission risk/reward types | `src/lib/sharedTypes.ts` |
+| Mission templates | `src/lib/missions.ts` |
+| Progression server tests | `server/test/progression.test.js` |
+| Collection reward catalogue/evaluator | `src/lib/collectionRewards.ts` · `server/lib/collectionRewards.js` |
+| Reward routes + reroll spend | `src/services/collectionRewards.ts` · `server/routes/rewards.js` |
+| Forge reroll recovery UI | `src/pages/cardForge/useForgeGeneration.ts` · `src/pages/cardForge/ForgePreviewPanel.tsx` |

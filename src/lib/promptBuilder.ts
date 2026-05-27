@@ -1,6 +1,8 @@
 import { createSeededRandom } from "./prng";
+import { resolveBoardPoseScene } from "./boardPoseScenes";
 import { getCoverIdentityProfile } from "./coverIdentity";
-import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity } from "./types";
+import { PUNCH_SKATER_RARITY, type CardPrompts, type Rarity, type District } from "./types";
+import type { MissionBoardTheme } from "./sharedTypes";
 
 // ── Lookup tables ──────────────────────────────────────────────────────────────
 
@@ -21,7 +23,7 @@ const DISTRICT_DESCRIPTIONS: Record<string, string> = {
 
 const STYLE_CLOTHING: Record<string, string> = {
   Corporate:      "a sleek corporate suit with a high-tech earpiece",
-  Street:         "a street-style hoodie and cargo pants with graffiti patches",
+  Street:         "a street-style hoodie and cargo pants with sewn patches",
   "Off-grid":     "rugged off-grid survivalist gear with utility belts",
   Union:          "union worker overalls covered in badge patches",
   Olympic:        "a coordinated high-end athletic ensemble — matching top and bottoms in sponsor colours, performance fabric, logo patches, and a professional snowboard warm-up suit or full snowsuit",
@@ -34,15 +36,15 @@ const STYLE_CLOTHING: Record<string, string> = {
 };
 
 const RARITY_MOOD: Record<string, string> = {
-  "Punch Skater": "gritty and low-budget",
+  "Punch Skater™": "gritty and low-budget",
   Apprentice:     "energetic and hopeful",
   Master:         "confident and polished",
   Rare:           "dynamic and striking",
-  Legendary:      "epic, otherworldly, and awe-inspiring",
+  Legendary:      "epic, electrifying, and awe-inspiring",
 };
 
 const RARITY_FRAME_DESCRIPTIONS: Record<string, string> = {
-  "Punch Skater":
+  "Punch Skater™":
     "an edge-to-edge frame that looks like a real poker card literally wrapped in oversized beige Band-Aid strips and adhesive bandages. " +
     "Perforated adhesive rails run up the full left and right edges with evenly spaced punch holes. " +
     "Chunky fabric bandage pads bunch up and fold over multiple corners like a slapped-together first-aid wrap. " +
@@ -65,13 +67,32 @@ const CORE_COMIC_BOOK_STYLE =
   "Comic-book illustration for a premium trading card: crisp detail, grounded faces, and strong silhouette readability. ";
 
 const ELECTRIC_SKATEBOARD_REQUIREMENT =
-  "Vehicle: an electric skateboard only — a single board deck under the rider's feet with exactly four skateboard wheels. " +
+  "Vehicle: an electric skateboard only — a single board deck with exactly four skateboard wheels. " +
   "The wheels are mounted in two aligned pairs on front and rear trucks with visible axles parallel to the deck width. " +
   "All four wheels point in the same riding direction as the board, never sideways or perpendicular to the deck, and they do not pivot like caster wheels. " +
   "No handlebars, no seat, no extra chassis. ";
 
 export const ELECTRIC_SKATEBOARD_EXCLUSIONS =
   "Never depict a scooter, mobility chair, roller skates, inline skates, children’s hoverboard, self-balancing board, segway, caster wheels, sideways wheels, perpendicular wheels, swivel wheels, or any other device underfoot. ";
+
+export const CHARACTER_LAYER_BOARD_EXCLUSIONS =
+  "No generated skateboard, no invented skateboard deck, no skateboard wheels, no trucks, no board underfoot, no second skateboard, no extra skateboard, no background skateboard, no distant skater, no extra rider, no skateboard mural, no skateboard poster. ";
+
+export const CRITICAL_NO_EXTRA_LIMBS_CONSTRAINT =
+  "CRITICAL: The human figure must have exactly two arms and two legs — " +
+  "no extra arms, no duplicate limbs, no third arm, no phantom limb, no floating appendage. " +
+  "Any anatomy error producing more than two arms or more than two legs is strictly forbidden.";
+
+export const CRITICAL_HUMAN_CHARACTER_CONSTRAINT =
+  "CRITICAL: Render exactly ONE normal adult human courier only — never a mutant, monster, alien, creature, animal-person, or fantasy being. " +
+  "The face must read as grounded human anatomy with exactly one head, one face, two normal human eyes, two ears, one nose, one mouth, and a natural human jawline. " +
+  "No extra eyes, no duplicated facial features, no split face, no deformed mouth, no monstrous teeth, no snout, no beak, no horns, no antennae, no gills, no scales, no fur, and no non-human skin texture.";
+
+const CHARACTER_LAYER_COMPOSITION_REQUIREMENT =
+  "Composition: pulled-back full-body framing with generous headroom, visible boots, and a clear long empty pocket of space beside or in front of the courier for a separate composited asset. Do not push the subject too close to the camera or crop the empty zone.";
+
+const COMBINED_BOARD_PLACEMENT_REQUIREMENT =
+  "Place the full electric skateboard completely inside the frame beside or slightly in front of the courier, never hidden behind the body and never cropped out of view. No extra people and no extra skateboards.";
 
 function joinPromptBlocks(...blocks: Array<string | undefined>): string {
   return blocks
@@ -108,20 +129,20 @@ function buildDynamicComposition(prompts: CardPrompts): string {
     "slightly worm's-eye comic-book perspective",
   ]);
   const motionLine = rng.pick([
-    "captured mid-carve with the rider leaning hard into momentum",
-    "caught in a fast push forward with one shoulder leading the motion",
-    "shown bracing through a sharp turn with the body counterbalancing the deck",
-    "posed as if popping over rough ground with the board alive underfoot",
-    "framed in a hard-driving glide with the deck cutting diagonally through the scene",
+    "captured leaning hard into courier momentum",
+    "caught in a fast forward drive with one shoulder leading the motion",
+    "shown bracing through a sharp route change with strong counterbalance",
+    "posed as if leaping over rough ground with action energy in the legs",
+    "framed in a hard-driving movement beat cutting diagonally through the scene",
   ]);
   const gazeLine = rng.pick([
     "eyes focused down the route instead of staring blankly at the camera",
     "attention locked on the next obstacle or delivery line",
-    "expression alert and reactive, like the rider is already making the next move",
+    "expression alert and reactive, like the courier is already making the next move",
     "gaze aimed just past the viewer with a sense of forward intent",
   ]);
 
-  return `${cameraAngle}, ${motionLine}, ${gazeLine}`;
+  return `${cameraAngle}, ${motionLine}, ${gazeLine}, framed slightly wider with breathing room around the lower body`;
 }
 
 // ── Appearance helpers ──────────────────────────────────────────────────────────
@@ -254,15 +275,13 @@ function buildBodyDescription(bodyType: string): string {
  * (matching the character-image cache key). Changing district or rarity leaves
  * this layer untouched.
  */
-export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: string[]): string {
+export function buildCharacterPrompt(prompts: CardPrompts): string {
   const coverIdentity = getCoverIdentityProfile(prompts.archetype);
   const clothing  = coverIdentity?.lookPrompt ?? STYLE_CLOTHING[prompts.style] ?? prompts.style;
   const pose      = buildCoverIdentityPose(prompts.archetype);
   const composition = buildDynamicComposition(prompts);
+  const boardScene = resolveBoardPoseScene(buildCharacterVisualSeed(prompts));
   const mood      = RARITY_MOOD[prompts.rarity]       ?? "bold";
-  const graffitiLine = graffitiWords?.length
-    ? `The skateboard deck and wheels feature graffiti tags or brand logos reading '${graffitiWords.join("' and '")}'. `
-    : "";
 
   const genderDesc =
     prompts.gender === "Woman" ? "a woman" :
@@ -277,17 +296,24 @@ export function buildCharacterPrompt(prompts: CardPrompts, graffitiWords?: strin
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
 
-  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
+  const characterDesc =
+    `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ` +
+    `They are unmistakably a normal human adult with natural human facial anatomy and ordinary human proportions. ` +
+    `${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Full-body comic-book portrait of an adult courier operating under a ${coverIdentity?.label.toLowerCase() ?? "civilian"} cover identity, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
-    ELECTRIC_SKATEBOARD_REQUIREMENT,
+    `Full-body comic-book portrait of an adult courier operating under a ${coverIdentity?.label.toLowerCase() ?? "civilian"} cover identity, wearing ${clothing}, ${pose}, ${boardScene.characterPrompt}, ${composition}.`,
+    `This character layer must contain only the courier; leave clean empty space for the separately composited equipment asset.`,
+    CHARACTER_LAYER_COMPOSITION_REQUIREMENT,
+    `No extra people, no crowd, no spare props, no wall art, no secondary vehicles.`,
     characterDesc,
-    graffitiLine,
     `Mood: ${mood}.`,
-    `Background: solid neutral medium-gray studio, full figure head-to-toe, centered.`,
+    `Background: solid neutral medium-gray studio, no scenery or props, full figure head-to-toe with generous margins, centered.`,
     `Adult subject (21+), fully clothed, SFW, LGBTQIA+ inclusive.`,
+    `Grounded human likeness only — believable adult courier, readable eyes, natural nose and mouth, coherent facial structure, no body-horror distortions.`,
+    CRITICAL_HUMAN_CHARACTER_CONSTRAINT,
+    CRITICAL_NO_EXTRA_LIMBS_CONSTRAINT,
   );
 }
 
@@ -385,7 +411,7 @@ export function buildBackgroundPrompt(district: string): string {
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
     `Scene: a wide establishing shot of ${desc}.`,
-    `No people, no characters, no text, no logos.`,
+    `No people, no characters, no riders, no skateboards, no text, no logos.`,
     `Mood: atmospheric, immersive, cinematic depth of field.`,
     `Render goals: rich environmental detail, dramatic lighting, and splash-page clarity.`,
     `SFW, family friendly, PG rated, LGBTQIA+.`,
@@ -407,6 +433,7 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const clothing = coverIdentity?.lookPrompt ?? STYLE_CLOTHING[prompts.style] ?? prompts.style;
   const pose     = buildCoverIdentityPose(prompts.archetype);
   const composition = buildDynamicComposition(prompts);
+  const boardScene = resolveBoardPoseScene(buildCharacterVisualSeed(prompts));
   const mood     = RARITY_MOOD[prompts.rarity]       ?? "bold";
   const genderDesc =
     prompts.gender === "Woman" ? "a woman" :
@@ -421,14 +448,249 @@ export function buildImagePrompt(prompts: CardPrompts): string {
   const skinDesc = buildSkinDescription(prompts.skinTone);
   const faceDesc = buildFaceDescription(prompts.faceCharacter);
 
-  const characterDesc = `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
+  const characterDesc =
+    `Character is ${genderDesc}, ${ageDesc}, with ${bodyDesc}. ` +
+    `They are unmistakably a normal human adult with natural human facial anatomy and ordinary human proportions. ` +
+    `${hairDesc}${facialHairDesc}${skinDesc}${faceDesc}`;
 
   return joinPromptBlocks(
     CORE_COMIC_BOOK_STYLE,
-    `Full-body comic-book portrait of an adult courier operating under a ${coverIdentity?.label.toLowerCase() ?? "civilian"} cover identity, wearing ${clothing}, ${pose}, riding an electric skateboard, ${composition}.`,
+    `Full-body comic-book portrait of an adult courier operating under a ${coverIdentity?.label.toLowerCase() ?? "civilian"} cover identity, wearing ${clothing}, ${pose}, ${boardScene.imagePrompt}, ${composition}.`,
     ELECTRIC_SKATEBOARD_REQUIREMENT,
+    COMBINED_BOARD_PLACEMENT_REQUIREMENT,
     characterDesc,
     `Mood: ${mood}.`,
     `Adult subject (21+), fully clothed, SFW, LGBTQIA+ inclusive.`,
+    `Grounded human likeness only — believable adult courier, readable eyes, natural nose and mouth, coherent facial structure, no body-horror distortions.`,
+    CRITICAL_HUMAN_CHARACTER_CONSTRAINT,
+  );
+}
+
+// ── Procedural map prompt ───────────────────────────────────────────────────────
+
+/**
+ * Tactical environment descriptor keyed by lore district.
+ *
+ * Each entry captures the top-down grid geometry that distinguishes that
+ * district: landmark silhouettes, path topology, and cover arrangement as
+ * they would appear in a strict overhead satellite readout.
+ */
+const MAP_DISTRICT_TACTICAL: Record<District, string> = {
+  Airaway:
+    "floating sky-city platform suspended above the cloud layer — " +
+    "elevated mag-rail bridges radiating from a central hub, pressurised walkway rings, " +
+    "tiered corporate tower blocks, sharply delineated drop-off ledges at every platform edge, " +
+    "and automated maintenance drone pads at the periphery",
+  Batteryville:
+    "heavy industrial complex — parallel rail yard tracks converging on a central freight hub, " +
+    "rectangular refinery modules, cylindrical storage silos, open-air switchway junctions, " +
+    "three-dimensional scaffold scaffolding casting hard overhead shadows, " +
+    "and wide loading corridors flanked by pipeline runs",
+  "The Grid":
+    "hyper-ordered surveillance district — perfect orthogonal street grid, " +
+    "federal block perimeters with no irregular corners, omnipresent sensor-array pylons at every intersection, " +
+    "fiber-conduit trenches running flush with every avenue, " +
+    "and a central server farm compound subdivided into symmetric quadrants",
+  Nightshade:
+    "underground tunnel labyrinth — narrow branching laneways with tight choke-point intersections, " +
+    "irregular vault chambers used as meeting nodes, " +
+    "rave-hall alcoves recessed into tunnel walls, " +
+    "dead-end maintenance shafts, and hidden crew safe-house cells clustered near the deeper tunnels",
+  "The Forest":
+    "elevated canopy settlement — irregular organic paths winding between massive trunk columns, " +
+    "rope-bridge connectors spanning open canopy gaps, " +
+    "circular platform nodes at treetop level, " +
+    "natural root barrier walls offering hard cover, " +
+    "and ground-level ruins half-swallowed by bioluminescent undergrowth",
+  "Glass City":
+    "deserted glass-tower megalopolis — wide empty boulevards forming a canyon grid between skyscraper footprints, " +
+    "holographic-ad-tower bases as hard obstacle blocks, " +
+    "rain-slicked plaza zones with long unobstructed sightlines, " +
+    "drone-corridor airspace lanes marked as restricted zones, " +
+    "and sparse utility-conduit covers as the only ground-level break in the open pavement",
+};
+
+/**
+ * Maps a numeric threat level (1 – 5) to a tactical annotation layer description.
+ *
+ * The description controls how many enemy indicators, patrol routes, and
+ * hazard zones appear in the generated map image.
+ */
+function buildThreatAnnotation(threatLevel: number): string {
+  const clamped = Math.min(5, Math.max(1, Math.round(threatLevel)));
+  switch (clamped) {
+    case 1:
+      return (
+        "Threat level: minimal. " +
+        "Sparse enemy markers at distant patrol waypoints only. " +
+        "Clear open routing with no blocked corridors. " +
+        "One small hazard zone shown in pale grey near the map edge."
+      );
+    case 2:
+      return (
+        "Threat level: low. " +
+        "Two or three enemy patrol-route lines shown as dashed vectors. " +
+        "One restricted zone boundary outlined in dark grey. " +
+        "Majority of corridors are passable."
+      );
+    case 3:
+      return (
+        "Threat level: elevated. " +
+        "Multiple patrol circuit lines with overlap at chokepoints. " +
+        "Two defined restricted sectors with hatched fill. " +
+        "Checkpoint markers at key intersections. " +
+        "A minority of corridors are blocked."
+      );
+    case 4:
+      return (
+        "Threat level: high. " +
+        "Dense interlocking patrol circuits covering most routing corridors. " +
+        "Three or more restricted sectors. " +
+        "Reinforced-position markers at tactical nodes. " +
+        "Flanking-vector indicators pointing inward. " +
+        "Only narrow passage windows remain uncontested."
+      );
+    case 5:
+      return (
+        "Threat level: critical lockdown. " +
+        "Maximum enemy saturation — overlapping patrol zones blanket almost every corridor. " +
+        "Reinforced barricade symbols on all major access routes. " +
+        "Multiple overlapping restricted sectors with cross-hatched fill. " +
+        "Only a single stealth-window gap is visible in the coverage net."
+      );
+    default:
+      return "Threat level: unknown. No patrol annotations.";
+  }
+}
+
+/**
+ * Builds a fal.ai image generation prompt for a **procedural tactical map tile**.
+ *
+ * The resulting image is a strict top-down, high-contrast monochrome satellite
+ * vector grid readout of the lore district(s) associated with the current weekly
+ * theme, annotated with threat-level overlays.  It is intended to be used as a
+ * backdrop for the Joustur Skatur™ and Race Arena tactical grid environments.
+ *
+ * @param weeklyTheme  - The active weekly mission-board theme, which supplies
+ *                       the label, flavor summary, and featured districts.
+ * @param threatLevel  - Integer from 1 (minimal) to 5 (critical lockdown) that
+ *                       controls the density of patrol and hazard overlays.
+ * @returns             A complete prompt string ready for {@link generateImage}.
+ */
+export function buildProceduralMapPrompt(
+  weeklyTheme: MissionBoardTheme,
+  threatLevel: number,
+): string {
+  // Resolve the primary district to drive environmental geometry.
+  const primaryDistrict: District =
+    weeklyTheme.featuredDistricts?.[0] ?? "The Grid";
+  const districtTactical =
+    MAP_DISTRICT_TACTICAL[primaryDistrict] ??
+    MAP_DISTRICT_TACTICAL["The Grid"];
+
+  // Optional secondary district for a split-zone composite map.
+  const secondaryDistrict: District | undefined =
+    weeklyTheme.featuredDistricts?.[1];
+  const secondaryTactical = secondaryDistrict
+    ? MAP_DISTRICT_TACTICAL[secondaryDistrict]
+    : undefined;
+
+  const districtZoneBlock = secondaryTactical
+    ? `Primary zone: ${districtTactical}. Secondary zone divided by a bold boundary line: ${secondaryTactical}.`
+    : `Zone: ${districtTactical}.`;
+
+  const threatBlock = buildThreatAnnotation(threatLevel);
+
+  return joinPromptBlocks(
+    // Core visual style
+    "Top-down orthographic tactical map, strict overhead satellite view, " +
+      "monochrome vector graphic, high-contrast black and white ink, " +
+      "clean geometric line work, no perspective distortion, no isometric angle. " +
+      "Style: military-grade battlefield readout crossed with punk underground zine — " +
+      "thick black borders, sharp white fill, micro-detail hatching for terrain variation.",
+
+    // Grid overlay
+    "A precise square tactical grid overlaid across the entire image. " +
+      "Grid lines are thin, evenly spaced, and rendered in mid-grey so they read " +
+      "as a navigation aid without overwhelming the terrain silhouettes beneath them. " +
+      "Grid squares are uniform and axis-aligned.",
+
+    // Lore environment geometry
+    districtZoneBlock,
+
+    // Theme flavor — drives subtle environmental detail choices
+    `Weekly operational theme: "${weeklyTheme.label}" — ${weeklyTheme.summary}`,
+
+    // Threat level annotation overlay
+    threatBlock,
+
+    // Tactical landmark icons
+    "Include minimal icon set rendered as bold flat symbols: " +
+      "two circular spawn-point markers (P1 and P2) on opposite map edges, " +
+      "one diamond objective marker at the map centre, " +
+      "and up to four square cover-block outlines scattered across mid-map. " +
+      "All icons use the same monochrome ink palette as the terrain.",
+
+    // Stealth Alcove markers (matching the five path-position alcoves in the game rules)
+    "Mark five Stealth Alcove positions with small inverted-triangle symbols " +
+      "placed at path positions 1, 5, 10, 15, and 19 relative to the P1 spawn edge.",
+
+    // Strict exclusions
+    "No characters, no people, no skateboards, no vehicles, no text labels, no watermarks. " +
+      "No colour, no gradients, no shading washes — strictly black, white, and mid-grey only. " +
+      "No perspective, no 3D rendering, no isometric projection. " +
+      "No photographic elements, no textures derived from photographs.",
+
+    // Safety and output quality
+    "Clean vector-art readout, 4K, print-ready resolution. " +
+      "SFW, family friendly, PG rated.",
+  );
+}
+
+export const MISSIONS_BACKDROP_PROMPT_VERSION = "missions-backdrop-v1";
+export const MISSIONS_SPRITE_PROMPT_VERSION = "missions-sprite-v1";
+
+export function buildMissionsBackdropPrompt(
+  districts: readonly District[],
+  boardDateKey: string,
+): string {
+  const districtBlock = districts.length
+    ? districts
+      .map((district) => DISTRICT_DESCRIPTIONS[district] ?? district)
+      .join("; ")
+    : DISTRICT_DESCRIPTIONS["The Grid"];
+  return joinPromptBlocks(
+    "Top-down tactical district map backdrop for a neon courier mission interface.",
+    `District blend: ${districtBlock}.`,
+    `Daily seed context: ${boardDateKey || "undated mission board"}.`,
+    "Show roads, intersections, route-friendly alleys, and landmark silhouettes with readable negative space for route overlays.",
+    "Cyberpunk night mood with electric cyan and magenta accents, soft haze, and subtle scanline texture.",
+    "No characters, no riders, no vehicles, no text labels, no logos, no watermark.",
+    "PG, safe-for-work, high contrast, crisp details.",
+  );
+}
+
+export interface MissionsSpritePromptCardInput {
+  name?: string;
+  crew?: string;
+  archetype?: string;
+  style?: string;
+  accentColor?: string;
+}
+
+export function buildMissionsSpritePrompt(card: MissionsSpritePromptCardInput): string {
+  const name = card.name?.trim() || "District Courier";
+  const crew = card.crew?.trim() || "independent crew";
+  const archetype = card.archetype?.trim() || "street runner";
+  const style = card.style?.trim() || "Street";
+  const accent = describeAccentColor(card.accentColor);
+  return joinPromptBlocks(
+    "Single full-body courier sprite for map traversal UI.",
+    `Character: ${name}, ${archetype}, crew ${crew}, outfit style ${style}.`,
+    `Accent palette emphasis: ${accent}.`,
+    "Pose angled forward as if actively moving between checkpoints.",
+    "Transparent or flat neutral background, centered silhouette, no props, no extra people, no text, no logo.",
+    "Clean comic-book rendering, high readability at small sizes.",
+    "SFW, PG rated.",
   );
 }

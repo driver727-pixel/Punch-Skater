@@ -30,7 +30,7 @@ export interface DistrictWeatherSnapshot {
 export interface DistrictWeatherResponse {
   generatedAt: string;
   stale: boolean;
-  source: "live" | "cache" | "fallback";
+  source: "live" | "partial-live" | "cache" | "fallback";
   districts: DistrictWeatherSnapshot[];
 }
 
@@ -110,21 +110,22 @@ export function isDistrictAccessibleWithBoardType(
   boardType: BoardType | undefined,
   wheelType: WheelType | undefined,
 ): boolean {
+  void weather;
+  void boardType;
   const wheelRule = getDistrictWheelAccessRule(district);
   if (!wheelType || !wheelRule.allowedWheelTypes.includes(wheelType)) {
     return false;
   }
-  if (!weather?.accessRule) return true;
-  return weather.accessRule.requiredBoardType === boardType;
+  return true;
 }
 
 export function getDistrictAccessSummary(
   district: District,
   weather: DistrictWeatherSnapshot | null | undefined,
 ): string {
+  void weather;
   const wheelSummary = formatWheelAccessSummary(getDistrictWheelAccessRule(district).allowedWheelTypes);
-  if (!weather?.accessRule) return wheelSummary;
-  return `${wheelSummary} · ${weather.accessRule.requiredBoardType} boards only`;
+  return wheelSummary;
 }
 
 export function getDistrictAccessBlockReason(
@@ -133,15 +134,14 @@ export function getDistrictAccessBlockReason(
   boardType: BoardType | undefined,
   wheelType: WheelType | undefined,
 ): string | null {
+  void weather;
+  void boardType;
   const wheelRule = getDistrictWheelAccessRule(district);
   if (!wheelType) {
     return `Equip a board first. ${wheelRule.reason}`;
   }
   if (!wheelRule.allowedWheelTypes.includes(wheelType)) {
     return wheelRule.reason;
-  }
-  if (weather?.accessRule && weather.accessRule.requiredBoardType !== boardType) {
-    return weather.accessRule.reason;
   }
   return null;
 }
@@ -150,5 +150,6 @@ export function hasDistrictAccessRestriction(
   district: District,
   weather: DistrictWeatherSnapshot | null | undefined,
 ): boolean {
-  return getDistrictWheelAccessRule(district).allowedWheelTypes.length < 4 || Boolean(weather?.accessRule);
+  void weather;
+  return getDistrictWheelAccessRule(district).allowedWheelTypes.length < 4;
 }

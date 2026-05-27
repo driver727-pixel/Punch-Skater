@@ -5,6 +5,24 @@ import { auth, db, storage } from "../lib/firebase";
 import { FACTION_LORE } from "../lib/lore";
 import { factionSlug } from "../lib/factionSlug";
 
+const MAX_FACTION_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_FACTION_IMAGE_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+} as const;
+
+function validateFactionImageFile(file: File): { extension: string; error: string } | null {
+  const extension = ALLOWED_FACTION_IMAGE_TYPES[file.type as keyof typeof ALLOWED_FACTION_IMAGE_TYPES];
+  if (!extension) {
+    return { extension: "", error: "Use a PNG, JPG, or WebP image." };
+  }
+  if (file.size <= 0 || file.size > MAX_FACTION_IMAGE_BYTES) {
+    return { extension, error: "Image must be smaller than 5 MB." };
+  }
+  return null;
+}
+
 /** Resolves the original flat storage path used before faction uploads were versioned. */
 function getLegacyFactionStoragePath(slug: string, ext?: string): string | null {
   return ext ? `factionImages/${slug}.${ext}` : null;
@@ -47,13 +65,23 @@ export function AdminFactionImagesPanel() {
 
   const handleFactionFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
-    setFactionImageFile(file);
     setFactionUploadStatus("idle");
     setFactionUploadError("");
+    setFactionImageFile(null);
     if (!file) {
       setFactionImagePreview(null);
       return;
     }
+
+    const validation = validateFactionImageFile(file);
+    if (validation) {
+      setFactionImagePreview(null);
+      setFactionUploadError(validation.error);
+      if (factionFileInputRef.current) factionFileInputRef.current.value = "";
+      return;
+    }
+
+    setFactionImageFile(file);
 
     const reader = new FileReader();
     reader.onload = (loadEvent) => setFactionImagePreview(loadEvent.target?.result as string);
@@ -68,7 +96,12 @@ export function AdminFactionImagesPanel() {
     setPanelError("");
 
     const slug = factionSlug(selectedFaction);
-    const ext = factionImageFile.name.split(".").pop()?.toLowerCase() ?? "png";
+    const ext = ALLOWED_FACTION_IMAGE_TYPES[factionImageFile.type as keyof typeof ALLOWED_FACTION_IMAGE_TYPES];
+    if (!ext) {
+      setFactionUploadError("Use a PNG, JPG, or WebP image.");
+      setFactionUploadStatus("error");
+      return;
+    }
     const uploadTimestamp = Date.now();
     const storagePath = `factionImages/${slug}/${uploadTimestamp}.${ext}`;
     const previousStoragePath =
@@ -186,7 +219,7 @@ export function AdminFactionImagesPanel() {
             ref={factionFileInputRef}
             className="input"
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg,image/webp"
             onChange={handleFactionFileChange}
             style={{ cursor: "pointer" }}
           />
