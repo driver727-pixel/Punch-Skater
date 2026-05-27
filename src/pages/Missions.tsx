@@ -872,7 +872,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   }, [cards, decks]);
 
   const selectedRunner = useMemo(
-    () => runnerOptions.find((runner) => runner.id === selectedRunnerId) ?? runnerOptions[0],
+    () => runnerOptions.find((runner) => runner.id === selectedRunnerId),
     [runnerOptions, selectedRunnerId],
   );
 

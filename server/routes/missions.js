@@ -1768,10 +1768,12 @@ export function registerMissionRoutes(app, {
           const deck = deckSnap?.exists ? deckSnap.data() : null;
           const soloCard = soloCardSnap?.exists ? { ...soloCardSnap.data(), id: currentRun.cardId } : null;
           const deckCard = soloCard ?? (deck ? pickMissionRewardCard(deck) : null);
-          const cardRef = deckCard?.id
-            ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id)
-            : null;
-          const cardSnap = soloCard ? soloCardSnap : (cardRef ? await tx.get(cardRef) : null);
+          let cardRef = null;
+          let cardSnap = soloCard ? soloCardSnap : null;
+          if (!soloCard && deckCard?.id) {
+            cardRef = adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id);
+            cardSnap = await tx.get(cardRef);
+          }
           const persistedCard = cardSnap?.exists
             ? { ...deckCard, ...cardSnap.data(), id: deckCard.id }
             : deckCard;
@@ -1899,10 +1901,12 @@ export function registerMissionRoutes(app, {
         const deck = deckSnap?.exists ? deckSnap.data() : null;
         const soloCard = soloCardSnap?.exists ? { ...soloCardSnap.data(), id: activeRun.cardId } : null;
         const deckCard = soloCard ?? (deck ? pickMissionRewardCard(deck) : null);
-        const cardRef = deckCard?.id
-          ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id)
-          : null;
-        const cardSnap = soloCard ? soloCardSnap : (cardRef ? await tx.get(cardRef) : null);
+        let cardRef = null;
+        let cardSnap = soloCard ? soloCardSnap : null;
+        if (!soloCard && deckCard?.id) {
+          cardRef = adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id);
+          cardSnap = await tx.get(cardRef);
+        }
         const persistedCard = cardSnap?.exists
           ? { ...deckCard, ...cardSnap.data(), id: deckCard.id }
           : deckCard;
@@ -1928,7 +1932,10 @@ export function registerMissionRoutes(app, {
 
         tx.set(runRef, finalized, { merge: true });
         tx.set(adminDb.collection(RUN_ARCHIVE_COLLECTION).doc(activeRun.runId), finalized, { merge: true });
-        if (deck && persistedCard?.id) {
+        if (soloCardRef && persistedCard?.id) {
+          const recordedCard = applyMissionFailureRecordToCard(persistedCard, debrief, failureRecord);
+          tx.set(soloCardRef, recordedCard, { merge: true });
+        } else if (deck && persistedCard?.id) {
           const recordedCard = applyMissionFailureRecordToCard(persistedCard, debrief, failureRecord);
           tx.set(deckRef, {
             ...deck,
