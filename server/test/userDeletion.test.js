@@ -9,6 +9,7 @@ function createMockAdminDb(uid) {
   const collectionDocs = new Map([
     [`users/${uid}/cards`, [{ ref: { path: `users/${uid}/cards/card-1` } }]],
     [`users/${uid}/decks`, [{ ref: { path: `users/${uid}/decks/deck-1` } }]],
+    [`wallets/${uid}/ledger`, [{ ref: { path: `wallets/${uid}/ledger/entry-1` } }]],
     [`notifications/${uid}/items`, [{ ref: { path: `notifications/${uid}/items/notif-1` } }]],
   ]);
 
@@ -106,6 +107,7 @@ test('deleteUserData removes per-user docs, subcollections, and related query re
       `userLookup/${uid}`,
       `arena/${uid}`,
       `leaderboard/${uid}`,
+      `wallets/${uid}`,
       `dailyStreaks/${uid}`,
       `battlePass/${uid}`,
       `notifications/${uid}`,
@@ -114,6 +116,7 @@ test('deleteUserData removes per-user docs, subcollections, and related query re
 
   assert.ok(adminDb.batchedPaths.includes(`users/${uid}/cards/card-1`));
   assert.ok(adminDb.batchedPaths.includes(`users/${uid}/decks/deck-1`));
+  assert.ok(adminDb.batchedPaths.includes(`wallets/${uid}/ledger/entry-1`));
   assert.ok(adminDb.batchedPaths.includes(`notifications/${uid}/items/notif-1`));
   assert.ok(adminDb.batchedPaths.includes(`missions?uid/${uid}`));
   assert.ok(adminDb.batchedPaths.includes(`races?defenderUid/${uid}`));
