@@ -52,6 +52,7 @@ export function useForgeGeneration() {
   const [boardImageLoading, setBoardImageLoading] = useState(false);
   const [spendingOzzies, setSpendingOzzies] = useState(false);
   const [walletMessage, setWalletMessage] = useState<string | null>(null);
+  const [walletMessageTone, setWalletMessageTone] = useState<"info" | "error">("info");
   const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
   const {
     abortRef,
@@ -83,6 +84,7 @@ export function useForgeGeneration() {
   const handleForge = useCallback(async () => {
     if (!canForge) {
       if (requiresOzzies && user) {
+        setWalletMessageTone("error");
         setWalletMessage(`You need ${CARD_FORGE_OZZIES_COST} Ozzies to forge after your free and referral credits are gone.`);
         return;
       }
@@ -102,8 +104,10 @@ export function useForgeGeneration() {
           idempotencyKey: crypto.randomUUID(),
         });
         applyWalletMutation(walletSpend);
+        setWalletMessageTone("info");
         setWalletMessage(`Spent ${CARD_FORGE_OZZIES_COST} Ozzies. Balance: ${walletSpend.wallet.currentBalance}.`);
       } catch (error) {
+        setWalletMessageTone("error");
         setWalletMessage(error instanceof Error ? error.message : "Card Forge could not spend Ozzies.");
         return;
       } finally {
@@ -283,6 +287,7 @@ export function useForgeGeneration() {
     requiresOzzies,
     spendingOzzies,
     walletMessage,
+    walletMessageTone,
     handleCloseFactionReveal,
     handleForge,
     handleLayerError,
@@ -315,6 +320,7 @@ export function useForgeGeneration() {
     requiresOzzies,
     spendingOzzies,
     walletMessage,
+    walletMessageTone,
     handleCloseFactionReveal,
     handleForge,
     handleLayerError,

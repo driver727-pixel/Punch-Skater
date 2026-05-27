@@ -407,7 +407,7 @@ export function Mission() {
     });
   }, []);
 
-  const finalizeMissionResult = useCallback(async (missionId: string, result: MissionResult): Promise<MissionResultView> => {
+  const processMissionRewardPayout = useCallback(async (missionId: string, result: MissionResult): Promise<MissionResultView> => {
     if (!result.success || result.ozziesReward <= 0 || !user) {
       return {
         ...result,
@@ -455,7 +455,7 @@ export function Mission() {
         return;
       }
       if (outcome.result.success) markMissionComplete(activeMission.id);
-      setMissionResult(await finalizeMissionResult(activeMission.id, outcome.result));
+      setMissionResult(await processMissionRewardPayout(activeMission.id, outcome.result));
       setPendingFork(null);
     } finally {
       setResolvingMission(false);
@@ -476,7 +476,7 @@ export function Mission() {
         return;
       }
       if (outcome.result.success) markMissionComplete(activeMission.id);
-      setMissionResult(await finalizeMissionResult(activeMission.id, outcome.result));
+      setMissionResult(await processMissionRewardPayout(activeMission.id, outcome.result));
       setPendingFork(null);
     } finally {
       setResolvingMission(false);

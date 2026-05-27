@@ -91,6 +91,7 @@ interface ForgeControlsPanelProps {
   spendingOzzies: boolean;
   tier: string;
   walletMessage: string | null;
+  walletMessageTone: "info" | "error";
   ageGroups: AgeGroup[];
 }
 
@@ -132,6 +133,7 @@ export function ForgeControlsPanel({
   spendingOzzies,
   tier,
   walletMessage,
+  walletMessageTone,
   ageGroups,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
@@ -350,7 +352,7 @@ export function ForgeControlsPanel({
         </p>
       )}
       {walletMessage && (
-        <p className={`forge-wallet-status${walletMessage.includes("need") || walletMessage.includes("failed") ? " forge-wallet-status--error" : ""}`} role="alert">
+        <p className={`forge-wallet-status${walletMessageTone === "error" ? " forge-wallet-status--error" : ""}`} role="alert">
           {walletMessage}
         </p>
       )}

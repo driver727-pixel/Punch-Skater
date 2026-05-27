@@ -12,9 +12,7 @@ export function registerWalletRoutes(app, {
   authenticateFirebaseUser,
   FieldValue,
 }) {
-  app.use('/api/wallet', walletRateLimit);
-
-  app.get('/api/wallet', async (req, res) => {
+  app.get('/api/wallet', walletRateLimit, async (req, res) => {
     let caller;
     try {
       caller = await authenticateFirebaseUser(req);
@@ -25,7 +23,7 @@ export function registerWalletRoutes(app, {
     }
   });
 
-  app.post('/api/wallet/spend', async (req, res) => {
+  app.post('/api/wallet/spend', walletRateLimit, async (req, res) => {
     let caller;
     try {
       caller = await authenticateFirebaseUser(req);
@@ -62,7 +60,7 @@ export function registerWalletRoutes(app, {
     }
   });
 
-  app.post('/api/wallet/rewards/mission', async (req, res) => {
+  app.post('/api/wallet/rewards/mission', walletRateLimit, async (req, res) => {
     let caller;
     try {
       caller = await authenticateFirebaseUser(req);

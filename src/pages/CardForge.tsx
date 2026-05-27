@@ -67,6 +67,7 @@ export function CardForge() {
     tier,
     tierCanSave,
     walletMessage,
+    walletMessageTone,
     viewing3D,
   } = useCardForgeController();
 
@@ -142,6 +143,7 @@ export function CardForge() {
           spendingOzzies={spendingOzzies}
           tier={tier}
           walletMessage={walletMessage}
+          walletMessageTone={walletMessageTone}
         />
 
         <ForgePreviewPanel

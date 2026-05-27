@@ -28,6 +28,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [recentTransactions, setRecentTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fallbackUid = userProfile?.uid ?? "";
+  const fallbackBalance = userProfile?.ozziesBalance ?? 0;
+  const fallbackLifetimeEarned = userProfile?.ozziesLifetimeEarned ?? 0;
+  const fallbackLifetimeSpent = userProfile?.ozziesLifetimeSpent ?? 0;
 
   const refreshWallet = useCallback(async () => {
     if (!user) {
@@ -73,15 +77,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const walletValue = useMemo<PlayerWallet | null>(() => {
     if (wallet) return wallet;
-    if (!userProfile) return null;
+    if (!fallbackUid) return null;
     return {
-      uid: userProfile.uid,
-      currentBalance: userProfile.ozziesBalance ?? 0,
-      lifetimeEarned: userProfile.ozziesLifetimeEarned ?? 0,
-      lifetimeSpent: userProfile.ozziesLifetimeSpent ?? 0,
+      uid: fallbackUid,
+      currentBalance: fallbackBalance,
+      lifetimeEarned: fallbackLifetimeEarned,
+      lifetimeSpent: fallbackLifetimeSpent,
       updatedAt: "",
     };
-  }, [userProfile, wallet]);
+  }, [
+    wallet,
+    fallbackUid,
+    fallbackBalance,
+    fallbackLifetimeEarned,
+    fallbackLifetimeSpent,
+  ]);
 
   return (
     <WalletContext.Provider value={{ wallet: walletValue, recentTransactions, loading, error, refreshWallet, applyWalletMutation }}>

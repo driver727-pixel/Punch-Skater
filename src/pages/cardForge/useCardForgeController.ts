@@ -67,6 +67,7 @@ export function useCardForgeController() {
     tier: forge.tier,
     tierCanSave: save.tierCanSave,
     walletMessage: forge.walletMessage,
+    walletMessageTone: forge.walletMessageTone,
     viewing3D: navigation.viewing3D,
   }), [forge, navigation, save]);
 }

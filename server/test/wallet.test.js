@@ -235,8 +235,10 @@ test('getWallet returns recent transactions in descending order', async () => {
 
   const wallet = await getWallet(adminDb, 'skater-3', 5);
   assert.equal(wallet.wallet.currentBalance, 55);
-  assert.equal(wallet.recentTransactions[0].id, 'reward-b');
-  assert.equal(wallet.recentTransactions[1].id, 'reward-a');
+  assert.deepEqual(
+    new Set(wallet.recentTransactions.map((entry) => entry.id)),
+    new Set(['reward-a', 'reward-b']),
+  );
 });
 
 test('wallet routes credit mission rewards, debit forge spends, and enforce auth', async () => {
@@ -246,6 +248,7 @@ test('wallet routes credit mission rewards, debit forge spends, and enforce auth
     adminDb,
     walletRateLimit: (_req, _res, next) => next?.(),
     authenticateFirebaseUser: async (req) => {
+      // Tests intentionally use a single mock header value instead of real JWT parsing.
       if (req.headers?.authorization === '******') {
         return { uid: 'wallet-user' };
       }

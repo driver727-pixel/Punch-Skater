@@ -136,6 +136,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ozziesLifetimeEarned: 0,
     ozziesLifetimeSpent: 0,
   });
+  const {
+    ozziesBalance,
+    ozziesLifetimeEarned,
+    ozziesLifetimeSpent,
+  } = walletProfile;
 
   useEffect(() => {
     if (!auth) {
@@ -212,7 +217,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email ?? "",
           displayName: getFallbackDisplayName(user),
           isAdmin: adminClaim,
-          ...walletProfile,
+          ozziesBalance,
+          ozziesLifetimeEarned,
+          ozziesLifetimeSpent,
         });
       return;
     }
@@ -229,7 +236,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             getProfileString(data.displayName)
             ?? getFallbackDisplayName(user),
           isAdmin: adminClaim,
-          ...walletProfile,
+          ozziesBalance,
+          ozziesLifetimeEarned,
+          ozziesLifetimeSpent,
         });
       },
       () => {
@@ -238,11 +247,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email ?? "",
           displayName: getFallbackDisplayName(user),
           isAdmin: adminClaim,
-          ...walletProfile,
+          ozziesBalance,
+          ozziesLifetimeEarned,
+          ozziesLifetimeSpent,
         });
       },
     );
-  }, [user, adminClaim, walletProfile]);
+  }, [
+    user,
+    adminClaim,
+    ozziesBalance,
+    ozziesLifetimeEarned,
+    ozziesLifetimeSpent,
+  ]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!auth) throw createAuthUnavailableError();

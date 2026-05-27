@@ -2,6 +2,7 @@ import { createRequire } from 'module';
 
 const nodeRequire = createRequire(import.meta.url);
 const ozziesConfig = nodeRequire('../../src/lib/ozziesConfig.json');
+const MAX_WALLET_METADATA_ENTRIES = 12;
 
 export const CARD_FORGE_OZZIES_COST = Number.isFinite(ozziesConfig.cardForgeCost)
   ? Math.max(1, Math.floor(ozziesConfig.cardForgeCost))
@@ -31,7 +32,7 @@ function sanitizeWalletMetadata(value) {
       || typeof entryValue === 'boolean'
       || entryValue === null
     ))
-    .slice(0, 12);
+    .slice(0, MAX_WALLET_METADATA_ENTRIES);
   return Object.fromEntries(entries);
 }
 
