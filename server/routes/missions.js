@@ -591,6 +591,18 @@ function appendMissionRunRecord(records, record) {
   return [record, ...existing].slice(0, MAX_MISSION_RUN_RECORDS);
 }
 
+function buildMissionFailureHistoryRecord(runRecord, activeRun) {
+  return {
+    ...runRecord,
+    recordType: 'mission_failure',
+    rewardXp: 0,
+    rewardOzzies: 0,
+    activeCardIds: Array.isArray(activeRun?.activeCardIds)
+      ? activeRun.activeCardIds.filter((cardId) => typeof cardId === 'string')
+      : [],
+  };
+}
+
 function pickMissionRewardCard(deck) {
   const cards = Array.isArray(deck?.cards) ? deck.cards : [];
   const challenger = typeof deck?.challengerCardId === 'string'
@@ -620,15 +632,7 @@ function applyMissionRewardsToCard(card, debrief, runRecord) {
 function applyMissionFailureRecordToCard(card, debrief, runRecord) {
   return {
     ...card,
-    missionRunRecords: appendMissionRunRecord(card?.missionRunRecords, runRecord),
-    missionStats: {
-      ...(card?.missionStats ?? {}),
-      completedRuns: Number(card?.missionStats?.completedRuns) || 0,
-      failedRuns: (Number(card?.missionStats?.failedRuns) || 0) + 1,
-      missionXp: Number(card?.missionStats?.missionXp) || 0,
-      missionOzzies: Number(card?.missionStats?.missionOzzies) || 0,
-      lastRunAt: debrief.completedAt,
-    },
+    missionFailureHistory: appendMissionRunRecord(card?.missionFailureHistory, runRecord),
     updatedAt: debrief.completedAt,
   };
 }
@@ -1764,6 +1768,10 @@ export function registerMissionRoutes(app, {
         if (activeRun.uid !== caller.uid) {
           throw Object.assign(new Error('This run does not belong to the current user.'), { statusCode: 403 });
         }
+        if (activeRun.phase === MISSION_PHASE.MISSION_COMPLETE) {
+          // A successful return is terminal and must not be converted into a failed run.
+          return activeRun;
+        }
         if (activeRun.completionFinalizedAt) {
           // Idempotency guard: failure history was already recorded.
           return activeRun;
@@ -1801,6 +1809,7 @@ export function registerMissionRoutes(app, {
           failureReason,
         });
         const runRecord = buildMissionRunRecord(debrief, terminalRun);
+        const failureRecord = buildMissionFailureHistoryRecord(runRecord, terminalRun);
         const finalized = {
           ...terminalRun,
           debrief,
@@ -1811,13 +1820,13 @@ export function registerMissionRoutes(app, {
         tx.set(runRef, finalized, { merge: true });
         tx.set(adminDb.collection(RUN_ARCHIVE_COLLECTION).doc(activeRun.runId), finalized, { merge: true });
         if (deck && persistedCard?.id) {
-          const recordedCard = applyMissionFailureRecordToCard(persistedCard, debrief, runRecord);
+          const recordedCard = applyMissionFailureRecordToCard(persistedCard, debrief, failureRecord);
           tx.set(deckRef, {
             ...deck,
             cards: Array.isArray(deck.cards)
               ? deck.cards.map((card) => (card?.id === recordedCard.id ? { ...card, ...recordedCard } : card))
               : deck.cards,
-            missionRunRecords: appendMissionRunRecord(deck.missionRunRecords, runRecord),
+            missionFailureHistory: appendMissionRunRecord(deck.missionFailureHistory, failureRecord),
             updatedAt: now,
           }, { merge: true });
           if (cardRef) {

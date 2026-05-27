@@ -1322,8 +1322,79 @@ test('district world fail route records non-punitive card history without reward
   const persistedCard = adminDb.store.get('users/user-1/cards/grid-runner-1');
   assert.equal(persistedCard.xp, 10);
   assert.equal(persistedCard.ozzies, 5);
-  assert.equal(persistedCard.missionStats.failedRuns, 1);
-  assert.equal(persistedCard.missionRunRecords[0].success, false);
+  assert.equal(persistedCard.missionStats, undefined);
+  assert.equal(persistedCard.missionRunRecords, undefined);
+  assert.equal(persistedCard.missionFailureHistory[0].success, false);
+  assert.equal(persistedCard.missionFailureHistory[0].recordType, 'mission_failure');
+  const persistedDeck = adminDb.store.get('users/user-1/decks/deck-1');
+  assert.equal(persistedDeck.missionRunRecords, undefined);
+  assert.equal(persistedDeck.missionFailureHistory[0].runId, runId);
   assert.equal(adminDb.store.get('userProfiles/user-1').missionXp, 20);
   assert.ok(adminDb.store.get(`missionRunArchives/${runId}`), 'failed run is archived');
+});
+
+test('district world fail route does not convert completed success into failure history', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'MISSION_COMPLETE',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'poi-0'],
+      checkpointNodeIndex: 0,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:10:00.000Z`,
+      completedAt: `${boardDateKey}T01:10:00.000Z`,
+      completionFinalizedAt: `${boardDateKey}T01:10:00.000Z`,
+    },
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [{ from: 'workshop', to: 'poi-0' }],
+      contracts: [{
+        id: 'contract-1',
+        nodeId: 'poi-0',
+        definitionId: 'def-1',
+        title: 'Contract One',
+        tagline: 'Completed route',
+        district: 'The Grid',
+        rewardXp: 100,
+        rewardOzzies: 80,
+        visibility: 'visible',
+        status: 'completed',
+      }],
+    },
+    'users/user-1/decks/deck-1': buildGridDeck({ id: 'deck-1', challengerCardId: 'grid-runner-1' }),
+    'users/user-1/cards/grid-runner-1': {
+      ...buildCard({ id: 'grid-runner-1', identity: { name: 'Trace Lead' } }),
+      xp: 110,
+      ozzies: 85,
+      missionStats: { completedRuns: 1, missionXp: 100, missionOzzies: 80 },
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/fail');
+
+  const res = await invokeRoute(route, {
+    body: { runId, reason: 'Late retry after success.' },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun.phase, 'MISSION_COMPLETE');
+  const persistedCard = adminDb.store.get('users/user-1/cards/grid-runner-1');
+  assert.equal(persistedCard.xp, 110);
+  assert.equal(persistedCard.ozzies, 85);
+  assert.equal(persistedCard.missionStats.completedRuns, 1);
+  assert.equal(persistedCard.missionFailureHistory, undefined);
 });
