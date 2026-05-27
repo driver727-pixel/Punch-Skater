@@ -145,6 +145,8 @@ function MissionDebriefPanel({
       )}
 
       <button
+        type="button"
+        aria-label="Return to map"
         onClick={onDismiss}
         style={{ marginTop: "auto", padding: "10px 0", background: "rgba(125,231,255,0.08)", border: "1px solid rgba(125,231,255,0.55)", borderRadius: 4, color: "#7de7ff", fontFamily: "monospace", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer" }}
       >

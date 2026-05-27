@@ -527,6 +527,7 @@ function buildMissionCompletionDebrief(activeRun, contract, completedAt, card = 
   const totalRewardXp = clampMissionReward(baseRewardXp + bonusRewardXp);
   const totalRewardOzzies = clampMissionReward(baseRewardOzzies + bonusRewardOzzies);
   const routeLength = Array.isArray(activeRun?.routeNodeIds) ? activeRun.routeNodeIds.length : 0;
+  const routeLegCount = Math.max(0, routeLength - 1);
   const contractTitle = String(contract?.title ?? activeRun?.contractId ?? 'Mission contract');
   const district = String(contract?.district ?? 'The Grid');
   const success = options.success !== false;
@@ -544,7 +545,7 @@ function buildMissionCompletionDebrief(activeRun, contract, completedAt, card = 
     district,
     success,
     summary,
-    routeSummary: `${Math.max(0, routeLength - 1)} checkpoint leg${routeLength === 2 ? '' : 's'} completed`,
+    routeSummary: `${routeLegCount} checkpoint leg${routeLegCount === 1 ? '' : 's'} completed`,
     launchedAt: activeRun.launchedAt,
     completedAt,
     deckId: activeRun.deckId,
@@ -1641,6 +1642,7 @@ export function registerMissionRoutes(app, {
             throw Object.assign(new Error('This run does not belong to the current user.'), { statusCode: 403 });
           }
           if (currentRun.completionFinalizedAt) {
+            // Idempotency guard: rewards and permanent card history were already applied.
             return currentRun;
           }
           if (currentRun.phase !== MISSION_PHASE.TRAVELING_INBOUND) {
@@ -1763,6 +1765,7 @@ export function registerMissionRoutes(app, {
           throw Object.assign(new Error('This run does not belong to the current user.'), { statusCode: 403 });
         }
         if (activeRun.completionFinalizedAt) {
+          // Idempotency guard: failure history was already recorded.
           return activeRun;
         }
 
