@@ -932,6 +932,15 @@ export interface MissionRunRecord {
   failureReason?: string;
 }
 
+/** @sprint 9 @owner pr4 — Non-punitive failed-run history separate from gameplay mission stats/rewards. */
+export interface MissionFailureHistoryRecord extends MissionRunRecord {
+  recordType: "mission_failure";
+  success: false;
+  rewardXp: 0;
+  rewardOzzies: 0;
+  activeCardIds?: string[];
+}
+
 export interface CharacterLayerExtractionContract {
   version: string;
   sourceType: "forged_card" | "fallback";
