@@ -45,6 +45,9 @@ interface UserProfile {
   missionOzzies?: number;
   /** Account-level Ozzy balance — escrow currency for race wagers. */
   ozzies?: number;
+  ozziesBalance?: number;
+  ozziesLifetimeEarned?: number;
+  ozziesLifetimeSpent?: number;
   collectionRewards?: {
     rerollTokens: number;
   };
@@ -92,6 +95,10 @@ function createAuthUnavailableError() {
 
 function getProfileString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function getProfileNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 function getProfileBoolean(value: unknown): boolean | undefined {
@@ -184,6 +191,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [playerRewards, setPlayerRewards] = useState<PlayerRewardsSyncResult | null>(null);
   const [adminClaim, setAdminClaim] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [walletProfile, setWalletProfile] = useState({
+    ozziesBalance: 0,
+    ozziesLifetimeEarned: 0,
+    ozziesLifetimeSpent: 0,
+  });
+  const {
+    ozziesBalance,
+    ozziesLifetimeEarned,
+    ozziesLifetimeSpent,
+  } = walletProfile;
 
   useEffect(() => {
     if (!auth) {
@@ -233,6 +250,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) {
+      setWalletProfile({
+        ozziesBalance: 0,
+        ozziesLifetimeEarned: 0,
+        ozziesLifetimeSpent: 0,
+      });
+      return;
+    }
+    if (!db) return;
+
+    return onSnapshot(
+      doc(db, "wallets", user.uid),
+      (snap) => {
+        const data = snap.exists() ? snap.data() : {};
+        setWalletProfile({
+          ozziesBalance: getProfileNumber(data.currentBalance) ?? 0,
+          ozziesLifetimeEarned: getProfileNumber(data.lifetimeEarned) ?? 0,
+          ozziesLifetimeSpent: getProfileNumber(data.lifetimeSpent) ?? 0,
+        });
+      },
+      () => {
+        setWalletProfile({
+          ozziesBalance: 0,
+          ozziesLifetimeEarned: 0,
+          ozziesLifetimeSpent: 0,
+        });
+      },
+    );
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
       setUserProfile(null);
       return;
     }
@@ -245,6 +293,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           missionXp: 0,
           missionOzzies: 0,
           ozzies: 0,
+          ozziesBalance,
+          ozziesLifetimeEarned,
+          ozziesLifetimeSpent,
           collectionRewards: { rerollTokens: 0 },
           craftlinguaLink: null,
           craftlinguaProfile: null,
@@ -271,6 +322,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           missionXp: typeof data.missionXp === "number" ? data.missionXp : 0,
           missionOzzies: typeof data.missionOzzies === "number" ? data.missionOzzies : 0,
           ozzies: typeof data.ozzies === "number" ? data.ozzies : 0,
+          ozziesBalance,
+          ozziesLifetimeEarned,
+          ozziesLifetimeSpent,
           collectionRewards: getCollectionRewards(data.collectionRewards),
           craftlinguaLink: getCraftlinguaLink(data.craftlinguaLink),
           craftlinguaProfile,
@@ -286,6 +340,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           missionXp: 0,
           missionOzzies: 0,
           ozzies: 0,
+          ozziesBalance,
+          ozziesLifetimeEarned,
+          ozziesLifetimeSpent,
           collectionRewards: { rerollTokens: 0 },
           craftlinguaLink: null,
           craftlinguaProfile: null,
@@ -293,7 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       },
     );
-  }, [user, adminClaim]);
+  }, [user, adminClaim, ozziesBalance, ozziesLifetimeEarned, ozziesLifetimeSpent]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!auth) throw createAuthUnavailableError();

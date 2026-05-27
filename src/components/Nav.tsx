@@ -197,6 +197,11 @@ export function Nav() {
             >
               Pricing Tier: {tierData.name}
             </button>
+            {user && (
+              <div className="nav-wallet-badge nav-desktop-only" title="Your current Ozzies balance">
+                💰 {userProfile?.ozziesBalance ?? 0}
+              </div>
+            )}
 
             {authLoading ? (
               <span className="nav-auth-loading" aria-label="Loading…" />
@@ -226,6 +231,9 @@ export function Nav() {
                     >
                       🤝 Trades{pendingTrades > 0 && ` (${pendingTrades})`}
                     </button>
+                    <div className="user-dropdown-wallet">
+                      💰 Ozzies balance: {userProfile?.ozziesBalance ?? 0}
+                    </div>
                     <button
                       className="user-dropdown-item"
                       onClick={() => { setMenuOpen(false); navigate("/account"); }}
@@ -284,6 +292,11 @@ export function Nav() {
               >
                 Pricing Tier: {tierData.name}
               </button>
+              {user && (
+                <div className="nav-wallet-badge">
+                  💰 {userProfile?.ozziesBalance ?? 0}
+                </div>
+              )}
             </div>
           </div>
         )}

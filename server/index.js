@@ -47,6 +47,7 @@ import { registerImageRoutes } from './routes/images.js';
 import { registerImportRoutes } from './routes/import.js';
 import { registerMissionRoutes } from './routes/missions.js';
 import { registerPaymentRoutes } from './routes/payments.js';
+import { registerWalletRoutes } from './routes/wallet.js';
 import { registerBattlePassRoutes } from './battlePass.js';
 import { registerLeaderboardRoutes } from './routes/leaderboard.js';
 import { registerRewardRoutes } from './routes/rewards.js';
@@ -233,6 +234,13 @@ const battlePassRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 20,
   message: { error: 'Too many battle pass requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const walletRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many wallet requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -891,6 +899,13 @@ registerBattleRoutes(app, {
 registerBattlePassRoutes(app, {
   adminDb,
   battlePassRateLimit,
+  authenticateFirebaseUser,
+  FieldValue,
+});
+
+registerWalletRoutes(app, {
+  adminDb,
+  walletRateLimit,
   authenticateFirebaseUser,
   FieldValue,
 });

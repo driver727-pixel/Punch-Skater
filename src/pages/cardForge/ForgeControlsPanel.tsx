@@ -12,6 +12,7 @@ import type {
 import { BoardBuilder } from "../../components/BoardBuilder";
 import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
 import { ReferralPanel } from "../../components/ReferralPanel";
+import ozziesConfig from "../../lib/ozziesConfig.json";
 import type { BoardConfig } from "../../lib/boardBuilder";
 import { FORGE_CLASS_ODDS } from "../../lib/cardClassProgression";
 import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
@@ -71,9 +72,14 @@ interface ForgeControlsPanelProps {
   onForge: () => void;
   onOpenUpgradeModal: () => void;
   onPromptChange: <K extends keyof CardPrompts>(key: K, value: CardPrompts[K]) => void;
+  ozziesBalance: number;
   prompts: CardPrompts;
+  requiresOzzies: boolean;
   skinTones: SkinTone[];
+  spendingOzzies: boolean;
   tier: string;
+  walletMessage: string | null;
+  walletMessageTone: "info" | "error";
   ageGroups: AgeGroup[];
 }
 
@@ -96,14 +102,19 @@ export function ForgeControlsPanel({
   onForge,
   onOpenUpgradeModal,
   onPromptChange,
+  ozziesBalance,
   prompts,
+  requiresOzzies,
   skinTones,
+  spendingOzzies,
   tier,
+  walletMessage,
+  walletMessageTone,
   ageGroups,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
   const freeForgeRemainingMs = getRemainingDurationMs(freeForgeReadyAt);
-  const isFreeForgeCoolingDown = isFreeTier && freeForgeRemainingMs > 0 && generateCredits === 0;
+  const isFreeForgeCoolingDown = isFreeTier && !requiresOzzies && freeForgeRemainingMs > 0 && generateCredits === 0;
 
   return (
     <div className="forge-form">
@@ -283,22 +294,28 @@ export function ForgeControlsPanel({
       <button
         className="btn-primary btn-lg btn-forge"
         onClick={onForge}
-        disabled={forging || isAnyLayerLoading || isFreeForgeCoolingDown}
+        disabled={forging || isAnyLayerLoading || spendingOzzies || isFreeForgeCoolingDown}
         data-testid="forge-button"
       >
         {isAnyLayerLoading
           ? "✨ Generating…"
+          : spendingOzzies
+            ? "💰 Spending Ozzies…"
           : isFreeForgeCoolingDown
             ? `⚡ Forge Card (ready in ${formatDurationClock(freeForgeRemainingMs)})`
           : !canForge
-            ? "🔒 Forge Card — Upgrade to Unlock"
+            ? requiresOzzies
+              ? `💰 Need ${ozziesConfig.cardForgeCost} Ozzies to Forge`
+              : "🔒 Forge Card — Upgrade to Unlock"
           : tier === "free" && !freeCardUsed
               ? "⚡ Forge Card (1 free card)"
               : generateCredits > 0
                 ? `⚡ Forge Card (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
-                : "⚡ Forge Card"}
+                : requiresOzzies
+                  ? `💰 Forge Card (${ozziesConfig.cardForgeCost} Ozzies)`
+                  : "⚡ Forge Card"}
       </button>
-      {tier === "free" && generateCredits === 0 && (
+      {isFreeTier && generateCredits === 0 && !requiresOzzies && (
         <p className="form-hint">
           {freeForgeRemainingMs > 0
             ? `Your next free forge unlocks in ${formatDurationClock(freeForgeRemainingMs)}.`
@@ -307,10 +324,18 @@ export function ForgeControlsPanel({
               : "Your first free forge is ready right now."}
         </p>
       )}
+      {requiresOzzies && (
+        <p className="forge-wallet-note">
+          Wallet balance: <strong>{ozziesBalance}</strong> Ozzies. Card Forge costs {ozziesConfig.cardForgeCost} Ozzies once free/referral credits are spent.
+        </p>
+      )}
+      {walletMessage && (
+        <p className={`forge-wallet-status${walletMessageTone === "error" ? " forge-wallet-status--error" : ""}`} role="alert">
+          {walletMessage}
+        </p>
+      )}
 
       <ReferralPanel />
-
-
     </div>
   );
 }

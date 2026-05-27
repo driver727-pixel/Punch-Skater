@@ -13,9 +13,11 @@ import { sfxClick, sfxSuccessPing } from "../../lib/sfx";
 import { removeBackground, isImageGenConfigured } from "../../services/imageGen";
 import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../../services/boardImageGen";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../../lib/promptBuilder";
+import ozziesConfig from "../../lib/ozziesConfig.json";
 import { useTier } from "../../context/TierContext";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useWallet } from "../../context/WalletContext";
 import { useFactionDiscovery } from "../../hooks/useFactionDiscovery";
 import {
   COLLECTION_REROLL_ACTION_BY_ID,
@@ -52,10 +54,14 @@ import {
 } from "../../lib/boardPlacement";
 import { buildCraftlinguaFlavorFields } from "../../services/craftlingua";
 import { spendCollectionReroll } from "../../services/collectionRewards";
+import { spendOzzies } from "../../services/wallet";
 
 const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
 const DEFAULT_CHARACTER_BLEND = 1;
 const CHARACTER_LAYER_VALIDATOR = createCharacterLayerValidator(CHARACTER_MIN_DIMENSIONS);
+const CARD_FORGE_OZZIES_COST = Number.isFinite(ozziesConfig.cardForgeCost)
+  ? Math.max(1, Math.floor(ozziesConfig.cardForgeCost))
+  : 25;
 
 function buildVariationKey(actionId: CollectionRerollActionId): string {
   return `${actionId}:${Date.now()}:${crypto.randomUUID()}`;
@@ -84,7 +90,7 @@ function buildCharacterAttempts(baseSeed: string, variationKey?: string) {
 export function useForgeGeneration() {
   const {
     tier,
-    canForge,
+    canForge: tierCanForge,
     generateCredits,
     consumeCredit,
     freeForgeReadyAt,
@@ -95,6 +101,7 @@ export function useForgeGeneration() {
   } = useTier();
   const { user, userProfile } = useAuth();
   const { linkedLanguage, profile, useCraftlingua } = useLanguage();
+  const { applyWalletMutation, wallet } = useWallet();
   const { hasFaction, unlockFaction } = useFactionDiscovery();
   const sessionOwnerKey = user?.uid ?? "guest";
   const skipNextSessionPersistRef = useRef(false);
@@ -111,6 +118,9 @@ export function useForgeGeneration() {
   const [forging, setForging] = useState(false);
   const [boardImageLoading, setBoardImageLoading] = useState(false);
   const [boardError, setBoardError] = useState("");
+  const [spendingOzzies, setSpendingOzzies] = useState(false);
+  const [walletMessage, setWalletMessage] = useState<string | null>(null);
+  const [walletMessageTone, setWalletMessageTone] = useState<"info" | "error">("info");
   const [rerollTokens, setRerollTokens] = useState(0);
   const [rerollingActionId, setRerollingActionId] = useState<CollectionRerollActionId | null>(null);
   const [recoveryMessage, setRecoveryMessage] = useState("");
@@ -129,6 +139,10 @@ export function useForgeGeneration() {
     setLayerParams,
     setLayers,
   } = useForgeLayers();
+  const ozziesBalance = wallet?.currentBalance ?? userProfile?.ozziesBalance ?? 0;
+  const requiresOzzies = !tierCanForge && generateCredits === 0 && (tier !== "free" || freeCardUsed);
+  const canSpendOzzies = Boolean(user && requiresOzzies && ozziesBalance >= CARD_FORGE_OZZIES_COST);
+  const canForge = tierCanForge || canSpendOzzies;
   const boardPlacement = useMemo(() => {
     if (!generated) return null;
     const scene = resolveBoardPoseScene(generated.characterSeed);
@@ -262,6 +276,9 @@ export function useForgeGeneration() {
     setForging(false);
     setBoardImageLoading(false);
     setBoardError("");
+    setSpendingOzzies(false);
+    setWalletMessage(null);
+    setWalletMessageTone("info");
     setRecoveryMessage("");
     setRecoveryError("");
     setRerollingActionId(null);
@@ -304,10 +321,38 @@ export function useForgeGeneration() {
     }));
   }, []);
 
-  const handleForge = useCallback(() => {
+  const handleForge = useCallback(async () => {
     if (!canForge) {
+      if (requiresOzzies && user) {
+        setWalletMessageTone("error");
+        setWalletMessage(`You need ${CARD_FORGE_OZZIES_COST} Ozzies to forge after your free and referral credits are gone.`);
+        return;
+      }
       openUpgradeModal();
       return;
+    }
+    setWalletMessage(null);
+    if (requiresOzzies) {
+      if (!user) {
+        openUpgradeModal();
+        return;
+      }
+      setSpendingOzzies(true);
+      try {
+        const walletSpend = await spendOzzies(user, {
+          sink: "card_forge",
+          idempotencyKey: crypto.randomUUID(),
+        });
+        applyWalletMutation(walletSpend);
+        setWalletMessageTone("info");
+        setWalletMessage(`Spent ${CARD_FORGE_OZZIES_COST} Ozzies. Balance: ${walletSpend.wallet.currentBalance}.`);
+      } catch (error) {
+        setWalletMessageTone("error");
+        setWalletMessage(error instanceof Error ? error.message : "Card Forge could not spend Ozzies.");
+        return;
+      } finally {
+        setSpendingOzzies(false);
+      }
     }
     sfxSuccessPing();
 
@@ -357,7 +402,7 @@ export function useForgeGeneration() {
       setRevealedFaction(null);
     }
 
-    if (tier === "free" && generateCredits === 0) {
+    if (!requiresOzzies && tier === "free" && generateCredits === 0) {
       if (!freeCardUsed) {
         markFreeCardUsed();
       }
@@ -409,13 +454,15 @@ export function useForgeGeneration() {
     prompts,
     refreshCraftlinguaFront,
     replaceAbortController,
+    requiresOzzies,
     resetLayerSession,
     runBoardGeneration,
     setLayerParams,
     startFreeForgeCooldown,
     tier,
     unlockFaction,
-    user?.uid,
+    user,
+    applyWalletMutation,
   ]);
 
   const handleReroll = useCallback(async (actionId: CollectionRerollActionId) => {
@@ -708,6 +755,11 @@ export function useForgeGeneration() {
     freeForgeReadyAt,
     generated,
     generateCredits,
+    ozziesBalance,
+    requiresOzzies,
+    spendingOzzies,
+    walletMessage,
+    walletMessageTone,
     handleCloseFactionReveal,
     handleCloseRarityReveal,
     handleForge,
@@ -756,6 +808,11 @@ export function useForgeGeneration() {
     freeForgeReadyAt,
     generated,
     generateCredits,
+    ozziesBalance,
+    requiresOzzies,
+    spendingOzzies,
+    walletMessage,
+    walletMessageTone,
     handleCloseFactionReveal,
     handleCloseRarityReveal,
     handleForge,

@@ -4,6 +4,7 @@ import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
 import { ForgeObjectivePanel } from "../components/ForgeObjectivePanel";
+import { WalletPanel } from "../components/WalletPanel";
 import {
   ACCENT_PRESETS,
   AGE_GROUPS,
@@ -57,6 +58,7 @@ export function CardForge() {
     isFirstCard,
     layers,
     openUpgradeModal,
+    ozziesBalance,
     patchGeneratedCard,
     patchIdentity,
     patchStats,
@@ -64,6 +66,7 @@ export function CardForge() {
     prompts,
     recoveryError,
     recoveryMessage,
+    requiresOzzies,
     revealedFaction,
     revealedRarity,
     rerollTokens,
@@ -82,9 +85,12 @@ export function CardForge() {
     setCharacterRotation,
     setCharacterScale,
     showWelcome,
+    spendingOzzies,
     tier,
     tierCanSave,
     viewing3D,
+    walletMessage,
+    walletMessageTone,
   } = useCardForgeController();
   const battlePass = useBattlePass();
 
@@ -139,6 +145,8 @@ export function CardForge() {
 
       <ForgeObjectivePanel onOpenStartHere={handleReopenWelcome} />
 
+      <WalletPanel />
+
       <div className="forge-layout">
         <ForgeControlsPanel
           accentPresets={ACCENT_PRESETS}
@@ -160,9 +168,14 @@ export function CardForge() {
           onForge={handleForge}
           onOpenUpgradeModal={openUpgradeModal}
           onPromptChange={setPrompt}
+          ozziesBalance={ozziesBalance}
           prompts={prompts}
+          requiresOzzies={requiresOzzies}
           skinTones={SKIN_TONES}
+          spendingOzzies={spendingOzzies}
           tier={tier}
+          walletMessage={walletMessage}
+          walletMessageTone={walletMessageTone}
         />
 
         <ForgePreviewPanel

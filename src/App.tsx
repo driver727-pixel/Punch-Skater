@@ -2,6 +2,7 @@ import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, u
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
+import { WalletProvider } from "./context/WalletContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { useTier } from "./context/TierContext";
 import { Nav } from "./components/Nav";
@@ -267,94 +268,96 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <TierProvider>
-          <ThemeApplier />
-          <LanguageProvider>
-            <ErrorBoundary>
-              <div className="app">
-                <AppParallaxBackdrop />
-                <a className="skip-link" href="#main-content">Skip to main content</a>
-                <ScrollToTopOnRouteChange />
-                <Nav />
-                {!isFirebaseConfigured && (
-                  <div className="firebase-banner">{firebaseUnavailableMessage}</div>
-                )}
-                <PlayerRewardBanner />
-                <main id="main-content" className="main" tabIndex={-1}>
-                  <Suspense fallback={<AppLoadingState />}>
-                    <Routes>
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/forge" element={<CardForge />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/credits" element={<Credits />} />
-                      <Route path="/factions" element={<Factions />} />
-                      <Route path="/lore" element={<Lore />} />
-                      <Route path="/privacy" element={<PrivacyPolicy />} />
-                      <Route path="/terms" element={<TermsOfService />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      <Route path="/account" element={
-                        <ProtectedRoute><AccountSettings /></ProtectedRoute>
-                      } />
-                      <Route path="/collection" element={
-                        <ProtectedRoute><Collection /></ProtectedRoute>
-                      } />
-                      <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
-                      <Route path="/edit/:cardId" element={
-                        <ProtectedRoute><EditCard /></ProtectedRoute>
-                      } />
-                      <Route path="/trades" element={
-                        <ProtectedRoute><Trades /></ProtectedRoute>
-                      } />
-                      <Route path="/arena" element={
-                        <ProtectedRoute><BattleArena /></ProtectedRoute>
-                      } />
-                      <Route path="/race/:raceId" element={
-                        <ProtectedRoute><RaceTrack /></ProtectedRoute>
-                      } />
-                      <Route path="/missions" element={
-                        <ProtectedRoute><Missions /></ProtectedRoute>
-                      } />
-                      <Route path="/joustur" element={
-                        <ProtectedRoute><JousturGate><JousturHome /></JousturGate></ProtectedRoute>
-                      } />
-                      <Route path="/joustur/lineup" element={
-                        <ProtectedRoute><JousturGate><JousturLineupBuilder /></JousturGate></ProtectedRoute>
-                      } />
-                      <Route path="/joustur/match/:id" element={
-                        <ProtectedRoute><JousturGate><JousturBoard /></JousturGate></ProtectedRoute>
-                      } />
-                      <Route path="/joustur/result/:id" element={
-                        <ProtectedRoute><JousturGate><JousturResult /></JousturGate></ProtectedRoute>
-                      } />
-                      <Route path="/joustur/rules" element={<JousturRules />} />
-                      <Route path="/workshop" element={
-                        <ProtectedRoute><Workshop /></ProtectedRoute>
-                      } />
-                      <Route path="/profile" element={
-                        <ProtectedRoute><UserProfile /></ProtectedRoute>
-                      } />
-                      <Route path="/leaderboard" element={
-                        <ProtectedRoute><Leaderboard /></ProtectedRoute>
-                      } />
-                      <Route path="/trash" element={
-                        <ProtectedRoute><Trash /></ProtectedRoute>
-                      } />
-                      <Route path="/admin" element={
-                        <AdminRoute><Admin /></AdminRoute>
-                      } />
-                      <Route path="/dev/asset-generator" element={
-                        <AdminRoute><AssetGenerator /></AdminRoute>
-                      } />
-                      <Route path="/dev/frame-preview" element={<FramePreview />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Footer />
-              </div>
-            </ErrorBoundary>
-          </LanguageProvider>
-        </TierProvider>
+        <WalletProvider>
+          <TierProvider>
+            <ThemeApplier />
+            <LanguageProvider>
+              <ErrorBoundary>
+                <div className="app">
+                  <AppParallaxBackdrop />
+                  <a className="skip-link" href="#main-content">Skip to main content</a>
+                  <ScrollToTopOnRouteChange />
+                  <Nav />
+                  {!isFirebaseConfigured && (
+                    <div className="firebase-banner">{firebaseUnavailableMessage}</div>
+                  )}
+                  <PlayerRewardBanner />
+                  <main id="main-content" className="main" tabIndex={-1}>
+                    <Suspense fallback={<AppLoadingState />}>
+                      <Routes>
+                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/forge" element={<CardForge />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/credits" element={<Credits />} />
+                        <Route path="/factions" element={<Factions />} />
+                        <Route path="/lore" element={<Lore />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/terms" element={<TermsOfService />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/account" element={
+                          <ProtectedRoute><AccountSettings /></ProtectedRoute>
+                        } />
+                        <Route path="/collection" element={
+                          <ProtectedRoute><Collection /></ProtectedRoute>
+                        } />
+                        <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
+                        <Route path="/edit/:cardId" element={
+                          <ProtectedRoute><EditCard /></ProtectedRoute>
+                        } />
+                        <Route path="/trades" element={
+                          <ProtectedRoute><Trades /></ProtectedRoute>
+                        } />
+                        <Route path="/arena" element={
+                          <ProtectedRoute><BattleArena /></ProtectedRoute>
+                        } />
+                        <Route path="/race/:raceId" element={
+                          <ProtectedRoute><RaceTrack /></ProtectedRoute>
+                        } />
+                        <Route path="/missions" element={
+                          <ProtectedRoute><Missions /></ProtectedRoute>
+                        } />
+                        <Route path="/joustur" element={
+                          <ProtectedRoute><JousturGate><JousturHome /></JousturGate></ProtectedRoute>
+                        } />
+                        <Route path="/joustur/lineup" element={
+                          <ProtectedRoute><JousturGate><JousturLineupBuilder /></JousturGate></ProtectedRoute>
+                        } />
+                        <Route path="/joustur/match/:id" element={
+                          <ProtectedRoute><JousturGate><JousturBoard /></JousturGate></ProtectedRoute>
+                        } />
+                        <Route path="/joustur/result/:id" element={
+                          <ProtectedRoute><JousturGate><JousturResult /></JousturGate></ProtectedRoute>
+                        } />
+                        <Route path="/joustur/rules" element={<JousturRules />} />
+                        <Route path="/workshop" element={
+                          <ProtectedRoute><Workshop /></ProtectedRoute>
+                        } />
+                        <Route path="/profile" element={
+                          <ProtectedRoute><UserProfile /></ProtectedRoute>
+                        } />
+                        <Route path="/leaderboard" element={
+                          <ProtectedRoute><Leaderboard /></ProtectedRoute>
+                        } />
+                        <Route path="/trash" element={
+                          <ProtectedRoute><Trash /></ProtectedRoute>
+                        } />
+                        <Route path="/admin" element={
+                          <AdminRoute><Admin /></AdminRoute>
+                        } />
+                        <Route path="/dev/asset-generator" element={
+                          <AdminRoute><AssetGenerator /></AdminRoute>
+                        } />
+                        <Route path="/dev/frame-preview" element={<FramePreview />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
+                  </main>
+                  <Footer />
+                </div>
+              </ErrorBoundary>
+            </LanguageProvider>
+          </TierProvider>
+        </WalletProvider>
       </AuthProvider>
     </BrowserRouter>
   );

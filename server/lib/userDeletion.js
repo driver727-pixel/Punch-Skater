@@ -51,11 +51,13 @@ export async function deleteUserData({ adminDb, uid, pageSize = 200 }) {
   if (!adminDb || !uid) return;
 
   const userDocRef = adminDb.collection('users').doc(uid);
+  const walletDocRef = adminDb.collection('wallets').doc(uid);
   const notificationsDocRef = adminDb.collection('notifications').doc(uid);
 
   await Promise.all([
     deleteCollectionDocs(adminDb, userDocRef.collection('cards'), pageSize),
     deleteCollectionDocs(adminDb, userDocRef.collection('decks'), pageSize),
+    deleteCollectionDocs(adminDb, walletDocRef.collection('ledger'), pageSize),
     deleteCollectionDocs(adminDb, notificationsDocRef.collection('items'), pageSize),
     deleteQueryDocs(adminDb, adminDb.collection('trades').where('fromUid', '==', uid), pageSize),
     deleteQueryDocs(adminDb, adminDb.collection('trades').where('toUid', '==', uid), pageSize),
@@ -75,6 +77,7 @@ export async function deleteUserData({ adminDb, uid, pageSize = 200 }) {
     adminDb.collection('userLookup').doc(uid).delete(),
     adminDb.collection('arena').doc(uid).delete(),
     adminDb.collection('leaderboard').doc(uid).delete(),
+    walletDocRef.delete(),
     adminDb.collection('dailyStreaks').doc(uid).delete(),
     adminDb.collection('battlePass').doc(uid).delete(),
     notificationsDocRef.delete(),
