@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "../context/AuthContext";
 import { isEnabled } from "../lib/featureFlags";
 import {
@@ -31,6 +31,16 @@ import { MissionsPanel } from "../components/MissionsPanel";
 
 const PANEL_WIDTH = 320;
 const SEGMENT_DURATION_MS = 700;
+const ACTION_ERROR_BANNER_STYLE: CSSProperties = {
+  padding: "8px 20px",
+  borderBottom: "1px solid rgba(255,138,138,0.22)",
+  background: "rgba(255,80,80,0.08)",
+  color: "#ffb0b0",
+  fontFamily: "monospace",
+  fontSize: 10,
+  lineHeight: 1.45,
+  flexShrink: 0,
+};
 
 /** Smoothstep easing — eliminates the harsh linear start/stop of token travel. */
 function smoothstep(t: number): number {
@@ -117,10 +127,12 @@ function MissionDebriefPanel({
   debrief,
   contract,
   onDismiss,
+  onRefresh,
 }: {
   debrief?: MissionRunDebrief;
   contract?: WorldContract;
   onDismiss: () => void;
+  onRefresh: () => void;
 }) {
   const hasDebrief = Boolean(debrief);
   const success = debrief?.success === true;
@@ -188,7 +200,7 @@ function MissionDebriefPanel({
       <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
         <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>
           {debrief?.summary ?? (!hasDebrief
-            ? "Run record unavailable. Refresh the Missions page before dismissing this run."
+            ? "Run record unavailable. Refresh the Missions page to reload the latest run state."
             : success ? "Run complete." : "Run logged with no gameplay penalties.")}
         </p>
       </div>
@@ -335,7 +347,7 @@ function MissionDebriefPanel({
         <button
           type="button"
           aria-label="Return to map"
-          onClick={onDismiss}
+          onClick={hasDebrief ? onDismiss : onRefresh}
           style={{
             width: "100%",
             padding: "10px 0",
@@ -352,7 +364,7 @@ function MissionDebriefPanel({
             transition: "background 0.15s",
           }}
         >
-          Return to map
+          {hasDebrief ? "Return to map" : "Refresh Missions"}
         </button>
       </div>
     </div>
@@ -761,7 +773,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         })
         .catch(() => {
           lastCheckpointSyncRef.current = "";
-          setActionError("Failed to sync outbound checkpoint. Please try refreshing Missions.");
+          setActionError("Failed to sync outbound checkpoint. Please try again or refresh the Missions page.");
           setSegmentTravel(null);
           animatingRef.current = false;
         });
@@ -814,7 +826,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         })
         .catch(() => {
           lastCheckpointSyncRef.current = "";
-          setActionError("Failed to sync return checkpoint. Please try refreshing Missions.");
+          setActionError("Failed to sync return checkpoint. Please try again or refresh the Missions page.");
           setSegmentTravel(null);
           animatingRef.current = false;
         });
@@ -871,7 +883,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Failed to start run.");
+      const message = err instanceof Error ? err.message : "Failed to start run.";
+      setActionError(`${message} Please try again or refresh the Missions page.`);
     } finally {
       setLaunching(false);
     }
@@ -885,7 +898,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       const run = await resolveEncounter(uid, activeRun.runId, choiceId, userEmail);
       setActiveRun(run);
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Failed to resolve encounter.");
+      const message = err instanceof Error ? err.message : "Failed to resolve encounter.";
+      setActionError(`${message} Please try again or refresh the Missions page.`);
     } finally {
       setResolvingEncounter(false);
     }
@@ -900,7 +914,8 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Failed to resolve POI fork.");
+      const message = err instanceof Error ? err.message : "Failed to resolve POI fork.";
+      setActionError(`${message} Please try again or refresh the Missions page.`);
     } finally {
       setResolvingFork(false);
     }
@@ -923,6 +938,10 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
       });
     }
   }, [activeRun, uid, userEmail]);
+
+  const handleRefreshMissions = useCallback(() => {
+    window.location.reload();
+  }, []);
 
   if (loading) {
     return (
@@ -997,7 +1016,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         </div>
 
         {actionError && (
-          <div style={{ padding: "8px 20px", borderBottom: "1px solid rgba(255,138,138,0.22)", background: "rgba(255,80,80,0.08)", color: "#ffb0b0", fontFamily: "monospace", fontSize: 10, lineHeight: 1.45, flexShrink: 0 }}>
+          <div style={ACTION_ERROR_BANNER_STYLE}>
             {actionError}
           </div>
         )}
@@ -1031,6 +1050,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
             debrief={activeRun?.debrief}
             contract={selectedContract}
             onDismiss={handleDismissDebrief}
+            onRefresh={handleRefreshMissions}
           />
         ) : selectedContract ? (
           <ContractDetailPanel
