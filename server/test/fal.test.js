@@ -160,12 +160,14 @@ test('readFalRequestConfig normalizes env-backed Fal profiles and warns on inval
     FAL_CHARACTER_IMAGE_MODEL_URL: 'https://fal.run/character-model',
     FAL_CHARACTER_LORA_PATH: 'https://fal.media/character.safetensors',
     FAL_CHARACTER_LORA_SCALE: 'nope',
+    FAL_MISSIONS_BACKDROP_MODEL_URL: 'https://fal.run/backdrop-model',
   }, {
     warn: (message) => warnings.push(message),
   });
 
   assert.equal(normalizeFalProfile('unknown'), 'default');
   assert.equal(normalizeFalProfile('character'), 'character');
+  assert.equal(normalizeFalProfile('backdrop'), 'backdrop');
   assert.deepEqual(resolveFalProfile('character', config.profiles), {
     modelUrl: 'https://fal.run/character-model',
     configUrl: 'https://v3b.fal.media/files/b/0a962cdb/GvvgV0ByFDT7TB0SNb9Dc_config_cf867d1b-1b55-45d1-a4a4-fe5e223ec932.json',
@@ -176,7 +178,18 @@ test('readFalRequestConfig normalizes env-backed Fal profiles and warns on inval
     configUrl: '',
     defaultLoras: [{ path: 'https://fal.media/default.safetensors', scale: 0.75 }],
   });
+  assert.deepEqual(resolveFalProfile('backdrop', config.profiles), {
+    modelUrl: 'https://fal.run/backdrop-model',
+    configUrl: '',
+    defaultLoras: [],
+  });
   assert.deepEqual(warnings, ['⚠️  FAL_CHARACTER_LORA_SCALE is invalid — falling back to 1.']);
+});
+
+test('readFalRequestConfig uses fal-ai/nano-banana-2 as default backdrop model URL', () => {
+  const config = readFalRequestConfig({}, { warn: () => {} });
+  assert.equal(resolveFalProfile('backdrop', config.profiles).modelUrl, 'https://fal.run/fal-ai/nano-banana-2');
+  assert.deepEqual(resolveFalProfile('backdrop', config.profiles).defaultLoras, []);
 });
 
 test('normalizeFalProfile falls back to default for invalid values', () => {
