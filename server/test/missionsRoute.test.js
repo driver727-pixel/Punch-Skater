@@ -129,6 +129,10 @@ function createFirestoreHarness(initialData = {}) {
         store.set(path, next);
         writeLog.push({ path, data: next, options });
       },
+      async delete() {
+        store.delete(path);
+        writeLog.push({ path, deleted: true });
+      },
       collection(name) {
         return createCollection(`${path}/${name}`);
       },
@@ -1397,4 +1401,162 @@ test('district world fail route does not convert completed success into failure 
   assert.equal(persistedCard.ozzies, 85);
   assert.equal(persistedCard.missionStats.completedRuns, 1);
   assert.equal(persistedCard.missionFailureHistory, undefined);
+});
+
+test('district world launch route allows a fresh contract after MISSION_FAILED', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: {
+      worldId,
+      boardDateKey,
+      dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+      nodes: [
+        { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+        { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+      ],
+      edges: [{ from: 'workshop', to: 'poi-0' }],
+      contracts: [{
+        id: 'contract-1',
+        nodeId: 'poi-0',
+        definitionId: 'def-1',
+        title: 'Contract One',
+        tagline: 'Try again',
+        district: 'The Grid',
+        rewardXp: 100,
+        rewardOzzies: 80,
+        visibility: 'visible',
+        status: 'active',
+      }],
+    },
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'MISSION_FAILED',
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+      routeNodeIds: ['workshop', 'poi-0'],
+      checkpointNodeIndex: 0,
+      launchedAt: `${boardDateKey}T01:00:00.000Z`,
+      updatedAt: `${boardDateKey}T01:01:00.000Z`,
+      completedAt: `${boardDateKey}T01:01:00.000Z`,
+      completionFinalizedAt: `${boardDateKey}T01:01:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/run');
+
+  const res = await invokeRoute(route, {
+    body: { contractId: 'contract-1', deckId: 'deck-1', deckName: 'Deck One' },
+  });
+
+  assert.equal(res.statusCode, 201);
+  assert.equal(res.body.activeRun.phase, 'TRAVELING_OUTBOUND');
+  assert.equal(res.body.activeRun.checkpointNodeIndex, 0);
+  assert.equal(res.body.activeRun.completionFinalizedAt, undefined,
+    'fresh launch must not inherit the prior terminal finalization stamp');
+  const persistedRun = adminDb.store.get(`missionActiveRuns/${runId}`);
+  assert.equal(persistedRun.phase, 'TRAVELING_OUTBOUND');
+  assert.equal(persistedRun.completionFinalizedAt, undefined);
+});
+
+test('district world acknowledge route deletes a finalized terminal run', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'MISSION_COMPLETE',
+      contractId: 'contract-1',
+      completedAt: `${boardDateKey}T01:10:00.000Z`,
+      completionFinalizedAt: `${boardDateKey}T01:10:00.000Z`,
+      archivedAt: `${boardDateKey}T01:10:00.000Z`,
+    },
+    [`missionRunArchives/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      phase: 'MISSION_COMPLETE',
+      archivedAt: `${boardDateKey}T01:10:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/acknowledge');
+  assert.ok(route, 'POST /api/missions/world/acknowledge route must be registered');
+
+  const res = await invokeRoute(route, { body: { runId } });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun, null);
+  assert.equal(res.body.acknowledged, true);
+  assert.equal(adminDb.store.get(`missionActiveRuns/${runId}`), undefined,
+    'active-run document is removed after acknowledge');
+  assert.ok(adminDb.store.get(`missionRunArchives/${runId}`),
+    'archive copy survives acknowledge');
+});
+
+test('district world acknowledge route is idempotent when the run was already dropped', async () => {
+  const adminDb = createFirestoreHarness({});
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/acknowledge');
+
+  const res = await invokeRoute(route, { body: { runId: 'missing_run' } });
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.activeRun, null);
+  assert.equal(res.body.acknowledged, true);
+});
+
+test('district world acknowledge route refuses to drop runs that are still mid-flight', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-1',
+      boardDateKey,
+      phase: 'TRAVELING_INBOUND',
+      contractId: 'contract-1',
+      routeNodeIds: ['workshop', 'poi-0'],
+      checkpointNodeIndex: 1,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/acknowledge');
+
+  const res = await invokeRoute(route, { body: { runId } });
+
+  assert.equal(res.statusCode, 409);
+  assert.ok(adminDb.store.get(`missionActiveRuns/${runId}`),
+    'in-flight run is preserved when acknowledge is rejected');
+});
+
+test('district world acknowledge route rejects runs owned by another user', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-2_${boardDateKey}`;
+  const runId = `${worldId}_run`;
+  const adminDb = createFirestoreHarness({
+    [`missionActiveRuns/${runId}`]: {
+      runId,
+      uid: 'user-2',
+      boardDateKey,
+      phase: 'MISSION_COMPLETE',
+      contractId: 'contract-1',
+      completionFinalizedAt: `${boardDateKey}T01:10:00.000Z`,
+    },
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/acknowledge');
+
+  const res = await invokeRoute(route, { body: { runId } });
+
+  assert.equal(res.statusCode, 403);
+  assert.ok(adminDb.store.get(`missionActiveRuns/${runId}`),
+    'foreign-owned run is not deleted');
 });

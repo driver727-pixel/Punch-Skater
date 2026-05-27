@@ -156,6 +156,10 @@ const MISSION_WORLD_CHECKPOINT_API_URL = resolveApiUrl(
   (import.meta.env.VITE_MISSIONS_WORLD_CHECKPOINT_API_URL as string | undefined)?.trim(),
   "/api/missions/world/checkpoint",
 );
+const MISSION_WORLD_ACKNOWLEDGE_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_ACKNOWLEDGE_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/acknowledge",
+);
 
 export async function getDistrictWorld(uid: string, userEmail?: string | null): Promise<DistrictWorldPayload> {
   if (!uid || !isEnabled("MISSIONS", userEmail)) {
@@ -251,6 +255,34 @@ export async function persistDistrictCheckpoint(
     "Failed to persist checkpoint.",
   );
   return payload.activeRun;
+}
+
+/**
+ * Acknowledge a terminal mission run so the server drops it from the active
+ * runs collection. The archive copy is preserved as history. Safe to call
+ * multiple times; the server is idempotent.
+ */
+export async function acknowledgeDistrictRun(
+  uid: string,
+  runId: string,
+  userEmail?: string | null,
+): Promise<void> {
+  if (!uid || !isEnabled("MISSIONS", userEmail) || !runId) {
+    return;
+  }
+  const idToken = await getIdToken();
+  await fetchMissionJson<{ activeRun: null; acknowledged: boolean }>(
+    MISSION_WORLD_ACKNOWLEDGE_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId }),
+    },
+    "Failed to acknowledge mission run.",
+  );
 }
 
 const MISSION_WORLD_ENCOUNTER_API_URL = resolveApiUrl(
