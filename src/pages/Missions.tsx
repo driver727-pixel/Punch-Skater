@@ -103,7 +103,7 @@ function RunPhaseBadge({ phase }: { phase: string }) {
 function DebriefSectionLabel({ children, color = "rgba(125,231,255,0.5)" }: { children: ReactNode; color?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0 0" }}>
-      <span style={{ fontFamily: "monospace", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color }}>
+      <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color }}>
         {children}
       </span>
       <div style={{ flex: 1, height: 1, background: `${color}40` }} />
@@ -131,7 +131,9 @@ function MissionDebriefPanel({
   const duration = formatRunDuration(debrief?.launchedAt, debrief?.completedAt);
   const encounterResults = results.filter((r) => r.resultType === "travel_encounter");
   const routeLegs = debrief?.routeSummary ?? "";
-  const shortRunId = debrief?.runId ? debrief.runId.split("_").pop()?.slice(-8) : null;
+  const shortRunId = debrief?.runId
+    ? (debrief.runId.includes("_") ? debrief.runId.split("_").pop() : debrief.runId)?.slice(-8) ?? null
+    : null;
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
@@ -194,19 +196,19 @@ function MissionDebriefPanel({
         <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 10px", fontFamily: "monospace", fontSize: 10 }}>
           {routeLegs && (
             <>
-              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 8, letterSpacing: "0.08em", alignSelf: "center" }}>Legs</span>
+              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Legs</span>
               <span style={{ color: "rgba(255,255,255,0.8)" }}>{routeLegs}</span>
             </>
           )}
           {encounterResults.length > 0 && (
             <>
-              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 8, letterSpacing: "0.08em", alignSelf: "center" }}>Encounters</span>
+              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Encounters</span>
               <span style={{ color: "rgba(255,255,255,0.8)" }}>{encounterResults.length}</span>
             </>
           )}
           {debrief?.deckName && (
             <>
-              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 8, letterSpacing: "0.08em", alignSelf: "center" }}>Deck</span>
+              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Deck</span>
               <span style={{ color: "rgba(255,255,255,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debrief.deckName}</span>
             </>
           )}
@@ -222,14 +224,14 @@ function MissionDebriefPanel({
               const isPoi = result.resultType === "poi_resolution";
               const entryColor = isPoi ? accent.color : "rgba(255,255,255,0.65)";
               const entryBadge = isPoi ? "🎯" : "⚡";
-              const hasGain = result.rewardXpDelta > 0 || result.rewardOzziesDelta > 0;
+              const hasGain = (Number(result.rewardXpDelta) > 0) || (Number(result.rewardOzziesDelta) > 0);
               return (
                 <div
                   key={`${result.resultType}-${result.choiceId}-${index}`}
                   style={{
                     padding: "8px 10px",
                     border: `1px solid ${isPoi ? `${accent.color}30` : "rgba(255,255,255,0.09)"}`,
-                    borderLeft: `2px solid ${isPoi ? accent.color : (result.success ? "rgba(125,255,182,0.5)" : "rgba(255,138,138,0.35)")}`,
+                    borderLeft: `2px solid ${isPoi ? accent.color : (result.success !== false ? "rgba(125,255,182,0.5)" : "rgba(255,138,138,0.35)")}`,
                     borderRadius: "0 4px 4px 0",
                     background: isPoi ? `${accent.color}08` : "rgba(255,255,255,0.02)",
                   }}
@@ -242,9 +244,9 @@ function MissionDebriefPanel({
                       <p style={{ margin: "3px 0 0", fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.5)", lineHeight: 1.4 }}>{result.summary}</p>
                     </div>
                     {success && hasGain && (
-                      <div style={{ flexShrink: 0, textAlign: "right", fontFamily: "monospace", fontSize: 8, color: "#7dffb6", lineHeight: 1.5 }}>
-                        {result.rewardXpDelta > 0 && <div>+{result.rewardXpDelta} XP</div>}
-                        {result.rewardOzziesDelta > 0 && <div>+{result.rewardOzziesDelta} Ozz</div>}
+                      <div style={{ flexShrink: 0, textAlign: "right", fontFamily: "monospace", fontSize: 9, color: "#7dffb6", lineHeight: 1.5 }}>
+                        {Number(result.rewardXpDelta) > 0 && <div>+{result.rewardXpDelta} XP</div>}
+                        {Number(result.rewardOzziesDelta) > 0 && <div>+{result.rewardOzziesDelta} Ozzies</div>}
                       </div>
                     )}
                   </div>
@@ -310,7 +312,7 @@ function MissionDebriefPanel({
           {debrief?.cardName ? (
             <>
               <p style={{ margin: 0, fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: "#ff8af8" }}>{debrief.cardName}</p>
-              <p style={{ margin: "2px 0 0", fontFamily: "monospace", fontSize: 8, color: "rgba(255,138,248,0.5)", letterSpacing: "0.06em" }}>{debrief.cardId}</p>
+              <p style={{ margin: "2px 0 0", fontFamily: "monospace", fontSize: 9, color: "rgba(255,138,248,0.5)", letterSpacing: "0.06em" }}>{debrief.cardId}</p>
             </>
           ) : (
             <p style={{ margin: 0, fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
