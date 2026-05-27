@@ -932,7 +932,10 @@ export interface MissionRunRecord {
   failureReason?: string;
 }
 
-/** @sprint 9 @owner pr4 — Non-punitive failed-run history separate from gameplay mission stats/rewards. */
+/**
+ * @sprint 9 @owner pr4 — Non-punitive failed-run history separate from gameplay mission stats/rewards.
+ * Literal success/reward fields enforce that failure records cannot carry gameplay payouts.
+ */
 export interface MissionFailureHistoryRecord extends MissionRunRecord {
   recordType: "mission_failure";
   success: false;
