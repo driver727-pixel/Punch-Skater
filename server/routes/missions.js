@@ -329,7 +329,6 @@ function findRouteAStar(nodes, edges, startId, goalId) {
     }
     openSet.delete(currentId);
     for (const neighborId of (adjacency.get(currentId) ?? [])) {
-      if (!nodeById.has(neighborId)) continue;
       const tentativeG = (gScore.get(currentId) ?? Number.POSITIVE_INFINITY) + 1;
       if (tentativeG >= (gScore.get(neighborId) ?? Number.POSITIVE_INFINITY)) continue;
       cameFrom.set(neighborId, currentId);

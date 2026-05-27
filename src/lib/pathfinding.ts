@@ -97,16 +97,14 @@ export function findAStarRoute(graph: PathfindingGraph, startId: string, goalId:
     openSet.delete(currentId);
     const neighbors = adjacency.get(currentId);
     if (!neighbors) continue;
-
     for (const neighborId of neighbors) {
-      const neighborNode = nodesById.get(neighborId);
-      if (!neighborNode) continue;
       const currentG = gScore.get(currentId) ?? Number.POSITIVE_INFINITY;
       const tentativeG = currentG + 1;
       if (tentativeG >= (gScore.get(neighborId) ?? Number.POSITIVE_INFINITY)) continue;
 
       cameFrom.set(neighborId, currentId);
       gScore.set(neighborId, tentativeG);
+      const neighborNode = nodesById.get(neighborId)!;
       fScore.set(neighborId, tentativeG + manhattanDistance(neighborNode, goalNode));
       openSet.add(neighborId);
     }
