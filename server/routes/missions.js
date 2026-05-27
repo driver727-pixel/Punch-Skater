@@ -1686,6 +1686,8 @@ export function registerMissionRoutes(app, {
         const resumePhase = activeRun.encounter.resumePhase;
         const choiceId = typeof req.body?.choiceId === 'string'
           ? req.body.choiceId.trim()
+          // Backward compatibility for clients from the previous PR that sent
+          // `{ outcome: { choiceId } }`; new clients send top-level choiceId.
           : typeof req.body?.outcome?.choiceId === 'string'
             ? req.body.outcome.choiceId.trim()
             : '';

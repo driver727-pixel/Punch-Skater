@@ -127,7 +127,9 @@ function hashString(value) {
 }
 
 function cloneJson(value) {
-  return value == null ? value : JSON.parse(JSON.stringify(value));
+  if (value == null) return value;
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
 }
 
 function normalizeLeg(phase) {
