@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { GeoAtlas } from "../components/GeoAtlas";
 import { SkateboardStatsPanel } from "../components/SkateboardStatsPanel";
+import { useAuth } from "../context/AuthContext";
+import { useWallet } from "../context/WalletContext";
 import { useDecks } from "../hooks/useDecks";
 import { useCollection } from "../hooks/useCollection";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
@@ -38,6 +40,7 @@ import type { District, RoadCorridor } from "../lib/types";
 import { spawnCelebrationBurst } from "../lib/celebration";
 import { sfxError, sfxRewardShower, sfxSuccess, sfxSuccessPing, sfxClick, sfxNavigate } from "../lib/sfx";
 import { loadCompletedMissions, saveCompletedMissions } from "../lib/storage";
+import { claimMissionReward } from "../services/wallet";
 
 const MISSION_MARKER_OFFSET_Y = -76;
 const DISTRICT_MARKER_OFFSETS = [
@@ -59,6 +62,16 @@ const ATLAS_FILTERS = [
 const DEFAULT_ATLAS_FILTER: AtlasFilter = "all";
 
 type AtlasFilter = (typeof ATLAS_FILTERS)[number]["id"];
+type MissionWalletRewardState = {
+  status: "credited" | "failed" | "none";
+  missionId?: string;
+  idempotencyKey?: string;
+  balanceAfter?: number;
+  error?: string;
+};
+type MissionResultView = MissionResult & {
+  walletReward?: MissionWalletRewardState;
+};
 
 function resolveMissionLocation(district: District) {
   return DISTRICT_WEATHER_LOCATIONS[district] ?? {
@@ -118,16 +131,19 @@ function getMissionStateLabel(
 
 export function Mission() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { applyWalletMutation } = useWallet();
   const { cards, updateCard } = useCollection();
   const { decks, updateCardInDecks } = useDecks();
   const { weatherByDistrict, loading: weatherLoading, error: weatherError } = useDistrictWeather();
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
   const [activeMissionId, setActiveMissionId] = useState<string>(DISTRICT_MISSIONS[0].id);
   const [runnerCardId, setRunnerCardId] = useState<string | null>(null);
-  const [missionResult, setMissionResult] = useState<MissionResult | null>(null);
+  const [missionResult, setMissionResult] = useState<MissionResultView | null>(null);
   const [pendingFork, setPendingFork] = useState<MissionForkPrompt | null>(null);
   const [forkChoices, setForkChoices] = useState<Record<string, ForkChoice>>({});
   const [claimedPartsRewardId, setClaimedPartsRewardId] = useState<string | null>(null);
+  const [resolvingMission, setResolvingMission] = useState(false);
   const [atlasFilter, setAtlasFilter] = useState<AtlasFilter>(DEFAULT_ATLAS_FILTER);
   const [atlasCollapsed, setAtlasCollapsed] = useState(false);
   const [selectorCollapsed, setSelectorCollapsed] = useState(false);
@@ -138,7 +154,10 @@ export function Mission() {
   const deckSelectionRef = useRef<HTMLDivElement | null>(null);
   const missionResultRef = useRef<HTMLElement | null>(null);
   const missionHasRewardsToDisplay = Boolean(
-    missionResult?.success && (missionResult.ozziesReward > 0 || missionResult.partsReward),
+    missionResult?.success && (
+      missionResult.partsReward
+      || (missionResult.ozziesReward > 0 && missionResult.walletReward?.status === "credited")
+    ),
   );
 
   useEffect(() => {
@@ -388,37 +407,113 @@ export function Mission() {
     });
   }, []);
 
-  const handleRunMission = () => {
+  const finalizeMissionResult = useCallback(async (missionId: string, result: MissionResult): Promise<MissionResultView> => {
+    if (!result.success || result.ozziesReward <= 0 || !user) {
+      return {
+        ...result,
+        walletReward: { status: "none" },
+      };
+    }
+
+    const idempotencyKey = crypto.randomUUID();
+    try {
+      const reward = await claimMissionReward(user, { missionId, idempotencyKey });
+      applyWalletMutation(reward);
+      return {
+        ...result,
+        walletReward: {
+          status: "credited",
+          missionId,
+          idempotencyKey,
+          balanceAfter: reward.wallet.currentBalance,
+        },
+      };
+    } catch (error) {
+      return {
+        ...result,
+        walletReward: {
+          status: "failed",
+          missionId,
+          idempotencyKey,
+          error: error instanceof Error ? error.message : "Mission payout failed.",
+        },
+      };
+    }
+  }, [applyWalletMutation, user]);
+
+  const handleRunMission = async () => {
     if (!activeDeck || missionAccessBlocked || !missionPreview.runnerCard) return;
+    setResolvingMission(true);
     setClaimedPartsRewardId(null);
     setForkChoices({});
     setPendingFork(null);
-    const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, {});
-    if (outcome.kind === "fork") {
-      setPendingFork(outcome);
-      setMissionResult(null);
-    } else {
+    try {
+      const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, {});
+      if (outcome.kind === "fork") {
+        setPendingFork(outcome);
+        setMissionResult(null);
+        return;
+      }
       if (outcome.result.success) markMissionComplete(activeMission.id);
-      setMissionResult(outcome.result);
+      setMissionResult(await finalizeMissionResult(activeMission.id, outcome.result));
       setPendingFork(null);
+    } finally {
+      setResolvingMission(false);
     }
   };
 
-  const handleForkChoice = (choice: ForkChoice) => {
+  const handleForkChoice = async (choice: ForkChoice) => {
     if (!activeDeck || !pendingFork) return;
+    setResolvingMission(true);
     const nextChoices = { ...forkChoices, [pendingFork.forkStepId]: choice };
     setForkChoices(nextChoices);
     setPendingFork(null);
-    const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, nextChoices);
-    if (outcome.kind === "fork") {
-      setPendingFork(outcome);
-      setMissionResult(null);
-    } else {
+    try {
+      const outcome = runDistrictMission(activeMission.id, missionPreview.playerDeck, nextChoices);
+      if (outcome.kind === "fork") {
+        setPendingFork(outcome);
+        setMissionResult(null);
+        return;
+      }
       if (outcome.result.success) markMissionComplete(activeMission.id);
-      setMissionResult(outcome.result);
+      setMissionResult(await finalizeMissionResult(activeMission.id, outcome.result));
       setPendingFork(null);
+    } finally {
+      setResolvingMission(false);
     }
   };
+
+  const handleRetryMissionReward = useCallback(async () => {
+    if (!missionResult?.walletReward?.idempotencyKey || !missionResult.walletReward.missionId || !user) return;
+    setResolvingMission(true);
+    try {
+      const reward = await claimMissionReward(user, {
+        missionId: missionResult.walletReward.missionId,
+        idempotencyKey: missionResult.walletReward.idempotencyKey,
+      });
+      applyWalletMutation(reward);
+      setMissionResult({
+        ...missionResult,
+        walletReward: {
+          status: "credited",
+          missionId: missionResult.walletReward.missionId,
+          idempotencyKey: missionResult.walletReward.idempotencyKey,
+          balanceAfter: reward.wallet.currentBalance,
+        },
+      });
+    } catch (error) {
+      setMissionResult({
+        ...missionResult,
+        walletReward: {
+          ...missionResult.walletReward,
+          status: "failed",
+          error: error instanceof Error ? error.message : "Mission payout failed.",
+        },
+      });
+    } finally {
+      setResolvingMission(false);
+    }
+  }, [applyWalletMutation, missionResult, user]);
 
   const handleApplyPartsReward = (reward: MissionPartsUpgradeReward) => {
     const sourceCard = cards.find((card) => card.id === missionPreview.runnerCard?.id);
@@ -613,9 +708,9 @@ export function Mission() {
             <button
               className="btn-primary"
               onClick={() => { sfxClick(); handleRunMission(); }}
-              disabled={!activeDeck || !hasRunner || missionAccessBlocked}
+              disabled={!activeDeck || !hasRunner || missionAccessBlocked || resolvingMission}
             >
-              ▶ Run Mission
+              {resolvingMission ? "… Resolving" : "▶ Run Mission"}
             </button>
           </div>
         </div>
@@ -835,10 +930,10 @@ export function Mission() {
                   </ol>
                 )}
                 <div className="mission-fork__choices">
-                  <button className="btn-secondary" onClick={() => { sfxClick(); handleForkChoice("A"); }}>
+                  <button className="btn-secondary" disabled={resolvingMission} onClick={() => { sfxClick(); handleForkChoice("A"); }}>
                     {pendingFork.optionA.label}
                   </button>
-                  <button className="btn-secondary" onClick={() => { sfxClick(); handleForkChoice("B"); }}>
+                  <button className="btn-secondary" disabled={resolvingMission} onClick={() => { sfxClick(); handleForkChoice("B"); }}>
                     {pendingFork.optionB.label}
                   </button>
                 </div>
@@ -889,7 +984,9 @@ export function Mission() {
                     {missionResult.success
                       ? missionHasRewardsToDisplay
                         ? "Runner touched down with fresh loot and a whole lot of swagger."
-                        : "Runner made it back clean."
+                        : missionResult.walletReward?.status === "failed"
+                          ? "Runner made it back, but the payout terminal needs another try."
+                          : "Runner made it back clean."
                       : "The route fought back harder than your crew could handle."}
                   </p>
                 </div>
@@ -899,7 +996,7 @@ export function Mission() {
               </div>
               {missionResult.success && missionHasRewardsToDisplay && (
                 <div className="mission-result__rewards">
-                  {missionResult.ozziesReward > 0 && (
+                  {missionResult.ozziesReward > 0 && missionResult.walletReward?.status === "credited" && (
                     <div className="mission-result__reward-card mission-result__reward-card--ozzies">
                       <span className="mission-result__reward-label">Ozzies haul</span>
                       <strong className="mission-result__reward-value">💰 {missionResult.ozziesReward}</strong>
@@ -937,13 +1034,31 @@ export function Mission() {
                   <span className="mission-stat-value">🧩 {missionResult.partsReward.rewardLabel}</span>
                 </div>
               )}
-              {missionResult.ozziesReward > 0 && (
+              {missionResult.ozziesReward > 0 && missionResult.walletReward?.status === "credited" && (
                 <div className="mission-stat-row">
                   <span className="mission-stat-label">Ozzies Earned</span>
                   <span className="mission-stat-value">💰 {missionResult.ozziesReward}</span>
                 </div>
               )}
+              {missionResult.walletReward?.status === "credited" && typeof missionResult.walletReward.balanceAfter === "number" && (
+                <div className="mission-stat-row">
+                  <span className="mission-stat-label">Wallet Balance</span>
+                  <span className="mission-stat-value">💰 {missionResult.walletReward.balanceAfter}</span>
+                </div>
+              )}
             </div>
+            {missionResult.walletReward?.status === "failed" && (
+              <div className="mission-wallet-alert" role="alert">
+                <p>{missionResult.walletReward.error ?? "Mission payout failed."}</p>
+                <button
+                  className="btn-secondary"
+                  onClick={() => { sfxClick(); void handleRetryMissionReward(); }}
+                  disabled={resolvingMission}
+                >
+                  {resolvingMission ? "Retrying…" : "Retry Ozzies payout"}
+                </button>
+              </div>
+            )}
             {missionResult.partsReward && (
               <div className="mission-result-popup__upgrade">
                 <h4>{missionResult.partsReward.label}</h4>

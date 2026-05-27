@@ -37,6 +37,9 @@ interface UserProfile {
   email: string;
   displayName: string;
   isAdmin?: boolean;
+  ozziesBalance?: number;
+  ozziesLifetimeEarned?: number;
+  ozziesLifetimeSpent?: number;
 }
 
 interface AuthContextValue {
@@ -70,6 +73,10 @@ function createAuthUnavailableError() {
 
 function getProfileString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function getProfileNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 function getFallbackDisplayName(user: User): string {
@@ -124,6 +131,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [adminClaim, setAdminClaim] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [walletProfile, setWalletProfile] = useState({
+    ozziesBalance: 0,
+    ozziesLifetimeEarned: 0,
+    ozziesLifetimeSpent: 0,
+  });
 
   useEffect(() => {
     if (!auth) {
@@ -160,6 +172,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) {
+      setWalletProfile({
+        ozziesBalance: 0,
+        ozziesLifetimeEarned: 0,
+        ozziesLifetimeSpent: 0,
+      });
+      return;
+    }
+    if (!db) return;
+
+    return onSnapshot(
+      doc(db, "wallets", user.uid),
+      (snap) => {
+        const data = snap.exists() ? snap.data() : {};
+        setWalletProfile({
+          ozziesBalance: getProfileNumber(data.currentBalance) ?? 0,
+          ozziesLifetimeEarned: getProfileNumber(data.lifetimeEarned) ?? 0,
+          ozziesLifetimeSpent: getProfileNumber(data.lifetimeSpent) ?? 0,
+        });
+      },
+      () => {
+        setWalletProfile({
+          ozziesBalance: 0,
+          ozziesLifetimeEarned: 0,
+          ozziesLifetimeSpent: 0,
+        });
+      },
+    );
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
       setUserProfile(null);
       return;
     }
@@ -169,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email ?? "",
           displayName: getFallbackDisplayName(user),
           isAdmin: adminClaim,
+          ...walletProfile,
         });
       return;
     }
@@ -185,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             getProfileString(data.displayName)
             ?? getFallbackDisplayName(user),
           isAdmin: adminClaim,
+          ...walletProfile,
         });
       },
       () => {
@@ -193,10 +238,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email ?? "",
           displayName: getFallbackDisplayName(user),
           isAdmin: adminClaim,
+          ...walletProfile,
         });
       },
     );
-  }, [user, adminClaim]);
+  }, [user, adminClaim, walletProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!auth) throw createAuthUnavailableError();

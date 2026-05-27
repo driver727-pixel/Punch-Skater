@@ -2,6 +2,7 @@ import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
+import { WalletPanel } from "../components/WalletPanel";
 import {
   ACCENT_PRESETS,
   AGE_GROUPS,
@@ -29,6 +30,7 @@ export function CardForge() {
     freeCardUsed,
     generated,
     generateCredits,
+    ozziesBalance,
     handleClose3D,
     handleCloseFactionReveal,
     handleClosePrint,
@@ -52,9 +54,11 @@ export function CardForge() {
     printing,
     prompts,
     revealedFaction,
+    requiresOzzies,
     saveError,
     savedCard,
     saving,
+    spendingOzzies,
     setArchetype,
     setBoardConfig,
     setCharacterBlend,
@@ -62,6 +66,7 @@ export function CardForge() {
     showWelcome,
     tier,
     tierCanSave,
+    walletMessage,
     viewing3D,
   } = useCardForgeController();
 
@@ -95,6 +100,8 @@ export function CardForge() {
         </button>
       </div>
 
+      <WalletPanel />
+
       <div className="forge-layout">
         <ForgeControlsPanel
           accentPresets={ACCENT_PRESETS}
@@ -115,6 +122,7 @@ export function CardForge() {
           hairLengths={HAIR_LENGTHS}
           hasAnyLayerUrl={hasAnyLayerUrl}
           isAnyLayerLoading={isAnyLayerLoading}
+          ozziesBalance={ozziesBalance}
           onArchetypeChange={setArchetype}
           onBlendChange={setCharacterBlend}
           onBoardConfigChange={setBoardConfig}
@@ -127,10 +135,13 @@ export function CardForge() {
           onSaveToCollection={handleSaveToCollection}
           prompts={prompts}
           rarities={RARITIES}
+          requiresOzzies={requiresOzzies}
           saveError={saveError}
           saving={saving}
           skinTones={SKIN_TONES}
+          spendingOzzies={spendingOzzies}
           tier={tier}
+          walletMessage={walletMessage}
         />
 
         <ForgePreviewPanel

@@ -1,0 +1,17 @@
+{
+  "cardForgeCost": 25,
+  "missionRewards": {
+    "airaway-sky-organ-run": 50,
+    "airaway-contractor-parts-run": 30,
+    "airaway-skybridge-pizza-lift": 25,
+    "roads-grease-mile": 30,
+    "batteryville-lithium-bleed": 40,
+    "grid-black-badge": 45,
+    "grid-relay-stand": 35,
+    "nightshade-midnight-organ": 40,
+    "nightshade-glowhound-breakers": 35,
+    "forest-canopy-stand": 30,
+    "glass-city-lifeline-case": 50,
+    "glass-city-boutique-parts": 45
+  }
+}

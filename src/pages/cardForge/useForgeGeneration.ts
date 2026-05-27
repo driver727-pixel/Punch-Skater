@@ -13,8 +13,10 @@ import { sfxClick, sfxSuccessPing } from "../../lib/sfx";
 import { removeBackground, isImageGenConfigured } from "../../services/imageGen";
 import { generateGouacheBoard } from "../../services/boardImageGen";
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../../lib/promptBuilder";
+import ozziesConfig from "../../lib/ozziesConfig.json";
 import { useTier } from "../../context/TierContext";
 import { useAuth } from "../../context/AuthContext";
+import { useWallet } from "../../context/WalletContext";
 import { useFactionDiscovery } from "../../hooks/useFactionDiscovery";
 import type { Archetype, CardPayload, CardPrompts, Faction } from "../../lib/types";
 import { createCharacterLayerValidator, useForgeLayers } from "./useForgeLayers";
@@ -25,12 +27,17 @@ import {
   CHARACTER_SEED_VARIANTS,
 } from "./constants";
 import { applyPreviewUpdates, buildRandomizedBoardConfig, buildRandomizedPrompts } from "./helpers";
+import { spendOzzies } from "../../services/wallet";
 
 const ARCHETYPE_VALUES = FORGE_ARCHETYPE_OPTIONS.map((option) => option.value);
+const CARD_FORGE_OZZIES_COST = Number.isFinite(ozziesConfig.cardForgeCost)
+  ? Math.max(1, Math.floor(ozziesConfig.cardForgeCost))
+  : 25;
 
 export function useForgeGeneration() {
-  const { tier, canForge, generateCredits, consumeCredit, openUpgradeModal, freeCardUsed, markFreeCardUsed } = useTier();
-  const { user } = useAuth();
+  const { tier, canForge: tierCanForge, generateCredits, consumeCredit, openUpgradeModal, freeCardUsed, markFreeCardUsed } = useTier();
+  const { user, userProfile } = useAuth();
+  const { applyWalletMutation, wallet } = useWallet();
   const { hasFaction, unlockFaction } = useFactionDiscovery();
   const [prompts, setPrompts] = useState<CardPrompts>({
     archetype: "Qu111s", rarity: "Punch Skater", style: "Corporate",
@@ -43,6 +50,8 @@ export function useForgeGeneration() {
   const [characterBlend, setCharacterBlend] = useState(1);
   const [forging, setForging] = useState(false);
   const [boardImageLoading, setBoardImageLoading] = useState(false);
+  const [spendingOzzies, setSpendingOzzies] = useState(false);
+  const [walletMessage, setWalletMessage] = useState<string | null>(null);
   const [revealedFaction, setRevealedFaction] = useState<{ faction: Faction; isNew: boolean } | null>(null);
   const {
     abortRef,
@@ -54,6 +63,10 @@ export function useForgeGeneration() {
     resetLayerSession,
     setLayerParams,
   } = useForgeLayers();
+  const ozziesBalance = wallet?.currentBalance ?? userProfile?.ozziesBalance ?? 0;
+  const requiresOzzies = !tierCanForge && generateCredits === 0 && (tier !== "free" || freeCardUsed);
+  const canSpendOzzies = Boolean(user && ozziesBalance >= CARD_FORGE_OZZIES_COST);
+  const canForge = tierCanForge || canSpendOzzies;
 
   const setPrompt = useCallback(<K extends keyof CardPrompts>(key: K, value: CardPrompts[K]) => {
     setPrompts((current) => ({ ...current, [key]: value }));
@@ -67,10 +80,35 @@ export function useForgeGeneration() {
     }));
   }, []);
 
-  const handleForge = useCallback(() => {
+  const handleForge = useCallback(async () => {
     if (!canForge) {
+      if (requiresOzzies && user) {
+        setWalletMessage(`You need ${CARD_FORGE_OZZIES_COST} Ozzies to forge after your free and referral credits are gone.`);
+        return;
+      }
       openUpgradeModal();
       return;
+    }
+    setWalletMessage(null);
+    if (requiresOzzies) {
+      if (!user) {
+        openUpgradeModal();
+        return;
+      }
+      setSpendingOzzies(true);
+      try {
+        const walletSpend = await spendOzzies(user, {
+          sink: "card_forge",
+          idempotencyKey: crypto.randomUUID(),
+        });
+        applyWalletMutation(walletSpend);
+        setWalletMessage(`Spent ${CARD_FORGE_OZZIES_COST} Ozzies. Balance: ${walletSpend.wallet.currentBalance}.`);
+      } catch (error) {
+        setWalletMessage(error instanceof Error ? error.message : "Card Forge could not spend Ozzies.");
+        return;
+      } finally {
+        setSpendingOzzies(false);
+      }
     }
     sfxSuccessPing();
 
@@ -189,11 +227,13 @@ export function useForgeGeneration() {
     markFreeCardUsed,
     openUpgradeModal,
     prompts,
+    requiresOzzies,
     resetLayerSession,
     setLayerParams,
     tier,
     unlockFaction,
-    user?.uid,
+    user,
+    applyWalletMutation,
   ]);
 
   const handleRandomSkater = useCallback(() => {
@@ -239,6 +279,10 @@ export function useForgeGeneration() {
     freeCardUsed,
     generated,
     generateCredits,
+    ozziesBalance,
+    requiresOzzies,
+    spendingOzzies,
+    walletMessage,
     handleCloseFactionReveal,
     handleForge,
     handleLayerError,
@@ -267,6 +311,10 @@ export function useForgeGeneration() {
     freeCardUsed,
     generated,
     generateCredits,
+    ozziesBalance,
+    requiresOzzies,
+    spendingOzzies,
+    walletMessage,
     handleCloseFactionReveal,
     handleForge,
     handleLayerError,

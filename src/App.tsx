@@ -2,6 +2,7 @@ import { Component, ReactNode, lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
+import { WalletProvider } from "./context/WalletContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { useTier } from "./context/TierContext";
 import { Nav } from "./components/Nav";
@@ -73,60 +74,62 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <TierProvider>
-          <ThemeApplier />
-          <LanguageProvider>
-            <ErrorBoundary>
-              <div className="app">
-                <Nav />
-                {!isFirebaseConfigured && (
-                  <div className="firebase-banner">{firebaseUnavailableMessage}</div>
-                )}
-                <main className="main">
-                  <Suspense fallback={<div className="page-loading">Loading…</div>}>
-                    <Routes>
-                      <Route path="/" element={<CardForge />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/credits" element={<Credits />} />
-                      <Route path="/factions" element={<Factions />} />
-                      <Route path="/lore" element={<Lore />} />
-                      <Route path="/privacy" element={<PrivacyPolicy />} />
-                      <Route path="/terms" element={<TermsOfService />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      <Route path="/account" element={
-                        <ProtectedRoute><AccountSettings /></ProtectedRoute>
-                      } />
-                      <Route path="/collection" element={
-                        <ProtectedRoute><Collection /></ProtectedRoute>
-                      } />
-                      <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
-                      <Route path="/mission" element={
-                        <ProtectedRoute><Mission /></ProtectedRoute>
-                      } />
-                      <Route path="/edit/:cardId" element={
-                        <ProtectedRoute><EditCard /></ProtectedRoute>
-                      } />
-                      <Route path="/trades" element={
-                        <ProtectedRoute><Trades /></ProtectedRoute>
-                      } />
-                      <Route path="/arena" element={
-                        <ProtectedRoute><BattleArena /></ProtectedRoute>
-                      } />
-                      <Route path="/admin" element={
-                        <AdminRoute><Admin /></AdminRoute>
-                      } />
-                      <Route path="/dev/asset-generator" element={
-                        <AdminRoute><AssetGenerator /></AdminRoute>
-                      } />
-                      <Route path="/dev/frame-preview" element={<FramePreview />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Footer />
-              </div>
-            </ErrorBoundary>
-          </LanguageProvider>
-        </TierProvider>
+        <WalletProvider>
+          <TierProvider>
+            <ThemeApplier />
+            <LanguageProvider>
+              <ErrorBoundary>
+                <div className="app">
+                  <Nav />
+                  {!isFirebaseConfigured && (
+                    <div className="firebase-banner">{firebaseUnavailableMessage}</div>
+                  )}
+                  <main className="main">
+                    <Suspense fallback={<div className="page-loading">Loading…</div>}>
+                      <Routes>
+                        <Route path="/" element={<CardForge />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/credits" element={<Credits />} />
+                        <Route path="/factions" element={<Factions />} />
+                        <Route path="/lore" element={<Lore />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/terms" element={<TermsOfService />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/account" element={
+                          <ProtectedRoute><AccountSettings /></ProtectedRoute>
+                        } />
+                        <Route path="/collection" element={
+                          <ProtectedRoute><Collection /></ProtectedRoute>
+                        } />
+                        <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
+                        <Route path="/mission" element={
+                          <ProtectedRoute><Mission /></ProtectedRoute>
+                        } />
+                        <Route path="/edit/:cardId" element={
+                          <ProtectedRoute><EditCard /></ProtectedRoute>
+                        } />
+                        <Route path="/trades" element={
+                          <ProtectedRoute><Trades /></ProtectedRoute>
+                        } />
+                        <Route path="/arena" element={
+                          <ProtectedRoute><BattleArena /></ProtectedRoute>
+                        } />
+                        <Route path="/admin" element={
+                          <AdminRoute><Admin /></AdminRoute>
+                        } />
+                        <Route path="/dev/asset-generator" element={
+                          <AdminRoute><AssetGenerator /></AdminRoute>
+                        } />
+                        <Route path="/dev/frame-preview" element={<FramePreview />} />
+                      </Routes>
+                    </Suspense>
+                  </main>
+                  <Footer />
+                </div>
+              </ErrorBoundary>
+            </LanguageProvider>
+          </TierProvider>
+        </WalletProvider>
       </AuthProvider>
     </BrowserRouter>
   );

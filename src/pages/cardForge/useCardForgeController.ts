@@ -28,6 +28,7 @@ export function useCardForgeController() {
     freeCardUsed: forge.freeCardUsed,
     generated: forge.generated,
     generateCredits: forge.generateCredits,
+    ozziesBalance: forge.ozziesBalance,
     handleClose3D: navigation.handleClose3D,
     handleCloseFactionReveal: forge.handleCloseFactionReveal,
     handleClosePrint: navigation.handleClosePrint,
@@ -53,9 +54,11 @@ export function useCardForgeController() {
     printing: navigation.printing,
     prompts: forge.prompts,
     revealedFaction: forge.revealedFaction,
+    requiresOzzies: forge.requiresOzzies,
     saveError: save.saveError,
     savedCard: save.savedCard,
     saving: save.saving,
+    spendingOzzies: forge.spendingOzzies,
     setArchetype: forge.setArchetype,
     setBoardConfig: forge.setBoardConfig,
     setCharacterBlend: forge.setCharacterBlend,
@@ -63,6 +66,7 @@ export function useCardForgeController() {
     showWelcome: navigation.showWelcome,
     tier: forge.tier,
     tierCanSave: save.tierCanSave,
+    walletMessage: forge.walletMessage,
     viewing3D: navigation.viewing3D,
   }), [forge, navigation, save]);
 }

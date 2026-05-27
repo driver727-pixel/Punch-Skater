@@ -114,6 +114,34 @@ export interface ShareLink {
   expiresAt?: string;
 }
 
+// ── Wallets (Sprint 1) ────────────────────────────────────────────────────────
+
+/** @sprint 1 @owner copilot — Server-owned Ozzies wallet summary. Doc ID = uid. */
+export interface PlayerWallet {
+  uid: string;
+  currentBalance: number;
+  lifetimeEarned: number;
+  lifetimeSpent: number;
+  updatedAt: string;
+}
+
+/** @sprint 1 @owner copilot — Immutable wallet ledger entry. Doc ID = idempotencyKey. */
+export interface WalletTransaction {
+  id: string;
+  uid: string;
+  idempotencyKey: string;
+  amount: number;
+  direction: "credit" | "debit";
+  balanceBefore: number;
+  balanceAfter: number;
+  sourceType: string;
+  sourceId: string;
+  description: string;
+  metadata?: Record<string, string | number | boolean | null>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Shared enums / constants ─────────────────────────────────────────────────
 
 /** @sprint 0 @owner gamma — XP reward tiers used across battle pass, missions, and daily rewards. */

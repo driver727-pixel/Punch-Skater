@@ -201,6 +201,19 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // ── Wallets ──────────────────────────────────────────────────────────────
+    // Per-user Ozzies balance summary with a read-only ledger subcollection.
+    // Clients may read their own wallet state, but all writes are API/server-only.
+    match /wallets/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+
+      match /ledger/{entryId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create, update, delete: if false;
+      }
+    }
+
     // ── Share Links ──────────────────────────────────────────────────────────
     // Publicly viewable card / deck share links.
     match /shareLinks/{linkId} {

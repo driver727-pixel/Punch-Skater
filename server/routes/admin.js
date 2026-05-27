@@ -132,6 +132,7 @@ export function registerAdminRoutes(app, {
       await Promise.all([
         deleteCollectionDocs(userDocRef.collection('cards')),
         deleteCollectionDocs(userDocRef.collection('decks')),
+        deleteCollectionDocs(adminDb.collection('wallets').doc(uid).collection('ledger')),
         deleteQueryDocs(adminDb.collection('trades').where('fromUid', '==', uid)),
         deleteQueryDocs(adminDb.collection('trades').where('toUid', '==', uid)),
         deleteQueryDocs(adminDb.collection('battleResults').where('challengerUid', '==', uid)),
@@ -145,6 +146,7 @@ export function registerAdminRoutes(app, {
         adminDb.collection('userLookup').doc(uid).delete(),
         adminDb.collection('arena').doc(uid).delete(),
         adminDb.collection('leaderboard').doc(uid).delete(),
+        adminDb.collection('wallets').doc(uid).delete(),
       ]);
 
       await adminAuth.deleteUser(uid);

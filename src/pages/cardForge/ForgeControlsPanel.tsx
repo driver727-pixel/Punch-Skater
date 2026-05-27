@@ -14,6 +14,7 @@ import type {
 import { BoardBuilder } from "../../components/BoardBuilder";
 import { GeoAtlas } from "../../components/GeoAtlas";
 import { ReferralPanel } from "../../components/ReferralPanel";
+import ozziesConfig from "../../lib/ozziesConfig.json";
 import type { BoardConfig } from "../../lib/boardBuilder";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
@@ -70,6 +71,7 @@ interface ForgeControlsPanelProps {
   hairLengths: HairLength[];
   hasAnyLayerUrl: boolean;
   isAnyLayerLoading: boolean;
+  ozziesBalance: number;
   onArchetypeChange: (archetype: Archetype) => void;
   onBlendChange: (value: number) => void;
   onBoardConfigChange: (config: BoardConfig) => void;
@@ -82,10 +84,13 @@ interface ForgeControlsPanelProps {
   onSaveToCollection: () => void;
   prompts: CardPrompts;
   rarities: Rarity[];
+  requiresOzzies: boolean;
   saveError: string | null;
   saving: boolean;
   skinTones: SkinTone[];
+  spendingOzzies: boolean;
   tier: string;
+  walletMessage: string | null;
   ageGroups: AgeGroup[];
 }
 
@@ -107,6 +112,7 @@ export function ForgeControlsPanel({
   hairLengths,
   hasAnyLayerUrl,
   isAnyLayerLoading,
+  ozziesBalance,
   onArchetypeChange,
   onBlendChange,
   onBoardConfigChange,
@@ -119,10 +125,13 @@ export function ForgeControlsPanel({
   onSaveToCollection,
   prompts,
   rarities,
+  requiresOzzies,
   saveError,
   saving,
   skinTones,
+  spendingOzzies,
   tier,
+  walletMessage,
   ageGroups,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
@@ -316,19 +325,35 @@ export function ForgeControlsPanel({
       <button
         className="btn-primary btn-lg btn-forge"
         onClick={onForge}
-        disabled={forging || isAnyLayerLoading}
+        disabled={forging || isAnyLayerLoading || spendingOzzies}
         data-testid="forge-button"
       >
         {isAnyLayerLoading
           ? "✨ Generating…"
+          : spendingOzzies
+            ? "💰 Spending Ozzies…"
           : !canForge
-            ? "🔒 FORGE YOUR CARD — Upgrade to Unlock"
+            ? requiresOzzies
+              ? `💰 NEED ${ozziesConfig.cardForgeCost} OZZIES TO FORGE`
+              : "🔒 FORGE YOUR CARD — Upgrade to Unlock"
             : tier === "free" && !freeCardUsed
               ? "⚡ FORGE YOUR CARD (1 free card)"
               : generateCredits > 0
                 ? `⚡ FORGE YOUR CARD (${generateCredits} credit${generateCredits === 1 ? "" : "s"} left)`
+                : requiresOzzies
+                  ? `💰 FORGE YOUR CARD (${ozziesConfig.cardForgeCost} Ozzies)`
                 : "⚡ FORGE YOUR CARD"}
       </button>
+      {requiresOzzies && (
+        <p className="forge-wallet-note">
+          Wallet balance: <strong>{ozziesBalance}</strong> Ozzies. Card Forge costs {ozziesConfig.cardForgeCost} Ozzies once free/referral credits are spent.
+        </p>
+      )}
+      {walletMessage && (
+        <p className={`forge-wallet-status${walletMessage.includes("need") || walletMessage.includes("failed") ? " forge-wallet-status--error" : ""}`} role="alert">
+          {walletMessage}
+        </p>
+      )}
 
       <ReferralPanel />
 
