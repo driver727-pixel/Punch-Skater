@@ -11,7 +11,7 @@ import {
   transition,
 } from '../lib/missionPhaseMachine.js';
 
-test('exports the six canonical mission phases', () => {
+test('exports the canonical mission phases', () => {
   assert.deepEqual(new Set(MISSION_PHASES), new Set([
     'IDLE_AT_BASE',
     'TRAVELING_OUTBOUND',
@@ -19,6 +19,7 @@ test('exports the six canonical mission phases', () => {
     'AT_POI_FORK',
     'TRAVELING_INBOUND',
     'MISSION_COMPLETE',
+    'MISSION_FAILED',
   ]));
 });
 
@@ -27,7 +28,7 @@ test('normalizePhase maps legacy persisted strings to canonical phases', () => {
   assert.equal(normalizePhase('at_poi'), MISSION_PHASE.AT_POI_FORK);
   assert.equal(normalizePhase('returning'), MISSION_PHASE.TRAVELING_INBOUND);
   assert.equal(normalizePhase('complete'), MISSION_PHASE.MISSION_COMPLETE);
-  assert.equal(normalizePhase('failed'), MISSION_PHASE.MISSION_COMPLETE);
+  assert.equal(normalizePhase('failed'), MISSION_PHASE.MISSION_FAILED);
 });
 
 test('normalizePhase passes through canonical phases and defaults unknown to IDLE_AT_BASE', () => {
@@ -48,6 +49,7 @@ test('isMissionPhase strictly matches canonical phase strings only', () => {
 
 test('isTerminalPhase identifies MISSION_COMPLETE and legacy terminal strings', () => {
   assert.equal(isTerminalPhase(MISSION_PHASE.MISSION_COMPLETE), true);
+  assert.equal(isTerminalPhase(MISSION_PHASE.MISSION_FAILED), true);
   assert.equal(isTerminalPhase('complete'), true);
   assert.equal(isTerminalPhase('failed'), true);
   assert.equal(isTerminalPhase(MISSION_PHASE.TRAVELING_OUTBOUND), false);
@@ -72,6 +74,7 @@ test('canTransition refuses illegal shortcuts and self-loops', () => {
   assert.equal(canTransition(MISSION_PHASE.TRAVELING_OUTBOUND, MISSION_PHASE.TRAVELING_INBOUND), false);
   // Cannot relaunch a terminated run.
   assert.equal(canTransition(MISSION_PHASE.MISSION_COMPLETE, MISSION_PHASE.TRAVELING_OUTBOUND), false);
+  assert.equal(canTransition(MISSION_PHASE.MISSION_FAILED, MISSION_PHASE.TRAVELING_OUTBOUND), false);
   // Self-loops are never allowed.
   for (const phase of MISSION_PHASES) {
     assert.equal(canTransition(phase, phase), false, `self-loop refused for ${phase}`);
@@ -98,4 +101,5 @@ test('allowedNextPhases enumerates the legal next states', () => {
     MISSION_PHASE.AT_POI_FORK,
   ]);
   assert.deepEqual(allowedNextPhases(MISSION_PHASE.MISSION_COMPLETE), []);
+  assert.deepEqual(allowedNextPhases(MISSION_PHASE.MISSION_FAILED), []);
 });
