@@ -73,6 +73,10 @@ function getCardDisplayName(card?: CardPayload | null): string {
   return card?.identity?.name?.trim() || "Unnamed card";
 }
 
+function getCardRunnerDetail(card: CardPayload): string {
+  return `${getCardDisplayName(card)} runs one-person jobs: thefts, hacks, jousts, stings, and other solo risks.`;
+}
+
 /** Smoothstep easing — eliminates the harsh linear start/stop of token travel. */
 function smoothstep(t: number): number {
   const clamped = Math.max(0, Math.min(1, t));
@@ -252,7 +256,7 @@ function MissionDebriefPanel({
               <span style={{ color: "rgba(255,255,255,0.8)" }}>{encounterResults.length}</span>
             </>
           )}
-          {debrief?.deckName && (
+          {(debrief?.deckName || debrief?.cardName) && (
             <>
               <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Game piece</span>
               <span style={{ color: "rgba(255,255,255,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debrief.cardName ?? debrief.deckName}</span>
@@ -808,7 +812,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     if (!world) return;
     let cancelled = false;
     const visualRunner = activeRun
-      ? { deckId: activeRun.deckId || null, cardId: activeRun.cardId ?? null }
+      ? { deckId: activeRun.deckId ?? null, cardId: activeRun.cardId ?? null }
       : {
         deckId: selectedRunner?.runnerType === "deck" ? selectedRunner.deck?.id ?? null : null,
         cardId: selectedRunner?.runnerType === "card" ? selectedRunner.card?.id ?? null : null,
@@ -847,7 +851,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
         id: `card:${card.id}`,
         runnerType: "card",
         label: getCardDisplayName(card),
-        detail: `${getCardDisplayName(card)} runs one-person jobs: thefts, hacks, jousts, stings, and other solo risks.`,
+        detail: getCardRunnerDetail(card),
         card,
       });
     }
@@ -859,7 +863,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
           id: `card:${card.id}`,
           runnerType: "card",
           label: getCardDisplayName(card),
-          detail: `${getCardDisplayName(card)} runs one-person jobs: thefts, hacks, jousts, stings, and other solo risks.`,
+          detail: getCardRunnerDetail(card),
           card,
         });
       }

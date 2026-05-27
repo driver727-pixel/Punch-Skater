@@ -878,7 +878,7 @@ test('district world run start supports a single-card runner', async () => {
   assert.equal(res.body.activeRun.cardId, 'grid-runner-1');
   assert.equal(res.body.activeRun.cardName, 'Grid Runner');
   assert.deepEqual(res.body.activeRun.activeCardIds, ['grid-runner-1']);
-  assert.equal(res.body.activeRun.deckId, '');
+  assert.equal(res.body.activeRun.deckId, null);
 });
 
 test('district world run start rejects routes through dangling graph edges', async () => {
