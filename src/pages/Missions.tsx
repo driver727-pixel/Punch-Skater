@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useAuth } from "../context/AuthContext";
 import { isEnabled } from "../lib/featureFlags";
 import {
@@ -49,6 +50,28 @@ const PHASE_COLORS: Record<string, string> = {
   [MISSION_PHASE.MISSION_FAILED]: "#ff6b6b",
 };
 
+// ── Debrief helpers ────────────────────────────────────────────────────────
+
+const DEBRIEF_DISTRICT_ACCENT: Record<string, { color: string; glyph: string }> = {
+  Airaway: { color: "#7de7ff", glyph: "◎" },
+  Batteryville: { color: "#ffe44d", glyph: "⚡" },
+  "The Grid": { color: "#ff3af2", glyph: "▦" },
+  Nightshade: { color: "#d490ff", glyph: "✦" },
+  "The Forest": { color: "#8cff8a", glyph: "❋" },
+  "Glass City": { color: "#ffd98f", glyph: "◈" },
+};
+
+function formatRunDuration(launchedAt?: string, completedAt?: string): string {
+  if (!launchedAt || !completedAt) return "";
+  const ms = new Date(completedAt).getTime() - new Date(launchedAt).getTime();
+  if (Number.isNaN(ms) || ms < 0) return "";
+  const totalSec = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  if (minutes === 0) return `${seconds}s`;
+  return `${minutes}m ${seconds}s`;
+}
+
 function RunPhaseBadge({ phase }: { phase: string }) {
   const normalized = normalizeMissionPhase(phase);
   const label = MISSION_PHASE_LABELS[normalized] ?? normalized;
@@ -75,6 +98,21 @@ function RunPhaseBadge({ phase }: { phase: string }) {
   );
 }
 
+// ── Section divider label ──────────────────────────────────────────────────
+
+function DebriefSectionLabel({ children, color = "rgba(125,231,255,0.5)" }: { children: ReactNode; color?: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0 0" }}>
+      <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color }}>
+        {children}
+      </span>
+      <div style={{ flex: 1, height: 1, background: `${color}40` }} />
+    </div>
+  );
+}
+
+// ── Mission debrief panel — baseball-card-style run record ─────────────────
+
 function MissionDebriefPanel({
   debrief,
   contract,
@@ -86,73 +124,234 @@ function MissionDebriefPanel({
 }) {
   const success = debrief?.success !== false;
   const title = debrief?.contractTitle ?? contract?.title ?? "Mission run";
+  const district = debrief?.district ?? contract?.district ?? "The Grid";
   const results = debrief?.results ?? [];
+  const accent = DEBRIEF_DISTRICT_ACCENT[district] ?? { color: "#7de7ff", glyph: "◈" };
+  const statusColor = success ? "#7dffb6" : "#ff8a8a";
+  const duration = formatRunDuration(debrief?.launchedAt, debrief?.completedAt);
+  const encounterResults = results.filter((r) => r.resultType === "travel_encounter");
+  const routeLegs = debrief?.routeSummary ?? "";
+  const shortRunId = debrief?.runId
+    ? (debrief.runId.includes("_") ? debrief.runId.split("_").pop() : debrief.runId)?.slice(-8) ?? null
+    : null;
+
   return (
-    <div style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ fontSize: 32 }}>{success ? "🏁" : "🗂️"}</div>
-        <div>
-          <p style={{ margin: 0, fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: success ? "#7dffb6" : "#ff8a8a" }}>
-            {success ? "Successful return debrief" : "Failed-run record"}
-          </p>
-          <h2 style={{ margin: "4px 0 0", fontFamily: "monospace", fontSize: 16, color: "#fff" }}>{title}</h2>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      {/* ── Card header ── */}
+      <div
+        style={{
+          borderTop: `3px solid ${accent.color}`,
+          padding: "14px 18px 12px",
+          background: `linear-gradient(180deg, ${accent.color}0d 0%, transparent 100%)`,
+          flexShrink: 0,
+        }}
+      >
+        {/* District + status row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ fontFamily: "monospace", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.13em", color: accent.color }}>
+            {accent.glyph} {district}
+          </span>
+          <span
+            style={{
+              padding: "1px 7px",
+              background: `${statusColor}18`,
+              border: `1px solid ${statusColor}`,
+              borderRadius: 3,
+              fontFamily: "monospace",
+              fontSize: 8,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: statusColor,
+            }}
+          >
+            {success ? "✓ Returned" : "✕ Failed run"}
+          </span>
         </div>
-      </div>
 
-      <p style={{ margin: 0, fontFamily: "monospace", fontSize: 12, color: "rgba(255,255,255,0.72)", lineHeight: 1.55 }}>
-        {debrief?.summary ?? (success ? "Run complete." : "Run logged with no gameplay penalties.")}
-      </p>
+        {/* Contract title */}
+        <h2 style={{ margin: "0 0 4px", fontFamily: "monospace", fontSize: 15, fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>
+          {title}
+        </h2>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {[
-          ["XP", debrief?.totalRewardXp ?? 0],
-          ["Ozzies", debrief?.totalRewardOzzies ?? 0],
-          ["Bonus XP", debrief?.bonusRewardXp ?? 0],
-          ["Bonus Ozzies", debrief?.bonusRewardOzzies ?? 0],
-        ].map(([label, value]) => (
-          <div key={label} style={{ padding: 10, border: "1px solid rgba(125,231,255,0.18)", borderRadius: 4, background: "rgba(125,231,255,0.05)" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: "#7de7ff", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</div>
-            <div style={{ marginTop: 4, fontFamily: "monospace", fontSize: 18, fontWeight: 700, color: "#fff" }}>{value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ padding: 12, border: "1px solid rgba(255,58,242,0.22)", borderRadius: 5, background: "rgba(255,58,242,0.05)" }}>
-        <p style={{ margin: 0, fontFamily: "monospace", fontSize: 9, color: "#ff8af8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-          Card record
-        </p>
-        <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: 12, color: "rgba(255,255,255,0.72)" }}>
-          {debrief?.cardName ? `${debrief.cardName} · ${debrief.cardId}` : "No card mutation was available for this run."}
-        </p>
-        {!success && (
-          <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: 11, color: "#ffb0b0" }}>
-            Failure history only — no XP, Ozzies, stat loss, repair, or lockout applied.
+        {/* Run ID line */}
+        {shortRunId && (
+          <p style={{ margin: 0, fontFamily: "monospace", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: "0.08em" }}>
+            RUN {shortRunId.toUpperCase()}
+            {duration ? ` · ${duration}` : ""}
           </p>
         )}
       </div>
 
+      {/* ── Summary text ── */}
+      <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
+        <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>
+          {debrief?.summary ?? (success ? "Run complete." : "Run logged with no gameplay penalties.")}
+        </p>
+      </div>
+
+      {/* ── Route + deck metadata ── */}
+      <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
+        <DebriefSectionLabel>Route</DebriefSectionLabel>
+        <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 10px", fontFamily: "monospace", fontSize: 10 }}>
+          {routeLegs && (
+            <>
+              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Legs</span>
+              <span style={{ color: "rgba(255,255,255,0.8)" }}>{routeLegs}</span>
+            </>
+          )}
+          {encounterResults.length > 0 && (
+            <>
+              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Encounters</span>
+              <span style={{ color: "rgba(255,255,255,0.8)" }}>{encounterResults.length}</span>
+            </>
+          )}
+          {debrief?.deckName && (
+            <>
+              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Deck</span>
+              <span style={{ color: "rgba(255,255,255,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debrief.deckName}</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Encounter + POI log ── */}
       {results.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ margin: 0, fontFamily: "monospace", fontSize: 9, color: "#7de7ff", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-            Route events
-          </p>
-          {results.map((result, index) => (
-            <div key={`${result.resultType}-${result.choiceId}-${index}`} style={{ padding: 10, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, background: "rgba(255,255,255,0.035)" }}>
-              <p style={{ margin: 0, fontFamily: "monospace", fontSize: 11, color: "#fff", fontWeight: 700 }}>{result.label}</p>
-              <p style={{ margin: "4px 0 0", fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.62)", lineHeight: 1.45 }}>{result.summary}</p>
-            </div>
-          ))}
+        <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
+          <DebriefSectionLabel>Run log</DebriefSectionLabel>
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            {results.map((result, index) => {
+              const isPoi = result.resultType === "poi_resolution";
+              const entryColor = isPoi ? accent.color : "rgba(255,255,255,0.65)";
+              const entryBadge = isPoi ? "🎯" : "⚡";
+              const hasGain = (Number(result.rewardXpDelta) > 0) || (Number(result.rewardOzziesDelta) > 0);
+              return (
+                <div
+                  key={`${result.resultType}-${result.choiceId}-${index}`}
+                  style={{
+                    padding: "8px 10px",
+                    border: `1px solid ${isPoi ? `${accent.color}30` : "rgba(255,255,255,0.09)"}`,
+                    borderLeft: `2px solid ${isPoi ? accent.color : (result.success !== false ? "rgba(125,255,182,0.5)" : "rgba(255,138,138,0.35)")}`,
+                    borderRadius: "0 4px 4px 0",
+                    background: isPoi ? `${accent.color}08` : "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: entryColor }}>
+                        {entryBadge} {result.label}
+                      </p>
+                      <p style={{ margin: "3px 0 0", fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.5)", lineHeight: 1.4 }}>{result.summary}</p>
+                    </div>
+                    {success && hasGain && (
+                      <div style={{ flexShrink: 0, textAlign: "right", fontFamily: "monospace", fontSize: 9, color: "#7dffb6", lineHeight: 1.5 }}>
+                        {Number(result.rewardXpDelta) > 0 && <div>+{result.rewardXpDelta} XP</div>}
+                        {Number(result.rewardOzziesDelta) > 0 && <div>+{result.rewardOzziesDelta} Ozzies</div>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      <button
-        type="button"
-        aria-label="Return to map"
-        onClick={onDismiss}
-        style={{ marginTop: "auto", padding: "10px 0", background: "rgba(125,231,255,0.08)", border: "1px solid rgba(125,231,255,0.55)", borderRadius: 4, color: "#7de7ff", fontFamily: "monospace", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer" }}
-      >
-        Return to map
-      </button>
+      {/* ── Rewards (success) or No-penalty notice (failure) ── */}
+      <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
+        {success ? (
+          <>
+            <DebriefSectionLabel color="#7dffb6">Rewards banked</DebriefSectionLabel>
+            <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              {[
+                { label: "Base XP", value: debrief?.baseRewardXp ?? 0 },
+                { label: "Base Ozzies", value: debrief?.baseRewardOzzies ?? 0 },
+                { label: "Bonus XP", value: debrief?.bonusRewardXp ?? 0 },
+                { label: "Bonus Ozzies", value: debrief?.bonusRewardOzzies ?? 0 },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ padding: "7px 9px", border: "1px solid rgba(125,255,182,0.15)", borderRadius: 4, background: "rgba(125,255,182,0.04)" }}>
+                  <div style={{ fontFamily: "monospace", fontSize: 8, color: "#7dffb6", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</div>
+                  <div style={{ marginTop: 3, fontFamily: "monospace", fontSize: 16, fontWeight: 700, color: "#fff" }}>{value}</div>
+                </div>
+              ))}
+            </div>
+            {((debrief?.totalRewardXp ?? 0) > 0 || (debrief?.totalRewardOzzies ?? 0) > 0) && (
+              <div style={{ marginTop: 8, padding: "8px 10px", border: "1px solid rgba(125,255,182,0.3)", borderRadius: 4, background: "rgba(125,255,182,0.07)", fontFamily: "monospace", fontSize: 10, color: "#7dffb6", display: "flex", justifyContent: "space-between" }}>
+                <span>Total</span>
+                <span style={{ fontWeight: 700 }}>
+                  {debrief?.totalRewardXp ?? 0} XP · {debrief?.totalRewardOzzies ?? 0} Ozzies
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <DebriefSectionLabel color="#ff8a8a">No rewards · No penalties</DebriefSectionLabel>
+            <div style={{ marginTop: 8, padding: "10px 12px", border: "1px solid rgba(255,138,138,0.2)", borderRadius: 4, background: "rgba(255,138,138,0.04)" }}>
+              <p style={{ margin: 0, fontFamily: "monospace", fontSize: 10, color: "#ffb0b0", lineHeight: 1.6 }}>
+                This run didn't make it back to the Workshop.
+              </p>
+              <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: 9, color: "rgba(255,138,138,0.6)", lineHeight: 1.55 }}>
+                No XP, Ozzies, stat changes, card repairs, or lockouts applied.
+                The run is recorded as history only.
+              </p>
+              {debrief?.failureReason && (
+                <p style={{ margin: "8px 0 0", fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.45)", lineHeight: 1.4, borderTop: "1px solid rgba(255,138,138,0.15)", paddingTop: 8 }}>
+                  {debrief.failureReason}
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Card record ── */}
+      <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
+        <DebriefSectionLabel color="#ff8af8">Card record</DebriefSectionLabel>
+        <div style={{ marginTop: 8, padding: "9px 10px", border: "1px solid rgba(255,58,242,0.2)", borderRadius: 4, background: "rgba(255,58,242,0.04)" }}>
+          {debrief?.cardName ? (
+            <>
+              <p style={{ margin: 0, fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: "#ff8af8" }}>{debrief.cardName}</p>
+              <p style={{ margin: "2px 0 0", fontFamily: "monospace", fontSize: 9, color: "rgba(255,138,248,0.5)", letterSpacing: "0.06em" }}>{debrief.cardId}</p>
+            </>
+          ) : (
+            <p style={{ margin: 0, fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
+              No card selected for this run.
+            </p>
+          )}
+          <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: 9, color: success ? "rgba(125,255,182,0.7)" : "rgba(255,138,138,0.6)", lineHeight: 1.4 }}>
+            {success
+              ? "Rewards and run stats applied to this card."
+              : "Failure history logged — no gameplay penalties applied to this card."}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Dismiss button ── */}
+      <div style={{ padding: "14px 18px 18px", marginTop: "auto", flexShrink: 0 }}>
+        <button
+          type="button"
+          aria-label="Return to map"
+          onClick={onDismiss}
+          style={{
+            width: "100%",
+            padding: "10px 0",
+            background: `${accent.color}0e`,
+            border: `1px solid ${accent.color}88`,
+            borderRadius: 4,
+            color: accent.color,
+            fontFamily: "monospace",
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            cursor: "pointer",
+            transition: "background 0.15s",
+          }}
+        >
+          Return to map
+        </button>
+      </div>
     </div>
   );
 }
