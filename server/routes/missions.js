@@ -265,12 +265,26 @@ function buildMissionsSpritePrompt(card) {
   ].join(' ');
 }
 
-function toGraphAdjacency(edges) {
+function toGraphNodeMap(nodes) {
+  const nodeById = new Map();
+  for (const node of Array.isArray(nodes) ? nodes : []) {
+    if (node?.id) nodeById.set(node.id, node);
+  }
+  return nodeById;
+}
+
+function graphEdgeKey(from, to) {
+  return from < to ? `${from}|${to}` : `${to}|${from}`;
+}
+
+function toGraphAdjacency(edges, nodeIds) {
   const adjacency = new Map();
+  for (const nodeId of nodeIds) {
+    adjacency.set(nodeId, new Set());
+  }
   for (const edge of Array.isArray(edges) ? edges : []) {
     if (!edge?.from || !edge?.to) continue;
-    if (!adjacency.has(edge.from)) adjacency.set(edge.from, new Set());
-    if (!adjacency.has(edge.to)) adjacency.set(edge.to, new Set());
+    if (edge.from === edge.to || !nodeIds.has(edge.from) || !nodeIds.has(edge.to)) continue;
     adjacency.get(edge.from).add(edge.to);
     adjacency.get(edge.to).add(edge.from);
   }
@@ -284,10 +298,10 @@ function manhattanDistance(a, b) {
 function findRouteAStar(nodes, edges, startId, goalId) {
   if (!startId || !goalId) return [];
   if (startId === goalId) return [startId];
-  const nodeById = new Map((Array.isArray(nodes) ? nodes : []).map((node) => [node?.id, node]));
+  const nodeById = toGraphNodeMap(nodes);
   if (!nodeById.has(startId) || !nodeById.has(goalId)) return [];
-  const adjacency = toGraphAdjacency(edges);
-  if (!adjacency.has(startId) || !adjacency.has(goalId)) return [];
+  const nodeIds = new Set(nodeById.keys());
+  const adjacency = toGraphAdjacency(edges, nodeIds);
   const openSet = new Set([startId]);
   const cameFrom = new Map();
   const gScore = new Map([[startId, 0]]);
@@ -311,7 +325,7 @@ function findRouteAStar(nodes, edges, startId, goalId) {
         cursor = cameFrom.get(cursor);
         path.unshift(cursor);
       }
-      return path;
+      return routeUsesValidEdges(edges, path, nodeIds) ? path : [];
     }
     openSet.delete(currentId);
     for (const neighborId of (adjacency.get(currentId) ?? [])) {
@@ -326,19 +340,21 @@ function findRouteAStar(nodes, edges, startId, goalId) {
   return [];
 }
 
-function routeUsesValidEdges(edges, routeNodeIds) {
+function routeUsesValidEdges(edges, routeNodeIds, validNodeIds) {
   if (!Array.isArray(routeNodeIds) || routeNodeIds.length < 2) return true;
   const edgeSet = new Set();
   for (const edge of Array.isArray(edges) ? edges : []) {
     if (!edge?.from || !edge?.to) continue;
-    const key = edge.from < edge.to ? `${edge.from}|${edge.to}` : `${edge.to}|${edge.from}`;
-    edgeSet.add(key);
+    if (edge.from === edge.to) continue;
+    if (validNodeIds && (!validNodeIds.has(edge.from) || !validNodeIds.has(edge.to))) continue;
+    edgeSet.add(graphEdgeKey(edge.from, edge.to));
   }
   for (let i = 1; i < routeNodeIds.length; i++) {
     const from = routeNodeIds[i - 1];
     const to = routeNodeIds[i];
-    const key = from < to ? `${from}|${to}` : `${to}|${from}`;
-    if (!edgeSet.has(key)) return false;
+    if (!from || !to || from === to) return false;
+    if (validNodeIds && (!validNodeIds.has(from) || !validNodeIds.has(to))) return false;
+    if (!edgeSet.has(graphEdgeKey(from, to))) return false;
   }
   return true;
 }
@@ -1266,8 +1282,9 @@ export function registerMissionRoutes(app, {
         res.status(400).json({ error: 'This contract is locked and cannot be started yet.' });
         return;
       }
+      const worldNodeIds = new Set(toGraphNodeMap(world.nodes ?? []).keys());
       const routeNodeIds = findRouteAStar(world.nodes ?? [], world.edges ?? [], 'workshop', contract.nodeId);
-      if (routeNodeIds.length < 2 || !routeUsesValidEdges(world.edges ?? [], routeNodeIds)) {
+      if (routeNodeIds.length < 2 || !routeUsesValidEdges(world.edges ?? [], routeNodeIds, worldNodeIds)) {
         res.status(422).json({ error: 'Unable to calculate a valid route to this contract.' });
         return;
       }

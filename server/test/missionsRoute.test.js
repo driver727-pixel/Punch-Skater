@@ -526,6 +526,54 @@ test('district world run start returns an A* edge-valid route and checkpoint sta
   assert.equal(res.body.activeRun.checkpointNodeIndex, 0);
 });
 
+test('district world run start rejects routes through dangling graph edges', async () => {
+  const boardDateKey = new Date().toISOString().slice(0, 10);
+  const worldId = `user-1_${boardDateKey}`;
+  const world = {
+    worldId,
+    boardDateKey,
+    dailyResetAt: `${boardDateKey}T23:59:59.000Z`,
+    nodes: [
+      { id: 'workshop', kind: 'workshop', x: 10, y: 10, label: 'Workshop' },
+      { id: 'poi-0', kind: 'poi', x: 40, y: 10, label: 'Node One', contractId: 'contract-1' },
+    ],
+    edges: [
+      { from: 'workshop', to: 'missing-junction' },
+      { from: 'missing-junction', to: 'poi-0' },
+    ],
+    contracts: [
+      {
+        id: 'contract-1',
+        nodeId: 'poi-0',
+        definitionId: 'def-1',
+        title: 'Contract One',
+        tagline: 'Dangling route',
+        district: 'The Grid',
+        rewardXp: 100,
+        rewardOzzies: 80,
+        visibility: 'visible',
+        status: 'active',
+      },
+    ],
+  };
+  const adminDb = createFirestoreHarness({
+    [`missionWorlds/${worldId}`]: world,
+  });
+  const app = registerMissionHarness({ adminDb });
+  const route = app.getRoute('POST', '/api/missions/world/run');
+
+  const res = await invokeRoute(route, {
+    body: {
+      contractId: 'contract-1',
+      deckId: 'deck-1',
+      deckName: 'Deck One',
+    },
+  });
+
+  assert.equal(res.statusCode, 422);
+  assert.equal(res.body.error, 'Unable to calculate a valid route to this contract.');
+});
+
 test('district world checkpoint route persists sequential travel and marks poi arrival', async () => {
   const boardDateKey = new Date().toISOString().slice(0, 10);
   const worldId = `user-1_${boardDateKey}`;
