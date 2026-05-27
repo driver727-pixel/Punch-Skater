@@ -15,6 +15,7 @@ export const MISSION_PHASE = Object.freeze({
   AT_POI_FORK: 'AT_POI_FORK',
   TRAVELING_INBOUND: 'TRAVELING_INBOUND',
   MISSION_COMPLETE: 'MISSION_COMPLETE',
+  MISSION_FAILED: 'MISSION_FAILED',
 });
 
 export const MISSION_PHASES = Object.freeze(Object.values(MISSION_PHASE));
@@ -29,7 +30,7 @@ const LEGACY_PHASE_MAP = Object.freeze({
   at_poi: MISSION_PHASE.AT_POI_FORK,
   returning: MISSION_PHASE.TRAVELING_INBOUND,
   complete: MISSION_PHASE.MISSION_COMPLETE,
-  failed: MISSION_PHASE.MISSION_COMPLETE,
+  failed: MISSION_PHASE.MISSION_FAILED,
 });
 
 /**
@@ -62,6 +63,7 @@ const ALLOWED_TRANSITIONS = Object.freeze({
     MISSION_PHASE.MISSION_COMPLETE,
   ]),
   [MISSION_PHASE.MISSION_COMPLETE]: Object.freeze([]),
+  [MISSION_PHASE.MISSION_FAILED]: Object.freeze([]),
 });
 
 export function isMissionPhase(value) {
@@ -82,7 +84,8 @@ export function normalizePhase(value) {
 }
 
 export function isTerminalPhase(phase) {
-  return normalizePhase(phase) === MISSION_PHASE.MISSION_COMPLETE;
+  const normalized = normalizePhase(phase);
+  return normalized === MISSION_PHASE.MISSION_COMPLETE || normalized === MISSION_PHASE.MISSION_FAILED;
 }
 
 /**

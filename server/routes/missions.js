@@ -38,7 +38,9 @@ const MISSIONS_SPRITE_PROMPT_VERSION = 'missions-sprite-v1';
 const MIN_FAL_DIMENSION = 64;
 const WORLD_COLLECTION = 'missionWorlds';
 const ACTIVE_RUN_COLLECTION = 'missionActiveRuns';
+const RUN_ARCHIVE_COLLECTION = 'missionRunArchives';
 const WORLD_VISUALS_COLLECTION = 'missionWorldVisuals';
+const MAX_MISSION_RUN_RECORDS = 20;
 const MAX_FAL_DIMENSION = 1536;
 const MIN_INFERENCE_STEPS = 1;
 const MAX_INFERENCE_STEPS = 50;
@@ -498,6 +500,135 @@ function getMissionDefinitionFields(entry) {
     requirements: entry.requirements,
     fork: entry.fork,
     encounter: entry.encounter,
+  };
+}
+
+function clampMissionReward(value) {
+  const parsed = Number(value) || 0;
+  return Math.max(0, Math.round(parsed));
+}
+
+function getMissionRunResults(activeRun) {
+  return Array.isArray(activeRun?.missionResults)
+    ? activeRun.missionResults.filter((result) => result && typeof result === 'object')
+    : [];
+}
+
+function buildMissionCompletionDebrief(activeRun, contract, completedAt, card = null, options = {}) {
+  const results = getMissionRunResults(activeRun);
+  const baseRewardXp = options.success === false ? 0 : clampMissionReward(contract?.rewardXp);
+  const baseRewardOzzies = options.success === false ? 0 : clampMissionReward(contract?.rewardOzzies);
+  const bonusRewardXp = options.success === false
+    ? 0
+    : results.reduce((total, result) => total + (Number(result.rewardXpDelta) || 0), 0);
+  const bonusRewardOzzies = options.success === false
+    ? 0
+    : results.reduce((total, result) => total + (Number(result.rewardOzziesDelta) || 0), 0);
+  const totalRewardXp = clampMissionReward(baseRewardXp + bonusRewardXp);
+  const totalRewardOzzies = clampMissionReward(baseRewardOzzies + bonusRewardOzzies);
+  const routeLength = Array.isArray(activeRun?.routeNodeIds) ? activeRun.routeNodeIds.length : 0;
+  const contractTitle = String(contract?.title ?? activeRun?.contractId ?? 'Mission contract');
+  const district = String(contract?.district ?? 'The Grid');
+  const success = options.success !== false;
+  const cardName = typeof card?.identity?.name === 'string' && card.identity.name.trim()
+    ? card.identity.name.trim()
+    : null;
+  const summary = success
+    ? `${contractTitle} banked at the Workshop for ${totalRewardXp} XP and ${totalRewardOzzies} Ozzies.`
+    : `${contractTitle} was logged as a failed run with no rewards or card penalties.`;
+
+  return {
+    runId: activeRun.runId,
+    contractId: activeRun.contractId,
+    contractTitle,
+    district,
+    success,
+    summary,
+    routeSummary: `${Math.max(0, routeLength - 1)} checkpoint leg${routeLength === 2 ? '' : 's'} completed`,
+    launchedAt: activeRun.launchedAt,
+    completedAt,
+    deckId: activeRun.deckId,
+    deckName: activeRun.deckName,
+    cardId: card?.id ?? null,
+    cardName,
+    baseRewardXp,
+    baseRewardOzzies,
+    bonusRewardXp,
+    bonusRewardOzzies,
+    totalRewardXp,
+    totalRewardOzzies,
+    resultCount: results.length,
+    results,
+    ...(options.failureReason ? { failureReason: options.failureReason } : {}),
+  };
+}
+
+function buildMissionRunRecord(debrief, activeRun) {
+  return {
+    schemaVersion: 1,
+    runId: debrief.runId,
+    contractId: debrief.contractId,
+    contractTitle: debrief.contractTitle,
+    district: debrief.district,
+    success: debrief.success,
+    completedAt: debrief.completedAt,
+    deckId: debrief.deckId,
+    deckName: debrief.deckName,
+    cardId: debrief.cardId ?? null,
+    cardName: debrief.cardName ?? null,
+    rewardXp: debrief.totalRewardXp,
+    rewardOzzies: debrief.totalRewardOzzies,
+    resultCount: debrief.resultCount,
+    routeNodeIds: Array.isArray(activeRun?.routeNodeIds) ? activeRun.routeNodeIds : [],
+    summary: debrief.summary,
+    ...(debrief.failureReason ? { failureReason: debrief.failureReason } : {}),
+  };
+}
+
+function appendMissionRunRecord(records, record) {
+  const existing = Array.isArray(records) ? records.filter((entry) => entry?.runId !== record.runId) : [];
+  return [record, ...existing].slice(0, MAX_MISSION_RUN_RECORDS);
+}
+
+function pickMissionRewardCard(deck) {
+  const cards = Array.isArray(deck?.cards) ? deck.cards : [];
+  const challenger = typeof deck?.challengerCardId === 'string'
+    ? cards.find((card) => card?.id === deck.challengerCardId)
+    : null;
+  return challenger ?? cards.find((card) => card?.id) ?? null;
+}
+
+function applyMissionRewardsToCard(card, debrief, runRecord) {
+  return {
+    ...card,
+    xp: clampMissionReward((Number(card?.xp) || 0) + debrief.totalRewardXp),
+    ozzies: clampMissionReward((Number(card?.ozzies) || 0) + debrief.totalRewardOzzies),
+    missionRunRecords: appendMissionRunRecord(card?.missionRunRecords, runRecord),
+    missionStats: {
+      ...(card?.missionStats ?? {}),
+      completedRuns: (Number(card?.missionStats?.completedRuns) || 0) + 1,
+      failedRuns: Number(card?.missionStats?.failedRuns) || 0,
+      missionXp: (Number(card?.missionStats?.missionXp) || 0) + debrief.totalRewardXp,
+      missionOzzies: (Number(card?.missionStats?.missionOzzies) || 0) + debrief.totalRewardOzzies,
+      lastRunAt: debrief.completedAt,
+    },
+    updatedAt: debrief.completedAt,
+  };
+}
+
+function applyMissionFailureRecordToCard(card, debrief, runRecord) {
+  return {
+    ...card,
+    missionRunRecords: appendMissionRunRecord(card?.missionRunRecords, runRecord),
+    missionStats: {
+      ...(card?.missionStats ?? {}),
+      completedRuns: Number(card?.missionStats?.completedRuns) || 0,
+      failedRuns: (Number(card?.missionStats?.failedRuns) || 0) + 1,
+      missionXp: Number(card?.missionStats?.missionXp) || 0,
+      missionOzzies: Number(card?.missionStats?.missionOzzies) || 0,
+      lastRunAt: debrief.completedAt,
+    },
+    updatedAt: debrief.completedAt,
   };
 }
 
@@ -1395,6 +1526,10 @@ export function registerMissionRoutes(app, {
         res.status(403).json({ error: 'This run does not belong to the current user.' });
         return;
       }
+      if (activeRun.phase === MISSION_PHASE.MISSION_COMPLETE || activeRun.phase === MISSION_PHASE.MISSION_FAILED) {
+        res.json({ activeRun });
+        return;
+      }
       // Only travel phases accept checkpoint progression; encounters and the
       // POI fork must be resolved through their dedicated endpoints first.
       if (
@@ -1435,8 +1570,7 @@ export function registerMissionRoutes(app, {
       // Decide whether this checkpoint completes a leg and triggers a phase
       // transition. Reaching the POI (last node on outbound) parks the run
       // at AT_POI_FORK; reaching the Workshop (first node on inbound) marks
-      // the run MISSION_COMPLETE. Card mutation is intentionally deferred
-      // to PR 4 (#633) — this endpoint never writes to the player card.
+      // the run MISSION_COMPLETE and finalizes rewards exactly once.
       let nextPhase = activeRun.phase;
       if (activeRun.phase === MISSION_PHASE.TRAVELING_OUTBOUND && checkpointNodeIndex === maxIndex) {
         try {
@@ -1496,11 +1630,204 @@ export function registerMissionRoutes(app, {
         } : {}),
         ...(nextPhase === MISSION_PHASE.MISSION_COMPLETE ? { completedAt: now } : {}),
       };
+      if (nextPhase === MISSION_PHASE.MISSION_COMPLETE) {
+        const finalizedRun = await adminDb.runTransaction(async (tx) => {
+          const runSnap = await tx.get(runRef);
+          if (!runSnap.exists) {
+            throw Object.assign(new Error('Run not found.'), { statusCode: 404 });
+          }
+          const currentRun = normalizeActiveRunPhase(runSnap.data());
+          if (currentRun.uid !== caller.uid) {
+            throw Object.assign(new Error('This run does not belong to the current user.'), { statusCode: 403 });
+          }
+          if (currentRun.completionFinalizedAt) {
+            return currentRun;
+          }
+          if (currentRun.phase !== MISSION_PHASE.TRAVELING_INBOUND) {
+            throw Object.assign(new Error(`Completion is not allowed in phase ${currentRun.phase}.`), { statusCode: 409 });
+          }
+
+          const worldRef = adminDb.collection(WORLD_COLLECTION).doc(`${caller.uid}_${currentRun.boardDateKey}`);
+          const profileRef = adminDb.collection(PROFILE_COLLECTION).doc(caller.uid);
+          const deckRef = currentRun.deckId
+            ? adminDb.collection('users').doc(caller.uid).collection('decks').doc(currentRun.deckId)
+            : null;
+          const [freshWorldSnap, profileSnap, deckSnap] = await Promise.all([
+            tx.get(worldRef),
+            tx.get(profileRef),
+            deckRef ? tx.get(deckRef) : Promise.resolve(null),
+          ]);
+          const freshWorld = freshWorldSnap.exists ? freshWorldSnap.data() : world;
+          const freshContract = freshWorld?.contracts?.find((candidate) => candidate.id === currentRun.contractId) ?? contract;
+          const deck = deckSnap?.exists ? deckSnap.data() : null;
+          const deckCard = deck ? pickMissionRewardCard(deck) : null;
+          const cardRef = deckCard?.id
+            ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id)
+            : null;
+          const cardSnap = cardRef ? await tx.get(cardRef) : null;
+          const persistedCard = cardSnap?.exists
+            ? { ...deckCard, ...cardSnap.data(), id: deckCard.id }
+            : deckCard;
+          const completionRun = {
+            ...currentRun,
+            checkpointNodeIndex,
+            lastCheckpointAt: now,
+            updatedAt: now,
+            phase: MISSION_PHASE.MISSION_COMPLETE,
+            completedAt: now,
+          };
+          const debrief = buildMissionCompletionDebrief(completionRun, freshContract, now, persistedCard, { success: true });
+          const runRecord = buildMissionRunRecord(debrief, completionRun);
+          const finalized = {
+            ...completionRun,
+            debrief,
+            completionFinalizedAt: now,
+            archivedAt: now,
+          };
+          const progression = getProgression(profileSnap.exists ? profileSnap.data() : {});
+          const nextContracts = Array.isArray(freshWorld?.contracts)
+            ? freshWorld.contracts.map((candidate) => (candidate.id === currentRun.contractId
+              ? { ...candidate, status: 'completed', completedAt: now }
+              : candidate))
+            : [];
+
+          tx.set(runRef, finalized, { merge: true });
+          tx.set(adminDb.collection(RUN_ARCHIVE_COLLECTION).doc(currentRun.runId), finalized, { merge: true });
+          if (freshWorld) {
+            tx.set(worldRef, { ...freshWorld, contracts: nextContracts, updatedAt: now }, { merge: true });
+          }
+          tx.set(profileRef, {
+            missionXp: progression.missionXp + debrief.totalRewardXp,
+            missionOzzies: progression.missionOzzies + debrief.totalRewardOzzies,
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+          if (deck && persistedCard?.id) {
+            const rewardedCard = applyMissionRewardsToCard(persistedCard, debrief, runRecord);
+            const updatedDeck = {
+              ...deck,
+              cards: Array.isArray(deck.cards)
+                ? deck.cards.map((card) => (card?.id === rewardedCard.id ? { ...card, ...rewardedCard } : card))
+                : deck.cards,
+              missionRunRecords: appendMissionRunRecord(deck.missionRunRecords, runRecord),
+              updatedAt: now,
+            };
+            tx.set(deckRef, updatedDeck, { merge: true });
+            if (cardRef) {
+              tx.set(cardRef, rewardedCard, { merge: true });
+            }
+          }
+          return finalized;
+        });
+        res.json({ activeRun: finalizedRun });
+        return;
+      }
       await runRef.set(nextRun, { merge: true });
       res.json({ activeRun: nextRun });
     } catch (error) {
       console.error('Mission checkpoint update error:', error);
       res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to persist checkpoint.' });
+    }
+  });
+
+  app.post('/api/missions/world/fail', missionCheckpointRateLimit, async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Mission world is not configured on this server.' });
+      return;
+    }
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
+    const runId = typeof req.body?.runId === 'string' ? req.body.runId.trim() : '';
+    const failureReason = typeof req.body?.reason === 'string' && req.body.reason.trim()
+      ? req.body.reason.trim().slice(0, 240)
+      : 'Run abandoned before a successful Workshop return.';
+    if (!runId) {
+      res.status(400).json({ error: 'runId is required.' });
+      return;
+    }
+
+    try {
+      const runRef = adminDb.collection(ACTIVE_RUN_COLLECTION).doc(runId);
+      const failedRun = await adminDb.runTransaction(async (tx) => {
+        const runSnap = await tx.get(runRef);
+        if (!runSnap.exists) {
+          throw Object.assign(new Error('Run not found.'), { statusCode: 404 });
+        }
+        const activeRun = normalizeActiveRunPhase(runSnap.data());
+        if (activeRun.uid !== caller.uid) {
+          throw Object.assign(new Error('This run does not belong to the current user.'), { statusCode: 403 });
+        }
+        if (activeRun.completionFinalizedAt) {
+          return activeRun;
+        }
+
+        const now = new Date().toISOString();
+        const worldRef = adminDb.collection(WORLD_COLLECTION).doc(`${caller.uid}_${activeRun.boardDateKey}`);
+        const deckRef = activeRun.deckId
+          ? adminDb.collection('users').doc(caller.uid).collection('decks').doc(activeRun.deckId)
+          : null;
+        const [worldSnap, deckSnap] = await Promise.all([
+          tx.get(worldRef),
+          deckRef ? tx.get(deckRef) : Promise.resolve(null),
+        ]);
+        const world = worldSnap.exists ? worldSnap.data() : null;
+        const contract = world?.contracts?.find((candidate) => candidate.id === activeRun.contractId) ?? null;
+        const deck = deckSnap?.exists ? deckSnap.data() : null;
+        const deckCard = deck ? pickMissionRewardCard(deck) : null;
+        const cardRef = deckCard?.id
+          ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id)
+          : null;
+        const cardSnap = cardRef ? await tx.get(cardRef) : null;
+        const persistedCard = cardSnap?.exists
+          ? { ...deckCard, ...cardSnap.data(), id: deckCard.id }
+          : deckCard;
+        const terminalRun = {
+          ...activeRun,
+          phase: MISSION_PHASE.MISSION_FAILED,
+          updatedAt: now,
+          completedAt: now,
+          failureReason,
+        };
+        const debrief = buildMissionCompletionDebrief(terminalRun, contract, now, persistedCard, {
+          success: false,
+          failureReason,
+        });
+        const runRecord = buildMissionRunRecord(debrief, terminalRun);
+        const finalized = {
+          ...terminalRun,
+          debrief,
+          completionFinalizedAt: now,
+          archivedAt: now,
+        };
+
+        tx.set(runRef, finalized, { merge: true });
+        tx.set(adminDb.collection(RUN_ARCHIVE_COLLECTION).doc(activeRun.runId), finalized, { merge: true });
+        if (deck && persistedCard?.id) {
+          const recordedCard = applyMissionFailureRecordToCard(persistedCard, debrief, runRecord);
+          tx.set(deckRef, {
+            ...deck,
+            cards: Array.isArray(deck.cards)
+              ? deck.cards.map((card) => (card?.id === recordedCard.id ? { ...card, ...recordedCard } : card))
+              : deck.cards,
+            missionRunRecords: appendMissionRunRecord(deck.missionRunRecords, runRecord),
+            updatedAt: now,
+          }, { merge: true });
+          if (cardRef) {
+            tx.set(cardRef, recordedCard, { merge: true });
+          }
+        }
+        return finalized;
+      });
+
+      res.json({ activeRun: failedRun });
+    } catch (error) {
+      console.error('Mission fail logging error:', error);
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to log failed mission run.' });
     }
   });
 

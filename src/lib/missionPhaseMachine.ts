@@ -14,6 +14,7 @@ export const MISSION_PHASE = {
   AT_POI_FORK: "AT_POI_FORK",
   TRAVELING_INBOUND: "TRAVELING_INBOUND",
   MISSION_COMPLETE: "MISSION_COMPLETE",
+  MISSION_FAILED: "MISSION_FAILED",
 } as const;
 
 export type MissionPhase = (typeof MISSION_PHASE)[keyof typeof MISSION_PHASE];
@@ -25,7 +26,7 @@ const LEGACY_PHASE_MAP: Record<string, MissionPhase> = {
   at_poi: MISSION_PHASE.AT_POI_FORK,
   returning: MISSION_PHASE.TRAVELING_INBOUND,
   complete: MISSION_PHASE.MISSION_COMPLETE,
-  failed: MISSION_PHASE.MISSION_COMPLETE,
+  failed: MISSION_PHASE.MISSION_FAILED,
 };
 
 const ALLOWED_TRANSITIONS: Record<MissionPhase, readonly MissionPhase[]> = {
@@ -44,6 +45,7 @@ const ALLOWED_TRANSITIONS: Record<MissionPhase, readonly MissionPhase[]> = {
     MISSION_PHASE.MISSION_COMPLETE,
   ],
   [MISSION_PHASE.MISSION_COMPLETE]: [],
+  [MISSION_PHASE.MISSION_FAILED]: [],
 };
 
 export function isMissionPhase(value: unknown): value is MissionPhase {
@@ -64,7 +66,8 @@ export function canTransitionMissionPhase(from: unknown, to: MissionPhase): bool
 }
 
 export function isTerminalMissionPhase(phase: unknown): boolean {
-  return normalizeMissionPhase(phase) === MISSION_PHASE.MISSION_COMPLETE;
+  const normalized = normalizeMissionPhase(phase);
+  return normalized === MISSION_PHASE.MISSION_COMPLETE || normalized === MISSION_PHASE.MISSION_FAILED;
 }
 
 export const MISSION_PHASE_LABELS: Record<MissionPhase, string> = {
@@ -74,4 +77,5 @@ export const MISSION_PHASE_LABELS: Record<MissionPhase, string> = {
   [MISSION_PHASE.AT_POI_FORK]: "◆ AT CONTRACT",
   [MISSION_PHASE.TRAVELING_INBOUND]: "◀ RETURNING",
   [MISSION_PHASE.MISSION_COMPLETE]: "✓ COMPLETE",
+  [MISSION_PHASE.MISSION_FAILED]: "× FAILED",
 };
