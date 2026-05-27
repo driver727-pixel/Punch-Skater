@@ -252,3 +252,88 @@ export async function persistDistrictCheckpoint(
   );
   return payload.activeRun;
 }
+
+const MISSION_WORLD_ENCOUNTER_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_ENCOUNTER_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/encounter",
+);
+const MISSION_WORLD_POI_API_URL = resolveApiUrl(
+  (import.meta.env.VITE_MISSIONS_WORLD_POI_API_URL as string | undefined)?.trim(),
+  "/api/missions/world/resolve-poi",
+);
+
+export async function startEncounter(
+  uid: string,
+  runId: string,
+  encounterId: string,
+  nodeId: string,
+  userEmail?: string | null,
+): Promise<ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
+    MISSION_WORLD_ENCOUNTER_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId, action: "start", encounterId, nodeId }),
+    },
+    "Failed to start encounter.",
+  );
+  return payload.activeRun;
+}
+
+export async function resolveEncounter(
+  uid: string,
+  runId: string,
+  outcome: Record<string, unknown>,
+  userEmail?: string | null,
+): Promise<ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
+    MISSION_WORLD_ENCOUNTER_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId, action: "resolve", outcome }),
+    },
+    "Failed to resolve encounter.",
+  );
+  return payload.activeRun;
+}
+
+export async function resolvePoiFork(
+  uid: string,
+  runId: string,
+  choiceId: string,
+  userEmail?: string | null,
+): Promise<ActiveDistrictRun> {
+  if (!uid || !isEnabled("MISSIONS", userEmail)) {
+    throw new Error("Missions are not enabled.");
+  }
+  const idToken = await getIdToken();
+  const payload = await fetchMissionJson<{ activeRun: ActiveDistrictRun }>(
+    MISSION_WORLD_POI_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", idToken].join(" "),
+      },
+      body: JSON.stringify({ runId, choiceId }),
+    },
+    "Failed to resolve POI fork.",
+  );
+  return payload.activeRun;
+}
