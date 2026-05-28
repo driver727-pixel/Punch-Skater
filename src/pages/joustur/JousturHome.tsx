@@ -173,6 +173,14 @@ export function JousturHome() {
 
   return (
     <div className="page joustur-home">
+      <button
+        type="button"
+        className="btn-outline btn-sm"
+        onClick={() => navigate("/arena")}
+        style={{ marginBottom: "1rem" }}
+      >
+        ← Back to Arena
+      </button>
       <p className="page-eyebrow">Game Mode</p>
       <h1 className="page-title">Joustur Skatur™</h1>
       <p className="page-sub">
