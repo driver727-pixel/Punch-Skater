@@ -181,6 +181,10 @@ async function prepareFrameWagerSettlement(tx, db, match) {
           tx.set(targetCardRef, { jousturFrameWagerLock: null }, { merge: true });
         }
       } else if (targetCardSnap.exists) {
+        const lock = targetCardSnap.data()?.jousturFrameWagerLock;
+        if (lock?.matchId !== match.id || lock?.frameId !== wager.frameId || lock?.status !== 'locked') {
+          throw badRequest('The wagered card lock could not be verified for loss settlement.', 409);
+        }
         tx.delete(targetCardRef);
       }
     }

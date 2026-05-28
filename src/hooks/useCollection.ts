@@ -18,6 +18,7 @@ const MIGRATION_KEY_PREFIX = "skpd_migration_done_";
 interface UnlockedFrameEntry {
   cardId: string;
   frameId: string;
+  unlockedAt: string;
 }
 
 /**
@@ -34,6 +35,7 @@ function normalizeUnlockedFrames(value: unknown): UnlockedFrameEntry[] {
       return {
         cardId: typeof data.cardId === "string" ? data.cardId : "",
         frameId: typeof data.frameId === "string" ? data.frameId : "",
+        unlockedAt: typeof data.unlockedAt === "string" ? data.unlockedAt : "",
       };
     })
     .filter((entry): entry is UnlockedFrameEntry => Boolean(entry?.cardId && entry.frameId));
@@ -47,7 +49,8 @@ function normalizeUnlockedFrames(value: unknown): UnlockedFrameEntry[] {
  */
 function applyUnlockedFrames(cards: CardPayload[], unlockedFrames: UnlockedFrameEntry[]): CardPayload[] {
   const byCardId = new Map<string, string[]>();
-  for (const entry of unlockedFrames) {
+  const orderedUnlocks = [...unlockedFrames].sort((left, right) => left.unlockedAt.localeCompare(right.unlockedAt));
+  for (const entry of orderedUnlocks) {
     const frameIds = byCardId.get(entry.cardId) ?? [];
     if (!frameIds.includes(entry.frameId)) frameIds.push(entry.frameId);
     byCardId.set(entry.cardId, frameIds);
