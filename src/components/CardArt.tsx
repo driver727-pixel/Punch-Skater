@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { CardPayload } from "../lib/types";
 import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { CardFrame } from "./CardFrame";
+import { normalizeCosmeticFrameId } from "../lib/cosmeticFrames";
 
 interface CardArtProps {
   card: CardPayload;
@@ -969,6 +970,21 @@ const RARITY_STAR_COLOR: Record<string, string> = {
   Legendary:      "#ffaa00",
 };
 
+function CosmeticSvgFrame({ frameId, width, height }: { frameId?: string; width: number; height: number }) {
+  const normalized = normalizeCosmeticFrameId(frameId);
+  if (!normalized) return null;
+  const isChrome = normalized === "chrome-singed";
+  const primary = isChrome ? "#f6f1e8" : "#00f5ff";
+  const secondary = isChrome ? "#ff6b1a" : "#ff2bd6";
+  return (
+    <g className={`cosmetic-svg-frame cosmetic-svg-frame--${normalized}`} pointerEvents="none">
+      <rect x={4} y={4} width={width - 8} height={height - 8} rx={10} fill="none" stroke={primary} strokeWidth={2.5} opacity={0.9} />
+      <rect x={8} y={8} width={width - 16} height={height - 16} rx={7} fill="none" stroke={secondary} strokeWidth={1.2} opacity={0.85} strokeDasharray={isChrome ? "10 5 2 5" : "5 4"} />
+      <path d={`M12 20 L12 12 L28 12 M${width - 28} 12 L${width - 12} 12 L${width - 12} 20 M12 ${height - 20} L12 ${height - 12} L28 ${height - 12} M${width - 28} ${height - 12} L${width - 12} ${height - 12} L${width - 12} ${height - 20}`} fill="none" stroke={secondary} strokeWidth={2} opacity={0.95} />
+    </g>
+  );
+}
+
 function CardArtComponent({ card, width = 200, height = 140 }: CardArtProps) {
   const accent    = card.visuals.accentColor || "#00ff88";
   const stars     = RARITY_STARS[card.prompts.rarity] || 1;
@@ -1016,6 +1032,7 @@ function CardArtComponent({ card, width = 200, height = 140 }: CardArtProps) {
           transform={`translate(${width / 2 - (stars - 1) * 7 + i * 14}, 12)`}
         />
       ))}
+      <CosmeticSvgFrame frameId={card.activeFrameId} width={width} height={height} />
       <text x={width - 4} y={height - 4} textAnchor="end" fontSize="9"
         fill={accent} fontFamily="monospace" fillOpacity="0.8">
         {card.prompts.district}
@@ -1035,6 +1052,7 @@ function areCardArtPropsEqual(previous: CardArtProps, next: CardArtProps): boole
     previous.height === next.height &&
     previous.card.id === next.card.id &&
     previous.card.frameSeed === next.card.frameSeed &&
+    previous.card.activeFrameId === next.card.activeFrameId &&
     previous.card.backgroundSeed === next.card.backgroundSeed &&
     previous.card.characterSeed === next.card.characterSeed &&
     previous.card.identity.name === next.card.identity.name &&

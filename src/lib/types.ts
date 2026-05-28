@@ -183,6 +183,10 @@ export interface CardPayload {
   frameSeed: string;
   backgroundSeed: string;
   characterSeed: string;
+  /** Runtime-only unlocked prestige frame IDs hydrated from userProfiles.unlocked_frames. */
+  unlockedFrameIds?: string[];
+  /** Runtime-only active prestige frame applied as a CSS/SVG overlay. */
+  activeFrameId?: string;
 
   prompts: CardPrompts;
 

@@ -184,6 +184,82 @@ async function mutateWallet(adminDb, {
   });
 }
 
+/**
+ * Debit a wallet inside an existing Firestore transaction.
+ * @param {object} tx Active Firestore transaction.
+ * @param {object} adminDb Firestore Admin instance.
+ * @param {object} params Wallet debit parameters, including uid, amount, source metadata, and idempotency key.
+ * @returns {Promise<{wallet: object, transaction: object, duplicate: boolean}>}
+ * @throws {Error} 409 when the user has insufficient Ozzies; 400 for invalid input; 503 when wallet storage is unavailable.
+ */
+export async function debitWalletInTransaction(tx, adminDb, {
+  uid,
+  amount,
+  sourceType,
+  sourceId,
+  description,
+  metadata = {},
+  idempotencyKey,
+  FieldValue,
+}) {
+  validateWalletMutationInput({ uid, amount, sourceType, sourceId, description, idempotencyKey });
+  if (!adminDb) {
+    throw Object.assign(new Error('Wallet service is not configured on this server.'), { statusCode: 503 });
+  }
+
+  const walletRef = adminDb.collection('wallets').doc(uid);
+  const ledgerRef = walletRef.collection('ledger').doc(idempotencyKey);
+  const [walletSnap, ledgerSnap] = await Promise.all([
+    tx.get(walletRef),
+    tx.get(ledgerRef),
+  ]);
+
+  if (ledgerSnap.exists) {
+    return {
+      wallet: normalizeWalletData(walletSnap.exists ? walletSnap.data() : { uid }),
+      transaction: ledgerSnap.data(),
+      duplicate: true,
+    };
+  }
+
+  const currentWallet = normalizeWalletData(walletSnap.exists ? walletSnap.data() : { uid });
+  const balanceBefore = currentWallet.currentBalance;
+  const balanceAfter = balanceBefore - amount;
+  if (balanceAfter < 0) {
+    throw Object.assign(new Error('Insufficient Ozzies balance.'), { statusCode: 409 });
+  }
+
+  const nextWallet = buildWalletRecord({
+    uid,
+    currentBalance: balanceAfter,
+    lifetimeEarned: currentWallet.lifetimeEarned,
+    lifetimeSpent: currentWallet.lifetimeSpent + amount,
+    FieldValue,
+  });
+  const transaction = buildTransactionRecord({
+    uid,
+    idempotencyKey,
+    amount,
+    direction: 'debit',
+    balanceBefore,
+    balanceAfter,
+    sourceType,
+    sourceId,
+    description,
+    metadata,
+    FieldValue,
+  });
+
+  tx.set(walletRef, nextWallet, { merge: true });
+  tx.set(ledgerRef, transaction);
+
+  return {
+    wallet: normalizeWalletData(nextWallet),
+    transaction,
+    duplicate: false,
+  };
+}
+
 export function creditWallet(adminDb, params) {
   return mutateWallet(adminDb, {
     ...params,

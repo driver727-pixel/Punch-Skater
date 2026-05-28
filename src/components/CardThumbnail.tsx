@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
+import { CosmeticFrameOverlay } from "./CosmeticFrameOverlay";
 import {
   getFrameBlendMode,
   getStaticFrameBackUrl,
@@ -105,6 +106,7 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           className="card-art-layer card-art-layer--svg-frame"
         />
       )}
+      <CosmeticFrameOverlay frameId={card.activeFrameId} />
     </div>
   );
 }

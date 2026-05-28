@@ -18,6 +18,7 @@ import type { PointerEvent } from "react";
 import type { BoardPlacement, CardPayload, CharacterPlacement, LayerPlacement } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
+import { CosmeticFrameOverlay } from "./CosmeticFrameOverlay";
 import { StatBar } from "./StatBar";
 import { getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
@@ -349,6 +350,7 @@ function CardFront({
               className="print-art-layer print-art-layer--svg-frame"
             />
           )}
+          <CosmeticFrameOverlay frameId={card.activeFrameId} className="print-art-layer" />
         </div>
       ) : (
         <CardArt card={card} width={fallbackWidth} height={fallbackHeight} />

@@ -72,6 +72,9 @@ export type JousturMatchStatus = "initializing" | "active" | "completed" | "canc
 
 export type JousturMatchMode = "friend" | "casual" | "solo";
 
+export type JousturFrameWagerType = "ozzies" | "card_lock";
+export type JousturFrameWagerStatus = "staked" | "won" | "lost";
+
 // ── Lineup ────────────────────────────────────────────────────────────────────
 
 /** Persistent lineup doc stored at `jousturLineups/{uid}`. */
@@ -212,6 +215,18 @@ export interface JousturMatch {
   winnerUid: string | null;
   /** Prevents duplicate reward grants. */
   rewardsGranted: boolean;
+  /** Prestige-frame wager metadata for high-stakes matches. */
+  wager?: {
+    type: JousturFrameWagerType;
+    frameId: string;
+    targetCardId: string;
+    amount: number;
+    status: JousturFrameWagerStatus;
+    stakedAt: string;
+    settledAt?: string;
+  };
+  /** Prevents duplicate frame unlock / loss-penalty settlement. */
+  frameWagerSettled?: boolean;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;

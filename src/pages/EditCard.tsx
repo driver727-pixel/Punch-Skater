@@ -377,6 +377,8 @@ export function EditCard() {
           layerOrder: preservedBoardLayerOrder,
         },
         characterPlacement: preservedCharacterPlacement,
+        unlockedFrameIds: original.unlockedFrameIds,
+        activeFrameId: original.activeFrameId,
       };
 
       setPreview(merged);
@@ -582,6 +584,9 @@ export function EditCard() {
         <div>
           <h1 className="page-title">Customize Card</h1>
           <p className="page-sub">One hub for identity, build, board, layout, stats, and art consistency.</p>
+          {original.activeFrameId && (
+            <p className="page-sub">Prestige frame active: {original.activeFrameId.replace(/-/g, " ")}</p>
+          )}
         </div>
         <button className="btn-outline" onClick={() => { sfxClick(); navigate("/collection"); }}>← Back</button>
       </div>

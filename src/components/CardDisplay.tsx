@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useMemo, useRef } from "react";
 import type { CardPayload } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
+import { CosmeticFrameOverlay } from "./CosmeticFrameOverlay";
 import { StatBar } from "./StatBar";
 import { ShareModal } from "./ShareModal";
 import { CardViewer3D } from "./CardViewer3D";
@@ -102,6 +103,7 @@ function areCardsEqual(previous: CardPayload, next: CardPayload): boolean {
     previous.backgroundImageUrl === next.backgroundImageUrl &&
     previous.characterImageUrl === next.characterImageUrl &&
     previous.frameImageUrl === next.frameImageUrl &&
+    previous.activeFrameId === next.activeFrameId &&
     shallowEqualObject(previous.prompts as unknown as Record<string, unknown>, next.prompts as unknown as Record<string, unknown>) &&
     shallowEqualObject(previous.identity as unknown as Record<string, unknown>, next.identity as unknown as Record<string, unknown>) &&
     shallowEqualObject(previous.class as unknown as Record<string, unknown>, next.class as unknown as Record<string, unknown>) &&
@@ -284,6 +286,7 @@ function CompositeArt({
           className="card-art-layer card-art-layer--svg-frame"
         />
       )}
+      <CosmeticFrameOverlay frameId={card.activeFrameId} />
     </div>
   );
 }

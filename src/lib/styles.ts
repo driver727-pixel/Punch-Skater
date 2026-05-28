@@ -48,12 +48,15 @@ export function remapStyleConnection(style: unknown): string {
 }
 
 export function normalizeCardPayload(card: CardPayload): CardPayload {
+  const persistableCard = { ...card };
+  delete persistableCard.unlockedFrameIds;
+  delete persistableCard.activeFrameId;
   const rawStyle = typeof card.prompts?.style === "string" ? card.prompts.style : "Street";
   const style = resolveArchetypeStyle(card.prompts?.archetype, rawStyle);
   const flavorText = card.front?.flavorText;
   const flavorTextEnglish = card.front?.flavorTextEnglish;
-  const normalizedCard = style === rawStyle ? card : {
-    ...card,
+  const normalizedCard = style === rawStyle ? persistableCard : {
+    ...persistableCard,
     prompts: { ...card.prompts, style },
   };
   const joust = normalizeJoustProfile(normalizedCard);
@@ -65,7 +68,7 @@ export function normalizeCardPayload(card: CardPayload): CardPayload {
         : normalizedCard.front;
   const frontChanged = nextFront !== normalizedCard.front;
   const joustChanged = normalizedCard.joust !== joust;
-  if (normalizedCard === card && !frontChanged && !joustChanged) return card;
+  if (normalizedCard === persistableCard && !frontChanged && !joustChanged) return persistableCard;
   return {
     ...normalizedCard,
     joust,
