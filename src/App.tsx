@@ -9,8 +9,13 @@ import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
+import { TerminalShell } from "./components/TerminalShell";
+import {
+  TerminalRouterProvider,
+  isTerminalPath,
+} from "./context/TerminalRouterContext";
 import { firebaseUnavailableMessage, isFirebaseConfigured } from "./lib/firebase";
-import { isEnabled } from "./lib/featureFlags";
+import { featureFlags, isEnabled } from "./lib/featureFlags";
 
 /** Applies data-theme and data-time attributes to <html> for CSS theming. */
 function ThemeApplier() {
@@ -163,6 +168,9 @@ function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    // The Unified Terminal panels manage their own per-panel scroll memory,
+    // so skip the global reset whenever the URL belongs to a terminal view.
+    if (featureFlags.UNIFIED_TERMINAL && isTerminalPath(pathname)) return;
     const behavior = resolveScrollBehavior();
     const main = document.querySelector(MAIN_CONTENT_SELECTOR);
     if (main instanceof HTMLElement) {
@@ -264,6 +272,100 @@ function AppParallaxBackdrop() {
   );
 }
 
+function LegacyRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/forge" element={<CardForge />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/credits" element={<Credits />} />
+      <Route path="/factions" element={<Factions />} />
+      <Route path="/lore" element={<Lore />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/account" element={
+        <ProtectedRoute><AccountSettings /></ProtectedRoute>
+      } />
+      <Route path="/collection" element={
+        <ProtectedRoute><Collection /></ProtectedRoute>
+      } />
+      <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
+      <Route path="/edit/:cardId" element={
+        <ProtectedRoute><EditCard /></ProtectedRoute>
+      } />
+      <Route path="/trades" element={
+        <ProtectedRoute><Trades /></ProtectedRoute>
+      } />
+      <Route path="/arena" element={
+        <ProtectedRoute><BattleArena /></ProtectedRoute>
+      } />
+      <Route path="/race/:raceId" element={
+        <ProtectedRoute><RaceTrack /></ProtectedRoute>
+      } />
+      <Route path="/missions" element={
+        <ProtectedRoute><Missions /></ProtectedRoute>
+      } />
+      <Route path="/joustur" element={
+        <ProtectedRoute><JousturGate><JousturHome /></JousturGate></ProtectedRoute>
+      } />
+      <Route path="/joustur/lineup" element={
+        <ProtectedRoute><JousturGate><JousturLineupBuilder /></JousturGate></ProtectedRoute>
+      } />
+      <Route path="/joustur/match/:id" element={
+        <ProtectedRoute><JousturGate><JousturBoard /></JousturGate></ProtectedRoute>
+      } />
+      <Route path="/joustur/result/:id" element={
+        <ProtectedRoute><JousturGate><JousturResult /></JousturGate></ProtectedRoute>
+      } />
+      <Route path="/joustur/rules" element={<JousturRules />} />
+      <Route path="/workshop" element={
+        <ProtectedRoute><Workshop /></ProtectedRoute>
+      } />
+      <Route path="/profile" element={
+        <ProtectedRoute><UserProfile /></ProtectedRoute>
+      } />
+      <Route path="/leaderboard" element={
+        <ProtectedRoute><Leaderboard /></ProtectedRoute>
+      } />
+      <Route path="/trash" element={
+        <ProtectedRoute><Trash /></ProtectedRoute>
+      } />
+      <Route path="/admin" element={
+        <AdminRoute><Admin /></AdminRoute>
+      } />
+      <Route path="/dev/asset-generator" element={
+        <AdminRoute><AssetGenerator /></AdminRoute>
+      } />
+      <Route path="/dev/frame-preview" element={<FramePreview />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
+/**
+ * Routes URL → either the Unified Terminal SPA shell or the legacy `<Routes>`.
+ *
+ * When the `UNIFIED_TERMINAL` feature flag is on AND the current pathname
+ * matches a registered terminal view (phase 1: `/` and `/forge`), the shell
+ * stays mounted across navigation so panels slide in/out via CSS transforms
+ * without unmounting page state. All other paths continue to render through
+ * the legacy `<Routes>` tree, so unmigrated views are unaffected.
+ */
+function AppContent() {
+  const { pathname } = useLocation();
+  const isUnifiedTerminalRoute = featureFlags.UNIFIED_TERMINAL && isTerminalPath(pathname);
+
+  if (isUnifiedTerminalRoute) {
+    return (
+      <TerminalRouterProvider>
+        <TerminalShell />
+      </TerminalRouterProvider>
+    );
+  }
+  return <LegacyRoutes />;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -284,72 +386,7 @@ function App() {
                   <PlayerRewardBanner />
                   <main id="main-content" className="main" tabIndex={-1}>
                     <Suspense fallback={<AppLoadingState />}>
-                      <Routes>
-                        <Route path="/" element={<LandingPage />} />
-                        <Route path="/forge" element={<CardForge />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/credits" element={<Credits />} />
-                        <Route path="/factions" element={<Factions />} />
-                        <Route path="/lore" element={<Lore />} />
-                        <Route path="/privacy" element={<PrivacyPolicy />} />
-                        <Route path="/terms" element={<TermsOfService />} />
-                        <Route path="/reset-password" element={<ResetPassword />} />
-                        <Route path="/account" element={
-                          <ProtectedRoute><AccountSettings /></ProtectedRoute>
-                        } />
-                        <Route path="/collection" element={
-                          <ProtectedRoute><Collection /></ProtectedRoute>
-                        } />
-                        <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
-                        <Route path="/edit/:cardId" element={
-                          <ProtectedRoute><EditCard /></ProtectedRoute>
-                        } />
-                        <Route path="/trades" element={
-                          <ProtectedRoute><Trades /></ProtectedRoute>
-                        } />
-                        <Route path="/arena" element={
-                          <ProtectedRoute><BattleArena /></ProtectedRoute>
-                        } />
-                        <Route path="/race/:raceId" element={
-                          <ProtectedRoute><RaceTrack /></ProtectedRoute>
-                        } />
-                        <Route path="/missions" element={
-                          <ProtectedRoute><Missions /></ProtectedRoute>
-                        } />
-                        <Route path="/joustur" element={
-                          <ProtectedRoute><JousturGate><JousturHome /></JousturGate></ProtectedRoute>
-                        } />
-                        <Route path="/joustur/lineup" element={
-                          <ProtectedRoute><JousturGate><JousturLineupBuilder /></JousturGate></ProtectedRoute>
-                        } />
-                        <Route path="/joustur/match/:id" element={
-                          <ProtectedRoute><JousturGate><JousturBoard /></JousturGate></ProtectedRoute>
-                        } />
-                        <Route path="/joustur/result/:id" element={
-                          <ProtectedRoute><JousturGate><JousturResult /></JousturGate></ProtectedRoute>
-                        } />
-                        <Route path="/joustur/rules" element={<JousturRules />} />
-                        <Route path="/workshop" element={
-                          <ProtectedRoute><Workshop /></ProtectedRoute>
-                        } />
-                        <Route path="/profile" element={
-                          <ProtectedRoute><UserProfile /></ProtectedRoute>
-                        } />
-                        <Route path="/leaderboard" element={
-                          <ProtectedRoute><Leaderboard /></ProtectedRoute>
-                        } />
-                        <Route path="/trash" element={
-                          <ProtectedRoute><Trash /></ProtectedRoute>
-                        } />
-                        <Route path="/admin" element={
-                          <AdminRoute><Admin /></AdminRoute>
-                        } />
-                        <Route path="/dev/asset-generator" element={
-                          <AdminRoute><AssetGenerator /></AdminRoute>
-                        } />
-                        <Route path="/dev/frame-preview" element={<FramePreview />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
+                      <AppContent />
                     </Suspense>
                   </main>
                   <Footer />
