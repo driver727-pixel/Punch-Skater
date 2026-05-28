@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { generateImage, removeBackground } from "../services/imageGen";
 import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
 import { AdminFactionImagesPanel } from "../components/AdminFactionImagesPanel";
 import { AdminImageCachePanel } from "../components/AdminImageCachePanel";
+import {
+  getDistrictTheme,
+  getDistrictTransitionEyebrow,
+  getDistrictTransitionLine,
+} from "../lib/districtTheme";
+import { RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
 
 // ── Download helper ────────────────────────────────────────────────────────────
 
@@ -95,6 +101,7 @@ const ALL_ITEMS = buildAssetItems();
 const IRREGULAR_PLURALS: Record<string, string> = {
   Battery: "Batteries",
 };
+const TRANSITION_PREVIEW_SEED_COUNT = 128;
 
 function pluralizeCategory(cat: string): string {
   return IRREGULAR_PLURALS[cat] ?? (cat.endsWith("s") ? cat : `${cat}s`);
@@ -111,12 +118,28 @@ interface ItemState {
 }
 
 export function AssetGenerator() {
-  const [activeTab, setActiveTab] = useState<"generator" | "factions" | "cache">("generator");
+  const [activeTab, setActiveTab] = useState<"generator" | "transitions" | "factions" | "cache">("generator");
   const [states, setStates] = useState<Record<string, ItemState>>(
     Object.fromEntries(ALL_ITEMS.map((i) => [i.seedKey, { status: "idle" }]))
   );
   const [runningAll, setRunningAll] = useState(false);
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
+  const transitionPreviewData = useMemo(() => {
+    return RACE_DISTRICT_OPTIONS.map((district) => {
+      const eyebrows = new Set<string>();
+      const lines = new Set<string>();
+      for (let seed = 0; seed < TRANSITION_PREVIEW_SEED_COUNT; seed += 1) {
+        eyebrows.add(getDistrictTransitionEyebrow(district.slug, seed));
+        lines.add(getDistrictTransitionLine(district.slug, seed));
+      }
+      return {
+        ...district,
+        theme: getDistrictTheme(district.slug),
+        eyebrows: Array.from(eyebrows),
+        lines: Array.from(lines),
+      };
+    });
+  }, []);
 
   function setItemState(seedKey: string, patch: Partial<ItemState>) {
     setStates((prev) => ({
@@ -193,6 +216,12 @@ export function AssetGenerator() {
           onClick={() => setActiveTab("generator")}
         >
           🎨 Asset Generator
+        </button>
+        <button
+          className={`admin-tab${activeTab === "transitions" ? " admin-tab--active" : ""}`}
+          onClick={() => setActiveTab("transitions")}
+        >
+          🚦 Page Transitions
         </button>
         <button
           className={`admin-tab${activeTab === "factions" ? " admin-tab--active" : ""}`}
@@ -313,6 +342,51 @@ export function AssetGenerator() {
             );
           })}
         </>
+      ) : activeTab === "transitions" ? (
+        <section className="asset-gen-section">
+          <h2 className="asset-gen-section-title">Page Transition Popup Gallery</h2>
+          <p className="asset-gen-toolbar-copy">
+            Preview all currently discoverable district transition popup text variants in one place.
+          </p>
+          <div className="admin-transition-gallery">
+            {transitionPreviewData.map((district) => (
+              <article
+                key={district.slug}
+                className="admin-transition-card"
+                style={
+                  {
+                    "--transition-preview-bg": district.theme.bg,
+                    "--transition-preview-bg2": district.theme.bg2,
+                    "--transition-preview-border": district.theme.neonAccent,
+                    "--transition-preview-accent": district.theme.accent2,
+                    "--transition-preview-text": district.theme.text,
+                  } as CSSProperties
+                }
+              >
+                <header className="admin-transition-card__header">
+                  <span>{district.emoji}</span>
+                  <strong>{district.displayName}</strong>
+                </header>
+                <div className="admin-transition-card__section">
+                  <h3>Eyebrows ({district.eyebrows.length})</h3>
+                  <ul>
+                    {district.eyebrows.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="admin-transition-card__section">
+                  <h3>Body Lines ({district.lines.length})</h3>
+                  <ul>
+                    {district.lines.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       ) : activeTab === "factions" ? (
         <AdminFactionImagesPanel />
       ) : (
