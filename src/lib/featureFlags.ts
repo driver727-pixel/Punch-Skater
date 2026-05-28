@@ -38,6 +38,14 @@ export const featureFlags = {
 
   /** Joustur Skatur™ async board mode. @owner gamma */
   JOUSTUR_SKATUR: envFlag("VITE_FF_JOUSTUR_SKATUR", false),
+
+  /**
+   * Unified Terminal SPA shell — keeps top-level views (Hub, Forge, …) mounted
+   * and slides between them via CSS transforms instead of hard route swaps.
+   * Phase 1 ships Hub + Forge behind this flag; other views fall through to
+   * legacy `<Routes>` until they are migrated. @owner architecture
+   */
+  UNIFIED_TERMINAL: envFlag("VITE_FF_UNIFIED_TERMINAL", false),
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;

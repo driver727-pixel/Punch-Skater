@@ -17042,3 +17042,267 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     transform: rotateX(60deg) rotateZ(-45deg) translateZ(10px);
   }
 }
+
+/* =====================================================================
+ * Unified Terminal — SPA slide-panel shell (phase 1).
+ *
+ * `.terminal-shell` is the always-mounted host. `.terminal-stage`
+ * stacks each registered view as an absolutely positioned
+ * `.terminal-panel` and animates between them with hardware-accelerated
+ * transforms so navigation never causes a hard reload or layout flash.
+ * ===================================================================== */
+:root {
+  --terminal-slide-duration: 320ms;
+  --terminal-slide-ease: cubic-bezier(.2, .8, .2, 1);
+  --terminal-hud-height: 64px;
+}
+
+.terminal-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.terminal-hud {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: linear-gradient(180deg, rgba(8, 8, 24, 0.92), rgba(8, 8, 24, 0.78));
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  min-height: var(--terminal-hud-height);
+  flex-wrap: wrap;
+}
+
+.terminal-hud__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.terminal-hud__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 30% 25%, var(--accent2), var(--purple));
+  color: #05050e;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.terminal-hud__identity-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.terminal-hud__name {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.terminal-hud__tier {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.terminal-hud__stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.terminal-hud__stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 204, 255, 0.08);
+  border: 1px solid rgba(0, 204, 255, 0.25);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+}
+
+.terminal-hud__stat--ozzies {
+  background: rgba(204, 68, 255, 0.08);
+  border-color: rgba(204, 68, 255, 0.3);
+}
+
+.terminal-hud__stat-glyph { font-size: 14px; }
+.terminal-hud__stat-value { font-weight: 700; letter-spacing: 0.02em; }
+.terminal-hud__stat-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.terminal-hud__quick-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.terminal-hud__nav-btn {
+  appearance: none;
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  background: rgba(0, 255, 136, 0.05);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+}
+
+.terminal-hud__nav-btn:hover {
+  background: rgba(0, 255, 136, 0.18);
+  border-color: var(--accent);
+}
+
+.terminal-hud__nav-btn--active {
+  background: var(--accent);
+  color: #05050e;
+  border-color: var(--accent);
+}
+
+.terminal-hud__nav-btn--return {
+  background: rgba(204, 68, 255, 0.12);
+  border-color: rgba(204, 68, 255, 0.45);
+}
+
+.terminal-stage {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-height: 0;
+  /* Stretch the stage so absolutely positioned panels can fill the viewport
+     minus the HUD. Use dvh so iOS Safari address-bar shrink doesn't double
+     up scrollbars. */
+  min-height: calc(100dvh - var(--terminal-hud-height));
+}
+
+.terminal-panel {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Hardware-accelerated slide. Hidden panels park off the right edge. */
+  transform: translate3d(100%, 0, 0);
+  transition: transform var(--terminal-slide-duration) var(--terminal-slide-ease),
+              opacity var(--terminal-slide-duration) var(--terminal-slide-ease);
+  will-change: transform, opacity;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.terminal-panel[data-state="active"] {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* Forward navigation: outgoing panel exits to the left. */
+.terminal-panel[data-state="exiting"][data-direction="forward"] {
+  transform: translate3d(-100%, 0, 0);
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Back navigation: outgoing panel exits to the right. */
+.terminal-panel[data-state="exiting"][data-direction="back"] {
+  transform: translate3d(100%, 0, 0);
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Back navigation: incoming panel slides in from the left. */
+.terminal-panel[data-state="active"][data-direction="back"] {
+  animation: terminal-slide-from-left var(--terminal-slide-duration) var(--terminal-slide-ease);
+}
+
+/* Forward navigation: incoming panel slides in from the right (default). */
+.terminal-panel[data-state="active"][data-direction="forward"] {
+  animation: terminal-slide-from-right var(--terminal-slide-duration) var(--terminal-slide-ease);
+}
+
+@keyframes terminal-slide-from-right {
+  from { transform: translate3d(100%, 0, 0); opacity: 0; }
+  to   { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+
+@keyframes terminal-slide-from-left {
+  from { transform: translate3d(-100%, 0, 0); opacity: 0; }
+  to   { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+
+/* Hidden panels: parked, inert, no animation. */
+.terminal-panel[data-state="hidden"] {
+  visibility: hidden;
+}
+
+/* Mobile parity: keep the same transform-based slide but tighten HUD
+   spacing so panels still get the full viewport. Reuse the existing nav
+   breakpoint (768px) used elsewhere in this stylesheet. */
+@media (max-width: 768px) {
+  :root { --terminal-hud-height: 52px; }
+  .terminal-hud {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+  .terminal-hud__identity-text { display: none; }
+  .terminal-hud__name { max-width: 140px; }
+  .terminal-hud__quick-nav { width: 100%; order: 3; margin-left: 0; justify-content: flex-start; }
+  .terminal-hud__stats { gap: 6px; }
+  .terminal-hud__stat { padding: 3px 8px; font-size: 12px; }
+  .terminal-hud__stat-label { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-panel {
+    transition: none;
+    animation: none !important;
+  }
+  .terminal-panel[data-state="hidden"],
+  .terminal-panel[data-state="exiting"] {
+    transform: none;
+    visibility: hidden;
+    opacity: 0;
+  }
+  .terminal-panel[data-state="active"] {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+  }
+}
