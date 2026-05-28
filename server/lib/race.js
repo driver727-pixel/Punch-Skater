@@ -72,6 +72,11 @@ const EVENTS = {
   comeback:       { tag: "✨ Comeback surge", multiplier: 1.40, duration: 10, burst: true  },
 };
 
+/** Reverse lookup: event tag → hazard ID (avoids repeated Object.entries scans). */
+const EVENT_TAG_TO_ID = Object.freeze(
+  Object.fromEntries(Object.entries(EVENTS).map(([id, def]) => [def.tag, id]))
+);
+
 const STAT_KEYS = ["speed", "range", "stealth", "grit"];
 const BATTERY_STAT_BONUSES = Object.freeze({
   SlimStealth: { stealth: 2 },
@@ -251,7 +256,7 @@ export function simulateRace(challenger, defender, seed) {
       const ev = pickEvent(rng, "challenger", effectiveCStats, cStamina, dProgress - cProgress);
       if (ev) {
         // Apply wheel-hazard counter matrix
-        const hazardId = Object.entries(EVENTS).find(([, def]) => def.tag === ev.tag)?.[0];
+        const hazardId = EVENT_TAG_TO_ID[ev.tag];
         const wheelInteraction = hazardId ? resolveWheelHazardInteraction(cWheelType, hazardId) : null;
         const appliedEv = wheelInteraction
           ? { ...ev, multiplier: wheelInteraction.multiplier }
@@ -268,7 +273,7 @@ export function simulateRace(challenger, defender, seed) {
       const ev = pickEvent(rng, "defender", dStats, dStamina, cProgress - dProgress);
       if (ev) {
         // Apply wheel-hazard counter matrix
-        const hazardId = Object.entries(EVENTS).find(([, def]) => def.tag === ev.tag)?.[0];
+        const hazardId = EVENT_TAG_TO_ID[ev.tag];
         const wheelInteraction = hazardId ? resolveWheelHazardInteraction(dWheelType, hazardId) : null;
         const appliedEv = wheelInteraction
           ? { ...ev, multiplier: wheelInteraction.multiplier }

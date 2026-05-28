@@ -307,9 +307,13 @@ export interface CardCombatHistory {
   missionSuccesses: number;
   /** Total mission failures. */
   missionFailures: number;
-  /** Current consecutive win streak (any mode). */
+  /**
+   * Current consecutive win/loss streak (any mode).
+   * Positive values = consecutive wins. Negative values = consecutive losses.
+   * Resets to 0 on the opposite outcome (win resets loss streak and vice versa).
+   */
   currentStreak: number;
-  /** Best all-time win streak. */
+  /** Best all-time win streak (always ≥ 0). */
   bestStreak: number;
   /** Named bosses/rivals defeated (IDs). */
   bossesDefeated: string[];

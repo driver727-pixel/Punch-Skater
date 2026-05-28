@@ -91,9 +91,9 @@ export function evaluateEarnedTitles(history) {
  * @returns {string}
  */
 export function formatCardNameWithTitle(name, title) {
-  if (!title) return name;
+  if (!title) return name || '';
   const parts = (name || '').trim().split(/\s+/);
-  if (parts.length <= 1) return `${name} '${title}'`;
+  if (parts.length <= 1) return `${name || ''} '${title}'`;
   const firstName = parts[0];
   const rest = parts.slice(1).join(' ');
   return `${firstName} '${title}' ${rest}`;
