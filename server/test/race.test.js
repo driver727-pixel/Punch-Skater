@@ -169,3 +169,21 @@ test('createRaceCardSnapshot clamps out-of-range stats into [1, 10]', () => {
   assert.equal(snapshot.stats.speed, 10);
   assert.equal(snapshot.stats.grit, 1);
 });
+
+test('race boss modifiers affect sprint calculations', () => {
+  const urethane = snap('urethane', { speed: 8, range: 8 }, 'Urethane Rider');
+  urethane.board = { config: { wheels: 'Urethane', battery: 'TopPeli' } };
+  const rubber = snap('rubber', { speed: 8, range: 8 }, 'Rubber Rider');
+  rubber.board = { config: { wheels: 'Rubber', battery: 'TopPeli' } };
+  const nova = snap('nova', { speed: 5, range: 5 }, 'Nova Saint');
+
+  const slowed = simulateRace(urethane, nova, 'nova-wheel-check');
+  const normal = simulateRace(rubber, nova, 'nova-wheel-check');
+  assert.ok(slowed.modifiers.some((modifier) => modifier.id === 'nova-crowd-drag'));
+  assert.equal(normal.modifiers.length, 0);
+  assert.ok(slowed.timeline[0].challengerSpeed < normal.timeline[0].challengerSpeed);
+
+  const moss = snap('moss', { speed: 5, range: 5 }, 'Moss Kade');
+  const nulled = simulateRace(urethane, moss, 'moss-battery-check');
+  assert.ok(nulled.modifiers.some((modifier) => modifier.id === 'moss-off-grid-null'));
+});

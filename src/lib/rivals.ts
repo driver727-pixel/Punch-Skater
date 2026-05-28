@@ -1,5 +1,5 @@
 /**
- * rivals.ts — First five Punch Skater™ district rivals.
+ * rivals.ts — Six Punch Skater™ district rivals.
  *
  * This is the canonical, data-driven catalogue referenced by
  * docs/JOUSTING_LITE_DESIGN.md ("Rival catalogue"). Each entry carries a
@@ -110,10 +110,9 @@ export interface DistrictRival {
 }
 
 /**
- * The first five named district rivals, matching the example list in
+ * The six named district rivals, matching the example list in
  * PUNCH_SKATER_VISION_ROADMAP.md ("Phase 4 — Districts, Rivals, and Boss
- * Jousts"). The Forest is intentionally left without a named rival in this
- * batch and remains a future expansion slot.
+ * Jousts"). The Forest finale is Moss Kade, the Wooder anti-grid boss.
  */
 export const DISTRICT_RIVALS: readonly DistrictRival[] = [
   {
@@ -434,6 +433,70 @@ export const DISTRICT_RIVALS: readonly DistrictRival[] = [
     progressionHook: {
       districtReputationDelta: 40,
       codexEntryIds: ["codex-rival-nova-saint"],
+    },
+  },
+  {
+    id: "forest-moss-kade",
+    name: "Moss Kade",
+    district: "The Forest",
+    faction: "The Wooders",
+    archetype: "The Team",
+    tagline: "Off-grid Wooder final boss who turns tech loadouts into dead weight.",
+    personality:
+      "Moss Kade keeps the Forest routes alive without Cascade, sponsors, or battery worship. They treat every glowing component as a liability and make high-tech riders prove they can still carve when the grid goes quiet.",
+    signatureTactic: "guard",
+    signatureTrait: "Off-Grid Null",
+    difficulty: "boss",
+    signatureCard: {
+      id: "rival-card-moss-kade",
+      name: "Moss Kade",
+      archetype: "The Team",
+      crew: "The Wooders",
+      district: "The Forest",
+      stats: { speed: 6, range: 8, rangeNm: 8, stealth: 7, grit: 9 },
+      joust: {
+        lance: 7,
+        shield: 9,
+        hype: 6,
+        gear: {
+          boardType: "Mountain",
+          lanceType: "kinetic",
+          shieldType: "riot",
+          armorTag: "living bark guard",
+        },
+        traits: ["Riot Shield", "Heavy Lance"],
+      },
+    },
+    cardReward: {
+      id: "card-reward-rootbreaker-null",
+      name: "Rootbreaker Null",
+      rarity: "Legendary",
+      archetype: "The Team",
+      tagline: "A bark-wrapped disconnect charm that reminds smart boards who owns the trail.",
+      signatureTrait: "Off-Grid Null",
+    },
+    codexUnlock: {
+      id: "codex-rival-moss-kade",
+      title: "Moss Kade: Off-Grid Last Word",
+      summary:
+        "First-defeat dossier on Moss Kade, The Forest Wooder final boss who disables battery advantages and forces high-tech riders to win on balance, grit, and route sense.",
+    },
+    dialogue: {
+      intro: 'Moss Kade thumbs the kill-switch charm. "No grid past this root. Show me the rider, not the battery."',
+      win: 'Moss nods toward the trees. "You can hear the trail. Keep that."',
+      loss: 'Moss lifts the dead battery lead. "Told ya. Tech talks loud until the forest answers."',
+      draw: 'Moss smiles at the mudline. "Even roots. Even ride."',
+    },
+    missionHook: {
+      missionDefinitionIds: ["forest-bridge-menders", "forest-rootline-cache"],
+      label: "Moss Kade rootline joust",
+      intro: 'Moss Kade shuts down the signal posts and points to the wet timber lane. "No grid. Ride clean."',
+      summary: "Beat Moss Kade in the rootline joust to prove the crew can survive The Forest without battery crutches.",
+      difficulty: "hard",
+    },
+    progressionHook: {
+      districtReputationDelta: 60,
+      codexEntryIds: ["codex-rival-moss-kade"],
     },
   },
 ] as const;

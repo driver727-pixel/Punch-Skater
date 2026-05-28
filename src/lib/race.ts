@@ -12,6 +12,7 @@
  * between the two modules cannot be observed by users.
  */
 import type {
+  ForgedCardStats,
   Race,
   RaceCardSnapshot,
   RaceResult,
@@ -29,6 +30,12 @@ const TICK_NOISE = 0.25;
 const EVENT_BASE_PROB = 0.04;
 const STAMINA_PER_BURST = 18;
 const REST_RATE = 0.6;
+
+const BATTERY_STAT_BONUSES: Record<string, Partial<ForgedCardStats>> = {
+  SlimStealth: { stealth: 2 },
+  DoubleStack: { grit: 1, range: 1, rangeNm: 1 },
+  TopPeli: { range: 2, rangeNm: 2, stealth: 1 },
+};
 
 interface EventDef {
   tag: string;
@@ -82,6 +89,38 @@ interface RaceStats {
   grit: number;
 }
 
+function getBossName(card: RaceCardSnapshot): string {
+  return String(card.name ?? "").toLowerCase();
+}
+
+function getBoardConfigValue(card: RaceCardSnapshot, key: string): string | null {
+  return card.boardComponents?.[key as keyof NonNullable<RaceCardSnapshot["boardComponents"]>] ?? null;
+}
+
+function getRaceBossContext(challenger: RaceCardSnapshot, defender: RaceCardSnapshot, cStats: RaceStats) {
+  const bossName = getBossName(defender);
+  const modifiers: Array<{ id: string; label: string; summary: string }> = [];
+  let challengerPaceMultiplier = 1;
+  let challengerStats = { ...cStats };
+  if (bossName === "nova saint" && getBoardConfigValue(challenger, "wheels") === "Urethane") {
+    challengerPaceMultiplier *= 0.85;
+    modifiers.push({ id: "nova-crowd-drag", label: "Crowd Drag", summary: "Nova Saint reduces Urethane wheel speed by 15%." });
+  }
+  if (bossName === "moss kade") {
+    const battery = getBoardConfigValue(challenger, "battery");
+    const bonuses = battery ? BATTERY_STAT_BONUSES[battery] : null;
+    if (bonuses) {
+      challengerStats = { ...challengerStats };
+      for (const [stat, amount] of Object.entries(bonuses)) {
+        const key = stat as keyof RaceStats;
+        if (key in challengerStats) challengerStats[key] = clampStat((challengerStats[key] ?? 5) - (amount ?? 0));
+      }
+      modifiers.push({ id: "moss-off-grid-null", label: "Off-Grid Null", summary: "Moss Kade disables player battery stat bonuses before the sprint resolves." });
+    }
+  }
+  return { challengerStats, challengerPaceMultiplier, modifiers };
+}
+
 function basePace(stats: RaceStats): number {
   return BASE_SPEED_AT_5 + (stats.speed - 5) * SPEED_PER_STAT + (stats.range - 5) * 0.02 * SPEED_PER_STAT;
 }
@@ -121,6 +160,7 @@ export interface RaceSimulation {
   timeline: RaceTimelineTick[];
   challengerFinishTick: number | null;
   defenderFinishTick: number | null;
+  modifiers?: Array<{ id: string; label: string; summary: string }>;
 }
 
 /**
@@ -146,13 +186,15 @@ export function simulateRace(
     stealth: clampStat(defender.stats.stealth),
     grit: clampStat(defender.stats.grit),
   };
-  const cBase = basePace(cStats);
+  const bossContext = getRaceBossContext(challenger, defender, cStats);
+  const effectiveCStats = bossContext.challengerStats;
+  const cBase = basePace(effectiveCStats) * bossContext.challengerPaceMultiplier;
   const dBase = basePace(dStats);
   let cProg = 0;
   let dProg = 0;
   let cBuffs: EventDef[] = [];
   let dBuffs: EventDef[] = [];
-  let cStam = staminaPool(cStats);
+  let cStam = staminaPool(effectiveCStats);
   let dStam = staminaPool(dStats);
   let cFinish: number | null = null;
   let dFinish: number | null = null;
@@ -165,7 +207,7 @@ export function simulateRace(
     let cEv: string | undefined;
     let dEv: string | undefined;
     if (rng() < EVENT_BASE_PROB) {
-      const ev = pickEvent(rng, cStats, cStam, dProg - cProg);
+      const ev = pickEvent(rng, effectiveCStats, cStam, dProg - cProg);
       if (ev) {
         cBuffs.push(ev);
         cEv = ev.tag;
@@ -181,7 +223,7 @@ export function simulateRace(
       }
     }
 
-    cStam = Math.min(staminaPool(cStats), cStam + REST_RATE);
+    cStam = Math.min(staminaPool(effectiveCStats), cStam + REST_RATE);
     dStam = Math.min(staminaPool(dStats), dStam + REST_RATE);
 
     const cMul = applyMultipliers(cBuffs);
@@ -233,7 +275,7 @@ export function simulateRace(
     else { dFinish = TICKS_TOTAL - 1; dProg = 1; timeline[timeline.length - 1].defenderProgress = 1; }
   }
 
-  return { timeline, challengerFinishTick: cFinish, defenderFinishTick: dFinish };
+  return { timeline, challengerFinishTick: cFinish, defenderFinishTick: dFinish, modifiers: bossContext.modifiers };
 }
 
 /**

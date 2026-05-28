@@ -11,6 +11,7 @@
 import type {
   Archetype,
   BoardPlacement,
+  BossModifierSummary,
   CardPayload,
   CharacterPlacement,
   CompositeLayerOrder,
@@ -195,6 +196,8 @@ export interface MissionEncounterOption {
   currentPower?: number;
   successSummary?: string;
   failureSummary?: string;
+  /** @sprint 8 @owner gamma — Boss rule overrides shown before a joust counter resolves. */
+  bossModifiers?: BossModifierSummary[];
 }
 
 /**
@@ -225,6 +228,8 @@ export interface MissionJoustResult {
   rewardSignals?: MissionRewardSignal[];
   /** @sprint 7 @owner gamma — Rival pressure snapshot that framed this joust. */
   rivalPressure?: MissionRivalPressure | null;
+  /** @sprint 8 @owner gamma — Boss rule overrides that affected this joust. */
+  bossModifiers?: BossModifierSummary[];
 }
 
 /**
@@ -286,6 +291,8 @@ export interface MissionActiveRunState {
   boardPlaystyles?: MissionBoardPlaystyle[];
   /** @sprint 7 @owner gamma — Rival memory and heat level for named district jousts. */
   rivalPressure?: MissionRivalPressure | null;
+  /** @sprint 8 @owner gamma — Boss rule overrides that affected this joust. */
+  bossModifiers?: BossModifierSummary[];
 }
 
 /**

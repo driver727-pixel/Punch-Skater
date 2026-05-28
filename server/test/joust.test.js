@@ -148,3 +148,57 @@ test('resolveJoust falls back from locked tactics to the first available tactic'
 
   assert.equal(result.playerTactic, 'charge');
 });
+
+test('boss overrides apply conditional mechanical counters', () => {
+  const player = buildCard({
+    id: 'player-boss-rules',
+    stats: { speed: 8, range: 8, stealth: 8, grit: 8 },
+    joust: { lance: 8, shield: 7, hype: 7, traits: [] },
+  });
+  player.board = { config: { wheels: 'Urethane', battery: 'TopPeli' } };
+
+  const jax = resolveJoust(player, buildCard({ id: 'batteryville-jax-voltage', name: 'Jax Voltage' }), {
+    playerTactic: 'boost',
+    rivalTactic: 'charge',
+    seed: 'boss-jax',
+  });
+  assert.ok(jax.breakdown.playerModifiers.some((modifier) => modifier.source.includes('Overload Lane') && modifier.amount === -2));
+
+  const mina = resolveJoust(player, buildCard({ id: 'airaway-mina-chrome', name: 'Mina Chrome' }), {
+    playerTactic: 'charge',
+    rivalTactic: 'guard',
+    seed: 'boss-mina',
+  });
+  assert.ok(mina.breakdown.rivalModifiers.some((modifier) => modifier.source.includes('Compliance Lock') && modifier.amount === 2));
+
+  const rook = resolveJoust(player, buildCard({ id: 'nightshade-rook-wraith', name: 'Rook Wraith' }), {
+    playerTactic: 'counter',
+    rivalTactic: 'feint',
+    seed: 'boss-rook',
+  });
+  assert.ok(rook.breakdown.playerModifiers.some((modifier) => modifier.source.includes('Ghost Route') && modifier.target === 'speed'));
+
+  const vex = resolveJoust(player, buildCard({ id: 'grid-vex-static', name: 'Vex Static' }), {
+    playerTactic: 'counter',
+    rivalTactic: 'charge',
+    seed: 'boss-vex',
+  });
+  assert.equal(vex.breakdown.speedTieBreak, 0);
+  assert.ok(vex.breakdown.playerModifiers.some((modifier) => modifier.source.includes('Signal Jam')));
+
+  const nova = resolveJoust(player, buildCard({ id: 'glass-city-nova-saint', name: 'Nova Saint' }), {
+    playerTactic: 'charge',
+    rivalTactic: 'charge',
+    seed: 'boss-nova',
+  });
+  assert.ok(nova.breakdown.playerModifiers.some((modifier) => modifier.source.includes('Crowd Drag') && modifier.amount === -15));
+
+  const moss = resolveJoust(player, buildCard({ id: 'forest-moss-kade', name: 'Moss Kade' }), {
+    playerTactic: 'charge',
+    rivalTactic: 'guard',
+    seed: 'boss-moss',
+  });
+  assert.equal(moss.player.stats.range, 6);
+  assert.equal(moss.player.stats.stealth, 7);
+  assert.ok(moss.breakdown.playerModifiers.some((modifier) => modifier.source.includes('Off-Grid Null')));
+});

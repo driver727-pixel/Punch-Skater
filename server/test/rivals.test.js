@@ -46,14 +46,15 @@ const KNOWN_JOUST_TRAITS = new Set([
   'Heavy Lance',
   'Riot Shield',
   'Neon Flourish',
+  'Off-Grid Null',
 ]);
 
-test('first five district rivals catalogue ships exactly five named rivals', () => {
-  assert.equal(DISTRICT_RIVALS.length, 5);
+test('district rivals catalogue ships six named rivals', () => {
+  assert.equal(DISTRICT_RIVALS.length, 6);
   const names = DISTRICT_RIVALS.map((rival) => rival.name);
   assert.deepEqual(
     [...names].sort(),
-    ['Jax Voltage', 'Mina Chrome', 'Nova Saint', 'Rook Wraith', 'Vex Static'],
+    ['Jax Voltage', 'Mina Chrome', 'Moss Kade', 'Nova Saint', 'Rook Wraith', 'Vex Static'],
   );
 });
 
@@ -156,7 +157,7 @@ test('lookups by id and by district return the expected rivals', () => {
   assert.equal(nightshade[0].name, 'Rook Wraith');
 
   // The Forest is intentionally a future expansion slot in this batch.
-  assert.equal(getDistrictRivalsByDistrict('The Forest').length, 0);
+  assert.equal(getDistrictRivalsByDistrict('The Forest')[0].name, 'Moss Kade');
 });
 
 test('named district rivals expose mission hooks, battle snapshots, and first-win progression awards', () => {
@@ -181,5 +182,5 @@ test('named district rivals expose mission hooks, battle snapshots, and first-wi
     districtReputationDelta: 40,
   });
   assert.equal(getDistrictRivalProgressionAward('nightshade-rook-wraith', 'loss'), null);
-  assert.equal(getDistrictRivalMissionHook('The Forest'), null);
+  assert.equal(getDistrictRivalMissionHook('The Forest').rivalCard.name, 'Moss Kade');
 });
