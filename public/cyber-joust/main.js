@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { MenuScene } from './ui.js';
 import { GameScene } from './gameScene.js';
 

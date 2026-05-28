@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { init } from '@instantdb/core';
 import { INSTANT_DB_APP_ID } from './instant_db_config.js';
 
