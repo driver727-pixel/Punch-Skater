@@ -14,7 +14,6 @@ export function useCardForgeController() {
     openUpgradeModal: forge.openUpgradeModal,
     tier: forge.tier,
     uid: user?.uid ?? null,
-    userEmail: user?.email ?? null,
   });
   const navigation = useForgeNavigation({
     onBeforeCollectionNavigation: save.clearSavedCard,

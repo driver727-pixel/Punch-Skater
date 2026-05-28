@@ -36,7 +36,8 @@ export const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
 /**
  * Starter weapon assets available in the Card Forge weapon selector.
  * Images should be transparent PNGs uploaded to /public/assets/weapons/.
- * The admin will upload additional weapons over time.
+ * The admin will design and upload the actual weapon images — these are
+ * placeholder entries that will resolve once the PNGs are added to the directory.
  */
 export const WEAPON_ASSETS: Array<{ url: string; name: string }> = [
   { url: "/assets/weapons/neon-bat.png", name: "Neon Bat" },

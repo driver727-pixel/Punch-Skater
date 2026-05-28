@@ -371,7 +371,7 @@ export function ForgePreviewPanel({
                       aria-label="Weapon rotation"
                     />
                     <p className="form-hint">
-                      Drag the weapon on the card face to position it. The weapon layer sits above the skateboard.
+                      Drag the weapon on the card face to position it. The weapon layer sits above the skateboard but below the frame.
                     </p>
                   </div>
                 </>

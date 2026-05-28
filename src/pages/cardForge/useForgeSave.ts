@@ -15,7 +15,6 @@ interface UseForgeSaveOptions {
   openUpgradeModal: () => void;
   tier: TierLevel;
   uid: string | null;
-  userEmail: string | null;
 }
 
 function buildSavedCard(generated: CardPayload, layers: LayerState): CardPayload {
