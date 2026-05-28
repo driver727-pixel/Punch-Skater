@@ -264,6 +264,61 @@ export interface CardPayload {
    * Crew Ozzies = sum across the active 6-card Crew.
    */
   ozzies?: number;
+
+  // ── Combat History (Workshop Feedback: "Give Me a Hero to Mourn") ─────────
+
+  /**
+   * Per-card combat history tracking.
+   * Updated by the server after each race, joust, or mission encounter.
+   */
+  combatHistory?: CardCombatHistory;
+
+  /**
+   * Earned titles based on performance thresholds.
+   * Auto-appended by the server when thresholds are met.
+   * Players can select which title to display.
+   */
+  earnedTitles?: string[];
+
+  /** Currently displayed title (selected from earnedTitles). */
+  activeTitle?: string;
+
+  /**
+   * Visual condition of the card based on combat history.
+   * Determines cosmetic overlays rendered on the card face.
+   */
+  cardCondition?: CardCondition;
+}
+
+// ── Card Combat History ───────────────────────────────────────────────────────
+
+export type CardCondition = "pristine" | "battle-worn" | "scarred" | "legendary";
+
+export interface CardCombatHistory {
+  /** Total race wins. */
+  raceWins: number;
+  /** Total race losses. */
+  raceLosses: number;
+  /** Total joust wins. */
+  joustWins: number;
+  /** Total joust losses. */
+  joustLosses: number;
+  /** Total mission successes. */
+  missionSuccesses: number;
+  /** Total mission failures. */
+  missionFailures: number;
+  /** Current consecutive win streak (any mode). */
+  currentStreak: number;
+  /** Best all-time win streak. */
+  bestStreak: number;
+  /** Named bosses/rivals defeated (IDs). */
+  bossesDefeated: string[];
+  /** ID of the rival who most recently defeated this card (for "Marked by" title). */
+  lastDefeatedBy?: string;
+  /** Narrow wins (won by < 5% margin). */
+  narrowWins: number;
+  /** Total races/jousts participated. */
+  totalBattles: number;
 }
 
 export interface WorkshopBoardPayload {

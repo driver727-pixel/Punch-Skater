@@ -17451,3 +17451,167 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     visibility: visible;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Card Condition Overlays — Workshop Feedback: "Give Me a Hero to Mourn"
+   Visual scars & condition states applied to SkaterCardFace.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.card-condition--battle-worn {
+  position: relative;
+}
+.card-condition--battle-worn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0,
+    transparent 3px,
+    rgba(255 255 255 / 0.015) 3px,
+    rgba(255 255 255 / 0.015) 4px
+  );
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+}
+
+.card-condition--scarred {
+  position: relative;
+}
+.card-condition--scarred::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 8px,
+      rgba(255 50 80 / 0.06) 8px,
+      rgba(255 50 80 / 0.06) 9px
+    );
+  mix-blend-mode: screen;
+  border-radius: inherit;
+  animation: card-scar-glitch 4s infinite steps(3);
+}
+
+@keyframes card-scar-glitch {
+  0%, 92% { opacity: 0.7; transform: none; }
+  93% { opacity: 1; transform: translateX(-1px) skewX(-0.3deg); }
+  96% { opacity: 0.5; transform: translateX(1px) skewX(0.2deg); }
+  100% { opacity: 0.7; transform: none; }
+}
+
+.card-condition--legendary {
+  position: relative;
+}
+.card-condition--legendary::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, rgba(255 215 0 / 0.3), rgba(255 140 0 / 0.15), rgba(255 215 0 / 0.3)) border-box;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: card-legendary-glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes card-legendary-glow {
+  0% { opacity: 0.6; filter: brightness(0.9); }
+  100% { opacity: 1; filter: brightness(1.2); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Race HUD — Wheel-Hazard Counter Math Display
+   Workshop Feedback: "Make the Hardware Hurt"
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.race-hazard-toast {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  background: rgba(0 0 0 / 0.85);
+  border: 1px solid var(--theme-accent, #4bbcff);
+  color: var(--theme-text, #eef8ff);
+  font-size: 0.78rem;
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: hazard-toast-in 0.3s ease-out, hazard-toast-out 0.3s ease-in 2.2s forwards;
+  z-index: 80;
+}
+
+.race-hazard-toast--bypass {
+  border-color: #8cff5f;
+  box-shadow: 0 0 8px rgba(140 255 95 / 0.3);
+}
+
+.race-hazard-toast--penalty {
+  border-color: #ff6b82;
+  box-shadow: 0 0 8px rgba(255 107 130 / 0.3);
+}
+
+.race-hazard-toast--boost {
+  border-color: #ffcf33;
+  box-shadow: 0 0 8px rgba(255 207 51 / 0.3);
+}
+
+@keyframes hazard-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes hazard-toast-out {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Match Trash Talk Toast — Workshop Feedback: "Don't Hide the Flavor"
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.trash-talk-toast {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(90vw, 420px);
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0 0 0 / 0.9), rgba(20 10 30 / 0.92));
+  border: 1px solid var(--theme-purple, #7b61ff);
+  color: var(--theme-text, #eef8ff);
+  font-size: 0.82rem;
+  font-style: italic;
+  text-align: center;
+  pointer-events: none;
+  animation: trash-talk-in 0.4s ease-out, trash-talk-out 0.4s ease-in 2.6s forwards;
+  z-index: 70;
+}
+
+.trash-talk-toast__speaker {
+  display: block;
+  font-size: 0.65rem;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--theme-accent, #4bbcff);
+  margin-bottom: 0.2rem;
+}
+
+@keyframes trash-talk-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px) scale(0.95); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@keyframes trash-talk-out {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.97); }
+}

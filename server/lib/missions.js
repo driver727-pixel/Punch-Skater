@@ -1,4 +1,5 @@
 import { getAvailableJoustTactics, getJoustBossModifiers, resolveJoust, selectDefaultJoustRider } from './joust.js';
+import { resolveWheelHazardInteraction } from './wheelHazardMatrix.js';
 import {
   getDistrictRival,
   getDistrictRivalMissionHook,
