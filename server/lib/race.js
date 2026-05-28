@@ -19,12 +19,18 @@
  *   - wipeout (-, rare)           ─ large slowdown
  *   - comeback surge (+)          ─ small burst when far behind
  *
+ * Wheel-Hazard Counter Matrix (Workshop Feedback: "Make the Hardware Hurt"):
+ *   Event multipliers are graduated based on the racer's equipped wheel type.
+ *   See server/lib/wheelHazardMatrix.js for the full interaction table.
+ *
  * Contract guarantees (enforced by the simulator + checked by tests):
  *   - The timeline always has exactly TICKS_TOTAL entries.
  *   - At least one card crosses the finish line by the final tick.
  *   - The leader cannot lap the trailing card so dramatic photo finishes
  *     stay in frame (leader auto-throttles when far ahead).
  */
+
+import { resolveWheelHazardInteraction } from './wheelHazardMatrix.js';
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 // Risk knobs live here so we can tune the feel without touching the simulator.
@@ -65,6 +71,11 @@ const EVENTS = {
   wipeout:        { tag: "💥 Wipeout",       multiplier: 0.20, duration: 14, burst: false },
   comeback:       { tag: "✨ Comeback surge", multiplier: 1.40, duration: 10, burst: true  },
 };
+
+/** Reverse lookup: event tag → hazard ID (avoids repeated Object.entries scans). */
+const EVENT_TAG_TO_ID = Object.freeze(
+  Object.fromEntries(Object.entries(EVENTS).map(([id, def]) => [def.tag, id]))
+);
 
 const STAT_KEYS = ["speed", "range", "stealth", "grit"];
 const BATTERY_STAT_BONUSES = Object.freeze({
@@ -214,6 +225,13 @@ export function simulateRace(challenger, defender, seed) {
   const cBase = basePace(effectiveCStats) * bossContext.challengerPaceMultiplier;
   const dBase = basePace(dStats);
 
+  // Resolve wheel types for the counter matrix
+  const cWheelType = getBoardConfigValue(challenger, 'wheels');
+  const dWheelType = getBoardConfigValue(defender, 'wheels');
+
+  /** Track wheel-hazard interactions for the UI to display. */
+  const wheelHazardEvents = [];
+
   let cProgress = 0;
   let dProgress = 0;
   let cBuffs = [];
@@ -237,17 +255,35 @@ export function simulateRace(challenger, defender, seed) {
     if (rng() < EVENT_BASE_PROB) {
       const ev = pickEvent(rng, "challenger", effectiveCStats, cStamina, dProgress - cProgress);
       if (ev) {
-        cBuffs.push(ev);
-        cEventTag = ev.tag;
+        // Apply wheel-hazard counter matrix
+        const hazardId = EVENT_TAG_TO_ID[ev.tag];
+        const wheelInteraction = hazardId ? resolveWheelHazardInteraction(cWheelType, hazardId) : null;
+        const appliedEv = wheelInteraction
+          ? { ...ev, multiplier: wheelInteraction.multiplier }
+          : ev;
+        cBuffs.push(appliedEv);
+        cEventTag = wheelInteraction ? wheelInteraction.label : ev.tag;
         if (ev.burst) cStamina = Math.max(0, cStamina - STAMINA_PER_BURST);
+        if (wheelInteraction) {
+          wheelHazardEvents.push({ tick: t, side: 'challenger', wheel: cWheelType, hazard: hazardId, label: wheelInteraction.label, multiplier: wheelInteraction.multiplier, bypassed: wheelInteraction.bypasses });
+        }
       }
     }
     if (rng() < EVENT_BASE_PROB) {
       const ev = pickEvent(rng, "defender", dStats, dStamina, cProgress - dProgress);
       if (ev) {
-        dBuffs.push(ev);
-        dEventTag = ev.tag;
+        // Apply wheel-hazard counter matrix
+        const hazardId = EVENT_TAG_TO_ID[ev.tag];
+        const wheelInteraction = hazardId ? resolveWheelHazardInteraction(dWheelType, hazardId) : null;
+        const appliedEv = wheelInteraction
+          ? { ...ev, multiplier: wheelInteraction.multiplier }
+          : ev;
+        dBuffs.push(appliedEv);
+        dEventTag = wheelInteraction ? wheelInteraction.label : ev.tag;
         if (ev.burst) dStamina = Math.max(0, dStamina - STAMINA_PER_BURST);
+        if (wheelInteraction) {
+          wheelHazardEvents.push({ tick: t, side: 'defender', wheel: dWheelType, hazard: hazardId, label: wheelInteraction.label, multiplier: wheelInteraction.multiplier, bypassed: wheelInteraction.bypasses });
+        }
       }
     }
 
@@ -323,7 +359,7 @@ export function simulateRace(challenger, defender, seed) {
     }
   }
 
-  return { timeline, challengerFinishTick: cFinish, defenderFinishTick: dFinish, modifiers: bossContext.modifiers };
+  return { timeline, challengerFinishTick: cFinish, defenderFinishTick: dFinish, modifiers: bossContext.modifiers, wheelHazardEvents };
 }
 
 // ── Result helpers ──────────────────────────────────────────────────────────

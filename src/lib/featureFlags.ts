@@ -46,6 +46,15 @@ export const featureFlags = {
    * legacy `<Routes>` until they are migrated. @owner architecture
    */
   UNIFIED_TERMINAL: envFlag("VITE_FF_UNIFIED_TERMINAL", false),
+
+  /** Card combat history, dynamic titles & visual scars. @owner workshop-feedback */
+  CARD_SCARS: envFlag("VITE_FF_CARD_SCARS", true),
+
+  /** Wheel-hazard counter matrix in race events. @owner workshop-feedback */
+  WHEEL_HAZARD_MATRIX: envFlag("VITE_FF_WHEEL_HAZARD_MATRIX", true),
+
+  /** Faction trash talk and district lore injection during matches. @owner workshop-feedback */
+  MATCH_TRASH_TALK: envFlag("VITE_FF_MATCH_TRASH_TALK", true),
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;
