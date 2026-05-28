@@ -1073,28 +1073,112 @@ export class GameScene extends Phaser.Scene {
         const overlay = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x050510, 0.82)
             .setDepth(200)
             .setScrollFactor(0);
-        const title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 40, 'GAME OVER', {
+        const title = this.add.text(this.scale.width / 2, this.scale.height * 0.3, 'GAME OVER', {
             fontFamily: '"Press Start 2P"',
             fontSize: '28px',
             color: '#ff0055'
         }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        const subtitle = this.add.text(this.scale.width / 2, this.scale.height / 2 + 8, `FINAL SCORE: ${this.score}`, {
+        const subtitle = this.add.text(this.scale.width / 2, this.scale.height * 0.3 + 48, `FINAL SCORE: ${this.score}`, {
             fontFamily: '"Press Start 2P"',
             fontSize: '14px',
             color: '#ffffff'
         }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        const restart = this.add.text(this.scale.width / 2, this.scale.height / 2 + 54, 'TAP OR PRESS SPACE TO RESTART', {
+
+        // Name input prompt
+        const promptText = this.add.text(this.scale.width / 2, this.scale.height * 0.5 - 20, 'ENTER YOUR NAME:', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '11px',
+            color: '#ffea00'
+        }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+        // Create a DOM input for the player name
+        const inputEl = document.createElement('input');
+        inputEl.type = 'text';
+        inputEl.maxLength = 12;
+        inputEl.placeholder = 'ANON RIDER';
+        inputEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;font-family:"Press Start 2P",monospace;font-size:14px;padding:10px 16px;background:#0a0a1a;color:#00f0ff;border:2px solid #ff007f;text-align:center;outline:none;width:220px;text-transform:uppercase;';
+        document.body.appendChild(inputEl);
+        inputEl.focus();
+
+        const submitBtn = this.add.text(this.scale.width / 2, this.scale.height * 0.5 + 50, 'SUBMIT SCORE', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '12px',
+            color: '#111122',
+            backgroundColor: '#00f0ff',
+            padding: { x: 16, y: 10 }
+        }).setOrigin(0.5).setDepth(201).setScrollFactor(0).setInteractive({ cursor: 'pointer' });
+
+        const restart = this.add.text(this.scale.width / 2, this.scale.height * 0.5 + 100, 'TAP OR PRESS SPACE TO RESTART', {
             fontFamily: '"Press Start 2P"',
             fontSize: '10px',
             color: '#00f0ff'
-        }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        }).setOrigin(0.5).setDepth(201).setScrollFactor(0).setAlpha(0);
 
+        let scoreSaved = false;
+
+        const saveScore = () => {
+            if (scoreSaved) return;
+            scoreSaved = true;
+            const playerName = (inputEl.value.trim() || 'ANON RIDER').toUpperCase().substring(0, 12);
+            inputEl.remove();
+            promptText.setText(`SAVED: ${playerName}`);
+            submitBtn.setVisible(false);
+            restart.setAlpha(1);
+
+            try {
+                const scoreId = typeof crypto?.randomUUID === 'function'
+                    ? crypto.randomUUID()
+                    : `score-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+                db.transact(db.tx.scores[scoreId].update({
+                    playerName,
+                    score: this.score,
+                    weapon: this.myCosmetics.weapon || 'Unknown',
+                    createdAt: Date.now()
+                }));
+            } catch (e) {
+                console.warn('Failed to persist score to InstantDB.', e);
+            }
+
+            this.enableRestart(overlay, title, subtitle, promptText, submitBtn, restart);
+        };
+
+        submitBtn.on('pointerdown', saveScore);
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveScore();
+        });
+
+        // Allow skip without saving — also cleans up DOM input
+        const skipAndRestart = () => {
+            if (!scoreSaved) {
+                inputEl.remove();
+            }
+            if (!scoreSaved) {
+                scoreSaved = true;
+                this.enableRestart(overlay, title, subtitle, promptText, submitBtn, restart);
+            }
+        };
+        this.time.delayedCall(5000, () => {
+            if (!scoreSaved) {
+                restart.setAlpha(0.6);
+                restart.setText('TAP/SPACE TO SKIP & RESTART');
+                this.input.keyboard.once('keydown-SPACE', skipAndRestart);
+                this.input.once('pointerdown', skipAndRestart);
+            }
+        });
+    }
+
+    enableRestart(overlay, title, subtitle, promptText, submitBtn, restart) {
         const restartGame = () => {
             this.input.keyboard.off('keydown-SPACE', restartGame);
             this.input.off('pointerdown', restartGame);
+            // Clean up any orphaned DOM input
+            const staleInput = document.querySelector('input[placeholder="ANON RIDER"]');
+            if (staleInput) staleInput.remove();
             overlay.destroy();
             title.destroy();
             subtitle.destroy();
+            promptText.destroy();
+            submitBtn.destroy();
             restart.destroy();
             this.scene.restart({ cosmetics: this.myCosmetics });
         };

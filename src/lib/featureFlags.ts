@@ -55,6 +55,9 @@ export const featureFlags = {
 
   /** Faction trash talk and district lore injection during matches. @owner workshop-feedback */
   MATCH_TRASH_TALK: envFlag("VITE_FF_MATCH_TRASH_TALK", true),
+
+  /** Cyber Joust™ Phaser arcade-joust mini-game. @owner gamma */
+  CYBER_JOUST: envFlag("VITE_FF_CYBER_JOUST", true),
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;

@@ -305,6 +305,7 @@ export function BattleArena() {
   const myOzzies = Number(userProfile?.ozzies ?? 0);
   const soloWagerCap = Math.max(0, Math.min(myOzzies, SOLO_WAGER_MAX));
   const showJousturEntry = isEnabled("JOUSTUR_SKATUR", user);
+  const showCyberJoust = isEnabled("CYBER_JOUST", user);
   const isSignedInFreeUser = tier === "free" && !!user;
 
   useEffect(() => {
@@ -458,6 +459,11 @@ export function BattleArena() {
         {showJousturEntry && (
           <p>
             <Link to="/joustur" className="btn-outline btn-sm">🛹 Open Joustur</Link>
+          </p>
+        )}
+        {showCyberJoust && (
+          <p>
+            <a href="/cyber-joust/" className="btn-outline btn-sm">⚡ Cyber Joust™</a>
           </p>
         )}
         <div className="race-arena-self">

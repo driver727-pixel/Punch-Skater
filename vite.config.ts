@@ -62,7 +62,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,ico,svg,webp,webmanifest,woff2}'],
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api/],
+        navigateFallbackDenylist: [/^\/api/, /^\/cyber-joust/],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
