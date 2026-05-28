@@ -35,8 +35,12 @@ interface LayerToggles {
   frame: boolean;
 }
 
-const INITIAL_BOSS_DECK_MATCH = "garibaldi";
+const INITIAL_BOSS_DECK_NAME = "Garibaldi's Crew";
 const INITIAL_BOSS_COUNT = 6;
+
+function normalizeDeckName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
 
 const ALL_LAYERS_ON: LayerToggles = {
   background: true,
@@ -334,7 +338,7 @@ function AdminBossCardTile({ card }: AdminBossCardTileProps) {
         ⚔ Traits: <strong>{card.joust?.traits?.[0] ?? "No joust trait set"}</strong>
       </div>
       <blockquote className="adlp-boss-dialogue">
-        {card.front?.flavorTextEnglish ?? card.front?.flavorText ?? card.back?.notes ?? "No boss flavour text set yet."}
+        {card.front?.flavorTextEnglish ?? card.front?.flavorText ?? card.back?.notes ?? "No boss flavor text set yet."}
       </blockquote>
     </div>
   );
@@ -381,7 +385,7 @@ export function AdminDeckLayersPanel() {
   const [error, setError] = useState("");
 
   const initialBossDeck = useMemo(
-    () => decks.find((deck) => deck.name.toLowerCase().includes(INITIAL_BOSS_DECK_MATCH)),
+    () => decks.find((deck) => normalizeDeckName(deck.name) === normalizeDeckName(INITIAL_BOSS_DECK_NAME)),
     [decks],
   );
 
@@ -458,7 +462,7 @@ export function AdminDeckLayersPanel() {
         <p className="asset-gen-toolbar-copy">
           {initialBossDeck
             ? `Showing the first ${initialBossCards.length} cards from "${initialBossDeck.name}" as the starting boss lineup.`
-            : "Garibaldi's crew deck was not found, so the fallback district rival snapshots are shown instead."}
+            : `${INITIAL_BOSS_DECK_NAME} was not found, so the fallback district rival snapshots are shown instead.`}
         </p>
         <div className="adlp-boss-grid">
           {initialBossCards.length > 0
