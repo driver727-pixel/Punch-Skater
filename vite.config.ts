@@ -60,7 +60,7 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        globPatterns: ['**/*.{js,css,ico,svg,webp,webmanifest,woff2}'],
+        globPatterns: ['**/*.{html,js,css,ico,svg,webp,webmanifest,woff2}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/cyber-joust/],
         runtimeCaching: [
