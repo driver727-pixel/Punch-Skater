@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "../lib/firebase";
 import { TIERS, type TierLevel } from "../lib/tiers";
-import { resolveApiUrl } from "../lib/apiUrls";
+import { resolveAdminActionUrl } from "../lib/apiUrls";
 import type { CardPayload } from "../lib/types";
 import { AdminCombinationStatsPanel } from "../components/AdminCombinationStatsPanel";
 
@@ -29,20 +29,7 @@ interface UserProfile {
 
 const PAGE_SIZE = 20;
 
-const ADMIN_API_URL = resolveApiUrl(
-  import.meta.env.VITE_ADMIN_API_URL as string | undefined,
-  "/api/admin/create-user",
-);
-
-function resolveAdminActionUrl(pathname: string): string {
-  const configuredUrl = (import.meta.env.VITE_ADMIN_API_URL as string | undefined)?.trim();
-  if (!configuredUrl) return pathname;
-  try {
-    return new URL(pathname, configuredUrl).toString();
-  } catch {
-    return pathname;
-  }
-}
+const ADMIN_API_URL = resolveAdminActionUrl("/api/admin/create-user");
 
 const ADMIN_DELETE_API_URL = resolveAdminActionUrl("/api/admin/delete-user");
 
@@ -93,8 +80,11 @@ function PlayerPanel({ user, onClose }: PlayerPanelProps) {
     setPanelError("");
     try {
       const res = await adminFetch(`/api/admin/player/${user.uid}/cards`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(errData.error ?? "Failed to load cards.");
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load cards.");
       setCards(data.cards ?? []);
     } catch (err) {
       setPanelError(err instanceof Error ? err.message : "Failed to load cards.");
@@ -107,8 +97,11 @@ function PlayerPanel({ user, onClose }: PlayerPanelProps) {
     setLoadingDecks(true);
     try {
       const res = await adminFetch(`/api/admin/player/${user.uid}/decks`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(errData.error ?? "Failed to load decks.");
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load decks.");
       setDecks(data.decks ?? []);
     } catch (err) {
       setPanelError(err instanceof Error ? err.message : "Failed to load decks.");
@@ -134,8 +127,11 @@ function PlayerPanel({ user, onClose }: PlayerPanelProps) {
         method: "PUT",
         body: JSON.stringify({ displayName: trimmed }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to save profile.");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(errData.error ?? "Failed to save profile.");
+      }
+      await res.json();
       setPanelSuccess("✓ Profile saved.");
     } catch (err) {
       setPanelError(err instanceof Error ? err.message : "Failed to save profile.");
@@ -398,10 +394,11 @@ export function Admin() {
         },
         body: JSON.stringify({ email: newEmail.trim(), password: newPassword }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        setCreateError(data.error ?? "Failed to create user.");
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        setCreateError(errData.error ?? "Failed to create user.");
       } else {
+        const data = await res.json();
         setCreateSuccess(`✓ Account created for ${data.email}`);
         setNewEmail("");
         setNewPassword("");

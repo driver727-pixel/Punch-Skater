@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
+import { resolveAdminActionUrl } from "../lib/apiUrls";
 
 // ── Totals derived from the compatibility rules in boardBuilderCompatibility.ts ─
 //
@@ -22,16 +23,6 @@ interface CombinationStats {
   admin: CombinationGroup;
   users: CombinationGroup;
   combined: CombinationGroup;
-}
-
-function resolveAdminActionUrl(pathname: string): string {
-  const configuredUrl = (import.meta.env.VITE_ADMIN_API_URL as string | undefined)?.trim();
-  if (!configuredUrl) return pathname;
-  try {
-    return new URL(pathname, configuredUrl).toString();
-  } catch {
-    return pathname;
-  }
 }
 
 function pct(count: number, total: number): string {

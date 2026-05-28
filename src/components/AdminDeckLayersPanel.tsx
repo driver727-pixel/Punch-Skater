@@ -14,6 +14,7 @@ import {
   getStaticFrameBackUrl,
   shouldInsetBackgroundForFrame,
 } from "../services/staticAssets";
+import { resolveAdminActionUrl } from "../lib/apiUrls";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,18 +48,6 @@ const ALL_LAYERS_OFF: LayerToggles = {
   character: false,
   frame: false,
 };
-
-// ── URL resolution ─────────────────────────────────────────────────────────────
-
-function resolveAdminActionUrl(pathname: string): string {
-  const configuredUrl = (import.meta.env.VITE_ADMIN_API_URL as string | undefined)?.trim();
-  if (!configuredUrl) return pathname;
-  try {
-    return new URL(pathname, configuredUrl).toString();
-  } catch {
-    return pathname;
-  }
-}
 
 // ── Layer toggle controls ──────────────────────────────────────────────────────
 
@@ -368,8 +357,11 @@ export function AdminDeckLayersPanel() {
           Authorization: "Bearer " + idToken,
         },
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(errData.error ?? "Failed to load admin decks.");
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load admin decks.");
       setDecks(data.decks ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin decks.");
