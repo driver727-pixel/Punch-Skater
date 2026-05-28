@@ -184,6 +184,14 @@ async function mutateWallet(adminDb, {
   });
 }
 
+/**
+ * Debit a wallet inside an existing Firestore transaction.
+ * @param {object} tx Active Firestore transaction.
+ * @param {object} adminDb Firestore Admin instance.
+ * @param {object} params Wallet debit parameters, including uid, amount, source metadata, and idempotency key.
+ * @returns {Promise<{wallet: object, transaction: object, duplicate: boolean}>}
+ * @throws {Error} 409 when the user has insufficient Ozzies; 400 for invalid input; 503 when wallet storage is unavailable.
+ */
 export async function debitWalletInTransaction(tx, adminDb, {
   uid,
   amount,

@@ -20,6 +20,11 @@ interface UnlockedFrameEntry {
   frameId: string;
 }
 
+/**
+ * Validates and normalizes unlocked frame entries loaded from Firestore.
+ * @param value Raw userProfiles/{uid}.unlocked_frames data.
+ * @returns Valid card/frame pairs, with malformed entries removed.
+ */
 function normalizeUnlockedFrames(value: unknown): UnlockedFrameEntry[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -34,6 +39,12 @@ function normalizeUnlockedFrames(value: unknown): UnlockedFrameEntry[] {
     .filter((entry): entry is UnlockedFrameEntry => Boolean(entry?.cardId && entry.frameId));
 }
 
+/**
+ * Hydrates cards with unlocked prestige frame IDs for display.
+ * @param cards Current saved collection cards.
+ * @param unlockedFrames Normalized profile unlock entries.
+ * @returns Cards with unlockedFrameIds and the first unlocked frame marked active.
+ */
 function applyUnlockedFrames(cards: CardPayload[], unlockedFrames: UnlockedFrameEntry[]): CardPayload[] {
   const byCardId = new Map<string, string[]>();
   for (const entry of unlockedFrames) {

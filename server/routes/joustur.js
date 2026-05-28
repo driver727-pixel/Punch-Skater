@@ -79,6 +79,12 @@ function badRequest(message, status = 400) {
   return Object.assign(new Error(message), { statusCode: status });
 }
 
+/**
+ * Normalize a requested prestige frame ID and verify it exists in the wager catalog.
+ * @param {unknown} value Raw client-provided frame ID, with or without a "frame-" prefix.
+ * @returns {string} Canonical frame ID.
+ * @throws {Error} 422 when the frame is not available for high-stakes wagers.
+ */
 function normalizeHighStakesFrameId(value) {
   const raw = String(value ?? '').trim().toLowerCase();
   const withoutPrefix = raw.startsWith('frame-') ? raw.slice(6) : raw;
@@ -88,6 +94,11 @@ function normalizeHighStakesFrameId(value) {
   return withoutPrefix;
 }
 
+/**
+ * Normalize unlocked frame entries from a profile document.
+ * @param {unknown} value Firestore field value from userProfiles/{uid}.unlocked_frames.
+ * @returns {Array<{cardId: string, frameId: string, source: string, matchId: string, unlockedAt: string}>}
+ */
 function normalizeUnlockedFrames(value) {
   if (!Array.isArray(value)) return [];
   return value
@@ -101,11 +112,25 @@ function normalizeUnlockedFrames(value) {
     .filter((entry) => entry.cardId && entry.frameId);
 }
 
+/**
+ * Check whether a profile already has a frame unlocked for a specific card.
+ * @param {object | undefined} profile User profile data.
+ * @param {string} cardId Target card ID.
+ * @param {string} frameId Prestige frame ID.
+ * @returns {boolean}
+ */
 function hasUnlockedFrame(profile, cardId, frameId) {
   return normalizeUnlockedFrames(profile?.unlocked_frames)
     .some((entry) => entry.cardId === cardId && entry.frameId === frameId);
 }
 
+/**
+ * Prepare idempotent settlement for a completed frame wager.
+ * @param {object} tx Active Firestore transaction.
+ * @param {object} db Firestore Admin instance.
+ * @param {object} match Match snapshot before settlement.
+ * @returns {Promise<null | ((finalMatch: object) => object)>} Callback that awards the frame on victory or applies card-lock loss penalties.
+ */
 async function prepareFrameWagerSettlement(tx, db, match) {
   const wager = match?.wager;
   if (!wager || match.frameWagerSettled || wager.status !== 'staked') return null;
