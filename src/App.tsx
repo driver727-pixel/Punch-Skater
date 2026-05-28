@@ -111,6 +111,8 @@ const JousturBoard    = lazy(() => import("./pages/joustur/JousturBoard").then(m
 const JousturResult   = lazy(() => import("./pages/joustur/JousturResult").then(m => ({ default: m.JousturResult })));
 const JousturRules    = lazy(() => import("./pages/joustur/JousturRules").then(m => ({ default: m.JousturRules })));
 const MAIN_CONTENT_SELECTOR = ".main";
+const TRANSITION_SEED_TIME_WINDOW = 1_000_000;
+const EYEBROW_SEED_OFFSET = 17;
 
 /** P2-C: Redirects to "/" when the JOUSTUR_SKATUR feature flag is off. */
 function JousturGate({ children }: { children: ReactNode }) {
@@ -251,10 +253,10 @@ function DistrictThemeController() {
     applyDistrictTheme(nextDistrict);
     transitionNonceRef.current += 1;
     const transitionNonce = transitionNonceRef.current;
-    const transitionSeed = pathname.length + Date.now() + transitionNonce;
+    const transitionSeed = pathname.length + (Date.now() % TRANSITION_SEED_TIME_WINDOW) + transitionNonce;
     setTransition({
       theme: nextTheme,
-      eyebrow: getDistrictTransitionEyebrow(nextDistrict, transitionSeed + 17),
+      eyebrow: getDistrictTransitionEyebrow(nextDistrict, transitionSeed + EYEBROW_SEED_OFFSET),
       line: getDistrictTransitionLine(nextDistrict, transitionSeed),
       nonce: transitionSeed,
     });
