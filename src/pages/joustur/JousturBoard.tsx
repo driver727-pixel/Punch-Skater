@@ -1131,6 +1131,13 @@ export function JousturBoard() {
   return (
     <div className="page joustur-board">
       {clashCinematic && <ClashCinematicOverlay cinematic={clashCinematic} onDismiss={() => setClashCinematic(null)} />}
+      <button
+        type="button"
+        className="btn-outline btn-sm page-back-btn"
+        onClick={() => navigate("/joustur")}
+      >
+        ← Back
+      </button>
       <p className="page-eyebrow">Joustur Skatur™</p>
       <h1 className="page-title">
         {JOUSTUR_FACTION_LABELS[myState.faction] ?? myState.faction}
