@@ -1,4 +1,4 @@
-import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, useState } from "react";
+import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
@@ -16,6 +16,14 @@ import {
 } from "./context/TerminalRouterContext";
 import { firebaseUnavailableMessage, isFirebaseConfigured } from "./lib/firebase";
 import { featureFlags, isEnabled } from "./lib/featureFlags";
+import {
+  applyDistrictTheme,
+  getDistrictTheme,
+  getDistrictTransitionLine,
+  getStoredActiveDistrict,
+  subscribeToDistrictChanges,
+  type DistrictTheme,
+} from "./lib/districtTheme";
 
 /** Applies data-theme and data-time attributes to <html> for CSS theming. */
 function ThemeApplier() {
@@ -181,6 +189,75 @@ function ScrollToTopOnRouteChange() {
   }, [pathname]);
 
   return null;
+}
+
+function resolveDistrictForRoute(pathname: string, currentDistrict: string): string {
+  // Hub and Forge are Airaway terminal surfaces; other routes keep the most
+  // recent district until their page-level data announces a more specific one.
+  if (pathname === "/" || pathname === "/forge") return "airaway";
+  return currentDistrict;
+}
+
+function getRoutePanelKey(pathname: string): string {
+  if (pathname === "/") return "hub";
+  return pathname.split("/").filter(Boolean)[0] ?? "hub";
+}
+
+function DistrictTransitionOverlay({ theme, line, nonce }: { theme: DistrictTheme; line: string; nonce: number }) {
+  return (
+    <div key={nonce} className="district-transition-overlay" role="status" aria-live="polite">
+      <div className="district-transition-overlay__card">
+        <span className="district-transition-overlay__eyebrow">District bleed engaged</span>
+        <strong>{theme.name}</strong>
+        <p>{line}</p>
+      </div>
+    </div>
+  );
+}
+
+function DistrictThemeController() {
+  const { pathname } = useLocation();
+  const [activeDistrict, setActiveDistrict] = useState(getStoredActiveDistrict);
+  const [transition, setTransition] = useState<{
+    theme: DistrictTheme;
+    line: string;
+    nonce: number;
+  } | null>(null);
+  const activeDistrictRef = useRef(activeDistrict);
+  const previousTransitionRef = useRef({
+    district: activeDistrict,
+    panel: getRoutePanelKey(pathname),
+  });
+
+  useEffect(() => {
+    activeDistrictRef.current = activeDistrict;
+    applyDistrictTheme(activeDistrict);
+  }, [activeDistrict]);
+
+  useEffect(() => subscribeToDistrictChanges(setActiveDistrict), []);
+
+  useEffect(() => {
+    const nextDistrict = resolveDistrictForRoute(pathname, activeDistrictRef.current);
+    const nextTheme = getDistrictTheme(nextDistrict);
+    const nextPanel = getRoutePanelKey(pathname);
+    const previousTransition = previousTransitionRef.current;
+    previousTransitionRef.current = { district: nextTheme.slug, panel: nextPanel };
+    if (nextTheme.slug === previousTransition.district && nextPanel === previousTransition.panel) {
+      return undefined;
+    }
+    applyDistrictTheme(nextDistrict);
+    setTransition({
+      theme: nextTheme,
+      line: getDistrictTransitionLine(nextDistrict, pathname.length + Date.now()),
+      nonce: Date.now(),
+    });
+    const timeout = window.setTimeout(() => setTransition(null), 1450);
+    return () => window.clearTimeout(timeout);
+  }, [pathname]);
+
+  return transition ? (
+    <DistrictTransitionOverlay theme={transition.theme} line={transition.line} nonce={transition.nonce} />
+  ) : null;
 }
 
 function AppParallaxBackdrop() {
@@ -384,6 +461,7 @@ function App() {
                     <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                   )}
                   <PlayerRewardBanner />
+                  <DistrictThemeController />
                   <main id="main-content" className="main" tabIndex={-1}>
                     <Suspense fallback={<AppLoadingState />}>
                       <AppContent />

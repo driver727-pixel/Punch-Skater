@@ -15,16 +15,29 @@
 }
 
 :root {
-  --bg: #05050e;
-  --bg2: #080818;
-  --bg3: #0d0c22;
-  --border: #1a1840;
-  --text: #ece4ff;
-  --text-dim: #6858a8;
-  --accent: #00ff88;
-  --accent2: #00ccff;
-  --purple: #cc44ff;
-  --danger: #ff4444;
+  --theme-bg: #05050e;
+  --theme-bg2: #080818;
+  --theme-bg3: #0d0c22;
+  --theme-border: #1a1840;
+  --theme-text: #ece4ff;
+  --theme-text-dim: #6858a8;
+  --theme-accent: #00ff88;
+  --theme-accent2: #00ccff;
+  --theme-purple: #cc44ff;
+  --theme-danger: #ff4444;
+  --theme-neon-accent: #00ff88;
+  --theme-scanline: rgba(0, 255, 136, 0.045);
+  --theme-overlay: linear-gradient(135deg, rgba(5,5,14,0.96), rgba(0,255,136,0.16));
+  --bg: var(--theme-bg);
+  --bg2: var(--theme-bg2);
+  --bg3: var(--theme-bg3);
+  --border: var(--theme-border);
+  --text: var(--theme-text);
+  --text-dim: var(--theme-text-dim);
+  --accent: var(--theme-accent);
+  --accent2: var(--theme-accent2);
+  --purple: var(--theme-purple);
+  --danger: var(--theme-danger);
   --font: 'Courier New', Courier, monospace;
   --font-display: 'Bangers', 'Impact', 'Arial Black', cursive;
   /* Canonical poker-card aspect ratio used by .print-card, .viewer3d-card, and
@@ -44,14 +57,100 @@ body {
   /* 90s comic: halftone dot overlay + horizontal scan lines + faint pixel grid */
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px),
-    radial-gradient(circle, rgba(0,255,136,0.045) 1.5px, transparent 1.5px),
-    repeating-linear-gradient(90deg, rgba(0,255,136,0.012) 0px, rgba(0,255,136,0.012) 1px, transparent 1px, transparent 4px),
-    repeating-linear-gradient(0deg, rgba(0,204,255,0.008) 0px, rgba(0,204,255,0.008) 1px, transparent 1px, transparent 4px);
+    radial-gradient(circle, var(--theme-scanline) 1.5px, transparent 1.5px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--theme-accent) 8%, transparent) 0px, color-mix(in srgb, var(--theme-accent) 8%, transparent) 1px, transparent 1px, transparent 4px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--theme-accent2) 5%, transparent) 0px, color-mix(in srgb, var(--theme-accent2) 5%, transparent) 1px, transparent 1px, transparent 4px);
   background-size: 100% 4px, 22px 22px, 4px 4px, 4px 4px;
   color: var(--text);
   font-family: var(--font);
   font-size: 15px;
   line-height: 1.55;
+}
+
+.district-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--theme-neon-accent) 20%, transparent), transparent 34%),
+    linear-gradient(90deg, rgba(0,0,0,0.8), transparent 25%, transparent 75%, rgba(0,0,0,0.8)),
+    var(--theme-overlay);
+  animation: district-transition-fade 1450ms ease both;
+}
+
+.district-transition-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(90deg, transparent 0 34px, color-mix(in srgb, var(--theme-accent2) 16%, transparent) 35px 36px);
+  mix-blend-mode: screen;
+  opacity: 0.35;
+}
+
+.district-transition-overlay__card {
+  position: relative;
+  width: min(92vw, 680px);
+  border: 2px solid color-mix(in srgb, var(--theme-neon-accent) 70%, white 10%);
+  border-radius: 22px;
+  padding: clamp(24px, 5vw, 44px);
+  background:
+    linear-gradient(135deg, rgba(0,0,0,0.82), color-mix(in srgb, var(--theme-bg2) 78%, transparent)),
+    radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--theme-accent2) 22%, transparent), transparent 36%);
+  box-shadow:
+    0 0 32px color-mix(in srgb, var(--theme-neon-accent) 44%, transparent),
+    inset 0 0 28px rgba(255,255,255,0.07);
+  text-align: center;
+  text-transform: uppercase;
+  transform: skew(-2deg);
+}
+
+.district-transition-overlay__eyebrow {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--theme-accent2);
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+}
+
+.district-transition-overlay__card strong {
+  display: block;
+  color: var(--theme-neon-accent);
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 5.2rem);
+  line-height: 0.9;
+  letter-spacing: 0.04em;
+  text-shadow:
+    3px 3px 0 rgba(0,0,0,0.72),
+    0 0 20px color-mix(in srgb, var(--theme-neon-accent) 72%, transparent);
+}
+
+.district-transition-overlay__card p {
+  margin: 18px auto 0;
+  max-width: 52ch;
+  color: var(--theme-text);
+  font-size: clamp(0.95rem, 2.5vw, 1.2rem);
+  letter-spacing: 0.05em;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+@keyframes district-transition-fade {
+  0% { opacity: 0; transform: scale(1.03); }
+  12% { opacity: 1; transform: scale(1); }
+  78% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.985); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .district-transition-overlay {
+    animation-duration: 420ms;
+  }
 }
 
 /* ===== Joustur gameplay board ===== */

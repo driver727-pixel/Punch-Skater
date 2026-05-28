@@ -21,6 +21,7 @@ import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
 import { isEnabled } from "../lib/featureFlags";
+import { announceActiveDistrict } from "../lib/districtTheme";
 
 type TabKey = "challengers" | "hub" | "solo";
 
@@ -143,6 +144,10 @@ function ChallengeModal({
   const [district, setDistrict] = useState(DEFAULT_RACE_DISTRICT);
   const defenderCard = state.opponent.cards.find((c) => c.id === defenderCardId);
   const cap = Math.max(0, Math.min(myOzzies, 10_000));
+
+  useEffect(() => {
+    announceActiveDistrict(district);
+  }, [district]);
 
   if (!myChallengerCard) {
     return (
@@ -323,6 +328,10 @@ export function BattleArena() {
       setSoloWager(soloWagerCap);
     }
   }, [soloWager, soloWagerCap]);
+
+  useEffect(() => {
+    announceActiveDistrict(soloDistrict);
+  }, [soloDistrict]);
 
   // Sync tab → URL.
   useEffect(() => {
