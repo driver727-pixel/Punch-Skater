@@ -215,7 +215,7 @@ const AUSTRALIAN_SLANG: Partial<Record<RaceDistrictSlug, string[]>> = {
   ],
 };
 
-export function getDistrictTransitionLine(district?: string | null, seed = Date.now()): string {
+export function getDistrictTransitionLine(district?: string | null, seed = 0): string {
   const theme = getDistrictTheme(district);
   const lore = DISTRICT_LORE.find((entry) => entry.name === theme.name);
   const language = CRAFTLINGUA_DISTRICT_LANGUAGES.find((entry) => entry.slug === theme.slug);

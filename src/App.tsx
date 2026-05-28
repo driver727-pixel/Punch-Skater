@@ -1,4 +1,4 @@
-import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, useState } from "react";
+import { Component, type ReactNode, type ErrorInfo, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TierProvider } from "./context/TierContext";
@@ -193,10 +193,12 @@ function ScrollToTopOnRouteChange() {
 
 function getRouteDistrictHint(pathname: string, currentDistrict: string): string {
   if (pathname === "/" || pathname === "/forge") return "airaway";
-  if (pathname.startsWith("/race/") || pathname.startsWith("/arena") || pathname.startsWith("/missions")) {
-    return currentDistrict;
-  }
   return currentDistrict;
+}
+
+function getRoutePanelKey(pathname: string): string {
+  if (pathname === "/") return "hub";
+  return pathname.split("/").filter(Boolean)[0] ?? "hub";
 }
 
 function DistrictTransitionOverlay({ theme, line, nonce }: { theme: DistrictTheme; line: string; nonce: number }) {
@@ -219,16 +221,28 @@ function DistrictThemeController() {
     line: string;
     nonce: number;
   } | null>(null);
+  const activeDistrictRef = useRef(activeDistrict);
+  const previousTransitionRef = useRef({
+    district: activeDistrict,
+    panel: getRoutePanelKey(pathname),
+  });
 
   useEffect(() => {
+    activeDistrictRef.current = activeDistrict;
     applyDistrictTheme(activeDistrict);
   }, [activeDistrict]);
 
   useEffect(() => subscribeToDistrictChanges(setActiveDistrict), []);
 
   useEffect(() => {
-    const nextDistrict = getRouteDistrictHint(pathname, activeDistrict);
+    const nextDistrict = getRouteDistrictHint(pathname, activeDistrictRef.current);
     const nextTheme = getDistrictTheme(nextDistrict);
+    const nextPanel = getRoutePanelKey(pathname);
+    const previousTransition = previousTransitionRef.current;
+    previousTransitionRef.current = { district: nextTheme.slug, panel: nextPanel };
+    if (nextTheme.slug === previousTransition.district && nextPanel === previousTransition.panel) {
+      return undefined;
+    }
     applyDistrictTheme(nextDistrict);
     setTransition({
       theme: nextTheme,
@@ -237,7 +251,7 @@ function DistrictThemeController() {
     });
     const timeout = window.setTimeout(() => setTransition(null), 1450);
     return () => window.clearTimeout(timeout);
-  }, [pathname, activeDistrict]);
+  }, [pathname]);
 
   return transition ? (
     <DistrictTransitionOverlay theme={transition.theme} line={transition.line} nonce={transition.nonce} />

@@ -373,7 +373,6 @@ export function BattleArena() {
         ozzyWager: wager,
         district,
       });
-      announceActiveDistrict(district);
       setModal(null);
       setActionMessage("Challenge sent!");
       setTab("hub");
