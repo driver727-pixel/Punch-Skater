@@ -217,20 +217,78 @@ const AUSTRALIAN_SLANG: Partial<Record<RaceDistrictSlug, string[]>> = {
   ],
 };
 
-export function getDistrictTransitionLine(district?: string | null, seed = 0): string {
-  const theme = getDistrictTheme(district);
+const TRANSITION_EYEBROW_LINES: Partial<Record<RaceDistrictSlug, string[]>> = {
+  airaway: [
+    "District bleed engaged",
+    "Air lane sync engaged",
+    "Skyline feed rerouted",
+  ],
+  batteryville: [
+    "District bleed engaged",
+    "Breaker relay engaged",
+    "Yard feed rerouted",
+  ],
+  "the-grid": [
+    "District bleed engaged",
+    "Grid relay engaged",
+    "Signal feed rerouted",
+  ],
+  nightshade: [
+    "District bleed engaged",
+    "Murk relay engaged",
+    "Shadow feed rerouted",
+  ],
+  "the-forest": [
+    "District bleed engaged",
+    "Rootline relay engaged",
+    "Canopy feed rerouted",
+  ],
+  "glass-city": [
+    "District bleed engaged",
+    "Mirror relay engaged",
+    "Exchange feed rerouted",
+  ],
+};
+
+function buildDistrictTransitionCandidates(theme: DistrictTheme): string[] {
   const lore = DISTRICT_LORE_BY_NAME.get(theme.name);
   const language = DISTRICT_LANGUAGE_BY_SLUG.get(theme.slug);
-  const candidates = [
+  const flavorTexts = lore?.flavorTexts ?? [];
+  const baseLines = [
     lore?.tagline,
     lore?.atmosphere,
-    ...(lore?.flavorTexts ?? []),
+    ...flavorTexts,
     language?.summary,
     language?.sample,
     ...(AUSTRALIAN_SLANG[theme.slug] ?? []),
   ]
     .filter((line): line is string => Boolean(line?.trim()))
-    .map((line) => line.replace(/^"|"$/g, ""));
+    .map((line) => line.replace(/^"|"$/g, "").trim());
+
+  if (baseLines.length === 0) return [];
+
+  const firstFlavor = flavorTexts.find((line) => Boolean(line?.trim()));
+  const remixed = [
+    lore?.tagline && language?.summary ? `${lore.tagline} ${language.summary}` : null,
+    lore?.atmosphere && language?.sample ? `${lore.atmosphere} ${language.sample}` : null,
+    firstFlavor && language?.summary ? `${firstFlavor} ${language.summary}` : null,
+    language?.sample && lore?.tagline ? `${language.sample} ${lore.tagline}` : null,
+  ]
+    .filter((line): line is string => Boolean(line?.trim()))
+    .map((line) => line.replace(/\s+/g, " ").trim());
+
+  return [...new Set([...baseLines, ...remixed])];
+}
+
+export function getDistrictTransitionEyebrow(district?: string | null, seed = 0): string {
+  const theme = getDistrictTheme(district);
+  const candidates = TRANSITION_EYEBROW_LINES[theme.slug] ?? ["District bleed engaged"];
+  return candidates[Math.abs(seed) % candidates.length] ?? "District bleed engaged";
+}
+
+export function getDistrictTransitionLine(district?: string | null, seed = 0): string {
+  const theme = getDistrictTheme(district);
+  const candidates = buildDistrictTransitionCandidates(theme);
   if (candidates.length === 0) {
     console.warn(`[DistrictTheme] Missing transition copy for district: ${theme.slug}`);
     return "Booting the district feed…";

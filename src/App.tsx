@@ -18,6 +18,7 @@ import { firebaseUnavailableMessage, isFirebaseConfigured } from "./lib/firebase
 import { featureFlags, isEnabled } from "./lib/featureFlags";
 import {
   applyDistrictTheme,
+  getDistrictTransitionEyebrow,
   getDistrictTheme,
   getDistrictTransitionLine,
   getStoredActiveDistrict,
@@ -203,11 +204,11 @@ function getRoutePanelKey(pathname: string): string {
   return pathname.split("/").filter(Boolean)[0] ?? "hub";
 }
 
-function DistrictTransitionOverlay({ theme, line, nonce }: { theme: DistrictTheme; line: string; nonce: number }) {
+function DistrictTransitionOverlay({ theme, eyebrow, line, nonce }: { theme: DistrictTheme; eyebrow: string; line: string; nonce: number }) {
   return (
     <div key={nonce} className="district-transition-overlay" role="status" aria-live="polite">
       <div className="district-transition-overlay__card">
-        <span className="district-transition-overlay__eyebrow">District bleed engaged</span>
+        <span className="district-transition-overlay__eyebrow">{eyebrow}</span>
         <strong>{theme.name}</strong>
         <p>{line}</p>
       </div>
@@ -220,6 +221,7 @@ function DistrictThemeController() {
   const [activeDistrict, setActiveDistrict] = useState(getStoredActiveDistrict);
   const [transition, setTransition] = useState<{
     theme: DistrictTheme;
+    eyebrow: string;
     line: string;
     nonce: number;
   } | null>(null);
@@ -246,9 +248,11 @@ function DistrictThemeController() {
       return undefined;
     }
     applyDistrictTheme(nextDistrict);
+    const transitionSeed = pathname.length + Date.now();
     setTransition({
       theme: nextTheme,
-      line: getDistrictTransitionLine(nextDistrict, pathname.length + Date.now()),
+      eyebrow: getDistrictTransitionEyebrow(nextDistrict, transitionSeed + 17),
+      line: getDistrictTransitionLine(nextDistrict, transitionSeed),
       nonce: Date.now(),
     });
     const timeout = window.setTimeout(() => setTransition(null), 1450);
@@ -256,7 +260,7 @@ function DistrictThemeController() {
   }, [pathname]);
 
   return transition ? (
-    <DistrictTransitionOverlay theme={transition.theme} line={transition.line} nonce={transition.nonce} />
+    <DistrictTransitionOverlay theme={transition.theme} eyebrow={transition.eyebrow} line={transition.line} nonce={transition.nonce} />
   ) : null;
 }
 
