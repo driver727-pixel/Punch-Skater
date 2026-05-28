@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyber Joust - Skate Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script type="importmap">
+    {
+        "imports": {
+            "phaser": "https://esm.sh/phaser@3.90.0",
+            "tone": "https://esm.sh/tone@14.7.77",
+            "@instantdb/core": "https://esm.sh/@instantdb/core@0.22.155"
+        }
+    }
+    </script>
+    <style>
+        html, body, #game-container {
+            width: 100%; height: 100%; margin: 0; padding: 0;
+            background-color: black; overflow: hidden;
+        }
+        body { touch-action: none; }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
