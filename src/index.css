@@ -5252,6 +5252,52 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   mix-blend-mode: normal;
   pointer-events: none;
 }
+.cosmetic-frame-overlay {
+  position: absolute;
+  inset: 2.2%;
+  z-index: 6;
+  pointer-events: none;
+  border: 2px solid rgba(0, 245, 255, 0.92);
+  border-radius: 7px;
+  box-shadow:
+    0 0 8px rgba(0, 245, 255, 0.75),
+    inset 0 0 10px rgba(255, 43, 214, 0.28);
+}
+.cosmetic-frame-overlay::before,
+.cosmetic-frame-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 5px;
+  pointer-events: none;
+}
+.cosmetic-frame-overlay::before {
+  border: 1px dashed rgba(255, 43, 214, 0.85);
+}
+.cosmetic-frame-overlay::after {
+  background:
+    linear-gradient(135deg, rgba(0, 245, 255, 0.25), transparent 18%, transparent 82%, rgba(255, 43, 214, 0.28)),
+    repeating-linear-gradient(90deg, transparent 0 18px, rgba(255, 255, 255, 0.14) 18px 20px);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+}
+.cosmetic-frame-overlay--chrome-singed {
+  border-color: rgba(246, 241, 232, 0.92);
+  box-shadow:
+    0 0 8px rgba(246, 241, 232, 0.72),
+    0 0 14px rgba(255, 107, 26, 0.48),
+    inset 0 0 14px rgba(255, 107, 26, 0.2);
+}
+.cosmetic-frame-overlay--chrome-singed::before {
+  border-style: solid;
+  border-color: rgba(255, 107, 26, 0.82);
+}
+.cosmetic-frame-overlay--chrome-singed::after {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 107, 26, 0.52), transparent 8%),
+    radial-gradient(circle at 82% 86%, rgba(255, 107, 26, 0.46), transparent 9%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.26), transparent 30%, rgba(255, 107, 26, 0.22));
+}
 .card-art-layer--loading {
   inset: 0;
   display: flex;

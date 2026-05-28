@@ -42,6 +42,7 @@ import {
   buildSoloBotPlayerState,
 } from '../lib/jousturRules.js';
 import { loadAdminLoanerCards, requireFreeTierCaller } from '../lib/adminLoaners.js';
+import { debitWalletInTransaction } from '../lib/wallet.js';
 
 // ── Fallback rate limiter (production injector overrides this) ────────────────
 
@@ -62,6 +63,11 @@ const TURNS_SUBCOL    = 'turns';
 const QUEUE_COL       = 'jousturQueue';
 const PROFILES_COL    = 'userProfiles';
 const SOLO_BOT_UID_PREFIX = 'joustur-solo-bot';
+const HIGH_STAKES_OZZIES_COST = 100;
+const HIGH_STAKES_FRAME_CATALOG = Object.freeze({
+  'archive-neon': { id: 'archive-neon', name: 'Archive Neon' },
+  'chrome-singed': { id: 'chrome-singed', name: 'Chrome Singed' },
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -71,6 +77,90 @@ function nowIso() {
 
 function badRequest(message, status = 400) {
   return Object.assign(new Error(message), { statusCode: status });
+}
+
+function normalizeHighStakesFrameId(value) {
+  const raw = String(value ?? '').trim().toLowerCase();
+  const withoutPrefix = raw.startsWith('frame-') ? raw.slice(6) : raw;
+  if (!HIGH_STAKES_FRAME_CATALOG[withoutPrefix]) {
+    throw badRequest('Choose a valid prestige frame: archive-neon or chrome-singed.', 422);
+  }
+  return withoutPrefix;
+}
+
+function normalizeUnlockedFrames(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => ({
+      cardId: typeof entry?.cardId === 'string' ? entry.cardId : '',
+      frameId: typeof entry?.frameId === 'string' ? entry.frameId : '',
+      source: typeof entry?.source === 'string' ? entry.source : '',
+      matchId: typeof entry?.matchId === 'string' ? entry.matchId : '',
+      unlockedAt: typeof entry?.unlockedAt === 'string' ? entry.unlockedAt : '',
+    }))
+    .filter((entry) => entry.cardId && entry.frameId);
+}
+
+function hasUnlockedFrame(profile, cardId, frameId) {
+  return normalizeUnlockedFrames(profile?.unlocked_frames)
+    .some((entry) => entry.cardId === cardId && entry.frameId === frameId);
+}
+
+async function prepareFrameWagerSettlement(tx, db, match) {
+  const wager = match?.wager;
+  if (!wager || match.frameWagerSettled || wager.status !== 'staked') return null;
+
+  const profileRef = db.collection(PROFILES_COL).doc(match.challengerUid);
+  const targetCardRef = db.collection('users').doc(match.challengerUid).collection('cards').doc(wager.targetCardId);
+  const [profileSnap, targetCardSnap] = await Promise.all([
+    tx.get(profileRef),
+    tx.get(targetCardRef),
+  ]);
+  const profile = profileSnap.exists ? profileSnap.data() : {};
+  const currentUnlocks = normalizeUnlockedFrames(profile.unlocked_frames);
+  const unlockExists = currentUnlocks.some((entry) =>
+    entry.cardId === wager.targetCardId && entry.frameId === wager.frameId
+  );
+
+  return (finalMatch) => {
+    if (finalMatch.status !== 'completed' || !finalMatch.winnerUid) return finalMatch;
+    const wonWager = finalMatch.winnerUid === match.challengerUid;
+    const settledMatch = cloneJson(finalMatch);
+    settledMatch.frameWagerSettled = true;
+    settledMatch.wager = {
+      ...settledMatch.wager,
+      status: wonWager ? 'won' : 'lost',
+      settledAt: nowIso(),
+    };
+
+    if (wonWager && !unlockExists) {
+      tx.set(profileRef, {
+        unlocked_frames: [
+          ...currentUnlocks,
+          {
+            cardId: wager.targetCardId,
+            frameId: wager.frameId,
+            source: 'joustur_high_stakes',
+            matchId: match.id,
+            unlockedAt: nowIso(),
+          },
+        ],
+        updatedAt: nowIso(),
+      }, { merge: true });
+    }
+
+    if (wager.type === 'card_lock') {
+      if (wonWager) {
+        if (targetCardSnap.exists) {
+          tx.set(targetCardRef, { jousturFrameWagerLock: null }, { merge: true });
+        }
+      } else if (targetCardSnap.exists) {
+        tx.delete(targetCardRef);
+      }
+    }
+
+    return settledMatch;
+  };
 }
 
 function buildNotification({ uid, type, title, body, link, data, randomUUID }) {
@@ -887,6 +977,115 @@ export function registerJousturRoutes(app, {
     }
   });
 
+  // ── POST /api/joustur/high-stakes/solo ─────────────────────────────────────
+  // Starts a wagered solo Joustur match. The target card must be one of the
+  // caller's saved rider cards, and the Ozzies debit or card lock is committed
+  // in the same transaction that creates the match.
+  app.post('/api/joustur/high-stakes/solo', limiter, async (req, res) => {
+    if (!adminDb) { res.status(503).json({ error: 'Joustur not configured.' }); return; }
+    let caller;
+    try { caller = await authenticateFirebaseUser(req); }
+    catch (e) { res.status(e.statusCode ?? 500).json({ error: e.message }); return; }
+
+    let frameId;
+    try {
+      frameId = normalizeHighStakesFrameId(req.body?.frameId);
+    } catch (e) {
+      res.status(e.statusCode ?? 500).json({ error: e.message });
+      return;
+    }
+    const targetCardId = String(req.body?.targetCardId ?? '').trim();
+    const wagerType = req.body?.wagerType === 'card_lock' ? 'card_lock' : 'ozzies';
+    const wagerAmount = wagerType === 'ozzies'
+      ? Math.max(1, Math.floor(Number(req.body?.wagerAmount) || HIGH_STAKES_OZZIES_COST))
+      : 0;
+    if (!targetCardId) { res.status(400).json({ error: 'targetCardId is required.' }); return; }
+
+    try {
+      const lineupSnap = await adminDb.collection(LINEUPS_COL).doc(caller.uid).get();
+      if (!lineupSnap.exists) throw badRequest('Save a lineup before starting a high-stakes match.', 409);
+      const lineup = lineupSnap.data();
+      if (!lineup.riderCardIds.includes(targetCardId)) {
+        throw badRequest('The wagered card must be one of your saved Joustur rider cards.', 422);
+      }
+
+      const challengerState = await buildPlayerStateFromLineup(adminDb, caller.uid, lineup);
+      const defenderUid = `${SOLO_BOT_UID_PREFIX}-${randomUUID()}`;
+      const matchId = `jm-${randomUUID()}`;
+      const matchRef = adminDb.collection(MATCHES_COL).doc(matchId);
+      const targetCardRef = adminDb.collection('users').doc(caller.uid).collection('cards').doc(targetCardId);
+      const profileRef = adminDb.collection(PROFILES_COL).doc(caller.uid);
+      const wager = {
+        type: wagerType,
+        frameId,
+        targetCardId,
+        amount: wagerAmount,
+        status: 'staked',
+        stakedAt: nowIso(),
+      };
+      const match = {
+        id: matchId,
+        status: 'active',
+        mode: 'solo',
+        challengerUid: caller.uid,
+        defenderUid,
+        board: buildInitialBoardState(caller.uid),
+        challengerState,
+        defenderState: buildSoloBotPlayerState(challengerState, defenderUid),
+        winnerUid: null,
+        rewardsGranted: false,
+        frameWagerSettled: false,
+        wager,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+
+      await adminDb.runTransaction(async (tx) => {
+        const [profileSnap, targetCardSnap] = await Promise.all([
+          tx.get(profileRef),
+          tx.get(targetCardRef),
+        ]);
+        if (!targetCardSnap.exists) throw badRequest('The wagered card was not found in your collection.', 404);
+        const profile = profileSnap.exists ? profileSnap.data() : {};
+        if (hasUnlockedFrame(profile, targetCardId, frameId)) {
+          throw badRequest('That prestige frame is already unlocked for this card.', 409);
+        }
+
+        if (wagerType === 'ozzies') {
+          await debitWalletInTransaction(tx, adminDb, {
+            uid: caller.uid,
+            amount: wagerAmount,
+            sourceType: 'joustur_frame_wager',
+            sourceId: matchId,
+            description: `Joustur frame wager: ${HIGH_STAKES_FRAME_CATALOG[frameId].name}`,
+            metadata: { frameId, targetCardId },
+            idempotencyKey: `joustur-frame-wager:${matchId}`,
+            FieldValue,
+          });
+        } else {
+          const existingLock = targetCardSnap.data()?.jousturFrameWagerLock;
+          if (existingLock?.status === 'locked') {
+            throw badRequest('This card is already locked in another frame wager.', 409);
+          }
+          tx.set(targetCardRef, {
+            jousturFrameWagerLock: {
+              status: 'locked',
+              matchId,
+              frameId,
+              lockedAt: nowIso(),
+            },
+          }, { merge: true });
+        }
+
+        tx.set(matchRef, match);
+      });
+
+      res.status(201).json(match);
+    } catch (e) {
+      res.status(e.statusCode ?? 500).json({ error: e.message });
+    }
+  });
+
   // ── POST /api/joustur/free-solo ───────────────────────────────────────────
   // Signed-in free users can sample Joustur Skatur™ with a random admin-owned
   // loaner lineup. The match is gameplay-only and does not require a saved
@@ -1122,6 +1321,7 @@ export function registerJousturRoutes(app, {
         if (match.board.rollResult === null) {
           throw badRequest('Roll first before submitting a move.', 409);
         }
+        const settleFrameWager = await prepareFrameWagerSettlement(tx, adminDb, match);
 
         const isChallenger = match.challengerUid === caller.uid;
         const activeState   = isChallenger ? match.challengerState : match.defenderState;
@@ -1234,6 +1434,7 @@ export function registerJousturRoutes(app, {
         // Grant rewards idempotently — check the in-transaction snapshot so
         // concurrent winning moves cannot both see rewardsGranted=false.
         if (newMatch.status === 'completed' && !match.rewardsGranted) {
+          newMatch = settleFrameWager ? settleFrameWager(newMatch) : newMatch;
           newMatch.rewardsGranted = true;
           applyMatchRewards(tx, adminDb, newMatch, FieldValue);
         }
@@ -1284,6 +1485,7 @@ export function registerJousturRoutes(app, {
         }
         if (match.status !== 'active') throw badRequest('This match is not active.', 409);
         if (!match.board.clash) throw badRequest('There is no active joust clash to resolve.', 409);
+        const settleFrameWager = await prepareFrameWagerSettlement(tx, adminDb, match);
 
         match = maybeLockSoloBotClashChoice(match);
         const clash = match.board.clash;
@@ -1344,6 +1546,7 @@ export function registerJousturRoutes(app, {
           finalMatch.winnerUid &&
           !match.rewardsGranted
         ) {
+          finalMatch = settleFrameWager ? settleFrameWager(finalMatch) : finalMatch;
           finalMatch.rewardsGranted = true;
           applyMatchRewards(tx, adminDb, finalMatch, FieldValue);
         }

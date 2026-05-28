@@ -138,7 +138,7 @@ export function Collection() {
       }
       return changed ? next : prev;
     });
-    setSelected((prev) => (prev && !validIds.has(prev.id) ? null : prev));
+    setSelected((prev) => (prev ? cards.find((card) => card.id === prev.id) ?? null : prev));
   }, [cards]);
 
   // Close card detail panel on Escape key
@@ -765,6 +765,7 @@ export function Collection() {
                   <div className="card-thumb-info">
                     <span className="card-name">{card.identity.name}</span>
                     <span className="card-sub">{getDisplayedArchetype(card)} · {card.prompts.rarity}</span>
+                    {card.activeFrameId && <span className="card-sub">Prestige frame · {card.activeFrameId.replace(/-/g, " ")}</span>}
                   </div>
                 </div>
               );
@@ -783,6 +784,11 @@ export function Collection() {
                   className="print-preview-area--collection"
                 />
               </CardContainer>
+              {selected.activeFrameId && (
+                <p className="collection-result-count">
+                  Prestige frame unlocked: {selected.activeFrameId.replace(/-/g, " ")}
+                </p>
+              )}
               <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {tierData.canSave && (
                   <>

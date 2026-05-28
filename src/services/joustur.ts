@@ -119,6 +119,18 @@ export async function startFreeSoloJousturMatch(): Promise<JousturMatch> {
   return apiFetch<JousturMatch>("/free-solo", { method: "POST" });
 }
 
+export async function startHighStakesSoloJousturMatch(params: {
+  targetCardId: string;
+  frameId: string;
+  wagerType?: "ozzies" | "card_lock";
+  wagerAmount?: number;
+}): Promise<JousturMatch> {
+  return apiFetch<JousturMatch>("/high-stakes/solo", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 // ── Matches ───────────────────────────────────────────────────────────────────
 
 export async function listJousturMatches(): Promise<JousturMatch[]> {

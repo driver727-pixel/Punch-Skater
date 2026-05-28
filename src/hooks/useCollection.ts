@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   collection,
   doc,
@@ -15,6 +15,50 @@ import { normalizeCardPayload } from "../lib/styles";
 
 const MIGRATION_KEY_PREFIX = "skpd_migration_done_";
 
+interface UnlockedFrameEntry {
+  cardId: string;
+  frameId: string;
+}
+
+function normalizeUnlockedFrames(value: unknown): UnlockedFrameEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const data = entry as Record<string, unknown>;
+      return {
+        cardId: typeof data.cardId === "string" ? data.cardId : "",
+        frameId: typeof data.frameId === "string" ? data.frameId : "",
+      };
+    })
+    .filter((entry): entry is UnlockedFrameEntry => Boolean(entry?.cardId && entry.frameId));
+}
+
+function applyUnlockedFrames(cards: CardPayload[], unlockedFrames: UnlockedFrameEntry[]): CardPayload[] {
+  const byCardId = new Map<string, string[]>();
+  for (const entry of unlockedFrames) {
+    const frameIds = byCardId.get(entry.cardId) ?? [];
+    if (!frameIds.includes(entry.frameId)) frameIds.push(entry.frameId);
+    byCardId.set(entry.cardId, frameIds);
+  }
+
+  return cards.map((card) => {
+    const frameIds = byCardId.get(card.id) ?? [];
+    if (frameIds.length === 0) {
+      if (!card.unlockedFrameIds?.length && !card.activeFrameId) return card;
+      const rest = { ...card };
+      delete rest.unlockedFrameIds;
+      delete rest.activeFrameId;
+      return rest as CardPayload;
+    }
+    return {
+      ...card,
+      unlockedFrameIds: frameIds,
+      activeFrameId: frameIds[0],
+    };
+  });
+}
+
 function shallowEqualCardArrays(previous: CardPayload[], next: CardPayload[]): boolean {
   if (previous === next) return true;
   if (previous.length !== next.length) return false;
@@ -26,6 +70,7 @@ export function useCollection() {
   const uid = user?.uid ?? null;
 
   const [cards, setCards] = useState<CardPayload[]>(() => loadCollection());
+  const [unlockedFrames, setUnlockedFrames] = useState<UnlockedFrameEntry[]>([]);
   const [migrationPending, setMigrationPending] = useState(false);
   const lastSavedCardsRef = useRef<CardPayload[]>(cards);
   const initialGuestCardsRef = useRef<CardPayload[] | null>(null);
@@ -35,6 +80,7 @@ export function useCollection() {
   useEffect(() => {
     if (!uid) {
       const localCards = loadCollection();
+      setUnlockedFrames([]);
       guestHydratingRef.current = true;
       initialGuestCardsRef.current = localCards;
       lastSavedCardsRef.current = localCards;
@@ -55,11 +101,19 @@ export function useCollection() {
       setMigrationPending(local.length > 0);
     }
 
+    const profileRef = doc(db, "userProfiles", uid);
+    const unsubProfile = onSnapshot(profileRef, (snap) => {
+      setUnlockedFrames(normalizeUnlockedFrames(snap.data()?.unlocked_frames));
+    });
+
     const colRef = collection(db, "users", uid, "cards");
     const unsub = onSnapshot(colRef, (snap) => {
       setCards(snap.docs.map((d) => normalizeCardPayload(d.data() as CardPayload)));
     });
-    return unsub;
+    return () => {
+      unsub();
+      unsubProfile();
+    };
   }, [uid]);
 
   // ── Persist to localStorage for guests ────────────────────────────────────
@@ -105,6 +159,7 @@ export function useCollection() {
   }, [uid]);
 
   const hasCard = useCallback((id: string) => cards.some((c) => c.id === id), [cards]);
+  const displayCards = useMemo(() => applyUnlockedFrames(cards, unlockedFrames), [cards, unlockedFrames]);
 
   // ── Migration helpers ─────────────────────────────────────────────────────
   const importLocalCards = useCallback(async () => {
@@ -128,7 +183,7 @@ export function useCollection() {
   }, [uid]);
 
   return {
-    cards,
+    cards: displayCards,
     addCard,
     removeCard,
     updateCard,
