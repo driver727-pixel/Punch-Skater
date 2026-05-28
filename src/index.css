@@ -233,8 +233,8 @@ body {
   }
 
   .district-transition-overlay__card::after {
-    width: 180px;
-    height: 170px;
+    width: min(38vw, 180px);
+    height: min(36vw, 170px);
     opacity: 0.32;
   }
 }
