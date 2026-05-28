@@ -103,6 +103,7 @@ const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ defau
 const UserProfile     = lazy(() => import("./pages/UserProfile").then(m => ({ default: m.UserProfile })));
 const Leaderboard     = lazy(() => import("./pages/Leaderboard").then(m => ({ default: m.Leaderboard })));
 const Trash           = lazy(() => import("./pages/Trash").then(m => ({ default: m.Trash })));
+const BossAssets      = lazy(() => import("./pages/BossAssets").then(m => ({ default: m.BossAssets })));
 const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 const ClassicRace     = lazy(() => import("./pages/ClassicRace").then(m => ({ default: m.ClassicRace })));
 const JousturHome     = lazy(() => import("./pages/joustur/JousturHome").then(m => ({ default: m.JousturHome })));
@@ -404,6 +405,9 @@ function LegacyRoutes() {
       } />
       <Route path="/admin" element={
         <AdminRoute><Admin /></AdminRoute>
+      } />
+      <Route path="/admin/boss-assets" element={
+        <AdminRoute><BossAssets /></AdminRoute>
       } />
       <Route path="/dev/asset-generator" element={
         <AdminRoute><AssetGenerator /></AdminRoute>

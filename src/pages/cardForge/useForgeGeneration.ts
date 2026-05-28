@@ -32,6 +32,7 @@ import type {
   CompositeLayerOrder,
   Faction,
   Rarity,
+  WeaponPlacement,
 } from "../../lib/types";
 import {
   promoteCardClass,
@@ -50,6 +51,7 @@ import { resolveBoardPoseScene } from "../../lib/boardPoseScenes";
 import {
   normalizeBoardPlacement,
   normalizeCharacterPlacement,
+  normalizeWeaponPlacement,
   resolveBoardLayerOrder,
 } from "../../lib/boardPlacement";
 import { buildCraftlinguaFlavorFields } from "../../services/craftlingua";
@@ -150,6 +152,10 @@ export function useForgeGeneration() {
   }, [generated]);
   const characterPlacement = useMemo(
     () => (generated ? normalizeCharacterPlacement(generated.characterPlacement) : null),
+    [generated],
+  );
+  const weaponPlacement = useMemo(
+    () => (generated ? normalizeWeaponPlacement(generated.weaponPlacement) : null),
     [generated],
   );
   const boardLayerOrder = useMemo(
@@ -733,6 +739,53 @@ export function useForgeGeneration() {
     ));
   }, []);
 
+  const setWeaponPlacement = useCallback((placement: WeaponPlacement) => {
+    setGenerated((prev) => (
+      prev
+        ? {
+            ...prev,
+            weaponPlacement: normalizeWeaponPlacement(placement),
+          }
+        : prev
+    ));
+  }, []);
+
+  const setWeaponScale = useCallback((scale: number) => {
+    setGenerated((prev) => (
+      prev
+        ? {
+            ...prev,
+            weaponPlacement: normalizeWeaponPlacement({
+              ...normalizeWeaponPlacement(prev.weaponPlacement),
+              scale,
+            }),
+          }
+        : prev
+    ));
+  }, []);
+
+  const setWeaponRotation = useCallback((rotationDeg: number) => {
+    setGenerated((prev) => (
+      prev
+        ? {
+            ...prev,
+            weaponPlacement: normalizeWeaponPlacement({
+              ...normalizeWeaponPlacement(prev.weaponPlacement),
+              rotationDeg,
+            }),
+          }
+        : prev
+    ));
+  }, []);
+
+  /** Admin-only: set the weapon layer URL from a pre-uploaded asset. */
+  const setWeaponImageUrl = useCallback((url: string | undefined) => {
+    setGenerated((prev) => (
+      prev ? { ...prev, weaponImageUrl: url } : prev
+    ));
+    setLayers((current) => ({ ...current, weaponUrl: url }));
+  }, [setLayers]);
+
   const handleCloseFactionReveal = useCallback(() => {
     setRevealedFaction(null);
   }, []);
@@ -793,7 +846,12 @@ export function useForgeGeneration() {
     setCharacterScale,
     setCharacterBlend,
     setPrompt,
+    setWeaponImageUrl,
+    setWeaponPlacement,
+    setWeaponRotation,
+    setWeaponScale,
     tier,
+    weaponPlacement,
   }), [
     boardError,
     boardConfig,
@@ -846,6 +904,11 @@ export function useForgeGeneration() {
     setCharacterScale,
     setCharacterBlend,
     setPrompt,
+    setWeaponImageUrl,
+    setWeaponPlacement,
+    setWeaponRotation,
+    setWeaponScale,
     tier,
+    weaponPlacement,
   ]);
 }

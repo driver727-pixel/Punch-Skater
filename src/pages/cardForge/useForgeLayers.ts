@@ -4,12 +4,13 @@ import { generateImage, getImageDimensions, type ImageGenOptions } from "../../s
 import { getCachedImage, setCachedImage } from "../../services/imageCache";
 import { getStaticBackgroundUrl, getStaticFrameUrl } from "../../services/staticAssets";
 
-export type ForgeLayer = "background" | "character" | "frame";
+export type ForgeLayer = "background" | "character" | "frame" | "weapon";
 
 export interface LayerState {
   backgroundUrl?: string;
   characterUrl?: string;
   frameUrl?: string;
+  weaponUrl?: string;
   loading: Record<ForgeLayer, boolean>;
   errors: string[];
 }
@@ -31,7 +32,7 @@ interface LayerGenerationResult {
 }
 
 const INITIAL_LAYER_STATE: LayerState = {
-  loading: { background: false, character: false, frame: false },
+  loading: { background: false, character: false, frame: false, weapon: false },
   errors: [],
 };
 
@@ -59,11 +60,13 @@ export function useForgeLayers() {
     background: 0,
     character: 0,
     frame: 0,
+    weapon: 0,
   });
   const layerParamsRef = useRef<Record<ForgeLayer, LayerGenParams | null>>({
     background: null,
     character: null,
     frame: null,
+    weapon: null,
   });
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -234,7 +237,7 @@ export function useForgeLayers() {
 
   const resetLayerSession = useCallback(() => {
     setLayers(INITIAL_LAYER_STATE);
-    retryCountRef.current = { background: 0, character: 0, frame: 0 };
+    retryCountRef.current = { background: 0, character: 0, frame: 0, weapon: 0 };
   }, []);
 
   const setLayerParams = useCallback((params: Record<ForgeLayer, LayerGenParams | null>) => {
@@ -242,12 +245,12 @@ export function useForgeLayers() {
   }, []);
 
   const isAnyLayerLoading = useMemo(
-    () => layers.loading.background || layers.loading.character || layers.loading.frame,
+    () => layers.loading.background || layers.loading.character || layers.loading.frame || layers.loading.weapon,
     [layers.loading],
   );
   const hasAnyLayerUrl = useMemo(
-    () => Boolean(layers.backgroundUrl || layers.characterUrl || layers.frameUrl),
-    [layers.backgroundUrl, layers.characterUrl, layers.frameUrl],
+    () => Boolean(layers.backgroundUrl || layers.characterUrl || layers.frameUrl || layers.weaponUrl),
+    [layers.backgroundUrl, layers.characterUrl, layers.frameUrl, layers.weaponUrl],
   );
 
   return {

@@ -67,20 +67,24 @@ interface ForgeControlsPanelProps {
   generateCredits: number;
   hairLengths: HairLength[];
   isAnyLayerLoading: boolean;
+  isAdmin?: boolean;
   onArchetypeChange: (archetype: Archetype) => void;
   onBoardConfigChange: (config: BoardConfig) => void;
   onForge: () => void;
   onOpenUpgradeModal: () => void;
   onPromptChange: <K extends keyof CardPrompts>(key: K, value: CardPrompts[K]) => void;
+  onWeaponSelect?: (weaponUrl: string | undefined) => void;
   ozziesBalance: number;
   prompts: CardPrompts;
   requiresOzzies: boolean;
+  selectedWeaponUrl?: string;
   skinTones: SkinTone[];
   spendingOzzies: boolean;
   tier: string;
   walletMessage: string | null;
   walletMessageTone: "info" | "error";
   ageGroups: AgeGroup[];
+  weaponAssets?: Array<{ url: string; name: string }>;
 }
 
 export function ForgeControlsPanel({
@@ -102,15 +106,18 @@ export function ForgeControlsPanel({
   onForge,
   onOpenUpgradeModal,
   onPromptChange,
+  onWeaponSelect,
   ozziesBalance,
   prompts,
   requiresOzzies,
+  selectedWeaponUrl,
   skinTones,
   spendingOzzies,
   tier,
   walletMessage,
   walletMessageTone,
   ageGroups,
+  weaponAssets,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
   const freeForgeRemainingMs = getRemainingDurationMs(freeForgeReadyAt);
@@ -272,6 +279,38 @@ export function ForgeControlsPanel({
           onSave={onBoardConfigChange}
         />
       </div>
+
+      {weaponAssets && weaponAssets.length > 0 && onWeaponSelect && (
+        <div className="form-group">
+          <label>Weapon</label>
+          <p className="form-hint" style={{ marginBottom: 6 }}>
+            Equip a weapon to your card — drag it into position on the preview.
+          </p>
+          <div className="forge-weapon-grid">
+            <button
+              type="button"
+              className={`forge-weapon-option${!selectedWeaponUrl ? " selected" : ""}`}
+              onClick={() => onWeaponSelect(undefined)}
+              aria-pressed={!selectedWeaponUrl}
+            >
+              None
+            </button>
+            {weaponAssets.map((weapon) => (
+              <button
+                key={weapon.url}
+                type="button"
+                className={`forge-weapon-option${selectedWeaponUrl === weapon.url ? " selected" : ""}`}
+                onClick={() => onWeaponSelect(weapon.url)}
+                aria-pressed={selectedWeaponUrl === weapon.url}
+                title={weapon.name}
+              >
+                <img src={weapon.url} alt={weapon.name} className="forge-weapon-thumb" />
+                <span className="forge-weapon-name">{weapon.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="forge-class-odds">
         <button type="button" className="forge-class-odds__trigger btn-outline btn-glass btn-sm">

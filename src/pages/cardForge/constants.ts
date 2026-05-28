@@ -32,3 +32,15 @@ export const NON_LORA_GENERATION_OPTIONS: ImageGenOptions = {
 };
 export const CHARACTER_MIN_DIMENSIONS = { width: 750, height: 1050 };
 export const CHARACTER_SEED_VARIANTS = ["hq-a", "hq-b"];
+
+/**
+ * Starter weapon assets available in the Card Forge weapon selector.
+ * Images should be transparent PNGs uploaded to /public/assets/weapons/.
+ * The admin will upload additional weapons over time.
+ */
+export const WEAPON_ASSETS: Array<{ url: string; name: string }> = [
+  { url: "/assets/weapons/neon-bat.png", name: "Neon Bat" },
+  { url: "/assets/weapons/plasma-blade.png", name: "Plasma Blade" },
+  { url: "/assets/weapons/chain-whip.png", name: "Chain Whip" },
+  { url: "/assets/weapons/shock-knuckles.png", name: "Shock Knuckles" },
+];

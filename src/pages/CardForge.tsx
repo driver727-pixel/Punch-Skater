@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BattlePassPanel } from "../components/BattlePassPanel";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
@@ -15,6 +16,7 @@ import {
   HAIR_LENGTHS,
   RANDOM_SKATER_TOOLTIP,
   SKIN_TONES,
+  WEAPON_ASSETS,
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
 import { useBattlePass } from "../hooks/useBattlePass";
@@ -52,6 +54,7 @@ export function CardForge() {
     handleRandomSkater,
     handleReroll,
     handleReopenWelcome,
+    handleSaveToAdminAssets,
     handleSaveToCollection,
     isAnyLayerLoading,
     isAdmin,
@@ -84,6 +87,10 @@ export function CardForge() {
     setCharacterPlacement,
     setCharacterRotation,
     setCharacterScale,
+    setWeaponImageUrl,
+    setWeaponPlacement,
+    setWeaponRotation,
+    setWeaponScale,
     showWelcome,
     spendingOzzies,
     tier,
@@ -91,8 +98,25 @@ export function CardForge() {
     viewing3D,
     walletMessage,
     walletMessageTone,
+    weaponPlacement,
   } = useCardForgeController();
   const battlePass = useBattlePass();
+
+  // Admin layer toggles
+  const [layerToggles, setLayerToggles] = useState<Record<string, boolean>>({
+    background: true,
+    character: true,
+    frame: true,
+    weapon: true,
+  });
+
+  const handleLayerToggle = (layer: string, enabled: boolean) => {
+    setLayerToggles((prev) => ({ ...prev, [layer]: enabled }));
+  };
+
+  const handleWeaponSelect = (url: string | undefined) => {
+    setWeaponImageUrl(url);
+  };
 
   return (
     <div className="page page--forge">
@@ -162,20 +186,24 @@ export function CardForge() {
           genders={GENDERS}
           generateCredits={generateCredits}
           hairLengths={HAIR_LENGTHS}
+          isAdmin={isAdmin}
           isAnyLayerLoading={isAnyLayerLoading}
           onArchetypeChange={setArchetype}
           onBoardConfigChange={setBoardConfig}
           onForge={handleForge}
           onOpenUpgradeModal={openUpgradeModal}
           onPromptChange={setPrompt}
+          onWeaponSelect={handleWeaponSelect}
           ozziesBalance={ozziesBalance}
           prompts={prompts}
           requiresOzzies={requiresOzzies}
+          selectedWeaponUrl={generated?.weaponImageUrl}
           skinTones={SKIN_TONES}
           spendingOzzies={spendingOzzies}
           tier={tier}
           walletMessage={walletMessage}
           walletMessageTone={walletMessageTone}
+          weaponAssets={WEAPON_ASSETS}
         />
 
         <ForgePreviewPanel
@@ -194,6 +222,7 @@ export function CardForge() {
           isAnyLayerLoading={isAnyLayerLoading}
           isImageGenConfigured={isImageGenConfigured}
           layers={layers}
+          layerToggles={isAdmin ? layerToggles : undefined}
           onBoardLayerOrderChange={setBoardLayerOrder}
           onBoardPlacementChange={setBoardPlacement}
           onBoardRotationChange={setBoardRotation}
@@ -203,11 +232,16 @@ export function CardForge() {
           onCharacterScaleChange={setCharacterScale}
           onDownloadJpg={handleDownloadJpg}
           onForceRegenerateBoard={handleForceRegenerateBoard}
+          onLayerToggle={isAdmin ? handleLayerToggle : undefined}
           onOpen3D={handleOpen3D}
           onOpenPrint={handleOpenPrint}
           onOpenUpgradeModal={openUpgradeModal}
           onReroll={handleReroll}
           onSaveToCollection={handleSaveToCollection}
+          onSaveToAdminAssets={isAdmin ? handleSaveToAdminAssets : undefined}
+          onWeaponPlacementChange={setWeaponPlacement}
+          onWeaponRotationChange={setWeaponRotation}
+          onWeaponScaleChange={setWeaponScale}
           patchGeneratedCard={patchGeneratedCard}
           patchIdentity={patchIdentity}
           patchStats={patchStats}
@@ -217,6 +251,8 @@ export function CardForge() {
           rerollingActionId={rerollingActionId}
           saveError={saveError}
           saving={saving}
+          weaponRotation={weaponPlacement?.rotationDeg ?? 0}
+          weaponScale={weaponPlacement?.scale ?? 0.7}
         />
       </div>
 
