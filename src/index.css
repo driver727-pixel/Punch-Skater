@@ -12774,6 +12774,293 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   }
 }
 
+/* ===== Admin Deck Layers Panel (.adlp-*) ===== */
+.adlp-panel { padding-bottom: 48px; }
+
+.adlp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.adlp-section-header .asset-gen-section-title { margin-bottom: 0; }
+
+/* Deck collapsible block */
+.adlp-deck {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.adlp-deck-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  flex-wrap: wrap;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+
+.adlp-deck-expand-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.adlp-deck-expand-btn:hover { color: var(--text); }
+
+.adlp-deck-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adlp-deck-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.adlp-deck-global-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.adlp-deck-global-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Badges */
+.adlp-primary-badge,
+.adlp-ready-badge,
+.adlp-challenger-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+.adlp-primary-badge  { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+.adlp-ready-badge    { background: color-mix(in srgb, var(--green, #22c55e) 20%, transparent); color: var(--green, #22c55e); }
+.adlp-challenger-badge { background: color-mix(in srgb, var(--yellow, #facc15) 20%, transparent); color: var(--yellow, #facc15); }
+
+/* Card grid inside a deck */
+.adlp-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Individual card tile */
+.adlp-card-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 12px 12px;
+}
+
+.adlp-card-tile-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  line-height: 1.3;
+}
+
+.adlp-card-tile-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Card layer preview wrapper */
+.adlp-card-preview {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg2);
+  margin: 0 auto;
+}
+
+.adlp-no-layers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 16px 8px;
+  min-height: 80px;
+  width: 100%;
+}
+
+/* Reset per-card override button */
+.adlp-reset-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.adlp-reset-btn:hover { color: var(--text); background: var(--bg3); }
+
+/* Layer toggle bar */
+.adlp-layer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.adlp-layer-btn {
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1.5;
+}
+.adlp-layer-btn:hover { background: var(--bg3); color: var(--text); }
+.adlp-layer-btn--active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg2));
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+/* Boss grid */
+.adlp-boss-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.adlp-boss-tile {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adlp-boss-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adlp-boss-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.adlp-boss-district {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 1px 6px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: 6px;
+}
+
+.adlp-boss-tagline {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.adlp-boss-no-layers {
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 10px;
+  min-height: unset;
+}
+
+.adlp-boss-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adlp-boss-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg3);
+  border-radius: 6px;
+  padding: 4px 8px;
+  min-width: 36px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.adlp-boss-stat span {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 1px;
+}
+
+.adlp-boss-tactic {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.adlp-boss-dialogue {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--accent);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.45;
+  background: var(--bg3);
+  border-radius: 0 8px 8px 0;
+}
+
+.adlp-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 16px 0;
+}
+
+@media (max-width: 600px) {
+  .adlp-deck-global-toggles { margin-left: 0; width: 100%; }
+  .adlp-card-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; padding: 12px; }
+}
+
+
+
 /* ===== Frame Preview (/dev/frame-preview) ===== */
 .frame-preview-grid {
   display: grid;

@@ -3,6 +3,7 @@ import { generateImage, removeBackground } from "../services/imageGen";
 import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
 import { AdminFactionImagesPanel } from "../components/AdminFactionImagesPanel";
 import { AdminImageCachePanel } from "../components/AdminImageCachePanel";
+import { AdminDeckLayersPanel } from "../components/AdminDeckLayersPanel";
 import {
   getDistrictTheme,
   getDistrictTransitionEyebrow,
@@ -118,7 +119,7 @@ interface ItemState {
 }
 
 export function AssetGenerator() {
-  const [activeTab, setActiveTab] = useState<"generator" | "transitions" | "factions" | "cache">("generator");
+  const [activeTab, setActiveTab] = useState<"generator" | "transitions" | "factions" | "cache" | "decks">("generator");
   const [states, setStates] = useState<Record<string, ItemState>>(
     Object.fromEntries(ALL_ITEMS.map((i) => [i.seedKey, { status: "idle" }]))
   );
@@ -234,6 +235,12 @@ export function AssetGenerator() {
           onClick={() => setActiveTab("cache")}
         >
           🖼 Image Cache
+        </button>
+        <button
+          className={`admin-tab${activeTab === "decks" ? " admin-tab--active" : ""}`}
+          onClick={() => setActiveTab("decks")}
+        >
+          🃏 Decks &amp; Bosses
         </button>
       </div>
 
@@ -389,6 +396,8 @@ export function AssetGenerator() {
         </section>
       ) : activeTab === "factions" ? (
         <AdminFactionImagesPanel />
+      ) : activeTab === "decks" ? (
+        <AdminDeckLayersPanel />
       ) : (
         <AdminImageCachePanel />
       )}
