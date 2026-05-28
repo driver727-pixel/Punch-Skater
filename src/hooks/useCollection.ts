@@ -43,7 +43,7 @@ function normalizeUnlockedFrames(value: unknown): UnlockedFrameEntry[] {
  * Hydrates cards with unlocked prestige frame IDs for display.
  * @param cards Current saved collection cards.
  * @param unlockedFrames Normalized profile unlock entries.
- * @returns Cards with unlockedFrameIds and the first unlocked frame marked active.
+ * @returns Cards with unlockedFrameIds and the most recently unlocked frame marked active.
  */
 function applyUnlockedFrames(cards: CardPayload[], unlockedFrames: UnlockedFrameEntry[]): CardPayload[] {
   const byCardId = new Map<string, string[]>();
@@ -65,7 +65,7 @@ function applyUnlockedFrames(cards: CardPayload[], unlockedFrames: UnlockedFrame
     return {
       ...card,
       unlockedFrameIds: frameIds,
-      activeFrameId: frameIds[0],
+      activeFrameId: frameIds.at(-1),
     };
   });
 }

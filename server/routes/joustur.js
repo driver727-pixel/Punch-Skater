@@ -130,6 +130,7 @@ function hasUnlockedFrame(profile, cardId, frameId) {
  * @param {object} db Firestore Admin instance.
  * @param {object} match Match snapshot before settlement.
  * @returns {Promise<null | ((finalMatch: object) => object)>} Callback that awards the frame on victory or applies card-lock loss penalties.
+ * Card-lock losses intentionally delete the wagered card because the player chose that high-risk stake instead of the fixed Ozzies buy-in.
  */
 async function prepareFrameWagerSettlement(tx, db, match) {
   const wager = match?.wager;
@@ -1021,9 +1022,7 @@ export function registerJousturRoutes(app, {
     }
     const targetCardId = String(req.body?.targetCardId ?? '').trim();
     const wagerType = req.body?.wagerType === 'card_lock' ? 'card_lock' : 'ozzies';
-    const wagerAmount = wagerType === 'ozzies'
-      ? Math.max(1, Math.floor(Number(req.body?.wagerAmount) || HIGH_STAKES_OZZIES_COST))
-      : 0;
+    const wagerAmount = wagerType === 'ozzies' ? HIGH_STAKES_OZZIES_COST : 0;
     if (!targetCardId) { res.status(400).json({ error: 'targetCardId is required.' }); return; }
 
     try {
