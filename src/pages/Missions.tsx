@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useCollection } from "../hooks/useCollection";
+import { useDecks } from "../hooks/useDecks";
 import { isEnabled } from "../lib/featureFlags";
 import {
   MISSION_PHASE,
@@ -17,6 +19,7 @@ import type {
   MissionRunDebrief,
   WorldContract,
 } from "../lib/sharedTypes";
+import type { CardPayload, DeckPayload } from "../lib/types";
 import {
   acknowledgeDistrictRun,
   getDistrictWorld,
@@ -42,6 +45,37 @@ const ACTION_ERROR_BANNER_STYLE: CSSProperties = {
   lineHeight: 1.45,
   flexShrink: 0,
 };
+
+type MissionRunnerOption = {
+  id: string;
+  runnerType: "card" | "deck";
+  label: string;
+  detail: string;
+  deck?: DeckPayload;
+  card?: CardPayload;
+};
+
+const SINGLE_MISSION_IDEAS = [
+  "Theft: lift a prototype truck or rival patch before the alarm loop closes.",
+  "Hack: crack a Cascade kiosk, erase a trace, or ghost a camera spine.",
+  "Joust: challenge a gatekeeper rider for passage, proof, or reputation.",
+  "Courier sting: carry a decoy packet and identify who tries to intercept it.",
+];
+
+const GROUP_OPERATION_IDEAS = [
+  "Heist: split lookout, driver, hacker, and muscle roles for a high-value vault pull.",
+  "Rival assault: hit an enemy skater safehouse and hold the line through retaliation.",
+  "Aid hijack: seize an Asclepian shipment and decide who gets the supplies.",
+  "Convoy extraction: escort a witness, union fund, or med-crate across multiple districts.",
+];
+
+function getCardDisplayName(card?: CardPayload | null): string {
+  return card?.identity?.name?.trim() || "Unnamed card";
+}
+
+function getCardRunnerDetail(card: CardPayload): string {
+  return `${getCardDisplayName(card)} runs one-person jobs: thefts, hacks, jousts, stings, and other solo risks.`;
+}
 
 /** Smoothstep easing — eliminates the harsh linear start/stop of token travel. */
 function smoothstep(t: number): number {
@@ -222,10 +256,10 @@ function MissionDebriefPanel({
               <span style={{ color: "rgba(255,255,255,0.8)" }}>{encounterResults.length}</span>
             </>
           )}
-          {debrief?.deckName && (
+          {(debrief?.deckName || debrief?.cardName) && (
             <>
-              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Deck</span>
-              <span style={{ color: "rgba(255,255,255,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debrief.deckName}</span>
+              <span style={{ color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontSize: 9, letterSpacing: "0.08em", alignSelf: "center" }}>Game piece</span>
+              <span style={{ color: "rgba(255,255,255,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debrief.cardName ?? debrief.deckName}</span>
             </>
           )}
         </div>
@@ -379,14 +413,25 @@ function ContractDetailPanel({
   onLaunch,
   launching,
   disabled,
+  runnerOptions,
+  selectedRunnerId,
+  selectedRunner,
+  onRunnerChange,
 }: {
   contract: WorldContract;
   onLaunch: () => void;
   launching: boolean;
   disabled: boolean;
+  runnerOptions: MissionRunnerOption[];
+  selectedRunnerId: string;
+  selectedRunner?: MissionRunnerOption;
+  onRunnerChange: (runnerId: string) => void;
 }) {
   const isLocked = contract.visibility === "locked";
   const isCompleted = contract.status === "completed";
+  const isSolo = selectedRunner?.runnerType === "card";
+  const ideaList = isSolo ? SINGLE_MISSION_IDEAS : GROUP_OPERATION_IDEAS;
+  const launchDisabled = launching || disabled || !selectedRunner;
   return (
     <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12, height: "100%", boxSizing: "border-box", overflowY: "auto" }}>
       <p style={{ margin: 0, fontSize: 9, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: isLocked ? "rgba(180,180,220,0.5)" : "#ff3af2" }}>
@@ -411,9 +456,55 @@ function ContractDetailPanel({
         </div>
       )}
       {!isLocked && !isCompleted && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px", border: "1px solid rgba(125,231,255,0.2)", borderRadius: 4, background: "rgba(125,231,255,0.05)" }}>
+          <label htmlFor="mission-runner-select" style={{ fontSize: 9, fontFamily: "monospace", color: "#7de7ff", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+            Game piece
+          </label>
+          <select
+            id="mission-runner-select"
+            value={selectedRunnerId}
+            onChange={(event) => onRunnerChange(event.target.value)}
+            disabled={launching || disabled || runnerOptions.length === 0}
+            style={{
+              width: "100%",
+              padding: "8px 10px",
+              borderRadius: 4,
+              border: "1px solid rgba(125,231,255,0.45)",
+              background: "#071120",
+              color: "#ffffff",
+              fontFamily: "monospace",
+              fontSize: 11,
+            }}
+          >
+            {runnerOptions.length === 0 ? (
+              <option value="">Create a card or card deck first</option>
+            ) : runnerOptions.map((runner) => (
+              <option key={runner.id} value={runner.id}>
+                {runner.runnerType === "card" ? "Card" : "Deck"} · {runner.label}
+              </option>
+            ))}
+          </select>
+          <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.45 }}>
+            {selectedRunner?.detail ?? "Pick a character card for solo jobs, or a card deck for squad operations."}
+          </p>
+        </div>
+      )}
+      {!isLocked && !isCompleted && (
+        <div style={{ padding: "10px 12px", border: `1px solid ${isSolo ? "rgba(255,58,242,0.28)" : "rgba(125,255,182,0.24)"}`, borderRadius: 4, background: isSolo ? "rgba(255,58,242,0.05)" : "rgba(125,255,182,0.04)" }}>
+          <p style={{ margin: "0 0 6px", fontSize: 9, fontFamily: "monospace", color: isSolo ? "#ff8af8" : "#7dffb6", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+            {isSolo ? "Single-card mission ideas" : "Squad operation ideas"}
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+            {ideaList.map((idea) => (
+              <li key={idea} style={{ fontSize: 10, color: "rgba(255,255,255,0.62)", lineHeight: 1.35 }}>{idea}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {!isLocked && !isCompleted && (
         <button
           onClick={onLaunch}
-          disabled={launching || disabled}
+          disabled={launchDisabled}
           style={{
             marginTop: "auto",
             padding: "10px 0",
@@ -426,11 +517,11 @@ function ContractDetailPanel({
             fontWeight: 700,
             textTransform: "uppercase",
             letterSpacing: "0.08em",
-            cursor: launching ? "wait" : "pointer",
-            opacity: launching || disabled ? 0.6 : 1,
+            cursor: launching ? "wait" : launchDisabled ? "not-allowed" : "pointer",
+            opacity: launchDisabled ? 0.6 : 1,
           }}
         >
-          {launching ? "Launching…" : disabled ? "Travel in progress" : "Run Contract"}
+          {launching ? "Launching…" : disabled ? "Travel in progress" : selectedRunner ? (isSolo ? "Run Solo Job" : "Run Squad Operation") : "Pick a game piece"}
         </button>
       )}
       {isCompleted && (
@@ -669,9 +760,12 @@ type SegmentTravel = {
 };
 
 function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string | null }) {
+  const { decks } = useDecks();
+  const { cards } = useCollection();
   const [world, setWorld] = useState<DistrictWorld | null>(null);
   const [activeRun, setActiveRun] = useState<ActiveDistrictRun | null>(null);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [selectedRunnerId, setSelectedRunnerId] = useState("");
   const [visuals, setVisuals] = useState<DistrictWorldVisuals | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -714,10 +808,74 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     void loadDistrictWorld();
   }, [loadDistrictWorld]);
 
+  const selectedContract: WorldContract | undefined = useMemo(
+    () => world?.contracts.find((c) => c.id === selectedContractId),
+    [world, selectedContractId],
+  );
+
+  const runnerOptions = useMemo<MissionRunnerOption[]>(() => {
+    const deckOptions = decks.map((deck) => ({
+      id: `deck:${deck.id}`,
+      runnerType: "deck" as const,
+      label: deck.name,
+      detail: `${deck.cards.length} card${deck.cards.length === 1 ? "" : "s"} ready for group jobs and squad operations.`,
+      deck,
+    }));
+    const seenCardIds = new Set<string>();
+    const cardOptions: MissionRunnerOption[] = [];
+    for (const card of cards) {
+      if (!card?.id || seenCardIds.has(card.id)) continue;
+      seenCardIds.add(card.id);
+      cardOptions.push({
+        id: `card:${card.id}`,
+        runnerType: "card",
+        label: getCardDisplayName(card),
+        detail: getCardRunnerDetail(card),
+        card,
+      });
+    }
+    for (const deck of decks) {
+      for (const card of deck.cards) {
+        if (!card?.id || seenCardIds.has(card.id)) continue;
+        seenCardIds.add(card.id);
+        cardOptions.push({
+          id: `card:${card.id}`,
+          runnerType: "card",
+          label: getCardDisplayName(card),
+          detail: getCardRunnerDetail(card),
+          card,
+        });
+      }
+    }
+    return [...cardOptions, ...deckOptions];
+  }, [cards, decks]);
+
+  const selectedRunner = useMemo(
+    () => runnerOptions.find((runner) => runner.id === selectedRunnerId),
+    [runnerOptions, selectedRunnerId],
+  );
+
+  useEffect(() => {
+    if (runnerOptions.length === 0) {
+      setSelectedRunnerId("");
+      return;
+    }
+    setSelectedRunnerId((current) => (
+      runnerOptions.some((runner) => runner.id === current) ? current : runnerOptions[0].id
+    ));
+  }, [runnerOptions]);
+
+  const visualDeckId = activeRun
+    ? activeRun.deckId ?? null
+    : selectedRunner?.runnerType === "deck" ? selectedRunner.deck?.id ?? null : null;
+  const visualCardId = activeRun
+    ? activeRun.cardId ?? null
+    : selectedRunner?.runnerType === "card" ? selectedRunner.card?.id ?? null : null;
+
   useEffect(() => {
     if (!world) return;
     let cancelled = false;
-    getDistrictWorldVisuals(uid, world.boardDateKey, userEmail)
+    getDistrictWorldVisuals(uid, world.boardDateKey, { deckId: visualDeckId, cardId: visualCardId }, userEmail)
       .then((payload) => {
         if (!cancelled) setVisuals(payload);
       })
@@ -727,12 +885,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     return () => {
       cancelled = true;
     };
-  }, [uid, world, userEmail]);
-
-  const selectedContract: WorldContract | undefined = useMemo(
-    () => world?.contracts.find((c) => c.id === selectedContractId),
-    [world, selectedContractId],
-  );
+  }, [uid, userEmail, visualCardId, visualDeckId, world]);
 
   const selectedRouteNodeIds = useMemo(() => {
     if (!world || !selectedContract) return [];
@@ -883,13 +1036,29 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     if (
       !world
       || !selectedContractId
+      || !selectedRunner
       || selectedRouteNodeIds.length < 2
       || !routeUsesGraphEdges({ nodes: world.nodes, edges: world.edges }, selectedRouteNodeIds)
     ) return;
     setLaunching(true);
     setActionError(null);
     try {
-      const run = await startDistrictRun(uid, selectedContractId, "", "Default Deck", userEmail);
+      const launchRunner = selectedRunner.runnerType === "card"
+        ? {
+          runnerType: "card",
+          cardId: selectedRunner.card?.id ?? null,
+          cardName: selectedRunner.label,
+          deckId: null,
+          deckName: null,
+        }
+        : {
+          runnerType: "deck",
+          deckId: selectedRunner.deck?.id ?? null,
+          deckName: selectedRunner.label,
+          cardId: null,
+          cardName: null,
+        };
+      const run = await startDistrictRun(uid, selectedContractId, launchRunner, userEmail);
       setActiveRun(run);
       lastCheckpointSyncRef.current = "";
     } catch (err: unknown) {
@@ -898,7 +1067,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     } finally {
       setLaunching(false);
     }
-  }, [uid, world, selectedContractId, selectedRouteNodeIds, userEmail]);
+  }, [uid, world, selectedContractId, selectedRunner, selectedRouteNodeIds, userEmail]);
 
   const handleResolveEncounter = useCallback(async (choiceId: string) => {
     if (!activeRun) return;
@@ -1041,6 +1210,10 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
                 onLaunch={handleLaunch}
                 launching={launching}
                 disabled
+                runnerOptions={runnerOptions}
+                selectedRunnerId={selectedRunner?.id ?? ""}
+                selectedRunner={selectedRunner}
+                onRunnerChange={setSelectedRunnerId}
               />
             )}
             <EncounterOverlay
@@ -1069,6 +1242,10 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
             onLaunch={handleLaunch}
             launching={launching}
             disabled={activeTraveling}
+            runnerOptions={runnerOptions}
+            selectedRunnerId={selectedRunner?.id ?? ""}
+            selectedRunner={selectedRunner}
+            onRunnerChange={setSelectedRunnerId}
           />
         ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.3)", fontFamily: "monospace", fontSize: 11 }}>

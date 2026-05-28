@@ -568,7 +568,7 @@ function buildMissionCompletionDebrief(activeRun, contract, completedAt, card = 
   const success = options.success !== false;
   const cardName = typeof card?.identity?.name === 'string' && card.identity.name.trim()
     ? card.identity.name.trim()
-    : null;
+    : (typeof activeRun?.cardName === 'string' && activeRun.cardName.trim() ? activeRun.cardName.trim() : null);
   const summary = success
     ? `${contractTitle} banked at the Workshop for ${totalRewardXp} XP and ${totalRewardOzzies} Ozzies.`
     : `${contractTitle} was logged as a failed run with no rewards or card penalties.`;
@@ -585,7 +585,7 @@ function buildMissionCompletionDebrief(activeRun, contract, completedAt, card = 
     completedAt,
     deckId: activeRun.deckId,
     deckName: activeRun.deckName,
-    cardId: card?.id ?? null,
+    cardId: card?.id ?? activeRun?.cardId ?? null,
     cardName,
     baseRewardXp,
     baseRewardOzzies,
@@ -1323,6 +1323,7 @@ export function registerMissionRoutes(app, {
       const boardDateKey = /^\d{4}-\d{2}-\d{2}$/.test(rawBoardDateKey) ? rawBoardDateKey : new Date().toISOString().slice(0, 10);
       const worldId = `${caller.uid}_${boardDateKey}`;
       const preferredDeckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
+      const preferredCardId = typeof req.body?.cardId === 'string' ? req.body.cardId.trim() : '';
       const visualsRef = adminDb.collection(WORLD_VISUALS_COLLECTION).doc(worldId);
       const [worldSnap, visualsSnap, decksSnap, cardsSnap] = await Promise.all([
         adminDb.collection(WORLD_COLLECTION).doc(worldId).get(),
@@ -1343,7 +1344,7 @@ export function registerMissionRoutes(app, {
           .filter((card) => card && typeof card === 'object' && getNonEmptyString(card.id))
           .map((card) => [card.id, card]),
       );
-      const card = pickSpriteSourceCard(decks, preferredDeckId, cardsById);
+      const card = (preferredCardId && cardsById.get(preferredCardId)) || pickSpriteSourceCard(decks, preferredDeckId, cardsById);
       let extraction = buildExtractionContract(card);
       const originalCharacterImageUrl = extraction.characterImageUrl;
       const spriteCacheKey = [
@@ -1492,9 +1493,15 @@ export function registerMissionRoutes(app, {
     }
 
     const contractId = typeof req.body?.contractId === 'string' ? req.body.contractId.trim() : '';
-    // deckId is optional at this phase; deck selection UI is implemented in a later PR.
+    const runnerType = req.body?.runnerType === 'card' ? 'card' : 'deck';
     const deckId = typeof req.body?.deckId === 'string' ? req.body.deckId.trim() : '';
-    const deckName = typeof req.body?.deckName === 'string' ? req.body.deckName.trim() : 'Unknown Deck';
+    const deckName = typeof req.body?.deckName === 'string' && req.body.deckName.trim()
+      ? req.body.deckName.trim()
+      : 'Unknown Deck';
+    const cardId = typeof req.body?.cardId === 'string' ? req.body.cardId.trim() : '';
+    const cardName = typeof req.body?.cardName === 'string' && req.body.cardName.trim()
+      ? req.body.cardName.trim()
+      : 'Unknown Card';
     if (!contractId) {
       res.status(400).json({ error: 'contractId is required.' });
       return;
@@ -1562,8 +1569,12 @@ export function registerMissionRoutes(app, {
         boardDateKey,
         phase,
         contractId,
-        deckId,
-        deckName,
+        runnerType,
+        deckId: runnerType === 'deck' ? deckId : null,
+        deckName: runnerType === 'deck' ? deckName : null,
+        cardId: runnerType === 'card' ? cardId : null,
+        cardName: runnerType === 'card' ? cardName : null,
+        activeCardIds: runnerType === 'card' && cardId ? [cardId] : [],
         routeNodeIds,
         checkpointNodeIndex: 0,
         lastCheckpointAt: now,
@@ -1740,22 +1751,29 @@ export function registerMissionRoutes(app, {
 
           const worldRef = adminDb.collection(WORLD_COLLECTION).doc(`${caller.uid}_${currentRun.boardDateKey}`);
           const profileRef = adminDb.collection(PROFILE_COLLECTION).doc(caller.uid);
-          const deckRef = currentRun.deckId
+          const soloCardRef = currentRun.runnerType === 'card' && currentRun.cardId
+            ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(currentRun.cardId)
+            : null;
+          const deckRef = !soloCardRef && currentRun.deckId
             ? adminDb.collection('users').doc(caller.uid).collection('decks').doc(currentRun.deckId)
             : null;
-          const [freshWorldSnap, profileSnap, deckSnap] = await Promise.all([
+          const [freshWorldSnap, profileSnap, deckSnap, soloCardSnap] = await Promise.all([
             tx.get(worldRef),
             tx.get(profileRef),
             deckRef ? tx.get(deckRef) : Promise.resolve(null),
+            soloCardRef ? tx.get(soloCardRef) : Promise.resolve(null),
           ]);
           const freshWorld = freshWorldSnap.exists ? freshWorldSnap.data() : world;
           const freshContract = freshWorld?.contracts?.find((candidate) => candidate.id === currentRun.contractId) ?? contract;
           const deck = deckSnap?.exists ? deckSnap.data() : null;
-          const deckCard = deck ? pickMissionRewardCard(deck) : null;
-          const cardRef = deckCard?.id
-            ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id)
-            : null;
-          const cardSnap = cardRef ? await tx.get(cardRef) : null;
+          const soloCard = soloCardSnap?.exists && currentRun.cardId ? { ...soloCardSnap.data(), id: currentRun.cardId } : null;
+          const deckCard = soloCard ?? (deck ? pickMissionRewardCard(deck) : null);
+          let cardRef = null;
+          let cardSnap = soloCard ? soloCardSnap : null;
+          if (!soloCard && deckCard?.id) {
+            cardRef = adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id);
+            cardSnap = await tx.get(cardRef);
+          }
           const persistedCard = cardSnap?.exists
             ? { ...deckCard, ...cardSnap.data(), id: deckCard.id }
             : deckCard;
@@ -1792,7 +1810,10 @@ export function registerMissionRoutes(app, {
             missionOzzies: progression.missionOzzies + debrief.totalRewardOzzies,
             updatedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
-          if (deck && persistedCard?.id) {
+          if (soloCardRef && persistedCard?.id) {
+            const rewardedCard = applyMissionRewardsToCard(persistedCard, debrief, runRecord);
+            tx.set(soloCardRef, rewardedCard, { merge: true });
+          } else if (deck && persistedCard?.id) {
             const rewardedCard = applyMissionRewardsToCard(persistedCard, debrief, runRecord);
             const updatedDeck = {
               ...deck,
@@ -1864,21 +1885,28 @@ export function registerMissionRoutes(app, {
 
         const now = new Date().toISOString();
         const worldRef = adminDb.collection(WORLD_COLLECTION).doc(`${caller.uid}_${activeRun.boardDateKey}`);
-        const deckRef = activeRun.deckId
+        const soloCardRef = activeRun.runnerType === 'card' && activeRun.cardId
+          ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(activeRun.cardId)
+          : null;
+        const deckRef = !soloCardRef && activeRun.deckId
           ? adminDb.collection('users').doc(caller.uid).collection('decks').doc(activeRun.deckId)
           : null;
-        const [worldSnap, deckSnap] = await Promise.all([
+        const [worldSnap, deckSnap, soloCardSnap] = await Promise.all([
           tx.get(worldRef),
           deckRef ? tx.get(deckRef) : Promise.resolve(null),
+          soloCardRef ? tx.get(soloCardRef) : Promise.resolve(null),
         ]);
         const world = worldSnap.exists ? worldSnap.data() : null;
         const contract = world?.contracts?.find((candidate) => candidate.id === activeRun.contractId) ?? null;
         const deck = deckSnap?.exists ? deckSnap.data() : null;
-        const deckCard = deck ? pickMissionRewardCard(deck) : null;
-        const cardRef = deckCard?.id
-          ? adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id)
-          : null;
-        const cardSnap = cardRef ? await tx.get(cardRef) : null;
+        const soloCard = soloCardSnap?.exists && activeRun.cardId ? { ...soloCardSnap.data(), id: activeRun.cardId } : null;
+        const deckCard = soloCard ?? (deck ? pickMissionRewardCard(deck) : null);
+        let cardRef = null;
+        let cardSnap = soloCard ? soloCardSnap : null;
+        if (!soloCard && deckCard?.id) {
+          cardRef = adminDb.collection('users').doc(caller.uid).collection('cards').doc(deckCard.id);
+          cardSnap = await tx.get(cardRef);
+        }
         const persistedCard = cardSnap?.exists
           ? { ...deckCard, ...cardSnap.data(), id: deckCard.id }
           : deckCard;
@@ -1904,7 +1932,10 @@ export function registerMissionRoutes(app, {
 
         tx.set(runRef, finalized, { merge: true });
         tx.set(adminDb.collection(RUN_ARCHIVE_COLLECTION).doc(activeRun.runId), finalized, { merge: true });
-        if (deck && persistedCard?.id) {
+        if (soloCardRef && persistedCard?.id) {
+          const recordedCard = applyMissionFailureRecordToCard(persistedCard, debrief, failureRecord);
+          tx.set(soloCardRef, recordedCard, { merge: true });
+        } else if (deck && persistedCard?.id) {
           const recordedCard = applyMissionFailureRecordToCard(persistedCard, debrief, failureRecord);
           tx.set(deckRef, {
             ...deck,

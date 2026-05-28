@@ -1023,8 +1023,15 @@ export interface ActiveDistrictRun {
   /** The contract being targeted on this run. */
   contractId: string;
   /** Deck selected for this run. */
-  deckId: string;
-  deckName: string;
+  deckId?: string | null;
+  deckName?: string | null;
+  /** Whether this run was launched by a single card or a card deck. */
+  runnerType?: "card" | "deck";
+  /** Single-card runner selected for solo jobs. */
+  cardId?: string | null;
+  cardName?: string | null;
+  /** Cards explicitly active on this run for history/debrief display. */
+  activeCardIds?: string[];
   launchedAt: string;
   updatedAt: string;
   completedAt?: string;
