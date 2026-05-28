@@ -71,6 +71,8 @@ body {
   --transition-pop-pink: #ff2f9f;
   --transition-pop-teal: #58fff1;
   --transition-pop-ink: #05060c;
+  --transition-pop-card-clip: polygon(4% 9%, 13% 9%, 16% 2%, 42% 7%, 45% 1%, 59% 8%, 88% 3%, 96% 10%, 96% 78%, 86% 82%, 80% 97%, 77% 82%, 12% 86%, 6% 78%, 1% 78%, 4% 47%, 1% 35%);
+  --transition-pop-inner-clip: polygon(4% 9%, 30% 9%, 33% 3%, 76% 7%, 79% 3%, 95% 11%, 93% 66%, 82% 70%, 78% 87%, 72% 73%, 9% 78%, 6% 69%, 2% 69%, 4% 40%, 2% 31%);
   position: fixed;
   inset: 0;
   z-index: 10000;
@@ -119,7 +121,7 @@ body {
   text-align: left;
   text-transform: uppercase;
   transform: rotate(-1deg) skew(-2deg);
-  clip-path: polygon(4% 9%, 13% 9%, 16% 2%, 42% 7%, 45% 1%, 59% 8%, 88% 3%, 96% 10%, 96% 78%, 86% 82%, 80% 97%, 77% 82%, 12% 86%, 6% 78%, 1% 78%, 4% 47%, 1% 35%);
+  clip-path: var(--transition-pop-card-clip);
 }
 
 .district-transition-overlay__card::before,
@@ -133,7 +135,7 @@ body {
   inset: 16px 18px 24px;
   z-index: -1;
   border: 2px solid color-mix(in srgb, var(--transition-pop-teal) 58%, transparent);
-  clip-path: polygon(4% 9%, 30% 9%, 33% 3%, 76% 7%, 79% 3%, 95% 11%, 93% 66%, 82% 70%, 78% 87%, 72% 73%, 9% 78%, 6% 69%, 2% 69%, 4% 40%, 2% 31%);
+  clip-path: var(--transition-pop-inner-clip);
   background:
     linear-gradient(90deg, transparent 0 8%, color-mix(in srgb, var(--transition-pop-pink) 38%, transparent) 8% 8.5%, transparent 8.5% 100%),
     repeating-linear-gradient(90deg, transparent 0 18px, color-mix(in srgb, var(--transition-pop-teal) 50%, transparent) 18px 24px, transparent 24px 28px),
@@ -12815,6 +12817,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --transition-preview-border: #ff2f9f;
   --transition-preview-accent: #58fff1;
   --transition-preview-text: var(--text);
+  --transition-preview-card-clip: polygon(3% 7%, 30% 7%, 34% 1%, 72% 5%, 76% 1%, 97% 9%, 96% 78%, 84% 82%, 78% 98%, 75% 83%, 8% 87%, 2% 78%, 4% 40%, 1% 29%);
   position: relative;
   overflow: hidden;
   border: 3px solid var(--transition-preview-border);
@@ -12829,7 +12832,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     0 0 0 2px rgba(0,0,0,0.85),
     0 0 18px color-mix(in srgb, var(--transition-preview-border) 28%, transparent),
     inset 0 0 0 1px color-mix(in srgb, var(--transition-preview-accent) 28%, transparent);
-  clip-path: polygon(3% 7%, 30% 7%, 34% 1%, 72% 5%, 76% 1%, 97% 9%, 96% 78%, 84% 82%, 78% 98%, 75% 83%, 8% 87%, 2% 78%, 4% 40%, 1% 29%);
+  clip-path: var(--transition-preview-card-clip);
 }
 .admin-transition-card__header {
   display: flex;
