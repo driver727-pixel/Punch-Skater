@@ -147,6 +147,8 @@ export type BoardPlacement = LayerPlacement;
 
 export type CharacterPlacement = LayerPlacement;
 
+export type WeaponPlacement = LayerPlacement;
+
 export type CompositeLayerOrder = "behind-character" | "in-front";
 
 export interface ForgedBoardData {
@@ -245,7 +247,9 @@ export interface CardPayload {
   backgroundImageUrl?: string;
   characterImageUrl?: string;
   frameImageUrl?: string;
+  weaponImageUrl?: string;
   characterPlacement?: CharacterPlacement;
+  weaponPlacement?: WeaponPlacement;
 
   /**
    * Accumulated gameplay experience for this card.

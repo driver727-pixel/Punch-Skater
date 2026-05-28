@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
+import { doc, setDoc } from "firebase/firestore";
 import { useCollection } from "../../hooks/useCollection";
 import { TIERS, type TierLevel } from "../../lib/tiers";
 import type { CardPayload } from "../../lib/types";
 import { sfxError, sfxSuccess } from "../../lib/sfx";
 import { downloadCardAsJpg } from "../../services/cardDownload";
+import { db } from "../../lib/firebase";
 import type { LayerState } from "./useForgeLayers";
 
 interface UseForgeSaveOptions {
@@ -12,6 +14,7 @@ interface UseForgeSaveOptions {
   layers: LayerState;
   openUpgradeModal: () => void;
   tier: TierLevel;
+  uid: string | null;
 }
 
 function buildSavedCard(generated: CardPayload, layers: LayerState): CardPayload {
@@ -20,6 +23,7 @@ function buildSavedCard(generated: CardPayload, layers: LayerState): CardPayload
     ...(layers.backgroundUrl != null ? { backgroundImageUrl: layers.backgroundUrl } : {}),
     ...(layers.characterUrl != null ? { characterImageUrl: layers.characterUrl } : {}),
     ...(layers.frameUrl != null ? { frameImageUrl: layers.frameUrl } : {}),
+    ...(layers.weaponUrl != null ? { weaponImageUrl: layers.weaponUrl } : {}),
   };
 }
 
@@ -29,6 +33,7 @@ export function useForgeSave({
   layers,
   openUpgradeModal,
   tier,
+  uid,
 }: UseForgeSaveOptions) {
   const { addCard, cards } = useCollection();
   const tierData = TIERS[tier];
@@ -70,6 +75,26 @@ export function useForgeSave({
     }
   }, [addCard, cards.length, generated, layers, openUpgradeModal, tierData]);
 
+  const handleSaveToAdminAssets = useCallback(async () => {
+    if (!generated || !uid) return;
+
+    setSaving(true);
+    setSaveError(null);
+    const cardToSave = buildSavedCard(generated, layers);
+
+    try {
+      await setDoc(doc(db, "adminBossAssets", cardToSave.id), cardToSave);
+      sfxSuccess();
+      setSavedCard(cardToSave);
+    } catch (error) {
+      console.error("Failed to save to admin assets:", error);
+      sfxError();
+      setSaveError("Failed to save to Admin Assets. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }, [generated, layers, uid]);
+
   const handleDownloadJpg = useCallback(async () => {
     if (!generated) return;
     setDownloading(true);
@@ -104,6 +129,7 @@ export function useForgeSave({
     clearSavedCard,
     downloading,
     handleDownloadJpg,
+    handleSaveToAdminAssets,
     handleSaveToCollection,
     isFirstCard,
     saveError,
@@ -114,6 +140,7 @@ export function useForgeSave({
     clearSavedCard,
     downloading,
     handleDownloadJpg,
+    handleSaveToAdminAssets,
     handleSaveToCollection,
     isFirstCard,
     saveError,

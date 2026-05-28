@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { BoardPlacement, CharacterPlacement, CompositeLayerOrder, LayerPlacement } from "./types";
+import type { BoardPlacement, CharacterPlacement, CompositeLayerOrder, LayerPlacement, WeaponPlacement } from "./types";
 import type { BoardPoseSceneKey } from "./boardPoseScenes";
 
 export const BOARD_PLACEMENT_MIN_SCALE = 0.5;
@@ -8,6 +8,9 @@ export const BOARD_PLACEMENT_SCALE_STEP = 0.05;
 export const CHARACTER_PLACEMENT_MIN_SCALE = 0.7;
 export const CHARACTER_PLACEMENT_MAX_SCALE = 1.2;
 export const CHARACTER_PLACEMENT_SCALE_STEP = 0.05;
+export const WEAPON_PLACEMENT_MIN_SCALE = 0.3;
+export const WEAPON_PLACEMENT_MAX_SCALE = 1.5;
+export const WEAPON_PLACEMENT_SCALE_STEP = 0.05;
 export const CHARACTER_LAYER_Z_INDEX = 3;
 const DEFAULT_CENTER_PERCENT = 50;
 
@@ -35,6 +38,15 @@ const CHARACTER_PLACEMENT_PRESET: PlacementPreset<CharacterPlacement> = {
   rotationDeg: 0,
   widthPercent: 75,
   heightPercent: 82,
+};
+
+const WEAPON_PLACEMENT_PRESET: PlacementPreset<WeaponPlacement> = {
+  xPercent: 65,
+  yPercent: 55,
+  scale: 0.7,
+  rotationDeg: -15,
+  widthPercent: 40,
+  heightPercent: 40,
 };
 
 function clampPlacementValue(value: number, min: number, max: number): number {
@@ -181,4 +193,51 @@ export function resolveBoardLayerOrder(layerOrder?: CompositeLayerOrder): Compos
 
 export function getBoardLayerZIndex(layerOrder?: CompositeLayerOrder): number {
   return resolveBoardLayerOrder(layerOrder) === "behind-character" ? 2 : 4;
+}
+
+/** Weapon layer sits above the skateboard regardless of board layer order. */
+export const WEAPON_LAYER_Z_INDEX = 5;
+
+export function getDefaultWeaponPlacement(): WeaponPlacement {
+  return {
+    xPercent: WEAPON_PLACEMENT_PRESET.xPercent,
+    yPercent: WEAPON_PLACEMENT_PRESET.yPercent,
+    scale: WEAPON_PLACEMENT_PRESET.scale,
+    rotationDeg: WEAPON_PLACEMENT_PRESET.rotationDeg,
+  };
+}
+
+export function normalizeWeaponPlacement(
+  placement?: Partial<WeaponPlacement>,
+): WeaponPlacement {
+  return normalizePlacement(
+    WEAPON_PLACEMENT_PRESET,
+    placement,
+    WEAPON_PLACEMENT_MIN_SCALE,
+    WEAPON_PLACEMENT_MAX_SCALE,
+  );
+}
+
+export function getWeaponPlacementBox(scale: number): PlacementBox {
+  return getPlacementBox(
+    WEAPON_PLACEMENT_PRESET,
+    scale,
+    WEAPON_PLACEMENT_MIN_SCALE,
+    WEAPON_PLACEMENT_MAX_SCALE,
+  );
+}
+
+export function buildWeaponPlacementStyle(
+  placement?: Partial<WeaponPlacement>,
+): CSSProperties {
+  const normalized = normalizeWeaponPlacement(placement);
+  const box = getWeaponPlacementBox(normalized.scale);
+
+  return {
+    left: `${normalized.xPercent}%`,
+    top: `${normalized.yPercent}%`,
+    width: `${box.widthPercent}%`,
+    height: `${box.heightPercent}%`,
+    transform: `translate(-50%, -50%) rotate(${normalized.rotationDeg}deg)`,
+  };
 }

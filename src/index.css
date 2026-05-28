@@ -9409,6 +9409,99 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .print-art-layer--char-editable::before {
     inset: -40px;
   }
+  .print-art-layer--weapon-editable::before {
+    inset: -40px;
+  }
+}
+
+/* ── Weapon Layer ─────────────────────────────────────────────────────────── */
+.print-art-layer--weapon {
+  position: absolute;
+  pointer-events: none;
+}
+.print-art-layer--weapon-editable {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: left, top, transform;
+}
+.print-art-layer--weapon-editable:active {
+  cursor: grabbing;
+}
+.print-art-layer--weapon-editable::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+}
+.print-art-layer--weapon-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ── Forge Weapon Selector Grid ───────────────────────────────────────────── */
+.forge-weapon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+.forge-weapon-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border: 2px solid var(--card-border, #333);
+  border-radius: 8px;
+  background: var(--surface-2, rgba(0, 0, 0, 0.3));
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.forge-weapon-option.selected {
+  border-color: var(--accent, #00ff88);
+  background: rgba(0, 255, 136, 0.08);
+}
+.forge-weapon-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+.forge-weapon-name {
+  font-size: 0.7rem;
+  text-align: center;
+  opacity: 0.8;
+}
+
+/* ── Admin Layer Toggles ──────────────────────────────────────────────────── */
+.forge-admin-layer-toggles {
+  border: 1px solid var(--accent, #00ff88);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(0, 255, 136, 0.04);
+}
+.forge-layer-toggle-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+.forge-layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.forge-layer-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent, #00ff88);
+}
+.forge-layer-toggle__label {
+  text-transform: capitalize;
 }
 .print-art-layer--board-workshop {
   left: 4%;

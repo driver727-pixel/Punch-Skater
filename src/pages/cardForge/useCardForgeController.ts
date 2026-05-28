@@ -14,7 +14,6 @@ export function useCardForgeController() {
     openUpgradeModal: forge.openUpgradeModal,
     tier: forge.tier,
     uid: user?.uid ?? null,
-    userEmail: user?.email ?? null,
   });
   const navigation = useForgeNavigation({
     onBeforeCollectionNavigation: save.clearSavedCard,
@@ -54,6 +53,7 @@ export function useCardForgeController() {
     handleRandomSkater: forge.handleRandomSkater,
     handleReroll: forge.handleReroll,
     handleReopenWelcome: navigation.handleReopenWelcome,
+    handleSaveToAdminAssets: save.handleSaveToAdminAssets,
     handleSaveToCollection: save.handleSaveToCollection,
     hasAnyLayerUrl: forge.hasAnyLayerUrl,
     isAnyLayerLoading: forge.isAnyLayerLoading,
@@ -88,6 +88,10 @@ export function useCardForgeController() {
     setCharacterRotation: forge.setCharacterRotation,
     setCharacterScale: forge.setCharacterScale,
     setPrompt: forge.setPrompt,
+    setWeaponImageUrl: forge.setWeaponImageUrl,
+    setWeaponPlacement: forge.setWeaponPlacement,
+    setWeaponRotation: forge.setWeaponRotation,
+    setWeaponScale: forge.setWeaponScale,
     showWelcome: navigation.showWelcome,
     spendingOzzies: forge.spendingOzzies,
     tier: forge.tier,
@@ -95,5 +99,6 @@ export function useCardForgeController() {
     viewing3D: navigation.viewing3D,
     walletMessage: forge.walletMessage,
     walletMessageTone: forge.walletMessageTone,
+    weaponPlacement: forge.weaponPlacement,
   }), [forge, navigation, save, userProfile?.isAdmin]);
 }

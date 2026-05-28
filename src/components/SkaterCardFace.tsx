@@ -15,7 +15,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { PointerEvent } from "react";
-import type { BoardPlacement, CardPayload, CharacterPlacement, LayerPlacement } from "../lib/types";
+import type { BoardPlacement, CardPayload, CharacterPlacement, LayerPlacement, WeaponPlacement } from "../lib/types";
 import { CardArt } from "./CardArt";
 import { FrameOverlay } from "./FrameOverlay";
 import { CosmeticFrameOverlay } from "./CosmeticFrameOverlay";
@@ -36,11 +36,14 @@ import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 import {
   buildBoardPlacementStyle,
   buildCharacterPlacementStyle,
+  buildWeaponPlacementStyle,
   CHARACTER_LAYER_Z_INDEX,
   getBoardLayerZIndex,
   normalizeBoardPlacement,
   normalizeCharacterPlacement,
+  normalizeWeaponPlacement,
   resolveBoardLayerOrder,
+  WEAPON_LAYER_Z_INDEX,
 } from "../lib/boardPlacement";
 import { BOARD_TYPE_OPTIONS, DRIVETRAIN_OPTIONS, MOTOR_OPTIONS, WHEEL_OPTIONS, BATTERY_OPTIONS } from "../lib/boardBuilder";
 import { formatJoustGearLabel, JOUST_TRAIT_SUMMARIES, normalizeJoustProfile } from "../lib/jousting";
@@ -56,6 +59,7 @@ export interface SkaterCardFaceProps {
   backgroundImageUrl?: string;
   characterImageUrl?: string;
   frameImageUrl?: string;
+  weaponImageUrl?: string;
   /** Opacity blend for the character layer (0–1). */
   characterBlend?: number;
   /** Fallback art width when no layer images are provided (px). */
@@ -70,6 +74,7 @@ export interface SkaterCardFaceProps {
   metadataEditable?: boolean;
   onBoardPlacementChange?: (placement: BoardPlacement) => void;
   onCharacterPlacementChange?: (placement: CharacterPlacement) => void;
+  onWeaponPlacementChange?: (placement: WeaponPlacement) => void;
   onNameChange?: (value: string) => void;
   onBioChange?: (value: string) => void;
   onAgeChange?: (value: string) => void;
@@ -218,6 +223,7 @@ function CardFront({
   backgroundImageUrl,
   characterImageUrl,
   frameImageUrl,
+  weaponImageUrl,
   characterBlend,
   fallbackWidth = 189,
   fallbackHeight = 264,
@@ -227,6 +233,7 @@ function CardFront({
   onNameChange,
   onBoardPlacementChange,
   onCharacterPlacementChange,
+  onWeaponPlacementChange,
 }: Omit<SkaterCardFaceProps, "face" | "onStatChange" | "onBioChange" | "onAgeChange">) {
   const [boardImageFailed, setBoardImageFailed] = useState(false);
   const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl;
@@ -255,8 +262,14 @@ function CardFront({
     opacity: characterBlend,
     zIndex: CHARACTER_LAYER_Z_INDEX,
   };
+  const weaponPlacement = normalizeWeaponPlacement(card.weaponPlacement);
+  const weaponPlacementStyle = {
+    ...buildWeaponPlacementStyle(weaponPlacement),
+    zIndex: WEAPON_LAYER_Z_INDEX,
+  };
   const boardPlacementChangeHandler = artEditable ? onBoardPlacementChange : undefined;
   const characterPlacementChangeHandler = artEditable ? onCharacterPlacementChange : undefined;
+  const weaponPlacementChangeHandler = artEditable ? onWeaponPlacementChange : undefined;
   const boardGesture = usePlacementGesture({
     editable: artEditable,
     placement: boardPlacement,
@@ -268,6 +281,12 @@ function CardFront({
     placement: characterPlacement,
     normalizePlacement: normalizeCharacterPlacement,
     onPlacementChange: characterPlacementChangeHandler,
+  });
+  const weaponGesture = usePlacementGesture({
+    editable: artEditable,
+    placement: weaponPlacement,
+    normalizePlacement: normalizeWeaponPlacement,
+    onPlacementChange: weaponPlacementChangeHandler,
   });
 
   // Focal-crop background when the rarity has a dual-face PNG frame.
@@ -332,6 +351,25 @@ function CardFront({
                 src={characterImageUrl}
                 alt="character"
                 className="print-art-layer--char-image"
+              />
+            </div>
+          )}
+          {weaponImageUrl && (
+            <div
+              className={`print-art-layer print-art-layer--weapon${weaponPlacementChangeHandler ? " print-art-layer--weapon-editable" : ""}`}
+              style={weaponPlacementStyle}
+              role={weaponPlacementChangeHandler ? "img" : undefined}
+              aria-label={weaponPlacementChangeHandler ? "Editable weapon. Drag to reposition, or pinch and rotate on touch devices." : undefined}
+              onPointerDown={weaponGesture.handlePointerDown}
+              onPointerMove={weaponGesture.handlePointerMove}
+              onPointerUp={weaponGesture.handlePointerUp}
+              onPointerCancel={weaponGesture.handlePointerUp}
+            >
+              <img
+                src={weaponImageUrl}
+                alt="weapon"
+                className="print-art-layer--weapon-image"
+                draggable={false}
               />
             </div>
           )}
@@ -629,6 +667,7 @@ export function SkaterCardFace({
   backgroundImageUrl,
   characterImageUrl,
   frameImageUrl,
+  weaponImageUrl,
   characterBlend,
   fallbackWidth,
   fallbackHeight,
@@ -641,6 +680,7 @@ export function SkaterCardFace({
   onStatChange,
   onBoardPlacementChange,
   onCharacterPlacementChange,
+  onWeaponPlacementChange,
   boardImageLoading,
 }: SkaterCardFaceProps) {
   if (face === "front") {
@@ -650,6 +690,7 @@ export function SkaterCardFace({
         backgroundImageUrl={backgroundImageUrl}
         characterImageUrl={characterImageUrl}
         frameImageUrl={frameImageUrl}
+        weaponImageUrl={weaponImageUrl}
         characterBlend={characterBlend}
         fallbackWidth={fallbackWidth}
         fallbackHeight={fallbackHeight}
@@ -659,6 +700,7 @@ export function SkaterCardFace({
         onNameChange={onNameChange}
         onBoardPlacementChange={onBoardPlacementChange}
         onCharacterPlacementChange={onCharacterPlacementChange}
+        onWeaponPlacementChange={onWeaponPlacementChange}
       />
     );
   }

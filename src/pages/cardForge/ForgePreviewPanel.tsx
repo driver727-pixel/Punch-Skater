@@ -6,7 +6,7 @@ import {
   COLLECTION_REROLL_ACTIONS,
   type CollectionRerollActionId,
 } from "../../lib/collectionRewards";
-import type { BoardPlacement, CardPayload, CharacterPlacement, CompositeLayerOrder } from "../../lib/types";
+import type { BoardPlacement, CardPayload, CharacterPlacement, CompositeLayerOrder, WeaponPlacement } from "../../lib/types";
 import type { LayerState } from "./useForgeLayers";
 import {
   BOARD_PLACEMENT_MAX_SCALE,
@@ -15,6 +15,9 @@ import {
   CHARACTER_PLACEMENT_MAX_SCALE,
   CHARACTER_PLACEMENT_MIN_SCALE,
   CHARACTER_PLACEMENT_SCALE_STEP,
+  WEAPON_PLACEMENT_MAX_SCALE,
+  WEAPON_PLACEMENT_MIN_SCALE,
+  WEAPON_PLACEMENT_SCALE_STEP,
 } from "../../lib/boardPlacement";
 
 const FORGE_RATE_LIMIT_PATTERNS = [
@@ -56,6 +59,7 @@ interface ForgePreviewPanelProps {
   isAnyLayerLoading: boolean;
   isImageGenConfigured: boolean;
   layers: LayerState;
+  layerToggles?: Record<string, boolean>;
   onBoardLayerOrderChange: (value: CompositeLayerOrder) => void;
   onBoardPlacementChange: (placement: BoardPlacement) => void;
   onBoardRotationChange: (value: number) => void;
@@ -65,11 +69,16 @@ interface ForgePreviewPanelProps {
   onCharacterScaleChange: (value: number) => void;
   onDownloadJpg: () => void;
   onForceRegenerateBoard: () => void;
+  onLayerToggle?: (layer: string, enabled: boolean) => void;
   onOpen3D: () => void;
   onOpenPrint: () => void;
   onOpenUpgradeModal: () => void;
   onReroll: (actionId: CollectionRerollActionId) => void;
   onSaveToCollection: () => void;
+  onSaveToAdminAssets?: () => void;
+  onWeaponPlacementChange?: (placement: WeaponPlacement) => void;
+  onWeaponRotationChange?: (value: number) => void;
+  onWeaponScaleChange?: (value: number) => void;
   patchGeneratedCard: (updates: Partial<CardPayload>) => void;
   patchIdentity: (updates: Partial<CardPayload["identity"]>) => void;
   patchStats: (updates: Partial<CardPayload["stats"]>) => void;
@@ -79,6 +88,8 @@ interface ForgePreviewPanelProps {
   rerollingActionId: CollectionRerollActionId | null;
   saveError: string | null;
   saving: boolean;
+  weaponRotation?: number;
+  weaponScale?: number;
 }
 
 export function ForgePreviewPanel({
@@ -97,6 +108,7 @@ export function ForgePreviewPanel({
   isAnyLayerLoading,
   isImageGenConfigured,
   layers,
+  layerToggles,
   onBoardLayerOrderChange,
   onBoardPlacementChange,
   onBoardRotationChange,
@@ -106,11 +118,16 @@ export function ForgePreviewPanel({
   onCharacterScaleChange,
   onDownloadJpg,
   onForceRegenerateBoard,
+  onLayerToggle,
   onOpen3D,
   onOpenPrint,
   onOpenUpgradeModal,
   onReroll,
   onSaveToCollection,
+  onSaveToAdminAssets,
+  onWeaponPlacementChange,
+  onWeaponRotationChange,
+  onWeaponScaleChange,
   patchGeneratedCard,
   patchIdentity,
   patchStats,
@@ -120,6 +137,8 @@ export function ForgePreviewPanel({
   rerollingActionId,
   saveError,
   saving,
+  weaponRotation = 0,
+  weaponScale = 0.7,
 }: ForgePreviewPanelProps) {
   const cardVars = buildCardVars(card, "editor");
   const issueMessages = [...layers.errors, ...(boardError ? [`board: ${boardError}`] : [])];
@@ -185,6 +204,7 @@ export function ForgePreviewPanel({
                   backgroundImageUrl={layers.backgroundUrl}
                   characterImageUrl={layers.characterUrl}
                   frameImageUrl={layers.frameUrl}
+                  weaponImageUrl={layers.weaponUrl}
                   characterBlend={characterBlend}
                   className="print-preview-area--forge"
                   editable
@@ -194,6 +214,7 @@ export function ForgePreviewPanel({
                   onStatChange={handleStatChange}
                   onBoardPlacementChange={onBoardPlacementChange}
                   onCharacterPlacementChange={onCharacterPlacementChange}
+                  onWeaponPlacementChange={onWeaponPlacementChange}
                 />
               </CardContainer>
               <p className="forge-preview-hint">
@@ -316,6 +337,65 @@ export function ForgePreviewPanel({
                   Drag the board or character on the card face to place them before saving. On mobile, use one finger to move and two fingers to pinch or rotate.
                 </p>
               </div>
+              {layers.weaponUrl && (
+                <>
+                  <div className="blend-control">
+                    <label className="blend-control__label">
+                      <span>Weapon Size</span>
+                      <span>{Math.round(weaponScale * 100)}%</span>
+                    </label>
+                    <input
+                      type="range"
+                      className="range-slider"
+                      min={WEAPON_PLACEMENT_MIN_SCALE}
+                      max={WEAPON_PLACEMENT_MAX_SCALE}
+                      step={WEAPON_PLACEMENT_SCALE_STEP}
+                      value={weaponScale}
+                      onChange={(event) => onWeaponScaleChange?.(Number(event.target.value))}
+                      aria-label="Weapon size"
+                    />
+                  </div>
+                  <div className="blend-control">
+                    <label className="blend-control__label">
+                      <span>Weapon Rotation</span>
+                      <span>{Math.round(weaponRotation)}°</span>
+                    </label>
+                    <input
+                      type="range"
+                      className="range-slider"
+                      min={-180}
+                      max={180}
+                      step={1}
+                      value={weaponRotation}
+                      onChange={(event) => onWeaponRotationChange?.(Number(event.target.value))}
+                      aria-label="Weapon rotation"
+                    />
+                    <p className="form-hint">
+                      Drag the weapon on the card face to position it. The weapon layer sits above the skateboard but below the frame.
+                    </p>
+                  </div>
+                </>
+              )}
+              {isAdmin && onLayerToggle && (
+                <div className="blend-control forge-admin-layer-toggles">
+                  <label className="blend-control__label">
+                    <span>🛡 Admin Layer Toggles</span>
+                  </label>
+                  <p className="form-hint">Toggle layers on/off during creation.</p>
+                  <div className="forge-layer-toggle-grid">
+                    {(["background", "character", "frame", "weapon"] as const).map((layer) => (
+                      <label key={layer} className="forge-layer-toggle">
+                        <input
+                          type="checkbox"
+                          checked={layerToggles?.[layer] !== false}
+                          onChange={(event) => onLayerToggle(layer, event.target.checked)}
+                        />
+                        <span className="forge-layer-toggle__label">{layer}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="forge-generated-buttons">
                 <button className="btn-outline btn-3d" onClick={onOpen3D} title="View card in 3D">
                   ◈ 3D
@@ -332,6 +412,16 @@ export function ForgePreviewPanel({
                     aria-label="Force regenerate board art and ignore cache"
                   >
                     {boardImageLoading ? "⏳ Regenerating…" : "🛠 Force regenerate (ignore cache)"}
+                  </button>
+                )}
+                {isAdmin && onSaveToAdminAssets && (
+                  <button
+                    className="btn-outline"
+                    onClick={onSaveToAdminAssets}
+                    disabled={saving}
+                    title="Save to Admin Asset collection only (Boss assets)"
+                  >
+                    {saving ? "💾 Saving…" : "🛡 Save to Admin Assets"}
                   </button>
                 )}
                 {canSaveToCollection ? (

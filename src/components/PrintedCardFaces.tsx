@@ -32,6 +32,7 @@ export function PrintedCardPreviewPair({
   backgroundImageUrl,
   characterImageUrl,
   frameImageUrl,
+  weaponImageUrl,
   characterBlend,
   className,
   editable,
@@ -41,6 +42,7 @@ export function PrintedCardPreviewPair({
   onStatChange,
   onBoardPlacementChange,
   onCharacterPlacementChange,
+  onWeaponPlacementChange,
   boardImageLoading,
 }: PrintedCardPreviewPairProps) {
   const previewClassName = className ? `print-preview-area ${className}` : "print-preview-area";
@@ -58,6 +60,7 @@ export function PrintedCardPreviewPair({
               backgroundImageUrl={backgroundImageUrl}
               characterImageUrl={characterImageUrl}
               frameImageUrl={frameImageUrl}
+              weaponImageUrl={weaponImageUrl}
               characterBlend={characterBlend}
               editable={editable}
               onNameChange={onNameChange}
@@ -65,6 +68,7 @@ export function PrintedCardPreviewPair({
               onAgeChange={onAgeChange}
               onBoardPlacementChange={onBoardPlacementChange}
               onCharacterPlacementChange={onCharacterPlacementChange}
+              onWeaponPlacementChange={onWeaponPlacementChange}
             />
           </div>
         </div>
