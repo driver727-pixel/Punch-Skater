@@ -23,7 +23,6 @@ import {
   getDistrictTransitionLine,
   getStoredActiveDistrict,
   subscribeToDistrictChanges,
-  type DistrictTheme,
 } from "./lib/districtTheme";
 
 /** Applies data-theme and data-time attributes to <html> for CSS theming. */
@@ -111,7 +110,6 @@ const JousturBoard    = lazy(() => import("./pages/joustur/JousturBoard").then(m
 const JousturResult   = lazy(() => import("./pages/joustur/JousturResult").then(m => ({ default: m.JousturResult })));
 const JousturRules    = lazy(() => import("./pages/joustur/JousturRules").then(m => ({ default: m.JousturRules })));
 const MAIN_CONTENT_SELECTOR = ".main";
-const TRANSITION_SEED_TIME_WINDOW = 1_000_000;
 const EYEBROW_SEED_OFFSET = 17;
 
 /** P2-C: Redirects to "/" when the JOUSTUR_SKATUR feature flag is off. */
@@ -201,16 +199,30 @@ function resolveDistrictForRoute(pathname: string, currentDistrict: string): str
   return currentDistrict;
 }
 
-function getRoutePanelKey(pathname: string): string {
-  if (pathname === "/") return "hub";
-  return pathname.split("/").filter(Boolean)[0] ?? "hub";
+/** Pages where lore background panels should not appear (active game sessions). */
+const LORE_BG_EXCLUDED_PATHS = /^\/(race(\/|$)|joustur\/(match|result)(\/|$))/;
+
+function pathLoreSeed(pathname: string): number {
+  return pathname.split("").reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) | 0, 0);
 }
 
-function DistrictTransitionOverlay({ theme, eyebrow, line, nonce }: { theme: DistrictTheme; eyebrow: string; line: string; nonce: number }) {
+function LoreBgPanel() {
+  const { pathname } = useLocation();
+  const [activeDistrict, setActiveDistrict] = useState(getStoredActiveDistrict);
+
+  useEffect(() => subscribeToDistrictChanges(setActiveDistrict), []);
+
+  if (LORE_BG_EXCLUDED_PATHS.test(pathname)) return null;
+
+  const seed = pathLoreSeed(pathname);
+  const theme = getDistrictTheme(activeDistrict);
+  const eyebrow = getDistrictTransitionEyebrow(activeDistrict, seed + EYEBROW_SEED_OFFSET);
+  const line = getDistrictTransitionLine(activeDistrict, seed);
+
   return (
-    <div key={nonce} className="district-transition-overlay" role="status" aria-live="polite">
-      <div className="district-transition-overlay__card">
-        <span className="district-transition-overlay__eyebrow">{eyebrow}</span>
+    <div className="lore-bg-panel" aria-hidden="true">
+      <div className="lore-bg-panel__card">
+        <span className="lore-bg-panel__eyebrow">{eyebrow}</span>
         <strong>{theme.name}</strong>
         <p>{line}</p>
       </div>
@@ -218,21 +230,10 @@ function DistrictTransitionOverlay({ theme, eyebrow, line, nonce }: { theme: Dis
   );
 }
 
-function DistrictThemeController() {
+function DistrictThemeApplier() {
   const { pathname } = useLocation();
   const [activeDistrict, setActiveDistrict] = useState(getStoredActiveDistrict);
-  const [transition, setTransition] = useState<{
-    theme: DistrictTheme;
-    eyebrow: string;
-    line: string;
-    nonce: number;
-  } | null>(null);
   const activeDistrictRef = useRef(activeDistrict);
-  const previousTransitionRef = useRef({
-    district: activeDistrict,
-    panel: getRoutePanelKey(pathname),
-  });
-  const transitionNonceRef = useRef(0);
 
   useEffect(() => {
     activeDistrictRef.current = activeDistrict;
@@ -243,30 +244,10 @@ function DistrictThemeController() {
 
   useEffect(() => {
     const nextDistrict = resolveDistrictForRoute(pathname, activeDistrictRef.current);
-    const nextTheme = getDistrictTheme(nextDistrict);
-    const nextPanel = getRoutePanelKey(pathname);
-    const previousTransition = previousTransitionRef.current;
-    previousTransitionRef.current = { district: nextTheme.slug, panel: nextPanel };
-    if (nextTheme.slug === previousTransition.district && nextPanel === previousTransition.panel) {
-      return undefined;
-    }
     applyDistrictTheme(nextDistrict);
-    transitionNonceRef.current += 1;
-    const transitionNonce = transitionNonceRef.current;
-    const transitionSeed = pathname.length + (Date.now() % TRANSITION_SEED_TIME_WINDOW) + transitionNonce;
-    setTransition({
-      theme: nextTheme,
-      eyebrow: getDistrictTransitionEyebrow(nextDistrict, transitionSeed + EYEBROW_SEED_OFFSET),
-      line: getDistrictTransitionLine(nextDistrict, transitionSeed),
-      nonce: transitionSeed,
-    });
-    const timeout = window.setTimeout(() => setTransition(null), 1450);
-    return () => window.clearTimeout(timeout);
   }, [pathname]);
 
-  return transition ? (
-    <DistrictTransitionOverlay theme={transition.theme} eyebrow={transition.eyebrow} line={transition.line} nonce={transition.nonce} />
-  ) : null;
+  return null;
 }
 
 function AppParallaxBackdrop() {
@@ -470,7 +451,8 @@ function App() {
                     <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                   )}
                   <PlayerRewardBanner />
-                  <DistrictThemeController />
+                  <DistrictThemeApplier />
+                  <LoreBgPanel />
                   <main id="main-content" className="main" tabIndex={-1}>
                     <Suspense fallback={<AppLoadingState />}>
                       <AppContent />
