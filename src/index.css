@@ -71,6 +71,7 @@ body {
   --transition-pop-pink: #ff2f9f;
   --transition-pop-teal: #58fff1;
   --transition-pop-ink: #05060c;
+  /* Angular comic speech-panel silhouettes: outer card and inset tech frame. */
   --transition-pop-card-clip: polygon(4% 9%, 13% 9%, 16% 2%, 42% 7%, 45% 1%, 59% 8%, 88% 3%, 96% 10%, 96% 78%, 86% 82%, 80% 97%, 77% 82%, 12% 86%, 6% 78%, 1% 78%, 4% 47%, 1% 35%);
   --transition-pop-inner-clip: polygon(4% 9%, 30% 9%, 33% 3%, 76% 7%, 79% 3%, 95% 11%, 93% 66%, 82% 70%, 78% 87%, 72% 73%, 9% 78%, 6% 69%, 2% 69%, 4% 40%, 2% 31%);
   position: fixed;
@@ -140,6 +141,7 @@ body {
     linear-gradient(90deg, transparent 0 8%, color-mix(in srgb, var(--transition-pop-pink) 38%, transparent) 8% 8.5%, transparent 8.5% 100%),
     repeating-linear-gradient(90deg, transparent 0 18px, color-mix(in srgb, var(--transition-pop-teal) 50%, transparent) 18px 24px, transparent 24px 28px),
     repeating-linear-gradient(0deg, transparent 0 6px, rgba(255,255,255,0.055) 6px 7px);
+  /* Places the teal hatch marks like a HUD readout along the upper frame. */
   background-size: auto, 220px 18px, auto;
   background-position: 0 0, 58% 20px, 0 0;
   background-repeat: no-repeat, no-repeat, repeat;
@@ -152,6 +154,7 @@ body {
   z-index: -1;
   width: min(32vw, 280px);
   height: min(28vw, 235px);
+  /* Sci-fi city silhouette: dome plus stacked vertical tower blocks. */
   background:
     radial-gradient(ellipse at 52% 20%, color-mix(in srgb, var(--transition-pop-teal) 68%, white 8%) 0 22%, transparent 23%),
     linear-gradient(to top, color-mix(in srgb, var(--transition-pop-teal) 64%, transparent) 0 8%, transparent 8% 100%),
@@ -12817,6 +12820,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   --transition-preview-border: #ff2f9f;
   --transition-preview-accent: #58fff1;
   --transition-preview-text: var(--text);
+  /* Compact gallery variant of the comic speech-panel silhouette. */
   --transition-preview-card-clip: polygon(3% 7%, 30% 7%, 34% 1%, 72% 5%, 76% 1%, 97% 9%, 96% 78%, 84% 82%, 78% 98%, 75% 83%, 8% 87%, 2% 78%, 4% 40%, 1% 29%);
   position: relative;
   overflow: hidden;
