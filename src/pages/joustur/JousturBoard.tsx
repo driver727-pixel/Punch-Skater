@@ -1133,9 +1133,8 @@ export function JousturBoard() {
       {clashCinematic && <ClashCinematicOverlay cinematic={clashCinematic} onDismiss={() => setClashCinematic(null)} />}
       <button
         type="button"
-        className="btn-outline btn-sm"
+        className="btn-outline btn-sm page-back-btn"
         onClick={() => navigate("/joustur")}
-        style={{ marginBottom: "1rem" }}
       >
         ← Back
       </button>

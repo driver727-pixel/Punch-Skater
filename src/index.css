@@ -1988,6 +1988,7 @@ body::after {
   animation: led-marquee 6s linear infinite;
 }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+.page-back-btn { margin-bottom: 1rem; }
 
 /* ===== Buttons ===== */
 button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }

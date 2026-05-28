@@ -175,9 +175,8 @@ export function JousturHome() {
     <div className="page joustur-home">
       <button
         type="button"
-        className="btn-outline btn-sm"
+        className="btn-outline btn-sm page-back-btn"
         onClick={() => navigate("/arena")}
-        style={{ marginBottom: "1rem" }}
       >
         ← Back to Arena
       </button>
