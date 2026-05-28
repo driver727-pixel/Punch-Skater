@@ -31,6 +31,7 @@ import {
 } from "../services/missions";
 import { MissionsMap } from "../components/MissionsMap";
 import { MissionsPanel } from "../components/MissionsPanel";
+import { announceActiveDistrict } from "../lib/districtTheme";
 
 const PANEL_WIDTH = 320;
 const SEGMENT_DURATION_MS = 700;
@@ -812,6 +813,12 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     () => world?.contracts.find((c) => c.id === selectedContractId),
     [world, selectedContractId],
   );
+
+  useEffect(() => {
+    if (selectedContract?.district) {
+      announceActiveDistrict(selectedContract.district);
+    }
+  }, [selectedContract?.district]);
 
   const runnerOptions = useMemo<MissionRunnerOption[]>(() => {
     const deckOptions = decks.map((deck) => ({

@@ -31,6 +31,7 @@ import { sfxBattleClash, sfxBattleWin, sfxBattleLose, sfxClick } from "../lib/sf
 import type { Race } from "../lib/types";
 import { RaceCard3D } from "../components/RaceCard3D";
 import { getRaceDistrictDisplayName } from "../lib/raceDistricts";
+import { announceActiveDistrict } from "../lib/districtTheme";
 
 const CANVAS_WIDTH = 720;
 const CANVAS_HEIGHT = 360;
@@ -447,6 +448,7 @@ export function RaceTrack() {
   // Draw the static track surface once when the race loads.
   useEffect(() => {
     if (!race || !canvasRef.current) return;
+    announceActiveDistrict(race.district);
     const ctx = canvasRef.current.getContext("2d");
     if (!ctx) return;
     drawScene({ ctx, district: race.district ?? "" });

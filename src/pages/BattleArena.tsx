@@ -21,6 +21,7 @@ import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
 import { isEnabled } from "../lib/featureFlags";
+import { announceActiveDistrict } from "../lib/districtTheme";
 
 type TabKey = "challengers" | "hub" | "solo";
 
@@ -143,6 +144,10 @@ function ChallengeModal({
   const [district, setDistrict] = useState(DEFAULT_RACE_DISTRICT);
   const defenderCard = state.opponent.cards.find((c) => c.id === defenderCardId);
   const cap = Math.max(0, Math.min(myOzzies, 10_000));
+
+  useEffect(() => {
+    announceActiveDistrict(district);
+  }, [district]);
 
   if (!myChallengerCard) {
     return (
@@ -324,6 +329,10 @@ export function BattleArena() {
     }
   }, [soloWager, soloWagerCap]);
 
+  useEffect(() => {
+    announceActiveDistrict(soloDistrict);
+  }, [soloDistrict]);
+
   // Sync tab → URL.
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
@@ -364,6 +373,7 @@ export function BattleArena() {
         ozzyWager: wager,
         district,
       });
+      announceActiveDistrict(district);
       setModal(null);
       setActionMessage("Challenge sent!");
       setTab("hub");
@@ -387,6 +397,7 @@ export function BattleArena() {
         ozzyWager: Math.min(soloWager, soloWagerCap),
         district: soloDistrict,
       });
+      announceActiveDistrict(soloDistrict);
       navigate(`/race/${race.id}`);
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Failed to start solo race.");
@@ -402,6 +413,7 @@ export function BattleArena() {
       const race = await startFreeSoloRace({
         district: soloDistrict,
       });
+      announceActiveDistrict(soloDistrict);
       navigate(`/race/${race.id}`);
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Failed to start the free solo trial.");

@@ -16,6 +16,14 @@ import {
 } from "./context/TerminalRouterContext";
 import { firebaseUnavailableMessage, isFirebaseConfigured } from "./lib/firebase";
 import { featureFlags, isEnabled } from "./lib/featureFlags";
+import {
+  applyDistrictTheme,
+  getDistrictTheme,
+  getDistrictTransitionLine,
+  getStoredActiveDistrict,
+  subscribeToDistrictChanges,
+  type DistrictTheme,
+} from "./lib/districtTheme";
 
 /** Applies data-theme and data-time attributes to <html> for CSS theming. */
 function ThemeApplier() {
@@ -181,6 +189,59 @@ function ScrollToTopOnRouteChange() {
   }, [pathname]);
 
   return null;
+}
+
+function getRouteDistrictHint(pathname: string, currentDistrict: string): string {
+  if (pathname === "/" || pathname === "/forge") return "airaway";
+  if (pathname.startsWith("/race/") || pathname.startsWith("/arena") || pathname.startsWith("/missions")) {
+    return currentDistrict;
+  }
+  return currentDistrict;
+}
+
+function DistrictTransitionOverlay({ theme, line, nonce }: { theme: DistrictTheme; line: string; nonce: number }) {
+  return (
+    <div key={nonce} className="district-transition-overlay" role="status" aria-live="polite">
+      <div className="district-transition-overlay__card">
+        <span className="district-transition-overlay__eyebrow">District bleed engaged</span>
+        <strong>{theme.name}</strong>
+        <p>{line}</p>
+      </div>
+    </div>
+  );
+}
+
+function DistrictThemeController() {
+  const { pathname } = useLocation();
+  const [activeDistrict, setActiveDistrict] = useState(getStoredActiveDistrict);
+  const [transition, setTransition] = useState<{
+    theme: DistrictTheme;
+    line: string;
+    nonce: number;
+  } | null>(null);
+
+  useEffect(() => {
+    applyDistrictTheme(activeDistrict);
+  }, [activeDistrict]);
+
+  useEffect(() => subscribeToDistrictChanges(setActiveDistrict), []);
+
+  useEffect(() => {
+    const nextDistrict = getRouteDistrictHint(pathname, activeDistrict);
+    const nextTheme = getDistrictTheme(nextDistrict);
+    applyDistrictTheme(nextDistrict);
+    setTransition({
+      theme: nextTheme,
+      line: getDistrictTransitionLine(nextDistrict, pathname.length + Date.now()),
+      nonce: Date.now(),
+    });
+    const timeout = window.setTimeout(() => setTransition(null), 1450);
+    return () => window.clearTimeout(timeout);
+  }, [pathname, activeDistrict]);
+
+  return transition ? (
+    <DistrictTransitionOverlay theme={transition.theme} line={transition.line} nonce={transition.nonce} />
+  ) : null;
 }
 
 function AppParallaxBackdrop() {
@@ -384,6 +445,7 @@ function App() {
                     <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                   )}
                   <PlayerRewardBanner />
+                  <DistrictThemeController />
                   <main id="main-content" className="main" tabIndex={-1}>
                     <Suspense fallback={<AppLoadingState />}>
                       <AppContent />
