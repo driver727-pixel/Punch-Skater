@@ -396,7 +396,6 @@ export function BattleArena() {
         ozzyWager: Math.min(soloWager, soloWagerCap),
         district: soloDistrict,
       });
-      announceActiveDistrict(soloDistrict);
       navigate(`/race/${race.id}`);
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Failed to start solo race.");
@@ -412,7 +411,6 @@ export function BattleArena() {
       const race = await startFreeSoloRace({
         district: soloDistrict,
       });
-      announceActiveDistrict(soloDistrict);
       navigate(`/race/${race.id}`);
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Failed to start the free solo trial.");

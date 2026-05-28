@@ -135,6 +135,8 @@ const SLUG_BY_NAME = new Map<string, RaceDistrictSlug>(
     [option.displayName.toLowerCase().replace(/\s+/g, "-"), option.slug],
   ]),
 );
+const DISTRICT_LORE_BY_NAME = new Map(DISTRICT_LORE.map((entry) => [entry.name, entry] as const));
+const DISTRICT_LANGUAGE_BY_SLUG = new Map(CRAFTLINGUA_DISTRICT_LANGUAGES.map((entry) => [entry.slug, entry] as const));
 
 export function normalizeDistrictSlug(district?: string | null): RaceDistrictSlug {
   if (!district) return DEFAULT_RACE_DISTRICT;
@@ -217,8 +219,8 @@ const AUSTRALIAN_SLANG: Partial<Record<RaceDistrictSlug, string[]>> = {
 
 export function getDistrictTransitionLine(district?: string | null, seed = 0): string {
   const theme = getDistrictTheme(district);
-  const lore = DISTRICT_LORE.find((entry) => entry.name === theme.name);
-  const language = CRAFTLINGUA_DISTRICT_LANGUAGES.find((entry) => entry.slug === theme.slug);
+  const lore = DISTRICT_LORE_BY_NAME.get(theme.name);
+  const language = DISTRICT_LANGUAGE_BY_SLUG.get(theme.slug);
   const candidates = [
     lore?.tagline,
     lore?.atmosphere,
@@ -229,5 +231,9 @@ export function getDistrictTransitionLine(district?: string | null, seed = 0): s
   ]
     .filter((line): line is string => Boolean(line?.trim()))
     .map((line) => line.replace(/^"|"$/g, ""));
+  if (candidates.length === 0) {
+    console.warn(`[DistrictTheme] Missing transition copy for district: ${theme.slug}`);
+    return "Booting the district feed…";
+  }
   return candidates[Math.abs(seed) % candidates.length] ?? "Booting the district feed…";
 }

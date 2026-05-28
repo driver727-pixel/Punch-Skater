@@ -191,7 +191,9 @@ function ScrollToTopOnRouteChange() {
   return null;
 }
 
-function getRouteDistrictHint(pathname: string, currentDistrict: string): string {
+function resolveDistrictForRoute(pathname: string, currentDistrict: string): string {
+  // Hub and Forge are Airaway terminal surfaces; other routes keep the most
+  // recent district until their page-level data announces a more specific one.
   if (pathname === "/" || pathname === "/forge") return "airaway";
   return currentDistrict;
 }
@@ -235,7 +237,7 @@ function DistrictThemeController() {
   useEffect(() => subscribeToDistrictChanges(setActiveDistrict), []);
 
   useEffect(() => {
-    const nextDistrict = getRouteDistrictHint(pathname, activeDistrictRef.current);
+    const nextDistrict = resolveDistrictForRoute(pathname, activeDistrictRef.current);
     const nextTheme = getDistrictTheme(nextDistrict);
     const nextPanel = getRoutePanelKey(pathname);
     const previousTransition = previousTransitionRef.current;
