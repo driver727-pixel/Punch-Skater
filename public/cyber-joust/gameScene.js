@@ -62,7 +62,7 @@ export class GameScene extends Phaser.Scene {
         const params = new URLSearchParams(window.location.search);
         this.roomId = params.get('room') || 'cyber-joust-lobby';
         if (!params.get('room')) {
-            window.history.replaceState({}, null, `?room=${this.roomId}`);
+            window.history.replaceState({}, '', `?room=${this.roomId}`);
         }
 
         this.setupSoundButton();

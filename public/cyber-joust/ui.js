@@ -242,7 +242,7 @@ export class MenuScene extends Phaser.Scene {
             const score = row.score || 0;
             const rank = idx + 1;
             const rankColor = rank === 1 ? '#ffea00' : rank === 2 ? '#00f0ff' : '#ffffff';
-            const txt = this.add.text(0, idx * 24, `${rank}. ${name.padEnd(12, '.').substring(0, 12)} ${score}`, {
+            const txt = this.add.text(0, idx * 24, `${rank}. ${name.substring(0, 12).padEnd(12, '.')} ${score}`, {
                 fontFamily: '"Press Start 2P"', fontSize: '10px', color: rankColor
             }).setOrigin(0.5);
             this.leaderboardContainer.add(txt);
@@ -317,7 +317,10 @@ export class MenuScene extends Phaser.Scene {
     }
 
     copyRoomLink() {
-        const lobbyId = 'room-' + Math.random().toString(36).slice(2, 7);
+        const uniqueSegment = typeof crypto?.randomUUID === 'function'
+            ? crypto.randomUUID().slice(0, 8)
+            : Math.random().toString(36).slice(2, 10);
+        const lobbyId = `room-${uniqueSegment}`;
         const shareUrl = `${window.location.origin}${window.location.pathname}?room=${lobbyId}`;
 
         navigator.clipboard.writeText(shareUrl).then(() => {
