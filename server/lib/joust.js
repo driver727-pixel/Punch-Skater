@@ -105,6 +105,166 @@ function toMultiplier(value) {
   return Math.round(value * 100) / 100;
 }
 
+const BATTERY_STAT_BONUSES = Object.freeze({
+  SlimStealth: { stealth: 2 },
+  DoubleStack: { grit: 1, range: 1, rangeNm: 1 },
+  TopPeli: { range: 2, rangeNm: 2, stealth: 1 },
+});
+
+export const JOUST_BOSS_RULES = Object.freeze({
+  'batteryville-jax-voltage': {
+    id: 'jax-overload-lane',
+    bossName: 'Jax Voltage',
+    label: 'Overload Lane',
+    summary: 'Boost tactics into Jax lose 2 attack as breaker-yard surges short the lane.',
+  },
+  'airaway-mina-chrome': {
+    id: 'mina-compliance-lock',
+    bossName: 'Mina Chrome',
+    label: 'Compliance Lock',
+    summary: 'Mina gains +2 defense while guarding against Charge or Trick Strike lines.',
+  },
+  'nightshade-rook-wraith': {
+    id: 'rook-ghost-route',
+    bossName: 'Rook Wraith',
+    label: 'Ghost Route',
+    summary: "Guard and Counter reads into Rook's Feint lose 1 attack and 2 speed.",
+  },
+  'grid-vex-static': {
+    id: 'vex-signal-jam',
+    bossName: 'Vex Static',
+    label: 'Signal Jam',
+    summary: 'Counter and Boost tactics into Vex lose 2 attack and cannot claim speed tie-breaks.',
+  },
+  'glass-city-nova-saint': {
+    id: 'nova-crowd-drag',
+    bossName: 'Nova Saint',
+    label: 'Crowd Drag',
+    summary: 'Nova passively reduces Urethane wheel speed by 15%.',
+  },
+  'forest-moss-kade': {
+    id: 'moss-off-grid-null',
+    bossName: 'Moss Kade',
+    label: 'Off-Grid Null',
+    summary: 'The Forest final boss disables player battery stat bonuses before tactics resolve.',
+  },
+});
+
+const BOSS_NAME_TO_KEY = Object.freeze(Object.fromEntries(
+  Object.entries(JOUST_BOSS_RULES).map(([key, rule]) => [rule.bossName.toLowerCase(), key]),
+));
+
+function getBossRuleKey(rival) {
+  const id = typeof rival?.id === 'string' ? rival.id : '';
+  if (JOUST_BOSS_RULES[id]) return id;
+  const name = typeof rival?.name === 'string' ? rival.name.toLowerCase() : '';
+  return BOSS_NAME_TO_KEY[name] ?? null;
+}
+
+export function getJoustBossRule(rival) {
+  const key = getBossRuleKey(rival);
+  return key ? JOUST_BOSS_RULES[key] : null;
+}
+
+export function getJoustBossModifiers(rival) {
+  const rule = getJoustBossRule(rival);
+  return rule ? [{ id: rule.id, label: rule.label, summary: rule.summary }] : [];
+}
+
+function getBoardConfigValue(card, key) {
+  return card?.board?.config?.[key] ?? card?.board?.components?.[key] ?? card?.boardComponents?.[key] ?? null;
+}
+
+function getCardWheels(card) {
+  return getBoardConfigValue(card, 'wheels');
+}
+
+function getCardBattery(card) {
+  return getBoardConfigValue(card, 'battery');
+}
+
+function subtractStats(stats, deltas) {
+  const next = { ...stats };
+  for (const [stat, amount] of Object.entries(deltas ?? {})) {
+    next[stat] = clampJoustStat((next[stat] ?? 5) - amount, 5);
+  }
+  if ('range' in deltas && !('rangeNm' in deltas)) next.rangeNm = next.range;
+  return next;
+}
+
+function cloneCardWithStats(card, stats) {
+  return {
+    ...card,
+    stats: { ...stats },
+    joust: {
+      ...card.joust,
+      gear: { ...card.joust.gear },
+      traits: [...card.joust.traits],
+    },
+    boardComponents: card.boardComponents ? { ...card.boardComponents } : undefined,
+  };
+}
+
+function applyBossStatOverrides(player, rival, modifiers) {
+  const key = getBossRuleKey(rival);
+  if (key !== 'forest-moss-kade') return player;
+  const battery = getCardBattery(player);
+  const batteryBonuses = BATTERY_STAT_BONUSES[battery];
+  if (!batteryBonuses) return player;
+  modifiers.push({ source: 'Moss Kade — Off-Grid Null', amount: -Object.values(batteryBonuses).reduce((sum, value) => sum + (value ?? 0), 0), target: 'rule' });
+  return cloneCardWithStats(player, subtractStats(player.stats, batteryBonuses));
+}
+
+function hasUrethaneWheels(card) {
+  return getCardWheels(card) === 'Urethane';
+}
+
+function hasSpeedTieBreakSuppression(modifiers) {
+  return modifiers.some((modifier) => modifier.target === 'speed' && modifier.source === 'Vex Static — Signal Jam tie-break');
+}
+
+function applyBossStrikeOverrides({ player, rival, playerTactic, rivalTactic, playerModifiers, rivalModifiers }) {
+  const key = getBossRuleKey(rival);
+  const overrides = { attackDelta: 0, defenseDelta: 0, playerSpeedMultiplier: 1 };
+  switch (key) {
+    case 'batteryville-jax-voltage':
+      if (playerTactic === 'boost') {
+        overrides.attackDelta -= 2;
+        playerModifiers.push({ source: 'Jax Voltage — Overload Lane', amount: -2, target: 'attack' });
+      }
+      break;
+    case 'airaway-mina-chrome':
+      if (rivalTactic === 'guard' && (playerTactic === 'charge' || playerTactic === 'trickStrike')) {
+        overrides.defenseDelta += 2;
+        rivalModifiers.push({ source: 'Mina Chrome — Compliance Lock', amount: 2, target: 'defense' });
+      }
+      break;
+    case 'nightshade-rook-wraith':
+      if (rivalTactic === 'feint' && (playerTactic === 'guard' || playerTactic === 'counter')) {
+        overrides.attackDelta -= 1;
+        playerModifiers.push({ source: 'Rook Wraith — Ghost Route', amount: -1, target: 'attack' });
+        playerModifiers.push({ source: 'Rook Wraith — Ghost Route', amount: -2, target: 'speed' });
+      }
+      break;
+    case 'grid-vex-static':
+      if (playerTactic === 'counter' || playerTactic === 'boost') {
+        overrides.attackDelta -= 2;
+        playerModifiers.push({ source: 'Vex Static — Signal Jam', amount: -2, target: 'attack' });
+        playerModifiers.push({ source: 'Vex Static — Signal Jam tie-break', amount: -1, target: 'speed' });
+      }
+      break;
+    case 'glass-city-nova-saint':
+      if (hasUrethaneWheels(player)) {
+        overrides.playerSpeedMultiplier = 0.85;
+        playerModifiers.push({ source: 'Nova Saint — Crowd Drag', amount: -15, target: 'speed' });
+      }
+      break;
+    default:
+      break;
+  }
+  return overrides;
+}
+
 function hasCardPayloadShape(card) {
   return Boolean(card && typeof card === 'object' && card.prompts && card.board && card.stats);
 }
@@ -151,6 +311,16 @@ export function createJoustCardSnapshot(card) {
     district: hasCardPayloadShape(card) ? card.prompts?.district : card?.district,
     stats,
     joust,
+    ...(card?.board?.components || card?.board?.config
+      ? {
+        boardComponents: {
+          ...(card.board.config ?? {}),
+          ...(card.board.components ?? {}),
+        },
+      }
+      : card?.boardComponents
+        ? { boardComponents: { ...card.boardComponents } }
+        : {}),
   };
 }
 
@@ -302,21 +472,33 @@ function buildGuard(card, tactic, modifiers) {
 function predictStrike(player, rival, playerTactic, rivalTactic, randomRoll) {
   const playerModifiers = [];
   const rivalModifiers = [];
-  const attack = buildPressure(player, playerTactic, playerModifiers);
+  const playerForRules = applyBossStatOverrides(player, rival, playerModifiers);
+  const attack = buildPressure(playerForRules, playerTactic, playerModifiers);
   const defense = buildGuard(rival, rivalTactic, rivalModifiers);
+  const boss = applyBossStrikeOverrides({
+    player: playerForRules,
+    rival,
+    playerTactic,
+    rivalTactic,
+    playerModifiers,
+    rivalModifiers,
+  });
   const advantage = getTacticAdvantage(playerTactic, rivalTactic);
-  const playerSpeed = player.stats.speed + attack.speedDelta;
+  const playerSpeed = (playerForRules.stats.speed + attack.speedDelta) * boss.playerSpeedMultiplier;
   const rivalSpeed = rival.stats.speed + defense.speedDelta;
-  const speedTieBreak = playerSpeed > rivalSpeed ? 1 : 0;
-  const strike = attack.attack - defense.defense + advantage + speedTieBreak + randomRoll;
+  const speedTieBreak = playerSpeed > rivalSpeed && !hasSpeedTieBreakSuppression(playerModifiers) ? 1 : 0;
+  const finalAttack = attack.attack + boss.attackDelta;
+  const finalDefense = defense.defense + boss.defenseDelta;
+  const strike = finalAttack - finalDefense + advantage + speedTieBreak + randomRoll;
   return {
-    attack: attack.attack,
-    defense: defense.defense,
+    attack: finalAttack,
+    defense: finalDefense,
     advantage,
     speedTieBreak,
     strike,
     playerModifiers,
     rivalModifiers,
+    player: playerForRules,
   };
 }
 
@@ -389,7 +571,7 @@ export function resolveJoust(
   return {
     seed,
     difficulty,
-    player,
+    player: breakdown.player,
     rival,
     playerTactic: resolvedPlayerTactic,
     rivalTactic: resolvedRivalTactic,

@@ -384,6 +384,7 @@ export interface RaceCardSnapshot {
   archetype: Archetype;
   rarity: Rarity;
   stats: ForgedCardStats;
+  boardComponents?: Partial<ForgedBoardComponents>;
   /** Single-image preview used by the race animation (character art preferred). */
   imageUrl?: string;
   /** Individual composite art layers — used by arena card thumbnails. */
@@ -502,12 +503,19 @@ export interface JoustCardSnapshot {
   district?: District;
   stats: ForgedCardStats;
   joust: JoustCardProfile;
+  boardComponents?: Partial<ForgedBoardComponents>;
 }
 
 export interface JoustModifierBreakdown {
   source: string;
   amount: number;
-  target: "attack" | "defense" | "speed";
+  target: "attack" | "defense" | "speed" | "rule";
+}
+
+export interface BossModifierSummary {
+  id: string;
+  label: string;
+  summary: string;
 }
 
 export interface JoustTacticProfile {

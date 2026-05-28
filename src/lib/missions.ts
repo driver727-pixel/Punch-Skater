@@ -1,5 +1,5 @@
 import { isDistrictAccessibleWithBoardType, type DistrictWeatherSnapshot } from "./districtWeather";
-import { getAvailableJoustTactics, resolveJoust, selectDefaultJoustRider } from "./joust";
+import { getAvailableJoustTactics, getJoustBossModifiers, resolveJoust, selectDefaultJoustRider } from "./joust";
 import {
   getDistrictRival,
   getDistrictRivalMissionHook,
@@ -163,6 +163,7 @@ function buildMissionJoustOption(mission: MissionBoardEntry): MissionEncounterOp
     minimumCounterPower: 0,
     successSummary: `${config.label} cracked open a bonus lane for the crew.`,
     failureSummary: `${config.label} came up short, so the crew settled for the base contract only.`,
+    bossModifiers: getJoustBossModifiers(config.rival),
   };
 }
 
@@ -229,6 +230,7 @@ function resolveMissionJoust(
     outcome: resolution.outcome,
     strike: resolution.strike,
     narration: resolution.narration,
+    bossModifiers: getJoustBossModifiers(config.rival),
     rewardXpBonus: rewards.rewardXpDelta,
     rewardOzziesBonus: rewards.rewardOzziesDelta,
     ...(progressionAward

@@ -386,6 +386,9 @@ function getMissionResultLog(result: MissionRunResponse): MissionLogEntry[] {
         ? [
           { text: `${joustResult.playerName} called the district joust and ${joustResult.outcome === "win" ? "won" : joustResult.outcome === "draw" ? "drew" : "lost"} against ${joustResult.rivalName}.`, kind: "default" as const },
           { text: `${formatJoustTacticLabel(joustResult.playerTactic)} into ${formatJoustTacticLabel(joustResult.rivalTactic)} — ${joustResult.narration}`, kind: "default" as const },
+          ...(joustResult.bossModifiers?.length
+            ? [{ text: `Boss override — ${joustResult.bossModifiers.map((modifier) => `${modifier.label}: ${modifier.summary}`).join(" · ")}`, kind: "default" as const }]
+            : []),
         ]
         : []),
       ...(mission.lastRunCardOutcomes ?? []).map((outcome) => ({ text: outcome.summary, kind: "default" as const })),
@@ -413,6 +416,12 @@ function getCounterOptionRequirementText(option: MissionEncounterOption): string
     return `Needs ${option.requiredTags.join(" · ")}.`;
   }
   return option.description;
+}
+
+
+function getBossModifierText(option: MissionEncounterOption): string | null {
+  if (!option.bossModifiers?.length) return null;
+  return option.bossModifiers.map((modifier) => `${modifier.label}: ${modifier.summary}`).join(" · ");
 }
 
 function getJoustOutcomeLabel(result: MissionJoustResult): string {
@@ -1418,6 +1427,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                               <p className="mission-fork__prompt">
                                 {getCounterOptionRequirementText(selectedJoustOption)}
                               </p>
+                              {getBossModifierText(selectedJoustOption) && (
+                                <p className="mission-fork__prompt">Boss override — {getBossModifierText(selectedJoustOption)}</p>
+                              )}
                             </div>
                             <div className="mission-intel-tags" role="group" aria-label="Joust tactic selection">
                               {availableJoustTactics.map((tactic) => (
@@ -1482,6 +1494,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                                     ) : null}
                                   </span>
                                   <span className="comms-console__response-desc">{getCounterOptionRequirementText(option)}</span>
+                                  {getBossModifierText(option) && (
+                                    <span className="comms-console__response-desc">Boss override — {getBossModifierText(option)}</span>
+                                  )}
                                 </span>
                               </button>
                             );
@@ -1540,6 +1555,9 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
                                 <span className="mission-fork__option-meta">{getEncounterOptionMetaText(option, false)}</span>
                                 <span className="mission-fork__option-desc">{option.description}</span>
                                 <span className="mission-fork__option-desc">{getCounterOptionRequirementText(option)}</span>
+                                {getBossModifierText(option) && (
+                                  <span className="mission-fork__option-desc">Boss override — {getBossModifierText(option)}</span>
+                                )}
                                 {(option.rewardXpDelta || option.rewardOzziesDelta) && (
                                   <span className="mission-fork__option-desc">
                                     {option.rewardXpDelta ? `${formatForkRewardDelta(option.rewardXpDelta)} XP` : null}

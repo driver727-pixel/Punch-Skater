@@ -326,6 +326,70 @@ export const DISTRICT_RIVALS = [
       codexEntryIds: ['codex-rival-nova-saint'],
     },
   },
+  {
+    id: 'forest-moss-kade',
+    name: 'Moss Kade',
+    district: 'The Forest',
+    faction: 'The Wooders',
+    archetype: 'The Team',
+    tagline: 'Off-grid Wooder final boss who turns tech loadouts into dead weight.',
+    personality:
+      'Moss Kade keeps the Forest routes alive without Cascade, sponsors, or battery worship. They treat every glowing component as a liability and make high-tech riders prove they can still carve when the grid goes quiet.',
+    signatureTactic: 'guard',
+    signatureTrait: 'Off-Grid Null',
+    difficulty: 'boss',
+    signatureCard: {
+      id: 'rival-card-moss-kade',
+      name: 'Moss Kade',
+      archetype: 'The Team',
+      crew: 'The Wooders',
+      district: 'The Forest',
+      stats: { speed: 6, range: 8, rangeNm: 8, stealth: 7, grit: 9 },
+      joust: {
+        lance: 7,
+        shield: 9,
+        hype: 6,
+        gear: {
+          boardType: 'Mountain',
+          lanceType: 'kinetic',
+          shieldType: 'riot',
+          armorTag: 'living bark guard',
+        },
+        traits: ['Riot Shield', 'Heavy Lance'],
+      },
+    },
+    cardReward: {
+      id: 'card-reward-rootbreaker-null',
+      name: 'Rootbreaker Null',
+      rarity: 'Legendary',
+      archetype: 'The Team',
+      tagline: 'A bark-wrapped disconnect charm that reminds smart boards who owns the trail.',
+      signatureTrait: 'Off-Grid Null',
+    },
+    codexUnlock: {
+      id: 'codex-rival-moss-kade',
+      title: 'Moss Kade: Off-Grid Last Word',
+      summary:
+        'First-defeat dossier on Moss Kade, The Forest Wooder final boss who disables battery advantages and forces high-tech riders to win on balance, grit, and route sense.',
+    },
+    dialogue: {
+      intro: 'Moss Kade thumbs the kill-switch charm. "No grid past this root. Show me the rider, not the battery."',
+      win: 'Moss nods toward the trees. "You can hear the trail. Keep that."',
+      loss: 'Moss lifts the dead battery lead. "Told ya. Tech talks loud until the forest answers."',
+      draw: 'Moss smiles at the mudline. "Even roots. Even ride."',
+    },
+    missionHook: {
+      missionDefinitionIds: ['forest-bridge-menders', 'forest-rootline-cache'],
+      label: 'Moss Kade rootline joust',
+      intro: 'Moss Kade shuts down the signal posts and points to the wet timber lane. "No grid. Ride clean."',
+      summary: 'Beat Moss Kade in the rootline joust to prove the crew can survive The Forest without battery crutches.',
+      difficulty: 'hard',
+    },
+    progressionHook: {
+      districtReputationDelta: 60,
+      codexEntryIds: ['codex-rival-moss-kade'],
+    },
+  },
 ];
 
 export function getDistrictRival(id) {

@@ -67,6 +67,42 @@ const EVENTS = {
 };
 
 const STAT_KEYS = ["speed", "range", "stealth", "grit"];
+const BATTERY_STAT_BONUSES = Object.freeze({
+  SlimStealth: { stealth: 2 },
+  DoubleStack: { grit: 1, range: 1, rangeNm: 1 },
+  TopPeli: { range: 2, rangeNm: 2, stealth: 1 },
+});
+
+function getBossName(card) {
+  return String(card?.name ?? '').toLowerCase();
+}
+
+function getBoardConfigValue(card, key) {
+  return card?.board?.config?.[key] ?? card?.board?.components?.[key] ?? card?.boardComponents?.[key] ?? null;
+}
+
+function getRaceBossContext(challenger, defender, cStats) {
+  const bossName = getBossName(defender);
+  const modifiers = [];
+  let challengerPaceMultiplier = 1;
+  let challengerStats = { ...cStats };
+  if (bossName === 'nova saint' && getBoardConfigValue(challenger, 'wheels') === 'Urethane') {
+    challengerPaceMultiplier *= 0.85;
+    modifiers.push({ id: 'nova-crowd-drag', label: 'Crowd Drag', summary: 'Nova Saint reduces Urethane wheel speed by 15%.' });
+  }
+  if (bossName === 'moss kade') {
+    const battery = getBoardConfigValue(challenger, 'battery');
+    const bonuses = BATTERY_STAT_BONUSES[battery];
+    if (bonuses) {
+      challengerStats = { ...challengerStats };
+      for (const [stat, amount] of Object.entries(bonuses)) {
+        if (stat in challengerStats) challengerStats[stat] = clampStat(challengerStats[stat] - amount);
+      }
+      modifiers.push({ id: 'moss-off-grid-null', label: 'Off-Grid Null', summary: 'Moss Kade disables player battery stat bonuses before the sprint resolves.' });
+    }
+  }
+  return { challengerStats, challengerPaceMultiplier, modifiers };
+}
 
 // ── Seeded RNG (mulberry32 over a string seed) ──────────────────────────────
 
@@ -172,15 +208,17 @@ export function simulateRace(challenger, defender, seed) {
     stealth: clampStat(defender.stats?.stealth),
     grit: clampStat(defender.stats?.grit),
   };
+  const bossContext = getRaceBossContext(challenger, defender, cStats);
+  const effectiveCStats = bossContext.challengerStats;
 
-  const cBase = basePace(cStats);
+  const cBase = basePace(effectiveCStats) * bossContext.challengerPaceMultiplier;
   const dBase = basePace(dStats);
 
   let cProgress = 0;
   let dProgress = 0;
   let cBuffs = [];
   let dBuffs = [];
-  let cStamina = staminaPool(cStats);
+  let cStamina = staminaPool(effectiveCStats);
   let dStamina = staminaPool(dStats);
 
   let cFinish = null;
@@ -197,7 +235,7 @@ export function simulateRace(challenger, defender, seed) {
     let cEventTag;
     let dEventTag;
     if (rng() < EVENT_BASE_PROB) {
-      const ev = pickEvent(rng, "challenger", cStats, cStamina, dProgress - cProgress);
+      const ev = pickEvent(rng, "challenger", effectiveCStats, cStamina, dProgress - cProgress);
       if (ev) {
         cBuffs.push(ev);
         cEventTag = ev.tag;
@@ -214,7 +252,7 @@ export function simulateRace(challenger, defender, seed) {
     }
 
     // Recover stamina between bursts.
-    cStamina = Math.min(staminaPool(cStats), cStamina + REST_RATE);
+    cStamina = Math.min(staminaPool(effectiveCStats), cStamina + REST_RATE);
     dStamina = Math.min(staminaPool(dStats), dStamina + REST_RATE);
 
     const cMul = applyMultipliers(cBuffs);
@@ -285,7 +323,7 @@ export function simulateRace(challenger, defender, seed) {
     }
   }
 
-  return { timeline, challengerFinishTick: cFinish, defenderFinishTick: dFinish };
+  return { timeline, challengerFinishTick: cFinish, defenderFinishTick: dFinish, modifiers: bossContext.modifiers };
 }
 
 // ── Result helpers ──────────────────────────────────────────────────────────
@@ -411,6 +449,16 @@ export function createRaceCardSnapshot(card) {
       stealth: clampStatWithDefault(stats.stealth),
       grit: clampStatWithDefault(stats.grit),
     },
+    ...(card.board?.components || card.board?.config
+      ? {
+        boardComponents: {
+          ...(card.board.config ?? {}),
+          ...(card.board.components ?? {}),
+        },
+      }
+      : card.boardComponents
+        ? { boardComponents: { ...card.boardComponents } }
+        : {}),
     // Use character art as the single-image preview (e.g. race animation).
     // frameImageUrl is a transparent border overlay — unsuitable as a standalone image.
     ...(card.characterImageUrl
