@@ -44,6 +44,7 @@ export function registerAdminRoutes(app, {
   // Rate-limit all player management routes under /api/admin/player/
   app.use('/api/admin/player/', adminUserRateLimit);
   app.use('/api/admin/combination-stats', adminUserRateLimit);
+  app.use('/api/admin/decks', adminUserRateLimit);
 
   app.post('/api/auth/sync-session', async (req, res) => {
     if (!adminAuth) {
@@ -393,6 +394,59 @@ export function registerAdminRoutes(app, {
     } catch (error) {
       console.error('Admin delete player deck failed:', error);
       res.status(500).json({ error: 'Failed to delete player deck.' });
+    }
+  });
+
+  // ── Admin decks with full card data ───────────────────────────────────────
+  // Returns every card deck owned by every admin user, each deck hydrated with
+  // its full card payloads (including all AI-art layer URLs).
+
+  app.get('/api/admin/decks', async (req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      await authenticateAdminRequest(req);
+    } catch (error) {
+      res.status(error?.statusCode ?? 500).json({ error: error.message ?? 'Could not verify admin access.' });
+      return;
+    }
+
+    try {
+      const adminProfilesSnap = await adminDb.collection('userProfiles').where('isAdmin', '==', true).get();
+      const adminUids = adminProfilesSnap.docs.map((d) => d.id).filter(Boolean);
+
+      const allDecks = [];
+
+      await Promise.all(
+        adminUids.map(async (uid) => {
+          const decksSnap = await adminDb.collection('users').doc(uid).collection('decks').get();
+          for (const deckDoc of decksSnap.docs) {
+            const deckData = deckDoc.data() ?? {};
+            allDecks.push({
+              id: deckDoc.id,
+              ownerUid: uid,
+              name: deckData.name ?? 'Unnamed Deck',
+              isPrimary: deckData.isPrimary ?? false,
+              battleReady: deckData.battleReady ?? false,
+              challengerCardId: deckData.challengerCardId ?? null,
+              cards: Array.isArray(deckData.cards) ? deckData.cards : [],
+            });
+          }
+        }),
+      );
+
+      // Sort: primary decks first, then by deck name.
+      allDecks.sort((a, b) => {
+        if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
+        return (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' });
+      });
+
+      res.json({ decks: allDecks });
+    } catch (error) {
+      console.error('Admin get all decks failed:', error);
+      res.status(500).json({ error: 'Failed to load admin decks.' });
     }
   });
 
