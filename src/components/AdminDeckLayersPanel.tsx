@@ -318,7 +318,7 @@ function AdminBossCardTile({ card }: AdminBossCardTileProps) {
   return (
     <div className="adlp-boss-tile">
       <div className="adlp-boss-header">
-        <span className="adlp-boss-name">{card.identity?.name ?? "Unnamed Boss"}</span>
+        <h3 className="adlp-boss-name">{card.identity?.name ?? "Unnamed Boss"}</h3>
         <span className="adlp-boss-district">{card.prompts?.district ?? "Unknown district"}</span>
       </div>
       <div className="adlp-boss-tagline">
@@ -335,7 +335,7 @@ function AdminBossCardTile({ card }: AdminBossCardTileProps) {
         <div className="adlp-boss-stat"><span>HYP</span>{card.joust?.hype ?? "—"}</div>
       </div>
       <div className="adlp-boss-tactic">
-        ⚔ Traits: <strong>{card.joust?.traits?.[0] ?? "No joust trait set"}</strong>
+        <span aria-hidden="true">⚔</span> Traits: <strong>{card.joust?.traits?.[0] ?? "No joust trait set"}</strong>
       </div>
       <blockquote className="adlp-boss-dialogue">
         {card.front?.flavorTextEnglish ?? card.front?.flavorText ?? card.back?.notes ?? "No boss flavor text set yet."}
@@ -353,7 +353,7 @@ function RivalBossTile({ rival }: RivalBossTileProps) {
   return (
     <div className="adlp-boss-tile">
       <div className="adlp-boss-header">
-        <span className="adlp-boss-name">{rival.name}</span>
+        <h3 className="adlp-boss-name">{rival.name}</h3>
         <span className="adlp-boss-district">{rival.district}</span>
       </div>
       <div className="adlp-boss-tagline">{rival.tagline}</div>
@@ -370,7 +370,7 @@ function RivalBossTile({ rival }: RivalBossTileProps) {
         <div className="adlp-boss-stat"><span>HYP</span>{sc.joust.hype}</div>
       </div>
       <div className="adlp-boss-tactic">
-        ⚔ Tactic: <strong>{rival.signatureTactic}</strong> · {rival.signatureTrait}
+        <span aria-hidden="true">⚔</span> Tactic: <strong>{rival.signatureTactic}</strong> · {rival.signatureTrait}
       </div>
       <blockquote className="adlp-boss-dialogue">{rival.dialogue.intro}</blockquote>
     </div>
