@@ -44,6 +44,7 @@ export function registerAdminRoutes(app, {
   // Rate-limit all player management routes under /api/admin/player/
   app.use('/api/admin/player/', adminUserRateLimit);
   app.use('/api/admin/combination-stats', adminUserRateLimit);
+  app.use('/api/admin/decks', adminUserRateLimit);
 
   app.post('/api/auth/sync-session', async (req, res) => {
     if (!adminAuth) {
@@ -439,7 +440,7 @@ export function registerAdminRoutes(app, {
       // Sort: primary decks first, then by deck name.
       allDecks.sort((a, b) => {
         if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
-        return (a.name ?? '').localeCompare(b.name ?? '');
+        return (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' });
       });
 
       res.json({ decks: allDecks });
