@@ -239,6 +239,81 @@ body {
   }
 }
 
+/* ── Static lore background panels ─────────────────────────────────────────── */
+.lore-bg-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 1;
+  width: clamp(220px, 22vw, 300px);
+  pointer-events: none;
+  opacity: 0.14;
+  transition: opacity 0.4s ease;
+}
+
+.lore-bg-panel__card {
+  position: relative;
+  isolation: isolate;
+  padding: 18px 20px 26px;
+  border: 3px solid var(--theme-neonAccent, #ff2f9f);
+  border-radius: 10px 18px 12px 8px;
+  background:
+    linear-gradient(110deg, rgba(4,5,12,0.94) 0 52%, rgba(4,13,22,0.6) 53% 100%),
+    linear-gradient(165deg, var(--theme-bg2, #071a2d), #05060c);
+  box-shadow:
+    0 10px 0 rgba(0,0,0,0.6),
+    0 0 20px color-mix(in srgb, var(--theme-neonAccent, #ff2f9f) 40%, transparent),
+    inset 0 0 20px color-mix(in srgb, var(--theme-accent2, #58fff1) 10%, transparent);
+  text-align: left;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg) skew(-2deg);
+  clip-path: polygon(3% 8%, 14% 8%, 17% 2%, 88% 3%, 96% 10%, 96% 80%, 86% 84%, 80% 97%, 10% 88%, 4% 80%, 2% 78%, 3% 44%, 1% 32%);
+}
+
+.lore-bg-panel__eyebrow {
+  display: block;
+  margin: 0 0 5px;
+  color: var(--theme-accent2, #58fff1);
+  font-family: var(--font-display);
+  font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+  line-height: 0.9;
+  letter-spacing: 0.04em;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.9);
+  transform: rotate(-1deg);
+}
+
+.lore-bg-panel__card strong {
+  display: block;
+  color: var(--theme-neonAccent, #ff2f9f);
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+  text-shadow:
+    3px 3px 0 rgba(0,0,0,0.95),
+    0 0 14px color-mix(in srgb, var(--theme-neonAccent, #ff2f9f) 50%, transparent);
+  transform: rotate(-3deg) skew(-6deg);
+  transform-origin: left center;
+}
+
+.lore-bg-panel__card p {
+  margin: 12px 0 0 8px;
+  max-width: 100%;
+  color: var(--theme-accent2, #58fff1);
+  font-family: var(--font-display);
+  font-size: clamp(0.8rem, 2.2vw, 1.1rem);
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.9);
+  transform: skew(-5deg);
+}
+
+@media (max-width: 768px) {
+  .lore-bg-panel {
+    display: none;
+  }
+}
+
 /* ===== Joustur gameplay board ===== */
 .joustur-visual-board {
   margin: 28px auto;

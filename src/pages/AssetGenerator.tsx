@@ -222,7 +222,7 @@ export function AssetGenerator() {
           className={`admin-tab${activeTab === "transitions" ? " admin-tab--active" : ""}`}
           onClick={() => setActiveTab("transitions")}
         >
-          🚦 Page Transitions
+          🌆 Lore Backgrounds
         </button>
         <button
           className={`admin-tab${activeTab === "factions" ? " admin-tab--active" : ""}`}
@@ -351,9 +351,9 @@ export function AssetGenerator() {
         </>
       ) : activeTab === "transitions" ? (
         <section className="asset-gen-section">
-          <h2 className="asset-gen-section-title">Page Transition Popup Gallery</h2>
+          <h2 className="asset-gen-section-title">Lore Background Copy Gallery</h2>
           <p className="asset-gen-toolbar-copy">
-            Preview all currently discoverable district transition popup text variants in one place.
+            Preview all currently discoverable district lore text variants used as static background panels across the site.
           </p>
           <div className="admin-transition-gallery">
             {transitionPreviewData.map((district) => (
