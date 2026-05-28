@@ -211,7 +211,7 @@ function applyBossStatOverrides(player, rival, modifiers) {
   const battery = getCardBattery(player);
   const batteryBonuses = BATTERY_STAT_BONUSES[battery];
   if (!batteryBonuses) return player;
-  modifiers.push({ source: 'Moss Kade — Off-Grid Null', amount: -Object.values(batteryBonuses).reduce((sum, value) => sum + value, 0), target: 'rule' });
+  modifiers.push({ source: 'Moss Kade — Off-Grid Null', amount: -Object.values(batteryBonuses).reduce((sum, value) => sum + (value ?? 0), 0), target: 'rule' });
   return cloneCardWithStats(player, subtractStats(player.stats, batteryBonuses));
 }
 
