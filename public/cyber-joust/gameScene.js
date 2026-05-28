@@ -1128,7 +1128,7 @@ export class GameScene extends Phaser.Scene {
             try {
                 const scoreId = typeof crypto?.randomUUID === 'function'
                     ? crypto.randomUUID()
-                    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+                    : `score-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
                 db.transact(db.tx.scores[scoreId].update({
                     playerName,
                     score: this.score,
@@ -1146,12 +1146,34 @@ export class GameScene extends Phaser.Scene {
         inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') saveScore();
         });
+
+        // Allow skip without saving — also cleans up DOM input
+        const skipAndRestart = () => {
+            if (!scoreSaved) {
+                inputEl.remove();
+            }
+            if (!scoreSaved) {
+                scoreSaved = true;
+                this.enableRestart(overlay, title, subtitle, promptText, submitBtn, restart);
+            }
+        };
+        this.time.delayedCall(5000, () => {
+            if (!scoreSaved) {
+                restart.setAlpha(0.6);
+                restart.setText('TAP/SPACE TO SKIP & RESTART');
+                this.input.keyboard.once('keydown-SPACE', skipAndRestart);
+                this.input.once('pointerdown', skipAndRestart);
+            }
+        });
     }
 
     enableRestart(overlay, title, subtitle, promptText, submitBtn, restart) {
         const restartGame = () => {
             this.input.keyboard.off('keydown-SPACE', restartGame);
             this.input.off('pointerdown', restartGame);
+            // Clean up any orphaned DOM input
+            const staleInput = document.querySelector('input[placeholder="ANON RIDER"]');
+            if (staleInput) staleInput.remove();
             overlay.destroy();
             title.destroy();
             subtitle.destroy();
