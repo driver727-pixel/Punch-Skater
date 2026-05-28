@@ -230,6 +230,7 @@ function DistrictThemeController() {
     district: activeDistrict,
     panel: getRoutePanelKey(pathname),
   });
+  const transitionNonceRef = useRef(0);
 
   useEffect(() => {
     activeDistrictRef.current = activeDistrict;
@@ -248,12 +249,14 @@ function DistrictThemeController() {
       return undefined;
     }
     applyDistrictTheme(nextDistrict);
-    const transitionSeed = pathname.length + Date.now();
+    transitionNonceRef.current += 1;
+    const transitionNonce = transitionNonceRef.current;
+    const transitionSeed = pathname.length + Date.now() + transitionNonce;
     setTransition({
       theme: nextTheme,
       eyebrow: getDistrictTransitionEyebrow(nextDistrict, transitionSeed + 17),
       line: getDistrictTransitionLine(nextDistrict, transitionSeed),
-      nonce: Date.now(),
+      nonce: transitionSeed,
     });
     const timeout = window.setTimeout(() => setTransition(null), 1450);
     return () => window.clearTimeout(timeout);
