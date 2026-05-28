@@ -104,6 +104,7 @@ const UserProfile     = lazy(() => import("./pages/UserProfile").then(m => ({ de
 const Leaderboard     = lazy(() => import("./pages/Leaderboard").then(m => ({ default: m.Leaderboard })));
 const Trash           = lazy(() => import("./pages/Trash").then(m => ({ default: m.Trash })));
 const NotFound        = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
+const ClassicRace     = lazy(() => import("./pages/ClassicRace").then(m => ({ default: m.ClassicRace })));
 const JousturHome     = lazy(() => import("./pages/joustur/JousturHome").then(m => ({ default: m.JousturHome })));
 const JousturLineupBuilder = lazy(() => import("./pages/joustur/JousturLineupBuilder").then(m => ({ default: m.JousturLineupBuilder })));
 const JousturBoard    = lazy(() => import("./pages/joustur/JousturBoard").then(m => ({ default: m.JousturBoard })));
@@ -366,6 +367,9 @@ function LegacyRoutes() {
       } />
       <Route path="/arena" element={
         <ProtectedRoute><BattleArena /></ProtectedRoute>
+      } />
+      <Route path="/arena/classic" element={
+        <ProtectedRoute><ClassicRace /></ProtectedRoute>
       } />
       <Route path="/race/:raceId" element={
         <ProtectedRoute><RaceTrack /></ProtectedRoute>
