@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthCard } from "../components/AuthCard";
 import { ForgeStartHere } from "../components/ForgeStartHere";
@@ -17,17 +17,15 @@ export function LandingPage() {
     localStorage.setItem(LANDING_FACEOFF_KEY, "1");
     setShowFaceoff(false);
   }, []);
-  const closeFaceoffRef = useRef(closeFaceoff);
-  closeFaceoffRef.current = closeFaceoff;
 
   useEffect(() => {
     if (!showFaceoff) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeFaceoffRef.current();
+      if (event.key === "Escape") closeFaceoff();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [showFaceoff]);
+  }, [showFaceoff, closeFaceoff]);
 
   useEffect(() => {
     if (user) {
