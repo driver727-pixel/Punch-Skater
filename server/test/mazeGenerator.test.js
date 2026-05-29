@@ -109,15 +109,16 @@ test('generateDistrictWorld: contracts have 4 visible and 2 locked', () => {
 test('generateDistrictWorld records deterministic seed and graph contracts', () => {
   const world = generateDistrictWorld('user-abc', '2026-05-26', buildContracts(), '2026-05-27T00:00:00.000Z');
 
-  assert.equal(world.seed.version, 'district-world-v2');
+  assert.equal(world.seed.version, 'district-world-static-map-v1');
   assert.equal(world.seed.strategy, 'uid|boardDateKey|purpose');
   assert.equal(world.seed.stableFor, 'same-user-and-utc-day');
-  assert.equal(world.seed.purposes.tree, 'user-abc|2026-05-26|tree');
-  assert.equal(world.graph.algorithm, 'randomized-dfs-spanning-tree-with-loop-edges');
-  assert.deepEqual(world.graph.grid, { cols: 7, rows: 7 });
+  assert.equal(world.seed.purposes.tree, 'user-abc|2026-05-26|static-road-track');
+  assert.equal(world.graph.algorithm, 'static-game-map-road-track');
+  assert.deepEqual(world.graph.grid, { cols: 100, rows: 100 });
   assert.equal(world.graph.workshopNodeId, 'workshop');
   assert.equal(world.graph.poiCount, POI_COUNT);
-  assert.deepEqual(world.graph.placementPreference, ['dead_end', 'intersection', 'corridor']);
+  assert.deepEqual(world.graph.placementPreference, ['intersection', 'corridor', 'dead_end']);
+  assert.equal(world.graph.backdropUrl, '/game-map-best-big.jpg');
   assert.equal(world.graph.reachableFromWorkshop, true);
 });
 
@@ -188,27 +189,27 @@ test('generateDistrictWorld is deterministic for the same uid and dateKey', () =
   assert.deepEqual(w1, w2);
 });
 
-test('generateDistrictWorld produces different worlds for different users on the same day', () => {
+test('generateDistrictWorld keeps the same static road track for different users on the same day', () => {
   const contracts = buildContracts();
   const resetAt = '2026-05-27T00:00:00.000Z';
   const w1 = generateDistrictWorld('user-aaa', '2026-05-26', contracts, resetAt);
   const w2 = generateDistrictWorld('user-bbb', '2026-05-26', contracts, resetAt);
-  // Different worldIds at minimum
   assert.notEqual(w1.worldId, w2.worldId);
-  // Node positions should differ for different seeds
-  const w1Nodes = JSON.stringify(w1.nodes);
-  const w2Nodes = JSON.stringify(w2.nodes);
-  assert.notEqual(w1Nodes, w2Nodes);
+  assert.deepEqual(
+    w1.nodes.map(({ id, x, y }) => ({ id, x, y })),
+    w2.nodes.map(({ id, x, y }) => ({ id, x, y })),
+  );
 });
 
-test('generateDistrictWorld produces different worlds for the same user on different days', () => {
+test('generateDistrictWorld keeps the same static road track across dates', () => {
   const contracts = buildContracts();
   const w1 = generateDistrictWorld('user-abc', '2026-05-25', contracts, '2026-05-26T00:00:00.000Z');
   const w2 = generateDistrictWorld('user-abc', '2026-05-26', contracts, '2026-05-27T00:00:00.000Z');
   assert.notEqual(w1.worldId, w2.worldId);
-  const w1Nodes = JSON.stringify(w1.nodes);
-  const w2Nodes = JSON.stringify(w2.nodes);
-  assert.notEqual(w1Nodes, w2Nodes);
+  assert.deepEqual(
+    w1.nodes.map(({ id, x, y }) => ({ id, x, y })),
+    w2.nodes.map(({ id, x, y }) => ({ id, x, y })),
+  );
 });
 
 test('generateDistrictWorld throws when not given exactly 6 contracts', () => {
