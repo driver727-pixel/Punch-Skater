@@ -173,7 +173,7 @@ export function ForgeControlsPanel({
   const activeStepIndex = FORGE_WIZARD_STEPS.findIndex((step) => step.id === activeStepId);
   const activeStep = FORGE_WIZARD_STEPS[activeStepIndex] ?? FORGE_WIZARD_STEPS[0];
   const selectedWeaponName = selectedWeaponUrl
-    ? weaponAssets?.find((weapon) => weapon.url === selectedWeaponUrl)?.name ?? "Selected weapon"
+    ? weaponAssets?.find((weapon) => weapon.url === selectedWeaponUrl)?.name ?? "Unknown weapon"
     : "None equipped";
   const reviewItems = useMemo(
     () => [
@@ -222,9 +222,10 @@ export function ForgeControlsPanel({
   };
 
   const goToRelativeStep = (delta: -1 | 1) => {
+    sfxClick();
     const nextStep = FORGE_WIZARD_STEPS[activeStepIndex + delta];
     if (!nextStep) return;
-    goToStep(nextStep.id);
+    setActiveStepId(nextStep.id);
   };
 
   return (
