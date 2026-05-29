@@ -17,7 +17,7 @@ import ozziesConfig from "../../lib/ozziesConfig.json";
 import type { BoardConfig } from "../../lib/boardBuilder";
 import { FORGE_CLASS_ODDS } from "../../lib/cardClassProgression";
 import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
-import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
+import { FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
 import tabletopForgeBackdrop from "../../../tabletopforge.png";
 
@@ -180,7 +180,7 @@ export function ForgeControlsPanel({
       {
         stepId: "identity" as const,
         label: "Cover setup",
-        value: `${prompts.archetype} • ${prompts.district}`,
+        value: `${getForgeArchetypeLabel(prompts.archetype)} • ${prompts.district}`,
       },
       {
         stepId: "appearance" as const,
