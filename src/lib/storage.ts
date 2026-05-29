@@ -1,4 +1,4 @@
-import type { CardPayload, DeckPayload, WorkshopBoardPayload } from "./types";
+import type { CardPayload, DeckPayload, WorkshopBoardPayload, WorkshopWeaponPayload } from "./types";
 import { normalizeCardPayload } from "./styles";
 import { calculateBoardStats, normalizeBoardConfig } from "./boardBuilder";
 
@@ -7,6 +7,7 @@ const DECKS_KEY = "skpd_decks";
 const FACTION_DISCOVERIES_KEY = "skpd_faction_discoveries";
 const COMPLETED_MISSIONS_KEY = "skpd_completed_missions";
 const WORKSHOP_BOARDS_KEY = "skpd_workshop_boards";
+const WORKSHOP_WEAPONS_KEY = "skpd_workshop_weapons";
 
 export function loadCollection(): CardPayload[] {
   try {
@@ -77,6 +78,20 @@ function compareWorkshopBoards(a: WorkshopBoardPayload, b: WorkshopBoardPayload)
   return b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
 }
 
+function normalizeWorkshopWeapon(weapon: WorkshopWeaponPayload): WorkshopWeaponPayload {
+  return {
+    ...weapon,
+    label: typeof weapon.label === "string" && weapon.label.trim() ? weapon.label : "Workshop weapon",
+  };
+}
+
+function compareWorkshopWeapons(a: WorkshopWeaponPayload, b: WorkshopWeaponPayload): number {
+  const aOrder = a.sortOrder ?? Infinity;
+  const bOrder = b.sortOrder ?? Infinity;
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  return b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
+}
+
 export function loadWorkshopBoards(): WorkshopBoardPayload[] {
   try {
     const raw = localStorage.getItem(WORKSHOP_BOARDS_KEY);
@@ -91,6 +106,23 @@ export function saveWorkshopBoards(boards: WorkshopBoardPayload[]): void {
   localStorage.setItem(
     WORKSHOP_BOARDS_KEY,
     JSON.stringify(boards.map(normalizeWorkshopBoard).sort(compareWorkshopBoards)),
+  );
+}
+
+export function loadWorkshopWeapons(): WorkshopWeaponPayload[] {
+  try {
+    const raw = localStorage.getItem(WORKSHOP_WEAPONS_KEY);
+    if (!raw) return [];
+    return (JSON.parse(raw) as WorkshopWeaponPayload[]).map(normalizeWorkshopWeapon).sort(compareWorkshopWeapons);
+  } catch {
+    return [];
+  }
+}
+
+export function saveWorkshopWeapons(weapons: WorkshopWeaponPayload[]): void {
+  localStorage.setItem(
+    WORKSHOP_WEAPONS_KEY,
+    JSON.stringify(weapons.map(normalizeWorkshopWeapon).sort(compareWorkshopWeapons)),
   );
 }
 

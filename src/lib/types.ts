@@ -342,12 +342,27 @@ export interface WorkshopBoardPayload {
   /** Generated or approved skateboard art URL produced after the board is saved. */
   boardImageUrl?: string;
   /** Normalized floor placement on the workshop paper-doll stage. */
-  floorPlacement?: {
-    x: number;
-    y: number;
-  };
+  floorPlacement?: WorkshopFloorPlacement;
 }
-
+ 
+export interface WorkshopFloorPlacement {
+  x: number;
+  y: number;
+}
+ 
+export interface WorkshopWeaponPayload {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  label: string;
+  weaponImageUrl: string;
+  sourceCardId?: string;
+  /** Explicit display order on the workshop floor; lower values appear first. */
+  sortOrder?: number;
+  /** Normalized floor placement on the workshop paper-doll stage. */
+  floorPlacement?: WorkshopFloorPlacement;
+}
+ 
 // ── Deck payload ──────────────────────────────────────────────────────────────
 
 export interface DeckPayload {
