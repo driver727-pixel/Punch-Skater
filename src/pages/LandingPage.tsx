@@ -7,16 +7,20 @@ import { warmRoutes, warmRoutesOnIdle } from "../lib/routePrefetch";
 import { resolveUserDisplayName } from "../lib/userIdentity";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
 
-const LANDING_FACEOFF_KEY = "landing-faceoff-dismissed";
+const LANDING_GUEST_FACEOFF_KEY = "landing-faceoff-dismissed";
+const LANDING_LOGIN_FACEOFF_PREFIX = "landing-faceoff-login-dismissed";
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
-  const [showFaceoff, setShowFaceoff] = useState(() => localStorage.getItem(LANDING_FACEOFF_KEY) !== "1");
+  const [showFaceoff, setShowFaceoff] = useState(() => localStorage.getItem(LANDING_GUEST_FACEOFF_KEY) !== "1");
+  const faceoffDismissalKey = user
+    ? `${LANDING_LOGIN_FACEOFF_PREFIX}:${user.uid}:${user.metadata.lastSignInTime ?? "active"}`
+    : LANDING_GUEST_FACEOFF_KEY;
   const closeFaceoff = useCallback(() => {
-    localStorage.setItem(LANDING_FACEOFF_KEY, "1");
+    localStorage.setItem(faceoffDismissalKey, "1");
     setShowFaceoff(false);
-  }, []);
+  }, [faceoffDismissalKey]);
 
   useEffect(() => {
     if (!showFaceoff) return;
@@ -26,6 +30,11 @@ export function LandingPage() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [showFaceoff, closeFaceoff]);
+
+  useEffect(() => {
+    if (!user) return;
+    setShowFaceoff(localStorage.getItem(faceoffDismissalKey) !== "1");
+  }, [user, faceoffDismissalKey]);
 
   useEffect(() => {
     if (user) {
@@ -118,7 +127,11 @@ export function LandingPage() {
         )}
       </section>
 
-      <ForgeWelcomeModal open={showFaceoff} onClose={closeFaceoff} />
+      <ForgeWelcomeModal
+        open={showFaceoff}
+        onClose={closeFaceoff}
+        title={`Welcome to Punch Skater™, ${userDisplayName}.`}
+      />
     </div>
   );
 }
