@@ -17,7 +17,7 @@ import { fetchRaceArena, startFreeSoloRace, startSoloRace, type ArenaListEntry }
 import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
-import { announceActiveDistrict } from "../lib/districtTheme";
+import { announceActiveDistrict, getDistrictTheme } from "../lib/districtTheme";
 
 type TabKey = "hub" | "solo";
 
@@ -25,8 +25,71 @@ const WAGER_PRESETS = [0, 10, 50, 100];
 const SOLO_WAGER_PRESETS = [0, 5, 10, 25];
 const SOLO_WAGER_MAX = 25;
 
-function statTotal(stats: RaceCardSnapshot["stats"]): number {
+type RaceStats = RaceCardSnapshot["stats"];
+
+function statTotal(stats: RaceStats): number {
   return stats.speed + stats.range + stats.stealth + stats.grit;
+}
+
+/** Flavorful odds read derived from the two racers' total stat power. */
+function oddsFlavor(mine: number, theirs: number): string {
+  const diff = mine - theirs;
+  if (diff >= 6) return "🔥 You're the heavy favorite";
+  if (diff >= 2) return "📈 Edge in your favor";
+  if (diff <= -6) return "⚠️ Long shot — go for glory";
+  if (diff <= -2) return "📉 Underdog run";
+  return "⚖️ Dead-even matchup";
+}
+
+const MATCHUP_STAT_ROWS: { key: keyof Pick<RaceStats, "speed" | "range" | "stealth" | "grit">; label: string; emoji: string }[] = [
+  { key: "speed", label: "Speed", emoji: "⚡" },
+  { key: "range", label: "Range", emoji: "🛣️" },
+  { key: "stealth", label: "Stealth", emoji: "🥷" },
+  { key: "grit", label: "Grit", emoji: "💪" },
+];
+
+/** Head-to-head stat comparison shown before launching a race. */
+function StatMatchup({
+  mine,
+  theirs,
+  myName,
+  theirName,
+}: {
+  mine: RaceStats;
+  theirs: RaceStats;
+  myName: string;
+  theirName: string;
+}) {
+  const myPower = statTotal(mine);
+  const theirPower = statTotal(theirs);
+  return (
+    <div className="race-matchup">
+      <div className="race-matchup-head">
+        <span className="race-matchup-name race-matchup-name--mine">{myName} · {myPower}</span>
+        <span className="race-matchup-vs">VS</span>
+        <span className="race-matchup-name race-matchup-name--theirs">{theirName} · {theirPower}</span>
+      </div>
+      {MATCHUP_STAT_ROWS.map(({ key, label, emoji }) => {
+        const a = mine[key];
+        const b = theirs[key];
+        const max = Math.max(a, b, 1);
+        return (
+          <div key={key} className="race-matchup-row" title={label}>
+            <span className="race-matchup-bar race-matchup-bar--mine">
+              <span className="race-matchup-bar-fill race-matchup-bar-fill--mine" style={{ width: `${(a / max) * 100}%` }} />
+              <span className="race-matchup-bar-num">{a}</span>
+            </span>
+            <span className="race-matchup-stat">{emoji}</span>
+            <span className="race-matchup-bar race-matchup-bar--theirs">
+              <span className="race-matchup-bar-fill race-matchup-bar-fill--theirs" style={{ width: `${(b / max) * 100}%` }} />
+              <span className="race-matchup-bar-num">{b}</span>
+            </span>
+          </div>
+        );
+      })}
+      <p className="race-matchup-odds">{oddsFlavor(myPower, theirPower)}</p>
+    </div>
+  );
 }
 
 function CardMiniStats({ stats }: { stats: RaceCardSnapshot["stats"] }) {
@@ -106,16 +169,34 @@ function RaceDistrictPicker({
 }) {
   return (
     <div className="race-district-picker">
-      {RACE_DISTRICT_OPTIONS.map((option) => (
-        <button
-          key={option.slug}
-          type="button"
-          className={`race-district-btn${district === option.slug ? " active btn-outline--active" : ""}`}
-          onClick={() => onSelect(option.slug)}
-        >
-          {option.emoji} {option.displayName}
-        </button>
-      ))}
+      {RACE_DISTRICT_OPTIONS.map((option) => {
+        const theme = getDistrictTheme(option.slug);
+        const active = district === option.slug;
+        return (
+          <button
+            key={option.slug}
+            type="button"
+            className={`race-district-btn race-district-btn--swatch${active ? " active btn-outline--active" : ""}`}
+            onClick={() => onSelect(option.slug)}
+            style={{
+              borderColor: active ? theme.border : undefined,
+              boxShadow: active ? `0 0 12px ${theme.border}66` : undefined,
+            }}
+          >
+            <span
+              className="race-district-swatch"
+              aria-hidden="true"
+              style={{
+                background: `radial-gradient(circle at 50% 35%, ${theme.bg3}, ${theme.bg})`,
+                boxShadow: `inset 0 0 0 2px ${theme.accent2}, inset 0 0 10px ${theme.border}88`,
+              }}
+            >
+              <span className="race-district-swatch-emoji">{option.emoji}</span>
+            </span>
+            <span className="race-district-btn-label">{option.displayName}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -180,6 +261,18 @@ function ChallengeModal({
             ))}
           </div>
         </div>
+
+        {defenderCard && (
+          <div className="race-challenge-row">
+            <label>Head-to-head:</label>
+            <StatMatchup
+              mine={myChallengerCard.stats}
+              theirs={defenderCard.stats}
+              myName={myChallengerCard.name}
+              theirName={defenderCard.name}
+            />
+          </div>
+        )}
 
         <div className="race-challenge-row">
           <label>Wager (Ozzies) — your balance: {myOzzies}</label>
@@ -297,6 +390,10 @@ export function ClassicRace() {
   const myOzzies = Number(userProfile?.ozzies ?? 0);
   const soloWagerCap = Math.max(0, Math.min(myOzzies, SOLO_WAGER_MAX));
   const isSignedInFreeUser = tier === "free" && !!user;
+  const selectedSoloCard = useMemo(
+    () => primaryDeckRaceCards.find((card) => card.id === soloCardId) ?? null,
+    [primaryDeckRaceCards, soloCardId],
+  );
 
   useEffect(() => {
     if (primaryDeckRaceCards.length === 0) {
@@ -478,23 +575,31 @@ export function ClassicRace() {
 
       {tab === "hub" && (
         <section className="race-hub">
-          <div className="race-hub-block">
-            <h2>Challengers</h2>
+          <div className="race-hub-block race-hub-block--grid">
+            <h2>🏁 Starting Grid</h2>
             {arenaLoading && <p className="race-arena-loading">Loading starting grid…</p>}
             {arenaError && <p className="race-arena-error">{arenaError}</p>}
             {!arenaLoading && !arenaError && arenaEntries.length === 0 && (
               <p className="race-arena-empty">No other players have published a primary deck yet. Check back soon!</p>
             )}
-            <div className="race-arena-opponents">
-              {arenaEntries.map((entry) => {
+            <div className="race-arena-opponents race-arena-opponents--grid">
+              {arenaEntries.map((entry, index) => {
                 const challengerCard = entry.cards.find((c) => c.id === entry.challengerCardId) ?? entry.cards[0];
                 return (
-                  <article key={entry.uid} className="race-arena-opponent">
+                  <article
+                    key={entry.uid}
+                    className="race-arena-opponent race-arena-opponent--grid"
+                    style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
+                  >
+                    <span className="race-grid-pole" aria-hidden="true">P{index + 1}</span>
                     <header className="race-arena-opponent-header">
                       <span className="race-arena-opponent-name">{entry.displayName}</span>
                       <span className="race-arena-opponent-deck">{entry.deckName}</span>
                     </header>
                     <ArenaCardThumb snapshot={challengerCard} isChallenger />
+                    <span className="race-grid-power" title="Total stat power">
+                      Power {statTotal(challengerCard.stats)}
+                    </span>
                     <button
                       className="btn-primary"
                       disabled={!myChallengerCard}
@@ -595,6 +700,30 @@ export function ClassicRace() {
               {primaryDeckRaceCards.length === 0 && (
                 <p className="race-arena-empty">Your primary deck has no cards available for a solo sprint yet.</p>
               )}
+            </div>
+          )}
+
+          {!isSignedInFreeUser && selectedSoloCard && (
+            <div className="race-challenge-row">
+              <label>Starting-line dossier:</label>
+              <div className="race-solo-dossier">
+                <div className="race-solo-dossier-head">
+                  <strong>{selectedSoloCard.name}</strong>
+                  <span className="race-solo-dossier-power">Power {statTotal(selectedSoloCard.stats)}</span>
+                </div>
+                {MATCHUP_STAT_ROWS.map(({ key, label, emoji }) => (
+                  <div key={key} className="race-solo-dossier-row" title={label}>
+                    <span className="race-solo-dossier-stat">{emoji} {label}</span>
+                    <span className="race-solo-dossier-bar">
+                      <span
+                        className="race-solo-dossier-bar-fill"
+                        style={{ width: `${(selectedSoloCard.stats[key] / 10) * 100}%` }}
+                      />
+                    </span>
+                    <span className="race-solo-dossier-num">{selectedSoloCard.stats[key]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

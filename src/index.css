@@ -17992,6 +17992,150 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-weight: 600;
 }
 
+/* ── District preview swatches ── */
+.race-district-btn--swatch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 22px;
+}
+.race-district-swatch {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.race-district-swatch-emoji { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.6)); }
+.race-district-btn-label { white-space: nowrap; }
+
+/* ── Head-to-head stat matchup ── */
+.race-matchup {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+}
+.race-matchup-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+.race-matchup-name { font-weight: 700; }
+.race-matchup-name--mine { color: #ff88bb; text-align: right; }
+.race-matchup-name--theirs { color: #88e6ff; }
+.race-matchup-vs {
+  font-size: 0.7rem; font-weight: 800; opacity: 0.7;
+  padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,0.1);
+}
+.race-matchup-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.race-matchup-stat { font-size: 0.85rem; opacity: 0.85; }
+.race-matchup-bar {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.race-matchup-bar--mine { justify-content: flex-end; }
+.race-matchup-bar-fill {
+  position: absolute; top: 0; bottom: 0;
+  transition: width 0.3s ease;
+}
+.race-matchup-bar--mine .race-matchup-bar-fill {
+  right: 0; background: linear-gradient(90deg, rgba(255,68,136,0.4), #ff4488);
+}
+.race-matchup-bar--theirs .race-matchup-bar-fill {
+  left: 0; background: linear-gradient(90deg, #44ddff, rgba(68,221,255,0.4));
+}
+.race-matchup-bar-num {
+  position: relative; z-index: 1;
+  font-size: 0.66rem; font-weight: 800; padding: 0 5px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.race-matchup-odds {
+  margin: 8px 0 0; text-align: center;
+  font-size: 0.82rem; font-weight: 700;
+}
+
+/* ── Starting grid (challengers) ── */
+.race-arena-opponents--grid {
+  --grid-line: rgba(255,255,255,0.06);
+}
+.race-arena-opponent--grid {
+  position: relative;
+  animation: race-grid-in 0.4s ease-out both;
+}
+@keyframes race-grid-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.race-grid-pole {
+  position: absolute; top: 6px; left: 6px;
+  font-size: 0.62rem; font-weight: 800;
+  padding: 1px 6px; border-radius: 8px;
+  background: rgba(0,0,0,0.55); color: #ffd24a;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255,210,74,0.5);
+}
+.race-grid-power {
+  display: inline-block;
+  font-size: 0.72rem; font-weight: 700;
+  margin: 4px 0; opacity: 0.9;
+}
+
+/* ── Solo racer dossier ── */
+.race-solo-dossier {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+}
+.race-solo-dossier-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.race-solo-dossier-power {
+  font-size: 0.72rem; font-weight: 800;
+  padding: 1px 8px; border-radius: 10px; background: rgba(255,210,74,0.16); color: #ffd24a;
+}
+.race-solo-dossier-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 24px;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 0.78rem;
+}
+.race-solo-dossier-bar {
+  height: 10px; border-radius: 5px;
+  background: rgba(255,255,255,0.07); overflow: hidden;
+}
+.race-solo-dossier-bar-fill {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #44ddff, #ff88bb);
+  transition: width 0.3s ease;
+}
+.race-solo-dossier-num { text-align: right; font-weight: 700; font-family: ui-monospace, monospace; }
+
+
 /* ── Solo Sprint tab ── */
 .race-solo-panel {
   max-width: 520px;
