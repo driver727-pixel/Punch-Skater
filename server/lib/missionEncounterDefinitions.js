@@ -1,6 +1,135 @@
 const TRAVEL_ENCOUNTER_VERSION = 'travel-encounters-v1';
 const DEFAULT_NONE_WEIGHT = 120;
 const CONTRACT_ENCOUNTER_WEIGHT = 90;
+const STREETS_ENCOUNTER_WEIGHT = 110;
+
+// ── Punch Skater™ Streets — side-scrolling brawl encounters ─────────────────
+// These are attached to specific lore mission definitions via `mission.encounter`
+// (not the random travel pool) so they surface deterministically on the matching
+// contract without altering the existing checkpoint-encounter distribution. The
+// Missions UI launches the standalone /streets/ beat-em-up for the `enter-streets`
+// option; the hidden `streets-down` option is resolved on a loss (small
+// consolation, no card fallout) and `skip-streets` routes around the brawl.
+const STREETS_ENCOUNTER_DEFINITIONS = Object.freeze({
+  'nightshade-run': Object.freeze({
+    id: 'streets-nightshade-run',
+    badge: '🛹',
+    prompt: 'A deal goes wrong in the Nightshade laneways and a pack of rival skaters peels off to chase the crew. Nobody owns Nightshade.',
+    threat: 'Rival horde',
+    missionId: 'nightshade-run',
+    objective: 'escape',
+    district: 'nightshade',
+    win: { rewardXpDelta: 18, rewardOzziesDelta: 12, summary: 'You out-skated the Nightshade horde and hit the exit rail clean.' },
+    loss: { rewardXpDelta: 4, rewardOzziesDelta: 0, summary: 'The horde ran you down, but you limped clear of the laneways.' },
+    skip: { rewardXpDelta: 6, rewardOzziesDelta: -4, summary: 'You routed around the Nightshade brawl and kept rolling.' },
+    enterDescription: 'Outrun the horde down the laneways and reach the exit grind-rail alive.',
+    skipDescription: 'Avoid the brawl and lose a little time and cash.',
+  }),
+  'never-open-the-package': Object.freeze({
+    id: 'streets-package-run',
+    badge: '📦',
+    prompt: 'An Asclepian medical package sits on a hijacked Batteryville rail scaffold, ringed by Iron Circuit goons. Never open the package.',
+    threat: 'Hostile scaffold',
+    missionId: 'never-open-the-package',
+    objective: 'retrieve',
+    district: 'batteryville',
+    win: { rewardXpDelta: 22, rewardOzziesDelta: 16, summary: 'You pulled the package and skated it out past the Iron Circuit goons.' },
+    loss: { rewardXpDelta: 5, rewardOzziesDelta: 0, summary: 'You lost the package on the scaffold but escaped without card damage.' },
+    skip: { rewardXpDelta: 6, rewardOzziesDelta: 0, summary: 'You left the package and held the plotted line.' },
+    enterDescription: 'Grab the package off the scaffold and skate it out — never open the package.',
+    skipDescription: 'Walk away from the scaffold and keep the route clean.',
+  }),
+  'broomstick-first': Object.freeze({
+    id: 'streets-broomstick-first',
+    badge: '🧹',
+    prompt: 'Punch Skater™s are outlawed at the Airaway checkpoint. UCA white bikes are enemy symbols — broomstick first.',
+    threat: 'Checkpoint enforcers',
+    missionId: 'broomstick-first',
+    objective: 'fight_through',
+    district: 'airaway',
+    win: { rewardXpDelta: 24, rewardOzziesDelta: 14, summary: 'You smashed through the white-bike enforcers and duelled Mina Chrome at the gate.' },
+    loss: { rewardXpDelta: 5, rewardOzziesDelta: 0, summary: 'The enforcers pinned you at the checkpoint, but you slipped the cuffs and regrouped.' },
+    skip: { rewardXpDelta: 6, rewardOzziesDelta: -4, summary: 'You ghosted the checkpoint the quiet way and kept rolling.' },
+    enterDescription: 'Smash through the UCA white-bike enforcers and duel Mina Chrome at the biometric checkpoint.',
+    skipDescription: 'Slip the checkpoint quietly and lose a little time.',
+  }),
+  'transit-is-a-battlefield': Object.freeze({
+    id: 'streets-transit-battlefield',
+    badge: '🛣',
+    prompt: 'A Nullarbor-straightaway ambush opens up across The Roads — Road Runner raiders flood the asphalt. Transit is a battlefield.',
+    threat: 'Raider waves',
+    missionId: 'transit-is-a-battlefield',
+    objective: 'fight_through',
+    district: 'roads',
+    win: { rewardXpDelta: 20, rewardOzziesDelta: 14, summary: 'You cleared the straightaway and kept the long-haul contract rolling.' },
+    loss: { rewardXpDelta: 5, rewardOzziesDelta: 0, summary: 'The raiders bogged you down, but the crew broke off and regrouped.' },
+    skip: { rewardXpDelta: 6, rewardOzziesDelta: -4, summary: 'You swung wide around the ambush and stayed on contract.' },
+    enterDescription: 'Fight through the raider waves and keep the long-haul contract alive.',
+    skipDescription: 'Swing wide around the ambush and lose a little time.',
+  }),
+  'million-screens': Object.freeze({
+    id: 'streets-million-screens',
+    badge: '📺',
+    prompt: 'Move a chip no autonomous drone is allowed to touch across the Glass City neon strip. A million screens, zero witnesses.',
+    threat: 'Neon ambush',
+    missionId: 'million-screens',
+    objective: 'retrieve',
+    district: 'glasscity',
+    win: { rewardXpDelta: 22, rewardOzziesDelta: 18, summary: 'You moved the chip clean and out-skated Nova Saint\u2019s highlight-reel ambush.' },
+    loss: { rewardXpDelta: 5, rewardOzziesDelta: 0, summary: 'Nova Saint clipped your run, but you bailed the strip with the card intact.' },
+    skip: { rewardXpDelta: 6, rewardOzziesDelta: 0, summary: 'You held the chip and took the slow, safe strip out.' },
+    enterDescription: 'Clear the empty neon strip with the chip and out-skate Nova Saint\u2019s ambush.',
+    skipDescription: 'Take the slow, safe route and keep the chip cold.',
+  }),
+});
+
+/**
+ * Build a `mission.encounter` contract for a Punch Skater™ Streets brawl, keyed by
+ * the streets mission id. Returns null when the key is unknown. The returned
+ * contract surfaces through the normal checkpoint-encounter path and resolves via
+ * the standard encounter resolution endpoint.
+ */
+export function buildStreetsEncounter(streetsMissionKey) {
+  const def = STREETS_ENCOUNTER_DEFINITIONS[streetsMissionKey];
+  if (!def) return null;
+  return {
+    id: def.id,
+    badge: def.badge,
+    prompt: def.prompt,
+    threat: def.threat,
+    options: [
+      {
+        id: 'enter-streets',
+        label: 'Enter the Streets',
+        description: def.enterDescription,
+        encounterType: 'streets',
+        streetsMissionId: def.missionId,
+        streetsObjective: def.objective,
+        streetsDistrict: def.district,
+        rewardXpDelta: def.win.rewardXpDelta,
+        rewardOzziesDelta: def.win.rewardOzziesDelta,
+        successSummary: def.win.summary,
+      },
+      {
+        id: 'streets-down',
+        label: 'Go down swinging',
+        description: 'Resolved automatically if the brawl is lost.',
+        hidden: true,
+        rewardXpDelta: def.loss.rewardXpDelta,
+        rewardOzziesDelta: def.loss.rewardOzziesDelta,
+        successSummary: def.loss.summary,
+      },
+      {
+        id: 'skip-streets',
+        label: 'Take the long way',
+        description: def.skipDescription,
+        rewardXpDelta: def.skip.rewardXpDelta,
+        rewardOzziesDelta: def.skip.rewardOzziesDelta,
+        successSummary: def.skip.summary,
+      },
+    ],
+  };
+}
 
 const TRAVEL_ENCOUNTER_DEFINITIONS = Object.freeze([
   Object.freeze({
@@ -144,6 +273,10 @@ function sanitizeEncounterOption(option) {
     label: String(option.label ?? option.id),
     description: String(option.description ?? ''),
     ...(option.encounterType && { encounterType: option.encounterType }),
+    ...(option.streetsMissionId && { streetsMissionId: String(option.streetsMissionId) }),
+    ...(option.streetsObjective && { streetsObjective: String(option.streetsObjective) }),
+    ...(option.streetsDistrict && { streetsDistrict: String(option.streetsDistrict) }),
+    ...(option.hidden === true && { hidden: true }),
     ...(Array.isArray(option.requirements) && { requirements: cloneJson(option.requirements) }),
     ...(Array.isArray(option.requiredTags) && { requiredTags: cloneJson(option.requiredTags) }),
     ...(Number.isFinite(option.minimumCounterPower) && { minimumCounterPower: option.minimumCounterPower }),
@@ -183,13 +316,23 @@ function buildGenericCandidates(leg) {
     .filter((candidate) => candidate.encounter);
 }
 
-export function buildWeightedEncounterCandidates({ leg, contractEncounter = null } = {}) {
+export function buildWeightedEncounterCandidates({ leg, contractEncounter = null, streetsEncounter = null } = {}) {
   const candidates = [];
   const sanitizedContractEncounter = sanitizeEncounterContract(contractEncounter);
   if (sanitizedContractEncounter) {
     candidates.push({
       weight: CONTRACT_ENCOUNTER_WEIGHT,
       encounter: sanitizedContractEncounter,
+    });
+  }
+  // Contract-specific Punch Skater™ Streets brawl. Only contracts that define a
+  // streetsEncounter add this candidate, so the encounter distribution of every
+  // other contract (and the deterministic checkpoint test) is left untouched.
+  const sanitizedStreetsEncounter = sanitizeEncounterContract(streetsEncounter);
+  if (sanitizedStreetsEncounter) {
+    candidates.push({
+      weight: STREETS_ENCOUNTER_WEIGHT,
+      encounter: sanitizedStreetsEncounter,
     });
   }
   candidates.push(...buildGenericCandidates(leg));
@@ -238,6 +381,7 @@ export function pickCheckpointEncounter({
   const candidates = buildWeightedEncounterCandidates({
     leg,
     contractEncounter: contract?.encounter ?? null,
+    streetsEncounter: contract?.streetsEncounter ?? null,
   });
   const seed = [
     TRAVEL_ENCOUNTER_VERSION,

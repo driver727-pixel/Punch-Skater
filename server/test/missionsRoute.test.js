@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildMissionCardOutcomeUpdate, buildMissionResolutionRisk, registerMissionRoutes } from '../routes/missions.js';
 import { createMissionBoardEntries } from '../lib/missions.js';
-import { selectWeightedEncounter } from '../lib/missionEncounterDefinitions.js';
+import { selectWeightedEncounter, buildStreetsEncounter, buildWeightedEncounterCandidates } from '../lib/missionEncounterDefinitions.js';
 
 function createAppHarness() {
   const middleware = [];
@@ -150,6 +150,40 @@ function createFirestoreHarness(initialData = {}) {
       selectWeightedEncounter(candidates, 'stable-seed', 0),
     );
     assert.equal(selectWeightedEncounter(candidates, 'stable-seed', 10_000), null);
+  });
+
+  test('buildStreetsEncounter produces a launchable streets brawl contract', () => {
+    const encounter = buildStreetsEncounter('nightshade-run');
+    assert.ok(encounter, 'expected a streets encounter for a known mission key');
+    assert.equal(buildStreetsEncounter('does-not-exist'), null);
+
+    const enter = encounter.options.find((opt) => opt.id === 'enter-streets');
+    assert.ok(enter, 'expected an enter-streets launch option');
+    assert.equal(enter.encounterType, 'streets');
+    assert.equal(enter.streetsMissionId, 'nightshade-run');
+    assert.equal(enter.streetsObjective, 'escape');
+    assert.equal(enter.streetsDistrict, 'nightshade');
+
+    const down = encounter.options.find((opt) => opt.id === 'streets-down');
+    assert.ok(down?.hidden, 'expected a hidden streets-down loss outcome');
+    assert.ok(encounter.options.some((opt) => opt.id === 'skip-streets'), 'expected a skip-streets option');
+  });
+
+  test('streets brawl is only added as a candidate for contracts that define one', () => {
+    const withoutStreets = buildWeightedEncounterCandidates({ leg: 'outbound' });
+    assert.ok(
+      !withoutStreets.some((candidate) => candidate.encounter?.options?.some((opt) => opt.encounterType === 'streets')),
+      'contracts without a streetsEncounter must not surface a streets brawl',
+    );
+
+    const withStreets = buildWeightedEncounterCandidates({
+      leg: 'outbound',
+      streetsEncounter: buildStreetsEncounter('never-open-the-package'),
+    });
+    const streetsCandidate = withStreets.find((candidate) => candidate.encounter?.options?.some((opt) => opt.encounterType === 'streets'));
+    assert.ok(streetsCandidate, 'contracts with a streetsEncounter must surface a streets brawl candidate');
+    // The hidden loss option must survive sanitization so the server can resolve it.
+    assert.ok(streetsCandidate.encounter.options.some((opt) => opt.id === 'streets-down' && opt.hidden));
   });
 
   function createCollection(path) {

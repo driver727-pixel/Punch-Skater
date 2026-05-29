@@ -58,6 +58,9 @@ export const featureFlags = {
 
   /** Cyber Joust™ Phaser arcade-joust mini-game. @owner gamma */
   CYBER_JOUST: envFlag("VITE_FF_CYBER_JOUST", true),
+
+  /** Punch Skater™ Streets side-scrolling beat-em-up mission mode. @owner gamma */
+  STREETS: envFlag("VITE_FF_STREETS", true),
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;

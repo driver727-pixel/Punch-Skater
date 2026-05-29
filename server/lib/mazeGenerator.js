@@ -260,6 +260,7 @@ export function generateDistrictWorld(uid, boardDateKey, contracts, dailyResetAt
       status: contract.status ?? 'active',
     };
     if (contract.encounter) worldContract.encounter = contract.encounter;
+    if (contract.streetsEncounter) worldContract.streetsEncounter = contract.streetsEncounter;
     if (contract.fork) worldContract.fork = contract.fork;
     if (isLocked) {
       worldContract.lockHint = 'Complete closer contracts to unlock this deeper node.';

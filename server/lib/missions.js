@@ -5,6 +5,7 @@ import {
   getDistrictRivalMissionHook,
   getDistrictRivalProgressionAward,
 } from './rivals.js';
+import { buildStreetsEncounter } from './missionEncounterDefinitions.js';
 
 const DISTRICT_WHEEL_ACCESS_RULES = {
   Airaway: {
@@ -794,6 +795,7 @@ const BASE_MISSION_BOARD_DEFINITIONS = [
         },
       ],
     },
+    streetsEncounter: buildStreetsEncounter("never-open-the-package"),
   },
   {
     definitionId: "nightshade-tunnel-run",
@@ -830,6 +832,7 @@ const BASE_MISSION_BOARD_DEFINITIONS = [
         },
       ],
     },
+    streetsEncounter: buildStreetsEncounter("nightshade-run"),
   },
   {
     definitionId: "airaway-sky-lane",
@@ -867,6 +870,7 @@ const BASE_MISSION_BOARD_DEFINITIONS = [
         },
       ],
     },
+    streetsEncounter: buildStreetsEncounter("broomstick-first"),
   },
   {
     definitionId: "grid-trace",
@@ -904,6 +908,7 @@ const BASE_MISSION_BOARD_DEFINITIONS = [
         },
       ],
     },
+    streetsEncounter: buildStreetsEncounter("transit-is-a-battlefield"),
   },
   {
     definitionId: "forest-rootline",
@@ -978,6 +983,7 @@ const BASE_MISSION_BOARD_DEFINITIONS = [
         },
       ],
     },
+    streetsEncounter: buildStreetsEncounter("million-screens"),
   },
   {
     definitionId: "batteryville-switchyard-uprising",

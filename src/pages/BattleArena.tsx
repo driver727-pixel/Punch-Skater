@@ -14,6 +14,7 @@ export function BattleArena() {
   const { user } = useAuth();
   const showJousturEntry = isEnabled("JOUSTUR_SKATUR", user);
   const showCyberJoust = isEnabled("CYBER_JOUST", user);
+  const showStreets = isEnabled("STREETS", user);
 
   return (
     <div className="page race-arena-page">
@@ -33,6 +34,11 @@ export function BattleArena() {
         {showCyberJoust && (
           <a href="/cyber-joust/" className="btn-outline">
             ⚡ Cyber Joust - based on the classic video game Joust
+          </a>
+        )}
+        {showStreets && (
+          <a href="/streets/" className="btn-outline">
+            🛹 Punch Skater™ Streets - side-scrolling arcade beat-em-up
           </a>
         )}
         <Link to="/arena/classic" className="btn-outline">
