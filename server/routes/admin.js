@@ -124,6 +124,8 @@ export function registerAdminRoutes(app, {
   app.use('/api/admin/combination-stats', adminUserRateLimit);
   app.use('/api/admin/decks', adminUserRateLimit);
 
+  // Intentionally public so the static Cyber Joust runtime can load the latest
+  // sprite manifest without requiring a signed-in session.
   app.get('/api/cyber-joust/sprites', async (_req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });

@@ -66,6 +66,15 @@ function buildEmptyManifest() {
     return { version: 1, generatedAt: '', bodies: [], weapons: [], fighters: [] };
 }
 
+function isAllowedApiBase(candidate) {
+    try {
+        const parsed = new URL(candidate, window.location.origin);
+        return parsed.origin === window.location.origin || parsed.origin === CYBER_JOUST_REMOTE_API_ORIGIN;
+    } catch {
+        return false;
+    }
+}
+
 function resolveManifestCandidates() {
     const params = new URLSearchParams(window.location.search);
     const explicitBase = params.get('apiBase') || params.get('api');
@@ -74,7 +83,7 @@ function resolveManifestCandidates() {
     const staticManifest = new URL('./assets/fighters/manifest.json', window.location.href).toString();
 
     const candidates = [];
-    if (explicitBase) {
+    if (explicitBase && isAllowedApiBase(explicitBase)) {
         candidates.push(new URL(CYBER_JOUST_SPRITE_API_PATH, explicitBase).toString());
     }
     candidates.push(sameOrigin);

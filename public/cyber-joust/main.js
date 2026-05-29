@@ -77,16 +77,6 @@ class BootScene extends Phaser.Scene {
         this.registry.set(CYBER_JOUST_SPRITE_MANIFEST_KEY, manifest);
 
         const queuedLoads = [];
-        this.load.on('loaderror', (file) => {
-            console.warn(
-                'Cyber Joust sprite load failed:',
-                file?.src || file?.key || 'unknown',
-                'type:',
-                file?.type || 'unknown',
-                'error:',
-                file?.error || 'unknown'
-            );
-        });
 
         manifest.bodies.forEach((entry) => {
             const sourceUrl = resolveCyberJoustSpriteUrl(entry);
@@ -107,7 +97,19 @@ class BootScene extends Phaser.Scene {
         });
 
         if (queuedLoads.length > 0) {
+            const onLoadError = (file) => {
+                console.warn(
+                    'Cyber Joust sprite load failed:',
+                    file?.src || file?.key || 'unknown',
+                    'type:',
+                    file?.type || 'unknown',
+                    'error:',
+                    file?.error || 'unknown'
+                );
+            };
+            this.load.on('loaderror', onLoadError);
             this.load.once('complete', () => {
+                this.load.off('loaderror', onLoadError);
                 this.scene.start('MenuScene');
             });
             this.load.start();
