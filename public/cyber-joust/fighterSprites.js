@@ -75,6 +75,20 @@ function isAllowedApiBase(candidate) {
     }
 }
 
+function isSameOriginApiAvailable() {
+    try {
+        const origin = window.location.origin;
+        // On known static hosts (GitHub Pages, custom domain pointing to Pages), the
+        // Express API is not available at the same origin — skip to avoid noisy 404s.
+        if (origin === CYBER_JOUST_REMOTE_API_ORIGIN) return true;
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') return true;
+        return false;
+    } catch {
+        return false;
+    }
+}
+
 function resolveManifestCandidates() {
     const params = new URLSearchParams(window.location.search);
     const explicitBase = params.get('apiBase') || params.get('api');
@@ -86,7 +100,9 @@ function resolveManifestCandidates() {
     if (explicitBase && isAllowedApiBase(explicitBase)) {
         candidates.push(new URL(CYBER_JOUST_SPRITE_API_PATH, explicitBase).toString());
     }
-    candidates.push(sameOrigin);
+    if (isSameOriginApiAvailable()) {
+        candidates.push(sameOrigin);
+    }
     if (remote !== sameOrigin) candidates.push(remote);
     candidates.push(staticManifest);
     return Array.from(new Set(candidates));
