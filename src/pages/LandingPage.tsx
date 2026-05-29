@@ -12,10 +12,11 @@ const LANDING_LOGIN_FACEOFF_PREFIX = "landing-faceoff-login-dismissed";
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
-  const [showFaceoff, setShowFaceoff] = useState(() => localStorage.getItem(LANDING_GUEST_FACEOFF_KEY) !== "1");
+  const { user, userProfile, loading } = useAuth();
+  const [loginFallbackKey] = useState(() => `session:${Date.now()}`);
+  const [showFaceoff, setShowFaceoff] = useState(false);
   const faceoffDismissalKey = user
-    ? `${LANDING_LOGIN_FACEOFF_PREFIX}:${user.uid}:${user.metadata.lastSignInTime ?? "active"}`
+    ? `${LANDING_LOGIN_FACEOFF_PREFIX}:${user.uid}:${user.metadata.lastSignInTime ?? loginFallbackKey}`
     : LANDING_GUEST_FACEOFF_KEY;
   const closeFaceoff = useCallback(() => {
     localStorage.setItem(faceoffDismissalKey, "1");
@@ -32,9 +33,12 @@ export function LandingPage() {
   }, [showFaceoff, closeFaceoff]);
 
   useEffect(() => {
-    if (!user) return;
+    if (loading) {
+      setShowFaceoff(false);
+      return;
+    }
     setShowFaceoff(localStorage.getItem(faceoffDismissalKey) !== "1");
-  }, [user, faceoffDismissalKey]);
+  }, [loading, faceoffDismissalKey]);
 
   useEffect(() => {
     if (user) {
