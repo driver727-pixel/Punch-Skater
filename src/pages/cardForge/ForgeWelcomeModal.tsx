@@ -42,7 +42,6 @@ function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
       <div className="forge-welcome-faceoff__header">
         <span className="forge-welcome-faceoff__eyebrow">Tonight&apos;s Hype Match</span>
         <h3>Cassidy&apos;s Crew vs Garibaldi&apos;s Crew</h3>
-        <p>Fresh cards rotate from each squad so the next rivalry snap is already warmed up.</p>
       </div>
       <div className="forge-welcome-faceoff__stage">
         <article className="forge-welcome-faceoff__card forge-welcome-faceoff__card--cassidy">
