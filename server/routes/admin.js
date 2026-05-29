@@ -134,7 +134,7 @@ export function registerAdminRoutes(app, {
       res.json(buildCyberJoustManifest(snap.docs));
     } catch (error) {
       console.error('Cyber Joust sprite manifest failed:', error);
-      res.status(500).json({ error: 'Failed to load Cyber Joust sprites.' });
+      res.status(500).json({ error: 'Failed to load Cyber Joust sprites from Firestore.' });
     }
   });
 

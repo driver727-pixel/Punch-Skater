@@ -101,7 +101,7 @@ function createCenteredContext(size: number): CanvasRenderingContext2D {
   const canvas = createCanvas(size);
   const context = canvas.getContext("2d");
   if (!context) {
-    throw new Error("Canvas rendering is unavailable in this browser.");
+    throw new Error("Failed to get 2D rendering context from canvas.");
   }
   context.translate(size / 2, size / 2);
   context.lineJoin = "round";
@@ -387,7 +387,7 @@ export async function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
-      else reject(new Error("Failed to encode the sprite PNG."));
+      else reject(new Error("Failed to encode canvas to PNG blob."));
     }, "image/png");
   });
 }

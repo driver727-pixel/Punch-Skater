@@ -100,6 +100,7 @@ export async function loadCyberJoustSpriteManifest() {
         try {
             const response = await fetch(url, { mode: 'cors' });
             if (!response.ok) {
+                console.warn('Failed to load manifest from', url, 'status:', response.status);
                 continue;
             }
             return normalizeManifest(await response.json());

@@ -78,7 +78,14 @@ class BootScene extends Phaser.Scene {
 
         const queuedLoads = [];
         this.load.on('loaderror', (file) => {
-            console.warn('Cyber Joust sprite load failed:', file?.src || file?.key || 'unknown');
+            console.warn(
+                'Cyber Joust sprite load failed:',
+                file?.src || file?.key || 'unknown',
+                'type:',
+                file?.type || 'unknown',
+                'error:',
+                file?.error || 'unknown'
+            );
         });
 
         manifest.bodies.forEach((entry) => {

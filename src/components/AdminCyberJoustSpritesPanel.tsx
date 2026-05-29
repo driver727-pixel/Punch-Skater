@@ -225,7 +225,7 @@ export function AdminCyberJoustSpritesPanel() {
         setStatus(`Downloading ${entry.label}…`);
         const response = await fetch(entry.imageUrl);
         if (!response.ok) {
-          throw new Error(`Failed to download ${entry.label}.`);
+          throw new Error(`Failed to download ${entry.label} (HTTP ${response.status}).`);
         }
         const blob = await response.blob();
         const filename = entry.kind === "body"
