@@ -6,6 +6,8 @@
  * yet received a user gesture) never breaks the app.
  */
 
+import type { RaceEventEffectKind } from "./raceEffects";
+
 // ── Shared AudioContext (lazy singleton) ────────────────────────────────────
 
 let _ctx: AudioContext | null = null;
@@ -271,5 +273,204 @@ export function sfxGlitch() {
     layeredTone("square", 0.11, 0.03, 2800, 0.04, 1200);
   } catch {
     /* Audio unavailable – silently ignore */
+  }
+}
+
+// ── Classic Race SFX ─────────────────────────────────────────────────────────
+
+/**
+ * Race start horn — a punchy two-tone klaxon used after the "3·2·1·GO!"
+ * countdown to signal the off. Fire-and-forget.
+ */
+export function sfxRaceStartHorn() {
+  layeredTone("sawtooth", 0, 0.22, 196, 0.16, 233);
+  layeredTone("square", 0.02, 0.22, 392, 0.12, 466);
+  layeredTone("sawtooth", 0.22, 0.34, 233, 0.16, 311);
+  layeredTone("square", 0.24, 0.34, 466, 0.12, 622);
+  layeredTone("triangle", 0.24, 0.4, 932, 0.05, 1245);
+}
+
+/**
+ * Short countdown beep used for each "3 · 2 · 1" tick. Pass `go=true` for the
+ * brighter, higher "GO!" accent.
+ */
+export function sfxRaceCountdownBeep(go = false) {
+  osc("square", (o, g, c) => {
+    const t = c.currentTime;
+    const freq = go ? 1320 : 660;
+    o.frequency.setValueAtTime(freq, t);
+    if (go) o.frequency.exponentialRampToValueAtTime(freq * 1.5, t + 0.12);
+    g.gain.setValueAtTime(go ? 0.22 : 0.16, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + (go ? 0.3 : 0.16));
+    o.start(t);
+    o.stop(t + (go ? 0.3 : 0.16));
+  });
+}
+
+/**
+ * Per-event race stinger. Maps a race event hazard kind to a short audio cue
+ * so the player *hears* the difference between a wipeout and a hand-off boost.
+ * Re-uses the canonical {@link RaceEventEffectKind} so the audio and visual
+ * effect kinds never drift apart.
+ */
+export type RaceEventSfxKind = RaceEventEffectKind;
+
+export function sfxRaceEvent(kind: RaceEventSfxKind) {
+  switch (kind) {
+    case "pothole":
+      // Dull thud + rattle.
+      layeredTone("triangle", 0, 0.12, 220, 0.16, 90);
+      layeredTone("square", 0.02, 0.06, 140, 0.08, 70);
+      break;
+    case "copDodge":
+      // Quick siren-style up-down blip.
+      layeredTone("sawtooth", 0, 0.1, 760, 0.12, 1120);
+      layeredTone("sawtooth", 0.1, 0.12, 1120, 0.12, 680);
+      break;
+    case "courierHandoff":
+      // Bright ascending power surge.
+      layeredTone("square", 0, 0.16, 523, 0.13, 784);
+      layeredTone("triangle", 0.06, 0.2, 784, 0.1, 1175);
+      break;
+    case "wipeout":
+      // Crunchy descending crash.
+      layeredTone("sawtooth", 0, 0.3, 320, 0.2, 70);
+      layeredTone("square", 0.04, 0.22, 180, 0.12, 60);
+      layeredTone("triangle", 0.02, 0.34, 90, 0.12, 40);
+      break;
+    case "comeback":
+      // Heroic rising shimmer.
+      layeredTone("triangle", 0, 0.22, 659, 0.1, 988);
+      layeredTone("sine", 0.1, 0.26, 988, 0.08, 1319);
+      layeredTone("sine", 0.2, 0.2, 1319, 0.05, 1760);
+      break;
+    default:
+      break;
+  }
+}
+
+/** Finish-line crowd swell — a rising roar layered under the win/lose fanfare. */
+export function sfxRaceFinishSwell() {
+  try {
+    const c = ctx();
+    const now = c.currentTime;
+    const dur = 1.1;
+    const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      // Swell in, then settle — coloured noise resembling a crowd roar.
+      const p = i / data.length;
+      const envelope = Math.sin(Math.min(1, p * 1.3) * Math.PI);
+      data[i] = (Math.random() * 2 - 1) * envelope;
+    }
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const filter = c.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(420, now);
+    filter.frequency.linearRampToValueAtTime(1100, now + dur * 0.6);
+    filter.Q.value = 0.7;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(0.16, now + dur * 0.5);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(c.destination);
+    src.start(now);
+    src.stop(now + dur);
+  } catch {
+    /* Audio unavailable – silently ignore */
+  }
+}
+
+/**
+ * A controllable "roll" loop that imitates wheels/engine humming during a race.
+ * Returns a handle whose `setIntensity(0..1)` re-pitches and re-gains the loop
+ * to match the leader's speed, and whose `stop()` tears everything down.
+ *
+ * Always returns a handle (a no-op handle when audio is unavailable) so callers
+ * never need to null-check.
+ */
+export interface RaceRollLoopHandle {
+  setIntensity: (intensity: number) => void;
+  stop: () => void;
+}
+
+const NO_OP_ROLL_LOOP: RaceRollLoopHandle = { setIntensity: () => {}, stop: () => {} };
+
+export function startRaceRollLoop(): RaceRollLoopHandle {
+  try {
+    const c = ctx();
+    const now = c.currentTime;
+
+    // Looping noise buffer fed through a lowpass to make a wheels-on-asphalt hum.
+    const buf = c.createBuffer(1, c.sampleRate * 1, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = c.createBufferSource();
+    noise.buffer = buf;
+    noise.loop = true;
+
+    const filter = c.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(420, now);
+    filter.Q.value = 0.8;
+
+    // A low oscillator adds an engine-like body under the noise hum.
+    const drone = c.createOscillator();
+    drone.type = "sawtooth";
+    drone.frequency.setValueAtTime(70, now);
+
+    const noiseGain = c.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    const droneGain = c.createGain();
+    droneGain.gain.setValueAtTime(0.0001, now);
+    const master = c.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.linearRampToValueAtTime(0.9, now + 0.25);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(master);
+    drone.connect(droneGain);
+    droneGain.connect(master);
+    master.connect(c.destination);
+
+    noise.start(now);
+    drone.start(now);
+
+    let stopped = false;
+    const setIntensity = (intensityRaw: number) => {
+      if (stopped) return;
+      const intensity = Math.max(0, Math.min(1, intensityRaw));
+      const t = c.currentTime;
+      // Higher speed → brighter filter, higher engine pitch, louder hum.
+      filter.frequency.linearRampToValueAtTime(380 + intensity * 1600, t + 0.08);
+      drone.frequency.linearRampToValueAtTime(60 + intensity * 130, t + 0.08);
+      noiseGain.gain.linearRampToValueAtTime(0.05 + intensity * 0.10, t + 0.08);
+      droneGain.gain.linearRampToValueAtTime(0.04 + intensity * 0.08, t + 0.08);
+    };
+
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      try {
+        const t = c.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(master.gain.value, t);
+        master.gain.linearRampToValueAtTime(0.0001, t + 0.2);
+        noise.stop(t + 0.25);
+        drone.stop(t + 0.25);
+      } catch {
+        /* already stopped */
+      }
+    };
+
+    return { setIntensity, stop };
+  } catch {
+    return NO_OP_ROLL_LOOP;
   }
 }

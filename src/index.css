@@ -18230,6 +18230,150 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-weight: 600;
 }
 
+/* ── District preview swatches ── */
+.race-district-btn--swatch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 22px;
+}
+.race-district-swatch {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.race-district-swatch-emoji { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.6)); }
+.race-district-btn-label { white-space: nowrap; }
+
+/* ── Head-to-head stat matchup ── */
+.race-matchup {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+}
+.race-matchup-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+.race-matchup-name { font-weight: 700; }
+.race-matchup-name--mine { color: #ff88bb; text-align: right; }
+.race-matchup-name--theirs { color: #88e6ff; }
+.race-matchup-vs {
+  font-size: 0.7rem; font-weight: 800; opacity: 0.7;
+  padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,0.1);
+}
+.race-matchup-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.race-matchup-stat { font-size: 0.85rem; opacity: 0.85; }
+.race-matchup-bar {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.race-matchup-bar--mine { justify-content: flex-end; }
+.race-matchup-bar-fill {
+  position: absolute; top: 0; bottom: 0;
+  transition: width 0.3s ease;
+}
+.race-matchup-bar--mine .race-matchup-bar-fill {
+  right: 0; background: linear-gradient(90deg, rgba(255,68,136,0.4), #ff4488);
+}
+.race-matchup-bar--theirs .race-matchup-bar-fill {
+  left: 0; background: linear-gradient(90deg, #44ddff, rgba(68,221,255,0.4));
+}
+.race-matchup-bar-num {
+  position: relative; z-index: 1;
+  font-size: 0.66rem; font-weight: 800; padding: 0 5px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.race-matchup-odds {
+  margin: 8px 0 0; text-align: center;
+  font-size: 0.82rem; font-weight: 700;
+}
+
+/* ── Starting grid (challengers) ── */
+.race-arena-opponents--grid {
+  --grid-line: rgba(255,255,255,0.06);
+}
+.race-arena-opponent--grid {
+  position: relative;
+  animation: race-grid-in 0.4s ease-out both;
+}
+@keyframes race-grid-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.race-grid-pole {
+  position: absolute; top: 6px; left: 6px;
+  font-size: 0.62rem; font-weight: 800;
+  padding: 1px 6px; border-radius: 8px;
+  background: rgba(0,0,0,0.55); color: #ffd24a;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255,210,74,0.5);
+}
+.race-grid-power {
+  display: inline-block;
+  font-size: 0.72rem; font-weight: 700;
+  margin: 4px 0; opacity: 0.9;
+}
+
+/* ── Solo racer dossier ── */
+.race-solo-dossier {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+}
+.race-solo-dossier-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.race-solo-dossier-power {
+  font-size: 0.72rem; font-weight: 800;
+  padding: 1px 8px; border-radius: 10px; background: rgba(255,210,74,0.16); color: #ffd24a;
+}
+.race-solo-dossier-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 24px;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 0.78rem;
+}
+.race-solo-dossier-bar {
+  height: 10px; border-radius: 5px;
+  background: rgba(255,255,255,0.07); overflow: hidden;
+}
+.race-solo-dossier-bar-fill {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #44ddff, #ff88bb);
+  transition: width 0.3s ease;
+}
+.race-solo-dossier-num { text-align: right; font-weight: 700; font-family: ui-monospace, monospace; }
+
+
 /* ── Solo Sprint tab ── */
 .race-solo-panel {
   max-width: 520px;
@@ -18261,6 +18405,276 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 .race-card-trail--1 { opacity: 0.35; }
 .race-card-trail--2 { opacity: 0.15; }
+
+/* ── Race liveliness: event-tinted trails, lead pip, reaction flashes ──────── */
+/* Trails inherit the lane glow by default; events recolour them so a hand-off
+   boost streaks gold-green while a wipeout sheds hot debris-orange. */
+.race-card-trail--courierHandoff { box-shadow: 0 0 10px #9dff7a, 0 0 20px rgba(157,255,122,0.5); }
+.race-card-trail--copDodge       { box-shadow: 0 0 10px #9fe8ff, 0 0 20px rgba(159,232,255,0.5); }
+.race-card-trail--comeback       { box-shadow: 0 0 10px #ffe27a, 0 0 20px rgba(255,226,122,0.55); }
+.race-card-trail--wipeout        { box-shadow: 0 0 10px #ff7a3c, 0 0 20px rgba(255,122,60,0.5); }
+.race-card-trail--pothole        { box-shadow: 0 0 8px rgba(185,160,122,0.6); }
+
+/* Leading racer gets a brighter rubber-band glow + a "1st" pip. */
+.race-card-3d--leading {
+  filter: brightness(1.12) saturate(1.1);
+  z-index: 5;
+}
+.race-card-3d-pip {
+  position: absolute;
+  top: -8px; right: -8px;
+  font-size: 6px; font-weight: 800;
+  padding: 1px 3px; border-radius: 6px;
+  background: #ffd24a; color: #1a1205;
+  box-shadow: 0 0 6px rgba(255,210,74,0.9);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+}
+/* Reaction flashes animate only colour/glow (not transform) so the card keeps
+   its track orientation while still visibly reacting. */
+.race-card-3d--stumble { animation: race-card-stumble 0.45s ease-out; }
+.race-card-3d--surge   { animation: race-card-surge 0.45s ease-out; }
+@keyframes race-card-stumble {
+  0%   { filter: brightness(1) saturate(1); box-shadow: 0 0 10px #ff6a2c, 0 0 26px rgba(255,106,44,0.7); }
+  40%  { filter: brightness(0.7) saturate(1.4); }
+  100% { filter: brightness(1) saturate(1); }
+}
+@keyframes race-card-surge {
+  0%   { filter: brightness(1); }
+  35%  { filter: brightness(1.5) saturate(1.3); box-shadow: 0 0 16px #9dff7a, 0 0 32px rgba(157,255,122,0.8); }
+  100% { filter: brightness(1); }
+}
+
+/* ── Positioned event particle bursts (raceEffects.ts) ────────────────────── */
+.race-burst-particle {
+  position: absolute;
+  width: var(--bs, 5px);
+  height: var(--bs, 5px);
+  margin-left: calc(var(--bs, 5px) / -2);
+  margin-top: calc(var(--bs, 5px) / -2);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 6px var(--bglow, #fff);
+  animation: race-burst var(--bd, 700ms) ease-out forwards;
+  will-change: transform, opacity;
+}
+.race-burst-particle--pothole { border-radius: 2px; }
+.race-burst-particle--wipeout { border-radius: 2px; }
+@keyframes race-burst {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--bx, 0), var(--by, 0)) scale(0.2) rotate(var(--br, 0deg)); opacity: 0; }
+}
+
+/* ── Speed-reactive atmosphere veil ───────────────────────────────────────── */
+.race-speed-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 8px;
+  transition: opacity 120ms linear;
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 48%, rgba(0,0,0,0.55) 100%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, rgba(255,255,255,0) 2px 26px);
+  mix-blend-mode: screen;
+}
+
+/* ── Broadcast scoreboard strip ───────────────────────────────────────────── */
+.race-scoreboard {
+  max-width: 720px;
+  margin: 0 auto 0.6rem;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.race-scoreboard-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 92px;
+  padding: 0.3rem 0.7rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px;
+}
+.race-scoreboard-label {
+  font-size: 0.62rem; letter-spacing: 1.4px; text-transform: uppercase;
+  opacity: 0.65; font-weight: 700;
+}
+.race-scoreboard-value {
+  font-family: ui-monospace, monospace; font-weight: 800; font-size: 1rem;
+}
+
+/* ── Countdown overlay ────────────────────────────────────────────────────── */
+.race-countdown {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 8;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.35), rgba(0,0,0,0.05));
+}
+.race-countdown-num {
+  font-size: clamp(3rem, 12vw, 7rem);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(255,255,255,0.7), 0 0 40px var(--theme-accent, #aa66ff);
+  animation: race-countdown-pop 0.8s ease-out;
+}
+.race-countdown-num--go { color: #9dff7a; text-shadow: 0 0 22px #9dff7a, 0 0 50px #44ff88; }
+@keyframes race-countdown-pop {
+  0%   { transform: scale(2.2); opacity: 0; }
+  25%  { transform: scale(1); opacity: 1; }
+  80%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.7); opacity: 0; }
+}
+
+/* ── Lead-change banner ───────────────────────────────────────────────────── */
+.race-lead-banner {
+  position: absolute; top: 12%; left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 0.9rem;
+  background: linear-gradient(90deg, rgba(255,68,136,0.9), rgba(68,221,255,0.9));
+  color: #fff; font-weight: 800; font-size: 0.82rem;
+  letter-spacing: 0.5px; border-radius: 20px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+  z-index: 7; pointer-events: none; white-space: nowrap;
+  animation: race-lead-banner 1.5s ease-out forwards;
+}
+@keyframes race-lead-banner {
+  0%   { transform: translateX(-50%) translateY(-10px) scale(0.8); opacity: 0; }
+  15%  { transform: translateX(-50%) translateY(0) scale(1.05); opacity: 1; }
+  80%  { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-8px) scale(0.95); opacity: 0; }
+}
+
+/* ── Photo-finish treatment ───────────────────────────────────────────────── */
+.race-photo-flag {
+  position: absolute; bottom: 10px; left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  background: rgba(0,0,0,0.7); color: #ffd24a;
+  border: 1px solid #ffd24a; border-radius: 16px;
+  font-weight: 800; font-size: 0.78rem; letter-spacing: 0.6px;
+  z-index: 7; pointer-events: none;
+  animation: race-photo-pulse 0.8s ease-in-out infinite;
+}
+@keyframes race-photo-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(255,210,74,0.5); }
+  50%      { box-shadow: 0 0 18px rgba(255,210,74,0.95); }
+}
+.race-track-page--photo .race-track-canvas {
+  box-shadow: 0 0 0 2px rgba(255,210,74,0.7), 0 8px 32px rgba(0,0,0,0.6);
+}
+
+/* ── Screen shake (wipeouts) ──────────────────────────────────────────────── */
+.race-track-page--shake { animation: race-shake 0.36s cubic-bezier(.36,.07,.19,.97); }
+@keyframes race-shake {
+  10%, 90% { transform: translate(-1px, 0); }
+  20%, 80% { transform: translate(2px, 0); }
+  30%, 50%, 70% { transform: translate(-4px, 1px); }
+  40%, 60% { transform: translate(4px, -1px); }
+}
+
+/* ── Animated speed gauges (HUD) ──────────────────────────────────────────── */
+.race-hud-gauge {
+  position: relative;
+  display: flex; align-items: center; justify-content: flex-end;
+  height: 16px; border-radius: 8px; overflow: hidden;
+  background: rgba(255,255,255,0.08);
+  font-family: ui-monospace, monospace; font-size: 0.72rem;
+}
+.race-hud-gauge-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 8px;
+  transition: width 100ms linear;
+}
+.race-hud-gauge-fill--challenger { background: linear-gradient(90deg, #ff4488, #ffb04d); }
+.race-hud-gauge-fill--defender   { background: linear-gradient(90deg, #44ddff, #b04dff); }
+.race-hud-gauge-num {
+  position: relative; z-index: 1;
+  padding-right: 6px; color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  font-weight: 700;
+}
+.race-hud-gapline {
+  text-align: center; margin: 0.2rem 0 0;
+  font-size: 0.82rem; opacity: 0.85; font-style: italic;
+}
+
+/* ── Play-by-play commentary ticker ───────────────────────────────────────── */
+.race-commentary {
+  max-width: 560px; margin: 0.75rem auto;
+  display: flex; flex-direction: column; gap: 0.15rem;
+  font-family: ui-monospace, monospace; font-size: 0.8rem;
+}
+.race-commentary-line {
+  margin: 0; padding: 0.25rem 0.6rem;
+  background: rgba(0,0,0,0.35);
+  border-left: 2px solid var(--theme-accent, #aa66ff);
+  border-radius: 4px;
+  animation: race-commentary-in 0.3s ease-out;
+}
+.race-commentary-line:last-child {
+  background: rgba(255,255,255,0.08);
+  font-weight: 700;
+}
+@keyframes race-commentary-in {
+  from { transform: translateX(-8px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+/* ── Winner podium / reward payoff ────────────────────────────────────────── */
+.race-result-panel--podium { max-width: 600px; }
+.race-result-title { animation: race-result-title 0.6s ease-out; }
+@keyframes race-result-title {
+  0%   { transform: scale(0.7); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.race-result-photo { margin: 0 0 0.5rem; color: #ffd24a; font-weight: 700; }
+.race-result-district { margin: 0 0 0.75rem; opacity: 0.88; }
+.race-podium {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+.race-podium-slot {
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+  padding: 0.85rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+}
+.race-podium-slot--challenger { box-shadow: inset 0 0 0 1px rgba(255,68,136,0.25); }
+.race-podium-slot--defender   { box-shadow: inset 0 0 0 1px rgba(68,221,255,0.25); }
+.race-podium-slot--winner {
+  border-color: #ffd24a;
+  box-shadow: 0 0 18px rgba(255,210,74,0.4), inset 0 0 0 1px rgba(255,210,74,0.5);
+  animation: race-podium-rise 0.7s ease-out;
+}
+@keyframes race-podium-rise {
+  0%   { transform: translateY(14px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.race-podium-medal { font-size: 1.8rem; line-height: 1; }
+.race-podium-name { font-size: 0.95rem; }
+.race-podium-reward { font-family: ui-monospace, monospace; font-size: 0.82rem; opacity: 0.92; }
+.race-podium-boost {
+  font-size: 0.74rem; font-weight: 800; color: #9dff7a;
+  padding: 1px 8px; border-radius: 10px; background: rgba(157,255,122,0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .race-card-3d--stumble, .race-card-3d--surge,
+  .race-track-page--shake, .race-countdown-num,
+  .race-lead-banner, .race-photo-flag, .race-result-title,
+  .race-podium-slot--winner, .race-burst-particle, .race-commentary-line {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .race-scoreboard-cell { min-width: 72px; padding: 0.25rem 0.5rem; }
+  .race-podium { grid-template-columns: 1fr; }
+}
 
 /* ── Admin Combination Stats Panel ─────────────────────────────────────────── */
 .admin-combo-panel {
