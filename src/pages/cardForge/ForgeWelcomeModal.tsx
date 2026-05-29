@@ -21,8 +21,9 @@ function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
   const garibaldiCards = payload.crews.garibaldi.cards;
   const pairCount = Math.min(cassidyCards.length, garibaldiCards.length);
   const pairIndex = pairCount > 0 ? tick % pairCount : 0;
+  const garibaldiRotationOffset = Math.floor(tick / Math.max(pairCount, 1));
   const cassidyCard = cassidyCards[pairIndex];
-  const garibaldiCard = garibaldiCards[(pairIndex + Math.floor(tick / Math.max(pairCount, 1))) % garibaldiCards.length];
+  const garibaldiCard = garibaldiCards[(pairIndex + garibaldiRotationOffset) % garibaldiCards.length];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
