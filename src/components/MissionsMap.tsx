@@ -75,12 +75,59 @@ const POI_TITLE_TRUNCATE_AT = 16;
 // These are replaced immediately once the container mounts and reports its size.
 const DEFAULT_SVG_W = 800;
 const DEFAULT_SVG_H = 600;
+const STATIC_MAP_IMAGE_WIDTH = 1536;
+const STATIC_MAP_IMAGE_HEIGHT = 2752;
+
+interface MapProjection {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 // ── Coordinate projection ──────────────────────────────────────────────────
 // Nodes store x/y as 0-100 percentages; project to actual SVG pixel coords
 // so the viewBox matches the container and all markers stay circular.
 function spx(pct: number, dim: number): number {
   return (pct / 100) * dim;
+}
+
+function createMapProjection(svgW: number, svgH: number, alignToStaticBackdrop: boolean): MapProjection {
+  if (!alignToStaticBackdrop) {
+    return { x: 0, y: 0, width: svgW, height: svgH };
+  }
+
+  const imageRatio = STATIC_MAP_IMAGE_WIDTH / STATIC_MAP_IMAGE_HEIGHT;
+  const containerRatio = svgW / svgH;
+
+  if (containerRatio > imageRatio) {
+    const height = svgW / imageRatio;
+    return {
+      x: 0,
+      y: (svgH - height) / 2,
+      width: svgW,
+      height,
+    };
+  }
+
+  const width = svgH * imageRatio;
+  return {
+    x: (svgW - width) / 2,
+    y: 0,
+    width,
+    height: svgH,
+  };
+}
+
+function projectPoint(xPct: number, yPct: number, projection: MapProjection): { x: number; y: number } {
+  return {
+    x: projection.x + spx(xPct, projection.width),
+    y: projection.y + spx(yPct, projection.height),
+  };
+}
+
+function projectNode(node: WorldNode, projection: MapProjection): { x: number; y: number } {
+  return projectPoint(node.x, node.y, projection);
 }
 
 function renderFigurineLayer(
@@ -217,26 +264,26 @@ function MapEdge({
   nodes,
   highlighted,
   routeHighlighted,
-  svgW,
-  svgH,
+  projection,
 }: {
   edge: WorldEdge;
   nodes: WorldNode[];
   highlighted: boolean;
   routeHighlighted: boolean;
-  svgW: number;
-  svgH: number;
+  projection: MapProjection;
 }) {
   const fromNode = nodeById(nodes, edge.from);
   const toNode = nodeById(nodes, edge.to);
   if (!fromNode || !toNode) return null;
+  const from = projectNode(fromNode, projection);
+  const to = projectNode(toNode, projection);
 
   return (
     <line
-      x1={spx(fromNode.x, svgW)}
-      y1={spx(fromNode.y, svgH)}
-      x2={spx(toNode.x, svgW)}
-      y2={spx(toNode.y, svgH)}
+      x1={from.x}
+      y1={from.y}
+      x2={to.x}
+      y2={to.y}
       stroke={routeHighlighted ? ROUTE_EDGE_COLOUR : highlighted ? EDGE_ACTIVE_COLOUR : EDGE_COLOUR}
       strokeWidth={routeHighlighted ? 3 : highlighted ? 2 : 1.5}
       strokeDasharray={routeHighlighted ? undefined : highlighted ? undefined : "5 4"}
@@ -245,11 +292,12 @@ function MapEdge({
   );
 }
 
-function JunctionMarker({ node, svgW, svgH }: { node: WorldNode; svgW: number; svgH: number }) {
+function JunctionMarker({ node, projection }: { node: WorldNode; projection: MapProjection }) {
+  const { x: cx, y: cy } = projectNode(node, projection);
   return (
     <circle
-      cx={spx(node.x, svgW)}
-      cy={spx(node.y, svgH)}
+      cx={cx}
+      cy={cy}
       r={JUNCTION_R}
       fill={JUNCTION_FILL}
       stroke={JUNCTION_STROKE}
@@ -258,9 +306,8 @@ function JunctionMarker({ node, svgW, svgH }: { node: WorldNode; svgW: number; s
   );
 }
 
-function WorkshopMarker({ node, svgW, svgH }: { node: WorldNode; svgW: number; svgH: number }) {
-  const cx = spx(node.x, svgW);
-  const cy = spx(node.y, svgH);
+function WorkshopMarker({ node, projection }: { node: WorldNode; projection: MapProjection }) {
+  const { x: cx, y: cy } = projectNode(node, projection);
   return (
     <g filter="url(#mm-glow-cyan)">
       <circle cx={cx} cy={cy} r={WORKSHOP_R + 8} fill="none" stroke={NEON_CYAN} strokeWidth={1} opacity={0.1} />
@@ -326,18 +373,15 @@ function PoiMarker({
   contract,
   selected,
   onClick,
-  svgW,
-  svgH,
+  projection,
 }: {
   node: WorldNode;
   contract: WorldContract | undefined;
   selected: boolean;
   onClick: () => void;
-  svgW: number;
-  svgH: number;
+  projection: MapProjection;
 }) {
-  const cx = spx(node.x, svgW);
-  const cy = spx(node.y, svgH);
+  const { x: cx, y: cy } = projectNode(node, projection);
   const isLocked = !contract || contract.visibility === "locked";
   const isCompleted = contract?.status === "completed";
 
@@ -524,6 +568,8 @@ export function MissionsMap({
   }, []);
 
   const showBanner = activeRun !== null && !isTerminalMissionPhase(activeRun.phase);
+  const mapProjection = createMapProjection(svgW, svgH, Boolean(backdropUrl));
+  const displayTokenPoint = displayTokenPosition ? projectPoint(displayTokenPosition.x, displayTokenPosition.y, mapProjection) : null;
 
   return (
     <div ref={containerRef} style={containerStyle}>
@@ -564,13 +610,12 @@ export function MissionsMap({
               nodes={nodes}
               highlighted={isActiveEdge(edge, activeRun, contracts)}
               routeHighlighted={routeHighlighted}
-              svgW={svgW}
-              svgH={svgH}
+              projection={mapProjection}
             />
           );
         })}
         {junctionNodes.map((node) => (
-          <JunctionMarker key={node.id} node={node} svgW={svgW} svgH={svgH} />
+          <JunctionMarker key={node.id} node={node} projection={mapProjection} />
         ))}
         {poiNodes.map((node) => {
           const contract = contractForNode(contracts, node.id);
@@ -581,24 +626,23 @@ export function MissionsMap({
               contract={contract}
               selected={selectedContractId === contract?.id}
               onClick={() => contract && onSelectContract(contract.id)}
-              svgW={svgW}
-              svgH={svgH}
+              projection={mapProjection}
             />
           );
         })}
-        {workshopNode && <WorkshopMarker node={workshopNode} svgW={svgW} svgH={svgH} />}
-        {displayTokenPosition ? (
+        {workshopNode && <WorkshopMarker node={workshopNode} projection={mapProjection} />}
+        {displayTokenPoint ? (
           spriteExtraction?.characterImageUrl || spriteExtraction?.boardImageUrl ? (
             renderFigurineLayer(
               spriteExtraction,
-              spx(displayTokenPosition.x, svgW),
-              spx(displayTokenPosition.y, svgH),
+              displayTokenPoint.x,
+              displayTokenPoint.y,
             )
           ) : spriteUrl ? (
             <image
               href={spriteUrl}
-              x={spx(displayTokenPosition.x, svgW) - SPRITE_TOKEN_HALF}
-              y={spx(displayTokenPosition.y, svgH) - SPRITE_TOKEN_HALF}
+              x={displayTokenPoint.x - SPRITE_TOKEN_HALF}
+              y={displayTokenPoint.y - SPRITE_TOKEN_HALF}
               width={SPRITE_TOKEN_HALF * 2}
               height={SPRITE_TOKEN_HALF * 2}
               preserveAspectRatio="xMidYMid meet"
@@ -606,16 +650,16 @@ export function MissionsMap({
           ) : (
             <g filter="url(#mm-glow-pink)">
               <circle
-                cx={spx(displayTokenPosition.x, svgW)}
-                cy={spx(displayTokenPosition.y, svgH)}
+                cx={displayTokenPoint.x}
+                cy={displayTokenPoint.y}
                 r={TOKEN_R + 4}
                 fill="none"
                 stroke="rgba(255,58,242,0.45)"
                 strokeWidth={1}
               />
               <circle
-                cx={spx(displayTokenPosition.x, svgW)}
-                cy={spx(displayTokenPosition.y, svgH)}
+                cx={displayTokenPoint.x}
+                cy={displayTokenPoint.y}
                 r={TOKEN_R}
                 fill="rgba(255,58,242,0.18)"
                 stroke={NEON_PINK}
