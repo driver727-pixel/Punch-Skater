@@ -2377,7 +2377,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 /* ===== Card Forge Layout ===== */
 .forge-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -3378,6 +3378,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   top: 24px;
   overflow: hidden;
 }
+
 /* CRT screen edge vignette */
 .forge-preview::before {
   content: "";
@@ -3601,6 +3602,25 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+@media (min-width: 1181px) {
+  .forge-preview-stack {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.95fr) minmax(280px, 1.05fr);
+    align-items: start;
+  }
+
+  .forge-image-errors,
+  .forge-image-notice {
+    grid-column: 1 / -1;
+  }
+
+  .forge-generated-actions {
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 }
 
 .empty-preview {

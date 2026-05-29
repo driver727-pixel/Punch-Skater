@@ -116,6 +116,9 @@ export function useForgeGeneration() {
   });
   const [boardConfig, setBoardConfig] = useState(() => getSavedBoardConfig(loadForgeSession(sessionOwnerKey)));
   const [generated, setGenerated] = useState<CardPayload | null>(() => loadForgeSession(sessionOwnerKey)?.card ?? null);
+  const [selectedWeaponImageUrl, setSelectedWeaponImageUrl] = useState<string | undefined>(
+    () => loadForgeSession(sessionOwnerKey)?.card?.weaponImageUrl,
+  );
   const [characterBlend, setCharacterBlend] = useState(() => loadForgeSession(sessionOwnerKey)?.characterBlend ?? DEFAULT_CHARACTER_BLEND);
   const [forging, setForging] = useState(false);
   const [boardImageLoading, setBoardImageLoading] = useState(false);
@@ -278,6 +281,7 @@ export function useForgeGeneration() {
     const session = loadForgeSession(sessionOwnerKey);
     setBoardConfig(getSavedBoardConfig(session));
     setGenerated(session?.card ?? null);
+    setSelectedWeaponImageUrl(session?.card?.weaponImageUrl);
     setCharacterBlend(session?.characterBlend ?? DEFAULT_CHARACTER_BLEND);
     setForging(false);
     setBoardImageLoading(false);
@@ -296,6 +300,7 @@ export function useForgeGeneration() {
       ...(session?.backgroundUrl != null ? { backgroundUrl: session.backgroundUrl } : {}),
       ...(session?.characterUrl != null ? { characterUrl: session.characterUrl } : {}),
       ...(session?.frameUrl != null ? { frameUrl: session.frameUrl } : {}),
+      ...(session?.card?.weaponImageUrl != null ? { weaponUrl: session.card.weaponImageUrl } : {}),
     });
   }, [abortGeneration, sessionOwnerKey, setLayers]);
 
@@ -390,6 +395,8 @@ export function useForgeGeneration() {
     const cardWithBoard = {
       ...promotedCard,
       characterPlacement: normalizeCharacterPlacement(promotedCard.characterPlacement),
+      weaponImageUrl: selectedWeaponImageUrl,
+      weaponPlacement: normalizeWeaponPlacement(promotedCard.weaponPlacement),
       board: {
         ...promotedCard.board,
         layerOrder: resolveBoardLayerOrder(promotedCard.board.layerOrder),
@@ -418,6 +425,9 @@ export function useForgeGeneration() {
     }
 
     resetLayerSession();
+    if (selectedWeaponImageUrl) {
+      setLayers((current) => ({ ...current, weaponUrl: selectedWeaponImageUrl }));
+    }
     clearRecoveryIssues(["background", "character", "frame"], true);
 
     void runBoardGeneration(boardConfig, signal);
@@ -463,7 +473,9 @@ export function useForgeGeneration() {
     requiresOzzies,
     resetLayerSession,
     runBoardGeneration,
+    selectedWeaponImageUrl,
     setLayerParams,
+    setLayers,
     startFreeForgeCooldown,
     tier,
     unlockFaction,
@@ -780,6 +792,7 @@ export function useForgeGeneration() {
 
   /** Admin-only: set the weapon layer URL from a pre-uploaded asset. */
   const setWeaponImageUrl = useCallback((url: string | undefined) => {
+    setSelectedWeaponImageUrl(url);
     setGenerated((prev) => (
       prev ? { ...prev, weaponImageUrl: url } : prev
     ));
@@ -835,6 +848,7 @@ export function useForgeGeneration() {
     revealedRarity,
     rerollTokens,
     rerollingActionId,
+    selectedWeaponImageUrl,
     setArchetype,
     setBoardConfig,
     setBoardLayerOrder,
@@ -893,6 +907,7 @@ export function useForgeGeneration() {
     revealedRarity,
     rerollTokens,
     rerollingActionId,
+    selectedWeaponImageUrl,
     setArchetype,
     setBoardConfig,
     setBoardLayerOrder,

@@ -79,6 +79,7 @@ export function CardForge() {
     saveError,
     savedCard,
     saving,
+    selectedWeaponImageUrl,
     setArchetype,
     setBoardPlacement,
     setBoardScale,
@@ -201,7 +202,7 @@ export function CardForge() {
           ozziesBalance={ozziesBalance}
           prompts={prompts}
           requiresOzzies={requiresOzzies}
-          selectedWeaponUrl={generated?.weaponImageUrl}
+          selectedWeaponUrl={selectedWeaponImageUrl}
           skinTones={SKIN_TONES}
           spendingOzzies={spendingOzzies}
           tier={tier}
