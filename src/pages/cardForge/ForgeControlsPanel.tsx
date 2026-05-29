@@ -85,6 +85,8 @@ interface ForgeControlsPanelProps {
   walletMessageTone: "info" | "error";
   ageGroups: AgeGroup[];
   weaponAssets?: Array<{ url: string; name: string }>;
+  weaponUnlockXp?: number;
+  weaponsUnlocked?: boolean;
 }
 
 export function ForgeControlsPanel({
@@ -118,6 +120,8 @@ export function ForgeControlsPanel({
   walletMessageTone,
   ageGroups,
   weaponAssets,
+  weaponUnlockXp = 0,
+  weaponsUnlocked = true,
 }: ForgeControlsPanelProps) {
   const isFreeTier = tier === "free";
   const freeForgeRemainingMs = getRemainingDurationMs(freeForgeReadyAt);
@@ -284,7 +288,9 @@ export function ForgeControlsPanel({
         <div className="form-group">
           <label>Weapon</label>
           <p className="form-hint" style={{ marginBottom: 6 }}>
-            Equip a weapon to your card — drag it into position on the preview.
+            {weaponsUnlocked
+              ? "Equip a weapon to your card — drag it into position on the preview."
+              : `Weapons unlock at ${weaponUnlockXp.toLocaleString()} XP. Until then, they stay ghosted out.`}
           </p>
           <div className="forge-weapon-grid">
             <button
@@ -299,13 +305,18 @@ export function ForgeControlsPanel({
               <button
                 key={weapon.url}
                 type="button"
-                className={`forge-weapon-option${selectedWeaponUrl === weapon.url ? " selected" : ""}`}
-                onClick={() => onWeaponSelect(weapon.url)}
+                className={`forge-weapon-option${selectedWeaponUrl === weapon.url ? " selected" : ""}${!weaponsUnlocked ? " forge-weapon-option--locked" : ""}`}
+                onClick={() => {
+                  if (!weaponsUnlocked) return;
+                  onWeaponSelect(weapon.url);
+                }}
                 aria-pressed={selectedWeaponUrl === weapon.url}
+                disabled={!weaponsUnlocked}
                 title={weapon.name}
               >
                 <img src={weapon.url} alt={weapon.name} className="forge-weapon-thumb" />
                 <span className="forge-weapon-name">{weapon.name}</span>
+                {!weaponsUnlocked && <span className="forge-weapon-lock">🔒 {weaponUnlockXp.toLocaleString()} XP</span>}
               </button>
             ))}
           </div>

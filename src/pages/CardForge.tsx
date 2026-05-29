@@ -20,6 +20,7 @@ import {
 } from "./cardForge/constants";
 import { useCardForgeController } from "./cardForge/useCardForgeController";
 import { useBattlePass } from "../hooks/useBattlePass";
+import { WEAPON_UNLOCK_XP } from "../lib/progression";
 import { isImageGenConfigured } from "../services/imageGen";
 
 export function CardForge() {
@@ -59,6 +60,7 @@ export function CardForge() {
     isAnyLayerLoading,
     isAdmin,
     isFirstCard,
+    missionXp,
     layers,
     openUpgradeModal,
     ozziesBalance,
@@ -101,6 +103,7 @@ export function CardForge() {
     weaponPlacement,
   } = useCardForgeController();
   const battlePass = useBattlePass();
+  const weaponsUnlocked = missionXp >= WEAPON_UNLOCK_XP;
 
   // Admin layer toggles
   const [layerToggles, setLayerToggles] = useState<Record<string, boolean>>({
@@ -115,6 +118,7 @@ export function CardForge() {
   };
 
   const handleWeaponSelect = (url: string | undefined) => {
+    if (url && !weaponsUnlocked) return;
     setWeaponImageUrl(url);
   };
 
@@ -204,6 +208,8 @@ export function CardForge() {
           walletMessage={walletMessage}
           walletMessageTone={walletMessageTone}
           weaponAssets={WEAPON_ASSETS}
+          weaponUnlockXp={WEAPON_UNLOCK_XP}
+          weaponsUnlocked={weaponsUnlocked}
         />
 
         <ForgePreviewPanel

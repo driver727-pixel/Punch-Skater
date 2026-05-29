@@ -9603,6 +9603,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   border-color: var(--accent, #00ff88);
   background: rgba(0, 255, 136, 0.08);
 }
+.forge-weapon-option--locked {
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.forge-weapon-option--locked.selected {
+  border-color: var(--card-border, #333);
+  background: var(--surface-2, rgba(0, 0, 0, 0.3));
+}
 .forge-weapon-thumb {
   width: 48px;
   height: 48px;
@@ -9612,6 +9621,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   font-size: 0.7rem;
   text-align: center;
   opacity: 0.8;
+}
+.forge-weapon-lock {
+  font-size: 0.62rem;
+  line-height: 1;
+  text-align: center;
+  color: var(--muted, #9aa0a6);
 }
 
 /* ── Admin Layer Toggles ──────────────────────────────────────────────────── */

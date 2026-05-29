@@ -31,6 +31,12 @@ export const CREW_SIZE = 6;
  */
 export const MAX_CARD_XP = 100_000_000;
 
+/**
+ * Weapons unlock once a player reaches 10% of the way toward the maximum
+ * possible card XP.
+ */
+export const WEAPON_UNLOCK_XP = MAX_CARD_XP * 0.1;
+
 // ── Points (stats) ────────────────────────────────────────────────────────────
 
 /**

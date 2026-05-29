@@ -59,6 +59,7 @@ export function useCardForgeController() {
     isAnyLayerLoading: forge.isAnyLayerLoading,
     isAdmin: userProfile?.isAdmin === true,
     isFirstCard: save.isFirstCard,
+    missionXp: userProfile?.missionXp ?? 0,
     layers: forge.layers,
     openUpgradeModal: forge.openUpgradeModal,
     ozziesBalance: forge.ozziesBalance,
