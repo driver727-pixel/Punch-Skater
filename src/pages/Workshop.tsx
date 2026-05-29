@@ -7,15 +7,30 @@ import { SkaterCardFace } from "../components/SkaterCardFace";
 import { useCollection } from "../hooks/useCollection";
 import { useDecks } from "../hooks/useDecks";
 import { useWorkshopBoards } from "../hooks/useWorkshopBoards";
+import { useWorkshopWeapons } from "../hooks/useWorkshopWeapons";
 import { buildCardVars } from "../lib/cardVars";
 import { calculateBoardStats, getBoardSummary, normalizeBoardConfig } from "../lib/boardBuilder";
 import { sfxClick, sfxRemove, sfxSuccess } from "../lib/sfx";
-import type { BoardPlacement, CardPayload, CharacterPlacement, WorkshopBoardPayload } from "../lib/types";
-import { createWorkshopBoard, reforgeCardBoard, WORKSHOP_REFORGE_FEE_OZZIES } from "../lib/workshop";
+import type {
+  BoardPlacement,
+  CardPayload,
+  CharacterPlacement,
+  WeaponPlacement,
+  WorkshopBoardPayload,
+  WorkshopFloorPlacement,
+} from "../lib/types";
+import {
+  createWorkshopBoard,
+  createWorkshopWeapon,
+  reforgeCardBoard,
+  reforgeCardWeapon,
+  WORKSHOP_REFORGE_FEE_OZZIES,
+} from "../lib/workshop";
 import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../services/boardImageGen";
 import { getStaticFrameBackUrl } from "../services/staticAssets";
 import { removeBackground } from "../services/imageGen";
 import { useAuth } from "../context/AuthContext";
+import { WEAPON_ASSETS } from "./cardForge/constants";
 
 async function generateTransparentBoardArt(
   config: WorkshopBoardPayload["config"],
@@ -37,9 +52,24 @@ const KEYBOARD_NUDGE_STEP = 0.015;
 const KEYBOARD_NUDGE_STEP_SHIFT = 0.03;
 const DRAG_MOVEMENT_THRESHOLD_PX = 3;
 
+type WorkshopAssetKind = "board" | "weapon";
+
+interface WorkshopFloorAsset {
+  key: string;
+  id: string;
+  kind: WorkshopAssetKind;
+  label: string;
+  imageUrl?: string;
+  floorPlacement?: WorkshopFloorPlacement;
+}
+
+function getWorkshopAssetKey(kind: WorkshopAssetKind, id: string): string {
+  return `${kind}:${id}`;
+}
+
 function isValidFloorPlacement(
-  placement: WorkshopBoardPayload["floorPlacement"] | undefined,
-): placement is NonNullable<WorkshopBoardPayload["floorPlacement"]> {
+  placement: WorkshopFloorPlacement | undefined,
+): placement is WorkshopFloorPlacement {
   return Boolean(placement)
     && Number.isFinite(placement.x)
     && Number.isFinite(placement.y);
@@ -62,26 +92,32 @@ export function Workshop() {
   const { cards, updateCard } = useCollection();
   const { updateCardInDecks } = useDecks();
   const { boards, isLoading: boardsLoading, addBoard, saveBoard, removeBoard } = useWorkshopBoards();
+  const { weapons, isLoading: weaponsLoading, addWeapon, saveWeapon, removeWeapon } = useWorkshopWeapons();
   const [boardConfig, setBoardConfig] = useState(DEFAULT_BOARD_CONFIG);
   const [ignoreBoardCache, setIgnoreBoardCache] = useState(false);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(searchParams.get("board"));
+  const [selectedWeaponId, setSelectedWeaponId] = useState<string | null>(searchParams.get("weapon"));
+  const [selectedWeaponAssetUrl, setSelectedWeaponAssetUrl] = useState(WEAPON_ASSETS[0]?.url ?? "");
   const [selectedCardId, setSelectedCardId] = useState(searchParams.get("card") ?? "");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingBoard, setSavingBoard] = useState(false);
+  const [savingWeapon, setSavingWeapon] = useState(false);
   const [savingCardLayout, setSavingCardLayout] = useState(false);
   const [generatingBoardArtId, setGeneratingBoardArtId] = useState<string | null>(null);
   const [applyingBoardId, setApplyingBoardId] = useState<string | null>(null);
-  const [draggingBoardIds, setDraggingBoardIds] = useState<Set<string>>(() => new Set());
-  const [boardFloorPositions, setBoardFloorPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [applyingWeaponId, setApplyingWeaponId] = useState<string | null>(null);
+  const [draggingAssetKeys, setDraggingAssetKeys] = useState<Set<string>>(() => new Set());
+  const [assetFloorPositions, setAssetFloorPositions] = useState<Record<string, WorkshopFloorPlacement>>({});
   const [editingCard, setEditingCard] = useState<CardPayload | null>(null);
   const workshopIgnoreCacheInputId = "workshop-ignore-board-cache";
   const pendingBoardSelectionRef = useRef<string | null>(null);
+  const pendingWeaponSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
   const keyboardPersistTimersRef = useRef<Record<string, number>>({});
   const activeDragCountsRef = useRef<Record<string, number>>({});
   const dragSessionsRef = useRef<Record<number, {
-    boardId: string;
+    assetKey: string;
     offsetX: number;
     offsetY: number;
     startX: number;
@@ -91,8 +127,10 @@ export function Workshop() {
 
   useEffect(() => {
     const queryBoardId = searchParams.get("board");
+    const queryWeaponId = searchParams.get("weapon");
     const queryCardId = searchParams.get("card");
-    if (queryBoardId !== null) setSelectedBoardId(queryBoardId);
+    setSelectedBoardId(queryBoardId);
+    setSelectedWeaponId(queryWeaponId);
     if (queryCardId !== null) setSelectedCardId(queryCardId);
   }, [searchParams]);
 
@@ -111,28 +149,50 @@ export function Workshop() {
     };
   }, []);
 
+  const floorAssets = useMemo<WorkshopFloorAsset[]>(
+    () => [
+      ...boards.map((board) => ({
+        key: getWorkshopAssetKey("board", board.id),
+        id: board.id,
+        kind: "board" as const,
+        label: board.label,
+        imageUrl: board.boardImageUrl,
+        floorPlacement: board.floorPlacement,
+      })),
+      ...weapons.map((weapon) => ({
+        key: getWorkshopAssetKey("weapon", weapon.id),
+        id: weapon.id,
+        kind: "weapon" as const,
+        label: weapon.label,
+        imageUrl: weapon.weaponImageUrl,
+        floorPlacement: weapon.floorPlacement,
+      })),
+    ],
+    [boards, weapons],
+  );
+
   useEffect(() => {
-    setBoardFloorPositions((current) => {
-      const next: Record<string, { x: number; y: number }> = {};
-      boards.forEach((board, index) => {
-        const persisted = board.floorPlacement;
-        const existing = current[board.id];
+    setAssetFloorPositions((current) => {
+      const next: Record<string, WorkshopFloorPlacement> = {};
+      floorAssets.forEach((asset, index) => {
+        const persisted = asset.floorPlacement;
+        const existing = current[asset.key];
         if (isValidFloorPlacement(existing)) {
-          next[board.id] = existing;
+          next[asset.key] = existing;
           return;
         }
         if (isValidFloorPlacement(persisted)) {
-          next[board.id] = {
+          next[asset.key] = {
             x: clamp(persisted.x, 0, 1),
             y: clamp(persisted.y, 0, 1),
           };
           return;
         }
-        next[board.id] = getDefaultFloorPlacement(index, boards.length);
+        next[asset.key] = getDefaultFloorPlacement(index, floorAssets.length);
       });
       return next;
     });
-  }, [boards]);
+  }, [floorAssets]);
 
   useEffect(() => {
     if (boardsLoading) return;
@@ -150,13 +210,41 @@ export function Workshop() {
     }, { replace: true });
   }, [boards, boardsLoading, selectedBoardId, setSearchParams]);
 
+  useEffect(() => {
+    if (weaponsLoading) return;
+    if (selectedWeaponId && weapons.some((weapon) => weapon.id === selectedWeaponId)) {
+      pendingWeaponSelectionRef.current = null;
+      return;
+    }
+    const hasPendingSavedSelection = pendingWeaponSelectionRef.current === selectedWeaponId;
+    if (!selectedWeaponId || hasPendingSavedSelection) return;
+    setSelectedWeaponId(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("weapon");
+      return next;
+    }, { replace: true });
+  }, [selectedWeaponId, setSearchParams, weapons, weaponsLoading]);
+
   const selectedBoard = useMemo(
     () => boards.find((board) => board.id === selectedBoardId) ?? null,
     [boards, selectedBoardId],
   );
+  const selectedWeapon = useMemo(
+    () => weapons.find((weapon) => weapon.id === selectedWeaponId) ?? null,
+    [weapons, selectedWeaponId],
+  );
   const selectedCard = useMemo(
     () => cards.find((card) => card.id === selectedCardId) ?? null,
     [cards, selectedCardId],
+  );
+  const weaponNameByUrl = useMemo(
+    () => new Map(WEAPON_ASSETS.map((weapon) => [weapon.url, weapon.name])),
+    [],
+  );
+  const selectedWeaponAsset = useMemo(
+    () => WEAPON_ASSETS.find((weapon) => weapon.url === selectedWeaponAssetUrl) ?? null,
+    [selectedWeaponAssetUrl],
   );
   const cardEditorVars = useMemo(
     () => (editingCard ? buildCardVars(editingCard, "editor") : null),
@@ -172,10 +260,19 @@ export function Workshop() {
     [boardConfig],
   );
 
-  const updateSearchSelection = (nextBoardId: string | null, nextCardId = selectedCardId) => {
+  const updateSearchSelection = ({
+    boardId = selectedBoardId,
+    weaponId = selectedWeaponId,
+    cardId = selectedCardId,
+  }: {
+    boardId?: string | null;
+    weaponId?: string | null;
+    cardId?: string;
+  }) => {
     const next = new URLSearchParams();
-    if (nextBoardId) next.set("board", nextBoardId);
-    if (nextCardId) next.set("card", nextCardId);
+    if (boardId) next.set("board", boardId);
+    if (weaponId) next.set("weapon", weaponId);
+    if (cardId) next.set("card", cardId);
     setSearchParams(next, { replace: true });
   };
 
@@ -203,7 +300,7 @@ export function Workshop() {
       pendingBoardSelectionRef.current = board.id;
       await addBoard(boardWithArt);
       setSelectedBoardId(board.id);
-      updateSearchSelection(board.id);
+      updateSearchSelection({ boardId: board.id });
       sfxSuccess();
       setMessage("Generated skateboard saved to the workshop floor.");
     } catch (saveError) {
@@ -216,7 +313,7 @@ export function Workshop() {
 
   const handleSelectCard = (cardId: string) => {
     setSelectedCardId(cardId);
-    updateSearchSelection(selectedBoardId, cardId);
+    updateSearchSelection({ cardId });
   };
 
   const handleBoardPlacementChange = (placement: BoardPlacement) => {
@@ -239,6 +336,17 @@ export function Workshop() {
         ? {
             ...current,
             characterPlacement: placement,
+          }
+        : current
+    ));
+  };
+
+  const handleWeaponPlacementChange = (placement: WeaponPlacement) => {
+    setEditingCard((current) => (
+      current
+        ? {
+            ...current,
+            weaponPlacement: placement,
           }
         : current
     ));
@@ -270,13 +378,49 @@ export function Workshop() {
   const handleSelectBoard = (boardId: string) => {
     sfxClick();
     setSelectedBoardId(boardId);
-    updateSearchSelection(boardId);
+    updateSearchSelection({ boardId });
   };
 
   const handleDeselectBoard = () => {
     sfxClick();
     setSelectedBoardId(null);
-    updateSearchSelection(null);
+    updateSearchSelection({ boardId: null });
+  };
+
+  const handleBenchSaveWeapon = async () => {
+    if (!selectedWeaponAsset) {
+      setError("Pick a workshop weapon before saving it to the floor.");
+      return;
+    }
+    setSavingWeapon(true);
+    setError("");
+    setMessage("");
+    try {
+      const weapon = createWorkshopWeapon(selectedWeaponAsset.url, selectedWeaponAsset.name, selectedCard?.id);
+      pendingWeaponSelectionRef.current = weapon.id;
+      await addWeapon(weapon);
+      setSelectedWeaponId(weapon.id);
+      updateSearchSelection({ weaponId: weapon.id });
+      sfxSuccess();
+      setMessage("Saved weapon dropped onto the workshop floor.");
+    } catch (saveError) {
+      pendingWeaponSelectionRef.current = null;
+      setError(saveError instanceof Error ? saveError.message : "Failed to save the weapon to the workshop.");
+    } finally {
+      setSavingWeapon(false);
+    }
+  };
+
+  const handleSelectWeapon = (weaponId: string) => {
+    sfxClick();
+    setSelectedWeaponId(weaponId);
+    updateSearchSelection({ weaponId });
+  };
+
+  const handleDeselectWeapon = () => {
+    sfxClick();
+    setSelectedWeaponId(null);
+    updateSearchSelection({ weaponId: null });
   };
 
   const handleScrapBoard = async () => {
@@ -309,6 +453,18 @@ export function Workshop() {
       setError(artError instanceof Error ? artError.message : "Failed to generate skateboard art.");
     } finally {
       setGeneratingBoardArtId(null);
+    }
+  };
+
+  const handleScrapWeapon = async () => {
+    if (!selectedWeapon) return;
+    try {
+      sfxRemove();
+      await removeWeapon(selectedWeapon.id);
+      setMessage("Saved weapon scrapped from the workshop floor.");
+      setError("");
+    } catch (removeError) {
+      setError(removeError instanceof Error ? removeError.message : "Failed to scrap the saved weapon.");
     }
   };
 
@@ -355,60 +511,111 @@ export function Workshop() {
     }
   };
 
+  const handleApplyWeapon = async () => {
+    if (!selectedWeapon || !selectedCard) {
+      setError("Pick a saved weapon and a card before marrying the setup.");
+      return;
+    }
+    const isAdmin = userProfile?.isAdmin ?? false;
+    if (!isAdmin && (selectedCard.ozzies ?? 0) < WORKSHOP_REFORGE_FEE_OZZIES) {
+      setError(`${selectedCard.identity.name} needs ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies to cover the workshop fee.`);
+      return;
+    }
+
+    setApplyingWeaponId(selectedWeapon.id);
+    setError("");
+    setMessage("");
+
+    try {
+      const appliedFee = isAdmin ? 0 : WORKSHOP_REFORGE_FEE_OZZIES;
+      const reforgedCard = reforgeCardWeapon(selectedCard, selectedWeapon.weaponImageUrl, {
+        feeOzzies: appliedFee,
+      });
+      updateCard(reforgedCard);
+      updateCardInDecks(reforgedCard);
+      await removeWeapon(selectedWeapon.id);
+      sfxSuccess();
+      setMessage(
+        isAdmin
+          ? `${selectedCard.identity.name} took the saved weapon. Card art updated.`
+          : `${selectedCard.identity.name} took the saved weapon. Card art updated and ${WORKSHOP_REFORGE_FEE_OZZIES} Ozzies spent.`,
+      );
+    } catch (generationError) {
+      const detail = generationError instanceof Error ? generationError.message : "Unknown workshop error.";
+      setMessage("");
+      setError(`Could not bind the weapon: ${detail}`);
+    } finally {
+      setApplyingWeaponId(null);
+    }
+  };
+
   const handleDragStart = (
     event: React.PointerEvent<HTMLButtonElement>,
-    boardId: string,
-    boardIndex: number,
+    assetKey: string,
+    assetIndex: number,
   ) => {
     const stage = floorStageRef.current;
     if (!stage) return;
     const bounds = stage.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return;
-    const placement = boardFloorPositions[boardId] ?? getDefaultFloorPlacement(boardIndex, boards.length);
-    const boardCenterX = bounds.left + (placement.x * bounds.width);
-    const boardCenterY = bounds.top + (placement.y * bounds.height);
+    const placement = assetFloorPositions[assetKey] ?? getDefaultFloorPlacement(assetIndex, floorAssets.length);
+    const assetCenterX = bounds.left + (placement.x * bounds.width);
+    const assetCenterY = bounds.top + (placement.y * bounds.height);
     dragSessionsRef.current[event.pointerId] = {
-      boardId,
-      offsetX: event.clientX - boardCenterX,
-      offsetY: event.clientY - boardCenterY,
+      assetKey,
+      offsetX: event.clientX - assetCenterX,
+      offsetY: event.clientY - assetCenterY,
       startX: event.clientX,
       startY: event.clientY,
       moved: false,
     };
-    activeDragCountsRef.current[boardId] = (activeDragCountsRef.current[boardId] ?? 0) + 1;
-    setDraggingBoardIds((current) => {
+    activeDragCountsRef.current[assetKey] = (activeDragCountsRef.current[assetKey] ?? 0) + 1;
+    setDraggingAssetKeys((current) => {
       const next = new Set(current);
-      next.add(boardId);
+      next.add(assetKey);
       return next;
     });
   };
 
-  const persistFloorPlacement = (boardId: string, x: number, y: number) => {
-    const board = boards.find((entry) => entry.id === boardId);
-    if (!board) return;
-    saveBoard({
-      ...board,
+  const persistFloorPlacement = (assetKey: string, x: number, y: number) => {
+    const [assetKind, assetId] = assetKey.split(":") as [WorkshopAssetKind, string];
+    if (assetKind === "board") {
+      const board = boards.find((entry) => entry.id === assetId);
+      if (!board) return;
+      saveBoard({
+        ...board,
+        floorPlacement: { x, y },
+        updatedAt: new Date().toISOString(),
+      }).catch((saveError) => {
+        setError(saveError instanceof Error ? saveError.message : "Could not save board placement.");
+      });
+      return;
+    }
+    const weapon = weapons.find((entry) => entry.id === assetId);
+    if (!weapon) return;
+    saveWeapon({
+      ...weapon,
       floorPlacement: { x, y },
       updatedAt: new Date().toISOString(),
     }).catch((saveError) => {
-      setError(saveError instanceof Error ? saveError.message : "Could not save board placement.");
+      setError(saveError instanceof Error ? saveError.message : "Could not save weapon placement.");
     });
   };
 
-  const schedulePersistFloorPlacement = (boardId: string, x: number, y: number) => {
-    const existingTimer = keyboardPersistTimersRef.current[boardId];
+  const schedulePersistFloorPlacement = (assetKey: string, x: number, y: number) => {
+    const existingTimer = keyboardPersistTimersRef.current[assetKey];
     if (typeof existingTimer === "number") {
       window.clearTimeout(existingTimer);
     }
-    keyboardPersistTimersRef.current[boardId] = window.setTimeout(() => {
-      persistFloorPlacement(boardId, x, y);
-      delete keyboardPersistTimersRef.current[boardId];
+    keyboardPersistTimersRef.current[assetKey] = window.setTimeout(() => {
+      persistFloorPlacement(assetKey, x, y);
+      delete keyboardPersistTimersRef.current[assetKey];
     }, KEYBOARD_PERSIST_DEBOUNCE_MS);
   };
 
-  const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>, boardId: string) => {
+  const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>, assetKey: string) => {
     const session = dragSessionsRef.current[event.pointerId];
-    if (!session || session.boardId !== boardId) return;
+    if (!session || session.assetKey !== assetKey) return;
     const stage = floorStageRef.current;
     if (!stage) return;
     const bounds = stage.getBoundingClientRect();
@@ -420,35 +627,35 @@ export function Workshop() {
     }
     const x = clamp((event.clientX - bounds.left - session.offsetX) / bounds.width, 0, 1);
     const y = clamp((event.clientY - bounds.top - session.offsetY) / bounds.height, 0, 1);
-    setBoardFloorPositions((current) => ({
+    setAssetFloorPositions((current) => ({
       ...current,
-      [boardId]: { x, y },
+      [assetKey]: { x, y },
     }));
   };
 
-  const handleDragEnd = (boardId: string, pointerId: number): boolean => {
+  const handleDragEnd = (assetKey: string, pointerId: number): boolean => {
     const session = dragSessionsRef.current[pointerId];
-    if (!session || session.boardId !== boardId) return false;
+    if (!session || session.assetKey !== assetKey) return false;
     delete dragSessionsRef.current[pointerId];
-    const existingTimer = keyboardPersistTimersRef.current[boardId];
+    const existingTimer = keyboardPersistTimersRef.current[assetKey];
     if (typeof existingTimer === "number") {
       window.clearTimeout(existingTimer);
-      delete keyboardPersistTimersRef.current[boardId];
+      delete keyboardPersistTimersRef.current[assetKey];
     }
-    const placement = boardFloorPositions[boardId];
+    const placement = assetFloorPositions[assetKey];
     if (placement) {
-      persistFloorPlacement(boardId, placement.x, placement.y);
+      persistFloorPlacement(assetKey, placement.x, placement.y);
     }
-    const activeCount = activeDragCountsRef.current[boardId] ?? 0;
+    const activeCount = activeDragCountsRef.current[assetKey] ?? 0;
     if (activeCount <= 1) {
-      delete activeDragCountsRef.current[boardId];
-      setDraggingBoardIds((current) => {
+      delete activeDragCountsRef.current[assetKey];
+      setDraggingAssetKeys((current) => {
         const next = new Set(current);
-        next.delete(boardId);
+        next.delete(assetKey);
         return next;
       });
     } else {
-      activeDragCountsRef.current[boardId] = activeCount - 1;
+      activeDragCountsRef.current[assetKey] = activeCount - 1;
     }
     return session.moved;
   };
@@ -470,7 +677,7 @@ export function Workshop() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Workshop</h1>
-          <p className="page-sub">Save bench builds, inspect paper-doll boards, and marry a new skateboard to a forged card.</p>
+          <p className="page-sub">Save bench builds, inspect paper-doll gear, and marry new skateboards or weapons to a forged card.</p>
         </div>
         <button className="btn-outline" type="button" onClick={() => navigate("/forge")}>
           ← Back to Card Forge
@@ -482,12 +689,13 @@ export function Workshop() {
           <p className="eyebrow">Garage Stash</p>
           <h2>Bench new hardware without re-forging the whole courier.</h2>
           <p>
-            Save experimental skateboard builds to the workshop floor, then bind one to an existing card when a mission
-            needs different gear access.
+            Save experimental skateboard builds and spare weapons to the workshop floor, then bind them to an existing
+            card when a mission needs different gear access.
           </p>
         </div>
         <div className="workshop-hero__meta">
           <span><strong>{boards.length}</strong> saved boards</span>
+          <span><strong>{weapons.length}</strong> saved weapons</span>
           <span><strong>{cards.length}</strong> forged cards</span>
           <span>{isAdminUser ? <strong>Free (admin)</strong> : <><strong>{WORKSHOP_REFORGE_FEE_OZZIES}</strong> Oz workshop fee</>}</span>
         </div>
@@ -530,6 +738,53 @@ export function Workshop() {
           <section className="workshop-detail">
             <div className="workshop-panel-heading">
               <div>
+                <p className="eyebrow">Weapons Rack</p>
+                <h2>Save a spare weapon</h2>
+              </div>
+              <div className="workshop-panel-heading__actions">
+                <button className="btn-primary btn-sm" type="button" onClick={handleBenchSaveWeapon} disabled={savingWeapon}>
+                  {savingWeapon ? "Saving…" : "Save to Floor"}
+                </button>
+              </div>
+            </div>
+
+            <label className="workshop-field">
+              <span>Weapon target</span>
+              <div className="workshop-select">
+                <select
+                  className="input workshop-select__control"
+                  value={selectedWeaponAssetUrl}
+                  onChange={(event) => setSelectedWeaponAssetUrl(event.target.value)}
+                >
+                  {WEAPON_ASSETS.map((weapon) => (
+                    <option key={weapon.url} value={weapon.url}>
+                      {weapon.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </label>
+
+            <div className="workshop-bench__preview">
+              {selectedWeaponAsset ? (
+                <div className="workshop-board-art">
+                  <img
+                    src={selectedWeaponAsset.url}
+                    alt={selectedWeaponAsset.name}
+                    className="workshop-board-art__img workshop-board-art__img--weapon"
+                  />
+                </div>
+              ) : (
+                <div className="workshop-board-art workshop-board-art--empty">
+                  <span>Pick a weapon</span>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="workshop-detail">
+            <div className="workshop-panel-heading">
+              <div>
                 <p className="eyebrow">Card Editor</p>
                 <h2>Edit the selected card in place</h2>
               </div>
@@ -557,6 +812,7 @@ export function Workshop() {
               <div className="workshop-card-meta">
                 <span>Current board: {getBoardSummary(selectedCard.board.config)}</span>
                 <span>Current access: {selectedCard.board.loadout?.accessProfile ?? selectedCard.board.accessProfile}</span>
+                <span>Current weapon: {selectedCard.weaponImageUrl ? (weaponNameByUrl.get(selectedCard.weaponImageUrl) ?? "Custom weapon") : "None equipped"}</span>
                 <span>Available Ozzies: {selectedCard.ozzies ?? 0}</span>
               </div>
             )}
@@ -575,10 +831,12 @@ export function Workshop() {
                             backgroundImageUrl={editingCard.backgroundImageUrl}
                             characterImageUrl={editingCard.characterImageUrl}
                             frameImageUrl={editingCard.frameImageUrl}
+                            weaponImageUrl={editingCard.weaponImageUrl}
                             artEditable
                             metadataEditable={false}
                             onBoardPlacementChange={handleBoardPlacementChange}
                             onCharacterPlacementChange={handleCharacterPlacementChange}
+                            onWeaponPlacementChange={handleWeaponPlacementChange}
                           />
                         </div>
                       </div>
@@ -586,7 +844,7 @@ export function Workshop() {
                   </div>
                 </CardContainer>
                 <p className="form-hint" style={{ marginTop: 12 }}>
-                  Drag the skateboard on the card face to reposition it. On touch devices, pinch or rotate to scale and turn the layer.
+                  Drag the skateboard or weapon on the card face to reposition it. On touch devices, pinch or rotate to scale and turn the layer.
                 </p>
                 <div className="workshop-detail__actions">
                   <button className="btn-outline btn-sm" type="button" onClick={handleResetCardLayout}>
@@ -605,96 +863,143 @@ export function Workshop() {
             )}
           </section>
 
-        {selectedBoard && (
-          <section className="workshop-detail">
-            <div className="workshop-panel-heading">
-              <div>
-                <p className="eyebrow">Marriage Bay</p>
-                <h2>Bind a saved board to a card</h2>
+          {selectedBoard && (
+            <section className="workshop-detail">
+              <div className="workshop-panel-heading">
+                <div>
+                  <p className="eyebrow">Marriage Bay</p>
+                  <h2>Bind a saved board to a card</h2>
+                </div>
               </div>
-            </div>
 
-            <div className="workshop-detail__meta">
-              <strong>{selectedBoard.label}</strong>
-              <span>Saved {new Date(selectedBoard.createdAt).toLocaleString()}</span>
-            </div>
-            <SkateboardStatsPanel loadout={selectedBoard.loadout} config={selectedBoard.config} />
-            <div className="workshop-detail__actions">
-              <button
-                className="btn-outline btn-sm"
-                type="button"
-                onClick={handleDeselectBoard}
-              >
-                Selection: Off
-              </button>
-              {!selectedBoard.boardImageUrl && (
+              <div className="workshop-detail__meta">
+                <strong>{selectedBoard.label}</strong>
+                <span>Saved {new Date(selectedBoard.createdAt).toLocaleString()}</span>
+              </div>
+              <SkateboardStatsPanel loadout={selectedBoard.loadout} config={selectedBoard.config} />
+              <div className="workshop-detail__actions">
                 <button
                   className="btn-outline btn-sm"
                   type="button"
-                  onClick={() => void handleGenerateSelectedBoardArt()}
-                  disabled={generatingBoardArtId === selectedBoard.id}
+                  onClick={handleDeselectBoard}
                 >
-                  {generatingBoardArtId === selectedBoard.id ? "Generating…" : "Generate Board Art"}
+                  Selection: Off
                 </button>
-              )}
-              {isAdmin && selectedBoard.boardImageUrl && (
+                {!selectedBoard.boardImageUrl && (
+                  <button
+                    className="btn-outline btn-sm"
+                    type="button"
+                    onClick={() => void handleGenerateSelectedBoardArt()}
+                    disabled={generatingBoardArtId === selectedBoard.id}
+                  >
+                    {generatingBoardArtId === selectedBoard.id ? "Generating…" : "Generate Board Art"}
+                  </button>
+                )}
+                {isAdmin && selectedBoard.boardImageUrl && (
+                  <button
+                    className="btn-outline btn-sm"
+                    type="button"
+                    onClick={() => void handleGenerateSelectedBoardArt(true)}
+                    disabled={generatingBoardArtId === selectedBoard.id}
+                    title="Admin only — bypasses the per-user board cache for a fresh render."
+                    aria-label="Force regenerate board art and ignore cache"
+                  >
+                    {generatingBoardArtId === selectedBoard.id ? "⏳ Regenerating…" : "Force regenerate (ignore cache)"}
+                  </button>
+                )}
+                <button className="btn-danger btn-sm" type="button" onClick={handleScrapBoard}>
+                  Scrap Build
+                </button>
+                <button
+                  className="btn-primary btn-sm"
+                  type="button"
+                  onClick={handleApplyBoard}
+                  disabled={!selectedCard || !selectedBoard.boardImageUrl || applyingBoardId === selectedBoard.id}
+                >
+                  {applyingBoardId === selectedBoard.id ? "Marrying…" : marryButtonLabel}
+                </button>
+              </div>
+            </section>
+          )}
+
+          {selectedWeapon && (
+            <section className="workshop-detail">
+              <div className="workshop-panel-heading">
+                <div>
+                  <p className="eyebrow">Weapons Bay</p>
+                  <h2>Bind a saved weapon to a card</h2>
+                </div>
+              </div>
+
+              <div className="workshop-detail__meta">
+                <strong>{selectedWeapon.label}</strong>
+                <span>Saved {new Date(selectedWeapon.createdAt).toLocaleString()}</span>
+              </div>
+              <div className="workshop-bench__preview">
+                <div className="workshop-board-art">
+                  <img
+                    src={selectedWeapon.weaponImageUrl}
+                    alt={selectedWeapon.label}
+                    className="workshop-board-art__img workshop-board-art__img--weapon"
+                  />
+                </div>
+              </div>
+              <div className="workshop-detail__actions">
                 <button
                   className="btn-outline btn-sm"
                   type="button"
-                  onClick={() => void handleGenerateSelectedBoardArt(true)}
-                  disabled={generatingBoardArtId === selectedBoard.id}
-                  title="Admin only — bypasses the per-user board cache for a fresh render."
-                  aria-label="Force regenerate board art and ignore cache"
+                  onClick={handleDeselectWeapon}
                 >
-                  {generatingBoardArtId === selectedBoard.id ? "⏳ Regenerating…" : "Force regenerate (ignore cache)"}
+                  Selection: Off
                 </button>
-              )}
-              <button className="btn-danger btn-sm" type="button" onClick={handleScrapBoard}>
-                Scrap Build
-              </button>
-              <button
-                className="btn-primary btn-sm"
-                type="button"
-                onClick={handleApplyBoard}
-                disabled={!selectedCard || !selectedBoard.boardImageUrl || applyingBoardId === selectedBoard.id}
-              >
-                {applyingBoardId === selectedBoard.id ? "Marrying…" : marryButtonLabel}
-              </button>
-            </div>
-          </section>
-        )}
+                <button className="btn-danger btn-sm" type="button" onClick={handleScrapWeapon}>
+                  Scrap Weapon
+                </button>
+                <button
+                  className="btn-primary btn-sm"
+                  type="button"
+                  onClick={handleApplyWeapon}
+                  disabled={!selectedCard || applyingWeaponId === selectedWeapon.id}
+                >
+                  {applyingWeaponId === selectedWeapon.id ? "Marrying…" : marryButtonLabel}
+                </button>
+              </div>
+            </section>
+          )}
         </div>
       </div>
 
-      <section className="workshop-floor-stage" aria-label="Saved skateboard paper dolls" ref={floorStageRef}>
-        {boards.length > 0 && (
-          <p className="workshop-floor__drag-hint">Drag boards anywhere on the floor</p>
+      <section className="workshop-floor-stage" aria-label="Saved workshop gear paper dolls" ref={floorStageRef}>
+        {floorAssets.length > 0 && (
+          <p className="workshop-floor__drag-hint">Drag gear anywhere on the floor</p>
         )}
         <div className="workshop-floor__canvas">
-          {boardsLoading && (
+          {(boardsLoading || weaponsLoading) && (
             <div className="empty-state workshop-empty">
               <span className="empty-icon">🛹</span>
-              <p>Loading saved boards…</p>
+              <p>Loading saved workshop gear…</p>
             </div>
           )}
-          {!boardsLoading && boards.length === 0 && (
+          {!boardsLoading && !weaponsLoading && floorAssets.length === 0 && (
             <div className="empty-state workshop-empty">
               <span className="empty-icon">🛹</span>
-              <p>No saved boards yet.</p>
-              <p className="page-sub">Generate one on the bench and it will land directly on the workshop floor.</p>
+              <p>No saved workshop gear yet.</p>
+              <p className="page-sub">Generate a board or save a weapon and it will land directly on the workshop floor.</p>
             </div>
           )}
-          {!boardsLoading && boards.map((board, index) => {
+          {!boardsLoading && !weaponsLoading && floorAssets.map((asset, index) => {
             const tilt = ((index % 5) - 2) * 3;
-            const isDragging = draggingBoardIds.has(board.id);
-            const placement = boardFloorPositions[board.id] ?? getDefaultFloorPlacement(index, boards.length);
+            const isDragging = draggingAssetKeys.has(asset.key);
+            const placement = assetFloorPositions[asset.key] ?? getDefaultFloorPlacement(index, floorAssets.length);
+            const isSelected = asset.kind === "board" ? selectedBoardId === asset.id : selectedWeaponId === asset.id;
             return (
               <button
-                key={board.id}
+                key={asset.key}
                 type="button"
                 className={[
                   "workshop-board-card",
-                  selectedBoardId === board.id ? "workshop-board-card--active" : "",
+                  asset.kind === "weapon" ? "workshop-board-card--weapon" : "",
+                  isSelected ? "workshop-board-card--active" : "",
                   isDragging ? "workshop-board-card--dragging" : "",
                 ].filter(Boolean).join(" ")}
                 style={{
@@ -703,11 +1008,17 @@ export function Workshop() {
                   transform: `translate(-50%, -50%) rotate(${tilt}deg)`,
                   zIndex: isDragging ? 6 : 4,
                 }}
-                aria-label={`Select ${board.label} with ${board.loadout.accessProfile} access for card binding`}
+                aria-label={asset.kind === "board"
+                  ? `Select ${asset.label} for card binding`
+                  : `Select ${asset.label} weapon for card binding`}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    handleSelectBoard(board.id);
+                    if (asset.kind === "board") {
+                      handleSelectBoard(asset.id);
+                    } else {
+                      handleSelectWeapon(asset.id);
+                    }
                     return;
                   }
                   let dx = 0;
@@ -719,45 +1030,49 @@ export function Workshop() {
                   if (event.key === "ArrowDown") dy = step;
                   if (dx === 0 && dy === 0) return;
                   event.preventDefault();
-                  const currentPlacement = boardFloorPositions[board.id] ?? getDefaultFloorPlacement(index, boards.length);
+                  const currentPlacement = assetFloorPositions[asset.key] ?? getDefaultFloorPlacement(index, floorAssets.length);
                   const next = {
                     x: clamp(currentPlacement.x + dx, 0, 1),
                     y: clamp(currentPlacement.y + dy, 0, 1),
                   };
-                  setBoardFloorPositions((current) => ({
+                  setAssetFloorPositions((current) => ({
                     ...current,
-                    [board.id]: next,
+                    [asset.key]: next,
                   }));
-                  schedulePersistFloorPlacement(board.id, next.x, next.y);
+                  schedulePersistFloorPlacement(asset.key, next.x, next.y);
                 }}
                 onPointerDown={(event) => {
                   if (event.button !== 0) return;
                   event.currentTarget.setPointerCapture(event.pointerId);
-                  handleDragStart(event, board.id, index);
+                  handleDragStart(event, asset.key, index);
                 }}
-                onPointerMove={(event) => handleDragMove(event, board.id)}
+                onPointerMove={(event) => handleDragMove(event, asset.key)}
                 onPointerUp={(event) => {
                   if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                     event.currentTarget.releasePointerCapture(event.pointerId);
                   }
-                  const moved = handleDragEnd(board.id, event.pointerId);
+                  const moved = handleDragEnd(asset.key, event.pointerId);
                   if (!moved) {
-                    handleSelectBoard(board.id);
+                    if (asset.kind === "board") {
+                      handleSelectBoard(asset.id);
+                    } else {
+                      handleSelectWeapon(asset.id);
+                    }
                   }
                 }}
                 onPointerCancel={(event) => {
                   if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                     event.currentTarget.releasePointerCapture(event.pointerId);
                   }
-                  handleDragEnd(board.id, event.pointerId);
+                  handleDragEnd(asset.key, event.pointerId);
                 }}
               >
-                {board.boardImageUrl ? (
+                {asset.imageUrl ? (
                   <div className="workshop-board-card__art">
                     <img
-                      src={board.boardImageUrl}
-                      alt={board.label}
-                      className="workshop-board-card__art-img"
+                      src={asset.imageUrl}
+                      alt={asset.label}
+                      className={`workshop-board-card__art-img${asset.kind === "weapon" ? " workshop-board-card__art-img--weapon" : ""}`}
                       draggable={false}
                     />
                   </div>

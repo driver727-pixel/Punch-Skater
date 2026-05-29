@@ -7524,6 +7524,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   filter: drop-shadow(0 0 18px rgba(0, 255, 136, 0.28));
 }
 
+.workshop-board-card--weapon {
+  width: min(20vw, 220px);
+  min-width: 140px;
+}
+
 .workshop-board-card--dragging {
   opacity: 0.4;
 }
@@ -7557,6 +7562,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   height: 100%;
   object-fit: contain;
   display: block;
+}
+
+.workshop-board-art__img--weapon,
+.workshop-board-card__art-img--weapon {
+  padding: 12px;
 }
 
 .workshop-board-card__art {

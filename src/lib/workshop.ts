@@ -3,7 +3,7 @@ import { buildForgedCard } from "./skaterBoardSynthesis";
 import { normalizeCardPayload } from "./styles";
 import { normalizeJoustProfile } from "./jousting";
 import type { BoardConfig } from "./boardBuilder";
-import type { CardPayload, WorkshopBoardPayload } from "./types";
+import type { CardPayload, WorkshopBoardPayload, WorkshopWeaponPayload } from "./types";
 
 export const WORKSHOP_REFORGE_FEE_OZZIES = 25;
 
@@ -21,6 +21,22 @@ export function createWorkshopBoard(config: BoardConfig, sourceCardId?: string):
     label: getBoardSummary(normalizedConfig),
     config: normalizedConfig,
     loadout: calculateBoardStats(normalizedConfig),
+    ...(sourceCardId ? { sourceCardId } : {}),
+  };
+}
+
+export function createWorkshopWeapon(
+  weaponImageUrl: string,
+  label: string,
+  sourceCardId?: string,
+): WorkshopWeaponPayload {
+  const now = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+    label,
+    weaponImageUrl,
     ...(sourceCardId ? { sourceCardId } : {}),
   };
 }
@@ -55,6 +71,28 @@ export function reforgeCardBoard(
       placement: card.board.placement,
       layerOrder: card.board.layerOrder,
     },
+    ozzies: Math.max(0, currentOzzies - feeOzzies),
+  });
+  return {
+    ...updatedCard,
+    joust: normalizeJoustProfile(updatedCard),
+  };
+}
+
+interface ReforgeCardWeaponOptions {
+  feeOzzies?: number;
+}
+
+export function reforgeCardWeapon(
+  card: CardPayload,
+  weaponImageUrl: string,
+  options: ReforgeCardWeaponOptions = {},
+): CardPayload {
+  const currentOzzies = normalizeOzzies(card.ozzies);
+  const feeOzzies = normalizeOzzies(options.feeOzzies);
+  const updatedCard = normalizeCardPayload({
+    ...card,
+    weaponImageUrl,
     ozzies: Math.max(0, currentOzzies - feeOzzies),
   });
   return {
