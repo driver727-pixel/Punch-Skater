@@ -6,6 +6,8 @@
  * yet received a user gesture) never breaks the app.
  */
 
+import type { RaceEventEffectKind } from "./raceEffects";
+
 // ── Shared AudioContext (lazy singleton) ────────────────────────────────────
 
 let _ctx: AudioContext | null = null;
@@ -308,8 +310,10 @@ export function sfxRaceCountdownBeep(go = false) {
 /**
  * Per-event race stinger. Maps a race event hazard kind to a short audio cue
  * so the player *hears* the difference between a wipeout and a hand-off boost.
+ * Re-uses the canonical {@link RaceEventEffectKind} so the audio and visual
+ * effect kinds never drift apart.
  */
-export type RaceEventSfxKind = "pothole" | "copDodge" | "courierHandoff" | "wipeout" | "comeback";
+export type RaceEventSfxKind = RaceEventEffectKind;
 
 export function sfxRaceEvent(kind: RaceEventSfxKind) {
   switch (kind) {

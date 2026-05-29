@@ -385,9 +385,14 @@ function tiltYFromSpeed(speed: number): number {
 /** Reference raw speed (~mid pace) used to normalise speed to a 0..1 intensity. */
 const REFERENCE_SPEED = 0.0021;
 
-function speedIntensity(speed: number): number {
+function normalizeSpeedIntensity(speed: number): number {
   return Math.max(0, Math.min(1, speed / REFERENCE_SPEED));
 }
+
+/** How long a racer's stumble/surge reaction flash lingers after an event tick. */
+const REACTION_DURATION_MS = 480;
+/** How long the screen-shake and slow-mo emphasis last on a major event. */
+const EMPHASIS_DURATION_MS = 360;
 
 interface FloatingEvent {
   id: number;
@@ -638,11 +643,11 @@ export function RaceTrack() {
         if (side === "challenger") {
           setChReaction(kind);
           if (chReactionTimer.current) window.clearTimeout(chReactionTimer.current);
-          chReactionTimer.current = window.setTimeout(() => setChReaction(null), 480);
+          chReactionTimer.current = window.setTimeout(() => setChReaction(null), REACTION_DURATION_MS);
         } else {
           setDefReaction(kind);
           if (defReactionTimer.current) window.clearTimeout(defReactionTimer.current);
-          defReactionTimer.current = window.setTimeout(() => setDefReaction(null), 480);
+          defReactionTimer.current = window.setTimeout(() => setDefReaction(null), REACTION_DURATION_MS);
         }
         // Positioned particle burst at the racer's current spot.
         if (container) {
@@ -657,11 +662,11 @@ export function RaceTrack() {
         // Dramatic beats: screen-shake on wipeout, brief slow-mo on big moments.
         if (kind === "wipeout" && container) {
           container.classList.add("race-track-page--shake");
-          window.setTimeout(() => container.classList.remove("race-track-page--shake"), 360);
+          window.setTimeout(() => container.classList.remove("race-track-page--shake"), EMPHASIS_DURATION_MS);
         }
         if (isMajorRaceEvent(kind)) {
           timeScaleRef.current = 0.4;
-          slowMoUntilRef.current = performance.now() + 360;
+          slowMoUntilRef.current = performance.now() + EMPHASIS_DURATION_MS;
         }
       }
     };
@@ -680,8 +685,8 @@ export function RaceTrack() {
     const tk = race.timeline[tickIndex];
     if (!tk) return;
     const leaderSpeed = Math.max(tk.challengerSpeed, tk.defenderSpeed);
-    leaderIntensityRef.current = speedIntensity(leaderSpeed);
-    rollLoopRef.current?.setIntensity(speedIntensity(leaderSpeed));
+    leaderIntensityRef.current = normalizeSpeedIntensity(leaderSpeed);
+    rollLoopRef.current?.setIntensity(normalizeSpeedIntensity(leaderSpeed));
 
     if (!running) return;
     const newLeader: "challenger" | "defender" | null =
@@ -819,8 +824,8 @@ export function RaceTrack() {
     : race.defender.name;
   const chSpeedDisplay = tk.challengerSpeed * 1000;
   const defSpeedDisplay = tk.defenderSpeed * 1000;
-  const chSpeedPct = Math.round(speedIntensity(tk.challengerSpeed) * 100);
-  const defSpeedPct = Math.round(speedIntensity(tk.defenderSpeed) * 100);
+  const chSpeedPct = Math.round(normalizeSpeedIntensity(tk.challengerSpeed) * 100);
+  const defSpeedPct = Math.round(normalizeSpeedIntensity(tk.defenderSpeed) * 100);
 
   // Camera: zoom toward the midpoint of the racers on the final stretch.
   const camMidX = (chLeftPct + defLeftPct) / 2;
