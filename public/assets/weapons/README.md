@@ -11,5 +11,6 @@ Requirements:
 - `hockey-stick.png` — Hockey Stick
 - `road-sign.png` — Street Sign
 - `crutch-blue.png` — Crutch Lance
+- `medieval-lance.png` — Medieval Spear
 
 To add new weapons, place the image here and add an entry to the `WEAPON_ASSETS` array in constants.

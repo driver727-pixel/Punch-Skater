@@ -41,4 +41,5 @@ export const WEAPON_ASSETS: Array<{ url: string; name: string }> = [
   { url: "/assets/weapons/hockey-stick.png", name: "Hockey Stick" },
   { url: "/assets/weapons/road-sign.png", name: "Street Sign" },
   { url: "/assets/weapons/crutch-blue.png", name: "Crutch Lance" },
+  { url: "/assets/weapons/medieval-lance.png", name: "Medieval Spear" },
 ];
