@@ -290,7 +290,7 @@ export function ForgeControlsPanel({
           <p className="form-hint" style={{ marginBottom: 6 }}>
             {weaponsUnlocked
               ? "Equip a weapon to your card — drag it into position on the preview."
-              : `Weapons unlock at ${weaponUnlockXp.toLocaleString()} XP. Until then, they stay ghosted out.`}
+              : `Weapons unlock at ${weaponUnlockXp.toLocaleString()} XP. Until then, they are shown as unavailable.`}
           </p>
           <div className="forge-weapon-grid">
             <button
@@ -316,7 +316,13 @@ export function ForgeControlsPanel({
               >
                 <img src={weapon.url} alt={weapon.name} className="forge-weapon-thumb" />
                 <span className="forge-weapon-name">{weapon.name}</span>
-                {!weaponsUnlocked && <span className="forge-weapon-lock">🔒 {weaponUnlockXp.toLocaleString()} XP</span>}
+                {!weaponsUnlocked && (
+                  <span className="forge-weapon-lock">
+                    <span aria-hidden="true">🔒</span>
+                    <span className="visually-hidden">Locked until </span>
+                    {weaponUnlockXp.toLocaleString()} XP
+                  </span>
+                )}
               </button>
             ))}
           </div>
