@@ -222,7 +222,7 @@ function ChallengeModal({
   const [district, setDistrict] = useState(DEFAULT_RACE_DISTRICT);
   const defenderCard = state.opponent.cards.find((c) => c.id === defenderCardId);
   const cap = Math.max(0, Math.min(myOzzies, 10_000));
-  const dialogRef = useModalA11y<HTMLDivElement>({ onClose });
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose, active: true });
 
   useEffect(() => {
     announceActiveDistrict(district);
