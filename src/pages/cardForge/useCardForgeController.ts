@@ -78,6 +78,7 @@ export function useCardForgeController() {
     saveError: save.saveError,
     savedCard: save.savedCard,
     saving: save.saving,
+    selectedWeaponImageUrl: forge.selectedWeaponImageUrl,
     setArchetype: forge.setArchetype,
     setBoardConfig: forge.setBoardConfig,
     setBoardLayerOrder: forge.setBoardLayerOrder,
