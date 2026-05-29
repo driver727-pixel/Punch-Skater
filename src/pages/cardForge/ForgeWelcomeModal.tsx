@@ -21,9 +21,11 @@ function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
   const garibaldiCards = payload.crews.garibaldi.cards;
   const pairCount = Math.min(cassidyCards.length, garibaldiCards.length);
   const pairIndex = pairCount > 0 ? tick % pairCount : 0;
-  const garibaldiRotationOffset = Math.floor(tick / Math.max(pairCount, 1));
+  const garibaldiRotationOffset = pairCount > 0 ? Math.floor(tick / pairCount) : 0;
   const cassidyCard = cassidyCards[pairIndex];
-  const garibaldiCard = garibaldiCards[(pairIndex + garibaldiRotationOffset) % garibaldiCards.length];
+  const garibaldiCard = pairCount > 0
+    ? garibaldiCards[(pairIndex + garibaldiRotationOffset) % garibaldiCards.length]
+    : undefined;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -32,7 +34,7 @@ function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  if (!cassidyCard || !garibaldiCard) return null;
+  if (pairCount === 0 || !cassidyCard || !garibaldiCard) return null;
 
   return (
     <section className="forge-welcome-faceoff" aria-label="Featured crew face-off">

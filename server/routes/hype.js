@@ -6,7 +6,7 @@ const CREW_FACE_OFF_DECK_NAMES = {
 const CREW_FACE_OFF_CARD_LIMIT = 6;
 
 function normalizeDeckName(name) {
-  return String(name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return String(name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function isTargetDeck(deckName, targetName) {

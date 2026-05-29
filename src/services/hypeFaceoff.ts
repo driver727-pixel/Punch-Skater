@@ -7,6 +7,8 @@ const API_BASE = resolveApiUrl(
 );
 const CACHE_KEY = "skpd_hype_crew_faceoff";
 const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
+const PRELOAD_IMAGE_LIMIT = 32;
+const preloadedImages: HTMLImageElement[] = [];
 
 export interface CrewFaceoffPayload {
   generatedAt: string;
@@ -77,6 +79,10 @@ function preloadUrl(url: string | undefined): void {
   const image = new Image();
   image.decoding = "async";
   image.src = url;
+  preloadedImages.push(image);
+  if (preloadedImages.length > PRELOAD_IMAGE_LIMIT) {
+    preloadedImages.splice(0, preloadedImages.length - PRELOAD_IMAGE_LIMIT);
+  }
 }
 
 export function preloadCrewFaceoffImages(payload: CrewFaceoffPayload, cardLimit = 6): void {
