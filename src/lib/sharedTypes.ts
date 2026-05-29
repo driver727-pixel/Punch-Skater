@@ -183,7 +183,11 @@ export interface MissionEncounterOption {
   id: string;
   label: string;
   description: string;
-  /** @sprint 6 @owner gamma — `counter` uses tag/power checks, while `joust` resolves through jousting-lite with a tactic pick. `streets` launches the side-scrolling Punch Skater™ Streets brawl. */
+  /**
+   * @sprint 6 @owner gamma — `counter` uses tag/power checks, `joust` resolves
+   * through jousting-lite with a tactic pick, and `streets` launches the
+   * side-scrolling Punch Skater™ Streets brawl.
+   */
   encounterType?: "counter" | "joust" | "streets";
   /** Streets brawl mission id (e.g. "nightshade-run") when `encounterType` is `streets`. */
   streetsMissionId?: string;

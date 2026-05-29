@@ -365,7 +365,7 @@ export class StreetsGameScene extends Phaser.Scene {
     if (this.isOver || this.player.isDazed) return;
     if (this.special < this.specialMax) return;
     this.special = 0;
-    // Board-flip nova: damage + knock back every nearby enemy.
+    // Board-flip nova: damage + knockback every nearby enemy.
     this.cameras.main.shake(220, 0.012);
     this.triggerVfx(this.player.x, this.player.y - 20, 'heavy');
     this.playSfx('sfx-zap', 0.7);
