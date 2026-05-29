@@ -121,6 +121,23 @@ npm run test:e2e
 - Stripe checkout redirects are restricted to approved app origins, and webhook delivery should be configured for `/api/stripe/webhook`.
 - Admin access is now enforced via Firebase custom claims, with `userLookup` providing the minimal public directory used for trade lookups.
 
+## Firebase Storage CORS
+
+Browser uploads from the admin Asset Generator (for example the Cyber Joust sprite
+generator) talk directly to the Firebase Storage bucket. The bucket must allow the app
+origins or the browser blocks the upload preflight with a CORS error. Apply the bucket
+CORS policy from `cors.json` whenever origins change:
+
+```bash
+gcloud storage buckets update gs://<your-storage-bucket> --cors-file=cors.json
+# or, with the legacy tooling:
+gsutil cors set cors.json gs://<your-storage-bucket>
+```
+
+Use the bucket named in `VITE_FIREBASE_STORAGE_BUCKET` (e.g. `punch-skater.firebasestorage.app`).
+Write access to Storage paths is still gated by `storage.rules` (admin-only for the
+`factionImages/` and `cyber-joust/` prefixes).
+
 ## Prompt Surface Inventory
 
 ### Current image-prompt map
