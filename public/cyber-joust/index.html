@@ -59,6 +59,30 @@
     .fallback a {
       color: var(--yellow);
     }
+
+    #back-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 9999;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      color: var(--cyan);
+      background: var(--panel);
+      border: 2px solid var(--cyan);
+      padding: 8px 14px;
+      cursor: pointer;
+      text-decoration: none;
+      line-height: 1;
+      letter-spacing: 0.05em;
+      opacity: 0.85;
+      transition: opacity 0.15s;
+    }
+
+    #back-btn:hover {
+      opacity: 1;
+      background: rgba(0, 240, 255, 0.12);
+    }
   </style>
   <script type="importmap">
     {
@@ -70,6 +94,7 @@
   </script>
 </head>
 <body>
+  <a id="back-btn" href="/arena">← BACK</a>
   <div id="game-container"></div>
   <noscript>
     <div class="fallback">Cyber Joust needs JavaScript enabled. Head back to <a href="/">Punch Skater™</a> and relaunch with scripts on.</div>
