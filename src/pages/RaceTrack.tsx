@@ -10,24 +10,42 @@
  * Both players see the same playback because the timeline is precomputed
  * server-side and seeded.
  *
- * Design notes:
- *   - The HTML5 canvas draws only the static track surface (background,
- *     grid, oval ring, lane markers, start/finish line). It renders once
- *     when the race loads and never again.
- *   - The two racing cards are CSS 3D elements (`RaceCard3D`) absolutely
- *     positioned over the canvas. Their position and orientation are driven
- *     per-tick by the precomputed timeline so they follow the oval with
- *     realistic lean and speed wobble.
- *   - The HUD (lap progress bars, names, current Ozzy wager, speed needle)
- *     overlays using regular DOM elements so screen-readers and keyboard
- *     users still get the result via the result panel.
+ * Presentation layer (no effect on race fairness — the seeded timeline is
+ * untouched):
+ *   - The canvas is animated every frame: lane dashes flow under the racers,
+ *     the district backdrop drifts in parallax, and the track glow pulses with
+ *     the leader's speed so bursts *feel* fast.
+ *   - A "broadcast" HUD overlays lap count, split timer, the live gap between
+ *     racers, animated speed gauges, and lead-change callouts.
+ *   - Named timeline events spawn positioned particle bursts, audio stingers,
+ *     play-by-play commentary, screen-shake (wipeouts) and brief slow-mo
+ *     (dramatic beats).
+ *   - The race opens with a "3·2·1·GO!" countdown and closes with a photo-
+ *     finish treatment plus an animated winner / reward payoff.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { fetchRace } from "../services/race";
 import { spawnCelebrationBurst } from "../lib/celebration";
-import { sfxBattleClash, sfxBattleWin, sfxBattleLose, sfxClick } from "../lib/sfx";
+import {
+  sfxBattleClash,
+  sfxBattleWin,
+  sfxBattleLose,
+  sfxClick,
+  sfxRaceCountdownBeep,
+  sfxRaceStartHorn,
+  sfxRaceEvent,
+  sfxRaceFinishSwell,
+  startRaceRollLoop,
+  type RaceRollLoopHandle,
+} from "../lib/sfx";
+import {
+  spawnRaceEventBurst,
+  classifyRaceEvent,
+  isMajorRaceEvent,
+  type RaceEventEffectKind,
+} from "../lib/raceEffects";
 import type { Race } from "../lib/types";
 import { RaceCard3D } from "../components/RaceCard3D";
 import { getRaceDistrictDisplayName } from "../lib/raceDistricts";
@@ -162,27 +180,8 @@ function createTrackHelpers(district: string) {
   return { trackPoint, offsetTrackPoint };
 }
 
-interface DrawArgs {
-  ctx: CanvasRenderingContext2D;
-  district: string;
-}
-
-/** Draw the static track surface onto the canvas. Called once per race load. */
-function drawScene({ ctx, district }: DrawArgs) {
-  const theme = getTrackTheme(district);
-  const districtDisplayName = getRaceDistrictDisplayName(district) ?? "Open Circuit";
-  const { trackPoint, offsetTrackPoint } = createTrackHelpers(district);
-  ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  // Backdrop — district neon gradient.
-  const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-  grad.addColorStop(0, theme.backdropTop);
-  grad.addColorStop(1, theme.backdropBottom);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  // District ambience accents.
-  ctx.save();
+/** Draw a single tile of the per-district ambience spanning the canvas width. */
+function drawAmbienceTile(ctx: CanvasRenderingContext2D, district: string) {
   switch (district) {
     case "airaway":
       ctx.strokeStyle = "rgba(150,220,255,0.14)";
@@ -234,22 +233,58 @@ function drawScene({ ctx, district }: DrawArgs) {
     default:
       break;
   }
+}
+
+interface RenderArgs {
+  ctx: CanvasRenderingContext2D;
+  district: string;
+  /** Continuously increasing animation phase in pixels. */
+  phase: number;
+  /** Normalised leader speed in [0, 1] driving glow + flow energy. */
+  intensity: number;
+}
+
+/**
+ * Draw the animated track surface. Called every frame: lane dashes flow,
+ * backdrop drifts in parallax and the glow pulses with the leader's speed.
+ */
+function renderScene({ ctx, district, phase, intensity }: RenderArgs) {
+  const theme = getTrackTheme(district);
+  const districtDisplayName = getRaceDistrictDisplayName(district) ?? "Open Circuit";
+  const { trackPoint, offsetTrackPoint } = createTrackHelpers(district);
+  ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  // Backdrop — district neon gradient (static).
+  const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+  grad.addColorStop(0, theme.backdropTop);
+  grad.addColorStop(1, theme.backdropBottom);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  // District ambience — drifts horizontally in parallax (two tiles wrap).
+  const drift = (phase * 0.35) % CANVAS_WIDTH;
+  ctx.save();
+  ctx.translate(-drift, 0);
+  drawAmbienceTile(ctx, district);
+  ctx.translate(CANVAS_WIDTH, 0);
+  drawAmbienceTile(ctx, district);
   ctx.restore();
 
-  // Grid background.
+  // Grid background — scrolls slowly for a sense of forward motion.
   ctx.strokeStyle = theme.gridColor;
   ctx.lineWidth = 1;
-  for (let x = 0; x < CANVAS_WIDTH; x += 32) {
+  const gridOffset = phase % 32;
+  for (let x = -32 + gridOffset; x < CANVAS_WIDTH; x += 32) {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_HEIGHT); ctx.stroke();
   }
-  for (let y = 0; y < CANVAS_HEIGHT; y += 32) {
+  for (let y = -32 + (phase * 0.5) % 32; y < CANVAS_HEIGHT; y += 32) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_WIDTH, y); ctx.stroke();
   }
 
-  // Track surface — thick oval ring.
+  // Track surface — thick oval ring with a speed-reactive glow pulse.
   ctx.lineWidth = 44;
   ctx.strokeStyle = theme.ringColor;
-  ctx.shadowBlur = 18;
+  ctx.shadowBlur = 14 + intensity * 26;
   ctx.shadowColor = theme.glowColor;
   ctx.beginPath();
   for (let i = 0; i <= 200; i += 1) {
@@ -261,11 +296,12 @@ function drawScene({ ctx, district }: DrawArgs) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // Lane markers.
+  // Lane markers — animated dash flow so the road reads as moving under racers.
   ctx.lineWidth = 2;
   ctx.setLineDash([10, 10]);
+  ctx.lineDashOffset = -phase;
   ctx.strokeStyle = theme.laneColor;
-  ctx.shadowBlur = 8;
+  ctx.shadowBlur = 6 + intensity * 12;
   ctx.shadowColor = theme.glowColor;
   ctx.beginPath();
   for (let i = 0; i <= 200; i += 1) {
@@ -277,6 +313,7 @@ function drawScene({ ctx, district }: DrawArgs) {
   ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
 
   // Start/finish line at u=0.
   const startA = offsetTrackPoint(0, -22);
@@ -345,6 +382,13 @@ function tiltYFromSpeed(speed: number): number {
   return Math.max(-MAX_TILT_Y_DEG, Math.min(MAX_TILT_Y_DEG, speed * SPEED_TO_TILT_SCALE));
 }
 
+/** Reference raw speed (~mid pace) used to normalise speed to a 0..1 intensity. */
+const REFERENCE_SPEED = 0.0021;
+
+function speedIntensity(speed: number): number {
+  return Math.max(0, Math.min(1, speed / REFERENCE_SPEED));
+}
+
 interface FloatingEvent {
   id: number;
   side: "challenger" | "defender";
@@ -352,23 +396,80 @@ interface FloatingEvent {
   spawnedAt: number;
 }
 
+interface CommentaryLine {
+  id: number;
+  text: string;
+}
+
 let nextEventId = 1;
+
+/** Animated count-up hook used for the reward payoff numbers. */
+function useCountUp(target: number, active: boolean, durationMs = 900): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      setValue(0);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const from = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / durationMs);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(from + (target - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, active, durationMs]);
+  return value;
+}
+
+type RacePhase = "idle" | "countdown" | "running" | "completed";
 
 export function RaceTrack() {
   const { raceId } = useParams<{ raceId: string }>();
   const { user } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const cameraRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const startedAtRef = useRef<number | null>(null);
+
+  // Animation clocks driven by the unified render loop.
+  const lastFrameRef = useRef<number>(0);
+  const raceClockRef = useRef<number>(0);
+  const phaseRef = useRef<number>(0);
+  const timeScaleRef = useRef<number>(1);
+  const slowMoUntilRef = useRef<number>(0);
+  const leaderIntensityRef = useRef<number>(0);
+  const phaseStateRef = useRef<RacePhase>("idle");
+  const leaderSideRef = useRef<"challenger" | "defender" | null>(null);
+
+  const rollLoopRef = useRef<RaceRollLoopHandle | null>(null);
 
   const [race, setRace] = useState<Race | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tickIndex, setTickIndex] = useState(0);
-  const [running, setRunning] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const [racePhase, setRacePhase] = useState<RacePhase>("idle");
+  const [countdownText, setCountdownText] = useState<string | null>(null);
   const [floatingEvents, setFloatingEvents] = useState<FloatingEvent[]>([]);
+  const [commentary, setCommentary] = useState<CommentaryLine[]>([]);
+  const [leadBanner, setLeadBanner] = useState<string | null>(null);
+  const [photoFinish, setPhotoFinish] = useState(false);
+  // Short-lived per-side reaction kinds so card animations outlast the 1-tick event.
+  const [chReaction, setChReaction] = useState<RaceEventEffectKind | null>(null);
+  const [defReaction, setDefReaction] = useState<RaceEventEffectKind | null>(null);
+  const chReactionTimer = useRef<number | null>(null);
+  const defReactionTimer = useRef<number | null>(null);
+
+  const completed = racePhase === "completed";
+  const running = racePhase === "running";
+
+  // Keep a ref of the phase so the render loop reads the latest without re-binding.
+  useEffect(() => { phaseStateRef.current = racePhase; }, [racePhase]);
 
   // Load the race.
   useEffect(() => {
@@ -382,58 +483,228 @@ export function RaceTrack() {
     return () => { cancelled = true; };
   }, [raceId]);
 
-  // Animation loop.
-  const stop = useCallback(() => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
+  const trackHelpers = useMemo(
+    () => createTrackHelpers(race?.district ?? ""),
+    [race?.district],
+  );
+
+  // Whether this race is destined for a photo finish (used to heighten tension).
+  const isPhotoFinishRace = useMemo(() => {
+    if (!race) return false;
+    const a = race.result.challengerFinishTick;
+    const b = race.result.defenderFinishTick;
+    if (a == null || b == null) return false;
+    return Math.abs(a - b) <= 10;
+  }, [race]);
+
+  const pushCommentary = useCallback((text: string) => {
+    setCommentary((prev) => [...prev.slice(-4), { id: nextEventId++, text }]);
   }, []);
 
-  const start = useCallback(() => {
-    if (!race || running) return;
-    sfxClick();
-    setRunning(true);
-    setCompleted(false);
+  // ── Unified render loop ──────────────────────────────────────────────────
+  // Always runs once the race is loaded. It advances the parallax phase using
+  // the leader's current speed, advances the race clock (with optional slow-mo)
+  // while running, and redraws the animated canvas every frame.
+  useEffect(() => {
+    if (!race) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d") ?? null;
+    let cancelled = false;
+
+    const loop = (now: number) => {
+      if (cancelled) return;
+      const dt = lastFrameRef.current ? Math.min(64, now - lastFrameRef.current) : 16;
+      lastFrameRef.current = now;
+
+      // Restore from slow-mo once its window elapses.
+      if (slowMoUntilRef.current && now >= slowMoUntilRef.current) {
+        slowMoUntilRef.current = 0;
+        timeScaleRef.current = 1;
+      }
+
+      const phaseNow = phaseStateRef.current;
+
+      // Advance the race clock while running (slow-mo scales it down).
+      if (phaseNow === "running") {
+        raceClockRef.current += dt * timeScaleRef.current;
+        const idx = Math.min(
+          race.timeline.length - 1,
+          Math.floor(raceClockRef.current / race.tickMs),
+        );
+        setTickIndex(idx);
+        if (idx >= race.timeline.length - 1) {
+          setRacePhase("completed");
+        }
+      }
+
+      // Parallax/lane flow speed: idle drifts gently, racing tracks the leader.
+      const baseFlow = phaseNow === "running" ? 0.04 : 0.012;
+      const flow = baseFlow + leaderIntensityRef.current * 0.5;
+      phaseRef.current += flow * dt * timeScaleRef.current;
+
+      if (ctx) {
+        renderScene({
+          ctx,
+          district: race.district ?? "",
+          phase: phaseRef.current,
+          intensity: phaseNow === "running" ? leaderIntensityRef.current : 0.12,
+        });
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      cancelled = true;
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [race]);
+
+  // Manage the wheels/engine roll loop alongside the running state.
+  useEffect(() => {
+    if (running && !rollLoopRef.current) {
+      rollLoopRef.current = startRaceRollLoop();
+    }
+    if (!running && rollLoopRef.current) {
+      rollLoopRef.current.stop();
+      rollLoopRef.current = null;
+    }
+    return () => {
+      if (rollLoopRef.current) {
+        rollLoopRef.current.stop();
+        rollLoopRef.current = null;
+      }
+    };
+  }, [running]);
+
+  const beginTimeline = useCallback(() => {
+    raceClockRef.current = 0;
+    timeScaleRef.current = 1;
+    slowMoUntilRef.current = 0;
+    leaderSideRef.current = null;
     setTickIndex(0);
     setFloatingEvents([]);
-    startedAtRef.current = performance.now();
-    const tick = () => {
-      const startedAt = startedAtRef.current ?? performance.now();
-      const elapsed = performance.now() - startedAt;
-      const idx = Math.min(race.timeline.length - 1, Math.floor(elapsed / race.tickMs));
-      setTickIndex(idx);
-      if (idx >= race.timeline.length - 1) {
-        setRunning(false);
-        setCompleted(true);
-        startedAtRef.current = null;
+    setCommentary([]);
+    setLeadBanner(null);
+    setPhotoFinish(false);
+    setChReaction(null);
+    setDefReaction(null);
+    setRacePhase("running");
+    sfxRaceStartHorn();
+    pushCommentary("🏁 And they're off!");
+  }, [pushCommentary]);
+
+  // "3 · 2 · 1 · GO!" countdown, then start the timeline.
+  const startCountdown = useCallback(() => {
+    if (!race || racePhase === "countdown" || racePhase === "running") return;
+    sfxClick();
+    setRacePhase("countdown");
+    const steps = ["3", "2", "1", "GO!"];
+    let i = 0;
+    setCountdownText(steps[0]);
+    sfxRaceCountdownBeep(false);
+    const advance = () => {
+      i += 1;
+      if (i >= steps.length) {
+        setCountdownText(null);
+        beginTimeline();
         return;
       }
-      rafRef.current = requestAnimationFrame(tick);
+      setCountdownText(steps[i]);
+      sfxRaceCountdownBeep(i === steps.length - 1);
+      window.setTimeout(advance, i === steps.length - 1 ? 650 : 800);
     };
-    rafRef.current = requestAnimationFrame(tick);
-  }, [race, running]);
+    window.setTimeout(advance, 800);
+  }, [race, racePhase, beginTimeline]);
 
-  useEffect(() => () => stop(), [stop]);
+  // Surface event tags as floating overlays, particle bursts, audio + commentary.
+  useEffect(() => {
+    if (!race || !running) return;
+    const tk = race.timeline[tickIndex];
+    if (!tk) return;
+    const container = containerRef.current;
+    const additions: FloatingEvent[] = [];
 
-  // Surface event tags as floating overlays.
+    const handleSide = (side: "challenger" | "defender", tag?: string) => {
+      if (!tag) return;
+      additions.push({ id: nextEventId++, side, text: tag, spawnedAt: Date.now() });
+      sfxBattleClash();
+      const kind = classifyRaceEvent(tag);
+      if (kind) {
+        sfxRaceEvent(kind);
+        const racerName = side === "challenger" ? race.challenger.name : race.defender.name;
+        pushCommentary(`${tag} — ${racerName}`);
+        // Drive a short-lived card reaction (outlasts the single-tick event).
+        if (side === "challenger") {
+          setChReaction(kind);
+          if (chReactionTimer.current) window.clearTimeout(chReactionTimer.current);
+          chReactionTimer.current = window.setTimeout(() => setChReaction(null), 480);
+        } else {
+          setDefReaction(kind);
+          if (defReactionTimer.current) window.clearTimeout(defReactionTimer.current);
+          defReactionTimer.current = window.setTimeout(() => setDefReaction(null), 480);
+        }
+        // Positioned particle burst at the racer's current spot.
+        if (container) {
+          const prog = (side === "challenger" ? tk.challengerProgress : tk.defenderProgress) % 1;
+          const pos = trackHelpers.offsetTrackPoint(prog, side === "challenger" ? -10 : 10);
+          spawnRaceEventBurst(container, {
+            leftPct: (pos.x / CANVAS_WIDTH) * 100,
+            topPct: (pos.y / CANVAS_HEIGHT) * 100,
+            kind,
+          });
+        }
+        // Dramatic beats: screen-shake on wipeout, brief slow-mo on big moments.
+        if (kind === "wipeout" && container) {
+          container.classList.add("race-track-page--shake");
+          window.setTimeout(() => container.classList.remove("race-track-page--shake"), 360);
+        }
+        if (isMajorRaceEvent(kind)) {
+          timeScaleRef.current = 0.4;
+          slowMoUntilRef.current = performance.now() + 360;
+        }
+      }
+    };
+
+    handleSide("challenger", tk.challengerEvent);
+    handleSide("defender", tk.defenderEvent);
+
+    if (additions.length > 0) {
+      setFloatingEvents((prev) => [...prev, ...additions]);
+    }
+  }, [tickIndex, race, running, trackHelpers, pushCommentary]);
+
+  // Track lead changes + drive the leader intensity ref for the canvas/audio.
   useEffect(() => {
     if (!race) return;
     const tk = race.timeline[tickIndex];
     if (!tk) return;
-    const additions: FloatingEvent[] = [];
-    if (tk.challengerEvent) {
-      additions.push({ id: nextEventId++, side: "challenger", text: tk.challengerEvent, spawnedAt: Date.now() });
-      sfxBattleClash();
+    const leaderSpeed = Math.max(tk.challengerSpeed, tk.defenderSpeed);
+    leaderIntensityRef.current = speedIntensity(leaderSpeed);
+    rollLoopRef.current?.setIntensity(speedIntensity(leaderSpeed));
+
+    if (!running) return;
+    const newLeader: "challenger" | "defender" | null =
+      tk.challengerProgress > tk.defenderProgress + 0.002
+        ? "challenger"
+        : tk.defenderProgress > tk.challengerProgress + 0.002
+          ? "defender"
+          : leaderSideRef.current;
+    if (newLeader && newLeader !== leaderSideRef.current && leaderSideRef.current !== null) {
+      const name = newLeader === "challenger" ? race.challenger.name : race.defender.name;
+      setLeadBanner(`LEAD CHANGE · ${name} surges ahead!`);
+      pushCommentary(`⚡ ${name} takes the lead!`);
+      window.setTimeout(() => setLeadBanner(null), 1500);
     }
-    if (tk.defenderEvent) {
-      additions.push({ id: nextEventId++, side: "defender", text: tk.defenderEvent, spawnedAt: Date.now() });
-      sfxBattleClash();
+    if (newLeader) leaderSideRef.current = newLeader;
+
+    // Photo-finish tension on the final stretch.
+    const lead = Math.max(tk.challengerProgress, tk.defenderProgress);
+    if (isPhotoFinishRace && lead > 0.88 && !photoFinish) {
+      setPhotoFinish(true);
+      pushCommentary("📸 Photo finish brewing!");
     }
-    if (additions.length > 0) {
-      setFloatingEvents((prev) => [...prev, ...additions]);
-    }
-  }, [tickIndex, race]);
+  }, [tickIndex, race, running, isPhotoFinishRace, photoFinish, pushCommentary]);
 
   // Garbage-collect floating events older than 1.4s.
   useEffect(() => {
@@ -445,33 +716,58 @@ export function RaceTrack() {
     return () => clearTimeout(t);
   }, [floatingEvents]);
 
-  // Draw the static track surface once when the race loads.
+  // Announce district theme on load.
   useEffect(() => {
-    if (!race || !canvasRef.current) return;
+    if (!race) return;
     announceActiveDistrict(race.district);
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) return;
-    drawScene({ ctx, district: race.district ?? "" });
   }, [race]);
+
+  // Clean up reaction timers on unmount.
+  useEffect(() => () => {
+    if (chReactionTimer.current) window.clearTimeout(chReactionTimer.current);
+    if (defReactionTimer.current) window.clearTimeout(defReactionTimer.current);
+  }, []);
 
   // Finish-line celebration when the race completes.
   useEffect(() => {
     if (!completed || !race || !containerRef.current) return;
     const winner = race.result.winnerUid;
     const isViewerWinner = winner !== null && winner === user?.uid;
-    spawnCelebrationBurst(containerRef.current);
-    if (winner === null) return;
+    spawnCelebrationBurst(containerRef.current, { particles: 110, spreadX: 460, spreadY: 340 });
+    sfxRaceFinishSwell();
+    if (winner === null) {
+      pushCommentary("🤝 Too close to call — it's a draw!");
+      return;
+    }
     if (isViewerWinner) sfxBattleWin(); else sfxBattleLose();
-  }, [completed, race, user]);
+    const winnerName = winner === race.challengerUid ? race.challenger.name : race.defender.name;
+    pushCommentary(`🏆 ${winnerName} crosses the line first!`);
+  }, [completed, race, user, pushCommentary]);
 
   const isParticipant = useMemo(() => {
     if (!race || !user) return false;
     return race.challengerUid === user.uid || race.defenderUid === user.uid;
   }, [race, user]);
-  const trackHelpers = useMemo(
-    () => createTrackHelpers(race?.district ?? ""),
-    [race?.district],
+
+  const replay = useCallback(() => {
+    setRacePhase("idle");
+    setTickIndex(0);
+    raceClockRef.current = 0;
+    // Defer to next frame so the idle state settles before the countdown.
+    window.setTimeout(() => startCountdown(), 30);
+  }, [startCountdown]);
+
+  // Reward count-ups (only animate once completed).
+  const chOzzies = useCountUp(
+    Math.abs(race?.result.cardDeltas.challenger.ozzies ?? 0),
+    completed,
   );
+  const chXp = useCountUp(race?.result.cardDeltas.challenger.xp ?? 0, completed);
+  const defOzzies = useCountUp(
+    Math.abs(race?.result.cardDeltas.defender.ozzies ?? 0),
+    completed,
+  );
+  const defXp = useCountUp(race?.result.cardDeltas.defender.xp ?? 0, completed);
 
   if (loading) {
     return <div className="page race-track-page"><p>Loading race…</p></div>;
@@ -488,8 +784,10 @@ export function RaceTrack() {
   const districtDisplayName = getRaceDistrictDisplayName(race.district);
 
   // Compute 3D card positions for this tick.
-  const chPos = offsetTrackPoint(tk.challengerProgress % 1, -10);
-  const defPos = offsetTrackPoint(tk.defenderProgress % 1, 10);
+  const chProgress = tk.challengerProgress % 1;
+  const defProgress = tk.defenderProgress % 1;
+  const chPos = offsetTrackPoint(chProgress, -10);
+  const defPos = offsetTrackPoint(defProgress, 10);
   const chLeftPct = (chPos.x / CANVAS_WIDTH) * 100;
   const chTopPct  = (chPos.y / CANVAS_HEIGHT) * 100;
   const chAngleDeg = (chPos.angle * 180) / Math.PI;
@@ -500,14 +798,46 @@ export function RaceTrack() {
   const defAngleDeg = (defPos.angle * 180) / Math.PI;
   const defTiltY = tiltYFromSpeed(tk.defenderSpeed);
 
+  const challengerEventKind = chReaction;
+  const defenderEventKind = defReaction;
+
   const winnerSide = winner === race.challengerUid
     ? "challenger"
     : winner === race.defenderUid
       ? "defender"
       : null;
 
+  // ── Broadcast HUD readouts ────────────────────────────────────────────────
+  const laps = Math.max(1, race.laps || 1);
+  const leadProgress = Math.max(tk.challengerProgress, tk.defenderProgress);
+  const currentLap = Math.min(laps, Math.floor(leadProgress * laps) + 1);
+  const elapsedMs = tickIndex * race.tickMs;
+  const elapsedLabel = `${(elapsedMs / 1000).toFixed(2)}s`;
+  const gap = Math.abs(tk.challengerProgress - tk.defenderProgress);
+  const gapLeaderName = tk.challengerProgress >= tk.defenderProgress
+    ? race.challenger.name
+    : race.defender.name;
+  const chSpeedDisplay = tk.challengerSpeed * 1000;
+  const defSpeedDisplay = tk.defenderSpeed * 1000;
+  const chSpeedPct = Math.round(speedIntensity(tk.challengerSpeed) * 100);
+  const defSpeedPct = Math.round(speedIntensity(tk.defenderSpeed) * 100);
+
+  // Camera: zoom toward the midpoint of the racers on the final stretch.
+  const camMidX = (chLeftPct + defLeftPct) / 2;
+  const camMidY = (chTopPct + defTopPct) / 2;
+  const camZoom = running && leadProgress > 0.8
+    ? 1 + Math.min(0.07, (leadProgress - 0.8) * 0.35) + (photoFinish ? 0.02 : 0)
+    : 1;
+  const cameraStyle = {
+    transform: `scale(${camZoom.toFixed(3)})`,
+    transformOrigin: `${camMidX.toFixed(1)}% ${camMidY.toFixed(1)}%`,
+  } as const;
+
   return (
-    <div className="page race-track-page" ref={containerRef}>
+    <div
+      className={`page race-track-page${photoFinish ? " race-track-page--photo" : ""}`}
+      ref={containerRef}
+    >
       <header className="race-track-header">
         <h1>🏁 Courier Race</h1>
         <p>
@@ -516,8 +846,26 @@ export function RaceTrack() {
         </p>
       </header>
 
+      {/* ── Broadcast scoreboard strip ── */}
+      <div className="race-scoreboard" aria-hidden="true">
+        <span className="race-scoreboard-cell">
+          <span className="race-scoreboard-label">Lap</span>
+          <span className="race-scoreboard-value">{currentLap}/{laps}</span>
+        </span>
+        <span className="race-scoreboard-cell">
+          <span className="race-scoreboard-label">Time</span>
+          <span className="race-scoreboard-value">{elapsedLabel}</span>
+        </span>
+        <span className="race-scoreboard-cell">
+          <span className="race-scoreboard-label">Gap</span>
+          <span className="race-scoreboard-value">
+            {gap < 0.001 ? "DEAD HEAT" : `${(gap * 100).toFixed(1)}%`}
+          </span>
+        </span>
+      </div>
+
       <div className="race-track-canvas-wrap">
-        <div className="race-track-canvas-inner">
+        <div className="race-track-canvas-inner" ref={cameraRef} style={cameraStyle}>
           <canvas
             ref={canvasRef}
             width={CANVAS_WIDTH}
@@ -525,6 +873,14 @@ export function RaceTrack() {
             className="race-track-canvas"
             aria-label={`Race track: ${race.challenger.name} versus ${race.defender.name}`}
           />
+
+          {/* Speed-reactive atmosphere overlays. */}
+          <div
+            className="race-speed-veil"
+            aria-hidden="true"
+            style={{ opacity: running ? leaderIntensityRef.current * 0.5 : 0 }}
+          />
+
           {/* CSS 3D card racers — positioned over the canvas in perspective space. */}
           <RaceCard3D
             card={race.challenger}
@@ -535,6 +891,8 @@ export function RaceTrack() {
             tiltY={chTiltY}
             speed={tk.challengerSpeed}
             variant="challenger"
+            eventKind={challengerEventKind}
+            isLeading={running && tk.challengerProgress > tk.defenderProgress + 0.002}
           />
           <RaceCard3D
             card={race.defender}
@@ -545,7 +903,10 @@ export function RaceTrack() {
             tiltY={defTiltY}
             speed={tk.defenderSpeed}
             variant="defender"
+            eventKind={defenderEventKind}
+            isLeading={running && tk.defenderProgress > tk.challengerProgress + 0.002}
           />
+
           {/* Floating event overlays. */}
           {floatingEvents.map((ev) => (
             <span
@@ -556,6 +917,28 @@ export function RaceTrack() {
               {ev.text}
             </span>
           ))}
+
+          {/* Countdown overlay. */}
+          {countdownText && (
+            <div className="race-countdown" aria-hidden="true">
+              <span
+                key={countdownText}
+                className={`race-countdown-num${countdownText === "GO!" ? " race-countdown-num--go" : ""}`}
+              >
+                {countdownText}
+              </span>
+            </div>
+          )}
+
+          {/* Lead-change banner. */}
+          {leadBanner && (
+            <div className="race-lead-banner" role="status">{leadBanner}</div>
+          )}
+
+          {/* Photo-finish flag. */}
+          {photoFinish && !completed && (
+            <div className="race-photo-flag" aria-hidden="true">📸 PHOTO FINISH</div>
+          )}
         </div>
       </div>
 
@@ -568,8 +951,12 @@ export function RaceTrack() {
               style={{ width: `${(tk.challengerProgress * 100).toFixed(1)}%` }}
             />
           </div>
-          <span className="race-hud-speed" title="Current speed">
-            ⚡ {(tk.challengerSpeed * 1000).toFixed(2)}
+          <span className="race-hud-gauge" title="Current speed">
+            <span
+              className="race-hud-gauge-fill race-hud-gauge-fill--challenger"
+              style={{ width: `${chSpeedPct}%` }}
+            />
+            <span className="race-hud-gauge-num">⚡ {chSpeedDisplay.toFixed(2)}</span>
           </span>
         </div>
         <div className="race-hud-row">
@@ -580,20 +967,39 @@ export function RaceTrack() {
               style={{ width: `${(tk.defenderProgress * 100).toFixed(1)}%` }}
             />
           </div>
-          <span className="race-hud-speed" title="Current speed">
-            ⚡ {(tk.defenderSpeed * 1000).toFixed(2)}
+          <span className="race-hud-gauge" title="Current speed">
+            <span
+              className="race-hud-gauge-fill race-hud-gauge-fill--defender"
+              style={{ width: `${defSpeedPct}%` }}
+            />
+            <span className="race-hud-gauge-num">⚡ {defSpeedDisplay.toFixed(2)}</span>
           </span>
         </div>
+        {(running || completed) && (
+          <p className="race-hud-gapline">
+            {gap < 0.001 ? "Neck and neck!" : `${gapLeaderName} leads by ${(gap * 100).toFixed(1)}%`}
+          </p>
+        )}
       </div>
 
+      {/* Play-by-play commentary ticker. */}
+      {commentary.length > 0 && (
+        <div className="race-commentary" aria-live="polite">
+          {commentary.map((line) => (
+            <p key={line.id} className="race-commentary-line">{line.text}</p>
+          ))}
+        </div>
+      )}
+
       <div className="race-track-controls">
-        {!running && !completed && (
-          <button className="btn-primary" onClick={start}>▶ Start race</button>
+        {racePhase === "idle" && (
+          <button className="btn-primary" onClick={startCountdown}>▶ Start race</button>
         )}
+        {racePhase === "countdown" && <span className="race-track-status">Get set…</span>}
         {running && <span className="race-track-status">Racing…</span>}
         {completed && (
           <>
-            <button className="btn-outline" onClick={() => { setTickIndex(0); setCompleted(false); start(); }}>
+            <button className="btn-outline" onClick={replay}>
               ↻ Replay
             </button>
             <button
@@ -614,35 +1020,44 @@ export function RaceTrack() {
       </div>
 
       {completed && (
-        <div className="race-result-panel">
-          <h2>
+        <div className="race-result-panel race-result-panel--podium">
+          <h2 className="race-result-title">
             {winnerSide === null
               ? "🤝 It's a draw!"
               : winnerSide === "challenger"
                 ? `🏆 ${race.challenger.name} wins!`
                 : `🏆 ${race.defender.name} wins!`}
           </h2>
-          {districtDisplayName && (
-            <p style={{ margin: "0 0 0.75rem", opacity: 0.88 }}>
-              🏁 Raced in: {districtDisplayName}
-            </p>
+          {isPhotoFinishRace && winnerSide !== null && (
+            <p className="race-result-photo">📸 Photo finish — decided by a wheel!</p>
           )}
-          <ul className="race-result-list">
-            <li>
-              <strong>{race.challenger.name}</strong>
-              {`: ${race.result.cardDeltas.challenger.ozzies >= 0 ? "+" : ""}${race.result.cardDeltas.challenger.ozzies} Ozzies, +${race.result.cardDeltas.challenger.xp} XP`}
+          {districtDisplayName && (
+            <p className="race-result-district">🏁 Raced in: {districtDisplayName}</p>
+          )}
+
+          <div className="race-podium">
+            <div className={`race-podium-slot race-podium-slot--challenger${winnerSide === "challenger" ? " race-podium-slot--winner" : ""}`}>
+              <span className="race-podium-medal">{winnerSide === "challenger" ? "🥇" : winnerSide === null ? "🤝" : "🥈"}</span>
+              <strong className="race-podium-name">{race.challenger.name}</strong>
+              <span className="race-podium-reward">
+                {race.result.cardDeltas.challenger.ozzies >= 0 ? "+" : "−"}{chOzzies} Ozzies · +{chXp} XP
+              </span>
               {race.result.winnerStatBoost && winnerSide === "challenger" && (
-                <span> · +1 {race.result.winnerStatBoost.stat}</span>
+                <span className="race-podium-boost">+1 {race.result.winnerStatBoost.stat}</span>
               )}
-            </li>
-            <li>
-              <strong>{race.defender.name}</strong>
-              {`: ${race.result.cardDeltas.defender.ozzies >= 0 ? "+" : ""}${race.result.cardDeltas.defender.ozzies} Ozzies, +${race.result.cardDeltas.defender.xp} XP`}
+            </div>
+            <div className={`race-podium-slot race-podium-slot--defender${winnerSide === "defender" ? " race-podium-slot--winner" : ""}`}>
+              <span className="race-podium-medal">{winnerSide === "defender" ? "🥇" : winnerSide === null ? "🤝" : "🥈"}</span>
+              <strong className="race-podium-name">{race.defender.name}</strong>
+              <span className="race-podium-reward">
+                {race.result.cardDeltas.defender.ozzies >= 0 ? "+" : "−"}{defOzzies} Ozzies · +{defXp} XP
+              </span>
               {race.result.winnerStatBoost && winnerSide === "defender" && (
-                <span> · +1 {race.result.winnerStatBoost.stat}</span>
+                <span className="race-podium-boost">+1 {race.result.winnerStatBoost.stat}</span>
               )}
-            </li>
-          </ul>
+            </div>
+          </div>
+
           {!isParticipant && (
             <p className="race-result-spectator">You weren't in this race — viewing as a spectator.</p>
           )}
