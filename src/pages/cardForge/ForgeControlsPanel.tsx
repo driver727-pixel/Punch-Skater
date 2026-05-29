@@ -293,40 +293,45 @@ export function ForgeControlsPanel({
               ? "Equip a weapon to your card — drag it into position on the preview."
               : `Weapons unlock at ${weaponUnlockXp.toLocaleString()} XP. Until then, they appear locked.`}
           </p>
-          <div className="forge-weapon-grid">
+          <div className="forge-weapon-picker">
             <button
               type="button"
-              className={`forge-weapon-option${!selectedWeaponUrl ? " selected" : ""}`}
+              className={`forge-weapon-none-option${!selectedWeaponUrl ? " selected" : ""}`}
               onClick={() => onWeaponSelect(undefined)}
               aria-pressed={!selectedWeaponUrl}
             >
               None
             </button>
-            {weaponAssets.map((weapon) => (
-              <button
-                key={weapon.url}
-                type="button"
-                className={`forge-weapon-option${selectedWeaponUrl === weapon.url ? " selected" : ""}${!weaponsUnlocked ? " forge-weapon-option--locked" : ""}`}
-                onClick={() => {
-                  if (!weaponsUnlocked) return;
-                  onWeaponSelect(weapon.url);
-                }}
-                aria-pressed={selectedWeaponUrl === weapon.url}
-                disabled={!weaponsUnlocked}
-                title={weapon.name}
-              >
-                <img src={weapon.url} alt={weapon.name} className="forge-weapon-thumb" />
-                <span className="forge-weapon-name">{weapon.name}</span>
-                {!weaponsUnlocked && (
-                  <span className="forge-weapon-lock">
-                    <span aria-hidden="true">🔒 {weaponUnlockXp.toLocaleString()} XP</span>
-                    <span className="visually-hidden">
-                      Weapon locked. Requires {weaponUnlockXp.toLocaleString()} mission XP to unlock.
-                    </span>
-                  </span>
-                )}
-              </button>
-            ))}
+            <div className="forge-tabletop-backdrop forge-tabletop-backdrop--weapons">
+              <img src={tabletopForgeBackdrop} alt="Tabletop forge backdrop" className="forge-tabletop-backdrop__img" />
+              <div className="forge-tabletop-weapons" aria-label="Weapon choices">
+                {weaponAssets.map((weapon, index) => (
+                  <button
+                    key={weapon.url}
+                    type="button"
+                    className={`forge-weapon-option forge-weapon-table-item forge-weapon-table-item--${index}${selectedWeaponUrl === weapon.url ? " selected" : ""}${!weaponsUnlocked ? " forge-weapon-option--locked" : ""}`}
+                    onClick={() => {
+                      if (!weaponsUnlocked) return;
+                      onWeaponSelect(weapon.url);
+                    }}
+                    aria-pressed={selectedWeaponUrl === weapon.url}
+                    disabled={!weaponsUnlocked}
+                    title={weapon.name}
+                  >
+                    <img src={weapon.url} alt={weapon.name} className="forge-weapon-thumb" />
+                    <span className="forge-weapon-name">{weapon.name}</span>
+                    {!weaponsUnlocked && (
+                      <span className="forge-weapon-lock">
+                        <span aria-hidden="true">🔒 {weaponUnlockXp.toLocaleString()} XP</span>
+                        <span className="visually-hidden">
+                          Weapon locked. Requires {weaponUnlockXp.toLocaleString()} mission XP to unlock.
+                        </span>
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -355,10 +360,6 @@ export function ForgeControlsPanel({
                   ? `💰 Forge Card (${ozziesConfig.cardForgeCost} Ozzies)`
                   : "⚡ Forge Card"}
       </button>
-
-      <div className="forge-tabletop-backdrop">
-        <img src={tabletopForgeBackdrop} alt="Tabletop forge backdrop" className="forge-tabletop-backdrop__img" />
-      </div>
 
       <div className="forge-class-odds">
         <button type="button" className="forge-class-odds__trigger btn-outline btn-glass btn-sm">
