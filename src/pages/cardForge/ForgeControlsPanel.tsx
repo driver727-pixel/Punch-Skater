@@ -318,9 +318,10 @@ export function ForgeControlsPanel({
                 <span className="forge-weapon-name">{weapon.name}</span>
                 {!weaponsUnlocked && (
                   <span className="forge-weapon-lock">
-                    <span aria-hidden="true">🔒</span>
-                    <span className="visually-hidden">Locked until </span>
-                    {weaponUnlockXp.toLocaleString()} XP
+                    <span aria-hidden="true">🔒 {weaponUnlockXp.toLocaleString()} XP</span>
+                    <span className="visually-hidden">
+                      Locked until {weaponUnlockXp.toLocaleString()} XP
+                    </span>
                   </span>
                 )}
               </button>
