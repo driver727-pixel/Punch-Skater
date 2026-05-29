@@ -118,7 +118,7 @@ export function CardForge() {
   };
 
   const handleWeaponSelect = (url: string | undefined) => {
-    if (url && !weaponsUnlocked) return;
+    if (!weaponsUnlocked) return;
     setWeaponImageUrl(url);
   };
 

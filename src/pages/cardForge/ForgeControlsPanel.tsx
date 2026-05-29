@@ -298,6 +298,7 @@ export function ForgeControlsPanel({
               className={`forge-weapon-option${!selectedWeaponUrl ? " selected" : ""}`}
               onClick={() => onWeaponSelect(undefined)}
               aria-pressed={!selectedWeaponUrl}
+              disabled={!weaponsUnlocked}
             >
               None
             </button>
@@ -320,7 +321,7 @@ export function ForgeControlsPanel({
                   <span className="forge-weapon-lock">
                     <span aria-hidden="true">🔒 {weaponUnlockXp.toLocaleString()} XP</span>
                     <span className="visually-hidden">
-                      Locked until {weaponUnlockXp.toLocaleString()} XP
+                      Weapon locked. Requires {weaponUnlockXp.toLocaleString()} mission XP to unlock.
                     </span>
                   </span>
                 )}
