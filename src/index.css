@@ -1683,12 +1683,12 @@ body::after {
   align-self: stretch;
 }
 .nav-link {
-  --nav-soda-face: rgba(91, 74, 118, 0.9);
-  --nav-soda-face-deep: rgba(45, 31, 62, 0.98);
-  --nav-soda-ink: #fff7d6;
-  --nav-soda-hotspot: rgba(255, 244, 198, 0.6);
-  --nav-soda-glow: rgba(255, 215, 130, 0.32);
-  --nav-soda-dead-zone: rgba(21, 12, 31, 0.5);
+  --nav-soda-face: rgba(140, 12, 80, 0.9);
+  --nav-soda-face-deep: rgba(70, 4, 42, 0.98);
+  --nav-soda-ink: #ffd6ee;
+  --nav-soda-hotspot: rgba(255, 160, 215, 0.58);
+  --nav-soda-glow: rgba(255, 46, 169, 0.34);
+  --nav-soda-dead-zone: rgba(24, 4, 18, 0.5);
   --nav-soda-bezel: rgba(10, 10, 14, 0.96);
   --nav-soda-edge: 8px;
   display: inline-flex;
@@ -1715,13 +1715,13 @@ body::after {
     0 var(--nav-soda-edge)
   );
   background:
-    radial-gradient(ellipse at 50% 55%, rgba(255, 247, 210, 0.55), rgba(255, 220, 140, 0.18) 38%, transparent 70%),
-    radial-gradient(circle at 24% 28%, var(--nav-soda-hotspot), rgba(255, 238, 178, 0.18) 18%, transparent 42%),
-    radial-gradient(circle at 78% 35%, rgba(255, 249, 232, 0.3), transparent 18%),
+    radial-gradient(ellipse at 50% 55%, rgba(255, 180, 230, 0.45), rgba(255, 100, 190, 0.14) 38%, transparent 70%),
+    radial-gradient(circle at 24% 28%, var(--nav-soda-hotspot), rgba(255, 120, 200, 0.14) 18%, transparent 42%),
+    radial-gradient(circle at 78% 35%, rgba(255, 200, 240, 0.22), transparent 18%),
     radial-gradient(circle at 68% 72%, var(--nav-soda-dead-zone), transparent 28%),
     linear-gradient(120deg, transparent 0 28%, rgba(255, 255, 255, 0.16) 29% 30%, transparent 31% 100%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, rgba(0, 0, 0, 0.04) 1px 3px, transparent 3px 6px),
-    linear-gradient(180deg, rgba(255, 239, 186, 0.32), rgba(255, 214, 120, 0.1) 22%, rgba(42, 22, 22, 0.12) 58%, rgba(16, 10, 8, 0.44)),
+    linear-gradient(180deg, rgba(255, 46, 169, 0.28), rgba(200, 20, 120, 0.1) 22%, rgba(42, 4, 22, 0.18) 58%, rgba(16, 4, 10, 0.44)),
     linear-gradient(135deg, var(--nav-soda-face), var(--nav-soda-face-deep));
   box-shadow:
     0 0 0 1px rgba(213, 217, 228, 0.2),
@@ -1735,38 +1735,53 @@ body::after {
   /* Backlit text — bright ink with soft halo and dark outline so the lettering
      reads cleanly on top of the lit "soda machine" face. */
   text-shadow:
-    0 0 4px rgba(255, 252, 220, 0.95),
-    0 0 10px rgba(255, 230, 150, 0.7),
-    0 0 18px rgba(255, 196, 110, 0.45),
+    0 0 4px rgba(255, 220, 240, 0.95),
+    0 0 10px rgba(255, 120, 200, 0.7),
+    0 0 18px rgba(255, 46, 169, 0.5),
     0 1px 0 rgba(0, 0, 0, 0.85),
     0 2px 2px rgba(0, 0, 0, 0.6);
 }
 .nav-link:hover {
-  color: #fff8ea;
+  color: #ffe0f4;
   transform: translateY(-1px);
   box-shadow:
-    0 0 0 1px rgba(230, 236, 244, 0.26),
+    0 0 0 1px rgba(255, 46, 169, 0.3),
     0 5px 0 rgba(0, 0, 0, 0.84),
     0 16px 24px rgba(0, 0, 0, 0.4),
-    0 0 22px rgba(185, 135, 255, 0.22),
-    inset 0 1px 0 rgba(255, 252, 245, 0.48),
-    inset 0 -10px 14px rgba(18, 10, 20, 0.38);
+    0 0 22px rgba(255, 46, 169, 0.32),
+    inset 0 1px 0 rgba(255, 220, 240, 0.48),
+    inset 0 -10px 14px rgba(20, 4, 14, 0.38);
 }
 .nav-link.active {
-  --nav-soda-face: rgba(100, 132, 58, 0.92);
-  --nav-soda-face-deep: rgba(40, 61, 26, 0.98);
-  --nav-soda-ink: #f5ffd2;
-  --nav-soda-hotspot: rgba(237, 255, 187, 0.58);
-  --nav-soda-glow: rgba(141, 255, 92, 0.24);
-  --nav-soda-dead-zone: rgba(18, 28, 14, 0.46);
+  --nav-soda-face: rgba(0, 100, 120, 0.92);
+  --nav-soda-face-deep: rgba(0, 42, 55, 0.98);
+  --nav-soda-ink: #d0faff;
+  --nav-soda-hotspot: rgba(160, 248, 255, 0.55);
+  --nav-soda-glow: rgba(32, 244, 255, 0.26);
+  --nav-soda-dead-zone: rgba(0, 16, 22, 0.46);
   color: var(--nav-soda-ink);
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(160, 248, 255, 0.38), rgba(80, 220, 240, 0.12) 38%, transparent 70%),
+    radial-gradient(circle at 24% 28%, var(--nav-soda-hotspot), rgba(100, 240, 255, 0.12) 18%, transparent 42%),
+    radial-gradient(circle at 78% 35%, rgba(180, 255, 255, 0.2), transparent 18%),
+    radial-gradient(circle at 68% 72%, var(--nav-soda-dead-zone), transparent 28%),
+    linear-gradient(120deg, transparent 0 28%, rgba(255, 255, 255, 0.16) 29% 30%, transparent 31% 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, rgba(0, 0, 0, 0.04) 1px 3px, transparent 3px 6px),
+    linear-gradient(180deg, rgba(32, 244, 255, 0.24), rgba(0, 180, 210, 0.1) 22%, rgba(0, 28, 40, 0.18) 58%, rgba(0, 10, 16, 0.44)),
+    linear-gradient(135deg, var(--nav-soda-face), var(--nav-soda-face-deep));
+  text-shadow:
+    0 0 4px rgba(200, 250, 255, 0.95),
+    0 0 10px rgba(80, 240, 255, 0.7),
+    0 0 18px rgba(32, 244, 255, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 2px 2px rgba(0, 0, 0, 0.6);
   box-shadow:
-    0 0 0 1px rgba(220, 228, 236, 0.26),
+    0 0 0 1px rgba(32, 244, 255, 0.28),
     0 4px 0 rgba(0, 0, 0, 0.84),
     0 12px 20px rgba(0, 0, 0, 0.36),
-    0 0 18px rgba(141, 255, 92, 0.24),
-    inset 0 1px 0 rgba(255, 255, 238, 0.46),
-    inset 0 -10px 14px rgba(10, 12, 7, 0.34);
+    0 0 18px rgba(32, 244, 255, 0.26),
+    inset 0 1px 0 rgba(200, 255, 255, 0.46),
+    inset 0 -10px 14px rgba(0, 12, 18, 0.34);
 }
 
 /* ===== Layout ===== */
