@@ -693,15 +693,15 @@ export class StreetsGameScene extends Phaser.Scene {
 
   updateHud() {
     const hpFrac = Phaser.Math.Clamp(this.player.hp / this.player.maxHp, 0, 1);
-    this.hpBar.width = 216 * hpFrac;
+    this.hpBar.setSize(216 * hpFrac, 12);
     this.hpBar.setFillStyle(hpFrac > 0.5 ? 0x39ff14 : hpFrac > 0.25 ? 0xffea00 : 0xff0055);
-    this.specialBar.width = 156 * Phaser.Math.Clamp(this.special / this.specialMax, 0, 1);
+    this.specialBar.setSize(156 * Phaser.Math.Clamp(this.special / this.specialMax, 0, 1), 7);
     this.scoreText.setText('SCORE ' + this.score);
 
     if (this.boss && this.boss.active && !this.boss.isDead) {
       const frac = Phaser.Math.Clamp(this.boss.hp / this.boss.maxHp, 0, 1);
       this.bossBarBg.setVisible(true);
-      this.bossBar.setVisible(true).width = 316 * frac;
+      this.bossBar.setVisible(true).setSize(316 * frac, 9);
       this.bossLabel.setVisible(true).setText(this.boss.bossName.toUpperCase());
     } else {
       this.bossBarBg.setVisible(false);
