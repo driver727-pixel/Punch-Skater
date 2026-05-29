@@ -35,10 +35,17 @@ function triggerDownload(blob: Blob, filename: string): void {
 function buildStaticManifest(
   manifest: CyberJoustSpriteManifest,
 ): CyberJoustSpriteManifest {
+  const stripRuntimeFields = <T extends { imageUrl?: string; storagePath?: string }>(entry: T): Omit<T, "imageUrl" | "storagePath"> => {
+    const nextEntry = { ...entry };
+    delete nextEntry.imageUrl;
+    delete nextEntry.storagePath;
+    return nextEntry;
+  };
+
   return {
     ...manifest,
-    bodies: manifest.bodies.map(({ imageUrl: _imageUrl, storagePath: _storagePath, ...entry }) => entry),
-    weapons: manifest.weapons.map(({ imageUrl: _imageUrl, storagePath: _storagePath, ...entry }) => entry),
+    bodies: manifest.bodies.map((entry) => stripRuntimeFields(entry)),
+    weapons: manifest.weapons.map((entry) => stripRuntimeFields(entry)),
   };
 }
 
