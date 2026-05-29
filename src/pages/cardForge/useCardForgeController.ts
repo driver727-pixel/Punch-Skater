@@ -101,5 +101,5 @@ export function useCardForgeController() {
     walletMessage: forge.walletMessage,
     walletMessageTone: forge.walletMessageTone,
     weaponPlacement: forge.weaponPlacement,
-  }), [forge, navigation, save, userProfile?.isAdmin]);
+  }), [forge, navigation, save, userProfile?.isAdmin, userProfile?.missionXp]);
 }
