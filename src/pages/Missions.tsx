@@ -15,6 +15,7 @@ import type {
   DistrictWorld,
   DistrictWorldVisuals,
   MissionEncounter,
+  MissionEncounterOption,
   MissionFork,
   MissionRunDebrief,
   WorldContract,
@@ -536,15 +537,67 @@ function ContractDetailPanel({
   );
 }
 
+// ── Punch Skater™ Streets launch ───────────────────────────────────────────
+
+const STREETS_RETURN_PATH = "/missions";
+const STREETS_LOSS_CHOICE_ID = "streets-down";
+
+/**
+ * Build the `/streets/` launch URL for a side-scroll brawl encounter option,
+ * encoding the chosen card's forged stats and cosmetics so the beat-em-up can
+ * derive the player fighter. The game bounces back to `STREETS_RETURN_PATH`
+ * with a `streetsResult` query param, which {@link MissionsWorldView} resolves.
+ */
+function buildStreetsLaunchUrl(
+  option: MissionEncounterOption,
+  runId: string,
+  nodeId: string | null,
+  card: CardPayload | null,
+): string {
+  const params = new URLSearchParams();
+  if (option.streetsMissionId) params.set("mission", option.streetsMissionId);
+  if (option.streetsObjective) params.set("objective", option.streetsObjective);
+  if (option.streetsDistrict) params.set("district", option.streetsDistrict);
+  params.set("runId", runId);
+  if (nodeId) params.set("nodeId", nodeId);
+  params.set("choiceId", option.id);
+  params.set("returnTo", STREETS_RETURN_PATH);
+
+  if (card) {
+    const name = card.identity?.name;
+    if (name) params.set("pName", name);
+    const stats = card.stats;
+    if (stats) {
+      if (Number.isFinite(stats.speed)) params.set("pSpeed", String(stats.speed));
+      if (Number.isFinite(stats.range)) params.set("pRange", String(stats.range));
+      if (Number.isFinite(stats.stealth)) params.set("pStealth", String(stats.stealth));
+      if (Number.isFinite(stats.grit)) params.set("pGrit", String(stats.grit));
+    }
+    const joust = card.joust;
+    if (joust) {
+      if (Number.isFinite(joust.lance)) params.set("pLance", String(joust.lance));
+      if (Number.isFinite(joust.shield)) params.set("pShield", String(joust.shield));
+      if (Number.isFinite(joust.hype)) params.set("pHype", String(joust.hype));
+      const weapon = joust.gear?.lanceType;
+      if (weapon) params.set("pWeapon", weapon);
+    }
+    if (card.characterImageUrl) params.set("pSprite", card.characterImageUrl);
+  }
+
+  return `/streets/?${params.toString()}`;
+}
+
 // ── Encounter overlay ──────────────────────────────────────────────────────
 
 function EncounterOverlay({
   encounter,
   onResolve,
+  onLaunchStreets,
   resolving,
 }: {
   encounter: MissionEncounter;
   onResolve: (choiceId: string) => void;
+  onLaunchStreets: (option: MissionEncounterOption) => void;
   resolving: boolean;
 }) {
   return (
@@ -595,7 +648,39 @@ function EncounterOverlay({
           Choose your response
         </p>
         {encounter.options.map((opt) => {
+          if (opt.hidden) return null;
           const unavailable = opt.available === false;
+          if (opt.encounterType === "streets") {
+            return (
+              <button
+                key={opt.id}
+                onClick={() => onLaunchStreets(opt)}
+                disabled={resolving || unavailable}
+                title={unavailable ? "Requirements not met" : opt.description}
+                style={{
+                  textAlign: "left",
+                  padding: "10px 14px",
+                  background: unavailable ? "rgba(255,255,255,0.03)" : "rgba(57,255,20,0.1)",
+                  border: `1px solid ${unavailable ? "rgba(255,255,255,0.12)" : "rgba(57,255,20,0.6)"}`,
+                  borderRadius: 4,
+                  color: unavailable ? "rgba(255,255,255,0.3)" : "#eaffe0",
+                  fontFamily: "monospace",
+                  fontSize: 11,
+                  cursor: resolving || unavailable ? "not-allowed" : "pointer",
+                  opacity: resolving ? 0.6 : 1,
+                  transition: "background 0.15s",
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>▶ {opt.label}</div>
+                <div style={{ fontSize: 10, color: unavailable ? "rgba(255,255,255,0.2)" : "rgba(234,255,224,0.7)", lineHeight: 1.4 }}>
+                  {opt.description}
+                </div>
+                <div style={{ marginTop: 6, fontSize: 9, color: "#7de7ff", letterSpacing: "0.08em" }}>
+                  SIDE-SCROLL BRAWL · PUNCH SKATER™ STREETS
+                </div>
+              </button>
+            );
+          }
           return (
             <button
               key={opt.id}
@@ -1093,6 +1178,57 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     }
   }, [uid, activeRun, userEmail]);
 
+  // Resolve the active card for a Streets brawl launch: the run's solo card, or
+  // the first card of the squad deck when running a deck.
+  const runnerCard = useMemo<CardPayload | null>(() => {
+    if (!activeRun) return null;
+    if (activeRun.cardId) {
+      const card = cards.find((c) => c.id === activeRun.cardId);
+      if (card) return card;
+    }
+    if (activeRun.deckId) {
+      const deck = decks.find((d) => d.id === activeRun.deckId);
+      const card = deck?.cards?.[0];
+      if (card) return card;
+    }
+    return null;
+  }, [activeRun, cards, decks]);
+
+  const handleLaunchStreets = useCallback((option: MissionEncounterOption) => {
+    if (!activeRun) return;
+    const nodeId = activeRun.encounter?.triggeredAtNodeId ?? null;
+    const url = buildStreetsLaunchUrl(option, activeRun.runId, nodeId, runnerCard);
+    window.location.href = url;
+  }, [activeRun, runnerCard]);
+
+  // When the Streets game bounces back with ?streetsResult=win|lose, resolve the
+  // active encounter once: a win banks the launch option's reward, a loss banks
+  // the hidden consolation outcome. Guarded so it fires a single time per result.
+  const streetsResultHandledRef = useRef(false);
+  useEffect(() => {
+    if (streetsResultHandledRef.current) return;
+    if (!activeRun?.encounter || activeRun.encounter.resolvedAt) return;
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("streetsResult");
+    if (result !== "win" && result !== "lose") return;
+
+    const options = activeRun.encounter.contract?.options ?? [];
+    let choiceId: string | null = null;
+    if (result === "win") {
+      choiceId = params.get("choiceId")
+        ?? options.find((opt) => opt.encounterType === "streets")?.id
+        ?? null;
+    } else {
+      choiceId = options.find((opt) => opt.id === STREETS_LOSS_CHOICE_ID)?.id
+        ?? STREETS_LOSS_CHOICE_ID;
+    }
+
+    streetsResultHandledRef.current = true;
+    // Strip the result params so a refresh does not re-trigger resolution.
+    window.history.replaceState({}, "", window.location.pathname);
+    if (choiceId) void handleResolveEncounter(choiceId);
+  }, [activeRun, handleResolveEncounter]);
+
   const handleResolvePoiFork = useCallback(async (choiceId: string) => {
     if (!activeRun) return;
     setResolvingFork(true);
@@ -1228,6 +1364,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
             <EncounterOverlay
               encounter={activeEncounter}
               onResolve={handleResolveEncounter}
+              onLaunchStreets={handleLaunchStreets}
               resolving={resolvingEncounter}
             />
           </div>

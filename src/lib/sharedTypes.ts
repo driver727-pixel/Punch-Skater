@@ -183,8 +183,16 @@ export interface MissionEncounterOption {
   id: string;
   label: string;
   description: string;
-  /** @sprint 6 @owner gamma — `counter` uses tag/power checks, while `joust` resolves through jousting-lite with a tactic pick. */
-  encounterType?: "counter" | "joust";
+  /** @sprint 6 @owner gamma — `counter` uses tag/power checks, while `joust` resolves through jousting-lite with a tactic pick. `streets` launches the side-scrolling Punch Skater™ Streets brawl. */
+  encounterType?: "counter" | "joust" | "streets";
+  /** Streets brawl mission id (e.g. "nightshade-run") when `encounterType` is `streets`. */
+  streetsMissionId?: string;
+  /** Streets brawl objective (`fight_through` | `retrieve` | `escape`) when `encounterType` is `streets`. */
+  streetsObjective?: string;
+  /** Streets brawl district skin id when `encounterType` is `streets`. */
+  streetsDistrict?: string;
+  /** When true, the option is resolvable by the server but hidden from the encounter UI (e.g. the Streets loss outcome). */
+  hidden?: boolean;
   requirements?: MissionRequirement[];
   requiredTags?: MissionCounterTag[];
   minimumCounterPower?: number;
