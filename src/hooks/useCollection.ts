@@ -11,6 +11,7 @@ import type { CardPayload } from "../lib/types";
 import { loadCollection, saveCollection } from "../lib/storage";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
+import { reportPersistenceError } from "../lib/persistenceError";
 import { normalizeCardPayload } from "../lib/styles";
 
 const MIGRATION_KEY_PREFIX = "skpd_migration_done_";
@@ -157,7 +158,7 @@ export function useCollection() {
 
   const removeCard = useCallback((id: string) => {
     if (uid) {
-      deleteDoc(doc(db, "users", uid, "cards", id)).catch(console.error);
+      deleteDoc(doc(db, "users", uid, "cards", id)).catch((error) => reportPersistenceError("Couldn't remove that card — check your connection and try again.", error));
     } else {
       setCards((prev) => prev.filter((c) => c.id !== id));
     }
@@ -166,7 +167,7 @@ export function useCollection() {
   const updateCard = useCallback((card: CardPayload) => {
     const normalizedCard = normalizeCardPayload(card);
     if (uid) {
-      setDoc(doc(db, "users", uid, "cards", normalizedCard.id), normalizedCard).catch(console.error);
+      setDoc(doc(db, "users", uid, "cards", normalizedCard.id), normalizedCard).catch((error) => reportPersistenceError("Couldn't save your card changes — check your connection and try again.", error));
     } else {
       setCards((prev) => prev.map((c) => (c.id === normalizedCard.id ? normalizedCard : c)));
     }

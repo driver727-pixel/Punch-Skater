@@ -19,6 +19,7 @@ import { useAuth } from "./AuthContext";
 import { db } from "../lib/firebase";
 import { resolveApiUrl } from "../lib/apiUrls";
 import { FREE_FORGE_COOLDOWN_MS } from "../lib/dailyRewards";
+import { reportPersistenceError } from "../lib/persistenceError";
 
 const CHECKOUT_VERIFY_API_URL = resolveApiUrl(
   import.meta.env.VITE_CHECKOUT_VERIFY_API_URL as string | undefined,
@@ -163,7 +164,11 @@ export function TierProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch((error) => {
-        console.warn("[Tier] Checkout verification failed:", error);
+        if (cancelled) return;
+        reportPersistenceError(
+          "We couldn't confirm your purchase. If you were charged, please reload or contact support.",
+          error,
+        );
       });
 
     return () => {

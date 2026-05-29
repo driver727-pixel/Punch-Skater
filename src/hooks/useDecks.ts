@@ -10,6 +10,7 @@ import type { DeckPayload, CardPayload } from "../lib/types";
 import { loadDecks, saveDecks } from "../lib/storage";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
+import { reportPersistenceError } from "../lib/persistenceError";
 
 /** Maximum number of cards allowed in a single deck. */
 export const DECK_CARD_LIMIT = 6;
@@ -92,7 +93,7 @@ export function useDecks() {
       });
 
       if (changedDecks.length > 0) {
-        void Promise.all(changedDecks.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch(console.error);
+        void Promise.all(changedDecks.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
       }
     });
     return unsub;
@@ -120,7 +121,7 @@ export function useDecks() {
   // ── Helpers ───────────────────────────────────────────────────────────────
   const saveDeck = useCallback((deck: DeckPayload) => {
     if (uid) {
-      setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch(console.error);
+      setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => prev.map((d) => (d.id === deck.id ? deck : d)));
     }
@@ -139,7 +140,7 @@ export function useDecks() {
       sortOrder: nextSortOrder,
     };
     if (uid) {
-      setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch(console.error);
+      setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => normalizeDeckOrder([...prev, deck]));
     }
@@ -148,7 +149,7 @@ export function useDecks() {
 
   const deleteDeck = useCallback((id: string) => {
     if (uid) {
-      deleteDoc(doc(db, "users", uid, "decks", id)).catch(console.error);
+      deleteDoc(doc(db, "users", uid, "decks", id)).catch((error) => reportPersistenceError("Couldn't delete that deck — check your connection and try again.", error));
     } else {
       setDecks((prev) => prev.filter((d) => d.id !== id));
     }
@@ -242,7 +243,7 @@ export function useDecks() {
     setDecks(normalized);
 
     if (uid) {
-      void Promise.all(normalized.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch(console.error);
+      void Promise.all(normalized.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     }
   }, [uid]);
 
@@ -272,7 +273,7 @@ export function useDecks() {
       updatedAt: new Date().toISOString(),
     };
     if (uid) {
-      setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch(console.error);
+      setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => [...prev, deck]);
     }
@@ -289,7 +290,7 @@ export function useDecks() {
     if (updates.length === 0) return;
     if (uid) {
       void Promise.all(updates.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck)))
-        .catch(console.error);
+        .catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => prev.map((d) => {
         const next = updates.find((u) => u.id === d.id);
