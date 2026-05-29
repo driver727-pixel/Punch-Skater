@@ -3065,6 +3065,135 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   line-height: 1.6;
 }
 
+.forge-welcome-faceoff {
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid rgba(255, 216, 74, 0.32);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 216, 74, 0.22), transparent 26%),
+    linear-gradient(135deg, rgba(255, 0, 128, 0.16), rgba(0, 204, 255, 0.14)),
+    rgba(4, 8, 14, 0.78);
+  box-shadow:
+    0 0 28px rgba(255, 216, 74, 0.14),
+    inset 0 0 24px rgba(0, 0, 0, 0.4);
+}
+
+.forge-welcome-faceoff__flare {
+  position: absolute;
+  inset: -35%;
+  background:
+    conic-gradient(from 90deg, transparent, rgba(0, 255, 136, 0.12), transparent, rgba(255, 0, 128, 0.14), transparent);
+  animation: faceoff-flare-spin 18s linear infinite;
+  pointer-events: none;
+}
+
+.forge-welcome-faceoff__header {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.forge-welcome-faceoff__eyebrow,
+.forge-welcome-faceoff__crew {
+  color: #ffd84a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.forge-welcome-faceoff__header h3 {
+  margin: 4px 0;
+  font-family: var(--font-display);
+  color: #fff7c2;
+  font-size: clamp(18px, 3vw, 25px);
+  letter-spacing: 1px;
+  text-shadow:
+    0 0 12px rgba(255, 216, 74, 0.45),
+    2px 2px 0 rgba(255, 0, 128, 0.35);
+}
+
+.forge-welcome-faceoff__header p {
+  max-width: 58ch;
+  margin: 0 auto 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.forge-welcome-faceoff__stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.forge-welcome-faceoff__card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.forge-welcome-faceoff__card .card-stack {
+  gap: 0;
+}
+
+.forge-welcome-faceoff__card .card-stack .card-full {
+  width: 110px;
+  zoom: 1.45;
+}
+
+.forge-welcome-faceoff__card .card-full--back {
+  display: none;
+}
+
+.forge-welcome-faceoff__card--cassidy .card-full--front {
+  transform: rotate(-4deg) translateX(5px);
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.22),
+    -10px 10px 0 rgba(0, 255, 136, 0.08);
+}
+
+.forge-welcome-faceoff__card--garibaldi .card-full--front {
+  transform: rotate(4deg) translateX(-5px);
+  box-shadow:
+    0 0 20px rgba(255, 0, 128, 0.22),
+    10px 10px 0 rgba(255, 0, 128, 0.08);
+}
+
+.forge-welcome-faceoff__versus {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 2px solid rgba(255, 216, 74, 0.72);
+  border-radius: 999px;
+  background: rgba(7, 12, 18, 0.84);
+  color: #ffd84a;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(255, 216, 74, 0.8);
+  box-shadow: 0 0 26px rgba(255, 216, 74, 0.24);
+  animation: faceoff-versus-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes faceoff-flare-spin {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes faceoff-versus-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
 .forge-welcome__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -12807,6 +12936,31 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .forge-welcome__actions .btn-primary {
     width: 100%;
     min-height: 46px;
+  }
+
+  .forge-welcome-faceoff {
+    padding: 14px 10px;
+  }
+
+  .forge-welcome-faceoff__stage {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .forge-welcome-faceoff__versus {
+    width: 52px;
+    height: 52px;
+    margin: -4px auto;
+    font-size: 18px;
+  }
+
+  .forge-welcome-faceoff__card .card-stack .card-full {
+    zoom: 1.2;
+  }
+
+  .forge-welcome-faceoff__card--cassidy .card-full--front,
+  .forge-welcome-faceoff__card--garibaldi .card-full--front {
+    transform: none;
   }
 
   .forge-quick-actions {

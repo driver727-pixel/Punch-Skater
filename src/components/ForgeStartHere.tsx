@@ -4,6 +4,7 @@ interface ForgeStartHereProps {
   actions?: ReactNode;
   className?: string;
   eyebrow?: string;
+  spotlight?: ReactNode;
   title?: string;
   titleId?: string;
 }
@@ -22,6 +23,7 @@ export function ForgeStartHere({
   actions,
   className = "",
   eyebrow = "Start Here",
+  spotlight,
   title = "Welcome to Punch Skater™, Rookie.",
   titleId,
 }: ForgeStartHereProps) {
@@ -36,6 +38,8 @@ export function ForgeStartHere({
         Your progression loop is simple: forge cards, lock a 6-card crew, run contracts, win jousts, and reinvest rewards.
         Legendary status is earned through play, not purchases.
       </p>
+
+      {spotlight}
 
       <h3 className="forge-welcome__loop-title">The Game Loop</h3>
       <ol className="forge-welcome__loop">

@@ -55,6 +55,7 @@ import { registerTradeRoutes } from './routes/trades.js';
 import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
 import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
 import { registerJousturRoutes } from './routes/joustur.js';
+import { registerHypeRoutes } from './routes/hype.js';
 
 // Load the shared pricing config — the single source of truth for Stripe
 // price IDs, buy URLs, and display prices.  Update src/lib/tierPricing.json
@@ -856,6 +857,10 @@ const districtWeatherService = createDistrictWeatherService();
 registerWeatherRoutes(app, {
   weatherRateLimit,
   districtWeatherService,
+});
+
+registerHypeRoutes(app, {
+  adminDb,
 });
 
 registerCraftlinguaRoutes(app, {
