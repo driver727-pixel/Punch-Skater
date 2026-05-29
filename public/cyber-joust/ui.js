@@ -1,6 +1,16 @@
 import * as Phaser from 'phaser';
 import { init } from '@instantdb/core';
 import { INSTANT_DB_APP_ID } from './instant_db_config.js';
+import {
+    buildCyberJoustBodyTextureKey,
+    buildCyberJoustWeaponTextureKey,
+    CYBER_JOUST_COLORS,
+    CYBER_JOUST_DECKS,
+    CYBER_JOUST_SPRITE_MANIFEST_KEY,
+    CYBER_JOUST_WEAPONS,
+    findCyberJoustBodySprite,
+    findCyberJoustWeaponSprite
+} from './fighterSprites.js';
 
 const db = init({ appId: INSTANT_DB_APP_ID });
 
@@ -10,19 +20,9 @@ export class MenuScene extends Phaser.Scene {
         this.selectedColorIdx = 0;
         this.selectedDeckIdx = 0;
         this.selectedWeaponIdx = 2;
-
-        this.colors = [
-            { name: 'Neon Cyan', value: 0x00f0ff },
-            { name: 'Cyber Pink', value: 0xff007f },
-            { name: 'Laser Yellow', value: 0xffea00 },
-            { name: 'Toxic Green', value: 0x39ff14 }
-        ];
-        this.decks = ['Speedline', 'Gridwave', 'ToxiCorp', 'Hologram'];
-        this.weapons = [
-            { name: 'Hockey Stick', speed: '⚡⚡⚡', weight: '⚡', reach: '⚡⚡' },
-            { name: 'Street Sign', speed: '⚡', weight: '⚡⚡⚡', reach: '⚡⚡' },
-            { name: 'Crutch Lance', speed: '⚡⚡', weight: '⚡⚡', reach: '⚡⚡⚡' }
-        ];
+        this.colors = CYBER_JOUST_COLORS;
+        this.decks = CYBER_JOUST_DECKS;
+        this.weapons = CYBER_JOUST_WEAPONS;
         this.highScores = [];
     }
 
@@ -84,6 +84,8 @@ export class MenuScene extends Phaser.Scene {
         this.previewGraphics = this.add.graphics();
         this.previewContainer = this.add.container(x - w * 0.3, y).setDepth(10);
         this.previewContainer.add(this.previewGraphics);
+        this.previewBodySprite = null;
+        this.previewWeaponSprite = null;
         this.updateRiderPreview();
 
         const controlX = x + w * 0.12;
@@ -143,8 +145,43 @@ export class MenuScene extends Phaser.Scene {
     updateRiderPreview() {
         const color = this.colors[this.selectedColorIdx].value;
         const weaponType = this.weapons[this.selectedWeaponIdx].name;
+        const spriteManifest = this.registry.get(CYBER_JOUST_SPRITE_MANIFEST_KEY);
+        const cosmetics = {
+            colorName: this.colors[this.selectedColorIdx].name,
+            color,
+            deck: this.decks[this.selectedDeckIdx],
+            weapon: weaponType
+        };
+        const bodySprite = findCyberJoustBodySprite(spriteManifest, cosmetics);
+        const weaponSprite = findCyberJoustWeaponSprite(spriteManifest, cosmetics);
+        const bodyTextureKey = bodySprite ? buildCyberJoustBodyTextureKey(bodySprite.slug) : null;
+        const weaponTextureKey = weaponSprite ? buildCyberJoustWeaponTextureKey(weaponSprite.slug) : null;
         const g = this.previewGraphics;
         g.clear();
+
+        const canUseSprites =
+            bodyTextureKey &&
+            weaponTextureKey &&
+            this.textures.exists(bodyTextureKey) &&
+            this.textures.exists(weaponTextureKey);
+
+        if (canUseSprites) {
+            if (!this.previewBodySprite) {
+                this.previewBodySprite = this.add.image(0, 0, bodyTextureKey);
+                this.previewContainer.add(this.previewBodySprite);
+            }
+            if (!this.previewWeaponSprite) {
+                this.previewWeaponSprite = this.add.image(0, 0, weaponTextureKey);
+                this.previewContainer.add(this.previewWeaponSprite);
+            }
+
+            this.previewBodySprite.setTexture(bodyTextureKey).setScale(1.1).setVisible(true);
+            this.previewWeaponSprite.setTexture(weaponTextureKey).setScale(1.1).setVisible(true);
+            return;
+        }
+
+        this.previewBodySprite?.setVisible(false);
+        this.previewWeaponSprite?.setVisible(false);
 
         g.fillStyle(0x222233, 1);
         g.lineStyle(2, color, 1);

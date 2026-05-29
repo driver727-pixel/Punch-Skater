@@ -4,6 +4,7 @@ import { BOARD_COMPONENT_CATALOG } from "../lib/boardBuilder";
 import { AdminFactionImagesPanel } from "../components/AdminFactionImagesPanel";
 import { AdminImageCachePanel } from "../components/AdminImageCachePanel";
 import { AdminDeckLayersPanel } from "../components/AdminDeckLayersPanel";
+import { AdminCyberJoustSpritesPanel } from "../components/AdminCyberJoustSpritesPanel";
 import {
   getDistrictTheme,
   getDistrictTransitionEyebrow,
@@ -119,7 +120,7 @@ interface ItemState {
 }
 
 export function AssetGenerator() {
-  const [activeTab, setActiveTab] = useState<"generator" | "transitions" | "factions" | "cache" | "decks">("generator");
+  const [activeTab, setActiveTab] = useState<"generator" | "transitions" | "factions" | "cache" | "decks" | "cyberJoust">("generator");
   const [states, setStates] = useState<Record<string, ItemState>>(
     Object.fromEntries(ALL_ITEMS.map((i) => [i.seedKey, { status: "idle" }]))
   );
@@ -241,6 +242,12 @@ export function AssetGenerator() {
           onClick={() => setActiveTab("decks")}
         >
           🃏 Decks &amp; Bosses
+        </button>
+        <button
+          className={`admin-tab${activeTab === "cyberJoust" ? " admin-tab--active" : ""}`}
+          onClick={() => setActiveTab("cyberJoust")}
+        >
+          ⚡ Cyber Joust
         </button>
       </div>
 
@@ -398,6 +405,8 @@ export function AssetGenerator() {
         <AdminFactionImagesPanel />
       ) : activeTab === "decks" ? (
         <AdminDeckLayersPanel />
+      ) : activeTab === "cyberJoust" ? (
+        <AdminCyberJoustSpritesPanel />
       ) : (
         <AdminImageCachePanel />
       )}

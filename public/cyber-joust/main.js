@@ -1,6 +1,13 @@
 import * as Phaser from 'phaser';
 import { MenuScene } from './ui.js';
 import { GameScene } from './gameScene.js';
+import {
+    buildCyberJoustBodyTextureKey,
+    buildCyberJoustWeaponTextureKey,
+    CYBER_JOUST_SPRITE_MANIFEST_KEY,
+    loadCyberJoustSpriteManifest,
+    resolveCyberJoustSpriteUrl
+} from './fighterSprites.js';
 
 class BootScene extends Phaser.Scene {
     constructor() {
@@ -37,7 +44,7 @@ class BootScene extends Phaser.Scene {
             percentText.setText(Math.round(value * 100) + '%');
         });
 
-        this.load.on('complete', () => {
+        this.load.once('complete', () => {
             loadingBox.destroy();
             progressBar.destroy();
             loadingText.destroy();
@@ -51,7 +58,7 @@ class BootScene extends Phaser.Scene {
         this.load.audio('sfx-zap', 'assets/audio/sfx-zap.mp3');
     }
 
-    create() {
+    async create() {
         const sparkCanvas = this.textures.createCanvas('spark-dot', 16, 16);
         const ctx = sparkCanvas.getContext();
         const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
@@ -65,6 +72,40 @@ class BootScene extends Phaser.Scene {
         ctx.arc(8, 8, 8, 0, Math.PI * 2);
         ctx.fill();
         sparkCanvas.refresh();
+
+        const manifest = await loadCyberJoustSpriteManifest();
+        this.registry.set(CYBER_JOUST_SPRITE_MANIFEST_KEY, manifest);
+
+        const queuedLoads = [];
+        this.load.on('loaderror', (file) => {
+            console.warn('Cyber Joust sprite load failed:', file?.src || file?.key || 'unknown');
+        });
+
+        manifest.bodies.forEach((entry) => {
+            const sourceUrl = resolveCyberJoustSpriteUrl(entry);
+            if (!sourceUrl) return;
+            const textureKey = buildCyberJoustBodyTextureKey(entry.slug);
+            if (this.textures.exists(textureKey)) return;
+            queuedLoads.push(textureKey);
+            this.load.image(textureKey, sourceUrl);
+        });
+
+        manifest.weapons.forEach((entry) => {
+            const sourceUrl = resolveCyberJoustSpriteUrl(entry);
+            if (!sourceUrl) return;
+            const textureKey = buildCyberJoustWeaponTextureKey(entry.slug);
+            if (this.textures.exists(textureKey)) return;
+            queuedLoads.push(textureKey);
+            this.load.image(textureKey, sourceUrl);
+        });
+
+        if (queuedLoads.length > 0) {
+            this.load.once('complete', () => {
+                this.scene.start('MenuScene');
+            });
+            this.load.start();
+            return;
+        }
 
         this.scene.start('MenuScene');
     }
