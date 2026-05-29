@@ -81,7 +81,7 @@ function compareWorkshopBoards(a: WorkshopBoardPayload, b: WorkshopBoardPayload)
 function normalizeWorkshopWeapon(weapon: WorkshopWeaponPayload): WorkshopWeaponPayload {
   return {
     ...weapon,
-    label: typeof weapon.label === "string" && weapon.label.trim() ? weapon.label : "Workshop weapon",
+    label: typeof weapon.label === "string" && weapon.label.trim() ? weapon.label : "Saved weapon",
   };
 }
 

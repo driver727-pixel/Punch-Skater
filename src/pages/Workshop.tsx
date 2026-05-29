@@ -414,7 +414,7 @@ export function Workshop() {
   const handleSelectWeapon = (weaponId: string) => {
     sfxClick();
     setSelectedWeaponId(weaponId);
-    updateSearchSelection({ weaponId: weaponId });
+    updateSearchSelection({ weaponId });
   };
 
   const handleDeselectWeapon = () => {
