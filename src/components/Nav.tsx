@@ -18,6 +18,7 @@ import { useAmbience } from "../hooks/useAmbience";
 import { isEnabled } from "../lib/featureFlags";
 import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
 import { warmRoutes, type RoutePrefetchKey } from "../lib/routePrefetch";
+import menuButtonImage from "../../menu-button.png";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
@@ -90,8 +91,7 @@ export function Nav() {
     navigate("/");
   };
 
-  const renderNavLinks = (onClick?: () => void, options?: { mobile?: boolean }) => {
-    const isMobile = options?.mobile === true;
+  const renderNavLinks = (onClick?: () => void) => {
     const handleNav = () => { sfxNavigate(); onClick?.(); };
     const bindIntentWarm = (keys: RoutePrefetchKey[]) => ({
       onFocus: () => warmRoutes(keys),
@@ -151,11 +151,9 @@ export function Nav() {
           <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
             ⚙ Admin
           </NavLink>
-          {!isMobile && (
-            <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
-              🎨 Image Assets
-            </NavLink>
-          )}
+          <NavLink to="/dev/asset-generator" className={({ isActive }) => isActive ? "nav-link nav-link--admin active" : "nav-link nav-link--admin"} onClick={handleNav}>
+            🎨 Image Assets
+          </NavLink>
         </>
       )}
     </>
@@ -267,7 +265,11 @@ export function Nav() {
               aria-label={navOpen ? "Close menu" : "Open menu"}
               aria-expanded={navOpen}
             >
-              {navOpen ? "✕" : "☰"}
+              {navOpen ? (
+                <span aria-hidden="true">✕</span>
+              ) : (
+                <img className="nav-hamburger-icon" src={menuButtonImage} alt="" aria-hidden="true" />
+              )}
             </button>
           </div>
           </div>
@@ -275,7 +277,7 @@ export function Nav() {
 
         {navOpen && (
           <div className="nav-mobile-menu">
-            {renderNavLinks(() => setNavOpen(false), { mobile: true })}
+            {renderNavLinks(() => setNavOpen(false))}
             <div className="nav-mobile-menu-footer">
               <button
                 className={`ambience-btn${ambienceEnabled ? " ambience-btn--on" : ""}`}
