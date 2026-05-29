@@ -19,7 +19,7 @@ import {
   submitJousturClashChoice,
 } from "../../services/joustur";
 import type {
-  JousturClashStance,
+  JousturClashMiniGame,
   JousturClashState,
   JousturMatch,
   JousturLegalMove,
@@ -38,15 +38,39 @@ const EXIT_POSITION = 15;
 const MOVE_HINT_DELAY_MS = 9000;
 type BoardSide = "top" | "bottom";
 type ClashCinematicStage = "charge" | "impact" | "resolve";
-const CLASH_STANCE_OPTIONS: Array<{
-  stance: JousturClashStance;
-  label: string;
-  desc: string;
-}> = [
-  { stance: "charge", label: "Charge", desc: "Beats Feint" },
-  { stance: "guard", label: "Guard", desc: "Beats Charge" },
-  { stance: "feint", label: "Feint", desc: "Beats Guard" },
+
+// ── Clash mini-game tuning (must mirror server/lib/jousturRules.js) ────────────
+/** Number of Rock/Paper/Scissors rounds played in the best-of-3 mini-game. */
+const CLASH_RPS_ROUNDS = 3;
+/** Length of the button-mash window, in milliseconds. */
+const CLASH_MASH_DURATION_MS = 4000;
+/** Maximum mash score (presses are clamped to this; matches the server cap). */
+const CLASH_MASH_MAX_SCORE = 20;
+
+type RpsMove = "rock" | "paper" | "scissors";
+const RPS_MOVES: Array<{ move: RpsMove; label: string; emoji: string }> = [
+  { move: "rock", label: "Rock", emoji: "✊" },
+  { move: "paper", label: "Paper", emoji: "✋" },
+  { move: "scissors", label: "Scissors", emoji: "✌️" },
 ];
+
+/** 1 = player wins, -1 = computer wins, 0 = tie. */
+function compareRpsMoves(player: RpsMove, computer: RpsMove): number {
+  if (player === computer) return 0;
+  if (
+    (player === "rock" && computer === "scissors") ||
+    (player === "paper" && computer === "rock") ||
+    (player === "scissors" && computer === "paper")
+  ) {
+    return 1;
+  }
+  return -1;
+}
+
+const CLASH_MINI_GAME_LABELS: Record<JousturClashMiniGame, string> = {
+  rps: "Best-of-3 Rock/Paper/Scissors",
+  mash: "Button-Mash Meter",
+};
 
 /** Player tile paths matching server/lib/jousturRules.js */
 const PLAYER1_PATH = [4, 3, 2, 1, 7, 8, 9, 10, 11, 12, 13, 14, 6, 5] as const;
@@ -436,14 +460,178 @@ function ClashCinematicOverlay({
           <button
             className="joustur-clash-cinematic__dismiss"
             onClick={onDismiss}
-            aria-label="Dismiss clash result"
+            aria-label="Exit clash result"
           >
-            Continue
+            Exit
           </button>
         )}
       </div>
     </div>
   );
+}
+
+/**
+ * Best-of-3 Rock/Paper/Scissors mini-game. The player duels a local computer
+ * for three rounds; the score reported is the number of rounds the player won.
+ */
+function ClashRpsGame({
+  disabled,
+  onComplete,
+}: {
+  disabled: boolean;
+  onComplete: (score: number) => void;
+}) {
+  const [round, setRound] = useState(1);
+  const [wins, setWins] = useState(0);
+  const [losses, setLosses] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [lastRound, setLastRound] = useState<{
+    player: RpsMove;
+    computer: RpsMove;
+    result: number;
+  } | null>(null);
+
+  const playRound = (move: RpsMove) => {
+    if (disabled || finished) return;
+    const computer = RPS_MOVES[Math.floor(Math.random() * RPS_MOVES.length)].move;
+    const result = compareRpsMoves(move, computer);
+    const nextWins = wins + (result === 1 ? 1 : 0);
+    const nextLosses = losses + (result === -1 ? 1 : 0);
+    setWins(nextWins);
+    setLosses(nextLosses);
+    setLastRound({ player: move, computer, result });
+    if (round >= CLASH_RPS_ROUNDS) {
+      setFinished(true);
+      onComplete(nextWins);
+    } else {
+      setRound((r) => r + 1);
+    }
+  };
+
+  const moveLabel = (move: RpsMove) =>
+    RPS_MOVES.find((option) => option.move === move)?.emoji ?? "";
+
+  return (
+    <div className="joustur-clash-minigame joustur-clash-minigame--rps">
+      <div className="joustur-clash-minigame__scoreboard">
+        <span>
+          Round <strong>{Math.min(round, CLASH_RPS_ROUNDS)}</strong> / {CLASH_RPS_ROUNDS}
+        </span>
+        <span>
+          You <strong>{wins}</strong> · CPU <strong>{losses}</strong>
+        </span>
+      </div>
+      {lastRound && (
+        <p className="joustur-clash-minigame__last" aria-live="polite">
+          {moveLabel(lastRound.player)} vs {moveLabel(lastRound.computer)} —{" "}
+          {lastRound.result === 1 ? "round won!" : lastRound.result === -1 ? "round lost." : "tie."}
+        </p>
+      )}
+      <div className="joustur-clash-minigame__actions">
+        {RPS_MOVES.map((option) => (
+          <button
+            key={option.move}
+            type="button"
+            className="joustur-clash-minigame__throw"
+            onClick={() => playRound(option.move)}
+            disabled={disabled || finished}
+          >
+            <span aria-hidden="true">{option.emoji}</span>
+            <strong>{option.label}</strong>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Button-mash meter mini-game. The player taps as fast as they can within a
+ * fixed window; the score reported is the (clamped) number of taps.
+ */
+function ClashMashGame({
+  disabled,
+  onComplete,
+}: {
+  disabled: boolean;
+  onComplete: (score: number) => void;
+}) {
+  const [count, setCount] = useState(0);
+  const [phase, setPhase] = useState<"idle" | "running" | "done">("idle");
+  const [timeLeft, setTimeLeft] = useState(CLASH_MASH_DURATION_MS);
+  const countRef = useRef(0);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    if (phase !== "running") return;
+    const start = Date.now();
+    const interval = window.setInterval(() => {
+      const remaining = CLASH_MASH_DURATION_MS - (Date.now() - start);
+      if (remaining <= 0) {
+        window.clearInterval(interval);
+        setTimeLeft(0);
+        setPhase("done");
+        onCompleteRef.current(Math.min(countRef.current, CLASH_MASH_MAX_SCORE));
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 100);
+    return () => window.clearInterval(interval);
+  }, [phase]);
+
+  const handleMash = () => {
+    if (disabled || phase === "done") return;
+    if (phase === "idle") setPhase("running");
+    countRef.current = Math.min(countRef.current + 1, CLASH_MASH_MAX_SCORE);
+    setCount(countRef.current);
+  };
+
+  const fillPct = Math.round((count / CLASH_MASH_MAX_SCORE) * 100);
+  const seconds = Math.ceil(timeLeft / 1000);
+
+  return (
+    <div className="joustur-clash-minigame joustur-clash-minigame--mash">
+      <div className="joustur-clash-minigame__scoreboard">
+        <span>
+          Taps <strong>{count}</strong> / {CLASH_MASH_MAX_SCORE}
+        </span>
+        <span>
+          {phase === "idle"
+            ? "Tap to start!"
+            : phase === "running"
+              ? `${seconds}s left`
+              : "Time!"}
+        </span>
+      </div>
+      <div className="joustur-clash-minigame__meter" aria-hidden="true">
+        <div className="joustur-clash-minigame__meter-fill" style={{ width: `${fillPct}%` }} />
+      </div>
+      <button
+        type="button"
+        className="joustur-clash-minigame__mash"
+        onClick={handleMash}
+        disabled={disabled || phase === "done"}
+      >
+        {phase === "done" ? "Locking in…" : "MASH!"}
+      </button>
+    </div>
+  );
+}
+
+function ClashMiniGame({
+  miniGame,
+  disabled,
+  onComplete,
+}: {
+  miniGame: JousturClashMiniGame;
+  disabled: boolean;
+  onComplete: (score: number) => void;
+}) {
+  if (miniGame === "mash") {
+    return <ClashMashGame disabled={disabled} onComplete={onComplete} />;
+  }
+  return <ClashRpsGame disabled={disabled} onComplete={onComplete} />;
 }
 
 interface DragState {
@@ -815,6 +1003,7 @@ export function JousturBoard() {
   const [rolling, setRolling] = useState(false);
   const [moving, setMoving] = useState(false);
   const [clashing, setClashing] = useState(false);
+  const [clashAttempt, setClashAttempt] = useState(0);
   const [legalMoves, setLegalMoves] = useState<JousturLegalMove[]>([]);
   const [canActivateSupport, setCanActivateSupport] = useState<{
     canActivate: boolean;
@@ -912,13 +1101,13 @@ export function JousturBoard() {
         ? "defender"
         : null
     : null;
-  const myClashChoice = activeClash
+  const myClashSubmitted = activeClash
     ? myClashRole === "attacker"
-      ? activeClash.attackerChoice
+      ? activeClash.attackerChoiceLocked
       : myClashRole === "defender"
-        ? activeClash.defenderChoice
-        : null
-    : null;
+        ? activeClash.defenderChoiceLocked
+        : false
+    : false;
   const opponentClashChoiceLocked = activeClash
     ? myClashRole === "attacker"
       ? activeClash.defenderChoiceLocked
@@ -996,14 +1185,14 @@ export function JousturBoard() {
   const handlePass = () => handleMove(null, false);
   const handleActivateSupport = (targetCardId?: string) =>
     handleMove(null, true, targetCardId);
-  const handleClashChoice = useCallback(
-    async (stance: JousturClashStance) => {
+  const handleClashSubmit = useCallback(
+    async (score: number) => {
       if (!matchId || clashing) return;
       setShowMoveHints(false);
       setClashing(true);
       setError(null);
       try {
-        const result = await submitJousturClashChoice(matchId, { stance });
+        const result = await submitJousturClashChoice(matchId, { score });
         const resolvedEvent = result.events?.find(isClashResolvedEvent);
         if (resolvedEvent?.winnerUid) {
           const cinematic = buildClashCinematicState(match, activeClash, resolvedEvent, myUid);
@@ -1013,7 +1202,7 @@ export function JousturBoard() {
             tone: resolvedEvent.winnerUid === myUid ? "clash-win" : "clash-loss",
           });
         } else {
-          setLastEvent({ message: "⚔️ Stance locked — waiting for reveal.", tone: "ok" });
+          setLastEvent({ message: "⚔️ Score locked — waiting for your rival.", tone: "ok" });
         }
         setMatch(result.match);
         if (result.winner) {
@@ -1024,7 +1213,9 @@ export function JousturBoard() {
           }
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Clash choice failed.");
+        // Allow the player to replay the mini-game on a failed submission.
+        setClashAttempt((attempt) => attempt + 1);
+        setError(e instanceof Error ? e.message : "Clash mini-game failed.");
       } finally {
         setClashing(false);
       }
@@ -1100,8 +1291,11 @@ export function JousturBoard() {
     : rollPending && isMyTurn
       ? "Click a glowing rider to move instantly, or drag it forward and release once it clearly reaches the lane."
       : null;
+  const clashMiniGameLabel = activeClash?.miniGame
+    ? CLASH_MINI_GAME_LABELS[activeClash.miniGame]
+    : "mini-game";
   const turnInstruction = activeClash
-    ? "Choose Charge, Guard, or Feint. Trait-matched stances gain +1, and the defender keeps the tile on ties."
+    ? `Win the ${clashMiniGameLabel} to take the tile. Highest score wins; the defender holds on a tie.`
     : isMyTurn
       ? rollPending
         ? "Your support card can replace a move once per match if it helps more than pushing a rider."
@@ -1121,11 +1315,13 @@ export function JousturBoard() {
     ? clashDefender?.lineup.find((snapshot) => snapshot.cardId === activeClash.defenderCardId)?.name ?? "Defender"
     : "";
   const clashStatus = activeClash
-    ? myClashChoice
+    ? myClashSubmitted
       ? opponentClashChoiceLocked
         ? "Reveal incoming…"
-        : "Your stance is locked. Waiting for the other rider."
-      : "Choose your hidden joust stance."
+        : "Your score is locked. Waiting for the other rider."
+      : myClashRole
+        ? `Play the ${clashMiniGameLabel}!`
+        : "A joust clash is underway."
     : null;
 
   return (
@@ -1182,28 +1378,23 @@ export function JousturBoard() {
           </div>
           <div className="joustur-board__clash-meta">
             <span>
-              Your stance: <strong>{myClashChoice ? myClashChoice.toUpperCase() : "Hidden"}</strong>
+              Mini-game: <strong>{clashMiniGameLabel}</strong>
             </span>
             <span>
-              Opponent: <strong>{opponentClashChoiceLocked ? "Locked in" : "Choosing…"}</strong>
+              You: <strong>{myClashSubmitted ? "Locked in" : "Playing…"}</strong>
+            </span>
+            <span>
+              Opponent: <strong>{opponentClashChoiceLocked ? "Locked in" : "Playing…"}</strong>
             </span>
           </div>
           {clashStatus && <p className="joustur-board__clash-status">{clashStatus}</p>}
-          {!myClashChoice && (
-            <div className="joustur-board__clash-actions">
-              {CLASH_STANCE_OPTIONS.map((option) => (
-                <button
-                  key={option.stance}
-                  type="button"
-                  className="joustur-board__clash-button"
-                  onClick={() => handleClashChoice(option.stance)}
-                  disabled={clashing}
-                >
-                  <strong>{option.label}</strong>
-                  <span>{option.desc}</span>
-                </button>
-              ))}
-            </div>
+          {myClashRole && !myClashSubmitted && activeClash.miniGame && (
+            <ClashMiniGame
+              key={`${activeClash.miniGame}-${clashAttempt}`}
+              miniGame={activeClash.miniGame}
+              disabled={clashing}
+              onComplete={handleClashSubmit}
+            />
           )}
         </section>
       )}

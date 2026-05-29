@@ -748,6 +748,123 @@ body {
   cursor: wait;
 }
 
+/* ── Clash mini-games ──────────────────────────────────────────────────────── */
+.joustur-clash-minigame {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.joustur-clash-minigame__scoreboard {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.joustur-clash-minigame__scoreboard strong {
+  color: #ffd8ff;
+}
+
+.joustur-clash-minigame__last {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.joustur-clash-minigame__actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.joustur-clash-minigame__throw {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 88px;
+  padding: 14px;
+  border: 1px solid rgba(204, 68, 255, 0.48);
+  border-radius: 14px;
+  background: rgba(16, 12, 32, 0.94);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.joustur-clash-minigame__throw span {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.joustur-clash-minigame__throw strong {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  color: #ffd8ff;
+}
+
+.joustur-clash-minigame__throw:hover,
+.joustur-clash-minigame__throw:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--accent2);
+  box-shadow: 0 0 18px rgba(0, 204, 255, 0.22);
+  outline: none;
+}
+
+.joustur-clash-minigame__throw:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.joustur-clash-minigame__meter {
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(204, 68, 255, 0.48);
+  background: rgba(16, 12, 32, 0.94);
+  overflow: hidden;
+}
+
+.joustur-clash-minigame__meter-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent2), #cc44ff);
+  transition: width 80ms linear;
+}
+
+.joustur-clash-minigame__mash {
+  min-height: 64px;
+  padding: 14px;
+  border: 1px solid var(--accent2);
+  border-radius: 14px;
+  background: rgba(0, 204, 255, 0.16);
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 80ms ease, box-shadow 160ms ease;
+}
+
+.joustur-clash-minigame__mash:active {
+  transform: scale(0.97);
+}
+
+.joustur-clash-minigame__mash:hover,
+.joustur-clash-minigame__mash:focus-visible {
+  box-shadow: 0 0 18px rgba(0, 204, 255, 0.32);
+  outline: none;
+}
+
+.joustur-clash-minigame__mash:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .joustur-clash-cinematic {
   position: fixed;
   inset: 0;

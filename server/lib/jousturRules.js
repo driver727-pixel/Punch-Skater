@@ -34,7 +34,16 @@ export const STEALTH_ALCOVES = Object.freeze(new Set([4, 6, 8, 12, 14]));
 export const RIDER_COUNT = 6;
 export const SHARD_COUNT = 3; // tetrahedral binary dice per roll
 const RIDER_NUMBER_OFFSET = 1;
-export const JOUST_CLASH_STANCES = Object.freeze(['charge', 'guard', 'feint']);
+/**
+ * Joust clashes are resolved by a quick mini-game that rotates randomly per
+ * clash.  Both riders play the same mini-game and the higher score wins; the
+ * defender keeps the tile on a tie.
+ *   - 'rps'  : best-of-3 Rock/Paper/Scissors — score = rounds won (0–3).
+ *   - 'mash' : button-mash meter — score = presses within the window (0–MAX).
+ */
+export const JOUST_CLASH_MINI_GAMES = Object.freeze(['rps', 'mash']);
+export const CLASH_RPS_MAX_SCORE = 3;
+export const CLASH_MASH_MAX_SCORE = 20;
 
 /**
  * Ordered tile paths for each player side.
@@ -79,60 +88,54 @@ export function isStealthAlcove(position) {
   return STEALTH_ALCOVES.has(position);
 }
 
-export function getPreferredClashStance(trait) {
-  switch (trait) {
-    case 'guard':
-    case 'anchor':
-      return 'guard';
-    case 'feint':
-    case 'slip':
-    case 'echo':
-      return 'feint';
-    case 'boost':
-    case 'strike':
-    case 'surge':
-    default:
-      return 'charge';
-  }
+/**
+ * The largest possible score for a clash mini-game.
+ * @param {'rps'|'mash'} miniGame
+ * @returns {number}
+ */
+export function getClashScoreMax(miniGame) {
+  return miniGame === 'mash' ? CLASH_MASH_MAX_SCORE : CLASH_RPS_MAX_SCORE;
 }
 
-export function getTraitClashBonus(trait, stance) {
-  return getPreferredClashStance(trait) === stance ? 1 : 0;
+/**
+ * Clamp a (possibly client-supplied) clash score into the valid range for the
+ * mini-game.  Non-numeric input collapses to 0.
+ * @param {'rps'|'mash'} miniGame
+ * @param {number} score
+ * @returns {number}
+ */
+export function clampClashScore(miniGame, score) {
+  const max = getClashScoreMax(miniGame);
+  const value = Math.floor(Number(score));
+  if (!Number.isFinite(value) || value < 0) return 0;
+  return value > max ? max : value;
 }
 
-function compareStances(attackerStance, defenderStance) {
-  if (attackerStance === defenderStance) return 0;
-  if (
-    (attackerStance === 'charge' && defenderStance === 'feint') ||
-    (attackerStance === 'feint' && defenderStance === 'guard') ||
-    (attackerStance === 'guard' && defenderStance === 'charge')
-  ) {
-    return 1;
-  }
-  return -1;
+/**
+ * Pick which mini-game a fresh clash should use.  Rotates randomly between the
+ * available games; falls back to the first game when no RNG is supplied.
+ * @param {{ range: (min: number, max: number) => number }} [rng]
+ * @returns {'rps'|'mash'}
+ */
+export function pickClashMiniGame(rng) {
+  if (!rng || typeof rng.range !== 'function') return JOUST_CLASH_MINI_GAMES[0];
+  const index = rng.range(0, JOUST_CLASH_MINI_GAMES.length - 1);
+  return JOUST_CLASH_MINI_GAMES[index] ?? JOUST_CLASH_MINI_GAMES[0];
 }
 
-export function resolveClashOutcome({
-  attackerTrait,
-  defenderTrait,
-  attackerStance,
-  defenderStance,
-}) {
-  const attackerTraitBonus = getTraitClashBonus(attackerTrait, attackerStance);
-  const defenderTraitBonus = getTraitClashBonus(defenderTrait, defenderStance);
-  const stanceResult = compareStances(attackerStance, defenderStance);
-  const attackerScore = (stanceResult === 1 ? 1 : 0) + attackerTraitBonus;
-  const defenderScore = (stanceResult === -1 ? 1 : 0) + defenderTraitBonus;
-  const winner = attackerScore > defenderScore ? 'attacker' : 'defender';
-
+/**
+ * Resolve a clash from both players' mini-game scores.  The attacker must beat
+ * the defender outright; the defender holds the tile on a tie.
+ * @param {{ attackerScore: number, defenderScore: number }} params
+ * @returns {{ winner: 'attacker'|'defender', attackerScore: number, defenderScore: number }}
+ */
+export function resolveClashScores({ attackerScore, defenderScore }) {
+  const a = Number.isFinite(attackerScore) ? attackerScore : 0;
+  const d = Number.isFinite(defenderScore) ? defenderScore : 0;
   return {
-    winner,
-    attackerScore,
-    defenderScore,
-    attackerTraitBonus,
-    defenderTraitBonus,
-    attackerPreferredStance: getPreferredClashStance(attackerTrait),
-    defenderPreferredStance: getPreferredClashStance(defenderTrait),
+    winner: a > d ? 'attacker' : 'defender',
+    attackerScore: a,
+    defenderScore: d,
   };
 }
 
@@ -604,47 +607,29 @@ export function chooseAutomatedMove(boardState, activePlayer, opponentPlayer) {
   return { cardId: null, activateSupport: false };
 }
 
-function getLineupSnapshot(playerState, cardId) {
-  return playerState.lineup.find((snapshot) => snapshot.cardId === cardId) ?? null;
-}
-
-export function chooseAutomatedClashStance(clash, playerState, opponentPlayer) {
-  const isAttacker = clash.attackerUid === playerState.uid;
-  const myCardId = isAttacker ? clash.attackerCardId : clash.defenderCardId;
-  const opponentCardId = isAttacker ? clash.defenderCardId : clash.attackerCardId;
-  const myTrait = getLineupSnapshot(playerState, myCardId)?.jousturTrait ?? 'boost';
-  const opponentTrait = getLineupSnapshot(opponentPlayer, opponentCardId)?.jousturTrait ?? 'boost';
-  const preferred = getPreferredClashStance(myTrait);
-  const opponentPreferred = getPreferredClashStance(opponentTrait);
-  const orderedStances = [preferred, ...JOUST_CLASH_STANCES.filter((stance) => stance !== preferred)];
-  const scored = orderedStances.map((stance) => {
-    const outcome = isAttacker
-      ? resolveClashOutcome({
-          attackerTrait: myTrait,
-          defenderTrait: opponentTrait,
-          attackerStance: stance,
-          defenderStance: opponentPreferred,
-        })
-      : resolveClashOutcome({
-          attackerTrait: opponentTrait,
-          defenderTrait: myTrait,
-          attackerStance: opponentPreferred,
-          defenderStance: stance,
-        });
-    const myScore = isAttacker ? outcome.attackerScore : outcome.defenderScore;
-    const oppScore = isAttacker ? outcome.defenderScore : outcome.attackerScore;
-    return { stance, myScore, oppScore };
-  });
-
-  scored.sort((a, b) => {
-    if (a.myScore !== b.myScore) return b.myScore - a.myScore;
-    if (a.oppScore !== b.oppScore) return a.oppScore - b.oppScore;
-    if (a.stance === preferred) return -1;
-    if (b.stance === preferred) return 1;
-    return JOUST_CLASH_STANCES.indexOf(a.stance) - JOUST_CLASH_STANCES.indexOf(b.stance);
-  });
-
-  return scored[0]?.stance ?? preferred;
+/**
+ * Generate a clash mini-game score for an automated (solo-bot) rider.  The bot
+ * "plays" the same mini-game as the human so the comparison stays fair, but it
+ * lands in a beatable band so the player keeps an edge.
+ * @param {'rps'|'mash'} miniGame
+ * @param {{ range: (min: number, max: number) => number }} [rng]
+ * @returns {number}
+ */
+export function chooseAutomatedClashScore(miniGame, rng) {
+  const roll = rng && typeof rng.range === 'function' ? rng : null;
+  if (miniGame === 'mash') {
+    const max = CLASH_MASH_MAX_SCORE;
+    const lo = Math.round(max * 0.35);
+    const hi = Math.round(max * 0.8);
+    return roll ? roll.range(lo, hi) : Math.round((lo + hi) / 2);
+  }
+  // Best-of-3 RPS: simulate three rounds, each won ~1/3 of the time.
+  if (!roll) return 1;
+  let wins = 0;
+  for (let i = 0; i < CLASH_RPS_MAX_SCORE; i++) {
+    if (roll.range(0, 2) === 0) wins += 1;
+  }
+  return wins;
 }
 
 /**
@@ -833,8 +818,9 @@ export function applyMove(boardState, activePlayer, opponentPlayer, moveChoice) 
               attackerCardId: rider.cardId,
               defenderCardId: oppRider.cardId,
               tile: activeTile,
-              attackerChoice: null,
-              defenderChoice: null,
+              miniGame: null,
+              attackerScore: null,
+              defenderScore: null,
               attackerChoiceLocked: false,
               defenderChoiceLocked: false,
               startedOnTurn: newBoard.turn,

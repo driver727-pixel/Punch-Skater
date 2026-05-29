@@ -13,7 +13,7 @@
  *   GET    /api/joustur/match/:id           — fetch a specific match.
  *   POST   /api/joustur/match/:id/roll      — (step 1) generate dice roll.
  *   POST   /api/joustur/match/:id/move      — (step 2) submit rider move / support.
- *   POST   /api/joustur/match/:id/clash     — submit a hidden clash stance.
+ *   POST   /api/joustur/match/:id/clash     — submit a clash mini-game score.
  */
 
 import rateLimit from 'express-rate-limit';
@@ -34,9 +34,11 @@ import {
   rollUsbShards,
   createSeededRng,
   chooseAutomatedMove,
-  chooseAutomatedClashStance,
-  resolveClashOutcome,
-  JOUST_CLASH_STANCES,
+  chooseAutomatedClashScore,
+  resolveClashScores,
+  pickClashMiniGame,
+  clampClashScore,
+  JOUST_CLASH_MINI_GAMES,
   PLAYER1_PATH,
   PLAYER2_PATH,
   buildSoloBotPlayerState,
@@ -241,13 +243,13 @@ function sanitizeMatchForCaller(match, callerUid) {
   if (!clash) return sanitized;
   const bothLocked = clash.attackerChoiceLocked && clash.defenderChoiceLocked;
   if (!bothLocked) {
-    if (callerUid !== clash.attackerUid) clash.attackerChoice = null;
-    if (callerUid !== clash.defenderUid) clash.defenderChoice = null;
+    if (callerUid !== clash.attackerUid) clash.attackerScore = null;
+    if (callerUid !== clash.defenderUid) clash.defenderScore = null;
   }
   return sanitized;
 }
 
-function maybeLockSoloBotClashChoice(match) {
+function maybeLockSoloBotClashChoice(match, matchId) {
   if (
     match.mode !== 'solo' ||
     !match.board?.clash ||
@@ -262,15 +264,33 @@ function maybeLockSoloBotClashChoice(match) {
   const opponentState = getOpponentState(nextMatch, botUid);
   if (!botState || !opponentState) return nextMatch;
 
+  const botRng = createSeededRng(
+    generateRollSeed(matchId ?? nextMatch.id, clash.startedOnTurn, 'clash-bot'),
+  );
   if (clash.attackerUid === botUid && !clash.attackerChoiceLocked) {
-    clash.attackerChoice = chooseAutomatedClashStance(clash, botState, opponentState);
+    clash.attackerScore = chooseAutomatedClashScore(clash.miniGame, botRng);
     clash.attackerChoiceLocked = true;
   }
   if (clash.defenderUid === botUid && !clash.defenderChoiceLocked) {
-    clash.defenderChoice = chooseAutomatedClashStance(clash, botState, opponentState);
+    clash.defenderScore = chooseAutomatedClashScore(clash.miniGame, botRng);
     clash.defenderChoiceLocked = true;
   }
   return nextMatch;
+}
+
+/**
+ * Assign a rotating mini-game to a freshly created clash.  Idempotent: a clash
+ * that already has a valid mini-game is left untouched.
+ */
+function assignClashMiniGame(match, matchId) {
+  const clash = match?.board?.clash;
+  if (!clash || JOUST_CLASH_MINI_GAMES.includes(clash.miniGame)) return match;
+  clash.miniGame = pickClashMiniGame(
+    createSeededRng(
+      generateRollSeed(matchId ?? match.id, clash.startedOnTurn, 'clash-minigame'),
+    ),
+  );
+  return match;
 }
 
 function resolvePendingClash(match) {
@@ -290,11 +310,9 @@ function resolvePendingClash(match) {
     throw badRequest('The active joust clash is missing one of its riders.', 409);
   }
 
-  const outcome = resolveClashOutcome({
-    attackerTrait: attackerSnapshot?.jousturTrait ?? 'boost',
-    defenderTrait: defenderSnapshot?.jousturTrait ?? 'boost',
-    attackerStance: clash.attackerChoice,
-    defenderStance: clash.defenderChoice,
+  const outcome = resolveClashScores({
+    attackerScore: clash.attackerScore,
+    defenderScore: clash.defenderScore,
   });
   const attackerWins = outcome.winner === 'attacker';
   const winningUid = attackerWins ? clash.attackerUid : clash.defenderUid;
@@ -317,12 +335,9 @@ function resolvePendingClash(match) {
     {
       type: 'clashReveal',
       tile: clash.tile,
-      attackerStance: clash.attackerChoice,
-      defenderStance: clash.defenderChoice,
-      attackerTraitBonus: outcome.attackerTraitBonus,
-      defenderTraitBonus: outcome.defenderTraitBonus,
-      attackerPreferredStance: outcome.attackerPreferredStance,
-      defenderPreferredStance: outcome.defenderPreferredStance,
+      miniGame: clash.miniGame,
+      attackerScore: outcome.attackerScore,
+      defenderScore: outcome.defenderScore,
     },
     {
       type: 'clashResolved',
@@ -519,7 +534,8 @@ function resolveSoloBotTurns(match, matchId, randomUUID) {
     nextMatch.challengerState = opponent;
     nextMatch.updatedAt = nowIso();
     if (nextMatch.board.clash) {
-      const locked = maybeLockSoloBotClashChoice(nextMatch);
+      assignClashMiniGame(nextMatch, matchId);
+      const locked = maybeLockSoloBotClashChoice(nextMatch, matchId);
       nextMatch.board = locked.board;
       nextMatch.defenderState = locked.defenderState;
       nextMatch.challengerState = locked.challengerState;
@@ -1402,7 +1418,8 @@ export function registerJousturRoutes(app, {
           newMatch.challengerState = newOpp;
         }
         if (newMatch.board.clash) {
-          newMatch = maybeLockSoloBotClashChoice(newMatch);
+          assignClashMiniGame(newMatch, matchId);
+          newMatch = maybeLockSoloBotClashChoice(newMatch, matchId);
         }
 
         // Win detection.
@@ -1493,9 +1510,9 @@ export function registerJousturRoutes(app, {
     catch (e) { res.status(e.statusCode ?? 500).json({ error: e.message }); return; }
 
     const matchId = String(req.params?.id ?? '').trim();
-    const stance = String(req.body?.stance ?? '').trim().toLowerCase();
-    if (!JOUST_CLASH_STANCES.includes(stance)) {
-      res.status(422).json({ error: 'Choose a valid clash stance: charge, guard, or feint.' });
+    const rawScore = req.body?.score;
+    if (typeof rawScore !== 'number' || !Number.isFinite(rawScore) || rawScore < 0) {
+      res.status(422).json({ error: 'Submit a numeric clash mini-game score.' });
       return;
     }
 
@@ -1515,26 +1532,28 @@ export function registerJousturRoutes(app, {
         if (!match.board.clash) throw badRequest('There is no active joust clash to resolve.', 409);
         const settleFrameWager = await prepareFrameWagerSettlement(tx, adminDb, match);
 
-        match = maybeLockSoloBotClashChoice(match);
+        assignClashMiniGame(match, matchId);
+        match = maybeLockSoloBotClashChoice(match, matchId);
         const clash = match.board.clash;
         const isAttacker = clash.attackerUid === caller.uid;
         const isDefender = clash.defenderUid === caller.uid;
         if (!isAttacker && !isDefender) {
-          throw badRequest('Only the riders in this joust clash may submit a stance.', 403);
+          throw badRequest('Only the riders in this joust clash may submit a score.', 403);
         }
         if (isAttacker && clash.attackerChoiceLocked) {
-          throw badRequest('You have already locked in your clash stance.', 409);
+          throw badRequest('You have already locked in your clash result.', 409);
         }
         if (isDefender && clash.defenderChoiceLocked) {
-          throw badRequest('You have already locked in your clash stance.', 409);
+          throw badRequest('You have already locked in your clash result.', 409);
         }
 
+        const score = clampClashScore(clash.miniGame, rawScore);
         const nextMatch = cloneJson(match);
         if (isAttacker) {
-          nextMatch.board.clash.attackerChoice = stance;
+          nextMatch.board.clash.attackerScore = score;
           nextMatch.board.clash.attackerChoiceLocked = true;
         } else {
-          nextMatch.board.clash.defenderChoice = stance;
+          nextMatch.board.clash.defenderScore = score;
           nextMatch.board.clash.defenderChoiceLocked = true;
         }
 
@@ -1544,8 +1563,8 @@ export function registerJousturRoutes(app, {
           role: isAttacker ? 'attacker' : 'defender',
         }];
         let capturedCardId = null;
-        let clashSummary = `Joust clash stance locked by ${isAttacker ? 'the attacker' : 'the defender'}.`;
-        let finalMatch = maybeLockSoloBotClashChoice(nextMatch);
+        let clashSummary = `Joust clash result locked by ${isAttacker ? 'the attacker' : 'the defender'}.`;
+        let finalMatch = maybeLockSoloBotClashChoice(nextMatch, matchId);
 
         if (finalMatch.board.clash?.attackerChoiceLocked && finalMatch.board.clash?.defenderChoiceLocked) {
           const resolved = resolvePendingClash(finalMatch);

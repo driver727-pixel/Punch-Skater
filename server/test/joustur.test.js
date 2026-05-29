@@ -30,7 +30,7 @@ import {
   STEALTH_ALCOVES,
   RIDER_COUNT,
   SHARD_COUNT,
-  JOUST_CLASH_STANCES,
+  JOUST_CLASH_MINI_GAMES,
   PLAYER1_PATH,
   PLAYER2_PATH,
   SHARED_TILES,
@@ -56,10 +56,14 @@ import {
   calcRewards,
   canActivateSupportEffect,
   chooseAutomatedMove,
-  chooseAutomatedClashStance,
+  chooseAutomatedClashScore,
   buildSoloBotPlayerState,
-  getPreferredClashStance,
-  resolveClashOutcome,
+  resolveClashScores,
+  pickClashMiniGame,
+  clampClashScore,
+  getClashScoreMax,
+  CLASH_RPS_MAX_SCORE,
+  CLASH_MASH_MAX_SCORE,
   // RNG
   createSeededRng,
   generateRollSeed,
@@ -208,39 +212,36 @@ test('STEALTH_ALCOVES set has exactly 5 entries', () => {
   assert.equal(STEALTH_ALCOVES.size, 5);
 });
 
-test('JOUST_CLASH_STANCES exposes the three hidden duel options', () => {
-  assert.deepEqual([...JOUST_CLASH_STANCES], ['charge', 'guard', 'feint']);
+test('JOUST_CLASH_MINI_GAMES exposes the rotating mini-game options', () => {
+  assert.deepEqual([...JOUST_CLASH_MINI_GAMES], ['rps', 'mash']);
 });
 
-test('getPreferredClashStance maps traits into stance bonuses', () => {
-  assert.equal(getPreferredClashStance('boost'), 'charge');
-  assert.equal(getPreferredClashStance('strike'), 'charge');
-  assert.equal(getPreferredClashStance('surge'), 'charge');
-  assert.equal(getPreferredClashStance('guard'), 'guard');
-  assert.equal(getPreferredClashStance('anchor'), 'guard');
-  assert.equal(getPreferredClashStance('feint'), 'feint');
-  assert.equal(getPreferredClashStance('slip'), 'feint');
-  assert.equal(getPreferredClashStance('echo'), 'feint');
+test('getClashScoreMax returns the per-mini-game score caps', () => {
+  assert.equal(getClashScoreMax('rps'), CLASH_RPS_MAX_SCORE);
+  assert.equal(getClashScoreMax('mash'), CLASH_MASH_MAX_SCORE);
 });
 
-test('resolveClashOutcome uses stance triangle and trait bonus, with defender winning ties', () => {
-  const attackerFavoured = resolveClashOutcome({
-    attackerTrait: 'boost',
-    defenderTrait: 'guard',
-    attackerStance: 'charge',
-    defenderStance: 'feint',
-  });
-  assert.equal(attackerFavoured.winner, 'attacker');
-  assert.equal(attackerFavoured.attackerTraitBonus, 1);
+test('clampClashScore clamps client scores into the valid range', () => {
+  assert.equal(clampClashScore('rps', 99), CLASH_RPS_MAX_SCORE);
+  assert.equal(clampClashScore('rps', -5), 0);
+  assert.equal(clampClashScore('rps', 2), 2);
+  assert.equal(clampClashScore('mash', 999), CLASH_MASH_MAX_SCORE);
+  assert.equal(clampClashScore('mash', 2.9), 2);
+  assert.equal(clampClashScore('mash', 'cheat'), 0);
+});
 
-  const defenderTie = resolveClashOutcome({
-    attackerTrait: 'boost',
-    defenderTrait: 'echo',
-    attackerStance: 'charge',
-    defenderStance: 'guard',
-  });
-  assert.equal(defenderTie.attackerScore, defenderTie.defenderScore);
-  assert.equal(defenderTie.winner, 'defender');
+test('pickClashMiniGame returns a valid game and falls back without an rng', () => {
+  assert.equal(pickClashMiniGame(), JOUST_CLASH_MINI_GAMES[0]);
+  for (let seed = 0; seed < 8; seed++) {
+    const game = pickClashMiniGame(createSeededRng(`pick-${seed}`));
+    assert.ok(JOUST_CLASH_MINI_GAMES.includes(game));
+  }
+});
+
+test('resolveClashScores gives the higher score the win, defender holds ties', () => {
+  assert.equal(resolveClashScores({ attackerScore: 3, defenderScore: 1 }).winner, 'attacker');
+  assert.equal(resolveClashScores({ attackerScore: 1, defenderScore: 3 }).winner, 'defender');
+  assert.equal(resolveClashScores({ attackerScore: 2, defenderScore: 2 }).winner, 'defender');
 });
 
 // ── Faction mapping ───────────────────────────────────────────────────────────
@@ -985,26 +986,16 @@ test('chooseAutomatedMove uses support when no legal moves exist', () => {
   assert.equal(choice.cardId, null);
 });
 
-test('chooseAutomatedClashStance picks a legal hidden stance', () => {
-  const attacker = makePlayer('A');
-  const defender = makePlayer('B');
-  attacker.lineup[0].jousturTrait = 'guard';
-  defender.lineup[0].jousturTrait = 'boost';
-  const clash = {
-    attackerUid: attacker.uid,
-    defenderUid: defender.uid,
-    attackerCardId: attacker.riders[0].cardId,
-    defenderCardId: defender.riders[0].cardId,
-    tile: 9,
-    attackerChoice: null,
-    defenderChoice: null,
-    attackerChoiceLocked: false,
-    defenderChoiceLocked: false,
-    startedOnTurn: 3,
-  };
-
-  const choice = chooseAutomatedClashStance(clash, attacker, defender);
-  assert.ok(JOUST_CLASH_STANCES.includes(choice));
+test('chooseAutomatedClashScore stays within the mini-game score range', () => {
+  const rng = createSeededRng('bot-clash-score');
+  for (let i = 0; i < 20; i++) {
+    const rpsScore = chooseAutomatedClashScore('rps', rng);
+    assert.ok(rpsScore >= 0 && rpsScore <= CLASH_RPS_MAX_SCORE);
+    const mashScore = chooseAutomatedClashScore('mash', rng);
+    assert.ok(mashScore >= 0 && mashScore <= CLASH_MASH_MAX_SCORE);
+  }
+  // Without an rng it returns a deterministic mid-range fallback.
+  assert.equal(chooseAutomatedClashScore('rps'), 1);
 });
 
 test('buildSoloBotPlayerState mirrors a player with unique echo card ids', () => {
