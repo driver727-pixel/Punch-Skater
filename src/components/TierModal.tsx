@@ -3,6 +3,7 @@ import { SEASON_PASS, TIERS, saveEmail, type PaidBillingPeriod, type TierLevel }
 import { useTier } from "../context/TierContext";
 import { resolveApiUrl } from "../lib/apiUrls";
 import { ReferralPanel } from "./ReferralPanel";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 interface TierModalProps {
   onClose: () => void;
@@ -22,6 +23,7 @@ export function TierModal({ onClose }: TierModalProps) {
   const [billingPeriod, setBillingPeriod] = useState<PaidBillingPeriod>("monthly");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose });
 
   const handleSelectTier = (level: TierLevel | "seasonPass") => {
     if (level === "free") {
@@ -95,9 +97,16 @@ export function TierModal({ onClose }: TierModalProps) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <button className="close-btn modal-close" onClick={onClose}>✕</button>
-        <h2 className="modal-title">Choose Your Tier</h2>
+      <div
+        className="modal-panel"
+        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tier-modal-title"
+      >
+        <button className="close-btn modal-close" onClick={onClose} aria-label="Close tier selection">✕</button>
+        <h2 className="modal-title" id="tier-modal-title">Choose Your Tier</h2>
         <p className="modal-sub">Subscribe for forge credits, collection tools, and cosmetics. Gameplay power still comes from play.</p>
 
         {!signupStep ? (

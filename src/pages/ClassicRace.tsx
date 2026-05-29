@@ -18,6 +18,7 @@ import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
 import { announceActiveDistrict, getDistrictTheme } from "../lib/districtTheme";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 type TabKey = "hub" | "solo";
 
@@ -221,6 +222,7 @@ function ChallengeModal({
   const [district, setDistrict] = useState(DEFAULT_RACE_DISTRICT);
   const defenderCard = state.opponent.cards.find((c) => c.id === defenderCardId);
   const cap = Math.max(0, Math.min(myOzzies, 10_000));
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose });
 
   useEffect(() => {
     announceActiveDistrict(district);
@@ -229,8 +231,15 @@ function ChallengeModal({
   if (!myChallengerCard) {
     return (
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <h2>You need a Challenger first</h2>
+        <div
+          className="modal-content"
+          onClick={(e) => e.stopPropagation()}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="race-challenge-need-card-title"
+        >
+          <h2 id="race-challenge-need-card-title">You need a Challenger first</h2>
           <p>Open <Link to="/collection?tab=decks">My Decks</Link>, mark a deck as Primary (🌟), and tap "🏁 Make Challenger" on the card you want to race with.</p>
           <button className="btn-primary" onClick={onClose}>Got it</button>
         </div>
@@ -240,8 +249,15 @@ function ChallengeModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content race-challenge-modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Issue Race Challenge</h2>
+      <div
+        className="modal-content race-challenge-modal"
+        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="race-challenge-title"
+      >
+        <h2 id="race-challenge-title">Issue Race Challenge</h2>
         <p className="race-challenge-summary">
           <strong>{myChallengerCard.name}</strong> challenges{" "}
           <strong>{defenderCard?.name ?? "their card"}</strong> from {state.opponent.displayName}'s deck.

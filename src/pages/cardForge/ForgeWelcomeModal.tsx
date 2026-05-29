@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ForgeStartHere } from "../../components/ForgeStartHere";
 import { CardDisplay } from "../../components/CardDisplay";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import {
   fetchCrewFaceoff,
   loadCachedCrewFaceoff,
@@ -63,6 +64,7 @@ function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
 
 export function ForgeWelcomeModal({ open, onClose, title }: ForgeWelcomeModalProps) {
   const [faceoffPayload, setFaceoffPayload] = useState<CrewFaceoffPayload | null>(() => loadCachedCrewFaceoff());
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose, active: open });
   const spotlight = useMemo(
     () => faceoffPayload ? <CrewFaceoffSpotlight payload={faceoffPayload} /> : null,
     [faceoffPayload],
@@ -94,7 +96,7 @@ export function ForgeWelcomeModal({ open, onClose, title }: ForgeWelcomeModalPro
       aria-labelledby="forge-welcome-title"
       onClick={onClose}
     >
-      <div className="modal-panel" onClick={(event) => event.stopPropagation()}>
+      <div className="modal-panel" onClick={(event) => event.stopPropagation()} ref={dialogRef}>
         <button
           type="button"
           className="close-btn modal-close"

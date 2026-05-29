@@ -9,6 +9,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCollection } from "../../hooks/useCollection";
 import { useJousturLineup } from "../../hooks/useJousturLineup";
+import { useModalA11y } from "../../hooks/useModalA11y";
 import type { CardPayload } from "../../lib/types";
 
 const RIDER_COUNT = 6;
@@ -114,6 +115,10 @@ export function JousturLineupBuilder() {
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const pickerRef = useModalA11y<HTMLDivElement>({
+    onClose: () => setPickingSlot(null),
+    active: Boolean(pickingSlot),
+  });
 
   const cardById = useMemo(() => {
     const map: Record<string, CardPayload> = {};
@@ -267,7 +272,9 @@ export function JousturLineupBuilder() {
         <div
           className="joustur-lineup__picker-overlay"
           role="dialog"
+          aria-modal="true"
           aria-label="Pick a card"
+          ref={pickerRef}
         >
           <div className="joustur-lineup__picker">
             <div className="joustur-lineup__picker-header">
