@@ -1,14 +1,33 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthCard } from "../components/AuthCard";
 import { ForgeStartHere } from "../components/ForgeStartHere";
 import { useAuth } from "../context/AuthContext";
 import { warmRoutes, warmRoutesOnIdle } from "../lib/routePrefetch";
 import { resolveUserDisplayName } from "../lib/userIdentity";
+import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
+
+const LANDING_FACEOFF_KEY = "landing-faceoff-dismissed";
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
+  const [showFaceoff, setShowFaceoff] = useState(() => localStorage.getItem(LANDING_FACEOFF_KEY) !== "1");
+  const closeFaceoff = useCallback(() => {
+    localStorage.setItem(LANDING_FACEOFF_KEY, "1");
+    setShowFaceoff(false);
+  }, []);
+  const closeFaceoffRef = useRef(closeFaceoff);
+  closeFaceoffRef.current = closeFaceoff;
+
+  useEffect(() => {
+    if (!showFaceoff) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeFaceoffRef.current();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showFaceoff]);
 
   useEffect(() => {
     if (user) {
@@ -100,6 +119,8 @@ export function LandingPage() {
           </div>
         )}
       </section>
+
+      <ForgeWelcomeModal open={showFaceoff} onClose={closeFaceoff} />
     </div>
   );
 }
