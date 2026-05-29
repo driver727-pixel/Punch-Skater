@@ -31,6 +31,8 @@ import {
 } from "../services/missions";
 import { MissionsMap } from "../components/MissionsMap";
 import { MissionsPanel } from "../components/MissionsPanel";
+
+const STATIC_MISSIONS_MAP_BACKDROP_URL = "/game-map-best-big.jpg";
 import { announceActiveDistrict } from "../lib/districtTheme";
 
 const PANEL_WIDTH = 320;
@@ -1184,7 +1186,7 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
           selectedContractId={selectedContractId}
           onSelectContract={handleSelectContract}
           routeNodeIds={previewRouteNodeIds}
-          backdropUrl={visuals?.backdrop.url}
+          backdropUrl={STATIC_MISSIONS_MAP_BACKDROP_URL}
           spriteUrl={visuals?.sprite.fallback ? null : visuals?.sprite.url}
           spriteExtraction={visuals?.extraction ?? null}
           tokenPosition={tokenPosition}
