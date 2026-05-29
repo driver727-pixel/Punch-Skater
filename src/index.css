@@ -3607,7 +3607,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 @media (min-width: 1181px) {
   .forge-preview-stack {
     display: grid;
-    grid-template-columns: minmax(320px, 0.95fr) minmax(280px, 1.05fr);
+    grid-template-columns: minmax(320px, 1fr) minmax(280px, 1fr);
     align-items: start;
   }
 
