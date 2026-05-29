@@ -9,11 +9,18 @@ import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
 
 const LANDING_GUEST_FACEOFF_KEY = "landing-faceoff-dismissed";
 const LANDING_LOGIN_FACEOFF_PREFIX = "landing-faceoff-login-dismissed";
+const LANDING_LOGIN_SESSION_KEY = "landing-faceoff-login-session";
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { user, userProfile, loading } = useAuth();
-  const [loginFallbackKey] = useState(() => `session:${Date.now()}`);
+  const [loginFallbackKey] = useState(() => {
+    const existing = sessionStorage.getItem(LANDING_LOGIN_SESSION_KEY);
+    if (existing) return existing;
+    const next = `session:${Date.now()}`;
+    sessionStorage.setItem(LANDING_LOGIN_SESSION_KEY, next);
+    return next;
+  });
   const [showFaceoff, setShowFaceoff] = useState(false);
   const faceoffDismissalKey = user
     ? `${LANDING_LOGIN_FACEOFF_PREFIX}:${user.uid}:${user.metadata.lastSignInTime ?? loginFallbackKey}`
