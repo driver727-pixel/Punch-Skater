@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { auth } from "../lib/firebase";
 import type { CardPayload } from "../lib/types";
 import { DISTRICT_RIVALS, type DistrictRival } from "../lib/rivals";
@@ -33,6 +33,13 @@ interface LayerToggles {
   board: boolean;
   character: boolean;
   frame: boolean;
+}
+
+const INITIAL_BOSS_DECK_NAME = "Garibaldi's Crew";
+const INITIAL_BOSS_COUNT = 6;
+
+function normalizeDeckName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 const ALL_LAYERS_ON: LayerToggles = {
@@ -303,16 +310,50 @@ function CardTileWithGlobal({ card, isChallengerCard, globalToggles }: CardTileW
 
 // ── Boss card tile ─────────────────────────────────────────────────────────────
 
-interface BossTileProps {
+interface AdminBossCardTileProps {
+  card: CardPayload;
+}
+
+function AdminBossCardTile({ card }: AdminBossCardTileProps) {
+  return (
+    <div className="adlp-boss-tile">
+      <div className="adlp-boss-header">
+        <h3 className="adlp-boss-name">{card.identity?.name ?? "Unnamed Boss"}</h3>
+        <span className="adlp-boss-district">{card.prompts?.district ?? "Unknown district"}</span>
+      </div>
+      <div className="adlp-boss-tagline">
+        {(card.identity?.crew ?? card.prompts?.archetype ?? "Unknown crew")} · {card.class?.rarity ?? card.prompts?.rarity ?? "Unknown rarity"}
+      </div>
+      <CardLayerPreview card={card} toggles={ALL_LAYERS_ON} />
+      <div className="adlp-boss-stats">
+        <div className="adlp-boss-stat"><span>SPD</span>{card.stats.speed}</div>
+        <div className="adlp-boss-stat"><span>RNG</span>{card.stats.range}</div>
+        <div className="adlp-boss-stat"><span>STL</span>{card.stats.stealth}</div>
+        <div className="adlp-boss-stat"><span>GRT</span>{card.stats.grit}</div>
+        <div className="adlp-boss-stat"><span>LNC</span>{card.joust?.lance ?? "—"}</div>
+        <div className="adlp-boss-stat"><span>SHD</span>{card.joust?.shield ?? "—"}</div>
+        <div className="adlp-boss-stat"><span>HYP</span>{card.joust?.hype ?? "—"}</div>
+      </div>
+      <div className="adlp-boss-tactic">
+        <span aria-hidden="true">⚔</span> Traits: <strong>{card.joust?.traits?.[0] ?? "No joust trait set"}</strong>
+      </div>
+      <blockquote className="adlp-boss-dialogue">
+        {card.front?.flavorTextEnglish ?? card.front?.flavorText ?? card.back?.notes ?? "No boss flavor text set yet."}
+      </blockquote>
+    </div>
+  );
+}
+
+interface RivalBossTileProps {
   rival: DistrictRival;
 }
 
-function BossTile({ rival }: BossTileProps) {
+function RivalBossTile({ rival }: RivalBossTileProps) {
   const sc = rival.signatureCard;
   return (
     <div className="adlp-boss-tile">
       <div className="adlp-boss-header">
-        <span className="adlp-boss-name">{rival.name}</span>
+        <h3 className="adlp-boss-name">{rival.name}</h3>
         <span className="adlp-boss-district">{rival.district}</span>
       </div>
       <div className="adlp-boss-tagline">{rival.tagline}</div>
@@ -329,7 +370,7 @@ function BossTile({ rival }: BossTileProps) {
         <div className="adlp-boss-stat"><span>HYP</span>{sc.joust.hype}</div>
       </div>
       <div className="adlp-boss-tactic">
-        ⚔ Tactic: <strong>{rival.signatureTactic}</strong> · {rival.signatureTrait}
+        <span aria-hidden="true">⚔</span> Tactic: <strong>{rival.signatureTactic}</strong> · {rival.signatureTrait}
       </div>
       <blockquote className="adlp-boss-dialogue">{rival.dialogue.intro}</blockquote>
     </div>
@@ -342,6 +383,16 @@ export function AdminDeckLayersPanel() {
   const [decks, setDecks] = useState<AdminDeck[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const initialBossDeck = useMemo(
+    () => decks.find((deck) => normalizeDeckName(deck.name) === normalizeDeckName(INITIAL_BOSS_DECK_NAME)),
+    [decks],
+  );
+
+  const initialBossCards = useMemo(
+    () => initialBossDeck?.cards.slice(0, INITIAL_BOSS_COUNT) ?? [],
+    [initialBossDeck],
+  );
 
   const fetchDecks = useCallback(async () => {
     if (!auth?.currentUser) {
@@ -407,15 +458,20 @@ export function AdminDeckLayersPanel() {
 
       {/* ── District Bosses ───────────────────────────────────────────────── */}
       <section className="asset-gen-section">
-        <h2 className="asset-gen-section-title">District Bosses / Rivals</h2>
+        <h2 className="asset-gen-section-title">Initial Bosses</h2>
         <p className="asset-gen-toolbar-copy">
-          All six named district boss rivals. Boss cards are stat-only snapshots — they do not
-          have AI-generated image layers yet.
+          {initialBossDeck
+            ? `Showing the first ${initialBossCards.length} cards from "${initialBossDeck.name}" as the starting boss lineup.`
+            : `${INITIAL_BOSS_DECK_NAME} was not found, so the fallback district rival snapshots are shown instead.`}
         </p>
         <div className="adlp-boss-grid">
-          {DISTRICT_RIVALS.map((rival) => (
-            <BossTile key={rival.id} rival={rival} />
-          ))}
+          {initialBossCards.length > 0
+            ? initialBossCards.map((card) => (
+                <AdminBossCardTile key={card.id} card={card} />
+              ))
+            : DISTRICT_RIVALS.map((rival) => (
+                <RivalBossTile key={rival.id} rival={rival} />
+              ))}
         </div>
       </section>
     </div>
