@@ -11,6 +11,13 @@ import {
 
 const db = init({ appId: INSTANT_DB_APP_ID });
 
+const CYBER_JOUST_COLORS_MAP = {
+    'neon cyan': 0x00f0ff,
+    'cyber pink': 0xff007f,
+    'laser yellow': 0xffea00,
+    'toxic green': 0x39ff14
+};
+
 const DEFAULT_COSMETICS = {
     colorName: 'Neon Cyan',
     color: 0x00f0ff,
@@ -63,8 +70,16 @@ export class GameScene extends Phaser.Scene {
     create() {
         const { width, height } = this.scale;
 
-        const bg = this.add.image(width / 2, height / 2, 'cyber-bg');
-        bg.setDisplaySize(width, height);
+        this.bgImage = this.add.image(width / 2, height / 2, 'cyber-bg');
+        this.bgImage.setDisplaySize(width, height);
+
+        this.scale.on('resize', (gameSize) => {
+            const { width: w, height: h } = gameSize;
+            if (this.bgImage) {
+                this.bgImage.setPosition(w / 2, h / 2);
+                this.bgImage.setDisplaySize(w, h);
+            }
+        });
 
         const params = new URLSearchParams(window.location.search);
         this.roomId = params.get('room') || 'cyber-joust-lobby';
@@ -456,7 +471,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     makeInteractive(buttonShape, onDown, onUp, tapOnly = false) {
-        buttonShape.setInteractive(new Phaser.Geom.Circle(buttonShape.x, buttonShape.y, buttonShape.radius), Phaser.Geom.Circle.Contains);
+        buttonShape.setInteractive(new Phaser.Geom.Circle(0, 0, buttonShape.radius), Phaser.Geom.Circle.Contains);
         buttonShape.input.cursor = 'pointer';
         buttonShape.on('pointerdown', () => {
             buttonShape.setScale(0.9);
@@ -606,22 +621,45 @@ export class GameScene extends Phaser.Scene {
     spawnBots(count) {
         const botNames = ['CyberGrip', 'GigaSkate', 'NeonLance', 'RampFiend', 'OnyxRider'];
         const weaponOptions = ['Hockey Stick', 'Street Sign', 'Crutch Lance'];
-        const colors = [0xff007f, 0xffea00, 0x39ff14, 0x9d00ff];
-        const colorNames = ['Pink', 'Yellow', 'Toxic Green', 'Violet'];
+        const colorOptions = [
+            { name: 'Cyber Pink', value: 0xff007f },
+            { name: 'Laser Yellow', value: 0xffea00 },
+            { name: 'Toxic Green', value: 0x39ff14 },
+            { name: 'Neon Cyan', value: 0x00f0ff }
+        ];
+
+        const spriteManifest = this.registry.get(CYBER_JOUST_SPRITE_MANIFEST_KEY);
+        const manifestFighters = Array.isArray(spriteManifest?.fighters) ? spriteManifest.fighters : [];
 
         for (let i = 0; i < count; i++) {
             const rx = Phaser.Math.Between(100, this.scale.width - 100);
             const ry = Phaser.Math.Between(100, this.scale.height - 300);
             const bot = this.spawnSkater(rx, ry, false, 'bot_' + i);
-            bot.name = botNames[i % botNames.length];
 
-            const randIdx = Phaser.Math.Between(0, colors.length - 1);
-            bot.cosmetics = {
-                colorName: colorNames[randIdx],
-                color: colors[randIdx],
-                deck: 'Gridwave',
-                weapon: weaponOptions[i % weaponOptions.length]
-            };
+            if (manifestFighters.length > 0) {
+                const fighter = manifestFighters[i % manifestFighters.length];
+                bot.name = fighter.name || botNames[i % botNames.length];
+                const randColor = colorOptions[i % colorOptions.length];
+                const fighterColor = fighter.colorName
+                    ? (CYBER_JOUST_COLORS_MAP[fighter.colorName.toLowerCase()] || randColor.value)
+                    : randColor.value;
+                bot.cosmetics = {
+                    colorName: fighter.colorName || randColor.name,
+                    color: fighterColor,
+                    deck: fighter.deck || 'Gridwave',
+                    weapon: fighter.weapon || weaponOptions[i % weaponOptions.length]
+                };
+            } else {
+                bot.name = botNames[i % botNames.length];
+                const randIdx = Phaser.Math.Between(0, colorOptions.length - 1);
+                const chosen = colorOptions[randIdx];
+                bot.cosmetics = {
+                    colorName: chosen.name,
+                    color: chosen.value,
+                    deck: 'Gridwave',
+                    weapon: weaponOptions[i % weaponOptions.length]
+                };
+            }
 
             this.updateSkaterVisuals(bot);
             bot.aiTimer = 0;
