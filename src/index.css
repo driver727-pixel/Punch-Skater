@@ -5158,18 +5158,33 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .nav-hamburger {
   display: none;
-  background: transparent;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: rgba(0, 0, 0, 0.24);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1;
-  padding: 4px 9px;
+  padding: 3px;
   border-radius: 4px;
   cursor: pointer;
   font-family: var(--font);
   transition: border-color 0.15s, color 0.15s;
 }
 .nav-hamburger:hover { border-color: var(--accent); color: var(--accent); }
+.nav-hamburger-icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.nav-hamburger-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ===== CRT Ambience Toggle Button ===== */
 .ambience-btn {
@@ -5194,28 +5209,44 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .nav-mobile-menu {
   display: none;
-  flex-direction: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
-  padding: 8px 16px 12px;
+  padding: 8px 12px 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  max-height: calc(100dvh - 86px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .nav-mobile-menu .nav-link {
-  display: block;
-  padding: 11px 12px;
+  display: inline-flex;
+  padding: 8px 10px;
   border-radius: 4px;
   font-size: 12px;
   letter-spacing: 0.8px;
+  min-height: 36px;
 }
 .nav-mobile-menu-footer {
-  display: flex;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 4px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
-  flex-wrap: wrap;
+}
+.nav-mobile-menu-footer .ambience-btn,
+.nav-mobile-menu-footer .tier-badge-btn,
+.nav-mobile-menu-footer .nav-wallet-badge {
+  width: 100%;
+  min-height: 34px;
+  justify-content: center;
+  text-align: center;
+}
+.nav-mobile-menu-footer .nav-wallet-badge:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 768px) {
@@ -5226,10 +5257,10 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     overflow: visible;
   }
 
-  .nav-hamburger { display: inline-flex; align-items: center; }
+  .nav-hamburger { display: inline-flex; }
   .nav-links { display: none; }
   .nav-desktop-only { display: none !important; }
-  .nav-mobile-menu { display: flex; }
+  .nav-mobile-menu { display: grid; }
   .nav-brand {
     flex: 1 1 auto;
     min-width: 0;
@@ -5260,13 +5291,11 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     font-size: 12px;
   }
   .nav-hamburger {
-    min-width: 40px;
-    min-height: 40px;
-    justify-content: center;
-    padding: 0 10px;
+    width: 40px;
+    height: 40px;
   }
   .nav-mobile-menu .nav-link {
-    min-height: 44px;
+    min-height: 36px;
     font-size: 13px;
   }
   body {
