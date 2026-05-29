@@ -11,6 +11,7 @@ import {
 interface ForgeWelcomeModalProps {
   open: boolean;
   onClose: () => void;
+  title?: string;
 }
 
 const FACE_OFF_ROTATION_MS = 7000;
@@ -60,7 +61,7 @@ function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
   );
 }
 
-export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
+export function ForgeWelcomeModal({ open, onClose, title }: ForgeWelcomeModalProps) {
   const [faceoffPayload, setFaceoffPayload] = useState<CrewFaceoffPayload | null>(() => loadCachedCrewFaceoff());
   const spotlight = useMemo(
     () => faceoffPayload ? <CrewFaceoffSpotlight payload={faceoffPayload} /> : null,
@@ -104,6 +105,7 @@ export function ForgeWelcomeModal({ open, onClose }: ForgeWelcomeModalProps) {
         </button>
         <ForgeStartHere
           titleId="forge-welcome-title"
+          title={title}
           spotlight={spotlight}
           actions={(
             <button
