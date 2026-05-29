@@ -5180,11 +5180,6 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   height: 28px;
   object-fit: contain;
 }
-.nav-hamburger-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* ===== CRT Ambience Toggle Button ===== */
 .ambience-btn {

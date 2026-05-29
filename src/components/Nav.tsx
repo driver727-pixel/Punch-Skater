@@ -266,7 +266,7 @@ export function Nav() {
               aria-expanded={navOpen}
             >
               {navOpen ? (
-                <span className="nav-hamburger-close" aria-hidden="true">✕</span>
+                <span aria-hidden="true">✕</span>
               ) : (
                 <img className="nav-hamburger-icon" src={menuButtonImage} alt="" aria-hidden="true" />
               )}
