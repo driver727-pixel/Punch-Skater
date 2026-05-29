@@ -37,6 +37,84 @@ export function registerAdminRoutes(app, {
 }) {
   // Maximum allowed display-name length (kept in sync with the Firestore profile schema).
   const DISPLAY_NAME_MAX_LENGTH = 40;
+  const CYBER_JOUST_SPRITES_COLLECTION = 'cyberJoustSprites';
+
+  function slugifyCyberJoustPart(value) {
+    return String(value ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function buildCyberJoustManifest(spriteDocs) {
+    const bodies = [];
+    const weapons = [];
+
+    for (const docSnap of spriteDocs) {
+      const data = docSnap.data?.() ?? {};
+      if (data.kind === 'body' && typeof data.slug === 'string' && typeof data.deck === 'string') {
+        bodies.push({
+          kind: 'body',
+          slug: data.slug,
+          label: typeof data.label === 'string' ? data.label : `${data.colorName ?? 'Neon Cyan'} / ${data.deck}`,
+          colorName: typeof data.colorName === 'string' ? data.colorName : 'Neon Cyan',
+          color: typeof data.color === 'number' ? data.color : 0x00f0ff,
+          deck: data.deck,
+          imagePath: typeof data.imagePath === 'string' ? data.imagePath : '',
+          imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : undefined,
+          storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
+        });
+      } else if (data.kind === 'weapon' && typeof data.slug === 'string' && typeof data.weapon === 'string') {
+        weapons.push({
+          kind: 'weapon',
+          slug: data.slug,
+          label: typeof data.label === 'string' ? data.label : `${data.colorName ?? 'Neon Cyan'} / ${data.weapon}`,
+          colorName: typeof data.colorName === 'string' ? data.colorName : 'Neon Cyan',
+          color: typeof data.color === 'number' ? data.color : 0x00f0ff,
+          weapon: data.weapon,
+          imagePath: typeof data.imagePath === 'string' ? data.imagePath : '',
+          imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : undefined,
+          storagePath: typeof data.storagePath === 'string' ? data.storagePath : undefined,
+        });
+      }
+    }
+
+    bodies.sort((left, right) => left.slug.localeCompare(right.slug));
+    weapons.sort((left, right) => left.slug.localeCompare(right.slug));
+
+    const weaponsByColor = new Map();
+    for (const weapon of weapons) {
+      if (!weaponsByColor.has(weapon.colorName)) {
+        weaponsByColor.set(weapon.colorName, []);
+      }
+      weaponsByColor.get(weapon.colorName).push(weapon);
+    }
+
+    const fighters = [];
+    for (const body of bodies) {
+      const matchingWeapons = weaponsByColor.get(body.colorName) ?? [];
+      for (const weapon of matchingWeapons) {
+        fighters.push({
+          slug: `${body.slug}--${slugifyCyberJoustPart(weapon.weapon)}`,
+          label: `${body.colorName} / ${body.deck} / ${weapon.weapon}`,
+          colorName: body.colorName,
+          color: body.color,
+          deck: body.deck,
+          weapon: weapon.weapon,
+          bodySlug: body.slug,
+          weaponSlug: weapon.slug,
+        });
+      }
+    }
+
+    return {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      bodies,
+      weapons,
+      fighters,
+    };
+  }
 
   app.use('/api/auth/sync-session', authSyncRateLimit);
   app.use('/api/admin/create-user', adminUserRateLimit);
@@ -45,6 +123,22 @@ export function registerAdminRoutes(app, {
   app.use('/api/admin/player/', adminUserRateLimit);
   app.use('/api/admin/combination-stats', adminUserRateLimit);
   app.use('/api/admin/decks', adminUserRateLimit);
+
+  // Intentionally public so the static Cyber Joust runtime can load the latest
+  // sprite manifest without requiring a signed-in session.
+  app.get('/api/cyber-joust/sprites', async (_req, res) => {
+    if (!adminDb) {
+      res.status(503).json({ error: 'Firebase Admin is not configured on this server.' });
+      return;
+    }
+    try {
+      const snap = await adminDb.collection(CYBER_JOUST_SPRITES_COLLECTION).get();
+      res.json(buildCyberJoustManifest(snap.docs));
+    } catch (error) {
+      console.error('Cyber Joust sprite manifest failed:', error);
+      res.status(500).json({ error: 'Failed to load Cyber Joust sprites from Firestore.' });
+    }
+  });
 
   app.post('/api/auth/sync-session', async (req, res) => {
     if (!adminAuth) {

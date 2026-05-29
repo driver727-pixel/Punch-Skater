@@ -1,11 +1,18 @@
 import * as Phaser from 'phaser';
 import { init } from '@instantdb/core';
 import { INSTANT_DB_APP_ID } from './instant_db_config.js';
+import {
+    buildCyberJoustBodyTextureKey,
+    buildCyberJoustWeaponTextureKey,
+    CYBER_JOUST_SPRITE_MANIFEST_KEY,
+    findCyberJoustBodySprite,
+    findCyberJoustWeaponSprite
+} from './fighterSprites.js';
 
 const db = init({ appId: INSTANT_DB_APP_ID });
 
 const DEFAULT_COSMETICS = {
-    colorName: 'Cyan',
+    colorName: 'Neon Cyan',
     color: 0x00f0ff,
     deck: 'Speedline',
     weapon: 'Crutch Lance'
@@ -179,12 +186,17 @@ export class GameScene extends Phaser.Scene {
 
         const bodyG = this.add.graphics();
         this.drawRider(bodyG, 0x00f0ff);
+        const bodySprite = this.add.image(0, 0, 'spark-dot');
+        bodySprite.setVisible(false);
 
         const weaponContainer = this.add.container(0, -10);
+        const weaponSprite = this.add.image(0, 0, 'spark-dot');
+        weaponSprite.setVisible(false);
         const weaponGraphics = this.add.graphics();
+        weaponContainer.add(weaponSprite);
         weaponContainer.add(weaponGraphics);
 
-        skater.add([board, wheelL, wheelR, deckAccent, bodyG, weaponContainer]);
+        skater.add([bodySprite, board, wheelL, wheelR, deckAccent, bodyG, weaponContainer]);
 
         skater.isPlayer = isPlayer;
         skater.skaterId = id;
@@ -197,7 +209,9 @@ export class GameScene extends Phaser.Scene {
         skater.cosmetics = { ...DEFAULT_COSMETICS };
 
         skater.bodyGraphics = bodyG;
+        skater.bodySprite = bodySprite;
         skater.weaponGraphics = weaponGraphics;
+        skater.weaponSprite = weaponSprite;
         skater.weaponContainer = weaponContainer;
         skater.wheels = [wheelL, wheelR];
         skater.deck = board;
@@ -243,83 +257,111 @@ export class GameScene extends Phaser.Scene {
         const color = skater.cosmetics?.color ?? DEFAULT_COSMETICS.color;
         const weaponType = skater.cosmetics?.weapon ?? DEFAULT_COSMETICS.weapon;
         const deckStyle = skater.cosmetics?.deck ?? DEFAULT_COSMETICS.deck;
+        const spriteManifest = this.registry.get(CYBER_JOUST_SPRITE_MANIFEST_KEY);
+        const bodyEntry = findCyberJoustBodySprite(spriteManifest, skater.cosmetics);
+        const weaponEntry = findCyberJoustWeaponSprite(spriteManifest, skater.cosmetics);
+        const bodyTextureKey = bodyEntry ? buildCyberJoustBodyTextureKey(bodyEntry.slug) : null;
+        const weaponTextureKey = weaponEntry ? buildCyberJoustWeaponTextureKey(weaponEntry.slug) : null;
+        const hasBodySprite = bodyTextureKey && this.textures.exists(bodyTextureKey);
+        const hasWeaponSprite = weaponTextureKey && this.textures.exists(weaponTextureKey);
 
-        this.drawRider(skater.bodyGraphics, color);
+        skater.bodySprite?.setVisible(Boolean(hasBodySprite));
+        if (hasBodySprite) {
+            skater.bodySprite.setTexture(bodyTextureKey).setScale(1);
+            skater.deck.setVisible(false);
+            skater.deckAccent.setVisible(false);
+            skater.wheels.forEach((wheel) => wheel.setVisible(false));
+            skater.bodyGraphics.setVisible(false);
+        } else {
+            skater.deck.setVisible(true);
+            skater.deckAccent.setVisible(true);
+            skater.wheels.forEach((wheel) => wheel.setVisible(true));
+            skater.bodyGraphics.setVisible(true);
+            this.drawRider(skater.bodyGraphics, color);
+        }
 
-        if (deckStyle === 'Speedline') {
+        if (!hasBodySprite && deckStyle === 'Speedline') {
             skater.deck.setStrokeStyle(2, color);
             skater.wheels.forEach((wheel) => wheel.setFillStyle(0xff007f));
             skater.deckAccent.setFillStyle(0xffea00);
-        } else if (deckStyle === 'Gridwave') {
+        } else if (!hasBodySprite && deckStyle === 'Gridwave') {
             skater.deck.setStrokeStyle(2, 0xff007f);
             skater.wheels.forEach((wheel) => wheel.setFillStyle(0x00f0ff));
             skater.deckAccent.setFillStyle(color);
-        } else if (deckStyle === 'ToxiCorp') {
+        } else if (!hasBodySprite && deckStyle === 'ToxiCorp') {
             skater.deck.setStrokeStyle(2, 0x39ff14);
             skater.wheels.forEach((wheel) => wheel.setFillStyle(0xffea00));
             skater.deckAccent.setFillStyle(0xff0055);
-        } else {
+        } else if (!hasBodySprite) {
             skater.deck.setStrokeStyle(2, 0xffea00);
             skater.wheels.forEach((wheel) => wheel.setFillStyle(0x9d00ff));
             skater.deckAccent.setFillStyle(0x00f0ff);
         }
 
         const wg = skater.weaponGraphics;
-        wg.clear();
-        wg.lineStyle(3, color, 1);
-        wg.fillStyle(0x1a1a2e, 1);
-
-        if (weaponType === 'Hockey Stick') {
-            wg.lineStyle(4, color, 1);
-            wg.beginPath();
-            wg.moveTo(-10, -10);
-            wg.lineTo(25, 5);
-            wg.lineTo(38, 0);
-            wg.strokePath();
-            wg.fillStyle(0xff007f, 1);
-            wg.fillCircle(8, -2, 3);
-            wg.fillCircle(20, 3, 3);
-        } else if (weaponType === 'Street Sign') {
-            wg.lineStyle(3, 0xff0055, 1);
-            wg.fillStyle(0xb2003b, 1);
-            wg.beginPath();
-            const signX = 25;
-            const signY = -5;
-            const radius = 14;
-            for (let i = 0; i < OCTAGON_SIDES; i++) {
-                const angle = (i * Math.PI) / (OCTAGON_SIDES / 2);
-                const px = signX + radius * Math.cos(angle);
-                const py = signY + radius * Math.sin(angle);
-                if (i === 0) {
-                    wg.moveTo(px, py);
-                } else {
-                    wg.lineTo(px, py);
-                }
-            }
-            wg.closePath();
-            wg.fillPath();
-            wg.strokePath();
-            wg.lineStyle(4, 0xcccccc, 1);
-            wg.lineBetween(-5, -5, 15, -5);
-            wg.fillStyle(0xffffff, 1);
-            wg.fillRect(signX - 6, signY - 2, 12, 4);
+        skater.weaponSprite?.setVisible(Boolean(hasWeaponSprite));
+        if (hasWeaponSprite) {
+            skater.weaponSprite.setTexture(weaponTextureKey).setScale(1);
+            wg.clear();
+            wg.setVisible(false);
         } else {
-            wg.lineStyle(3, 0x00f0ff, 1);
-            wg.lineBetween(-15, -5, 18, -5);
-            wg.lineBetween(-15, -12, 5, -5);
-            wg.lineBetween(-15, 2, 5, -5);
-            wg.fillStyle(0xff007f, 1);
-            wg.fillRect(-18, -14, 4, 16);
-            wg.lineStyle(2, 0xffea00, 1);
-            wg.beginPath();
-            wg.moveTo(10, -5);
-            wg.lineTo(15, -9);
-            wg.lineTo(20, -1);
-            wg.lineTo(25, -5);
-            wg.lineTo(32, -5);
-            wg.strokePath();
-            wg.fillStyle(0x00f0ff, 1);
-            wg.fillCircle(32, -5, 3.5);
+            wg.setVisible(true);
+            wg.clear();
+            wg.lineStyle(3, color, 1);
+            wg.fillStyle(0x1a1a2e, 1);
+
+            if (weaponType === 'Hockey Stick') {
+                wg.lineStyle(4, color, 1);
+                wg.beginPath();
+                wg.moveTo(-10, -10);
+                wg.lineTo(25, 5);
+                wg.lineTo(38, 0);
+                wg.strokePath();
+                wg.fillStyle(0xff007f, 1);
+                wg.fillCircle(8, -2, 3);
+                wg.fillCircle(20, 3, 3);
+            } else if (weaponType === 'Street Sign') {
+                wg.lineStyle(3, 0xff0055, 1);
+                wg.fillStyle(0xb2003b, 1);
+                wg.beginPath();
+                const signX = 25;
+                const signY = -5;
+                const radius = 14;
+                for (let i = 0; i < OCTAGON_SIDES; i++) {
+                    const angle = (i * Math.PI) / (OCTAGON_SIDES / 2);
+                    const px = signX + radius * Math.cos(angle);
+                    const py = signY + radius * Math.sin(angle);
+                    if (i === 0) {
+                        wg.moveTo(px, py);
+                    } else {
+                        wg.lineTo(px, py);
+                    }
+                }
+                wg.closePath();
+                wg.fillPath();
+                wg.strokePath();
+                wg.lineStyle(4, 0xcccccc, 1);
+                wg.lineBetween(-5, -5, 15, -5);
+                wg.fillStyle(0xffffff, 1);
+                wg.fillRect(signX - 6, signY - 2, 12, 4);
+            } else {
+                wg.lineStyle(3, 0x00f0ff, 1);
+                wg.lineBetween(-15, -5, 18, -5);
+                wg.lineBetween(-15, -12, 5, -5);
+                wg.lineBetween(-15, 2, 5, -5);
+                wg.fillStyle(0xff007f, 1);
+                wg.fillRect(-18, -14, 4, 16);
+                wg.lineStyle(2, 0xffea00, 1);
+                wg.beginPath();
+                wg.moveTo(10, -5);
+                wg.lineTo(15, -9);
+                wg.lineTo(20, -1);
+                wg.lineTo(25, -5);
+                wg.lineTo(32, -5);
+                wg.strokePath();
+                wg.fillStyle(0x00f0ff, 1);
+                wg.fillCircle(32, -5, 3.5);
+            }
         }
     }
 
