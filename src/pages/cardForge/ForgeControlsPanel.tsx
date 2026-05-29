@@ -290,7 +290,7 @@ export function ForgeControlsPanel({
           <p className="form-hint" style={{ marginBottom: 6 }}>
             {weaponsUnlocked
               ? "Equip a weapon to your card — drag it into position on the preview."
-              : `Weapons unlock at ${weaponUnlockXp.toLocaleString()} XP. Until then, they are shown as unavailable.`}
+              : `Weapons unlock at ${weaponUnlockXp.toLocaleString()} XP. Until then, they appear locked.`}
           </p>
           <div className="forge-weapon-grid">
             <button
@@ -298,7 +298,6 @@ export function ForgeControlsPanel({
               className={`forge-weapon-option${!selectedWeaponUrl ? " selected" : ""}`}
               onClick={() => onWeaponSelect(undefined)}
               aria-pressed={!selectedWeaponUrl}
-              disabled={!weaponsUnlocked}
             >
               None
             </button>
