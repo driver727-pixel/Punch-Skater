@@ -18,6 +18,7 @@ import { FORGE_CLASS_ODDS } from "../../lib/cardClassProgression";
 import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
 import { FORGE_ARCHETYPE_OPTIONS } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
+import tabletopForgeBackdrop from "../../../tabletopforge.png";
 
 function ForgeLockBadge({ onClick, label }: { onClick: () => void; label: string }) {
   return (
@@ -330,24 +331,6 @@ export function ForgeControlsPanel({
         </div>
       )}
 
-      <div className="forge-class-odds">
-        <button type="button" className="forge-class-odds__trigger btn-outline btn-glass btn-sm">
-          Forge Class Odds
-        </button>
-        <div className="forge-class-odds__popup" aria-label="Forge class odds">
-          <p className="forge-class-odds__title">Forge Class Odds</p>
-          <ul className="forge-class-odds__list">
-            {FORGE_CLASS_ODDS.map((tier) => (
-              <li key={tier.label} className="forge-class-odds__row">
-                <span className="forge-class-odds__label">{tier.label}</span>
-                <span className="forge-class-odds__chance">{tier.chance}</span>
-                <span className="forge-class-odds__note">{tier.note}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
       <button
         className="btn-primary btn-lg btn-forge"
         onClick={onForge}
@@ -372,6 +355,28 @@ export function ForgeControlsPanel({
                   ? `💰 Forge Card (${ozziesConfig.cardForgeCost} Ozzies)`
                   : "⚡ Forge Card"}
       </button>
+
+      <div className="forge-tabletop-backdrop">
+        <img src={tabletopForgeBackdrop} alt="Tabletop forge backdrop" className="forge-tabletop-backdrop__img" />
+      </div>
+
+      <div className="forge-class-odds">
+        <button type="button" className="forge-class-odds__trigger btn-outline btn-glass btn-sm">
+          Forge Class Odds
+        </button>
+        <div className="forge-class-odds__popup" aria-label="Forge class odds">
+          <p className="forge-class-odds__title">Forge Class Odds</p>
+          <ul className="forge-class-odds__list">
+            {FORGE_CLASS_ODDS.map((tier) => (
+              <li key={tier.label} className="forge-class-odds__row">
+                <span className="forge-class-odds__label">{tier.label}</span>
+                <span className="forge-class-odds__chance">{tier.chance}</span>
+                <span className="forge-class-odds__note">{tier.note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
       {isFreeTier && generateCredits === 0 && !requiresOzzies && (
         <p className="form-hint">
           {freeForgeRemainingMs > 0
