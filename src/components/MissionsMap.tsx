@@ -75,8 +75,8 @@ const POI_TITLE_TRUNCATE_AT = 16;
 // These are replaced immediately once the container mounts and reports its size.
 const DEFAULT_SVG_W = 800;
 const DEFAULT_SVG_H = 600;
-const STATIC_MAP_IMAGE_W = 1536;
-const STATIC_MAP_IMAGE_H = 2752;
+const STATIC_MAP_IMAGE_WIDTH = 1536;
+const STATIC_MAP_IMAGE_HEIGHT = 2752;
 
 interface MapProjection {
   x: number;
@@ -97,7 +97,7 @@ function createMapProjection(svgW: number, svgH: number, alignToStaticBackdrop: 
     return { x: 0, y: 0, width: svgW, height: svgH };
   }
 
-  const imageRatio = STATIC_MAP_IMAGE_W / STATIC_MAP_IMAGE_H;
+  const imageRatio = STATIC_MAP_IMAGE_WIDTH / STATIC_MAP_IMAGE_HEIGHT;
   const containerRatio = svgW / svgH;
 
   if (containerRatio > imageRatio) {
