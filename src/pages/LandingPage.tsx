@@ -22,8 +22,10 @@ export function LandingPage() {
     return next;
   });
   const [showFaceoff, setShowFaceoff] = useState(false);
+  const lastSignInMs = user?.metadata.lastSignInTime ? Date.parse(user.metadata.lastSignInTime) : NaN;
+  const loginInstanceKey = Number.isFinite(lastSignInMs) ? String(lastSignInMs) : loginFallbackKey;
   const faceoffDismissalKey = user
-    ? `${LANDING_LOGIN_FACEOFF_PREFIX}:${user.uid}:${user.metadata.lastSignInTime ?? loginFallbackKey}`
+    ? `${LANDING_LOGIN_FACEOFF_PREFIX}:${user.uid}:${loginInstanceKey}`
     : LANDING_GUEST_FACEOFF_KEY;
   const closeFaceoff = useCallback(() => {
     localStorage.setItem(faceoffDismissalKey, "1");
