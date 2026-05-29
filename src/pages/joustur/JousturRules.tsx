@@ -133,16 +133,15 @@ export function JousturRules() {
         <h3>Joust Clashes</h3>
         <ul className="joustur-rules__list">
           <li>Clashes only happen in the <strong>shared lane</strong> (tiles 7–14).</li>
-          <li>Landing on an opponent starts a hidden stance duel instead of an instant bump.</li>
+          <li>Landing on an opponent starts a quick mini-game instead of an instant bump.</li>
           <li>
-            Both riders secretly choose <strong>Charge</strong>, <strong>Guard</strong>, or{" "}
-            <strong>Feint</strong>, then reveal together.
+            Each clash randomly picks one fast mini-game: <strong>best-of-3 Rock/Paper/Scissors</strong>{" "}
+            or a <strong>button-mash meter</strong>. Both riders play the same game.
           </li>
           <li>
-            Charge beats Feint, Guard beats Charge, and Feint beats Guard. Matching your rider's
-            trait-favoured stance adds a +1 edge.
+            Highest mini-game score wins the clash. Ties go to the defender already on the tile.
           </li>
-          <li>The clash winner keeps the tile. The loser is bumped back to off-board, and ties go to the defender already on the tile.</li>
+          <li>The clash winner keeps the tile. The loser is bumped back to off-board.</li>
           <li>Riders on Stealth Alcoves are safe. Riders protected by smoke screen are safe.</li>
         </ul>
       </section>

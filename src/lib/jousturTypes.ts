@@ -59,7 +59,8 @@ export type JousturSupportEffect =
   | "overclock"     // Voltage Vultures
   | "sideRoute";    // Alley Wraiths
 
-export type JousturClashStance = "charge" | "guard" | "feint";
+/** Which mini-game resolves a clash. Selected randomly per clash. */
+export type JousturClashMiniGame = "rps" | "mash";
 
 export type JousturChallengeStatus =
   | "pending"
@@ -189,8 +190,12 @@ export interface JousturClashState {
   attackerCardId: string;
   defenderCardId: string;
   tile: number;
-  attackerChoice: JousturClashStance | null;
-  defenderChoice: JousturClashStance | null;
+  /** Which mini-game resolves this clash. Null until the server assigns it. */
+  miniGame: JousturClashMiniGame | null;
+  /** Attacker's mini-game score. Hidden from the opponent until both lock in. */
+  attackerScore: number | null;
+  /** Defender's mini-game score. Hidden from the opponent until both lock in. */
+  defenderScore: number | null;
   attackerChoiceLocked: boolean;
   defenderChoiceLocked: boolean;
   startedOnTurn: number;
@@ -299,7 +304,8 @@ export interface JousturMoveChoice {
 }
 
 export interface JousturClashChoice {
-  stance: JousturClashStance;
+  /** The player's mini-game score for the active clash. */
+  score: number;
 }
 
 /** Reward values granted to one player after a completed match. */
