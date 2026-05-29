@@ -59,6 +59,7 @@ export function useCardForgeController() {
     isAnyLayerLoading: forge.isAnyLayerLoading,
     isAdmin: userProfile?.isAdmin === true,
     isFirstCard: save.isFirstCard,
+    missionXp: userProfile?.missionXp ?? 0,
     layers: forge.layers,
     openUpgradeModal: forge.openUpgradeModal,
     ozziesBalance: forge.ozziesBalance,
@@ -100,5 +101,5 @@ export function useCardForgeController() {
     walletMessage: forge.walletMessage,
     walletMessageTone: forge.walletMessageTone,
     weaponPlacement: forge.weaponPlacement,
-  }), [forge, navigation, save, userProfile?.isAdmin]);
+  }), [forge, navigation, save, userProfile?.isAdmin, userProfile?.missionXp]);
 }

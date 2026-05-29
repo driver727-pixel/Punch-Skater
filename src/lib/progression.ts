@@ -31,6 +31,11 @@ export const CREW_SIZE = 6;
  */
 export const MAX_CARD_XP = 100_000_000;
 
+/**
+ * Weapons unlock once a player reaches 1,000 mission XP.
+ */
+export const WEAPON_UNLOCK_XP = 1_000;
+
 // ── Points (stats) ────────────────────────────────────────────────────────────
 
 /**
