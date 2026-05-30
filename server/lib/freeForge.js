@@ -73,8 +73,9 @@ export async function claimFreeForge(adminDb, { uid, FieldValue, now = Date.now(
       );
     }
 
-    const previousCount = snap.exists && Number.isFinite(snap.data()?.count)
-      ? Math.max(0, Math.floor(snap.data().count))
+    const snapData = snap.exists ? snap.data() : undefined;
+    const previousCount = snapData && Number.isFinite(snapData.count)
+      ? Math.max(0, Math.floor(snapData.count))
       : 0;
 
     tx.set(docRef, {
