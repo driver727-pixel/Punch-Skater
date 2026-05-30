@@ -12,7 +12,6 @@ import type {
 } from "../../lib/types";
 import { BoardBuilder } from "../../components/BoardBuilder";
 import { LanguageProfilePanel } from "../../components/LanguageProfilePanel";
-import { ReferralPanel } from "../../components/ReferralPanel";
 import ozziesConfig from "../../lib/ozziesConfig.json";
 import type { BoardConfig } from "../../lib/boardBuilder";
 import { FORGE_CLASS_ODDS } from "../../lib/cardClassProgression";
@@ -568,7 +567,6 @@ export function ForgeControlsPanel({
               </p>
             )}
 
-            <ReferralPanel />
           </>
         )}
       </div>

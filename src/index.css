@@ -4763,6 +4763,19 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--muted);
 }
 
+.forge-economy-panels {
+  width: min(1200px, 100%);
+  margin: 0 auto 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.forge-economy-panels > * {
+  margin: 0;
+}
+
 .wallet-panel__balance {
   text-align: right;
 }

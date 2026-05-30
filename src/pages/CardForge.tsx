@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BattlePassPanel } from "../components/BattlePassPanel";
+import { ReferralPanel } from "../components/ReferralPanel";
 import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
@@ -174,7 +175,10 @@ export function CardForge() {
 
       <ForgeObjectivePanel onOpenStartHere={handleReopenWelcome} />
 
-      <WalletPanel />
+      <div className="forge-economy-panels">
+        <WalletPanel />
+        <ReferralPanel />
+      </div>
 
       <div className="forge-layout">
         <ForgeControlsPanel
