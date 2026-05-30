@@ -186,10 +186,10 @@ All current forge districts and all current rarity tiers are registered to stati
 
 ### Nice-to-have immersion uploads
 
-- [ ] District ambience loops
-- [ ] Mission success / failure / fork-choice audio
-- [ ] Battle queue / draw / result audio
-- [ ] Trade sent / accepted / declined audio
+- [x] District ambience loops
+- [x] Mission success / failure / fork-choice audio
+- [x] Battle queue / draw / result audio
+- [x] Trade sent / accepted / declined audio
 - [ ] Launch promo / social share art
 
 ## Known Follow-Ups

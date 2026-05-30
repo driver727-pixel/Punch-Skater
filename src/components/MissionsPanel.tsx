@@ -39,6 +39,7 @@ import type {
 } from "../lib/sharedTypes";
 import type { District, JoustTactic, WorldLocation } from "../lib/types";
 import { getMissionBoard, runMission } from "../services/missions";
+import { sfxMissionSuccess, sfxMissionFailure, sfxMissionForkChoice } from "../lib/sfx";
 import { CardThumbnail } from "./CardThumbnail";
 
 interface MissionsPanelProps {
@@ -838,11 +839,17 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
     setSelectedCounterOptionId(result.mission.selectedCounterOptionId ?? null);
     if (result.awaitingChoice) {
       setMissionResult(null);
+      sfxMissionForkChoice();
       return;
     }
     setResultPhase(2);
     setLogExpanded(false);
     setMissionResult(result);
+    if (result.rewardGranted) {
+      sfxMissionSuccess();
+    } else {
+      sfxMissionFailure();
+    }
   }, []);
 
   const handleRunMission = useCallback(async () => {

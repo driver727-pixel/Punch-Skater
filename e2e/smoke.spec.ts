@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { calculateBoardStats } from '../src/lib/boardBuilder';
 import { FACTION_LORE } from '../src/lib/lore';
+import { liveFirebaseEnabled } from './live-auth.helpers';
 
 async function ensureNavLinksVisible(page: Page) {
   const collectionLink = page.getByRole('link', { name: /collection/i });
@@ -175,6 +176,8 @@ test.describe('Home page (Card Forge)', () => {
 // ── Login page ────────────────────────────────────────────────────────────────
 
 test.describe('Login page', () => {
+  test.skip(!liveFirebaseEnabled, 'Requires live Firebase test configuration.');
+
   test('loads the login page', async ({ page }) => {
     await page.goto('/login');
     await expect(page).toHaveTitle(/Punch Skater™/i);
