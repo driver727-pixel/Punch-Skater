@@ -339,6 +339,7 @@ function CardFrameComponent({ width, height, rarity, frameSeed, uid }: FrameProp
   const scaleX = width / FRAME_RENDER_WIDTH;
   const scaleY = height / FRAME_RENDER_HEIGHT;
 
+  // NOTE: SVG_FRAME_RARITIES in staticAssets.ts must mirror this set of rarity checks.
   return (
     <g transform={`scale(${scaleX} ${scaleY})`}>
       {rarity === "Punch Skater™" && <PunchSkaterFrame uid={uid} frameSeed={frameSeed} />}
