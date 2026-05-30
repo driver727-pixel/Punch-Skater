@@ -19,6 +19,7 @@ export function JousturResult() {
   const [match, setMatch] = useState<JousturMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const audioPlayedRef = useRef(false);
 
   useEffect(() => {
     if (!matchId) return;
@@ -31,6 +32,24 @@ export function JousturResult() {
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load match."))
       .finally(() => setLoading(false));
   }, [matchId, navigate]);
+
+  // Derive result values (safe even when match is null).
+  const myUid = user?.uid ?? "";
+  const didWin = match?.winnerUid === myUid;
+
+  // Play result audio once when the match loads.
+  useEffect(() => {
+    if (!match || !match.challengerState || !match.defenderState) return;
+    if (audioPlayedRef.current) return;
+    audioPlayedRef.current = true;
+    if (didWin) {
+      sfxJousturVictory();
+      setTimeout(() => sfxJousturApplause(), 300);
+    } else if (match.winnerUid) {
+      sfxJousturDefeat();
+      setTimeout(() => sfxJousturBoo(), 200);
+    }
+  }, [match, didWin]);
 
   if (loading) return <div className="page joustur-result"><p>Loading result…</p></div>;
   if (!match) return <div className="page joustur-result"><p>{error ?? "Match not found."}</p></div>;
@@ -47,26 +66,10 @@ export function JousturResult() {
     );
   }
 
-  const myUid = user?.uid ?? "";
-  const didWin = match.winnerUid === myUid;
   const isChallenger = match.challengerUid === myUid;
   const myState  = isChallenger ? match.challengerState  : match.defenderState;
   const oppState = isChallenger ? match.defenderState    : match.challengerState;
   const opponentLabel = match.mode === "solo" ? "House Bot" : "Opponent";
-
-  // Play result audio once when the page loads.
-  const audioPlayedRef = useRef(false);
-  useEffect(() => {
-    if (audioPlayedRef.current) return;
-    audioPlayedRef.current = true;
-    if (didWin) {
-      sfxJousturVictory();
-      setTimeout(() => sfxJousturApplause(), 300);
-    } else if (match.winnerUid) {
-      sfxJousturDefeat();
-      setTimeout(() => sfxJousturBoo(), 200);
-    }
-  }, [didWin, match.winnerUid]);
 
   return (
     <div className="page joustur-result">
