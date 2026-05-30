@@ -10,6 +10,10 @@ import * as Phaser from 'phaser';
 import { StreetsMenuScene } from './menuScene.js';
 import { StreetsGameScene } from './gameScene.js';
 import {
+  STREETS_DYNAMIC_TEXTURES,
+  parseStreetsConfig,
+} from './streetsConfig.js';
+import {
   buildCyberJoustBodyTextureKey,
   buildCyberJoustWeaponTextureKey,
   CYBER_JOUST_SPRITE_MANIFEST_KEY,
@@ -68,6 +72,14 @@ class BootScene extends Phaser.Scene {
     this.load.audio('sfx-hit', `${ASSET_BASE}/audio/sfx-clash.mp3`);
     this.load.audio('sfx-boost', `${ASSET_BASE}/audio/sfx-boost.mp3`);
     this.load.audio('sfx-zap', `${ASSET_BASE}/audio/sfx-zap.mp3`);
+
+    const launchConfig = parseStreetsConfig();
+    if (launchConfig.levelBackdropUrl) {
+      this.load.image(STREETS_DYNAMIC_TEXTURES.backdrop, launchConfig.levelBackdropUrl);
+    }
+    if (launchConfig.player?.cosmetics?.characterImageUrl) {
+      this.load.image(STREETS_DYNAMIC_TEXTURES.playerSprite, launchConfig.player.cosmetics.characterImageUrl);
+    }
   }
 
   async create() {

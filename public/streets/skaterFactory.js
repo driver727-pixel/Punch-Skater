@@ -23,6 +23,8 @@ export const DEFAULT_COSMETICS = Object.freeze({
   weapon: 'Crutch Lance',
 });
 
+const CUSTOM_SPRITE_SCALE = 0.18;
+
 /** Resolve a cosmetics object's numeric color, tolerating partial input. */
 export function resolveColorValue(cosmetics = {}) {
   const entry = getCyberJoustColor(cosmetics.colorName, cosmetics.color);
@@ -155,14 +157,17 @@ export function applySkaterVisuals(scene, skater) {
   const manifest = scene.registry.get(CYBER_JOUST_SPRITE_MANIFEST_KEY);
   const bodyEntry = findCyberJoustBodySprite(manifest, cosmetics);
   const weaponEntry = findCyberJoustWeaponSprite(manifest, cosmetics);
-  const bodyKey = bodyEntry ? buildCyberJoustBodyTextureKey(bodyEntry.slug) : null;
+  const customBodyKey = cosmetics.characterTextureKey && scene.textures.exists(cosmetics.characterTextureKey)
+    ? cosmetics.characterTextureKey
+    : null;
+  const bodyKey = customBodyKey || (bodyEntry ? buildCyberJoustBodyTextureKey(bodyEntry.slug) : null);
   const weaponKey = weaponEntry ? buildCyberJoustWeaponTextureKey(weaponEntry.slug) : null;
   const hasBody = bodyKey && scene.textures.exists(bodyKey);
   const hasWeapon = weaponKey && scene.textures.exists(weaponKey);
 
   skater.bodySprite.setVisible(Boolean(hasBody));
   if (hasBody) {
-    skater.bodySprite.setTexture(bodyKey).setScale(1);
+    skater.bodySprite.setTexture(bodyKey).setScale(customBodyKey ? CUSTOM_SPRITE_SCALE : 1);
     skater.bodyGraphics.setVisible(false);
   } else {
     skater.bodyGraphics.setVisible(true);

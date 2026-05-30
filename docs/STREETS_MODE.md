@@ -74,7 +74,9 @@ built by `buildStreetsEncounter()` in `server/lib/missionEncounterDefinitions.js
 - The Missions UI (`EncounterOverlay` in `src/pages/Missions.tsx`) renders an
   **▶ Enter the Streets** launch button for `encounterType: "streets"` options.
   It opens `/streets/?...` with the chosen card's stats/cosmetics and a
-  same-origin `returnTo`.
+  same-origin `returnTo`. When mission-world visuals are available, the launch
+  also passes the fal.ai-generated map backdrop as `levelBackdrop` plus a
+  deterministic `levelSeed`.
 - On win/lose the game returns to `/missions?streetsResult=win|lose&...`; the
   page resolves the encounter through the standard `POST
   /api/missions/world/encounter` flow:
@@ -94,6 +96,13 @@ No new economy is introduced; rewards flow into the existing mission rewards.
 | **Broomstick First** | Airaway checkpoint | fight_through | "UCA white bikes are enemy symbols — broomstick first." (duel Mina Chrome) |
 | **Transit Is a Battlefield** | The Roads straightaways | fight_through | Nullarbor-straightaway Road Runner ambush |
 | **A Million Screens, Zero Witnesses** | Glass City neon | retrieve | Out-skate Nova Saint's highlight-reel ambush |
+
+Each launch now gets a deterministic procedural stage profile from `levelSeed`.
+The seed varies stage length, final-wave pressure, parallax details, signage,
+rails, and foreground props. If fal.ai visuals are configured on the server, the
+existing mission-world backdrop generation is reused as a stylized Streets
+background layer; otherwise the Phaser scene falls back to generated vector
+district art.
 
 ## Feature flag
 
