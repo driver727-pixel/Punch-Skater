@@ -1,15 +1,25 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isFactionImageAdmin() {
+    function isAdmin() {
       return request.auth != null
         && firestore.get(
           /databases/(default)/documents/userProfiles/$(request.auth.uid)
         ).data.isAdmin == true;
     }
 
+    function isFactionImageAdmin() {
+      return isAdmin();
+    }
+
     function canWriteFactionImage() {
       return isFactionImageAdmin()
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+    }
+
+    function canWriteCyberJoustSprite() {
+      return isAdmin()
         && request.resource.size <= 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(png|jpeg|webp)');
     }
@@ -25,6 +35,13 @@ service firebase.storage {
       allow read: if true;
       allow write: if canWriteFactionImage();
       allow delete: if isFactionImageAdmin();
+    }
+
+    // Cyber Joust body/weapon sprites generated from the admin Asset Generator.
+    match /cyber-joust/{spriteFile=**} {
+      allow read: if true;
+      allow write: if canWriteCyberJoustSprite();
+      allow delete: if isAdmin();
     }
   }
 }
