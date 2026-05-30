@@ -8,6 +8,7 @@ import {
     findCyberJoustBodySprite,
     findCyberJoustWeaponSprite
 } from './fighterSprites.js';
+import { DEFAULT_CYBER_JOUST_DISTRICT, getCyberJoustDistrict } from './districts.js';
 
 const db = init({ appId: INSTANT_DB_APP_ID });
 
@@ -28,9 +29,18 @@ const OCTAGON_SIDES = 8;
 const RIDER_VISOR_WIDTH = 12.6;
 const RIDER_VISOR_HEIGHT = 10.8;
 const FLIP_VELOCITY_THRESHOLD = 300;
-const BOT_CHASE_PROBABILITY = 65;
 const CLASH_THRESHOLD = 48;
 const BOUNCE_HEIGHT_MARGIN = 12;
+const BACKDROP_ALPHA = 0.46;
+const SKYLINE_TOWER_COUNT = 8;
+const SKYLINE_BASE_OFFSET = 70;
+const SKYLINE_TOWER_WIDTH_RATIO = 0.055;
+const SKYLINE_TOWER_ALPHA = 0.38;
+const SKYLINE_TOWER_MIN_HEIGHT_RATIO = 0.16;
+const SKYLINE_TOWER_MAX_HEIGHT_RATIO = 0.36;
+const BACKDROP_NODE_COUNT = 18;
+const BACKDROP_NODE_MIN_Y = 80;
+const BACKDROP_NODE_MAX_HEIGHT_RATIO = 0.55;
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -49,6 +59,7 @@ export class GameScene extends Phaser.Scene {
         this.steerRight = false;
         this.tiltDirection = null;
         this.myCosmetics = { ...DEFAULT_COSMETICS };
+        this.district = DEFAULT_CYBER_JOUST_DISTRICT;
     }
 
     init(data) {
@@ -57,6 +68,8 @@ export class GameScene extends Phaser.Scene {
         } else {
             this.myCosmetics = { ...DEFAULT_COSMETICS };
         }
+        const params = new URLSearchParams(window.location.search);
+        this.district = getCyberJoustDistrict(data?.district || params.get('district'));
 
         this.score = 0;
         this.lives = 5;
@@ -73,7 +86,7 @@ export class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         this.bgImage = this.add.image(width / 2, height / 2, 'cyber-bg');
-        this.bgImage.setDisplaySize(width, height);
+        this.bgImage.setDisplaySize(width, height).setTint(this.district.palette.sky);
 
         this.scale.on('resize', (gameSize) => {
             const { width: w, height: h } = gameSize;
@@ -85,8 +98,8 @@ export class GameScene extends Phaser.Scene {
 
         const params = new URLSearchParams(window.location.search);
         this.roomId = params.get('room') || 'cyber-joust-lobby';
-        if (!params.get('room')) {
-            window.history.replaceState({}, '', `?room=${this.roomId}`);
+        if (!params.get('room') || params.get('district') !== this.district.slug) {
+            window.history.replaceState({}, '', `?room=${this.roomId}&district=${this.district.slug}`);
         }
 
         this.setupSoundButton();
@@ -123,38 +136,84 @@ export class GameScene extends Phaser.Scene {
 
         this.setupControls();
         this.joinMultiplayerRoom();
-        this.spawnBots(2);
+        this.spawnBots(this.district.botCount);
         this.createHUD();
     }
 
     createEnvironment(width, height) {
         this.platforms = this.physics.add.staticGroup();
-        const platformThickness = 24;
-        const groundY = height - 100;
-        const groundW = width * 0.35;
+        this.createDistrictBackdrop(width, height);
 
-        this.addPlatform(groundW / 2, groundY, groundW, platformThickness, 0x111122, 0xff007f);
-        this.addPlatform(width - groundW / 2, groundY, groundW, platformThickness, 0x111122, 0xff007f);
-        this.addPlatform(width * 0.25, height * 0.6, width * 0.3, platformThickness, 0x111122, 0x00f0ff);
-        this.addPlatform(width * 0.75, height * 0.6, width * 0.3, platformThickness, 0x111122, 0x00f0ff);
-        this.addPlatform(width * 0.5, height * 0.35, width * 0.25, platformThickness, 0x111122, 0xffea00);
+        this.district.platforms.forEach((platform) => {
+            this.addPlatform(
+                width * platform.x,
+                height * platform.y,
+                width * platform.w,
+                platform.h,
+                this.district.palette.platform,
+                this.getDistrictColor(platform.stroke)
+            );
+        });
 
-        this.createRamp(groundW, groundY, 120, 80, 'right');
-        this.createRamp(width - groundW, groundY, 120, 80, 'left');
-        this.createRamp(width * 0.4, height * 0.6, 100, 60, 'right');
-        this.createRamp(width * 0.6, height * 0.6, 100, 60, 'left');
+        this.district.ramps.forEach((ramp) => {
+            this.createRamp(width * ramp.x, height * ramp.y, ramp.w, ramp.h, ramp.dir);
+        });
 
         this.hazardY = height - 55;
-        this.hazard = this.add.rectangle(width / 2, this.hazardY + 20, width * 0.45, 40, 0xff0055, 0.3);
+        const hazardWidth = width * this.district.hazard.widthRatio;
+        this.hazard = this.add.rectangle(width / 2, this.hazardY + 20, hazardWidth, 40, this.district.palette.hazard, this.district.hazard.alpha);
         this.physics.add.existing(this.hazard, true);
 
-        this.hazardGrid = this.add.grid(width / 2, this.hazardY + 20, width * 0.45, 40, 20, 10, 0xff0055, 0.4, 0xff007f, 0.9);
+        this.hazardGrid = this.add.grid(width / 2, this.hazardY + 20, hazardWidth, 40, 20, 10, this.district.palette.hazard, 0.4, this.district.palette.secondary, 0.9);
         this.tweens.add({ targets: this.hazardGrid, alpha: 0.5, yoyo: true, repeat: -1, duration: 800 });
+        this.add.text(width / 2, this.hazardY + 19, this.district.hazard.label, {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '9px',
+            color: '#ffffff'
+        }).setOrigin(0.5).setAlpha(0.6);
+    }
+
+    createDistrictBackdrop(width, height) {
+        const palette = this.district.palette;
+        this.add.rectangle(width / 2, height / 2, width, height, palette.sky, BACKDROP_ALPHA).setDepth(-2);
+        for (let i = 0; i < SKYLINE_TOWER_COUNT; i++) {
+            const x = (width / (SKYLINE_TOWER_COUNT + 1)) * (i + 1);
+            const h = Phaser.Math.Between(
+                Math.floor(height * SKYLINE_TOWER_MIN_HEIGHT_RATIO),
+                Math.floor(height * SKYLINE_TOWER_MAX_HEIGHT_RATIO)
+            );
+            const tower = this.add.rectangle(
+                x,
+                height - SKYLINE_BASE_OFFSET - h / 2,
+                width * SKYLINE_TOWER_WIDTH_RATIO,
+                h,
+                palette.platform,
+                SKYLINE_TOWER_ALPHA
+            ).setDepth(-1);
+            tower.setStrokeStyle(1, i % 2 ? palette.primary : palette.secondary, 0.35);
+            this.add.rectangle(x, height - SKYLINE_BASE_OFFSET - 18 - h, width * 0.04, 3, i % 2 ? palette.accent : palette.primary, 0.6).setDepth(-1);
+        }
+
+        for (let i = 0; i < BACKDROP_NODE_COUNT; i++) {
+            const x = Phaser.Math.Between(20, width - 20);
+            const maxNodeY = height * BACKDROP_NODE_MAX_HEIGHT_RATIO;
+            const minNodeY = Math.min(BACKDROP_NODE_MIN_Y, maxNodeY);
+            const y = Phaser.Math.Between(minNodeY, maxNodeY);
+            const node = this.add.circle(x, y, Phaser.Math.Between(1, 3), i % 2 ? palette.primary : palette.secondary, 0.6).setDepth(-1);
+            this.tweens.add({
+                targets: node,
+                alpha: 0.15,
+                yoyo: true,
+                repeat: -1,
+                duration: Phaser.Math.Between(700, 1600)
+            });
+        }
     }
 
     addPlatform(x, y, width, height, fillColor, strokeColor) {
         const platform = this.add.rectangle(x, y, width, height, fillColor);
         platform.setStrokeStyle(3, strokeColor);
+        this.add.rectangle(x, y - height / 2 - 4, width * 0.92, 3, strokeColor, 0.55);
         this.physics.add.existing(platform, true);
         this.platforms.add(platform);
         return platform;
@@ -162,10 +221,23 @@ export class GameScene extends Phaser.Scene {
 
     createRamp(x, y, width, height, direction) {
         const graphics = this.add.graphics();
-        graphics.lineStyle(3, 0x00f0ff, 1);
-        graphics.fillStyle(0x111122, 0.8);
-        graphics.beginPath();
+        graphics.fillStyle(this.district.palette.platform, 0.82);
+        this.drawRampPath(graphics, x, y, width, height, direction);
+        graphics.fillPath();
+        graphics.lineStyle(6, this.district.palette.primary, 0.2);
+        this.drawRampPath(graphics, x, y, width, height, direction);
+        graphics.strokePath();
+        graphics.lineStyle(3, this.district.palette.accent, 1);
+        this.drawRampPath(graphics, x, y, width, height, direction);
+        graphics.strokePath();
 
+        const zoneX = direction === 'right' ? x - width / 2 : x + width / 2;
+        const rampZone = this.add.zone(zoneX, y - height / 2, width, height);
+        this.ramps.push({ zone: rampZone, direction, width, height });
+    }
+
+    drawRampPath(graphics, x, y, width, height, direction) {
+        graphics.beginPath();
         if (direction === 'right') {
             graphics.moveTo(x - width, y);
             graphics.lineTo(x, y - height);
@@ -176,12 +248,10 @@ export class GameScene extends Phaser.Scene {
             graphics.lineTo(x + width, y);
         }
         graphics.closePath();
-        graphics.fillPath();
-        graphics.strokePath();
+    }
 
-        const zoneX = direction === 'right' ? x - width / 2 : x + width / 2;
-        const rampZone = this.add.zone(zoneX, y - height / 2, width, height);
-        this.ramps.push({ zone: rampZone, direction, width, height });
+    getDistrictColor(key) {
+        return this.district.palette[key] ?? this.district.palette.primary;
     }
 
     spawnSkater(x, y, isPlayer, id) {
@@ -189,7 +259,7 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.existing(skater);
 
         skater.body.setCollideWorldBounds(true);
-        skater.body.setGravityY(750);
+        skater.body.setGravityY(this.district.gravityY);
         skater.body.setSize(50, 70);
         skater.body.setOffset(-25, -45);
         skater.body.setDragX(250);
@@ -578,7 +648,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        const speed = this.getWeaponThrustSpeed(this.myCosmetics.weapon);
+        const speed = this.getWeaponThrustSpeed(this.myCosmetics.weapon) * this.district.thrustMultiplier;
         const upForce = -240;
         const horizForce = this.player.facing === 'right' ? speed * 0.75 : -speed * 0.75;
 
@@ -862,7 +932,7 @@ export class GameScene extends Phaser.Scene {
             bot.aiTimer -= delta;
             if (bot.aiTimer <= 0) {
                 bot.aiTimer = Phaser.Math.Between(800, 2200);
-                const chasePlayer = Phaser.Math.Between(0, 100) < BOT_CHASE_PROBABILITY;
+                const chasePlayer = Phaser.Math.Between(0, 100) < this.district.botChaseProbability;
                 bot.aiTargetX = chasePlayer ? this.player.x : Phaser.Math.Between(50, this.scale.width - 50);
 
                 const shouldThrust =
@@ -977,9 +1047,10 @@ export class GameScene extends Phaser.Scene {
         this.triggerClashVFX(loser.x, loser.y, 'heavy');
 
         if (winner === this.player) {
-            this.score += 250;
+            const points = this.district.scoreBonus;
+            this.score += points;
             this.scoreText?.setText('SCORE: ' + this.score);
-            this.showFeedbackText(loser.x, loser.y - 40, '+250', '#00f0ff');
+            this.showFeedbackText(loser.x, loser.y - 40, `+${points}`, '#00f0ff');
         } else if (loser === this.player) {
             this.lives = Math.max(0, this.lives - 1);
             this.livesText?.setText('LIVES: ' + '⚡'.repeat(this.lives));
@@ -1096,6 +1167,12 @@ export class GameScene extends Phaser.Scene {
             fontFamily: '"Press Start 2P"',
             fontSize: '14px',
             color: '#ffea00'
+        }).setScrollFactor(0).setDepth(120);
+
+        this.add.text(24, 68, 'DISTRICT: ' + this.district.name.toUpperCase(), {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '9px',
+            color: '#ffffff'
         }).setScrollFactor(0).setDepth(120);
 
         this.roomText = this.add.text(this.scale.width - 24, 20, 'ROOM: ' + this.roomId, {
@@ -1282,6 +1359,7 @@ export class GameScene extends Phaser.Scene {
                     playerName,
                     score: this.score,
                     weapon: this.myCosmetics.weapon || 'Unknown',
+                    district: this.district.slug,
                     createdAt: Date.now()
                 }));
             } catch (e) {
@@ -1329,7 +1407,7 @@ export class GameScene extends Phaser.Scene {
             promptText.destroy();
             submitBtn.destroy();
             restart.destroy();
-            this.scene.restart({ cosmetics: this.myCosmetics });
+            this.scene.restart({ cosmetics: this.myCosmetics, district: this.district.slug });
         };
 
         this.input.keyboard.once('keydown-SPACE', restartGame);

@@ -11,6 +11,7 @@ import {
     findCyberJoustBodySprite,
     findCyberJoustWeaponSprite
 } from './fighterSprites.js';
+import { CYBER_JOUST_DISTRICTS, DEFAULT_CYBER_JOUST_DISTRICT, getCyberJoustDistrict } from './districts.js';
 
 const db = init({ appId: INSTANT_DB_APP_ID });
 
@@ -20,17 +21,20 @@ export class MenuScene extends Phaser.Scene {
         this.selectedColorIdx = 0;
         this.selectedDeckIdx = 0;
         this.selectedWeaponIdx = 2;
+        this.selectedDistrictIdx = 0;
         this.colors = CYBER_JOUST_COLORS;
         this.decks = CYBER_JOUST_DECKS;
         this.weapons = CYBER_JOUST_WEAPONS;
+        this.districts = CYBER_JOUST_DISTRICTS;
         this.highScores = [];
     }
 
     create() {
         const { width, height } = this.scale;
+        this.syncDistrictFromQuery();
 
-        const bg = this.add.image(width / 2, height / 2, 'cyber-bg');
-        bg.setDisplaySize(width, height).setAlpha(0.65);
+        this.bgImage = this.add.image(width / 2, height / 2, 'cyber-bg');
+        this.bgImage.setDisplaySize(width, height).setAlpha(0.65).setTint(this.getSelectedDistrict().palette.sky);
 
         this.add.text(width / 2, height * 0.12, 'CYBER JOUST', {
             fontFamily: '"Press Start 2P"', fontSize: 'min(38px, 6vw)', color: '#ff007f', stroke: '#00f0ff', strokeThickness: 5
@@ -73,6 +77,17 @@ export class MenuScene extends Phaser.Scene {
         this.drawLeaderboardPanel(leadX, leadY, panelWidth, panelHeight);
     }
 
+    syncDistrictFromQuery() {
+        const params = new URLSearchParams(window.location.search);
+        const district = getCyberJoustDistrict(params.get('district'));
+        const idx = this.districts.findIndex((entry) => entry.slug === district.slug);
+        this.selectedDistrictIdx = idx >= 0 ? idx : 0;
+    }
+
+    getSelectedDistrict() {
+        return this.districts[this.selectedDistrictIdx] || DEFAULT_CYBER_JOUST_DISTRICT;
+    }
+
     drawCustomizerPanel(x, y, w, h) {
         const panelBg = this.add.rectangle(x, y, w, h, 0x0a0a1a, 0.85);
         panelBg.setStrokeStyle(3, 0x00f0ff);
@@ -89,13 +104,13 @@ export class MenuScene extends Phaser.Scene {
         this.updateRiderPreview();
 
         const controlX = x + w * 0.12;
-        const optionSpacing = h * 0.22;
+        const optionSpacing = h * 0.18;
 
-        this.colorText = this.add.text(controlX, y - optionSpacing, 'COLOR: ' + this.colors[this.selectedColorIdx].name, {
+        this.colorText = this.add.text(controlX, y - optionSpacing * 1.35, 'COLOR: ' + this.colors[this.selectedColorIdx].name, {
             fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ffffff'
         }).setOrigin(0.5);
 
-        const colorBtn = this.add.rectangle(controlX, y - optionSpacing, w * 0.6, 32, 0x000000, 0);
+        const colorBtn = this.add.rectangle(controlX, y - optionSpacing * 1.35, w * 0.6, 32, 0x000000, 0);
         colorBtn.setInteractive({ cursor: 'pointer' });
         colorBtn.on('pointerdown', () => {
             this.selectedColorIdx = (this.selectedColorIdx + 1) % this.colors.length;
@@ -104,11 +119,11 @@ export class MenuScene extends Phaser.Scene {
             this.playTick();
         });
 
-        this.deckText = this.add.text(controlX, y, 'DECK: ' + this.decks[this.selectedDeckIdx], {
+        this.deckText = this.add.text(controlX, y - optionSpacing * 0.35, 'DECK: ' + this.decks[this.selectedDeckIdx], {
             fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ffffff'
         }).setOrigin(0.5);
 
-        const deckBtn = this.add.rectangle(controlX, y, w * 0.6, 32, 0x000000, 0);
+        const deckBtn = this.add.rectangle(controlX, y - optionSpacing * 0.35, w * 0.6, 32, 0x000000, 0);
         deckBtn.setInteractive({ cursor: 'pointer' });
         deckBtn.on('pointerdown', () => {
             this.selectedDeckIdx = (this.selectedDeckIdx + 1) % this.decks.length;
@@ -117,22 +132,41 @@ export class MenuScene extends Phaser.Scene {
             this.playTick();
         });
 
-        this.weaponText = this.add.text(controlX, y + optionSpacing, 'WEAPON: ' + this.weapons[this.selectedWeaponIdx].name, {
+        this.weaponText = this.add.text(controlX, y + optionSpacing * 0.65, 'WEAPON: ' + this.weapons[this.selectedWeaponIdx].name, {
             fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ffffff'
         }).setOrigin(0.5);
 
-        this.statsText = this.add.text(controlX, y + optionSpacing + 20, '', {
+        this.statsText = this.add.text(controlX, y + optionSpacing * 0.65 + 20, '', {
             fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#ffea00'
         }).setOrigin(0.5);
 
         this.updateWeaponStats();
-        const weaponBtn = this.add.rectangle(controlX, y + optionSpacing, w * 0.6, 32, 0x000000, 0);
+        const weaponBtn = this.add.rectangle(controlX, y + optionSpacing * 0.65, w * 0.6, 32, 0x000000, 0);
         weaponBtn.setInteractive({ cursor: 'pointer' });
         weaponBtn.on('pointerdown', () => {
             this.selectedWeaponIdx = (this.selectedWeaponIdx + 1) % this.weapons.length;
             this.weaponText.setText('WEAPON: ' + this.weapons[this.selectedWeaponIdx].name.toUpperCase());
             this.updateWeaponStats();
             this.updateRiderPreview();
+            this.playTick();
+        });
+
+        this.districtText = this.add.text(controlX, y + optionSpacing * 1.65, 'DISTRICT: ' + this.getSelectedDistrict().name, {
+            fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#ffffff', align: 'center'
+        }).setOrigin(0.5);
+
+        this.districtHintText = this.add.text(controlX, y + optionSpacing * 1.65 + 22, this.getSelectedDistrict().tagline.toUpperCase(), {
+            fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#00f0ff', align: 'center', wordWrap: { width: w * 0.62 }
+        }).setOrigin(0.5);
+
+        const districtBtn = this.add.rectangle(controlX, y + optionSpacing * 1.65, w * 0.66, 36, 0x000000, 0);
+        districtBtn.setInteractive({ cursor: 'pointer' });
+        districtBtn.on('pointerdown', () => {
+            this.selectedDistrictIdx = (this.selectedDistrictIdx + 1) % this.districts.length;
+            const district = this.getSelectedDistrict();
+            this.districtText.setText('DISTRICT: ' + district.name.toUpperCase());
+            this.districtHintText.setText(district.tagline.toUpperCase());
+            this.bgImage?.setTint(district.palette.sky);
             this.playTick();
         });
     }
@@ -340,7 +374,12 @@ export class MenuScene extends Phaser.Scene {
     }
 
     launchGameScene() {
+        const district = this.getSelectedDistrict();
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get('room') || 'cyber-joust-lobby';
+        window.history.replaceState({}, '', `?room=${roomId}&district=${district.slug}`);
         const payload = {
+            district: district.slug,
             cosmetics: {
                 colorName: this.colors[this.selectedColorIdx].name,
                 color: this.colors[this.selectedColorIdx].value,
@@ -354,11 +393,12 @@ export class MenuScene extends Phaser.Scene {
     }
 
     copyRoomLink() {
+        const district = this.getSelectedDistrict();
         const uniqueSegment = typeof crypto?.randomUUID === 'function'
             ? crypto.randomUUID().slice(0, 8)
             : Math.random().toString(36).slice(2, 10);
         const lobbyId = `room-${uniqueSegment}`;
-        const shareUrl = `${window.location.origin}${window.location.pathname}?room=${lobbyId}`;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?room=${lobbyId}&district=${district.slug}`;
 
         navigator.clipboard.writeText(shareUrl).then(() => {
             const notify = this.add.text(this.scale.width / 2, this.scale.height - 30, 'ROOM LINK COPIED! SHARE WITH A FRIEND!', {
@@ -374,7 +414,7 @@ export class MenuScene extends Phaser.Scene {
             });
         }).catch((err) => console.warn('Clipboard access denied.', err));
 
-        window.history.replaceState({}, '', `?room=${lobbyId}`);
+        window.history.replaceState({}, '', `?room=${lobbyId}&district=${district.slug}`);
         this.launchGameScene();
     }
 
