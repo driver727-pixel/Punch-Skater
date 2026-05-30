@@ -79,7 +79,7 @@ export class MenuScene extends Phaser.Scene {
 
     syncDistrictFromQuery() {
         const params = new URLSearchParams(window.location.search);
-        const district = getCyberJoustDistrict(params.get('district') || DEFAULT_CYBER_JOUST_DISTRICT.slug);
+        const district = getCyberJoustDistrict(params.get('district'));
         const idx = this.districts.findIndex((entry) => entry.slug === district.slug);
         this.selectedDistrictIdx = idx >= 0 ? idx : 0;
     }

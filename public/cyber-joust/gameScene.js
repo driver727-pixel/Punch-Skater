@@ -31,6 +31,17 @@ const RIDER_VISOR_HEIGHT = 10.8;
 const FLIP_VELOCITY_THRESHOLD = 300;
 const CLASH_THRESHOLD = 48;
 const BOUNCE_HEIGHT_MARGIN = 12;
+const BACKDROP_ALPHA = 0.46;
+const SKYLINE_TOWER_COUNT = 8;
+const SKYLINE_BASE_OFFSET = 70;
+const SKYLINE_TOWER_WIDTH_RATIO = 0.055;
+const SKYLINE_TOWER_ALPHA = 0.38;
+const SKYLINE_TOWER_MIN_HEIGHT_RATIO = 0.16;
+const SKYLINE_TOWER_MAX_HEIGHT_RATIO = 0.36;
+const BACKDROP_NODE_COUNT = 18;
+const BACKDROP_NODE_MIN_Y = 80;
+const BACKDROP_NODE_FALLBACK_MAX_Y = 90;
+const BACKDROP_NODE_MAX_HEIGHT_RATIO = 0.55;
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -165,18 +176,28 @@ export class GameScene extends Phaser.Scene {
 
     createDistrictBackdrop(width, height) {
         const palette = this.district.palette;
-        this.add.rectangle(width / 2, height / 2, width, height, palette.sky, 0.46).setDepth(-2);
-        for (let i = 0; i < 8; i++) {
-            const x = (width / 9) * (i + 1);
-            const h = Phaser.Math.Between(Math.floor(height * 0.16), Math.floor(height * 0.36));
-            const tower = this.add.rectangle(x, height - 70 - h / 2, width * 0.055, h, palette.platform, 0.38).setDepth(-1);
+        this.add.rectangle(width / 2, height / 2, width, height, palette.sky, BACKDROP_ALPHA).setDepth(-2);
+        for (let i = 0; i < SKYLINE_TOWER_COUNT; i++) {
+            const x = (width / (SKYLINE_TOWER_COUNT + 1)) * (i + 1);
+            const h = Phaser.Math.Between(
+                Math.floor(height * SKYLINE_TOWER_MIN_HEIGHT_RATIO),
+                Math.floor(height * SKYLINE_TOWER_MAX_HEIGHT_RATIO)
+            );
+            const tower = this.add.rectangle(
+                x,
+                height - SKYLINE_BASE_OFFSET - h / 2,
+                width * SKYLINE_TOWER_WIDTH_RATIO,
+                h,
+                palette.platform,
+                SKYLINE_TOWER_ALPHA
+            ).setDepth(-1);
             tower.setStrokeStyle(1, i % 2 ? palette.primary : palette.secondary, 0.35);
-            this.add.rectangle(x, height - 88 - h, width * 0.04, 3, i % 2 ? palette.accent : palette.primary, 0.6).setDepth(-1);
+            this.add.rectangle(x, height - SKYLINE_BASE_OFFSET - 18 - h, width * 0.04, 3, i % 2 ? palette.accent : palette.primary, 0.6).setDepth(-1);
         }
 
-        for (let i = 0; i < 18; i++) {
+        for (let i = 0; i < BACKDROP_NODE_COUNT; i++) {
             const x = Phaser.Math.Between(20, width - 20);
-            const y = Phaser.Math.Between(80, Math.max(90, height * 0.55));
+            const y = Phaser.Math.Between(BACKDROP_NODE_MIN_Y, Math.max(BACKDROP_NODE_FALLBACK_MAX_Y, height * BACKDROP_NODE_MAX_HEIGHT_RATIO));
             const node = this.add.circle(x, y, Phaser.Math.Between(1, 3), i % 2 ? palette.primary : palette.secondary, 0.6).setDepth(-1);
             this.tweens.add({
                 targets: node,
