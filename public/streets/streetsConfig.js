@@ -326,6 +326,7 @@ export function parseStreetsConfig(search = (typeof window !== 'undefined' ? win
     player.cosmetics.characterTextureKey = STREETS_DYNAMIC_TEXTURES.playerSprite;
   } else {
     player.cosmetics.characterImageUrl = null;
+    player.cosmetics.characterTextureKey = null;
   }
 
   const launchedFromMission = Boolean(

@@ -58,8 +58,9 @@ function hashString(value = '') {
 }
 
 function mulberry32(seed) {
+  let state = seed;
   return () => {
-    let t = seed += 0x6d2b79f5;
+    let t = state += 0x6d2b79f5;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -150,7 +151,7 @@ export class StreetsGameScene extends Phaser.Scene {
 
   createLevelProfile() {
     const variants = ['underpass', 'market', 'rooftop', 'station'];
-    const variant = variants[Math.floor(this.rng() * variants.length)] || variants[0];
+    const variant = variants[Math.floor(this.rng() * variants.length)];
     return {
       variant,
       lengthBonus: Math.floor(this.rng() * 3) * 160,
@@ -163,7 +164,10 @@ export class StreetsGameScene extends Phaser.Scene {
 
   getWaveCounts() {
     const base = this.mission?.waves ?? [3, 4];
-    return base.map((count, idx) => count + (idx === base.length - 1 ? this.levelProfile.waveBonus : 0));
+    return base.map((count, idx) => {
+      const isLastWave = idx === base.length - 1;
+      return count + (isLastWave ? this.levelProfile.waveBonus : 0);
+    });
   }
 
   buildBackdrop() {
