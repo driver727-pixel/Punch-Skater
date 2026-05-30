@@ -6,9 +6,9 @@ import { getReferralCreditCount } from "../services/referrals";
 /**
  * ReferralPanel
  *
- * Shown on the Card Forge page when the user is logged in.
+ * Shown in the Card Forge economy area when the user is logged in.
  * Displays their personal referral link and the number of credits they have
- * earned from referrals.  When a friend visits via the link the referrer's
+ * earned from referrals. When a friend visits via the link the referrer's
  * credit count (stored in Firestore) is incremented.
  */
 export function ReferralPanel() {
