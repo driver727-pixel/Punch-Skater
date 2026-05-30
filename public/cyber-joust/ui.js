@@ -33,8 +33,8 @@ export class MenuScene extends Phaser.Scene {
         const { width, height } = this.scale;
         this.syncDistrictFromQuery();
 
-        const bg = this.add.image(width / 2, height / 2, 'cyber-bg');
-        bg.setDisplaySize(width, height).setAlpha(0.65).setTint(this.getSelectedDistrict().palette.sky);
+        this.bgImage = this.add.image(width / 2, height / 2, 'cyber-bg');
+        this.bgImage.setDisplaySize(width, height).setAlpha(0.65).setTint(this.getSelectedDistrict().palette.sky);
 
         this.add.text(width / 2, height * 0.12, 'CYBER JOUST', {
             fontFamily: '"Press Start 2P"', fontSize: 'min(38px, 6vw)', color: '#ff007f', stroke: '#00f0ff', strokeThickness: 5
@@ -166,6 +166,7 @@ export class MenuScene extends Phaser.Scene {
             const district = this.getSelectedDistrict();
             this.districtText.setText('DISTRICT: ' + district.name.toUpperCase());
             this.districtHintText.setText(district.tagline.toUpperCase());
+            this.bgImage?.setTint(district.palette.sky);
             this.playTick();
         });
     }
@@ -373,8 +374,12 @@ export class MenuScene extends Phaser.Scene {
     }
 
     launchGameScene() {
+        const district = this.getSelectedDistrict();
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get('room') || 'cyber-joust-lobby';
+        window.history.replaceState({}, '', `?room=${roomId}&district=${district.slug}`);
         const payload = {
-            district: this.getSelectedDistrict().slug,
+            district: district.slug,
             cosmetics: {
                 colorName: this.colors[this.selectedColorIdx].name,
                 color: this.colors[this.selectedColorIdx].value,
