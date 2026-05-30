@@ -130,7 +130,17 @@ export function getStaticFrameBackUrl(rarity: Rarity): string | null {
   return FRAME_ASSETS[rarity]?.backUrl ?? null;
 }
 
+/**
+ * Rarities that have a procedural SVG frame implementation in CardFrame.tsx.
+ * Keep this in sync with the rarity checks in CardFrameComponent there.
+ */
+const SVG_FRAME_RARITIES: ReadonlySet<Rarity> = new Set<Rarity>(["Punch Skater™", "Legendary"]);
+
 export function shouldRenderSvgFrame(rarity: Rarity, frameUrl?: string): boolean {
+  // Only attempt an SVG frame for rarities that have an implementation in CardFrame.
+  // All other rarities produce an empty <g>, which silently disappears when embedded
+  // inline but causes an onerror when loaded as img.src during card download.
+  if (!SVG_FRAME_RARITIES.has(rarity)) return false;
   if (!frameUrl) return true;
   // Any rarity that registers a back-face frame ships real card-sized PNG frames
   // for both faces — render the PNG instead of the procedural SVG overlay.
