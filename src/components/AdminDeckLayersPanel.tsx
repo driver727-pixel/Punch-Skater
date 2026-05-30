@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { auth } from "../lib/firebase";
 import type { CardPayload } from "../lib/types";
 import { DISTRICT_RIVALS, type DistrictRival } from "../lib/rivals";
@@ -55,6 +55,83 @@ const ALL_LAYERS_OFF: LayerToggles = {
   character: false,
   frame: false,
 };
+
+// ── Export helpers ─────────────────────────────────────────────────────────────
+
+/** Render a card's visible layers onto a canvas and return a PNG blob. */
+async function renderCardToPng(
+  card: CardPayload,
+  toggles: LayerToggles,
+  width = 320,
+  height = 448,
+): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+
+  // Transparent background — do not fill
+
+  const layerUrls: { url: string; zIndex: number }[] = [];
+
+  if (toggles.background && card.backgroundImageUrl) {
+    layerUrls.push({ url: card.backgroundImageUrl, zIndex: 0 });
+  }
+  if (toggles.board && card.board?.imageUrl) {
+    layerUrls.push({ url: card.board.imageUrl, zIndex: getBoardLayerZIndex(card.board?.layerOrder) });
+  }
+  if (toggles.character && card.characterImageUrl) {
+    layerUrls.push({ url: card.characterImageUrl, zIndex: CHARACTER_LAYER_Z_INDEX });
+  }
+  if (toggles.frame && card.frameImageUrl) {
+    layerUrls.push({ url: card.frameImageUrl, zIndex: 10 });
+  }
+
+  // Sort by z-index to draw in correct order
+  layerUrls.sort((a, b) => a.zIndex - b.zIndex);
+
+  for (const layer of layerUrls) {
+    const img = await loadImage(layer.url);
+    ctx.drawImage(img, 0, 0, width, height);
+  }
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Canvas toBlob failed"))),
+      "image/png",
+    );
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.src = src;
+  });
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 60) || "card";
+}
+
+interface ExportEntry {
+  card: CardPayload;
+  toggles: LayerToggles;
+}
 
 // ── Layer toggle controls ──────────────────────────────────────────────────────
 
@@ -209,6 +286,47 @@ function CardLayerPreview({ card, toggles }: CardLayerPreviewProps) {
   );
 }
 
+// ── Export toolbar ──────────────────────────────────────────────────────────────
+
+interface ExportToolbarProps {
+  selectedCount: number;
+  totalCount: number;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  onExportSelected: () => void;
+  exporting: boolean;
+}
+
+function ExportToolbar({
+  selectedCount,
+  totalCount,
+  onSelectAll,
+  onDeselectAll,
+  onExportSelected,
+  exporting,
+}: ExportToolbarProps) {
+  return (
+    <div className="adlp-export-toolbar">
+      <span className="adlp-export-count">
+        {selectedCount} of {totalCount} selected
+      </span>
+      <button className="adlp-export-btn adlp-export-btn--select" onClick={onSelectAll} disabled={exporting}>
+        ☑ Select All
+      </button>
+      <button className="adlp-export-btn adlp-export-btn--select" onClick={onDeselectAll} disabled={exporting}>
+        ☐ Deselect All
+      </button>
+      <button
+        className="adlp-export-btn adlp-export-btn--download"
+        onClick={onExportSelected}
+        disabled={selectedCount === 0 || exporting}
+      >
+        {exporting ? "⏳ Exporting…" : `📥 Download${selectedCount > 1 ? ` (${selectedCount})` : ""}`}
+      </button>
+    </div>
+  );
+}
+
 // ── Deck section ───────────────────────────────────────────────────────────────
 
 interface DeckSectionProps {
@@ -218,6 +336,60 @@ interface DeckSectionProps {
 function DeckSection({ deck }: DeckSectionProps) {
   const [expanded, setExpanded] = useState(true);
   const [globalToggles, setGlobalToggles] = useState<LayerToggles>(ALL_LAYERS_ON);
+  const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
+
+  // Track per-card toggles for export
+  const cardTogglesRef = useRef<Map<string, LayerToggles>>(new Map());
+
+  function handleCardToggleChange(cardId: string, toggles: LayerToggles) {
+    cardTogglesRef.current.set(cardId, toggles);
+  }
+
+  function toggleCardSelection(cardId: string) {
+    setSelectedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) next.delete(cardId);
+      else next.add(cardId);
+      return next;
+    });
+  }
+
+  function selectAll() {
+    setSelectedCards(new Set(deck.cards.map((c) => c.id)));
+  }
+
+  function deselectAll() {
+    setSelectedCards(new Set());
+  }
+
+  async function handleExportSelected() {
+    if (selectedCards.size === 0) return;
+    setExporting(true);
+    try {
+      const entries: ExportEntry[] = deck.cards
+        .filter((c) => selectedCards.has(c.id))
+        .map((card) => ({
+          card,
+          toggles: cardTogglesRef.current.get(card.id) ?? globalToggles,
+        }));
+
+      for (const { card, toggles } of entries) {
+        const blob = await renderCardToPng(card, toggles);
+        const name = sanitizeFilename(card.identity?.name ?? card.id);
+        downloadBlob(blob, `${name}.png`);
+        // Small delay between downloads so browser doesn't block them
+        if (entries.length > 1) {
+          await new Promise((r) => setTimeout(r, 300));
+        }
+      }
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Export failed. Some card images may not be available for cross-origin download. Check that all image URLs are accessible.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="adlp-deck">
@@ -242,19 +414,46 @@ function DeckSection({ deck }: DeckSectionProps) {
       </div>
 
       {expanded && (
-        <div className="adlp-card-grid">
-          {deck.cards.map((card) => (
-            <CardTileWithGlobal
-              key={card.id}
-              card={card}
-              isChallengerCard={deck.challengerCardId === card.id}
-              globalToggles={globalToggles}
+        <>
+          {deck.cards.length > 0 && (
+            <ExportToolbar
+              selectedCount={selectedCards.size}
+              totalCount={deck.cards.length}
+              onSelectAll={selectAll}
+              onDeselectAll={deselectAll}
+              onExportSelected={handleExportSelected}
+              exporting={exporting}
             />
-          ))}
-          {deck.cards.length === 0 && (
-            <p className="adlp-empty">This deck has no cards.</p>
           )}
-        </div>
+          <div className="adlp-card-grid">
+            {deck.cards.map((card) => (
+              <CardTileWithGlobal
+                key={card.id}
+                card={card}
+                isChallengerCard={deck.challengerCardId === card.id}
+                globalToggles={globalToggles}
+                selected={selectedCards.has(card.id)}
+                onToggleSelect={() => toggleCardSelection(card.id)}
+                onToggleChange={(t) => handleCardToggleChange(card.id, t)}
+                onExportSingle={async (toggles) => {
+                  setExporting(true);
+                  try {
+                    const blob = await renderCardToPng(card, toggles);
+                    const name = sanitizeFilename(card.identity?.name ?? card.id);
+                    downloadBlob(blob, `${name}.png`);
+                  } catch {
+                    alert(`Export failed for "${card.identity?.name ?? card.id}". The image may not be available for cross-origin download.`);
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+              />
+            ))}
+            {deck.cards.length === 0 && (
+              <p className="adlp-empty">This deck has no cards.</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -265,45 +464,73 @@ interface CardTileWithGlobalProps {
   card: CardPayload;
   isChallengerCard: boolean;
   globalToggles: LayerToggles;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onToggleChange: (toggles: LayerToggles) => void;
+  onExportSingle: (toggles: LayerToggles) => void;
 }
 
-function CardTileWithGlobal({ card, isChallengerCard, globalToggles }: CardTileWithGlobalProps) {
+function CardTileWithGlobal({
+  card,
+  isChallengerCard,
+  globalToggles,
+  selected,
+  onToggleSelect,
+  onToggleChange,
+  onExportSingle,
+}: CardTileWithGlobalProps) {
   // Individual overrides start synced to global, then diverge if user changes them
   const [overridden, setOverridden] = useState(false);
   const [localToggles, setLocalToggles] = useState<LayerToggles>(globalToggles);
+  const onToggleChangeRef = useRef(onToggleChange);
+  onToggleChangeRef.current = onToggleChange;
 
   // Sync with global when not overridden
   useEffect(() => {
     if (!overridden) {
       setLocalToggles(globalToggles);
+      onToggleChangeRef.current(globalToggles);
     }
   }, [globalToggles, overridden]);
 
   function handleChange(t: LayerToggles) {
     setOverridden(true);
     setLocalToggles(t);
+    onToggleChange(t);
   }
 
   return (
-    <div className="adlp-card-tile">
-      <div className="adlp-card-tile-name">
-        {card.identity?.name ?? "—"}
-        {isChallengerCard && <span className="adlp-challenger-badge">⚡ Challenger</span>}
-        {overridden && (
-          <button
-            className="adlp-reset-btn"
-            onClick={() => { setOverridden(false); setLocalToggles(globalToggles); }}
-            title="Reset to deck-wide toggles"
-          >
-            ↺
-          </button>
-        )}
+    <div className={`adlp-card-tile${selected ? " adlp-card-tile--selected" : ""}`}>
+      <div className="adlp-card-tile-top">
+        <label className="adlp-card-select" title="Select for export">
+          <input type="checkbox" checked={selected} onChange={onToggleSelect} />
+        </label>
+        <div className="adlp-card-tile-name">
+          {card.identity?.name ?? "—"}
+          {isChallengerCard && <span className="adlp-challenger-badge">⚡ Challenger</span>}
+          {overridden && (
+            <button
+              className="adlp-reset-btn"
+              onClick={() => { setOverridden(false); setLocalToggles(globalToggles); onToggleChange(globalToggles); }}
+              title="Reset to deck-wide toggles"
+            >
+              ↺
+            </button>
+          )}
+        </div>
       </div>
       <div className="adlp-card-tile-sub">
         {card.prompts?.rarity} · {card.prompts?.archetype}
       </div>
       <CardLayerPreview card={card} toggles={localToggles} />
       <LayerToggleBar toggles={localToggles} onChange={handleChange} />
+      <button
+        className="adlp-export-btn adlp-export-btn--single"
+        onClick={() => onExportSingle(localToggles)}
+        title="Download this card as PNG"
+      >
+        📥 Export
+      </button>
     </div>
   );
 }
