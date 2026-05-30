@@ -553,6 +553,8 @@ function buildStreetsLaunchUrl(
   runId: string,
   nodeId: string | null,
   card: CardPayload | null,
+  world: DistrictWorld | null,
+  visuals: DistrictWorldVisuals | null,
 ): string {
   const params = new URLSearchParams();
   if (option.streetsMissionId) params.set("mission", option.streetsMissionId);
@@ -562,6 +564,15 @@ function buildStreetsLaunchUrl(
   if (nodeId) params.set("nodeId", nodeId);
   params.set("choiceId", option.id);
   params.set("returnTo", STREETS_RETURN_PATH);
+  params.set("levelSeed", [
+    world?.boardDateKey,
+    runId,
+    nodeId,
+    option.streetsMissionId,
+  ].filter(Boolean).join(":"));
+  if (visuals?.backdrop && !visuals.backdrop.fallback && visuals.backdrop.url) {
+    params.set("levelBackdrop", visuals.backdrop.url);
+  }
 
   if (card) {
     const name = card.identity?.name;
@@ -1197,9 +1208,9 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
   const handleLaunchStreets = useCallback((option: MissionEncounterOption) => {
     if (!activeRun) return;
     const nodeId = activeRun.encounter?.triggeredAtNodeId ?? null;
-    const url = buildStreetsLaunchUrl(option, activeRun.runId, nodeId, runnerCard);
+    const url = buildStreetsLaunchUrl(option, activeRun.runId, nodeId, runnerCard, world, visuals);
     window.location.href = url;
-  }, [activeRun, runnerCard]);
+  }, [activeRun, runnerCard, visuals, world]);
 
   // When the Streets game bounces back with ?streetsResult=win|lose, resolve the
   // active encounter once: a win banks the launch option's reward, a loss banks

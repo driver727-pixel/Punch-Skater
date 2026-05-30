@@ -35,6 +35,24 @@ const ENEMY_ATTACK_COOLDOWN_MS = 950;
 const ENEMY_ATTACK_RANGE = 64;
 const HORDE_CAP = 7;
 
+function hashString(value = '') {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function mulberry32(seed) {
+  return () => {
+    let t = seed += 0x6d2b79f5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 export class StreetsGameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'StreetsGameScene' });
@@ -48,6 +66,9 @@ export class StreetsGameScene extends Phaser.Scene {
       || this.mission?.objective
       || STREETS_OBJECTIVES.fight_through.id;
     this.districtId = this.config.districtId || this.mission?.district || 'nightshade';
+    this.levelSeed = String(this.config.levelSeed || this.missionId || this.districtId || 'streets');
+    this.rng = mulberry32(hashString(this.levelSeed));
+    this.levelProfile = null;
 
     this.enemies = [];
     this.gates = [];
@@ -68,6 +89,7 @@ export class StreetsGameScene extends Phaser.Scene {
     const { height } = this.scale;
     this.district = STREETS_DISTRICTS[this.districtId] || STREETS_DISTRICTS.nightshade;
     this.groundY = height - 90;
+    this.levelProfile = this.createLevelProfile();
     this.levelWidth = this.computeLevelWidth();
 
     this.physics.world.setBounds(0, 0, this.levelWidth, height);
@@ -75,6 +97,7 @@ export class StreetsGameScene extends Phaser.Scene {
 
     this.buildBackdrop();
     this.buildGround();
+    this.buildSetDressing();
     this.buildParticles();
 
     // Player fighter — stats from the launching card (or sane defaults).
@@ -105,11 +128,29 @@ export class StreetsGameScene extends Phaser.Scene {
   }
 
   computeLevelWidth() {
-    const waves = this.mission?.waves ?? [3, 4];
+    const waves = this.getWaveCounts();
     if (this.objectiveId === STREETS_OBJECTIVES.escape.id) {
-      return Math.max(3200, this.scale.width * 4);
+      return Math.max(3200 + this.levelProfile.lengthBonus, this.scale.width * 4);
     }
-    return LEVEL_PADDING + waves.length * GATE_SPACING + LEVEL_PADDING;
+    return LEVEL_PADDING + waves.length * GATE_SPACING + LEVEL_PADDING + this.levelProfile.lengthBonus;
+  }
+
+  createLevelProfile() {
+    const variants = ['underpass', 'market', 'rooftop', 'station'];
+    const variant = variants[Math.floor(this.rng() * variants.length)] || variants[0];
+    return {
+      variant,
+      lengthBonus: Math.floor(this.rng() * 3) * 160,
+      waveBonus: this.rng() > 0.62 ? 1 : 0,
+      signDensity: 0.65 + this.rng() * 0.55,
+      propDensity: 0.7 + this.rng() * 0.75,
+      railHue: this.rng() > 0.5 ? this.district.groundEdge : this.district.accent,
+    };
+  }
+
+  getWaveCounts() {
+    const base = this.mission?.waves ?? [3, 4];
+    return base.map((count, idx) => count + (idx === base.length - 1 ? this.levelProfile.waveBonus : 0));
   }
 
   buildBackdrop() {
@@ -119,20 +160,45 @@ export class StreetsGameScene extends Phaser.Scene {
     sky.fillGradientStyle(this.district.skyTop, this.district.skyTop, this.district.skyBottom, this.district.skyBottom, 1);
     sky.fillRect(0, 0, width, height);
 
+    if (this.config.levelBackdropTextureKey && this.textures.exists(this.config.levelBackdropTextureKey)) {
+      this.add.image(width / 2, height / 2, this.config.levelBackdropTextureKey)
+        .setDisplaySize(width, height)
+        .setScrollFactor(0)
+        .setDepth(-29)
+        .setAlpha(0.42);
+    }
+
     // Parallax neon skyline silhouettes across the level.
     const mid = this.add.graphics().setDepth(-20).setScrollFactor(0.4);
     mid.fillStyle(this.district.ground, 1);
     for (let x = 0; x < this.levelWidth; x += 140) {
-      const h = 90 + ((x * 37) % 160);
-      mid.fillRect(x, this.groundY - h, 90, h);
+      const h = 90 + ((x * 37 + hashString(this.levelSeed)) % 180);
+      const w = 70 + ((x * 17) % 60);
+      mid.fillRect(x, this.groundY - h, w, h);
       mid.lineStyle(2, this.district.accent, 0.5);
-      mid.strokeRect(x, this.groundY - h, 90, h);
+      mid.strokeRect(x, this.groundY - h, w, h);
+      for (let wy = this.groundY - h + 18; wy < this.groundY - 20; wy += 30) {
+        if (((x + wy) % 3) === 0) {
+          mid.fillStyle(this.district.haze, 0.55);
+          mid.fillRect(x + 12, wy, 10, 4);
+          mid.fillStyle(this.district.ground, 1);
+        }
+      }
     }
 
     // Far haze band for depth.
     const haze = this.add.graphics().setDepth(-25).setScrollFactor(0.15);
     haze.fillStyle(this.district.haze, 0.06);
     haze.fillRect(0, this.groundY - 260, this.levelWidth, 260);
+
+    const far = this.add.graphics().setDepth(-26).setScrollFactor(0.08);
+    far.lineStyle(1, this.district.haze, 0.22);
+    for (let x = 0; x < this.levelWidth; x += 95) {
+      const y = 60 + ((x * 19 + hashString(this.levelProfile.variant)) % 160);
+      far.lineBetween(x, y, x + 36, y + 8);
+      far.fillStyle(this.district.haze, 0.25);
+      far.fillCircle(x + 42, y + 10, 2);
+    }
   }
 
   buildGround() {
@@ -154,6 +220,38 @@ export class StreetsGameScene extends Phaser.Scene {
     const lane = this.add.graphics().setDepth(-5);
     lane.lineStyle(2, this.district.groundEdge, 0.6);
     lane.lineBetween(0, this.groundY, this.levelWidth, this.groundY);
+  }
+
+  buildSetDressing() {
+    const props = this.add.graphics().setDepth(-3);
+    const rail = this.add.graphics().setDepth(-2);
+    rail.lineStyle(4, this.levelProfile.railHue, 0.7);
+    for (let x = 260; x < this.levelWidth - 260; x += Math.round(360 / this.levelProfile.propDensity)) {
+      const y = this.groundY - 18 - Math.floor(this.rng() * 28);
+      rail.lineBetween(x, y, x + 160, y - 8);
+      rail.lineStyle(1, 0xffffff, 0.35);
+      rail.lineBetween(x, y + 9, x + 160, y + 1);
+      rail.lineStyle(4, this.levelProfile.railHue, 0.7);
+    }
+
+    for (let x = 120; x < this.levelWidth - 120; x += Math.round(180 / this.levelProfile.signDensity)) {
+      const tall = this.rng() > 0.45;
+      const signY = this.groundY - (tall ? 128 : 74);
+      props.lineStyle(2, this.district.groundEdge, 0.65);
+      props.lineBetween(x, this.groundY, x, signY);
+      props.fillStyle(this.rng() > 0.5 ? this.district.accent : this.district.groundEdge, 0.78);
+      props.fillRoundedRect(x - 30, signY - 16, 60, 24, 5);
+      props.lineStyle(1, 0xffffff, 0.45);
+      props.strokeRoundedRect(x - 30, signY - 16, 60, 24, 5);
+    }
+
+    const foreground = this.add.graphics().setScrollFactor(1.18).setDepth(20);
+    foreground.lineStyle(3, this.district.haze, 0.16);
+    for (let x = -80; x < this.levelWidth; x += 210) {
+      foreground.lineBetween(x, this.groundY + 42, x + 130, this.groundY + 34);
+      foreground.fillStyle(0x050510, 0.42);
+      foreground.fillRect(x + 35, this.groundY + 38, 18, 50);
+    }
   }
 
   buildParticles() {
@@ -179,7 +277,7 @@ export class StreetsGameScene extends Phaser.Scene {
   }
 
   buildWaveGates() {
-    const waves = this.mission?.waves ?? [3, 4];
+    const waves = this.getWaveCounts();
     waves.forEach((count, idx) => {
       const isLast = idx === waves.length - 1;
       this.gates.push({

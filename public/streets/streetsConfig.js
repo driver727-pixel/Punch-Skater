@@ -186,6 +186,11 @@ const DEFAULT_COSMETICS = Object.freeze({
   weapon: 'Crutch Lance',
 });
 
+export const STREETS_DYNAMIC_TEXTURES = Object.freeze({
+  backdrop: 'streets-generated-backdrop',
+  playerSprite: 'streets-player-sprite',
+});
+
 /** Clamp helper that tolerates NaN / non-finite input. */
 function clampNumber(value, min, max, fallback) {
   const num = Number(value);
@@ -212,6 +217,8 @@ export function mapStatsToFighter(stats = {}, joust = {}) {
   const lance = clampNumber(joust.lance, 0, 100, 50);
   const shield = clampNumber(joust.shield, 0, 100, 50);
   const hype = clampNumber(joust.hype, 0, 100, 50);
+
+  const levelBackdropUrl = sanitizeMediaUrl(params.get('levelBackdrop'));
 
   return {
     // Grit is survivability.
@@ -273,6 +280,18 @@ export function sanitizeReturnTo(raw) {
   return raw;
 }
 
+export function sanitizeMediaUrl(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const value = raw.trim();
+  if (value.startsWith('/')) return value.startsWith('//') ? null : value;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Parse the launch configuration from the current URL. Everything is optional;
  * missing values fall back to a self-contained free-play default so the page
@@ -303,6 +322,14 @@ export function parseStreetsConfig(search = (typeof window !== 'undefined' ? win
     joust: readJoust(params, 'p'),
   };
 
+  const playerSpriteUrl = sanitizeMediaUrl(player.cosmetics.characterImageUrl);
+  if (playerSpriteUrl) {
+    player.cosmetics.characterImageUrl = playerSpriteUrl;
+    player.cosmetics.characterTextureKey = STREETS_DYNAMIC_TEXTURES.playerSprite;
+  } else {
+    player.cosmetics.characterImageUrl = null;
+  }
+
   const launchedFromMission = Boolean(
     params.get('runId') || params.get('mission') || params.get('returnTo'),
   );
@@ -319,5 +346,8 @@ export function parseStreetsConfig(search = (typeof window !== 'undefined' ? win
     choiceId: params.get('choiceId') || null,
     returnTo: sanitizeReturnTo(params.get('returnTo')),
     launchedFromMission,
+    levelSeed: params.get('levelSeed') || params.get('runId') || missionId || districtId,
+    levelBackdropUrl,
+    levelBackdropTextureKey: levelBackdropUrl ? STREETS_DYNAMIC_TEXTURES.backdrop : null,
   };
 }
