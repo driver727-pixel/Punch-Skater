@@ -34,6 +34,19 @@ const ENEMY_BASE_DAMAGE = 8;
 const ENEMY_ATTACK_COOLDOWN_MS = 950;
 const ENEMY_ATTACK_RANGE = 64;
 const HORDE_CAP = 7;
+const WAVE_BONUS_THRESHOLD = 0.62;
+const MIN_SIGN_DENSITY = 0.65;
+const SIGN_DENSITY_RANGE = 0.55;
+const MIN_PROP_DENSITY = 0.7;
+const PROP_DENSITY_RANGE = 0.75;
+const BUILDING_HEIGHT_MULTIPLIER = 37;
+const BUILDING_HEIGHT_VARIANCE = 180;
+const BUILDING_WIDTH_MULTIPLIER = 17;
+const BUILDING_WIDTH_VARIANCE = 60;
+const WINDOW_DENSITY_FACTOR = 3;
+const RAIL_BASE_OFFSET = 18;
+const RAIL_VERTICAL_VARIANCE = 28;
+const TALL_SIGN_THRESHOLD = 0.45;
 
 function hashString(value = '') {
   let hash = 2166136261;
@@ -141,9 +154,9 @@ export class StreetsGameScene extends Phaser.Scene {
     return {
       variant,
       lengthBonus: Math.floor(this.rng() * 3) * 160,
-      waveBonus: this.rng() > 0.62 ? 1 : 0,
-      signDensity: 0.65 + this.rng() * 0.55,
-      propDensity: 0.7 + this.rng() * 0.75,
+      waveBonus: this.rng() > WAVE_BONUS_THRESHOLD ? 1 : 0,
+      signDensity: MIN_SIGN_DENSITY + this.rng() * SIGN_DENSITY_RANGE,
+      propDensity: MIN_PROP_DENSITY + this.rng() * PROP_DENSITY_RANGE,
       railHue: this.rng() > 0.5 ? this.district.groundEdge : this.district.accent,
     };
   }
@@ -173,13 +186,13 @@ export class StreetsGameScene extends Phaser.Scene {
     const seedHash = hashString(this.levelSeed);
     mid.fillStyle(this.district.ground, 1);
     for (let x = 0; x < this.levelWidth; x += 140) {
-      const h = 90 + ((x * 37 + seedHash) % 180);
-      const w = 70 + ((x * 17) % 60);
+      const h = 90 + ((x * BUILDING_HEIGHT_MULTIPLIER + seedHash) % BUILDING_HEIGHT_VARIANCE);
+      const w = 70 + ((x * BUILDING_WIDTH_MULTIPLIER) % BUILDING_WIDTH_VARIANCE);
       mid.fillRect(x, this.groundY - h, w, h);
       mid.lineStyle(2, this.district.accent, 0.5);
       mid.strokeRect(x, this.groundY - h, w, h);
       for (let wy = this.groundY - h + 18; wy < this.groundY - 20; wy += 30) {
-        if (((x + wy) % 3) === 0) {
+        if (((x + wy) % WINDOW_DENSITY_FACTOR) === 0) {
           mid.fillStyle(this.district.haze, 0.55);
           mid.fillRect(x + 12, wy, 10, 4);
           mid.fillStyle(this.district.ground, 1);
@@ -229,7 +242,7 @@ export class StreetsGameScene extends Phaser.Scene {
     const rail = this.add.graphics().setDepth(-2);
     rail.lineStyle(4, this.levelProfile.railHue, 0.7);
     for (let x = 260; x < this.levelWidth - 260; x += Math.round(360 / this.levelProfile.propDensity)) {
-      const y = this.groundY - 18 - Math.floor(this.rng() * 28);
+      const y = this.groundY - RAIL_BASE_OFFSET - Math.floor(this.rng() * RAIL_VERTICAL_VARIANCE);
       rail.lineBetween(x, y, x + 160, y - 8);
       rail.lineStyle(1, 0xffffff, 0.35);
       rail.lineBetween(x, y + 9, x + 160, y + 1);
@@ -237,7 +250,7 @@ export class StreetsGameScene extends Phaser.Scene {
     }
 
     for (let x = 120; x < this.levelWidth - 120; x += Math.round(180 / this.levelProfile.signDensity)) {
-      const tall = this.rng() > 0.45;
+      const tall = this.rng() > TALL_SIGN_THRESHOLD;
       const signY = this.groundY - (tall ? 128 : 74);
       props.lineStyle(2, this.district.groundEdge, 0.65);
       props.lineBetween(x, this.groundY, x, signY);
