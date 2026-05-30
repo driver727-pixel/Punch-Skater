@@ -93,8 +93,8 @@ function toCssColor(color: number): string {
   return `#${color.toString(16).padStart(6, "0")}`;
 }
 
-function mixColor(color: number, target: number, blendAmount: number): number {
-  const ratio = Math.max(0, Math.min(1, blendAmount));
+function mixColor(color: number, target: number, blendFactor: number): number {
+  const ratio = Math.max(0, Math.min(1, blendFactor));
   const red = Math.round(((color >> 16) & 0xff) * (1 - ratio) + ((target >> 16) & 0xff) * ratio);
   const green = Math.round(((color >> 8) & 0xff) * (1 - ratio) + ((target >> 8) & 0xff) * ratio);
   const blue = Math.round((color & 0xff) * (1 - ratio) + (target & 0xff) * ratio);
@@ -141,18 +141,18 @@ function drawNeonCircle(
   x: number,
   y: number,
   radius: number,
-  fill: number,
-  stroke = 0xffffff,
+  fillColor: number,
+  strokeColor = 0xffffff,
 ): void {
   context.save();
-  context.shadowColor = toCssColor(fill);
+  context.shadowColor = toCssColor(fillColor);
   context.shadowBlur = 9;
-  context.fillStyle = toCssColor(fill);
+  context.fillStyle = toCssColor(fillColor);
   context.beginPath();
   context.arc(x, y, radius, 0, Math.PI * 2);
   context.fill();
   context.shadowBlur = 0;
-  context.strokeStyle = toCssColor(stroke);
+  context.strokeStyle = toCssColor(strokeColor);
   context.lineWidth = 1.25;
   context.stroke();
   context.fillStyle = "#05050c";
@@ -343,11 +343,11 @@ export function renderCyberJoustBodySprite(colorName: string, deck: string): HTM
   }, 8);
 
   if (deck === "Gridwave") {
-    for (let offset = -18; offset <= 18; offset += 9) {
+    for (let xOffset = -18; xOffset <= 18; xOffset += 9) {
       drawNeonStroke(context, accent, 0.8, () => {
         context.beginPath();
-        context.moveTo(offset - 5, 15);
-        context.lineTo(offset + 4, 23);
+        context.moveTo(xOffset - 5, 15);
+        context.lineTo(xOffset + 4, 23);
       }, 4);
     }
   } else if (deck === "ToxiCorp") {
