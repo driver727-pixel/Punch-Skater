@@ -6,7 +6,11 @@ import {
   buildBoardPlacementStyle,
   buildCharacterPlacementStyle,
   CHARACTER_LAYER_Z_INDEX,
+  getBoardPlacementBox,
   getBoardLayerZIndex,
+  getCharacterPlacementBox,
+  normalizeBoardPlacement,
+  normalizeCharacterPlacement,
 } from "../lib/boardPlacement";
 import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 import {
@@ -58,6 +62,114 @@ const ALL_LAYERS_OFF: LayerToggles = {
 
 // ── Export helpers ─────────────────────────────────────────────────────────────
 
+type ExportLayer =
+  | { type: "background"; url: string; zIndex: number; inset: boolean }
+  | { type: "board"; url: string; zIndex: number; card: CardPayload }
+  | { type: "character"; url: string; zIndex: number; card: CardPayload }
+  | { type: "frame"; url: string; zIndex: number };
+
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
+  const sourceWidth = width / scale;
+  const sourceHeight = height / scale;
+  const sourceX = (img.naturalWidth - sourceWidth) / 2;
+  const sourceY = (img.naturalHeight - sourceHeight) / 2;
+  ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+}
+
+function drawImageContain(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  objectPositionY: "center" | "bottom" = "center",
+) {
+  const scale = Math.min(width / img.naturalWidth, height / img.naturalHeight);
+  const drawWidth = img.naturalWidth * scale;
+  const drawHeight = img.naturalHeight * scale;
+  const drawX = x + (width - drawWidth) / 2;
+  const drawY = objectPositionY === "bottom"
+    ? y + height - drawHeight
+    : y + (height - drawHeight) / 2;
+  ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+}
+
+function drawPlacedLayer(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  centerX: number,
+  centerY: number,
+  boxWidth: number,
+  boxHeight: number,
+  rotationDeg: number,
+  objectPositionY?: "center" | "bottom",
+) {
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate((rotationDeg * Math.PI) / 180);
+  drawImageContain(ctx, img, -boxWidth / 2, -boxHeight / 2, boxWidth, boxHeight, objectPositionY);
+  ctx.restore();
+}
+
+function drawExportLayer(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  layer: ExportLayer,
+  width: number,
+  height: number,
+) {
+  if (layer.type === "background") {
+    const insetScale = layer.inset ? 0.9333 : 1;
+    const insetWidth = width * insetScale;
+    const insetHeight = height * insetScale;
+    drawImageCover(ctx, img, (width - insetWidth) / 2, (height - insetHeight) / 2, insetWidth, insetHeight);
+    return;
+  }
+
+  if (layer.type === "board") {
+    const boardPoseScene = resolveBoardPoseScene(layer.card.characterSeed);
+    const placement = normalizeBoardPlacement(boardPoseScene.key, layer.card.board?.placement);
+    const box = getBoardPlacementBox(boardPoseScene.key, placement.scale);
+    drawPlacedLayer(
+      ctx,
+      img,
+      (placement.xPercent / 100) * width,
+      (placement.yPercent / 100) * height,
+      (box.widthPercent / 100) * width,
+      (box.heightPercent / 100) * height,
+      placement.rotationDeg,
+    );
+    return;
+  }
+
+  if (layer.type === "character") {
+    const placement = normalizeCharacterPlacement(layer.card.characterPlacement);
+    const box = getCharacterPlacementBox(placement.scale);
+    drawPlacedLayer(
+      ctx,
+      img,
+      (placement.xPercent / 100) * width,
+      (placement.yPercent / 100) * height,
+      (box.widthPercent / 100) * width,
+      (box.heightPercent / 100) * height,
+      placement.rotationDeg,
+      "bottom",
+    );
+    return;
+  }
+
+  ctx.drawImage(img, 0, 0, width, height);
+}
+
 /** Render a card's visible layers onto a canvas and return a PNG blob. */
 async function renderCardToPng(
   card: CardPayload,
@@ -72,27 +184,42 @@ async function renderCardToPng(
 
   // Transparent background — do not fill
 
-  const layerUrls: { url: string; zIndex: number }[] = [];
+  const layers: ExportLayer[] = [];
 
   if (toggles.background && card.backgroundImageUrl) {
-    layerUrls.push({ url: card.backgroundImageUrl, zIndex: 0 });
+    layers.push({
+      type: "background",
+      url: card.backgroundImageUrl,
+      zIndex: 0,
+      inset: shouldInsetBackgroundForFrame(card.prompts.rarity, card.frameImageUrl),
+    });
   }
   if (toggles.board && card.board?.imageUrl) {
-    layerUrls.push({ url: card.board.imageUrl, zIndex: getBoardLayerZIndex(card.board?.layerOrder) });
+    layers.push({
+      type: "board",
+      url: card.board.imageUrl,
+      zIndex: getBoardLayerZIndex(card.board?.layerOrder),
+      card,
+    });
   }
   if (toggles.character && card.characterImageUrl) {
-    layerUrls.push({ url: card.characterImageUrl, zIndex: CHARACTER_LAYER_Z_INDEX });
+    layers.push({
+      type: "character",
+      url: card.characterImageUrl,
+      zIndex: CHARACTER_LAYER_Z_INDEX,
+      card,
+    });
   }
   if (toggles.frame && card.frameImageUrl) {
-    layerUrls.push({ url: card.frameImageUrl, zIndex: 10 });
+    layers.push({ type: "frame", url: card.frameImageUrl, zIndex: 10 });
   }
 
   // Sort by z-index to draw in correct order
-  layerUrls.sort((a, b) => a.zIndex - b.zIndex);
+  layers.sort((a, b) => a.zIndex - b.zIndex);
 
-  for (const layer of layerUrls) {
+  for (const layer of layers) {
     const img = await loadImage(layer.url);
-    ctx.drawImage(img, 0, 0, width, height);
+    drawExportLayer(ctx, img, layer, width, height);
   }
 
   return new Promise<Blob>((resolve, reject) => {
