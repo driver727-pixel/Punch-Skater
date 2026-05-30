@@ -1,3 +1,10 @@
+/**
+ * Pre-generated top-down Classic Race track concept data.
+ *
+ * `points` and `landmarks` use normalized canvas coordinates where 0,0 is the
+ * top-left of the preview/replay map and 1,1 is the bottom-right. The replay
+ * renderer scales those coordinates to its canvas and samples a closed circuit.
+ */
 export interface RaceTrackDefinition {
   district: string;
   name: string;

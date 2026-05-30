@@ -191,6 +191,10 @@ function sampleTrackPath(district: string): SampledTrackPoint[] {
   });
 }
 
+function normalizeTrackProgress(u: number) {
+  return ((u % 1) + 1) % 1;
+}
+
 function createTrackHelpers(district: string) {
   const path = sampleTrackPath(district);
   const closing = Math.hypot(path[0].x - path[path.length - 1].x, path[0].y - path[path.length - 1].y);
@@ -198,7 +202,7 @@ function createTrackHelpers(district: string) {
 
   /** Parametric circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
   function trackPoint(u: number) {
-    const targetDistance = ((u % 1) + 1) % 1 * totalDistance;
+    const targetDistance = normalizeTrackProgress(u) * totalDistance;
     const index = path.findIndex((sample) => sample.distance >= targetDistance);
     const currentIndex = index <= 0 ? 0 : index;
     const prev = currentIndex === 0 ? path[path.length - 1] : path[currentIndex - 1];

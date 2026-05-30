@@ -175,7 +175,7 @@ function RaceDistrictPicker({
         const theme = getDistrictTheme(option.slug);
         const track = getRaceTrackDefinition(option.slug);
         const active = district === option.slug;
-        const pathPoints = track.points.map(([x, y]) => `${(x * 100).toFixed(1)},${(y * 100).toFixed(1)}`).join(" ");
+        const svgPolygonPoints = track.points.map(([x, y]) => `${(x * 100).toFixed(1)},${(y * 100).toFixed(1)}`).join(" ");
         return (
           <button
             key={option.slug}
@@ -196,9 +196,9 @@ function RaceDistrictPicker({
                   </radialGradient>
                 </defs>
                 <rect width="100" height="100" rx="12" fill={`url(#race-track-bg-${option.slug})`} />
-                <polygon points={pathPoints} fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="14" strokeLinejoin="round" strokeLinecap="round" />
-                <polygon points={pathPoints} fill="none" stroke={theme.accent2} strokeWidth="8" strokeLinejoin="round" strokeLinecap="round" />
-                <polygon points={pathPoints} fill="none" stroke={theme.accent} strokeWidth="2" strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
+                <polygon points={svgPolygonPoints} fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="14" strokeLinejoin="round" strokeLinecap="round" />
+                <polygon points={svgPolygonPoints} fill="none" stroke={theme.accent2} strokeWidth="8" strokeLinejoin="round" strokeLinecap="round" />
+                <polygon points={svgPolygonPoints} fill="none" stroke={theme.accent} strokeWidth="2" strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
                 <circle cx={track.points[0][0] * 100} cy={track.points[0][1] * 100} r="4" fill="#fff" />
               </svg>
             </span>

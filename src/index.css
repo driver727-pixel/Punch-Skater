@@ -3681,7 +3681,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 
 .forge-review-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
 
