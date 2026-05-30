@@ -349,6 +349,168 @@ export function sfxRaceEvent(kind: RaceEventSfxKind) {
   }
 }
 
+// ── Joustur Skatur™ SFX ─────────────────────────────────────────────────────
+
+/** Joustur dice roll — a rattling percussive shimmer. */
+export function sfxJousturRoll() {
+  layeredTone("square", 0, 0.06, 1100, 0.08, 800);
+  layeredTone("triangle", 0.04, 0.06, 1400, 0.06, 1000);
+  layeredTone("square", 0.08, 0.06, 900, 0.07, 600);
+  layeredTone("triangle", 0.12, 0.08, 1200, 0.06, 700);
+  layeredTone("square", 0.18, 0.05, 700, 0.05, 500);
+}
+
+/** Joustur rider move — short advancing whoosh. */
+export function sfxJousturMove() {
+  layeredTone("triangle", 0, 0.14, 400, 0.1, 700);
+  layeredTone("sine", 0.04, 0.12, 600, 0.06, 900);
+}
+
+/** Joustur stealth alcove landing — sneaky electronic blip. */
+export function sfxJousturStealthAlcove() {
+  layeredTone("sine", 0, 0.08, 1800, 0.09, 2400);
+  layeredTone("square", 0.06, 0.1, 1200, 0.06, 1600);
+  layeredTone("sine", 0.14, 0.12, 2400, 0.05, 3200);
+}
+
+/** Joustur rider scored/exited the track — triumphant ascending chime. */
+export function sfxJousturRiderScored() {
+  layeredTone("triangle", 0, 0.18, 523, 0.12, 784);
+  layeredTone("sine", 0.08, 0.2, 784, 0.1, 1047);
+  layeredTone("triangle", 0.18, 0.22, 1047, 0.09, 1319);
+  layeredTone("sine", 0.28, 0.16, 1568, 0.06, 2093);
+}
+
+/** Joustur clash started — aggressive metallic impact. */
+export function sfxJousturClashStart() {
+  layeredTone("sawtooth", 0, 0.18, 180, 0.18, 90);
+  layeredTone("square", 0.02, 0.14, 440, 0.12, 220);
+  layeredTone("sawtooth", 0.08, 0.1, 880, 0.08, 440);
+}
+
+/** Joustur clash won — crowd-pleasing rising power chords. */
+export function sfxJousturClashWin() {
+  layeredTone("square", 0, 0.2, 523, 0.14, 659);
+  layeredTone("square", 0.1, 0.2, 659, 0.13, 784);
+  layeredTone("triangle", 0.2, 0.22, 784, 0.11, 1047);
+  layeredTone("sine", 0.3, 0.18, 1319, 0.06, 1568);
+}
+
+/** Joustur clash lost — deflating descending buzz. */
+export function sfxJousturClashLoss() {
+  layeredTone("sawtooth", 0, 0.3, 330, 0.16, 110);
+  layeredTone("triangle", 0.05, 0.25, 220, 0.12, 80);
+  layeredTone("square", 0.15, 0.15, 150, 0.08, 60);
+}
+
+/**
+ * Joustur audience applause — synthesized crowd noise burst (positive).
+ * Filtered white noise shaped to sound like a cheering crowd.
+ */
+export function sfxJousturApplause() {
+  try {
+    const c = ctx();
+    const now = c.currentTime;
+    const dur = 1.4;
+    const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      const p = i / data.length;
+      // Quick swell to peak then slow fade — excitement envelope.
+      const envelope = p < 0.15
+        ? p / 0.15
+        : 1 - (p - 0.15) * 0.7;
+      data[i] = (Math.random() * 2 - 1) * Math.max(0, envelope);
+    }
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const filter = c.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(600, now);
+    filter.frequency.linearRampToValueAtTime(1400, now + dur * 0.2);
+    filter.frequency.linearRampToValueAtTime(900, now + dur);
+    filter.Q.value = 0.5;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(0.18, now + dur * 0.15);
+    g.gain.linearRampToValueAtTime(0.12, now + dur * 0.5);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(c.destination);
+    src.start(now);
+    src.stop(now + dur);
+  } catch {
+    /* Audio unavailable */
+  }
+}
+
+/**
+ * Joustur audience boo — low, rumbling disapproval noise.
+ * Darker filtered noise shaped as a crowd groaning/booing.
+ */
+export function sfxJousturBoo() {
+  try {
+    const c = ctx();
+    const now = c.currentTime;
+    const dur = 1.0;
+    const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      const p = i / data.length;
+      const envelope = p < 0.1
+        ? p / 0.1
+        : Math.max(0, 1 - (p - 0.1) * 1.1);
+      data[i] = (Math.random() * 2 - 1) * envelope;
+    }
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const filter = c.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(350, now);
+    filter.frequency.linearRampToValueAtTime(500, now + dur * 0.3);
+    filter.frequency.linearRampToValueAtTime(250, now + dur);
+    filter.Q.value = 0.8;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(0.14, now + dur * 0.1);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(c.destination);
+    src.start(now);
+    src.stop(now + dur);
+  } catch {
+    /* Audio unavailable */
+  }
+}
+
+/** Joustur match victory fanfare — epic ascending multi-layer celebration. */
+export function sfxJousturVictory() {
+  // Bass power hit
+  layeredTone("sawtooth", 0, 0.15, 110, 0.2, 55);
+  // Ascending chord progression
+  layeredTone("square", 0, 0.24, 440, 0.14);
+  layeredTone("square", 0.1, 0.24, 554, 0.13);
+  layeredTone("square", 0.2, 0.26, 659, 0.13);
+  layeredTone("square", 0.32, 0.24, 880, 0.12);
+  // Shimmer layer
+  layeredTone("triangle", 0.1, 0.5, 880, 0.08, 1319);
+  layeredTone("sine", 0.3, 0.4, 1319, 0.06, 1760);
+  layeredTone("sine", 0.45, 0.3, 1760, 0.04, 2637);
+  // Triumphant final
+  layeredTone("square", 0.5, 0.35, 1047, 0.1, 1319);
+  layeredTone("sawtooth", 0.55, 0.3, 659, 0.08, 1047);
+}
+
+/** Joustur match defeat — somber descending tones. */
+export function sfxJousturDefeat() {
+  layeredTone("triangle", 0, 0.4, 440, 0.14, 220);
+  layeredTone("sawtooth", 0.1, 0.35, 330, 0.1, 130);
+  layeredTone("triangle", 0.25, 0.4, 220, 0.12, 80);
+  layeredTone("sine", 0.4, 0.35, 165, 0.06, 60);
+}
+
 /** Finish-line crowd swell — a rising roar layered under the win/lose fanfare. */
 export function sfxRaceFinishSwell() {
   try {

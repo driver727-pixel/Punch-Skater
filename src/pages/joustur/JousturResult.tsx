@@ -4,12 +4,13 @@
  * Shows winner, both players' scores, and offers navigation back to Joustur hub.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getJousturMatch } from "../../services/joustur";
 import type { JousturMatch } from "../../lib/jousturTypes";
 import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
+import { sfxJousturVictory, sfxJousturDefeat, sfxJousturApplause, sfxJousturBoo } from "../../lib/sfx";
 
 export function JousturResult() {
   const { id: matchId } = useParams<{ id: string }>();
@@ -52,6 +53,20 @@ export function JousturResult() {
   const myState  = isChallenger ? match.challengerState  : match.defenderState;
   const oppState = isChallenger ? match.defenderState    : match.challengerState;
   const opponentLabel = match.mode === "solo" ? "House Bot" : "Opponent";
+
+  // Play result audio once when the page loads.
+  const audioPlayedRef = useRef(false);
+  useEffect(() => {
+    if (audioPlayedRef.current) return;
+    audioPlayedRef.current = true;
+    if (didWin) {
+      sfxJousturVictory();
+      setTimeout(() => sfxJousturApplause(), 300);
+    } else if (match.winnerUid) {
+      sfxJousturDefeat();
+      setTimeout(() => sfxJousturBoo(), 200);
+    }
+  }, [didWin, match.winnerUid]);
 
   return (
     <div className="page joustur-result">

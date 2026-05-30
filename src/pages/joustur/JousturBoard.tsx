@@ -29,6 +29,18 @@ import type {
 } from "../../lib/jousturTypes";
 import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 import { CyberpunkD4Dice } from "../../components/CyberpunkD4Dice";
+import { useJousturSoundtrack } from "../../hooks/useJousturSoundtrack";
+import {
+  sfxJousturRoll,
+  sfxJousturMove,
+  sfxJousturStealthAlcove,
+  sfxJousturRiderScored,
+  sfxJousturClashStart,
+  sfxJousturClashWin,
+  sfxJousturClashLoss,
+  sfxJousturApplause,
+  sfxJousturBoo,
+} from "../../lib/sfx";
 
 const JOUSTUR_BOARD_IMAGE_URL = "/assets/joustur/joustur-board.png";
 const STEALTH_ALCOVES = new Set([4, 6, 8, 12, 14]);
@@ -996,6 +1008,7 @@ export function JousturBoard() {
   const { id: matchId } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [soundtrackPlaying, toggleSoundtrack] = useJousturSoundtrack();
 
   const [match, setMatch] = useState<JousturMatch | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1130,6 +1143,7 @@ export function JousturBoard() {
     setShowMoveHints(false);
     setRolling(true);
     setError(null);
+    sfxJousturRoll();
     try {
       const result = await rollJousturShards(matchId);
       setRollResult(result.roll);
@@ -1168,11 +1182,11 @@ export function JousturBoard() {
         }
         // Summarise the most recent event for the player.
         const ev = result.events?.[result.events.length - 1] as Record<string, unknown> | undefined;
-        if (ev?.type === "capture") setLastEvent({ message: "🎯 Captured an opponent rider!", tone: "ok" });
-        else if (ev?.type === "clashStarted") setLastEvent({ message: "⚔️ Joust clash started!", tone: "ok" });
-        else if (ev?.type === "exit") setLastEvent({ message: "⚡ Rider scored!", tone: "ok" });
-        else if (ev?.type === "stealthAlcove") setLastEvent({ message: "🔒 Stealth Alcove — extra turn!", tone: "ok" });
-        else setLastEvent(null);
+        if (ev?.type === "capture") { setLastEvent({ message: "🎯 Captured an opponent rider!", tone: "ok" }); sfxJousturClashStart(); sfxJousturApplause(); }
+        else if (ev?.type === "clashStarted") { setLastEvent({ message: "⚔️ Joust clash started!", tone: "ok" }); sfxJousturClashStart(); }
+        else if (ev?.type === "exit") { setLastEvent({ message: "⚡ Rider scored!", tone: "ok" }); sfxJousturRiderScored(); sfxJousturApplause(); }
+        else if (ev?.type === "stealthAlcove") { setLastEvent({ message: "🔒 Stealth Alcove — extra turn!", tone: "ok" }); sfxJousturStealthAlcove(); sfxJousturApplause(); }
+        else { setLastEvent(null); sfxJousturMove(); }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Move failed.");
       } finally {
@@ -1197,6 +1211,13 @@ export function JousturBoard() {
         if (resolvedEvent?.winnerUid) {
           const cinematic = buildClashCinematicState(match, activeClash, resolvedEvent, myUid);
           if (cinematic) setClashCinematic(cinematic);
+          if (resolvedEvent.winnerUid === myUid) {
+            sfxJousturClashWin();
+            sfxJousturApplause();
+          } else {
+            sfxJousturClashLoss();
+            sfxJousturBoo();
+          }
           setLastEvent({
             message: resolvedEvent.winnerUid === myUid ? "⚔️ You won the joust clash!" : "💥 You lost the joust clash.",
             tone: resolvedEvent.winnerUid === myUid ? "clash-win" : "clash-loss",
@@ -1493,6 +1514,14 @@ export function JousturBoard() {
           Turn {match.board.turn} ·{" "}
           {match.mode === "friend" ? "👥 Friend match" : "🎮 Casual match"}
         </p>
+        <button
+          type="button"
+          className="btn-outline btn-sm"
+          onClick={toggleSoundtrack}
+          aria-label={soundtrackPlaying ? "Mute soundtrack" : "Play soundtrack"}
+        >
+          {soundtrackPlaying ? "🔊 Music On" : "🔇 Music Off"}
+        </button>
         <button
           type="button"
           className="btn-outline btn-sm"
