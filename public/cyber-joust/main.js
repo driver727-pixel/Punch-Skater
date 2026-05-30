@@ -37,14 +37,16 @@ class BootScene extends Phaser.Scene {
             color: '#ffffff'
         }).setOrigin(0.5);
 
-        this.load.on('progress', (value) => {
+        const onProgress = (value) => {
             progressBar.clear();
             progressBar.fillStyle(0xffea00, 1);
             progressBar.fillRect(width / 2 - 150, height / 2 - 15, 300 * value, 30);
             percentText.setText(Math.round(value * 100) + '%');
-        });
+        };
+        this.load.on('progress', onProgress);
 
         this.load.once('complete', () => {
+            this.load.off('progress', onProgress);
             loadingBox.destroy();
             progressBar.destroy();
             loadingText.destroy();
