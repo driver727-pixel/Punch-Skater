@@ -1,7 +1,5 @@
 import {
   CARD_FORGE_OZZIES_COST,
-  creditWallet,
-  getMissionRewardAmount,
   getWallet,
   spendWallet,
 } from '../lib/wallet.js';
@@ -60,46 +58,9 @@ export function registerWalletRoutes(app, {
     }
   });
 
-  app.post('/api/wallet/rewards/mission', walletRateLimit, async (req, res) => {
-    let caller;
-    try {
-      caller = await authenticateFirebaseUser(req);
-    } catch (error) {
-      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
-      return;
-    }
-
-    const missionId = typeof req.body?.missionId === 'string' ? req.body.missionId.trim() : '';
-    const idempotencyKey = typeof req.body?.idempotencyKey === 'string' ? req.body.idempotencyKey.trim() : '';
-    if (!missionId) {
-      res.status(400).json({ error: 'missionId is required.' });
-      return;
-    }
-    if (!idempotencyKey) {
-      res.status(400).json({ error: 'idempotencyKey is required.' });
-      return;
-    }
-
-    const rewardAmount = getMissionRewardAmount(missionId);
-    if (rewardAmount <= 0) {
-      res.status(400).json({ error: 'Mission does not award Ozzies.' });
-      return;
-    }
-
-    try {
-      const result = await creditWallet(adminDb, {
-        uid: caller.uid,
-        amount: rewardAmount,
-        sourceType: 'mission',
-        sourceId: missionId,
-        description: 'Mission reward',
-        metadata: { missionId },
-        idempotencyKey,
-        FieldValue,
-      });
-      res.status(result.duplicate ? 200 : 201).json(result);
-    } catch (error) {
-      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to credit mission reward.' });
-    }
-  });
+  // NOTE: There is intentionally no client-callable endpoint that credits
+  // mission Ozzies from a client-supplied missionId. Crediting on an
+  // unverified request let any authenticated user farm currency with unlimited
+  // idempotency keys. Mission rewards must be credited server-side from a
+  // verified mission completion (see creditWallet in server/lib/wallet.js).
 }

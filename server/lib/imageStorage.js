@@ -4,6 +4,37 @@ const FIREBASE_STORAGE_DOWNLOAD_TIMEOUT_MS = 60_000;
 const FIREBASE_STORAGE_BASE_URL = 'https://firebasestorage.googleapis.com';
 const FIREBASE_STORAGE_CACHE_CONTROL = 'public, max-age=31536000, immutable, no-transform';
 
+// Defense-in-depth SSRF guard: only fetch source images from the small set of
+// hosts this app legitimately persists from (fal.ai CDN + Google/Firebase
+// Storage). Callers already validate URLs, but enforcing it here makes the
+// function safe by construction even if a future caller forgets to.
+const ALLOWED_SOURCE_IMAGE_HOST_PATTERNS = [
+  /(^|\.)fal\.media$/i,
+  /^firebasestorage\.googleapis\.com$/i,
+  /(^|\.)firebasestorage\.googleapis\.com$/i,
+  /^storage\.googleapis\.com$/i,
+  /(^|\.)storage\.googleapis\.com$/i,
+];
+
+/**
+ * Returns true when `url` is an absolute http(s) URL whose host is on the
+ * source-image allow-list.
+ *
+ * @param {string} url
+ * @returns {boolean}
+ */
+function isAllowedSourceImageUrl(url) {
+  if (typeof url !== 'string') return false;
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+  return ALLOWED_SOURCE_IMAGE_HOST_PATTERNS.some((pattern) => pattern.test(parsed.hostname));
+}
+
 /**
  * Returns true when `url` is already a Firebase Storage download URL so we
  * never double-upload an already-persisted image.
@@ -44,6 +75,13 @@ export async function persistImageToStorage(adminStorage, sourceUrl, storageBuck
   }
 
   if (isFirebaseStorageUrl(sourceUrl)) {
+    return sourceUrl;
+  }
+
+  // SSRF guard: never fetch arbitrary URLs handed to this function. Only the
+  // fal.ai CDN and Google/Firebase Storage are legitimate image sources.
+  if (!isAllowedSourceImageUrl(sourceUrl)) {
+    console.warn('[imageStorage] Refusing to persist image from disallowed host; returning source URL unchanged.');
     return sourceUrl;
   }
 
