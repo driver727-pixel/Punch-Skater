@@ -58,6 +58,8 @@ export const CYBER_JOUST_STORAGE_PREFIX = "cyber-joust/fighters";
 export const CYBER_JOUST_STATIC_ASSET_BASE = "assets/fighters";
 export const CYBER_JOUST_BODY_CANVAS_SIZE = 96;
 export const CYBER_JOUST_WEAPON_CANVAS_SIZE = 64;
+const RIDER_VISOR_WIDTH = 12.6;
+const RIDER_VISOR_HEIGHT = 10.8;
 
 export const CYBER_JOUST_COLORS: CyberJoustColorOption[] = [
   { name: "Neon Cyan", value: 0x00f0ff },
@@ -88,6 +90,75 @@ function slugify(value: string): string {
 
 function toCssColor(color: number): string {
   return `#${color.toString(16).padStart(6, "0")}`;
+}
+
+function mixColor(color: number, target: number, blendFactor: number): number {
+  const ratio = Math.max(0, Math.min(1, blendFactor));
+  const red = Math.round(((color >> 16) & 0xff) * (1 - ratio) + ((target >> 16) & 0xff) * ratio);
+  const green = Math.round(((color >> 8) & 0xff) * (1 - ratio) + ((target >> 8) & 0xff) * ratio);
+  const blue = Math.round((color & 0xff) * (1 - ratio) + (target & 0xff) * ratio);
+  return (red << 16) | (green << 8) | blue;
+}
+
+function drawNeonStroke(
+  context: CanvasRenderingContext2D,
+  color: number,
+  width: number,
+  drawPath: () => void,
+  glow = 10,
+): void {
+  context.save();
+  context.strokeStyle = toCssColor(color);
+  context.lineWidth = width + 4;
+  context.globalAlpha = 0.28;
+  context.shadowColor = toCssColor(color);
+  context.shadowBlur = glow;
+  drawPath();
+  context.stroke();
+  context.restore();
+
+  context.save();
+  context.strokeStyle = toCssColor(color);
+  context.lineWidth = width;
+  context.shadowColor = toCssColor(color);
+  context.shadowBlur = glow * 0.45;
+  drawPath();
+  context.stroke();
+  context.restore();
+
+  context.save();
+  context.strokeStyle = "#ffffff";
+  context.lineWidth = Math.max(1, width * 0.28);
+  context.globalAlpha = 0.55;
+  drawPath();
+  context.stroke();
+  context.restore();
+}
+
+function drawNeonCircle(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  fillColor: number,
+  strokeColor = 0xffffff,
+): void {
+  context.save();
+  context.shadowColor = toCssColor(fillColor);
+  context.shadowBlur = 9;
+  context.fillStyle = toCssColor(fillColor);
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+  context.shadowBlur = 0;
+  context.strokeStyle = toCssColor(strokeColor);
+  context.lineWidth = 1.25;
+  context.stroke();
+  context.fillStyle = "#05050c";
+  context.beginPath();
+  context.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
 }
 
 function createCanvas(size: number): HTMLCanvasElement {
@@ -244,59 +315,139 @@ export function renderCyberJoustBodySprite(colorName: string, deck: string): HTM
     accent = 0x00f0ff;
   }
 
-  context.fillStyle = "#222233";
+  const primary = color.value;
+  const jacketFill = mixColor(primary, 0x050511, 0.78);
+  const suitFill = mixColor(primary, 0x050511, 0.9);
+
+  context.save();
+  context.shadowColor = toCssColor(deckStroke);
+  context.shadowBlur = 13;
+  context.fillStyle = "#121225";
   context.strokeStyle = toCssColor(deckStroke);
-  context.lineWidth = 2;
-  context.fillRect(-27, 15, 54, 8);
-  context.strokeRect(-27, 15, 54, 8);
-
-  context.fillStyle = toCssColor(leftWheel);
+  context.lineWidth = 2.5;
   context.beginPath();
-  context.arc(-18, 28, 5, 0, Math.PI * 2);
+  context.moveTo(-32, 14);
+  context.lineTo(34, 14);
+  context.lineTo(26, 24);
+  context.lineTo(-28, 24);
+  context.closePath();
   context.fill();
+  context.stroke();
+  context.restore();
+
+  drawNeonStroke(context, accent, 2, () => {
+    context.beginPath();
+    context.moveTo(-23, 12);
+    context.lineTo(23, 12);
+  }, 8);
+
+  if (deck === "Gridwave") {
+    for (let xOffset = -18; xOffset <= 18; xOffset += 9) {
+      drawNeonStroke(context, accent, 0.8, () => {
+        context.beginPath();
+        context.moveTo(xOffset - 5, 15);
+        context.lineTo(xOffset + 4, 23);
+      }, 4);
+    }
+  } else if (deck === "ToxiCorp") {
+    context.fillStyle = toCssColor(accent);
+    context.fillRect(-6, 16, 12, 5);
+    context.fillStyle = "#06060f";
+    context.fillRect(-2, 16, 4, 5);
+  } else if (deck === "Hologram") {
+    context.globalAlpha = 0.5;
+    context.fillStyle = toCssColor(accent);
+    context.fillRect(-25, 17, 50, 2);
+    context.globalAlpha = 1;
+  } else {
+    drawNeonStroke(context, accent, 1.2, () => {
+      context.beginPath();
+      context.moveTo(-27, 20);
+      context.lineTo(27, 17);
+    }, 5);
+  }
+
+  drawNeonCircle(context, -20, 29, 5.5, leftWheel, deckStroke);
+  drawNeonCircle(context, 20, 29, 5.5, rightWheel, deckStroke);
+
+  drawNeonStroke(context, primary, 3.2, () => {
+    context.beginPath();
+    context.moveTo(-8, 10);
+    context.lineTo(-18, 21);
+    context.lineTo(-25, 24);
+  }, 9);
+  drawNeonStroke(context, 0xff007f, 3.2, () => {
+    context.beginPath();
+    context.moveTo(2, 9);
+    context.lineTo(13, 18);
+    context.lineTo(24, 18);
+  }, 9);
+
+  context.save();
+  context.shadowColor = toCssColor(primary);
+  context.shadowBlur = 12;
+  context.fillStyle = toCssColor(jacketFill);
+  context.strokeStyle = toCssColor(primary);
+  context.lineWidth = 2.25;
   context.beginPath();
-  context.arc(18, 28, 5, 0, Math.PI * 2);
-  context.fillStyle = toCssColor(rightWheel);
+  context.moveTo(-13, -4);
+  context.lineTo(10, -10);
+  context.lineTo(16, -31);
+  context.lineTo(0, -37);
+  context.lineTo(-10, -28);
+  context.closePath();
+  context.fill();
+  context.stroke();
+  context.restore();
+
+  context.fillStyle = toCssColor(mixColor(primary, 0xffffff, 0.18));
+  context.beginPath();
+  context.moveTo(1, -31);
+  context.lineTo(10, -28);
+  context.lineTo(6, -14);
+  context.lineTo(-2, -12);
+  context.closePath();
   context.fill();
 
-  context.fillStyle = toCssColor(accent);
-  context.fillRect(-19, 12, 38, 2);
-
-  context.fillStyle = "#16122c";
-  context.strokeStyle = toCssColor(color.value);
+  context.save();
+  context.fillStyle = toCssColor(suitFill);
+  context.strokeStyle = "#ff007f";
   context.lineWidth = 2;
   context.beginPath();
   context.moveTo(-10, -5);
-  context.lineTo(10, -10);
-  context.lineTo(15, -30);
-  context.lineTo(-5, -35);
-  context.closePath();
-  context.fill();
-  context.stroke();
-
-  context.fillStyle = "#11111d";
-  context.strokeStyle = "#ff007f";
-  context.beginPath();
-  context.moveTo(-8, -5);
   context.lineTo(8, -5);
   context.lineTo(5, 12);
-  context.lineTo(-5, 12);
+  context.lineTo(-6, 12);
   context.closePath();
   context.fill();
   context.stroke();
+  context.restore();
 
-  context.fillStyle = toCssColor(color.value);
+  drawNeonStroke(context, accent, 2.5, () => {
+    context.beginPath();
+    context.moveTo(9, -23);
+    context.lineTo(24, -15);
+    context.lineTo(29, -8);
+  }, 7);
+
+  context.save();
+  context.shadowColor = toCssColor(primary);
+  context.shadowBlur = 11;
+  context.fillStyle = toCssColor(primary);
   context.beginPath();
   context.arc(8, -42, 9, 0, Math.PI * 2);
   context.fill();
+  context.restore();
 
-  context.fillStyle = "#000000";
+  context.fillStyle = "#05050d";
   context.beginPath();
-  context.arc(10, -42, 6, 0, Math.PI * 2);
+  context.ellipse(11, -42, RIDER_VISOR_WIDTH / 2, RIDER_VISOR_HEIGHT / 2, 0, 0, Math.PI * 2);
   context.fill();
-
-  context.fillStyle = "#ffea00";
-  context.fillRect(11, -44, 4, 3);
+  drawNeonStroke(context, accent, 1.2, () => {
+    context.beginPath();
+    context.moveTo(10, -45);
+    context.lineTo(17, -45);
+  }, 4);
 
   return canvas;
 }
@@ -305,32 +456,42 @@ export function renderCyberJoustWeaponSprite(colorName: string, weapon: string):
   const color = getCyberJoustColor(colorName);
   const context = createCenteredContext(CYBER_JOUST_WEAPON_CANVAS_SIZE);
   const canvas = context.canvas as HTMLCanvasElement;
+  const primary = color.value;
+  const hotPink = 0xff007f;
+  const yellow = 0xffea00;
 
   if (weapon === "Hockey Stick") {
-    context.strokeStyle = toCssColor(color.value);
-    context.lineWidth = 4;
-    context.beginPath();
-    context.moveTo(-10, -10);
-    context.lineTo(25, 5);
-    context.lineTo(38, 0);
-    context.stroke();
-
-    context.fillStyle = "#ff007f";
-    context.beginPath();
-    context.arc(8, -2, 3, 0, Math.PI * 2);
-    context.fill();
-    context.beginPath();
-    context.arc(20, 3, 3, 0, Math.PI * 2);
-    context.fill();
+    drawNeonStroke(context, primary, 5, () => {
+      context.beginPath();
+      context.moveTo(-23, -13);
+      context.lineTo(16, 4);
+      context.lineTo(31, -2);
+    }, 11);
+    drawNeonStroke(context, hotPink, 2, () => {
+      context.beginPath();
+      context.moveTo(-1, -4);
+      context.lineTo(18, 4);
+    }, 6);
+    drawNeonCircle(context, 5, -2, 3.2, hotPink, yellow);
+    drawNeonCircle(context, 19, 3, 3.2, hotPink, yellow);
     return canvas;
   }
 
   if (weapon === "Street Sign") {
+    drawNeonStroke(context, 0xcfd7df, 4, () => {
+      context.beginPath();
+      context.moveTo(-25, -5);
+      context.lineTo(11, -5);
+    }, 5);
+
+    context.save();
+    context.shadowColor = "#ff0055";
+    context.shadowBlur = 11;
     context.strokeStyle = "#ff0055";
-    context.fillStyle = "#b2003b";
+    context.fillStyle = "#9c0037";
     context.lineWidth = 3;
     context.beginPath();
-    const signX = 25;
+    const signX = 20;
     const signY = -5;
     const radius = 14;
     for (let index = 0; index < 8; index += 1) {
@@ -343,42 +504,47 @@ export function renderCyberJoustWeaponSprite(colorName: string, weapon: string):
     context.closePath();
     context.fill();
     context.stroke();
-
-    context.strokeStyle = "#cccccc";
-    context.lineWidth = 4;
-    context.beginPath();
-    context.moveTo(-5, -5);
-    context.lineTo(15, -5);
-    context.stroke();
+    context.restore();
 
     context.fillStyle = "#ffffff";
-    context.fillRect(signX - 6, signY - 2, 12, 4);
+    context.fillRect(signX - 8, signY - 2, 16, 4);
+    context.fillStyle = toCssColor(primary);
+    context.fillRect(signX - 4, signY - 10, 8, 3);
     return canvas;
   }
 
-  context.strokeStyle = "#00f0ff";
-  context.lineWidth = 3;
-  context.beginPath();
-  context.moveTo(-15, -5);
-  context.lineTo(18, -5);
-  context.moveTo(-15, -12);
-  context.lineTo(5, -5);
-  context.moveTo(-15, 2);
-  context.lineTo(5, -5);
-  context.stroke();
+  drawNeonStroke(context, primary, 3, () => {
+    context.beginPath();
+    context.moveTo(-23, -5);
+    context.lineTo(17, -5);
+    context.moveTo(-23, -14);
+    context.lineTo(4, -5);
+    context.moveTo(-23, 4);
+    context.lineTo(4, -5);
+  }, 10);
 
-  context.fillStyle = "#ff007f";
-  context.fillRect(-18, -14, 4, 16);
-
-  context.strokeStyle = "#ffea00";
-  context.lineWidth = 2;
+  context.save();
+  context.shadowColor = toCssColor(hotPink);
+  context.shadowBlur = 8;
+  context.fillStyle = toCssColor(hotPink);
   context.beginPath();
-  context.moveTo(10, -5);
-  context.lineTo(15, -9);
-  context.lineTo(20, -1);
-  context.lineTo(25, -5);
-  context.lineTo(32, -5);
-  context.stroke();
+  context.moveTo(-26, -17);
+  context.lineTo(-14, -13);
+  context.lineTo(-14, 3);
+  context.lineTo(-26, 7);
+  context.closePath();
+  context.fill();
+  context.restore();
+
+  drawNeonStroke(context, yellow, 2, () => {
+    context.beginPath();
+    context.moveTo(8, -5);
+    context.lineTo(14, -11);
+    context.lineTo(21, 0);
+    context.lineTo(27, -5);
+    context.lineTo(32, -5);
+  }, 7);
+  drawNeonCircle(context, 32, -5, 3.3, primary, yellow);
 
   return canvas;
 }

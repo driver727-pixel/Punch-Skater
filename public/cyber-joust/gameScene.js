@@ -25,6 +25,8 @@ const DEFAULT_COSMETICS = {
     weapon: 'Crutch Lance'
 };
 const OCTAGON_SIDES = 8;
+const RIDER_VISOR_WIDTH = 12.6;
+const RIDER_VISOR_HEIGHT = 10.8;
 const FLIP_VELOCITY_THRESHOLD = 300;
 const BOT_CHASE_PROBABILITY = 65;
 const CLASH_THRESHOLD = 48;
@@ -238,34 +240,74 @@ export class GameScene extends Phaser.Scene {
 
     drawRider(g, primaryColor) {
         g.clear();
-        g.fillStyle(0x16122c, 1);
+
+        g.lineStyle(7, primaryColor, 0.18);
+        g.beginPath();
+        g.moveTo(-8, 10);
+        g.lineTo(-18, 21);
+        g.lineTo(-25, 24);
+        g.strokePath();
+        g.lineStyle(3, primaryColor, 1);
+        g.strokePath();
+
+        g.lineStyle(7, 0xff007f, 0.18);
+        g.beginPath();
+        g.moveTo(2, 9);
+        g.lineTo(13, 18);
+        g.lineTo(24, 18);
+        g.strokePath();
+        g.lineStyle(3, 0xff007f, 1);
+        g.strokePath();
+
+        g.fillStyle(0x101023, 1);
+        g.lineStyle(5, primaryColor, 0.2);
+        g.beginPath();
+        g.moveTo(-13, -4);
+        g.lineTo(10, -10);
+        g.lineTo(16, -31);
+        g.lineTo(0, -37);
+        g.lineTo(-10, -28);
+        g.closePath();
+        g.fillPath();
+        g.strokePath();
         g.lineStyle(2, primaryColor, 1);
+        g.strokePath();
+
+        g.fillStyle(primaryColor, 0.28);
+        g.beginPath();
+        g.moveTo(1, -31);
+        g.lineTo(10, -28);
+        g.lineTo(6, -14);
+        g.lineTo(-2, -12);
+        g.closePath();
+        g.fillPath();
+
+        g.fillStyle(0x070711, 1);
+        g.lineStyle(2, 0xff007f, 1);
         g.beginPath();
         g.moveTo(-10, -5);
-        g.lineTo(10, -10);
-        g.lineTo(15, -30);
-        g.lineTo(-5, -35);
+        g.lineTo(8, -5);
+        g.lineTo(5, 12);
+        g.lineTo(-6, 12);
         g.closePath();
         g.fillPath();
         g.strokePath();
 
-        g.fillStyle(0x11111d, 1);
-        g.lineStyle(2, 0xff007f, 1);
+        g.lineStyle(6, 0xffea00, 0.18);
         g.beginPath();
-        g.moveTo(-8, -5);
-        g.lineTo(8, -5);
-        g.lineTo(5, 12);
-        g.lineTo(-5, 12);
-        g.closePath();
-        g.fillPath();
+        g.moveTo(9, -23);
+        g.lineTo(24, -15);
+        g.lineTo(29, -8);
+        g.strokePath();
+        g.lineStyle(2, 0xffea00, 1);
         g.strokePath();
 
         g.fillStyle(primaryColor, 1);
         g.fillCircle(8, -42, 9);
-        g.fillStyle(0x000000, 1);
-        g.fillCircle(10, -42, 6);
+        g.fillStyle(0x05050d, 1);
+        g.fillEllipse(11, -42, RIDER_VISOR_WIDTH, RIDER_VISOR_HEIGHT);
         g.fillStyle(0xffea00, 1);
-        g.fillRect(11, -44, 4, 3);
+        g.fillRect(10, -45, 8, 2);
     }
 
     updateSkaterVisuals(skater) {
@@ -326,20 +368,33 @@ export class GameScene extends Phaser.Scene {
             wg.fillStyle(0x1a1a2e, 1);
 
             if (weaponType === 'Hockey Stick') {
-                wg.lineStyle(4, color, 1);
+                wg.lineStyle(9, color, 0.18);
                 wg.beginPath();
-                wg.moveTo(-10, -10);
-                wg.lineTo(25, 5);
-                wg.lineTo(38, 0);
+                wg.moveTo(-23, -13);
+                wg.lineTo(16, 4);
+                wg.lineTo(31, -2);
                 wg.strokePath();
+                wg.lineStyle(5, color, 1);
+                wg.strokePath();
+                wg.lineStyle(2, 0xffffff, 0.45);
+                wg.strokePath();
+                wg.lineStyle(2, 0xff007f, 1);
+                wg.lineBetween(-1, -4, 18, 4);
                 wg.fillStyle(0xff007f, 1);
-                wg.fillCircle(8, -2, 3);
-                wg.fillCircle(20, 3, 3);
+                wg.fillCircle(5, -2, 3.2);
+                wg.fillCircle(19, 3, 3.2);
+                wg.fillStyle(0x05050c, 1);
+                wg.fillCircle(5, -2, 1.4);
+                wg.fillCircle(19, 3, 1.4);
             } else if (weaponType === 'Street Sign') {
-                wg.lineStyle(3, 0xff0055, 1);
-                wg.fillStyle(0xb2003b, 1);
+                wg.lineStyle(7, 0xcfd7df, 0.22);
+                wg.lineBetween(-25, -5, 11, -5);
+                wg.lineStyle(4, 0xcfd7df, 1);
+                wg.lineBetween(-25, -5, 11, -5);
+                wg.lineStyle(6, 0xff0055, 0.2);
+                wg.fillStyle(0x9c0037, 1);
                 wg.beginPath();
-                const signX = 25;
+                const signX = 20;
                 const signY = -5;
                 const radius = 14;
                 for (let i = 0; i < OCTAGON_SIDES; i++) {
@@ -355,27 +410,41 @@ export class GameScene extends Phaser.Scene {
                 wg.closePath();
                 wg.fillPath();
                 wg.strokePath();
-                wg.lineStyle(4, 0xcccccc, 1);
-                wg.lineBetween(-5, -5, 15, -5);
+                wg.lineStyle(3, 0xff0055, 1);
+                wg.strokePath();
                 wg.fillStyle(0xffffff, 1);
-                wg.fillRect(signX - 6, signY - 2, 12, 4);
+                wg.fillRect(signX - 8, signY - 2, 16, 4);
+                wg.fillStyle(color, 1);
+                wg.fillRect(signX - 4, signY - 10, 8, 3);
             } else {
-                wg.lineStyle(3, 0x00f0ff, 1);
-                wg.lineBetween(-15, -5, 18, -5);
-                wg.lineBetween(-15, -12, 5, -5);
-                wg.lineBetween(-15, 2, 5, -5);
+                wg.lineStyle(8, color, 0.18);
+                wg.lineBetween(-23, -5, 17, -5);
+                wg.lineBetween(-23, -14, 4, -5);
+                wg.lineBetween(-23, 4, 4, -5);
+                wg.lineStyle(3, color, 1);
+                wg.lineBetween(-23, -5, 17, -5);
+                wg.lineBetween(-23, -14, 4, -5);
+                wg.lineBetween(-23, 4, 4, -5);
                 wg.fillStyle(0xff007f, 1);
-                wg.fillRect(-18, -14, 4, 16);
+                wg.beginPath();
+                wg.moveTo(-26, -17);
+                wg.lineTo(-14, -13);
+                wg.lineTo(-14, 3);
+                wg.lineTo(-26, 7);
+                wg.closePath();
+                wg.fillPath();
                 wg.lineStyle(2, 0xffea00, 1);
                 wg.beginPath();
-                wg.moveTo(10, -5);
-                wg.lineTo(15, -9);
-                wg.lineTo(20, -1);
-                wg.lineTo(25, -5);
+                wg.moveTo(8, -5);
+                wg.lineTo(14, -11);
+                wg.lineTo(21, 0);
+                wg.lineTo(27, -5);
                 wg.lineTo(32, -5);
                 wg.strokePath();
-                wg.fillStyle(0x00f0ff, 1);
+                wg.fillStyle(color, 1);
                 wg.fillCircle(32, -5, 3.5);
+                wg.fillStyle(0x05050c, 1);
+                wg.fillCircle(32, -5, 1.4);
             }
         }
     }
