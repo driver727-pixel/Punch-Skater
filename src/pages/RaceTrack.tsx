@@ -143,6 +143,8 @@ interface SampledTrackPoint {
   distance: number;
 }
 
+const sampledTrackCache = new Map<string, SampledTrackPoint[]>();
+
 function catmullRom(points: [number, number][], index: number, t: number) {
   const len = points.length;
   const p0 = points[(index - 1 + len) % len];
@@ -167,6 +169,8 @@ function catmullRom(points: [number, number][], index: number, t: number) {
 }
 
 function sampleTrackPath(district: string): SampledTrackPoint[] {
+  const cached = sampledTrackCache.get(district);
+  if (cached) return cached;
   const definition = getRaceTrackDefinition(district);
   const samples: Omit<SampledTrackPoint, "angle" | "distance">[] = [];
   for (let i = 0; i < definition.points.length; i += 1) {
@@ -176,7 +180,7 @@ function sampleTrackPath(district: string): SampledTrackPoint[] {
   }
 
   let distance = 0;
-  return samples.map((sample, index) => {
+  const path = samples.map((sample, index) => {
     const next = samples[(index + 1) % samples.length];
     const prev = samples[(index - 1 + samples.length) % samples.length];
     if (index > 0) {
@@ -189,10 +193,23 @@ function sampleTrackPath(district: string): SampledTrackPoint[] {
       distance,
     };
   });
+  sampledTrackCache.set(district, path);
+  return path;
 }
 
 function normalizeTrackProgress(u: number) {
   return ((u % 1) + 1) % 1;
+}
+
+function findPathIndexAtDistance(path: SampledTrackPoint[], targetDistance: number) {
+  let low = 0;
+  let high = path.length - 1;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (path[mid].distance < targetDistance) low = mid + 1;
+    else high = mid;
+  }
+  return low;
 }
 
 function createTrackHelpers(district: string) {
@@ -203,13 +220,12 @@ function createTrackHelpers(district: string) {
   /** Parametric circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
   function trackPoint(u: number) {
     const targetDistance = normalizeTrackProgress(u) * totalDistance;
-    const index = path.findIndex((sample) => sample.distance >= targetDistance);
-    const currentIndex = index <= 0 ? 0 : index;
-    const prev = currentIndex === 0 ? path[path.length - 1] : path[currentIndex - 1];
+    const currentIndex = findPathIndexAtDistance(path, targetDistance);
+    const prev = currentIndex === 0 ? path[0] : path[currentIndex - 1];
     const current = path[currentIndex];
     const prevDistance = currentIndex === 0 ? 0 : prev.distance;
     const span = Math.max(1, current.distance - prevDistance);
-    const t = currentIndex === 0 ? 0 : Math.max(0, Math.min(1, (targetDistance - prevDistance) / span));
+    const t = Math.max(0, Math.min(1, (targetDistance - prevDistance) / span));
     const x = prev.x + (current.x - prev.x) * t;
     const y = prev.y + (current.y - prev.y) * t;
     const angle = Math.atan2(current.y - prev.y, current.x - prev.x);

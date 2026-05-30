@@ -17,7 +17,7 @@ import { fetchRaceArena, startFreeSoloRace, startSoloRace, type ArenaListEntry }
 import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
 import { DEFAULT_RACE_DISTRICT, getRaceDistrictDisplayName, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
-import { getRaceTrackDefinition } from "../lib/raceTracks";
+import { getRaceTrackDefinition, getRaceTrackSvgPolygonPoints } from "../lib/raceTracks";
 import { announceActiveDistrict, getDistrictTheme } from "../lib/districtTheme";
 import { useModalA11y } from "../hooks/useModalA11y";
 
@@ -175,7 +175,7 @@ function RaceDistrictPicker({
         const theme = getDistrictTheme(option.slug);
         const track = getRaceTrackDefinition(option.slug);
         const active = district === option.slug;
-        const svgPolygonPoints = track.points.map(([x, y]) => `${(x * 100).toFixed(1)},${(y * 100).toFixed(1)}`).join(" ");
+        const svgPolygonPoints = getRaceTrackSvgPolygonPoints(option.slug);
         return (
           <button
             key={option.slug}

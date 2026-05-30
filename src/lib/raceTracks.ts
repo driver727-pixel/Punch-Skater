@@ -119,5 +119,17 @@ export const RACE_TRACKS: Record<string, RaceTrackDefinition> = {
 };
 
 export function getRaceTrackDefinition(district?: string | null): RaceTrackDefinition {
-  return RACE_TRACKS[district ?? ""] ?? RACE_TRACKS.airaway;
+  return RACE_TRACKS[district ?? ""] ?? RACE_TRACKS[DEFAULT_RACE_DISTRICT];
 }
+
+const SVG_POLYGON_POINTS = new Map(
+  Object.entries(RACE_TRACKS).map(([district, track]) => [
+    district,
+    track.points.map(([x, y]) => `${(x * 100).toFixed(1)},${(y * 100).toFixed(1)}`).join(" "),
+  ]),
+);
+
+export function getRaceTrackSvgPolygonPoints(district?: string | null): string {
+  return SVG_POLYGON_POINTS.get(district ?? "") ?? SVG_POLYGON_POINTS.get(DEFAULT_RACE_DISTRICT) ?? "";
+}
+import { DEFAULT_RACE_DISTRICT } from "./raceDistricts";
