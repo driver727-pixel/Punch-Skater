@@ -58,9 +58,8 @@ export const CYBER_JOUST_STORAGE_PREFIX = "cyber-joust/fighters";
 export const CYBER_JOUST_STATIC_ASSET_BASE = "assets/fighters";
 export const CYBER_JOUST_BODY_CANVAS_SIZE = 96;
 export const CYBER_JOUST_WEAPON_CANVAS_SIZE = 64;
-const RIDER_VISOR_RADIUS_X = 6.3;
-const RIDER_VISOR_RADIUS_Y = 5.4;
-const RIDER_VISOR_ROTATION = -0.25;
+const RIDER_VISOR_WIDTH = 12.6;
+const RIDER_VISOR_HEIGHT = 10.8;
 
 export const CYBER_JOUST_COLORS: CyberJoustColorOption[] = [
   { name: "Neon Cyan", value: 0x00f0ff },
@@ -442,7 +441,7 @@ export function renderCyberJoustBodySprite(colorName: string, deck: string): HTM
 
   context.fillStyle = "#05050d";
   context.beginPath();
-  context.ellipse(11, -42, RIDER_VISOR_RADIUS_X, RIDER_VISOR_RADIUS_Y, RIDER_VISOR_ROTATION, 0, Math.PI * 2);
+  context.ellipse(11, -42, RIDER_VISOR_WIDTH / 2, RIDER_VISOR_HEIGHT / 2, 0, 0, Math.PI * 2);
   context.fill();
   drawNeonStroke(context, accent, 1.2, () => {
     context.beginPath();
