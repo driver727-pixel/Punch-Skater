@@ -197,7 +197,8 @@ export class GameScene extends Phaser.Scene {
 
         for (let i = 0; i < BACKDROP_NODE_COUNT; i++) {
             const x = Phaser.Math.Between(20, width - 20);
-            const y = Phaser.Math.Between(BACKDROP_NODE_MIN_Y, Math.max(BACKDROP_NODE_FALLBACK_MAX_Y, height * BACKDROP_NODE_MAX_HEIGHT_RATIO));
+            const maxNodeY = Math.max(BACKDROP_NODE_FALLBACK_MAX_Y, height * BACKDROP_NODE_MAX_HEIGHT_RATIO);
+            const y = Phaser.Math.Between(BACKDROP_NODE_MIN_Y, maxNodeY);
             const node = this.add.circle(x, y, Phaser.Math.Between(1, 3), i % 2 ? palette.primary : palette.secondary, 0.6).setDepth(-1);
             this.tweens.add({
                 targets: node,
@@ -1353,7 +1354,7 @@ export class GameScene extends Phaser.Scene {
                     playerName,
                     score: this.score,
                     weapon: this.myCosmetics.weapon || 'Unknown',
-                    district: this.district.name,
+                    district: this.district.slug,
                     createdAt: Date.now()
                 }));
             } catch (e) {
