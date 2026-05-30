@@ -170,9 +170,10 @@ export class StreetsGameScene extends Phaser.Scene {
 
     // Parallax neon skyline silhouettes across the level.
     const mid = this.add.graphics().setDepth(-20).setScrollFactor(0.4);
+    const seedHash = hashString(this.levelSeed);
     mid.fillStyle(this.district.ground, 1);
     for (let x = 0; x < this.levelWidth; x += 140) {
-      const h = 90 + ((x * 37 + hashString(this.levelSeed)) % 180);
+      const h = 90 + ((x * 37 + seedHash) % 180);
       const w = 70 + ((x * 17) % 60);
       mid.fillRect(x, this.groundY - h, w, h);
       mid.lineStyle(2, this.district.accent, 0.5);
@@ -192,9 +193,10 @@ export class StreetsGameScene extends Phaser.Scene {
     haze.fillRect(0, this.groundY - 260, this.levelWidth, 260);
 
     const far = this.add.graphics().setDepth(-26).setScrollFactor(0.08);
+    const variantHash = hashString(this.levelProfile.variant);
     far.lineStyle(1, this.district.haze, 0.22);
     for (let x = 0; x < this.levelWidth; x += 95) {
-      const y = 60 + ((x * 19 + hashString(this.levelProfile.variant)) % 160);
+      const y = 60 + ((x * 19 + variantHash) % 160);
       far.lineBetween(x, y, x + 36, y + 8);
       far.fillStyle(this.district.haze, 0.25);
       far.fillCircle(x + 42, y + 10, 2);

@@ -218,8 +218,6 @@ export function mapStatsToFighter(stats = {}, joust = {}) {
   const shield = clampNumber(joust.shield, 0, 100, 50);
   const hype = clampNumber(joust.hype, 0, 100, 50);
 
-  const levelBackdropUrl = sanitizeMediaUrl(params.get('levelBackdrop'));
-
   return {
     // Grit is survivability.
     maxHp: Math.round(80 + grit * 1.4),
@@ -333,6 +331,7 @@ export function parseStreetsConfig(search = (typeof window !== 'undefined' ? win
   const launchedFromMission = Boolean(
     params.get('runId') || params.get('mission') || params.get('returnTo'),
   );
+  const levelBackdropUrl = sanitizeMediaUrl(params.get('levelBackdrop'));
 
   return {
     missionId,
