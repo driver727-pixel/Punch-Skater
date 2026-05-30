@@ -1,3 +1,5 @@
+import { DEFAULT_RACE_DISTRICT } from "./raceDistricts";
+
 /**
  * Pre-generated top-down Classic Race track concept data.
  *
@@ -132,4 +134,3 @@ const SVG_POLYGON_POINTS = new Map(
 export function getRaceTrackSvgPolygonPoints(district?: string | null): string {
   return SVG_POLYGON_POINTS.get(district ?? "") ?? SVG_POLYGON_POINTS.get(DEFAULT_RACE_DISTRICT) ?? "";
 }
-import { DEFAULT_RACE_DISTRICT } from "./raceDistricts";

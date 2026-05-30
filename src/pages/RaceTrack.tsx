@@ -228,8 +228,10 @@ function createTrackHelpers(district: string) {
     const t = Math.max(0, Math.min(1, (targetDistance - prevDistance) / span));
     const x = prev.x + (current.x - prev.x) * t;
     const y = prev.y + (current.y - prev.y) * t;
-    const angle = Math.atan2(current.y - prev.y, current.x - prev.x);
-    return { x, y, angle: Number.isFinite(angle) ? angle : current.angle };
+    const dx = current.x - prev.x;
+    const dy = current.y - prev.y;
+    const angle = Math.hypot(dx, dy) > 0.001 ? Math.atan2(dy, dx) : current.angle;
+    return { x, y, angle };
   }
 
   /** Project a point on the offset (inside or outside) lane. */
