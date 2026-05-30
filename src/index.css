@@ -5913,6 +5913,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   pointer-events: none;
   filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55));
 }
+.card-art-layer--weapon {
+  z-index: 5;
+  inset: auto;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5));
+}
 .card-art-layer--board-workshop {
   left: 4%;
   bottom: 10%;

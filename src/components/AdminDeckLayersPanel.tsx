@@ -5,12 +5,16 @@ import { DISTRICT_RIVALS, type DistrictRival } from "../lib/rivals";
 import {
   buildBoardPlacementStyle,
   buildCharacterPlacementStyle,
+  buildWeaponPlacementStyle,
   CHARACTER_LAYER_Z_INDEX,
   getBoardPlacementBox,
   getBoardLayerZIndex,
   getCharacterPlacementBox,
+  getWeaponPlacementBox,
   normalizeBoardPlacement,
   normalizeCharacterPlacement,
+  normalizeWeaponPlacement,
+  WEAPON_LAYER_Z_INDEX,
 } from "../lib/boardPlacement";
 import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 import {
@@ -35,6 +39,7 @@ interface AdminDeck {
 interface LayerToggles {
   background: boolean;
   board: boolean;
+  weapon: boolean;
   character: boolean;
   frame: boolean;
 }
@@ -49,6 +54,7 @@ function normalizeDeckName(name: string): string {
 const ALL_LAYERS_ON: LayerToggles = {
   background: true,
   board: true,
+  weapon: true,
   character: true,
   frame: true,
 };
@@ -56,6 +62,7 @@ const ALL_LAYERS_ON: LayerToggles = {
 const ALL_LAYERS_OFF: LayerToggles = {
   background: false,
   board: false,
+  weapon: false,
   character: false,
   frame: false,
 };
@@ -65,6 +72,7 @@ const ALL_LAYERS_OFF: LayerToggles = {
 type ExportLayer =
   | { type: "background"; url: string; zIndex: number; inset: boolean }
   | { type: "board"; url: string; zIndex: number; card: CardPayload }
+  | { type: "weapon"; url: string; zIndex: number; card: CardPayload }
   | { type: "character"; url: string; zIndex: number; card: CardPayload }
   | { type: "frame"; url: string; zIndex: number };
 
@@ -167,6 +175,21 @@ function drawExportLayer(
     return;
   }
 
+  if (layer.type === "weapon") {
+    const placement = normalizeWeaponPlacement(layer.card.weaponPlacement);
+    const box = getWeaponPlacementBox(placement.scale);
+    drawPlacedLayer(
+      ctx,
+      img,
+      (placement.xPercent / 100) * width,
+      (placement.yPercent / 100) * height,
+      (box.widthPercent / 100) * width,
+      (box.heightPercent / 100) * height,
+      placement.rotationDeg,
+    );
+    return;
+  }
+
   ctx.drawImage(img, 0, 0, width, height);
 }
 
@@ -199,6 +222,14 @@ async function renderCardToPng(
       type: "board",
       url: card.board.imageUrl,
       zIndex: getBoardLayerZIndex(card.board?.layerOrder),
+      card,
+    });
+  }
+  if (toggles.weapon && card.weaponImageUrl) {
+    layers.push({
+      type: "weapon",
+      url: card.weaponImageUrl,
+      zIndex: WEAPON_LAYER_Z_INDEX,
       card,
     });
   }
@@ -268,7 +299,7 @@ interface LayerToggleBarProps {
 }
 
 function LayerToggleBar({ toggles, onChange }: LayerToggleBarProps) {
-  const allOn = toggles.background && toggles.board && toggles.character && toggles.frame;
+  const allOn = toggles.background && toggles.board && toggles.weapon && toggles.character && toggles.frame;
 
   function toggle(key: keyof LayerToggles) {
     onChange({ ...toggles, [key]: !toggles[key] });
@@ -302,6 +333,13 @@ function LayerToggleBar({ toggles, onChange }: LayerToggleBarProps) {
         🛹 Board
       </button>
       <button
+        className={`adlp-layer-btn${toggles.weapon ? " adlp-layer-btn--active" : ""}`}
+        onClick={() => toggle("weapon")}
+        title="Weapon layer"
+      >
+        ⚔ Weapon
+      </button>
+      <button
         className={`adlp-layer-btn${toggles.character ? " adlp-layer-btn--active" : ""}`}
         onClick={() => toggle("character")}
         title="Character layer"
@@ -331,9 +369,9 @@ interface CardLayerPreviewProps {
 
 function CardLayerPreview({ card, toggles }: CardLayerPreviewProps) {
   const [boardImageFailed, setBoardImageFailed] = useState(false);
-  const { backgroundImageUrl, characterImageUrl, frameImageUrl } = card;
+  const { backgroundImageUrl, characterImageUrl, frameImageUrl, weaponImageUrl } = card;
   const hasBackFrame = getStaticFrameBackUrl(card.prompts.rarity) != null;
-  const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl || card.board?.imageUrl;
+  const hasAnyLayer = backgroundImageUrl || characterImageUrl || frameImageUrl || card.board?.imageUrl || weaponImageUrl;
 
   const backgroundLayerClassName = shouldInsetBackgroundForFrame(card.prompts.rarity, frameImageUrl)
     ? "card-art-layer card-art-layer--background card-art-layer--background-inset"
@@ -355,6 +393,10 @@ function CardLayerPreview({ card, toggles }: CardLayerPreviewProps) {
   const characterPlacementStyle = {
     ...buildCharacterPlacementStyle(card.characterPlacement),
     zIndex: CHARACTER_LAYER_Z_INDEX,
+  };
+  const weaponPlacementStyle = {
+    ...buildWeaponPlacementStyle(card.weaponPlacement),
+    zIndex: WEAPON_LAYER_Z_INDEX,
   };
 
   return (
@@ -380,6 +422,16 @@ function CardLayerPreview({ card, toggles }: CardLayerPreviewProps) {
           loading="lazy"
           decoding="async"
           onError={() => setBoardImageFailed(true)}
+        />
+      )}
+      {toggles.weapon && weaponImageUrl && (
+        <img
+          src={weaponImageUrl}
+          alt="weapon"
+          className="card-art-layer card-art-layer--weapon"
+          style={weaponPlacementStyle}
+          loading="lazy"
+          decoding="async"
         />
       )}
       {toggles.character && characterImageUrl && (
@@ -795,7 +847,7 @@ export function AdminDeckLayersPanel() {
         </div>
         <p className="asset-gen-toolbar-copy">
           All card decks saved by admin accounts. Use the layer toggles on each card
-          to show or hide the Background, Skateboard Deck, Character, and Frame layers.
+          to show or hide the Background, Skateboard Deck, Weapon, Character, and Frame layers.
           Deck-wide toggles apply to all cards at once; individual card toggles override independently.
         </p>
 
