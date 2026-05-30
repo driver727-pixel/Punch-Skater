@@ -106,6 +106,7 @@ function generateBotSnapshot(playerStats, seed) {
 const MAX_OPEN_CHALLENGES_PER_USER = 20;
 const MAX_WAGER = 10_000;
 const MIN_WAGER = 0;
+const RACE_DISTRICTS = new Set(['airaway', 'batteryville', 'the-grid', 'nightshade', 'the-forest', 'glass-city']);
 
 function nowIso() {
   return new Date().toISOString();
@@ -119,6 +120,11 @@ function clampWager(value) {
   const n = Math.floor(Number(value));
   if (!Number.isFinite(n) || n < MIN_WAGER) return 0;
   return Math.min(MAX_WAGER, Math.max(MIN_WAGER, n));
+}
+
+function normalizeRaceDistrict(value) {
+  const district = String(value ?? '').trim();
+  return RACE_DISTRICTS.has(district) ? district : null;
 }
 
 function readOzzies(profile) {
@@ -222,6 +228,7 @@ export function registerRaceRoutes(app, {
     // Admin accounts are never charged Ozzies; their effective wager is 0.
     const wager = callerIsAdmin ? 0 : clampWager(req.body?.ozzyWager);
     const message = String(req.body?.message ?? '').slice(0, 280);
+    const district = normalizeRaceDistrict(req.body?.district);
 
     if (!defenderUid || !defenderCardId || !challengerCardId) {
       res.status(400).json({ error: 'challengerCardId, defenderUid, and defenderCardId are required.' });
@@ -292,6 +299,7 @@ export function registerRaceRoutes(app, {
           defenderCardName: defenderSnapshot.name,
           defenderDeckId: defenderDeckDoc.id,
           ozzyWager: wager,
+          ...(district ? { district } : {}),
           message,
           createdAt: nowIso(),
           updatedAt: nowIso(),
@@ -489,6 +497,7 @@ export function registerRaceRoutes(app, {
           challengeId: ch.id,
           challengerUid: ch.challengerUid,
           defenderUid: ch.defenderUid,
+          ...(ch.district ? { district: ch.district } : {}),
           challenger: challengerSnapshot,
           defender: defenderSnapshot,
           ozzyWager: ch.ozzyWager,
@@ -588,7 +597,7 @@ export function registerRaceRoutes(app, {
     const cardId = String(req.body?.cardId ?? '').trim();
     // Admin accounts are never charged Ozzies; their effective wager is 0.
     const wager = caller.admin === true ? 0 : clampWager(req.body?.ozzyWager);
-    const district = String(req.body?.district ?? '').trim() || null;
+    const district = normalizeRaceDistrict(req.body?.district);
 
     if (!cardId) {
       res.status(400).json({ error: 'cardId is required.' });
@@ -717,7 +726,7 @@ export function registerRaceRoutes(app, {
       await requireFreeTierCaller(adminDb, caller);
 
       const [loanerCard] = await loadAdminLoanerCards(adminDb, { count: 1 });
-      const district = String(req.body?.district ?? '').trim() || null;
+      const district = normalizeRaceDistrict(req.body?.district);
       const playerSnapshot = createRaceCardSnapshot(loanerCard);
       const raceSeed = randomUUID();
       const botSnapshot = generateBotSnapshot(playerSnapshot.stats, raceSeed);

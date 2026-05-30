@@ -16,7 +16,8 @@ import { useRaceArena } from "../hooks/useRaceArena";
 import { fetchRaceArena, startFreeSoloRace, startSoloRace, type ArenaListEntry } from "../services/race";
 import type { RaceCardSnapshot } from "../lib/types";
 import { sfxBattleReady, sfxClick } from "../lib/sfx";
-import { DEFAULT_RACE_DISTRICT, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
+import { DEFAULT_RACE_DISTRICT, getRaceDistrictDisplayName, RACE_DISTRICT_OPTIONS } from "../lib/raceDistricts";
+import { getRaceTrackDefinition, getRaceTrackSvgPolygonPoints } from "../lib/raceTracks";
 import { announceActiveDistrict, getDistrictTheme } from "../lib/districtTheme";
 import { useModalA11y } from "../hooks/useModalA11y";
 
@@ -172,29 +173,40 @@ function RaceDistrictPicker({
     <div className="race-district-picker">
       {RACE_DISTRICT_OPTIONS.map((option) => {
         const theme = getDistrictTheme(option.slug);
+        const track = getRaceTrackDefinition(option.slug);
         const active = district === option.slug;
+        const svgPolygonPoints = getRaceTrackSvgPolygonPoints(option.slug);
         return (
           <button
             key={option.slug}
             type="button"
-            className={`race-district-btn race-district-btn--swatch${active ? " active btn-outline--active" : ""}`}
+            className={`race-district-btn race-district-btn--track${active ? " active btn-outline--active" : ""}`}
             onClick={() => onSelect(option.slug)}
             style={{
               borderColor: active ? theme.border : undefined,
               boxShadow: active ? `0 0 12px ${theme.border}66` : undefined,
             }}
           >
-            <span
-              className="race-district-swatch"
-              aria-hidden="true"
-              style={{
-                background: `radial-gradient(circle at 50% 35%, ${theme.bg3}, ${theme.bg})`,
-                boxShadow: `inset 0 0 0 2px ${theme.accent2}, inset 0 0 10px ${theme.border}88`,
-              }}
-            >
-              <span className="race-district-swatch-emoji">{option.emoji}</span>
+            <span className="race-district-track-preview" aria-hidden="true">
+              <svg viewBox="0 0 100 100" role="img">
+                <defs>
+                  <radialGradient id={`race-track-bg-${option.slug}`} cx="50%" cy="38%" r="72%">
+                    <stop offset="0%" stopColor={theme.bg3} />
+                    <stop offset="100%" stopColor={theme.bg} />
+                  </radialGradient>
+                </defs>
+                <rect width="100" height="100" rx="12" fill={`url(#race-track-bg-${option.slug})`} />
+                <polygon points={svgPolygonPoints} fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="14" strokeLinejoin="round" strokeLinecap="round" />
+                <polygon points={svgPolygonPoints} fill="none" stroke={theme.accent2} strokeWidth="8" strokeLinejoin="round" strokeLinecap="round" />
+                <polygon points={svgPolygonPoints} fill="none" stroke={theme.accent} strokeWidth="2" strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
+                <circle cx={track.points[0][0] * 100} cy={track.points[0][1] * 100} r="4" fill="#fff" />
+              </svg>
             </span>
-            <span className="race-district-btn-label">{option.displayName}</span>
+            <span className="race-district-btn-copy">
+              <span className="race-district-btn-label">{option.emoji} {option.displayName}</span>
+              <span className="race-district-track-name">{track.name}</span>
+              <span className="race-district-track-terrain">{track.terrain}</span>
+            </span>
           </button>
         );
       })}
@@ -638,6 +650,7 @@ export function ClassicRace() {
                 <div>
                   <strong>{c.challengerDisplayName}</strong> wants to race <strong>{c.challengerCardName}</strong> against your <strong>{c.defenderCardName}</strong>.
                   {c.ozzyWager > 0 && <span className="race-hub-wager"> · Wager: {c.ozzyWager} Ozzies</span>}
+                  {c.district && <span className="race-hub-wager"> · District: {getRaceDistrictDisplayName(c.district) ?? c.district}</span>}
                   {c.message && <p className="race-hub-message">"{c.message}"</p>}
                 </div>
                 <div className="race-hub-actions">
@@ -658,6 +671,7 @@ export function ClassicRace() {
                 <div>
                   Awaiting reply from <strong>{c.defenderDisplayName}</strong> · {c.challengerCardName} vs {c.defenderCardName}
                   {c.ozzyWager > 0 && <span className="race-hub-wager"> · Wager: {c.ozzyWager} Ozzies</span>}
+                  {c.district && <span className="race-hub-wager"> · District: {getRaceDistrictDisplayName(c.district) ?? c.district}</span>}
                 </div>
                 <div className="race-hub-actions">
                   <button className="btn-outline" onClick={() => handleCancel(c.id)} disabled={arena.busy}>Withdraw</button>
@@ -674,6 +688,7 @@ export function ClassicRace() {
                 <div>
                   <strong>{c.challengerCardName}</strong> vs <strong>{c.defenderCardName}</strong>
                   {c.ozzyWager > 0 && <span className="race-hub-wager"> · Wager: {c.ozzyWager} Ozzies</span>}
+                  {c.district && <span className="race-hub-wager"> · District: {getRaceDistrictDisplayName(c.district) ?? c.district}</span>}
                 </div>
                 <div className="race-hub-actions">
                   {c.raceId && (
