@@ -3,7 +3,7 @@
  *
  * Loads the precomputed `Race` from the server, then renders a top-down
  * courier circuit drawn with HTML5 canvas. Each tick of the timeline maps
- * to a curve parameter `u ∈ [0, 1]` along an oval circuit; CSS 3D card
+ * to a curve parameter `u ∈ [0, 1]` along a district-specific circuit; CSS 3D card
  * elements follow the curve, speeding up and slowing down exactly as the
  * precomputed timeline dictates.
  *
@@ -49,11 +49,11 @@ import {
 import type { Race } from "../lib/types";
 import { RaceCard3D } from "../components/RaceCard3D";
 import { getRaceDistrictDisplayName } from "../lib/raceDistricts";
+import { getRaceTrackDefinition } from "../lib/raceTracks";
 import { announceActiveDistrict } from "../lib/districtTheme";
 
 const CANVAS_WIDTH = 720;
 const CANVAS_HEIGHT = 360;
-const PADDING = 60;
 
 interface TrackTheme {
   backdropTop: string;
@@ -62,8 +62,7 @@ interface TrackTheme {
   laneColor: string;
   gridColor: string;
   glowColor: string;
-  scaleX: number;
-  scaleY: number;
+  roadAccent: string;
 }
 
 const DEFAULT_TRACK_THEME: TrackTheme = {
@@ -73,8 +72,7 @@ const DEFAULT_TRACK_THEME: TrackTheme = {
   laneColor: "rgba(255,220,70,0.55)",
   gridColor: "rgba(120,70,200,0.18)",
   glowColor: "#aa66ff",
-  scaleX: 1,
-  scaleY: 1,
+  roadAccent: "rgba(255,255,255,0.22)",
 };
 
 const TRACK_THEMES: Record<string, TrackTheme> = {
@@ -85,8 +83,7 @@ const TRACK_THEMES: Record<string, TrackTheme> = {
     laneColor: "rgba(100,200,255,0.7)",
     gridColor: "rgba(80,180,255,0.15)",
     glowColor: "#66ccff",
-    scaleX: 1.15,
-    scaleY: 0.85,
+    roadAccent: "rgba(190,235,255,0.34)",
   },
   nightshade: {
     backdropTop: "#0d0018",
@@ -95,8 +92,7 @@ const TRACK_THEMES: Record<string, TrackTheme> = {
     laneColor: "rgba(200,80,255,0.7)",
     gridColor: "rgba(160,60,220,0.15)",
     glowColor: "#cc44ff",
-    scaleX: 0.85,
-    scaleY: 0.9,
+    roadAccent: "rgba(230,160,255,0.30)",
   },
   batteryville: {
     backdropTop: "#120800",
@@ -105,8 +101,7 @@ const TRACK_THEMES: Record<string, TrackTheme> = {
     laneColor: "rgba(255,140,30,0.7)",
     gridColor: "rgba(220,100,20,0.15)",
     glowColor: "#ff8800",
-    scaleX: 1.1,
-    scaleY: 0.8,
+    roadAccent: "rgba(255,190,90,0.32)",
   },
   "the-grid": {
     backdropTop: "#000d08",
@@ -115,8 +110,7 @@ const TRACK_THEMES: Record<string, TrackTheme> = {
     laneColor: "rgba(0,255,120,0.7)",
     gridColor: "rgba(0,200,80,0.15)",
     glowColor: "#00ff88",
-    scaleX: 1.2,
-    scaleY: 0.7,
+    roadAccent: "rgba(150,255,200,0.28)",
   },
   "the-forest": {
     backdropTop: "#061208",
@@ -125,8 +119,7 @@ const TRACK_THEMES: Record<string, TrackTheme> = {
     laneColor: "rgba(100,220,80,0.7)",
     gridColor: "rgba(60,180,40,0.15)",
     glowColor: "#88ee44",
-    scaleX: 0.95,
-    scaleY: 1,
+    roadAccent: "rgba(180,240,140,0.28)",
   },
   "glass-city": {
     backdropTop: "#12100e",
@@ -135,8 +128,7 @@ const TRACK_THEMES: Record<string, TrackTheme> = {
     laneColor: "rgba(255,220,100,0.7)",
     gridColor: "rgba(220,190,80,0.15)",
     glowColor: "#ffdd55",
-    scaleX: 1.2,
-    scaleY: 0.75,
+    roadAccent: "rgba(255,240,170,0.34)",
   },
 };
 
@@ -144,28 +136,80 @@ function getTrackTheme(district: string) {
   return TRACK_THEMES[district] ?? DEFAULT_TRACK_THEME;
 }
 
-function getTrackRadii(district: string) {
-  const baseRx = (CANVAS_WIDTH - PADDING * 2) / 2;
-  const baseRy = (CANVAS_HEIGHT - PADDING * 2) / 2;
-  const theme = getTrackTheme(district);
-  return { rx: baseRx * theme.scaleX, ry: baseRy * theme.scaleY };
+interface SampledTrackPoint {
+  x: number;
+  y: number;
+  angle: number;
+  distance: number;
+}
+
+function catmullRom(points: [number, number][], index: number, t: number) {
+  const len = points.length;
+  const p0 = points[(index - 1 + len) % len];
+  const p1 = points[index % len];
+  const p2 = points[(index + 1) % len];
+  const p3 = points[(index + 2) % len];
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const x = 0.5 * (
+    (2 * p1[0]) +
+    (-p0[0] + p2[0]) * t +
+    (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
+    (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3
+  );
+  const y = 0.5 * (
+    (2 * p1[1]) +
+    (-p0[1] + p2[1]) * t +
+    (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
+    (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3
+  );
+  return { x: x * CANVAS_WIDTH, y: y * CANVAS_HEIGHT };
+}
+
+function sampleTrackPath(district: string): SampledTrackPoint[] {
+  const definition = getRaceTrackDefinition(district);
+  const samples: Omit<SampledTrackPoint, "angle" | "distance">[] = [];
+  for (let i = 0; i < definition.points.length; i += 1) {
+    for (let j = 0; j < 12; j += 1) {
+      samples.push(catmullRom(definition.points, i, j / 12));
+    }
+  }
+
+  let distance = 0;
+  return samples.map((sample, index) => {
+    const next = samples[(index + 1) % samples.length];
+    const prev = samples[(index - 1 + samples.length) % samples.length];
+    if (index > 0) {
+      const last = samples[index - 1];
+      distance += Math.hypot(sample.x - last.x, sample.y - last.y);
+    }
+    return {
+      ...sample,
+      angle: Math.atan2(next.y - prev.y, next.x - prev.x),
+      distance,
+    };
+  });
 }
 
 function createTrackHelpers(district: string) {
-  const { rx, ry } = getTrackRadii(district);
+  const path = sampleTrackPath(district);
+  const closing = Math.hypot(path[0].x - path[path.length - 1].x, path[0].y - path[path.length - 1].y);
+  const totalDistance = path[path.length - 1].distance + closing;
 
-  /** Parametric oval circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
+  /** Parametric circuit: returns {x, y, tangentAngle} for u ∈ [0, 1]. */
   function trackPoint(u: number) {
-    const cx = CANVAS_WIDTH / 2;
-    const cy = CANVAS_HEIGHT / 2;
-    const theta = u * Math.PI * 2 - Math.PI / 2; // start at the top
-    const x = cx + Math.cos(theta) * rx;
-    const y = cy + Math.sin(theta) * ry;
-    // Tangent for orienting cards along the curve.
-    const dxdt = -Math.sin(theta) * rx;
-    const dydt = Math.cos(theta) * ry;
-    const angle = Math.atan2(dydt, dxdt);
-    return { x, y, angle };
+    const targetDistance = ((u % 1) + 1) % 1 * totalDistance;
+    const index = path.findIndex((sample) => sample.distance >= targetDistance);
+    const currentIndex = index <= 0 ? 0 : index;
+    const prev = currentIndex === 0 ? path[path.length - 1] : path[currentIndex - 1];
+    const current = path[currentIndex];
+    const prevDistance = currentIndex === 0 ? 0 : prev.distance;
+    const span = Math.max(1, current.distance - prevDistance);
+    const t = currentIndex === 0 ? 0 : Math.max(0, Math.min(1, (targetDistance - prevDistance) / span));
+    const x = prev.x + (current.x - prev.x) * t;
+    const y = prev.y + (current.y - prev.y) * t;
+    const angle = Math.atan2(current.y - prev.y, current.x - prev.x);
+    return { x, y, angle: Number.isFinite(angle) ? angle : current.angle };
   }
 
   /** Project a point on the offset (inside or outside) lane. */
@@ -177,7 +221,16 @@ function createTrackHelpers(district: string) {
     return { x: x + nx, y: y + ny, angle };
   }
 
-  return { trackPoint, offsetTrackPoint };
+  return { path, trackPoint, offsetTrackPoint };
+}
+
+function strokeTrackPath(ctx: CanvasRenderingContext2D, path: SampledTrackPoint[]) {
+  ctx.beginPath();
+  path.forEach(({ x, y }, index) => {
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
 }
 
 /** Draw a single tile of the per-district ambience spanning the canvas width. */
@@ -251,7 +304,8 @@ interface RenderArgs {
 function renderScene({ ctx, district, phase, intensity }: RenderArgs) {
   const theme = getTrackTheme(district);
   const districtDisplayName = getRaceDistrictDisplayName(district) ?? "Open Circuit";
-  const { trackPoint, offsetTrackPoint } = createTrackHelpers(district);
+  const definition = getRaceTrackDefinition(district);
+  const { path, trackPoint, offsetTrackPoint } = createTrackHelpers(district);
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   // Backdrop — district neon gradient (static).
@@ -281,20 +335,19 @@ function renderScene({ ctx, district, phase, intensity }: RenderArgs) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_WIDTH, y); ctx.stroke();
   }
 
-  // Track surface — thick oval ring with a speed-reactive glow pulse.
+  // Track surface — thick district route with a speed-reactive glow pulse.
   ctx.lineWidth = 44;
   ctx.strokeStyle = theme.ringColor;
   ctx.shadowBlur = 14 + intensity * 26;
   ctx.shadowColor = theme.glowColor;
-  ctx.beginPath();
-  for (let i = 0; i <= 200; i += 1) {
-    const u = i / 200;
-    const { x, y } = trackPoint(u);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
+  strokeTrackPath(ctx, path);
   ctx.stroke();
   ctx.shadowBlur = 0;
+
+  ctx.lineWidth = 29;
+  ctx.strokeStyle = theme.roadAccent;
+  strokeTrackPath(ctx, path);
+  ctx.stroke();
 
   // Lane markers — animated dash flow so the road reads as moving under racers.
   ctx.lineWidth = 2;
@@ -303,13 +356,7 @@ function renderScene({ ctx, district, phase, intensity }: RenderArgs) {
   ctx.strokeStyle = theme.laneColor;
   ctx.shadowBlur = 6 + intensity * 12;
   ctx.shadowColor = theme.glowColor;
-  ctx.beginPath();
-  for (let i = 0; i <= 200; i += 1) {
-    const u = i / 200;
-    const { x, y } = trackPoint(u);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
+  strokeTrackPath(ctx, path);
   ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.setLineDash([]);
@@ -338,6 +385,26 @@ function renderScene({ ctx, district, phase, intensity }: RenderArgs) {
   }
   ctx.restore();
 
+  // Lore landmarks from the generated concept map.
+  ctx.save();
+  ctx.font = "10px monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const mark of definition.landmarks) {
+    const x = mark.x * CANVAS_WIDTH;
+    const y = mark.y * CANVAS_HEIGHT;
+    ctx.fillStyle = "rgba(0,0,0,0.52)";
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = theme.laneColor;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.82)";
+    ctx.fillText(mark.label.toUpperCase(), x, y - 12);
+  }
+  ctx.restore();
+
   // District badge.
   ctx.save();
   ctx.font = "13px monospace";
@@ -363,6 +430,8 @@ function renderScene({ ctx, district, phase, intensity }: RenderArgs) {
   ctx.fill();
   ctx.fillStyle = "#ffffff";
   ctx.fillText(badgeText, badgeX + 9, badgeY + badgeH / 2 + 0.5);
+  ctx.fillStyle = "rgba(255,255,255,0.68)";
+  ctx.fillText(definition.name.toUpperCase(), badgeX + 9, badgeY + badgeH + 14);
   ctx.restore();
 
   // Cards are rendered as CSS 3D elements (RaceCard3D) in the DOM overlay —

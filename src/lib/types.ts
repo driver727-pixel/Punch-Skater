@@ -493,6 +493,8 @@ export interface RaceChallenge {
   defenderDeckId: string;
   /** Ozzies escrowed by the challenger when the challenge was issued. */
   ozzyWager: number;
+  /** Selected race district/track slug. */
+  district?: string;
   createdAt: string;
   updatedAt: string;
   /** Set when status transitions to resolved. */
