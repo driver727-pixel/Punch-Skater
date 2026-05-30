@@ -5299,7 +5299,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   color: var(--text);
   font-size: 22px;
   line-height: 1;
-  padding: 3px;
+  padding: 2px;
   border-radius: 4px;
   cursor: pointer;
   font-family: var(--font);
@@ -5308,8 +5308,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .nav-hamburger:hover { border-color: var(--accent); color: var(--accent); }
 .nav-hamburger-icon {
   display: block;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
 }
 
@@ -5418,8 +5418,8 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     font-size: 12px;
   }
   .nav-hamburger {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
   .nav-mobile-menu .nav-link {
     min-height: 36px;
