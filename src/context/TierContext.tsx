@@ -15,10 +15,16 @@ import {
   type TierLevel,
 } from "../lib/tiers";
 import { claimReferral, REFERRAL_CREDITS_KEY } from "../services/referrals";
+import {
+  claimFreeForge as claimFreeForgeApi,
+  fetchFreeForgeStatus,
+  FreeForgeCooldownError,
+} from "../services/forge";
 import { useAuth } from "./AuthContext";
 import { db } from "../lib/firebase";
 import { resolveApiUrl } from "../lib/apiUrls";
 import { FREE_FORGE_COOLDOWN_MS } from "../lib/dailyRewards";
+import { reportPersistenceError } from "../lib/persistenceError";
 
 const CHECKOUT_VERIFY_API_URL = resolveApiUrl(
   import.meta.env.VITE_CHECKOUT_VERIFY_API_URL as string | undefined,
@@ -45,6 +51,9 @@ function loadFreeCardUsed(): boolean {
   return localStorage.getItem(FREE_CARD_USED_KEY) === "1";
 }
 
+/** localStorage key holding a referrer UID captured before the visitor logs in. */
+const PENDING_REFERRER_KEY = "ps_pending_ref";
+
 interface TierContextValue {
   tier: TierLevel;
   email: string;
@@ -63,6 +72,12 @@ interface TierContextValue {
   markFreeCardUsed: () => void;
   /** Start the cooldown for the next free-tier forge. */
   startFreeForgeCooldown: () => void;
+  /**
+   * Claim the free tier's one complimentary card from the server, enforcing the
+   * per-account cooldown. Rejects when the visitor is not signed in or the free
+   * forge is still on cooldown.
+   */
+  claimFreeForgeCard: () => Promise<void>;
   showUpgradeModal: boolean;
   openUpgradeModal: () => void;
   closeUpgradeModal: () => void;
@@ -163,7 +178,11 @@ export function TierProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch((error) => {
-        console.warn("[Tier] Checkout verification failed:", error);
+        if (cancelled) return;
+        reportPersistenceError(
+          "We couldn't confirm your purchase. If you were charged, please reload or contact support.",
+          error,
+        );
       });
 
     return () => {
@@ -226,7 +245,9 @@ export function TierProvider({ children }: { children: ReactNode }) {
     }, () => {/* non-fatal */});
   }, [user, userProfile?.isAdmin, verifiedCheckout]);
 
-  // ── Handle referral link on first mount ───────────────────────────────────
+  // ── Capture referral link on first mount ──────────────────────────────────
+  // Referral credit is one-per-account, so the claim is deferred until the
+  // visitor signs in. Here we only persist the referrer UID and clean the URL.
   useEffect(() => {
     const referrerUid = extractReferrerUid();
     if (!referrerUid) return;
@@ -241,11 +262,68 @@ export function TierProvider({ children }: { children: ReactNode }) {
       window.location.pathname + (newSearch ? `?${newSearch}` : "")
     );
 
-    // Claim asynchronously — visitorUid unknown at this point (auth is separate)
-    claimReferral(referrerUid, null).catch((err) => {
-      console.warn("[Referral] Failed to record referral claim:", err);
-    });
+    try {
+      localStorage.setItem(PENDING_REFERRER_KEY, referrerUid);
+    } catch {
+      /* storage unavailable — referral cannot be credited */
+    }
   }, []);
+
+  // ── Claim a pending referral once the visitor is authenticated ────────────
+  // Authentication makes referral credit one-per-account: the claim is keyed by
+  // the visitor's own uid, so it can never be farmed by clearing storage.
+  useEffect(() => {
+    if (!user) return;
+    let pending: string | null = null;
+    try {
+      pending = localStorage.getItem(PENDING_REFERRER_KEY);
+    } catch {
+      pending = null;
+    }
+    if (!pending) return;
+
+    claimReferral(pending, user.uid)
+      .catch((err) => {
+        console.warn("[Referral] Failed to record referral claim:", err);
+      })
+      .finally(() => {
+        try {
+          localStorage.removeItem(PENDING_REFERRER_KEY);
+        } catch {
+          /* noop */
+        }
+      });
+  }, [user]);
+
+  // ── Sync server-authoritative free-forge state once authenticated ─────────
+  // The free forge cooldown is recorded per account on the server so clearing
+  // localStorage cannot mint additional free cards.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetchFreeForgeStatus(user)
+      .then((state) => {
+        if (cancelled) return;
+        setFreeCardUsed(state.used);
+        if (state.used) {
+          localStorage.setItem(FREE_CARD_USED_KEY, "1");
+        } else {
+          localStorage.removeItem(FREE_CARD_USED_KEY);
+        }
+        if (state.nextReadyAt != null) {
+          saveFreeForgeReadyAt(state.nextReadyAt);
+          setFreeForgeReadyAt(state.nextReadyAt);
+        } else {
+          setFreeForgeReadyAt(null);
+        }
+      })
+      .catch(() => {
+        /* non-fatal — fall back to local optimistic state */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const canUseFreeForge = tier === "free" && (
     !freeCardUsed
@@ -288,6 +366,30 @@ export function TierProvider({ children }: { children: ReactNode }) {
     setFreeForgeReadyAt(nextReadyAt);
   }, []);
 
+  const claimFreeForgeCard = useCallback(async () => {
+    if (!user) {
+      throw new Error("Sign in to forge your free card.");
+    }
+    try {
+      const state = await claimFreeForgeApi(user);
+      setFreeCardUsed(true);
+      localStorage.setItem(FREE_CARD_USED_KEY, "1");
+      if (state.nextReadyAt != null) {
+        saveFreeForgeReadyAt(state.nextReadyAt);
+        setFreeForgeReadyAt(state.nextReadyAt);
+      }
+    } catch (err) {
+      // Reflect the server cooldown locally so the UI shows the correct timer.
+      if (err instanceof FreeForgeCooldownError && err.nextReadyAt != null) {
+        setFreeCardUsed(true);
+        localStorage.setItem(FREE_CARD_USED_KEY, "1");
+        saveFreeForgeReadyAt(err.nextReadyAt);
+        setFreeForgeReadyAt(err.nextReadyAt);
+      }
+      throw err;
+    }
+  }, [user]);
+
   const openUpgradeModal = useCallback(() => setShowUpgradeModal(true), []);
   const closeUpgradeModal = useCallback(() => setShowUpgradeModal(false), []);
 
@@ -295,6 +397,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
     <TierContext.Provider value={{
       tier, email, generateCredits, canForge, freeCardUsed, freeForgeReadyAt,
       setTier, logout, consumeCredit, markFreeCardUsed, startFreeForgeCooldown,
+      claimFreeForgeCard,
       showUpgradeModal, openUpgradeModal, closeUpgradeModal,
     }}>
       {children}

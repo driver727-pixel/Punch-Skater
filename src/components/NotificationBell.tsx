@@ -40,6 +40,16 @@ export function NotificationBell() {
     return () => window.removeEventListener("mousedown", handler);
   }, [open]);
 
+  // Close on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
   const handleSelect = useCallback((id: string, link?: string) => {
     sfxClick();
     void markRead(id);
@@ -61,7 +71,7 @@ export function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="notif-popover" role="dialog" aria-label="Notifications">
+        <div className="notif-popover" role="dialog" aria-modal="true" aria-label="Notifications">
           <header className="notif-popover-header">
             <span>Notifications</span>
             {unreadCount > 0 && (

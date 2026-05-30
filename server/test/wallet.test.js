@@ -241,7 +241,7 @@ test('getWallet returns recent transactions in descending order', async () => {
   );
 });
 
-test('wallet routes credit mission rewards, debit forge spends, and enforce auth', async () => {
+test('wallet routes debit forge spends and enforce auth', async () => {
   const adminDb = createFakeDb();
   const app = createFakeApp();
   registerWalletRoutes(app, {
@@ -257,14 +257,21 @@ test('wallet routes credit mission rewards, debit forge spends, and enforce auth
     FieldValue,
   });
 
-  const rewardReq = {
-    headers: { authorization: '******' },
-    body: { missionId: 'glass-city-lifeline-case', idempotencyKey: 'mission-credit-1' },
-  };
-  const rewardRes = createMockResponse();
-  await app.routes.get('POST /api/wallet/rewards/mission')(rewardReq, rewardRes);
-  assert.equal(rewardRes.statusCode, 201);
-  assert.equal(rewardRes.body.wallet.currentBalance, 50);
+  // The client-trusted mission-reward minting endpoint has been removed; only
+  // wallet read and card-forge spend remain.
+  assert.equal(app.routes.has('POST /api/wallet/rewards/mission'), false);
+
+  // Pre-fund the wallet through the server-side credit primitive (the
+  // legitimate path) so the card-forge spend has a balance to draw from.
+  await creditWallet(adminDb, {
+    uid: 'wallet-user',
+    amount: 50,
+    sourceType: 'mission',
+    sourceId: 'glass-city-lifeline-case',
+    description: 'Mission reward',
+    idempotencyKey: 'mission-credit-1',
+    FieldValue,
+  });
 
   const spendRes = createMockResponse();
   await app.routes.get('POST /api/wallet/spend')({

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CardPayload } from "../lib/types";
 import { getDisplayedArchetype, getDisplayedCrew } from "../lib/cardIdentity";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 interface ShareModalProps {
   card: CardPayload;
@@ -9,6 +10,7 @@ interface ShareModalProps {
 
 export function ShareModal({ card, onClose }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose });
 
   const shareText = [
     `🛹 ${card.identity.name} — ${getDisplayedArchetype(card)} · ${card.class.badgeLabel}`,
@@ -49,9 +51,16 @@ export function ShareModal({ card, onClose }: ShareModalProps) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel modal-panel--sm" onClick={(e) => e.stopPropagation()}>
-        <button className="close-btn modal-close" onClick={onClose}>✕</button>
-        <h2 className="modal-title">Share Card</h2>
+      <div
+        className="modal-panel modal-panel--sm"
+        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
+      >
+        <button className="close-btn modal-close" onClick={onClose} aria-label="Close share card">✕</button>
+        <h2 className="modal-title" id="share-modal-title">Share Card</h2>
         <p className="modal-sub">{card.identity.name}</p>
 
         <div className="share-text-box">

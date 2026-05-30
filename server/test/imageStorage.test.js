@@ -57,6 +57,47 @@ test('persistImageToStorage falls back to sourceUrl when fetch fails', async () 
   assert.ok(result.length > 0);
 });
 
+test('persistImageToStorage refuses to fetch images from non-allow-listed hosts', async () => {
+  let fetchCalled = false;
+  const adminStorage = {
+    bucket: () => ({ file: () => ({ save: async () => {} }) }),
+  };
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    return { ok: true, headers: { get: () => 'image/png' }, arrayBuffer: async () => new ArrayBuffer(0) };
+  };
+  try {
+    const sourceUrl = 'https://evil.example.com/internal/metadata.png';
+    const result = await persistImageToStorage(adminStorage, sourceUrl, 'my-bucket.appspot.com', 'path/x.png');
+    assert.equal(result, sourceUrl, 'disallowed source URL should be returned unchanged');
+    assert.equal(fetchCalled, false, 'disallowed host must never be fetched (SSRF guard)');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('persistImageToStorage refuses non-http(s) source URLs', async () => {
+  let fetchCalled = false;
+  const adminStorage = {
+    bucket: () => ({ file: () => ({ save: async () => {} }) }),
+  };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    return { ok: true, headers: { get: () => 'image/png' }, arrayBuffer: async () => new ArrayBuffer(0) };
+  };
+  try {
+    const sourceUrl = 'file:///etc/passwd';
+    const result = await persistImageToStorage(adminStorage, sourceUrl, 'my-bucket.appspot.com', 'path/x.png');
+    assert.equal(result, sourceUrl);
+    assert.equal(fetchCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('persistImageToStorage returns Firebase Storage URL on success', async () => {
   const savedData = [];
   const adminStorage = {

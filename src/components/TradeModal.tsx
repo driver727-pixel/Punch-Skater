@@ -18,6 +18,7 @@ import {
   MAX_PENDING_OUTGOING_OFFERS,
 } from "../lib/tradeEconomy";
 import { createTradeOffer } from "../services/trades";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 interface TradeModalProps {
   cards: CardPayload[];
@@ -35,6 +36,7 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose });
   const pendingTrades = useMemo(() => sentTrades.filter((trade) => trade.status === "pending"), [sentTrades]);
   const pendingOfferCardIds = useMemo(
     () => pendingTrades.map((trade) => trade.offeredCardId ?? trade.offeredCard.id),
@@ -116,11 +118,18 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
   if (success) {
     return (
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-panel modal-panel--sm" onClick={(e) => e.stopPropagation()}>
-          <button className="modal-close close-btn" onClick={onClose}>✕</button>
+        <div
+          className="modal-panel modal-panel--sm"
+          onClick={(e) => e.stopPropagation()}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="trade-modal-success-title"
+        >
+          <button className="modal-close close-btn" onClick={onClose} aria-label="Close trade dialog">✕</button>
           <div style={{ textAlign: "center", padding: "32px 0" }}>
             <div style={{ fontSize: "40px", marginBottom: "12px" }}>🤝</div>
-            <h2 className="modal-title">Offer Sent!</h2>
+            <h2 className="modal-title" id="trade-modal-success-title">Offer Sent!</h2>
             <p className="modal-sub">
               Your card offer for <strong>{selectedCard?.identity.name}</strong> has been sent to{" "}
               <strong>{recipientEmail}</strong>.
@@ -134,9 +143,16 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel modal-panel--sm" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close close-btn" onClick={onClose}>✕</button>
-        <h2 className="modal-title">Send a Card Offer</h2>
+      <div
+        className="modal-panel modal-panel--sm"
+        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="trade-modal-title"
+      >
+        <button className="modal-close close-btn" onClick={onClose} aria-label="Close trade dialog">✕</button>
+        <h2 className="modal-title" id="trade-modal-title">Send a Card Offer</h2>
         <p className="modal-sub">Choose one card from your collection and send the offer directly to another player.</p>
 
         <div className="form-group">

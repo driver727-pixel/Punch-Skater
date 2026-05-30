@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import type { CardPayload, ImportResult } from "../lib/types";
 import { validateImport, validateImportFile } from "../lib/importJson";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 interface ImportModalProps {
   existingIds: Set<string>;
@@ -18,6 +19,7 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
   const [result, setResult] = useState<ImportResult | null>(null);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose });
 
   // ── Parsing helpers ────────────────────────────────────────────────────────
 
@@ -84,8 +86,12 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
       <div
         className="modal-panel modal-panel--sm import-modal"
         onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Import JSON"
       >
-        <button className="modal-close" onClick={onClose}>✕</button>
+        <button className="modal-close" onClick={onClose} aria-label="Close import dialog">✕</button>
 
         {step === "input" && (
           <>

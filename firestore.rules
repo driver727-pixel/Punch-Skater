@@ -128,22 +128,28 @@ service cloud.firestore {
       allow delete: if false;
     }
     // ── Referral Claims ──────────────────────────────────────────────────────
-    // Written by any visitor who arrives via a referral link.
-    // Doc ID format: {referrerUid}_{visitorKey}
-    // - Anyone may create a claim (unauthenticated visitors included).
-    // - Create is idempotent: if the doc already exists the write is silently
-    //   rejected by the "no update" rule.
+    // Written by an authenticated visitor who arrives via a referral link.
+    // Doc ID format: {referrerUid}_{visitorUid}
+    // - Only a signed-in visitor may create a claim, so referral credit is
+    //   one-per-account: the visitorKey must equal the caller's own uid and the
+    //   deterministic doc ID prevents the same account from claiming a referrer
+    //   more than once.
+    // - Self-referral is blocked: the visitor cannot be the referrer.
     // - Only the referrer (authenticated) may read their own claims.
-    // - Self-referral is blocked: the write is allowed only when the visitor
-    //   is unauthenticated OR is a different user than the referrer.
     match /referralClaims/{claimId} {
       allow read: if request.auth != null
         && resource.data.referrerUid == request.auth.uid;
-      allow create: if request.resource.data.keys().hasOnly(['referrerUid', 'visitorKey', 'claimedAt'])
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['referrerUid', 'visitorKey', 'claimedAt'])
         && request.resource.data.referrerUid is string
         && request.resource.data.visitorKey is string
-        // Prevent self-referral for authenticated visitors
-        && (request.auth == null || request.auth.uid != request.resource.data.referrerUid);
+        // The claim must be attributed to the authenticated visitor's own uid so
+        // it can only be counted once per account.
+        && request.resource.data.visitorKey == request.auth.uid
+        // Prevent self-referral.
+        && request.auth.uid != request.resource.data.referrerUid
+        // Pin the deterministic doc ID so an account cannot fan out claims.
+        && claimId == request.resource.data.referrerUid + '_' + request.auth.uid;
       allow update, delete: if false;
     }
 
@@ -284,6 +290,16 @@ service cloud.firestore {
         allow read: if request.auth != null && request.auth.uid == uid;
         allow create, update, delete: if false;
       }
+    }
+
+    // ── Free Forge ───────────────────────────────────────────────────────────
+    // Per-account record of the free tier's one-complimentary-card forge and its
+    // cooldown. Owners may read their own status, but the cooldown is recorded by
+    // the trusted /api/forge/* routes so clearing localStorage cannot mint extra
+    // free cards.
+    match /freeForge/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
     }
 
     // ── Share Links ──────────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../../se
 import { buildBackgroundPrompt, buildCharacterPrompt, buildFramePrompt } from "../../lib/promptBuilder";
 import ozziesConfig from "../../lib/ozziesConfig.json";
 import { useTier } from "../../context/TierContext";
+import { FreeForgeCooldownError } from "../../services/forge";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useWallet } from "../../context/WalletContext";
@@ -98,8 +99,7 @@ export function useForgeGeneration() {
     freeForgeReadyAt,
     openUpgradeModal,
     freeCardUsed,
-    markFreeCardUsed,
-    startFreeForgeCooldown,
+    claimFreeForgeCard,
   } = useTier();
   const { user, userProfile } = useAuth();
   const { linkedLanguage, profile, useCraftlingua } = useLanguage();
@@ -343,6 +343,29 @@ export function useForgeGeneration() {
       return;
     }
     setWalletMessage(null);
+    const usingFreeForge = !requiresOzzies && tier === "free" && generateCredits === 0;
+    if (usingFreeForge) {
+      if (!user) {
+        // The free card is one-per-account, so signing in is required.
+        openUpgradeModal();
+        return;
+      }
+      try {
+        // Server-authoritative claim enforces the per-account free-forge cooldown
+        // so clearing localStorage cannot mint additional free cards.
+        await claimFreeForgeCard();
+      } catch (error) {
+        setWalletMessageTone("error");
+        setWalletMessage(
+          error instanceof FreeForgeCooldownError
+            ? "Your free forge is still on cooldown. Come back when it refreshes or spend Ozzies."
+            : error instanceof Error
+              ? error.message
+              : "Could not claim your free forge.",
+        );
+        return;
+      }
+    }
     if (requiresOzzies) {
       if (!user) {
         openUpgradeModal();
@@ -415,12 +438,7 @@ export function useForgeGeneration() {
       setRevealedFaction(null);
     }
 
-    if (!requiresOzzies && tier === "free" && generateCredits === 0) {
-      if (!freeCardUsed) {
-        markFreeCardUsed();
-      }
-      startFreeForgeCooldown();
-    } else if (generateCredits > 0) {
+    if (!usingFreeForge && generateCredits > 0) {
       consumeCredit();
     }
 
@@ -461,11 +479,10 @@ export function useForgeGeneration() {
     canForge,
     clearRecoveryIssues,
     consumeCredit,
-    freeCardUsed,
     generateCredits,
     generateLayer,
     hasFaction,
-    markFreeCardUsed,
+    claimFreeForgeCard,
     openUpgradeModal,
     prompts,
     refreshCraftlinguaFront,
@@ -476,7 +493,6 @@ export function useForgeGeneration() {
     selectedWeaponImageUrl,
     setLayerParams,
     setLayers,
-    startFreeForgeCooldown,
     tier,
     unlockFaction,
     user,

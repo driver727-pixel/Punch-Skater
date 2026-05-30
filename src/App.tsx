@@ -7,6 +7,7 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { useTier } from "./context/TierContext";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
+import { PersistenceErrorToast } from "./components/PersistenceErrorToast";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { TerminalShell } from "./components/TerminalShell";
@@ -467,6 +468,7 @@ function App() {
                     </Suspense>
                   </main>
                   <Footer />
+                  <PersistenceErrorToast />
                 </div>
               </ErrorBoundary>
             </LanguageProvider>

@@ -5,6 +5,7 @@ import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 import { FACTION_LORE } from "../lib/lore";
 import { loadFactionDiscoveries, saveFactionDiscoveries } from "../lib/storage";
+import { reportPersistenceError } from "../lib/persistenceError";
 
 const VALID_FACTIONS = new Set<Faction>(FACTION_LORE.map((entry) => entry.name));
 
@@ -40,7 +41,7 @@ export function useFactionDiscovery() {
       const next = dedupeFactions([...prev, faction]);
 
       if (uid && db) {
-        setDoc(doc(db, "userProfiles", uid), { discoveredFactions: next }, { merge: true }).catch(console.error);
+        setDoc(doc(db, "userProfiles", uid), { discoveredFactions: next }, { merge: true }).catch((error) => reportPersistenceError("Couldn't save your faction discovery — check your connection and try again.", error));
       } else if (!uid) {
         saveFactionDiscoveries(next);
       }

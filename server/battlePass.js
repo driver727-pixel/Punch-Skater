@@ -2,17 +2,14 @@
  * server/battlePass.js — Battle pass progression handlers.
  *
  * Season length: 6 weeks. Max tier: 30.
- * XP is added via POST /api/battle-pass/xp and tiers advance automatically.
+ *
+ * NOTE: There is intentionally no endpoint that accepts client-supplied XP.
+ * Trusting a client-provided XP amount let any authenticated user climb every
+ * tier for free, so tier progression must be derived from server-verified game
+ * events. Reward claiming is still validated against the stored server tier.
  */
 
 const MAX_TIER = 30;
-const XP_PER_TIER_BASE = 100;
-const XP_SCALING_FACTOR = 1.15;
-
-function xpForTier(tier) {
-  if (tier <= 0) return 0;
-  return Math.floor(XP_PER_TIER_BASE * Math.pow(XP_SCALING_FACTOR, tier - 1));
-}
 
 export function registerBattlePassRoutes(app, { adminDb, battlePassRateLimit, authenticateFirebaseUser, FieldValue }) {
   app.get('/api/battle-pass', battlePassRateLimit, async (req, res) => {
@@ -33,55 +30,6 @@ export function registerBattlePassRoutes(app, { adminDb, battlePassRateLimit, au
           seasonId: data?.seasonId ?? null,
           claimedRewards: data?.claimedRewards ?? [],
         },
-      });
-    } catch (err) {
-      const status = err.statusCode ?? 500;
-      res.status(status).json({ error: err.message ?? 'Internal error.' });
-    }
-  });
-
-  app.post('/api/battle-pass/xp', battlePassRateLimit, async (req, res) => {
-    try {
-      const decoded = await authenticateFirebaseUser(req);
-      if (!adminDb) return res.status(503).json({ error: 'Service unavailable.' });
-
-      const { xp: xpGain, seasonId } = req.body ?? {};
-      if (typeof xpGain !== 'number' || xpGain <= 0 || xpGain > 1000) {
-        return res.status(400).json({ error: 'Invalid XP value.' });
-      }
-
-      const docRef = adminDb.collection('battlePass').doc(decoded.uid);
-      const snap = await docRef.get();
-      const data = snap.exists ? snap.data() : {};
-
-      let currentTier = data.tier ?? 0;
-      let currentXp = (data.xp ?? 0) + xpGain;
-
-      while (currentTier < MAX_TIER) {
-        const nextXp = xpForTier(currentTier + 1);
-        if (currentXp >= nextXp) {
-          currentXp -= nextXp;
-          currentTier++;
-        } else {
-          break;
-        }
-      }
-
-      if (currentTier >= MAX_TIER) currentTier = MAX_TIER;
-
-      await docRef.set({
-        uid: decoded.uid,
-        seasonId: seasonId ?? data.seasonId ?? null,
-        tier: currentTier,
-        xp: currentXp,
-        isPremium: data.isPremium ?? false,
-        claimedRewards: data.claimedRewards ?? [],
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-
-      res.json({
-        ok: true,
-        data: { tier: currentTier, xp: currentXp },
       });
     } catch (err) {
       const status = err.statusCode ?? 500;

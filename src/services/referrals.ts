@@ -5,10 +5,13 @@
  *
  * Flow:
  *  1. A logged-in user generates their referral link: `?ref=<uid>`.
- *  2. A visitor opens that link.  On arrival, `claimReferral()` is called:
- *     - A document is written to `referralClaims/<referrerUid>_<visitorKey>`.
- *     - The visitorKey is a UUID persisted in localStorage so the same browser
- *       cannot claim the same referrer twice.
+ *  2. A visitor opens that link. The referrer UID is held until the visitor
+ *     signs in (referral credit is one-per-account, so authentication is
+ *     required). Once the visitor is authenticated, `claimReferral()` is called:
+ *     - A document is written to `referralClaims/<referrerUid>_<visitorUid>`.
+ *     - Because the doc ID is keyed by the authenticated visitor UID, the same
+ *       account can never claim the same referrer twice (and Firestore rules
+ *       reject any claim whose visitorKey is not the caller's own uid).
  *  3. The referrer, on their next session, calls `syncReferralCredits(uid)`
  *     which counts `referralClaims` docs belonging to them, stores the count
  *     in localStorage, and returns it.  Each doc = 1 credit.
@@ -26,53 +29,45 @@ import {
 import { db } from "../lib/firebase";
 
 export const REFERRAL_CREDITS_KEY = "ps_gen_credits";
-const VISITOR_KEY_STORAGE = "ps_visitor_key";
 const CLAIMED_STORAGE_PREFIX = "ps_ref_claimed_";
 
-/** Returns the persistent visitor key for this browser, generating one if needed. */
-export function getOrCreateVisitorKey(): string {
-  let key = localStorage.getItem(VISITOR_KEY_STORAGE);
-  if (!key) {
-    key = crypto.randomUUID();
-    localStorage.setItem(VISITOR_KEY_STORAGE, key);
-  }
-  return key;
-}
-
 /**
- * Returns true if this browser has already claimed a referral credit for the
- * given referrerUid.
+ * Returns true if this browser has already recorded a referral claim for the
+ * given referrerUid. This is a UX cache only — the authoritative guard against
+ * duplicate credit is the per-account Firestore document.
  */
 export function hasClaimedReferral(referrerUid: string): boolean {
   return localStorage.getItem(`${CLAIMED_STORAGE_PREFIX}${referrerUid}`) === "1";
 }
 
 /**
- * Attempts to claim a referral credit for `referrerUid`.
+ * Attempts to claim a referral credit for `referrerUid` on behalf of the
+ * authenticated visitor `visitorUid`.
  * Writes a Firestore document so the referrer can count their earned credits.
- * Marks the claim in localStorage to prevent duplicate claims from this browser.
  *
- * @returns `true` if the claim was newly written, `false` if already claimed or
- *          if the visitor's own UID matches the referrerUid (self-referral guard).
+ * @returns `true` if the claim was newly written, `false` if the visitor is not
+ *          authenticated, has already claimed, or is the referrer themselves
+ *          (self-referral guard).
  */
 export async function claimReferral(
   referrerUid: string,
   visitorUid: string | null
 ): Promise<boolean> {
   if (!db) return false;
-  // Prevent self-referral
-  if (visitorUid && visitorUid === referrerUid) return false;
+  // Referral credit is one-per-account: an authenticated visitor is required.
+  if (!visitorUid) return false;
+  // Prevent self-referral.
+  if (visitorUid === referrerUid) return false;
 
-  // Already claimed by this browser
+  // Already claimed by this browser/account.
   if (hasClaimedReferral(referrerUid)) return false;
 
-  const visitorKey = getOrCreateVisitorKey();
-  const claimId = `${referrerUid}_${visitorKey}`;
+  const claimId = `${referrerUid}_${visitorUid}`;
 
   try {
     await setDoc(doc(db, "referralClaims", claimId), {
       referrerUid,
-      visitorKey,
+      visitorKey: visitorUid,
       claimedAt: serverTimestamp(),
     });
     // Mark as claimed in localStorage so we don't write again

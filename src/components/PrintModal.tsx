@@ -4,6 +4,7 @@ import { PrintedCardPreviewPair } from "./PrintedCardFaces";
 import { SkaterCardFace } from "./SkaterCardFace";
 import { CardContainer } from "./CardContainer";
 import { buildCardVars } from "../lib/cardVars";
+import { useModalA11y } from "../hooks/useModalA11y";
 
 interface PrintModalProps {
   card: CardPayload;
@@ -37,6 +38,7 @@ export function PrintModal({
   onClose,
 }: PrintModalProps) {
   const [side, setSide] = useState<PrintSide>("both");
+  const dialogRef = useModalA11y<HTMLDivElement>({ onClose });
 
   const handlePrint = () => {
     window.print();
@@ -50,9 +52,16 @@ export function PrintModal({
     <>
       {/* ── Screen UI ── */}
       <div className="modal-overlay print-modal-overlay" onClick={onClose}>
-        <div className="modal-panel print-modal-panel" onClick={(e) => e.stopPropagation()}>
-          <button className="close-btn modal-close" onClick={onClose}>✕</button>
-          <h2 className="modal-title">🖨 Print Card</h2>
+        <div
+          className="modal-panel print-modal-panel"
+          onClick={(e) => e.stopPropagation()}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="print-modal-title"
+        >
+          <button className="close-btn modal-close" onClick={onClose} aria-label="Close print preview">✕</button>
+          <h2 className="modal-title" id="print-modal-title">🖨 Print Card</h2>
           <p className="modal-sub">
             Standard poker size · 2.5 × 3.5 in · 0.125 in bleed · flat, clean
           </p>

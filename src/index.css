@@ -19345,3 +19345,44 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   from { opacity: 1; }
   to { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.97); }
 }
+
+/* ── Global persistence-error toast ─────────────────────────────────────────
+   Surfaces background save/sync failures that were previously swallowed. */
+.persistence-error-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 68, 102, 0.55);
+  border-radius: 12px;
+  background: rgba(40, 6, 14, 0.96);
+  color: #ffd6de;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  font-size: 0.95rem;
+}
+
+.persistence-error-toast__message {
+  flex: 1;
+}
+
+.persistence-error-toast__close {
+  flex: none;
+  background: transparent;
+  border: none;
+  color: #ffd6de;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.persistence-error-toast__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}

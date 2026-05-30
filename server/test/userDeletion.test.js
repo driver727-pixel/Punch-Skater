@@ -110,6 +110,7 @@ test('deleteUserData removes per-user docs, subcollections, and related query re
       `wallets/${uid}`,
       `dailyStreaks/${uid}`,
       `battlePass/${uid}`,
+      `freeForge/${uid}`,
       `notifications/${uid}`,
     ]),
   );

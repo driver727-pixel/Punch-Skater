@@ -3,6 +3,7 @@ import { MissionTransitScene } from "./MissionTransitScene";
 import { ProceduralMap } from "./ProceduralMap";
 import { useAuth } from "../context/AuthContext";
 import { DECK_CARD_LIMIT, useDecks } from "../hooks/useDecks";
+import { useModalA11y } from "../hooks/useModalA11y";
 import { useDistrictWeather } from "../hooks/useDistrictWeather";
 import type { DistrictWeatherSnapshot } from "../lib/districtWeather";
 import { getDistrictAccessSummary } from "../lib/districtWeather";
@@ -549,6 +550,10 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
   const [pendingCounterOptionId, setPendingCounterOptionId] = useState<string | null>(null);
   const [selectedJoustTactic, setSelectedJoustTactic] = useState<JoustTactic | null>(null);
   const [missionResult, setMissionResult] = useState<MissionRunResponse | null>(null);
+  const missionResultRef = useModalA11y<HTMLDivElement>({
+    onClose: () => setMissionResult(null),
+    active: Boolean(missionResult),
+  });
   const [streakExpanded, setStreakExpanded] = useState(false);
   const [resultPhase, setResultPhase] = useState<1 | 2 | 3>(2);
   const [logExpanded, setLogExpanded] = useState(false);
@@ -1643,6 +1648,7 @@ export function MissionsPanel({ uid }: MissionsPanelProps) {
               missionResult.rewardGranted ? "mission-result-panel--success" : "mission-result-panel--fail",
             ].join(" ")}
             style={getMissionThemeStyle(missionResult.mission.district)}
+            ref={missionResultRef}
           >
             {missionResult.rewardGranted && (
               <div className="mission-result-panel__beams" aria-hidden="true">

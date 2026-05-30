@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { CardViewer3D } from "../../components/CardViewer3D";
 import { PrintModal } from "../../components/PrintModal";
 import { sfxClick } from "../../lib/sfx";
@@ -76,6 +77,23 @@ export function ForgeResultOverlays({
 }: ForgeResultOverlaysProps) {
   const rarityConfig = revealedRarity ? RARITY_REVEAL_CONFIG[revealedRarity] : null;
 
+  // Allow Escape to dismiss the celebration overlays (rarity, saved, faction).
+  useEffect(() => {
+    const closeTop = revealedRarity
+      ? onCloseRarityReveal
+      : savedCard
+        ? onKeepForging
+        : revealedFaction
+          ? onCloseFactionReveal
+          : null;
+    if (!closeTop) return undefined;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeTop();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [revealedRarity, savedCard, revealedFaction, onCloseRarityReveal, onKeepForging, onCloseFactionReveal]);
+
   return (
     <>
       {card && viewing3D && (
@@ -99,13 +117,13 @@ export function ForgeResultOverlays({
         />
       )}
       {revealedRarity && rarityConfig && (
-        <div className="save-celebrate-overlay" onClick={onCloseRarityReveal}>
+        <div className="save-celebrate-overlay" onClick={onCloseRarityReveal} role="dialog" aria-modal="true" aria-labelledby="forge-rarity-reveal-title">
           <div
             className={`save-celebrate-modal save-celebrate-modal--rarity-reveal save-celebrate-modal--rarity-${rarityConfig.cssKey}`}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="save-celebrate-emoji rarity-reveal-emoji">{rarityConfig.emoji}</div>
-            <h2 className="save-celebrate-title rarity-reveal-title">{rarityConfig.title}</h2>
+            <h2 className="save-celebrate-title rarity-reveal-title" id="forge-rarity-reveal-title">{rarityConfig.title}</h2>
             <p className="rarity-reveal-badge">{revealedRarity}</p>
             <p className="save-celebrate-notice">{rarityConfig.message}</p>
             <div className="forge-generated-buttons">
@@ -123,10 +141,10 @@ export function ForgeResultOverlays({
         </div>
       )}
       {savedCard && (
-        <div className="save-celebrate-overlay" onClick={onKeepForging}>
+        <div className="save-celebrate-overlay" onClick={onKeepForging} role="dialog" aria-modal="true" aria-labelledby="forge-saved-title">
           <div className="save-celebrate-modal" onClick={(event) => event.stopPropagation()}>
             <div className="save-celebrate-emoji">🎉</div>
-            <h2 className="save-celebrate-title">
+            <h2 className="save-celebrate-title" id="forge-saved-title">
               {isFirstCard
                 ? "Congrats! You saved your first card!"
                 : "Card saved to your Collection!"}
@@ -157,10 +175,10 @@ export function ForgeResultOverlays({
         </div>
       )}
       {revealedFaction && (
-        <div className="save-celebrate-overlay" onClick={onCloseFactionReveal}>
+        <div className="save-celebrate-overlay" onClick={onCloseFactionReveal} role="dialog" aria-modal="true" aria-labelledby="forge-faction-reveal-title">
           <div className="save-celebrate-modal save-celebrate-modal--reveal" onClick={(event) => event.stopPropagation()}>
             <div className="save-celebrate-emoji">🎴</div>
-            <h2 className="save-celebrate-title">
+            <h2 className="save-celebrate-title" id="forge-faction-reveal-title">
               {revealedFaction.isNew
                 ? "Secret faction discovered!"
                 : "Faction signal reacquired!"}

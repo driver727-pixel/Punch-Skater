@@ -231,6 +231,9 @@ export function CardViewer3D({
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseLeave}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`3D viewer — ${card.identity.name}`}
     >
       {scene}
     </div>

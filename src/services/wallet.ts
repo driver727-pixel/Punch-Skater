@@ -10,10 +10,6 @@ const WALLET_SPEND_API_URL = resolveApiUrl(
   import.meta.env.VITE_WALLET_SPEND_API_URL as string | undefined,
   "/api/wallet/spend",
 );
-const WALLET_MISSION_REWARD_API_URL = resolveApiUrl(
-  import.meta.env.VITE_WALLET_MISSION_REWARD_API_URL as string | undefined,
-  "/api/wallet/rewards/mission",
-);
 
 export interface WalletStateResponse {
   wallet: PlayerWallet;
@@ -54,15 +50,5 @@ export function spendOzzies(
   return callWalletApi<WalletMutationResponse>(user, WALLET_SPEND_API_URL, {
     method: "POST",
     body: JSON.stringify({ sink, idempotencyKey }),
-  });
-}
-
-export function claimMissionReward(
-  user: User,
-  { missionId, idempotencyKey }: { missionId: string; idempotencyKey: string },
-): Promise<WalletMutationResponse> {
-  return callWalletApi<WalletMutationResponse>(user, WALLET_MISSION_REWARD_API_URL, {
-    method: "POST",
-    body: JSON.stringify({ missionId, idempotencyKey }),
   });
 }

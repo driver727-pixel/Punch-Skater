@@ -80,6 +80,7 @@ export async function deleteUserData({ adminDb, uid, pageSize = 200 }) {
     walletDocRef.delete(),
     adminDb.collection('dailyStreaks').doc(uid).delete(),
     adminDb.collection('battlePass').doc(uid).delete(),
+    adminDb.collection('freeForge').doc(uid).delete(),
     notificationsDocRef.delete(),
   ]);
 }

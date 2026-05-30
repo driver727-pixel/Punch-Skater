@@ -48,6 +48,7 @@ import { registerImportRoutes } from './routes/import.js';
 import { registerMissionRoutes } from './routes/missions.js';
 import { registerPaymentRoutes } from './routes/payments.js';
 import { registerWalletRoutes } from './routes/wallet.js';
+import { registerForgeRoutes } from './routes/forge.js';
 import { registerBattlePassRoutes } from './battlePass.js';
 import { registerLeaderboardRoutes } from './routes/leaderboard.js';
 import { registerRewardRoutes } from './routes/rewards.js';
@@ -242,6 +243,13 @@ const walletRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 60,
   message: { error: 'Too many wallet requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const forgeRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many forge requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -911,6 +919,13 @@ registerBattlePassRoutes(app, {
 registerWalletRoutes(app, {
   adminDb,
   walletRateLimit,
+  authenticateFirebaseUser,
+  FieldValue,
+});
+
+registerForgeRoutes(app, {
+  adminDb,
+  forgeRateLimit,
   authenticateFirebaseUser,
   FieldValue,
 });
