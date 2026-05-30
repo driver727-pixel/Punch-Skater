@@ -11,6 +11,7 @@ import { getDisplayedArchetype } from "../lib/cardIdentity";
 import { computeDeckTotalPower } from "../lib/battle";
 import { exportJson } from "../lib/storage";
 import { useTier } from "../context/TierContext";
+import { useAuth } from "../context/AuthContext";
 import { TIERS } from "../lib/tiers";
 import { sfxSuccess, sfxRemove, sfxClick } from "../lib/sfx";
 import {
@@ -48,7 +49,9 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
   const { cards } = useCollection();
   const { boards: workshopBoards } = useWorkshopBoards();
   const { tier, openUpgradeModal } = useTier();
+  const { userProfile } = useAuth();
   const tierData = TIERS[tier];
+  const isAdminUser = userProfile?.isAdmin === true;
 
   const [activeDeck, setActiveDeck] = useState<DeckPayload | null>(null);
   const [newDeckName, setNewDeckName] = useState("");
@@ -67,9 +70,9 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
 
   // First-deck initiation status (only relevant when activeDeck is the first deck)
   const firstDeckInitStatus = useMemo(() => {
-    if (!activeDeck || !isFirstDeck(activeDeck, decks)) return null;
+    if (!activeDeck || isAdminUser || !isFirstDeck(activeDeck, decks)) return null;
     return getFirstDeckInitiationStatus(activeDeck.cards);
-  }, [activeDeck, decks]);
+  }, [activeDeck, decks, isAdminUser]);
 
   // Auto-select the first deck when decks load (and none is selected)
   useEffect(() => {
@@ -143,7 +146,7 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
     if (activeDeck.cards.length >= DECK_CARD_LIMIT) return;
 
     // Enforce first-deck initiation rules
-    if (isFirstDeck(activeDeck, decks)) {
+    if (!isAdminUser && isFirstDeck(activeDeck, decks)) {
       const check = canAddToFirstDeck(activeDeck.cards, card);
       if (!check.allowed) {
         setBlockedReason(check.reason);
@@ -590,7 +593,7 @@ export function DeckBuilder({ embedded = false }: { embedded?: boolean } = {}) {
                   <h3>Add from Collection ({slotsRemaining} slot{slotsRemaining !== 1 ? "s" : ""} remaining)</h3>
                   <div className="card-grid card-grid--small">
                     {availableCards.map((card) => {
-                      const addCheck = isFirstDeck(activeDeck, decks)
+                      const addCheck = !isAdminUser && isFirstDeck(activeDeck, decks)
                         ? canAddToFirstDeck(activeDeck.cards, card)
                         : { allowed: true as const };
                       const blocked = !addCheck.allowed;
