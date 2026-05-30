@@ -24,7 +24,7 @@ import {
   SEASONAL_REWARD_TIERS,
 } from "../lib/seasonalLeaderboard";
 import { estimateCardTradeValue, formatTradeValue, getTradeValueBand } from "../lib/tradeEconomy";
-import { sfxSuccess, sfxRemove, sfxClick } from "../lib/sfx";
+import { sfxSuccess, sfxClick, sfxTradeAccepted, sfxTradeDeclined } from "../lib/sfx";
 
 type Tab = "inbox" | "outbox" | "market" | "leaderboard";
 
@@ -148,7 +148,7 @@ export function Trades() {
           updatedAt: new Date().toISOString(),
         });
       });
-      sfxSuccess();
+      sfxTradeAccepted();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept trade.");
     } finally {
@@ -197,7 +197,7 @@ export function Trades() {
         user.uid,
         "This offer is no longer assigned to your account.",
       );
-      sfxRemove();
+      sfxTradeDeclined();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to decline trade.");
     } finally {

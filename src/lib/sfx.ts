@@ -636,3 +636,280 @@ export function startRaceRollLoop(): RaceRollLoopHandle {
     return NO_OP_ROLL_LOOP;
   }
 }
+
+// ── Mission SFX ──────────────────────────────────────────────────────────────
+
+/** Mission success — bright ascending celebratory phrase with courier flair. */
+export function sfxMissionSuccess() {
+  // Opening burst
+  layeredTone("square", 0, 0.18, 523, 0.14, 659);
+  layeredTone("triangle", 0.06, 0.2, 659, 0.12, 880);
+  // Rising confirmation
+  layeredTone("square", 0.16, 0.22, 784, 0.12, 1047);
+  layeredTone("sine", 0.24, 0.26, 1047, 0.09, 1319);
+  // Sparkling finish
+  layeredTone("triangle", 0.34, 0.2, 1319, 0.07, 1760);
+  layeredTone("sine", 0.4, 0.16, 1760, 0.04, 2093);
+}
+
+/** Mission failure — ominous descending minor phrase. */
+export function sfxMissionFailure() {
+  // Heavy impact
+  layeredTone("sawtooth", 0, 0.2, 220, 0.18, 110);
+  // Descending minor tones
+  layeredTone("triangle", 0.05, 0.35, 392, 0.14, 196);
+  layeredTone("square", 0.12, 0.3, 311, 0.1, 156);
+  // Fading tension
+  layeredTone("sawtooth", 0.2, 0.25, 185, 0.08, 92);
+  layeredTone("triangle", 0.3, 0.3, 130, 0.06, 65);
+}
+
+/** Mission fork-choice — mysterious digital chime signalling a decision point. */
+export function sfxMissionForkChoice() {
+  // Dual-tone question mark feeling
+  layeredTone("sine", 0, 0.14, 660, 0.1);
+  layeredTone("triangle", 0.08, 0.16, 880, 0.08);
+  layeredTone("sine", 0.18, 0.14, 660, 0.09);
+  // Hanging unresolved note
+  layeredTone("triangle", 0.28, 0.22, 740, 0.07, 784);
+  layeredTone("sine", 0.32, 0.2, 1175, 0.04, 1245);
+}
+
+// ── Trade SFX ────────────────────────────────────────────────────────────────
+
+/** Trade sent — swift digital dispatch whoosh with confirmation ping. */
+export function sfxTradeSent() {
+  // Outgoing whoosh
+  layeredTone("sawtooth", 0, 0.12, 400, 0.1, 1200);
+  layeredTone("square", 0.02, 0.1, 600, 0.06, 1800);
+  // Confirmation ping
+  layeredTone("sine", 0.14, 0.18, 1047, 0.1);
+  layeredTone("triangle", 0.18, 0.14, 1319, 0.06);
+}
+
+/** Trade accepted — warm rising handshake tone. */
+export function sfxTradeAccepted() {
+  // Affirmative chord
+  layeredTone("sine", 0, 0.2, 523, 0.12);
+  layeredTone("triangle", 0.05, 0.2, 659, 0.1);
+  layeredTone("sine", 0.1, 0.22, 784, 0.1);
+  // Sealed deal shimmer
+  layeredTone("triangle", 0.2, 0.18, 1047, 0.08, 1319);
+  layeredTone("sine", 0.26, 0.14, 1319, 0.05, 1568);
+}
+
+/** Trade declined — brief descending rejection buzz. */
+export function sfxTradeDeclined() {
+  layeredTone("sawtooth", 0, 0.16, 350, 0.12, 180);
+  layeredTone("square", 0.04, 0.14, 260, 0.08, 130);
+  layeredTone("triangle", 0.12, 0.12, 180, 0.06, 90);
+}
+
+// ── Battle Queue / Draw / Result SFX ─────────────────────────────────────────
+
+/**
+ * Battle queue waiting pulse — a rhythmic low electronic heartbeat
+ * indicating the player is waiting for a match.
+ */
+export function sfxBattleQueuePulse() {
+  // Low thump
+  layeredTone("sine", 0, 0.15, 80, 0.14, 60);
+  layeredTone("triangle", 0.02, 0.12, 160, 0.06, 100);
+  // Subtle digital tick
+  layeredTone("square", 0.12, 0.04, 1400, 0.04, 900);
+}
+
+/** Battle draw — tense unresolved chord conveying a stalemate. */
+export function sfxBattleDraw() {
+  // Tension chord — neither rising nor falling, unresolved
+  layeredTone("triangle", 0, 0.3, 330, 0.14);
+  layeredTone("sine", 0, 0.3, 392, 0.12);
+  layeredTone("triangle", 0.05, 0.28, 466, 0.1);
+  // Fade to static whisper
+  layeredTone("sawtooth", 0.2, 0.15, 233, 0.06, 175);
+  layeredTone("square", 0.25, 0.12, 349, 0.04, 262);
+}
+
+/** Battle result reveal — dramatic stinger preceding win or lose fanfare. */
+export function sfxBattleResultReveal() {
+  // Drum-roll style ascending tension builder
+  layeredTone("square", 0, 0.06, 200, 0.08);
+  layeredTone("square", 0.06, 0.06, 250, 0.09);
+  layeredTone("square", 0.12, 0.06, 320, 0.1);
+  layeredTone("square", 0.18, 0.06, 400, 0.11);
+  layeredTone("square", 0.24, 0.08, 520, 0.12);
+  // Impact hit
+  layeredTone("sawtooth", 0.32, 0.14, 110, 0.18, 55);
+  layeredTone("triangle", 0.32, 0.2, 660, 0.1, 880);
+}
+
+// ── District Ambience Loop ───────────────────────────────────────────────────
+
+/**
+ * District-specific synthesized ambience loops. Each district has a unique
+ * tonal character built from oscillators and filtered noise.
+ *
+ * Returns a handle with `stop()` to tear down the loop.
+ */
+export interface DistrictAmbienceHandle {
+  stop: () => void;
+}
+
+const NO_OP_AMBIENCE: DistrictAmbienceHandle = { stop: () => {} };
+
+export type DistrictAmbienceKey =
+  | "Airaway"
+  | "Nightshade"
+  | "The Grid"
+  | "Glass City"
+  | "Batteryville"
+  | "The Roads";
+
+interface DistrictAmbienceConfig {
+  droneFreq: number;
+  droneType: OscillatorType;
+  filterFreq: number;
+  filterQ: number;
+  noiseGain: number;
+  droneGain: number;
+  filterType: BiquadFilterType;
+}
+
+const DISTRICT_AMBIENCE_CONFIGS: Record<DistrictAmbienceKey, DistrictAmbienceConfig> = {
+  Airaway: {
+    droneFreq: 92,
+    droneType: "sine",
+    filterFreq: 800,
+    filterQ: 0.4,
+    noiseGain: 0.03,
+    droneGain: 0.04,
+    filterType: "bandpass",
+  },
+  Nightshade: {
+    droneFreq: 55,
+    droneType: "sawtooth",
+    filterFreq: 350,
+    filterQ: 1.2,
+    noiseGain: 0.05,
+    droneGain: 0.05,
+    filterType: "lowpass",
+  },
+  "The Grid": {
+    droneFreq: 110,
+    droneType: "square",
+    filterFreq: 1200,
+    filterQ: 0.6,
+    noiseGain: 0.02,
+    droneGain: 0.03,
+    filterType: "bandpass",
+  },
+  "Glass City": {
+    droneFreq: 82,
+    droneType: "triangle",
+    filterFreq: 1600,
+    filterQ: 0.3,
+    noiseGain: 0.025,
+    droneGain: 0.035,
+    filterType: "highpass",
+  },
+  Batteryville: {
+    droneFreq: 65,
+    droneType: "sawtooth",
+    filterFreq: 500,
+    filterQ: 0.9,
+    noiseGain: 0.04,
+    droneGain: 0.045,
+    filterType: "lowpass",
+  },
+  "The Roads": {
+    droneFreq: 73,
+    droneType: "triangle",
+    filterFreq: 600,
+    filterQ: 0.5,
+    noiseGain: 0.035,
+    droneGain: 0.04,
+    filterType: "bandpass",
+  },
+};
+
+/**
+ * Starts a looping procedural ambience for the given district.
+ * The ambience uses filtered noise + a low drone oscillator, each tuned
+ * to evoke the district's atmosphere.
+ */
+export function startDistrictAmbience(district: DistrictAmbienceKey): DistrictAmbienceHandle {
+  try {
+    const c = ctx();
+    const now = c.currentTime;
+    const cfg = DISTRICT_AMBIENCE_CONFIGS[district];
+    if (!cfg) return NO_OP_AMBIENCE;
+
+    // Noise layer — looping white noise shaped by district filter.
+    const noiseBuf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
+    const noiseData = noiseBuf.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i += 1) {
+      noiseData[i] = Math.random() * 2 - 1;
+    }
+    const noiseSrc = c.createBufferSource();
+    noiseSrc.buffer = noiseBuf;
+    noiseSrc.loop = true;
+
+    const noiseFilter = c.createBiquadFilter();
+    noiseFilter.type = cfg.filterType;
+    noiseFilter.frequency.setValueAtTime(cfg.filterFreq, now);
+    noiseFilter.Q.value = cfg.filterQ;
+
+    const noiseGainNode = c.createGain();
+    noiseGainNode.gain.setValueAtTime(0.0001, now);
+    noiseGainNode.gain.linearRampToValueAtTime(cfg.noiseGain, now + 1.5);
+
+    noiseSrc.connect(noiseFilter);
+    noiseFilter.connect(noiseGainNode);
+
+    // Drone layer — low oscillator providing tonal body.
+    const drone = c.createOscillator();
+    drone.type = cfg.droneType;
+    drone.frequency.setValueAtTime(cfg.droneFreq, now);
+
+    const droneFilter = c.createBiquadFilter();
+    droneFilter.type = "lowpass";
+    droneFilter.frequency.setValueAtTime(cfg.droneFreq * 3, now);
+
+    const droneGainNode = c.createGain();
+    droneGainNode.gain.setValueAtTime(0.0001, now);
+    droneGainNode.gain.linearRampToValueAtTime(cfg.droneGain, now + 1.5);
+
+    drone.connect(droneFilter);
+    droneFilter.connect(droneGainNode);
+
+    // Master gain for fade-out.
+    const master = c.createGain();
+    master.gain.setValueAtTime(1, now);
+    noiseGainNode.connect(master);
+    droneGainNode.connect(master);
+    master.connect(c.destination);
+
+    noiseSrc.start(now);
+    drone.start(now);
+
+    let stopped = false;
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      try {
+        const t = c.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(master.gain.value, t);
+        master.gain.linearRampToValueAtTime(0.0001, t + 0.8);
+        noiseSrc.stop(t + 1);
+        drone.stop(t + 1);
+      } catch {
+        /* already stopped */
+      }
+    };
+
+    return { stop };
+  } catch {
+    return NO_OP_AMBIENCE;
+  }
+}

@@ -19,6 +19,7 @@ import {
 } from "../lib/tradeEconomy";
 import { createTradeOffer } from "../services/trades";
 import { useModalA11y } from "../hooks/useModalA11y";
+import { sfxTradeSent } from "../lib/sfx";
 
 interface TradeModalProps {
   cards: CardPayload[];
@@ -108,6 +109,7 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
       });
       setSentTrades((current) => [...current, response.trade]);
       setSuccess(true);
+      sfxTradeSent();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send trade offer.");
     } finally {
