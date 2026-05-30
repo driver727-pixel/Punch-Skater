@@ -40,7 +40,6 @@ const SKYLINE_TOWER_MIN_HEIGHT_RATIO = 0.16;
 const SKYLINE_TOWER_MAX_HEIGHT_RATIO = 0.36;
 const BACKDROP_NODE_COUNT = 18;
 const BACKDROP_NODE_MIN_Y = 80;
-const BACKDROP_NODE_FALLBACK_MAX_Y = 90;
 const BACKDROP_NODE_MAX_HEIGHT_RATIO = 0.55;
 
 export class GameScene extends Phaser.Scene {
@@ -197,8 +196,9 @@ export class GameScene extends Phaser.Scene {
 
         for (let i = 0; i < BACKDROP_NODE_COUNT; i++) {
             const x = Phaser.Math.Between(20, width - 20);
-            const maxNodeY = Math.max(BACKDROP_NODE_FALLBACK_MAX_Y, height * BACKDROP_NODE_MAX_HEIGHT_RATIO);
-            const y = Phaser.Math.Between(BACKDROP_NODE_MIN_Y, maxNodeY);
+            const maxNodeY = height * BACKDROP_NODE_MAX_HEIGHT_RATIO;
+            const minNodeY = Math.min(BACKDROP_NODE_MIN_Y, maxNodeY);
+            const y = Phaser.Math.Between(minNodeY, maxNodeY);
             const node = this.add.circle(x, y, Phaser.Math.Between(1, 3), i % 2 ? palette.primary : palette.secondary, 0.6).setDepth(-1);
             this.tweens.add({
                 targets: node,
@@ -221,10 +221,23 @@ export class GameScene extends Phaser.Scene {
 
     createRamp(x, y, width, height, direction) {
         const graphics = this.add.graphics();
-        graphics.lineStyle(6, this.district.palette.primary, 0.2);
         graphics.fillStyle(this.district.palette.platform, 0.82);
-        graphics.beginPath();
+        this.drawRampPath(graphics, x, y, width, height, direction);
+        graphics.fillPath();
+        graphics.lineStyle(6, this.district.palette.primary, 0.2);
+        this.drawRampPath(graphics, x, y, width, height, direction);
+        graphics.strokePath();
+        graphics.lineStyle(3, this.district.palette.accent, 1);
+        this.drawRampPath(graphics, x, y, width, height, direction);
+        graphics.strokePath();
 
+        const zoneX = direction === 'right' ? x - width / 2 : x + width / 2;
+        const rampZone = this.add.zone(zoneX, y - height / 2, width, height);
+        this.ramps.push({ zone: rampZone, direction, width, height });
+    }
+
+    drawRampPath(graphics, x, y, width, height, direction) {
+        graphics.beginPath();
         if (direction === 'right') {
             graphics.moveTo(x - width, y);
             graphics.lineTo(x, y - height);
@@ -235,14 +248,6 @@ export class GameScene extends Phaser.Scene {
             graphics.lineTo(x + width, y);
         }
         graphics.closePath();
-        graphics.fillPath();
-        graphics.strokePath();
-        graphics.lineStyle(3, this.district.palette.accent, 1);
-        graphics.strokePath();
-
-        const zoneX = direction === 'right' ? x - width / 2 : x + width / 2;
-        const rampZone = this.add.zone(zoneX, y - height / 2, width, height);
-        this.ramps.push({ zone: rampZone, direction, width, height });
     }
 
     getDistrictColor(key) {
