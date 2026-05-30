@@ -25,6 +25,8 @@ const DEFAULT_COSMETICS = {
     weapon: 'Crutch Lance'
 };
 const OCTAGON_SIDES = 8;
+const RIDER_VISOR_WIDTH = 12;
+const RIDER_VISOR_HEIGHT = 10;
 const FLIP_VELOCITY_THRESHOLD = 300;
 const BOT_CHASE_PROBABILITY = 65;
 const CLASH_THRESHOLD = 48;
@@ -303,7 +305,7 @@ export class GameScene extends Phaser.Scene {
         g.fillStyle(primaryColor, 1);
         g.fillCircle(8, -42, 9);
         g.fillStyle(0x05050d, 1);
-        g.fillEllipse(11, -42, 12, 10);
+        g.fillEllipse(11, -42, RIDER_VISOR_WIDTH, RIDER_VISOR_HEIGHT);
         g.fillStyle(0xffea00, 1);
         g.fillRect(10, -45, 8, 2);
     }

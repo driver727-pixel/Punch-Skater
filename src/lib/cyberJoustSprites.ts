@@ -58,6 +58,9 @@ export const CYBER_JOUST_STORAGE_PREFIX = "cyber-joust/fighters";
 export const CYBER_JOUST_STATIC_ASSET_BASE = "assets/fighters";
 export const CYBER_JOUST_BODY_CANVAS_SIZE = 96;
 export const CYBER_JOUST_WEAPON_CANVAS_SIZE = 64;
+const RIDER_VISOR_RADIUS_X = 6.3;
+const RIDER_VISOR_RADIUS_Y = 5.4;
+const RIDER_VISOR_ROTATION = -0.25;
 
 export const CYBER_JOUST_COLORS: CyberJoustColorOption[] = [
   { name: "Neon Cyan", value: 0x00f0ff },
@@ -90,8 +93,8 @@ function toCssColor(color: number): string {
   return `#${color.toString(16).padStart(6, "0")}`;
 }
 
-function mixColor(color: number, target: number, amount: number): number {
-  const ratio = Math.max(0, Math.min(1, amount));
+function mixColor(color: number, target: number, blendAmount: number): number {
+  const ratio = Math.max(0, Math.min(1, blendAmount));
   const red = Math.round(((color >> 16) & 0xff) * (1 - ratio) + ((target >> 16) & 0xff) * ratio);
   const green = Math.round(((color >> 8) & 0xff) * (1 - ratio) + ((target >> 8) & 0xff) * ratio);
   const blue = Math.round((color & 0xff) * (1 - ratio) + (target & 0xff) * ratio);
@@ -439,7 +442,7 @@ export function renderCyberJoustBodySprite(colorName: string, deck: string): HTM
 
   context.fillStyle = "#05050d";
   context.beginPath();
-  context.ellipse(11, -42, 6.3, 5.4, -0.25, 0, Math.PI * 2);
+  context.ellipse(11, -42, RIDER_VISOR_RADIUS_X, RIDER_VISOR_RADIUS_Y, RIDER_VISOR_ROTATION, 0, Math.PI * 2);
   context.fill();
   drawNeonStroke(context, accent, 1.2, () => {
     context.beginPath();
