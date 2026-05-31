@@ -366,6 +366,13 @@ export function Collection() {
     spinCarousel(deltaX > 0 ? -1 : 1);
   };
 
+  const openCarouselCard = (card: CardPayload, index: number) => {
+    setCarouselIndex(index);
+    const next = selected?.id === card.id ? null : card;
+    if (next) sfxClick();
+    setSelected(next);
+  };
+
   const handleExport = (targetCards: CardPayload[] = cards, filename = "skpd-collection.json") => {
     exportJson({ version: "1.0.0", cards: targetCards, exportedAt: new Date().toISOString() }, filename);
   };
@@ -765,9 +772,9 @@ export function Collection() {
           <section className="collection-carousel-panel" aria-label="Card carousel">
             <div className="collection-carousel-header">
               <div>
-                <p className="eyebrow">Swipe gallery</p>
+                <p className="eyebrow">Card gallery</p>
                 <h2>Spin through your cards</h2>
-                <p>Swipe left or right on mobile, or use the arrows to rotate the gallery.</p>
+                <p>Swipe left or right on mobile, use the arrows, or press arrow keys when a card is focused.</p>
               </div>
               <div className="collection-carousel-controls">
                 <button
@@ -809,15 +816,17 @@ export function Collection() {
               const isCardSelected = selectedIds.has(card.id);
               const carouselOffset = getCarouselOffset(index);
               const isCarouselActive = carouselOffset === 0;
-              const isCarouselVisible = Math.abs(carouselOffset) <= 3;
+              const carouselAbsOffset = Math.abs(carouselOffset);
+              const isCarouselVisible = carouselAbsOffset <= 3;
+              const cardZIndex = isCarouselVisible ? COLLECTION_CAROUSEL_MAX_Z_INDEX - carouselAbsOffset : 0;
               return (
                 <div
                   key={card.id}
                   className={`card-thumb collection-carousel-card ${selected?.id === card.id ? "card-thumb--active" : ""} ${isCardSelected ? "card-thumb--selected" : ""} ${isCarouselActive ? "collection-carousel-card--center" : ""}`}
                  style={{
                    "--carousel-offset": carouselOffset,
-                   "--carousel-abs-offset": Math.abs(carouselOffset),
-                   zIndex: isCarouselVisible ? COLLECTION_CAROUSEL_MAX_Z_INDEX - Math.abs(carouselOffset) : 0,
+                   "--carousel-abs-offset": carouselAbsOffset,
+                   zIndex: cardZIndex,
                  } satisfies CarouselCardStyle}
                  role={isCarouselVisible ? "listitem" : "presentation"}
                  aria-current={isCarouselActive ? "true" : undefined}
@@ -839,12 +848,7 @@ export function Collection() {
                  type="button"
                  className="collection-carousel-card__button"
                  aria-label={`Open ${card.identity.name}`}
-                 onClick={() => {
-                   setCarouselIndex(index);
-                   const next = selected?.id === card.id ? null : card;
-                   if (next) sfxClick();
-                   setSelected(next);
-                 }}
+                 onClick={() => openCarouselCard(card, index)}
                  onKeyDown={(event) => {
                    if (event.key === "ArrowLeft") {
                      event.preventDefault();
@@ -853,6 +857,10 @@ export function Collection() {
                    if (event.key === "ArrowRight") {
                      event.preventDefault();
                      spinCarousel(1);
+                   }
+                   if (event.key === "Enter" || event.key === " ") {
+                     event.preventDefault();
+                     openCarouselCard(card, index);
                    }
                  }}
                 >
