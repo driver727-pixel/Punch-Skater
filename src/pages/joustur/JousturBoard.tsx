@@ -42,7 +42,7 @@ import {
   sfxJousturBoo,
 } from "../../lib/sfx";
 
-const JOUSTUR_BOARD_IMAGE_URL = "/assets/joustur/joustur-board.png";
+const JOUSTUR_BOARD_IMAGE_URL = "/assets/joustur/joustur-board.webp";
 const STEALTH_ALCOVES = new Set([4, 6, 8, 12, 14]);
 const PRIVATE_ENTRY_MIN = 1;
 const PRIVATE_ENTRY_MAX = 4;

@@ -18,7 +18,7 @@ import { FORGE_CLASS_ODDS } from "../../lib/cardClassProgression";
 import { formatDurationClock, getRemainingDurationMs } from "../../lib/dailyRewards";
 import { FORGE_ARCHETYPE_OPTIONS, getForgeArchetypeLabel } from "../../lib/factionDiscovery";
 import { sfxClick } from "../../lib/sfx";
-import tabletopForgeBackdrop from "../../../tabletopforge.png";
+import tabletopForgeBackdrop from "../../assets/tabletopforge.png";
 
 type ForgeWizardStepId = "identity" | "appearance" | "board-build" | "final-polish" | "review";
 

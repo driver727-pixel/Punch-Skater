@@ -89,6 +89,21 @@ Copy `.env.example` to `.env` for local client config.
 
 Do not commit server secrets.
 
+## Project Assets
+
+Keep the repository root free of loose media. New art and other static assets
+belong in one of two places:
+
+- **`public/assets/`** — production assets served by the app at `/assets/...`.
+  Add the optimized (web-ready) copy here. Run
+  `WEBP_QUALITY=72 npm run optimize:assets` to generate `.webp` siblings.
+- **`src/assets/`** — images imported directly by React components
+  (for example `import logo from "../assets/logo.png"`).
+
+Original, unoptimized design/source files that the app does **not** ship
+(reference art, PDFs, video sources, screenshots) live in **`design/`**. See
+[`design/README.md`](design/README.md). Do not drop these in the repository root.
+
 ## Local Development
 
 ```bash
