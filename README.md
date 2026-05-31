@@ -2,11 +2,24 @@
 
 A cyberpunk electric-skate card game built with React, TypeScript, Vite, Firebase, and a small Express proxy for paid APIs.
 
+## Fast Start
+
+```bash
+npm install
+npm run dev
+```
+
+## Verify before pushing
+
+```bash
+npm run verify
+```
+
 ## Welcome to Punch Skater™
 
 Create your skater. Build your crew. Win the joust. Rule the neon streets.
 
-Punch Skater™ is a collectible card game set in the Sk8rpunk™ universe, built around forging cyberpunk electric-skate warriors, assembling a 6-card Crew, winning mission jousts, beating district rivals, and climbing seasonal neon leaderboards.
+Punch Skater™ is a collectible card game set in the Sk8rpunk™ universe, built around forging cyberpunk electric-skate warriors, assembling a 6-card Crew, winning mission jousts, beating district rivals, and climbing the seasonal ladder.
 
 - **What** — Forge skater cards with joust-ready identities, grow your collection, and choose your best 6 cards as your active **Crew**.
 - **How** — Start with a bonus Rare card on signup, then earn more through missions, joust encounters, battles, trades, daily rewards, weekly heat, and seasonal progression.
@@ -107,8 +120,7 @@ npm run dev
 ```bash
 cd /path/to/Punch-Skater
 npm install
-npm run lint
-npm run build
+npm run verify
 WEBP_QUALITY=72 npm run optimize:assets   # optional: generate .webp siblings for public/assets
 npx playwright install chromium
 npm run test:e2e
@@ -116,7 +128,7 @@ npm run test:e2e
 
 ## Security Notes
 
-- The Express API is intentionally hardened for API-only hosting. If you ever serve the SPA from the same origin, expand the CSP `connectSrc` allow-list first so Firebase, Stripe, and Fal requests continue to work.
+- The Express API is intentionally hardened for API-only hosting. If you ever serve the SPA from the same origin, expand the CSP `connectSrc` allow-list first so Firebase, Stripe, and Fal requests keep working.
 - Fal image-generation, board-generation, and background-removal routes now require an authenticated Firebase user plus Firebase Admin credentials on the server.
 - Stripe checkout redirects are restricted to approved app origins, and webhook delivery should be configured for `/api/stripe/webhook`.
 - Admin access is now enforced via Firebase custom claims, with `userLookup` providing the minimal public directory used for trade lookups.
@@ -170,7 +182,7 @@ Write access to Storage paths is still gated by `storage.rules` (admin-only for 
 
 ### District and frame prompt status
 
-All current forge districts and all current rarity tiers are registered to static assets, so the live forge does not normally need district or frame prompts anymore. Those prompt builders remain in the codebase only as fallback support for missing assets, future districts / rarities, or emergency regeneration.
+All current forge districts and all current rarity tiers are registered to static assets, so the live forge does not normally need district or frame prompts anymore. Those prompt builders remain available only as fallback paths if static assets are intentionally removed or future content expands beyond the current asset catalog.
 
 ## Launch Asset Checklist
 
