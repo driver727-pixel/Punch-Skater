@@ -5,6 +5,7 @@ import { AdminFactionImagesPanel } from "../components/AdminFactionImagesPanel";
 import { AdminImageCachePanel } from "../components/AdminImageCachePanel";
 import { AdminDeckLayersPanel } from "../components/AdminDeckLayersPanel";
 import { AdminCyberJoustSpritesPanel } from "../components/AdminCyberJoustSpritesPanel";
+import { AdminPageBadge } from "../components/AdminPageBadge";
 import {
   getDistrictTheme,
   getDistrictTransitionEyebrow,
@@ -205,7 +206,7 @@ export function AssetGenerator() {
     <div className="page asset-gen-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">🎨 Image Assets</h1>
+          <h1 className="page-title">🎨 Image Assets<AdminPageBadge /></h1>
           <p className="page-sub">
             Admin tools for board assets, faction images, and cached forge image cleanup.
           </p>

@@ -17,6 +17,7 @@ import { TIERS, type TierLevel } from "../lib/tiers";
 import { resolveAdminActionUrl } from "../lib/apiUrls";
 import type { CardPayload } from "../lib/types";
 import { AdminCombinationStatsPanel } from "../components/AdminCombinationStatsPanel";
+import { AdminPageBadge } from "../components/AdminPageBadge";
 
 interface UserProfile {
   uid: string;
@@ -523,7 +524,7 @@ export function Admin() {
     <div className="page admin-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">⚙ Admin Panel</h1>
+          <h1 className="page-title">⚙ Admin Panel<AdminPageBadge /></h1>
           <p className="page-sub">Manage users and access tiers.</p>
         </div>
       </div>
