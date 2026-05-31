@@ -15,7 +15,7 @@ import { CrewFaceoffSpotlight } from "./cardForge/ForgeWelcomeModal";
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile } = useAuth();
   const [faceoffPayload, setFaceoffPayload] = useState<CrewFaceoffPayload | null>(() => loadCachedCrewFaceoff());
 
   useEffect(() => {
