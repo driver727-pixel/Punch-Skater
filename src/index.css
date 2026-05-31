@@ -1824,6 +1824,14 @@ body::after {
     translate3d(calc(var(--parallax-pointer-x) * 28px), calc(var(--parallax-scroll) * -0.08px + var(--parallax-pointer-y) * 16px), 0)
     scale(1.04);
 }
+.app-parallax__layer--cicada {
+  background: url('/cicada-vending.png') center/cover no-repeat;
+  opacity: 0.09;
+  mix-blend-mode: screen;
+  transform:
+    translate3d(calc(var(--parallax-pointer-x) * -8px), calc(var(--parallax-scroll) * -0.02px + var(--parallax-pointer-y) * -6px), 0)
+    scale(1.06);
+}
 .app-parallax__props {
   display: flex;
   justify-content: space-between;

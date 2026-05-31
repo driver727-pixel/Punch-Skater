@@ -325,6 +325,7 @@ function AppParallaxBackdrop() {
 
   return (
     <div className="app-parallax" aria-hidden="true">
+      <div className="app-parallax__layer app-parallax__layer--cicada" />
       <div className="app-parallax__layer app-parallax__layer--nebula" />
       <div className="app-parallax__layer app-parallax__layer--grid" />
       <div className="app-parallax__layer app-parallax__layer--beams" />
