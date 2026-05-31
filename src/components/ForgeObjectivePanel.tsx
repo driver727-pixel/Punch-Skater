@@ -171,7 +171,7 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
         </p>
       </div>
 
-      <div className="forge-objective-card">
+      <div className="forge-objective-card forge-objective-card--snapshot">
         <span className="forge-objective-eyebrow">Progress snapshot</span>
         <div className="forge-objective-stats">
           <div className="forge-objective-stat">
