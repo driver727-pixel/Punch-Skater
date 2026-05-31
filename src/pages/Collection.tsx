@@ -39,6 +39,7 @@ const RARITY_ORDER: Record<Rarity, number> = {
 };
 const UNKNOWN_RARITY_ORDER = 5;
 const COLLECTION_CAROUSEL_SWIPE_THRESHOLD = 40;
+const COLLECTION_CAROUSEL_MAX_Z_INDEX = 30;
 type CarouselCardStyle = CSSProperties & {
   "--carousel-offset": number;
   "--carousel-abs-offset": number;
@@ -795,7 +796,6 @@ export function Collection() {
             <div
               className="collection-carousel-stage"
               role="list"
-              tabIndex={0}
               aria-live="polite"
               onPointerDown={(event) => {
                 carouselSwipeStartX.current = event.clientX;
@@ -803,16 +803,6 @@ export function Collection() {
               onPointerUp={(event) => handleCarouselSwipeEnd(event.clientX)}
               onPointerCancel={() => {
                 carouselSwipeStartX.current = null;
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "ArrowLeft") {
-                  event.preventDefault();
-                  spinCarousel(-1);
-                }
-                if (event.key === "ArrowRight") {
-                  event.preventDefault();
-                  spinCarousel(1);
-                }
               }}
             >
             {pagedCards.map((card, index) => {
@@ -827,9 +817,9 @@ export function Collection() {
                  style={{
                    "--carousel-offset": carouselOffset,
                    "--carousel-abs-offset": Math.abs(carouselOffset),
-                   zIndex: isCarouselVisible ? 30 - Math.abs(carouselOffset) : 0,
+                   zIndex: isCarouselVisible ? COLLECTION_CAROUSEL_MAX_Z_INDEX - Math.abs(carouselOffset) : 0,
                  } satisfies CarouselCardStyle}
-                 role="listitem"
+                 role={isCarouselVisible ? "listitem" : "presentation"}
                  aria-current={isCarouselActive ? "true" : undefined}
                  aria-hidden={!isCarouselVisible}
                  data-carousel-hidden={!isCarouselVisible ? "true" : undefined}
@@ -854,6 +844,16 @@ export function Collection() {
                    const next = selected?.id === card.id ? null : card;
                    if (next) sfxClick();
                    setSelected(next);
+                 }}
+                 onKeyDown={(event) => {
+                   if (event.key === "ArrowLeft") {
+                     event.preventDefault();
+                     spinCarousel(-1);
+                   }
+                   if (event.key === "ArrowRight") {
+                     event.preventDefault();
+                     spinCarousel(1);
+                   }
                  }}
                 >
                  <CardThumbnail card={card} width={160} height={224} />

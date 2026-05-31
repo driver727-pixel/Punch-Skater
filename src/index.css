@@ -4521,7 +4521,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   min-height: 390px;
   perspective: 1200px;
   overflow: hidden;
-  touch-action: pan-y;
+  touch-action: manipulation;
   user-select: none;
 }
 .collection-carousel-stage::before {
