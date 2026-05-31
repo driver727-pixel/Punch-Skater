@@ -2,13 +2,17 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTier } from "../context/TierContext";
 import { useCollection } from "../hooks/useCollection";
-import { useDecks } from "../hooks/useDecks";
+import { DECK_CARD_LIMIT, useDecks } from "../hooks/useDecks";
 import { useFactionDiscovery } from "../hooks/useFactionDiscovery";
 import { TIERS } from "../lib/tiers";
 import { sfxNavigate } from "../lib/sfx";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
+import { computeDeckTotalPower } from "../lib/battle";
+import { getForgeClassOptions } from "../lib/cardClassProgression";
+import { computeCrewOzzies, computeCrewXp } from "../lib/progression";
+import { WalletPanel } from "../components/WalletPanel";
 
 interface ProfileLinkProps {
   icon: string;
@@ -54,6 +58,15 @@ export function UserProfile() {
   const { myEntry } = useLeaderboard();
 
   const primaryDeck = decks.find((d) => d.isPrimary) ?? null;
+  const primaryDeckCards = primaryDeck?.cards ?? [];
+  const deckPower = computeDeckTotalPower(primaryDeckCards);
+  const crewOzzies = computeCrewOzzies(primaryDeckCards);
+  const crewXp = computeCrewXp(primaryDeckCards);
+  const missionXp = userProfile?.missionXp ?? 0;
+  const missionOzzies = Number(userProfile?.missionOzzies ?? 0);
+  const forgeOptions = getForgeClassOptions({ missionXp: Number(missionXp), missionOzzies, deckPower });
+  const highestUnlockedForge = [...forgeOptions].reverse().find((option) => option.unlocked)?.rarity ?? "Punch Skater™";
+  const nextUnlock = forgeOptions.find((option) => !option.unlocked) ?? null;
 
   const displayName = resolveUserDisplayName({
     profileDisplayName: userProfile?.displayName,
@@ -62,7 +75,6 @@ export function UserProfile() {
     fallbackName: "Courier",
   });
   const avatarLetter = resolveUserInitial(displayName);
-  const missionXp = userProfile?.missionXp ?? 0;
   const ozzies = userProfile?.ozzies ?? 0;
 
   if (!user) {
@@ -143,6 +155,63 @@ export function UserProfile() {
             No primary deck set — head to the <strong>Deck Builder</strong> and star a deck to feature it here.
           </p>
         )}
+      </section>
+
+      {/* ── Progress snapshot ──────────────────────────────── */}
+      <section className="profile-section">
+        <h2 className="profile-hub-heading">Progress Snapshot</h2>
+        <div className="forge-objective-card forge-objective-card--snapshot">
+          <div className="forge-objective-stats">
+            <div className="forge-objective-stat">
+              <span className="forge-objective-stat-label">Collection</span>
+              <strong>{cards.length}</strong>
+            </div>
+            <div className="forge-objective-stat">
+              <span className="forge-objective-stat-label">Crew size</span>
+              <strong>{primaryDeckCards.length}/{DECK_CARD_LIMIT}</strong>
+            </div>
+            <div className="forge-objective-stat">
+              <span className="forge-objective-stat-label">Crew power</span>
+              <strong>{deckPower}</strong>
+            </div>
+            <div className="forge-objective-stat">
+              <span className="forge-objective-stat-label">Crew Ozzies</span>
+              <strong>{crewOzzies.toLocaleString()}</strong>
+            </div>
+            <div className="forge-objective-stat">
+              <span className="forge-objective-stat-label">Mission XP</span>
+              <strong>{Number(missionXp).toLocaleString()}</strong>
+            </div>
+            <div className="forge-objective-stat">
+              <span className="forge-objective-stat-label">Crew XP</span>
+              <strong>{crewXp.toLocaleString()}</strong>
+            </div>
+          </div>
+          <div className="forge-objective-unlocks">
+            <p>
+              <span className="forge-objective-stat-label">Highest forge unlocked</span>
+              <strong>{highestUnlockedForge}</strong>
+            </p>
+            <p>
+              <span className="forge-objective-stat-label">Next unlock</span>
+              <strong>{nextUnlock?.rarity ?? "Legendary stays reward-only"}</strong>
+            </p>
+            {nextUnlock?.unlockHint && (
+              <p className="forge-objective-unlock-hint">{nextUnlock.unlockHint}</p>
+            )}
+            {user && missionOzzies > 0 && (
+              <p className="forge-objective-unlock-hint">
+                Mission Ozzies banked: {missionOzzies.toLocaleString()}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Ozzies wallet ──────────────────────────────────── */}
+      <section className="profile-section">
+        <h2 className="profile-hub-heading">Ozzies Wallet</h2>
+        <WalletPanel />
       </section>
 
       {/* ── Hub links ──────────────────────────────────────── */}

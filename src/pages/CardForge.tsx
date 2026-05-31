@@ -5,8 +5,6 @@ import { ForgeControlsPanel } from "./cardForge/ForgeControlsPanel";
 import { ForgePreviewPanel } from "./cardForge/ForgePreviewPanel";
 import { ForgeResultOverlays } from "./cardForge/ForgeResultOverlays";
 import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
-import { ForgeObjectivePanel } from "../components/ForgeObjectivePanel";
-import { WalletPanel } from "../components/WalletPanel";
 import {
   ACCENT_PRESETS,
   AGE_GROUPS,
@@ -173,12 +171,7 @@ export function CardForge() {
 
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
 
-      <ForgeObjectivePanel onOpenStartHere={handleReopenWelcome} />
-
-      <div className="forge-economy-panels">
-        <WalletPanel />
-        <ReferralPanel />
-      </div>
+      <ReferralPanel />
 
       <div className="forge-layout">
         <ForgeControlsPanel

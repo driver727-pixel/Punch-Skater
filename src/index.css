@@ -7132,6 +7132,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   box-shadow: 3px 3px 0 rgba(0,255,136,0.1);
 }
 
+.profile-section {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.profile-section .wallet-panel {
+  margin: 0;
+}
+
 .profile-hub-heading {
   font-family: var(--font-display);
   font-size: 18px;
