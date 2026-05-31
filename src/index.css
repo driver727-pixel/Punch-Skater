@@ -18296,6 +18296,13 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
+.forge-objective-card--snapshot {
+  background-image: url('/wrist-computer.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .forge-objective-eyebrow {
   color: var(--accent2);
   font-size: 12px;
