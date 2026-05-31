@@ -1597,7 +1597,7 @@ body::after {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: right center;
   opacity: 0.35;
   border-radius: inherit;
   pointer-events: none;
