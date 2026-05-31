@@ -22,7 +22,7 @@ import { CosmeticFrameOverlay } from "./CosmeticFrameOverlay";
 import { StatBar } from "./StatBar";
 import { getDisplayedCrew } from "../lib/cardIdentity";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
-import stamp360Gif from "../../stamp360.gif";
+import stamp360Gif from "../assets/stamp360.gif";
 import { InsetNeonTube } from "./InsetNeonTube";
 import { hasBuiltInFrameDesignator, RARITY_COLORS } from "../lib/cardRarityVisuals";
 import {

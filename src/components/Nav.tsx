@@ -17,7 +17,7 @@ import { useAmbience } from "../hooks/useAmbience";
 import { isEnabled } from "../lib/featureFlags";
 import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
 import { warmRoutes, type RoutePrefetchKey } from "../lib/routePrefetch";
-import menuButtonImage from "../../menu-button.png";
+import menuButtonImage from "../assets/menu-button.png";
 
 export function Nav() {
   const { tier, logout: tierLogout, showUpgradeModal, openUpgradeModal, closeUpgradeModal } = useTier();
