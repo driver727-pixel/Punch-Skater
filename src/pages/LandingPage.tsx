@@ -101,11 +101,6 @@ export function LandingPage() {
             </section>
           )}
         </div>
-        <div className="landing-hero__glow" aria-hidden="true">
-          <span className="landing-hero__glow-orb landing-hero__glow-orb--primary" />
-          <span className="landing-hero__glow-orb landing-hero__glow-orb--secondary" />
-          <span className="landing-hero__grid" />
-        </div>
       </section>
 
       <section className="landing-grid">
