@@ -914,6 +914,12 @@ export function Collection() {
                     </button>
                     <button
                       className="btn-outline btn-sm"
+                      onClick={() => navigate(`/workshop?card=${selected.id}&focus=bio`)}
+                    >
+                      ✏ Bio
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
                       onClick={() => navigate(`/workshop?card=${selected.id}&focus=reposition`)}
                     >
                       ↔ Reposition Art

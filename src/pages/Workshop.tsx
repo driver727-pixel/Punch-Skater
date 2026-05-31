@@ -128,6 +128,7 @@ export function Workshop() {
   const floorStageRef = useRef<HTMLElement | null>(null);
   const cardEditorSectionRef = useRef<HTMLElement | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const bioInputRef = useRef<HTMLTextAreaElement | null>(null);
   const repositionSectionRef = useRef<HTMLDivElement | null>(null);
   const refreshArtSectionRef = useRef<HTMLDivElement | null>(null);
   const handledFocusRef = useRef<string | null>(null);
@@ -311,6 +312,7 @@ export function Workshop() {
     handledFocusRef.current = focusKey;
     const sectionMap: Record<string, React.RefObject<HTMLElement | null>> = {
       rename: cardEditorSectionRef,
+      bio: cardEditorSectionRef,
       reposition: repositionSectionRef,
       refresh: refreshArtSectionRef,
     };
@@ -321,6 +323,8 @@ export function Workshop() {
       if (focusTarget === "rename") {
         renameInputRef.current?.focus();
         renameInputRef.current?.select();
+      } else if (focusTarget === "bio") {
+        bioInputRef.current?.focus();
       }
     }, FOCUS_SCROLL_DELAY_MS);
     return () => window.clearTimeout(scrollTimer);
@@ -955,6 +959,7 @@ export function Workshop() {
                 <label className="workshop-field">
                   <span>Bio</span>
                   <textarea
+                    ref={bioInputRef}
                     className="input"
                     rows={2}
                     value={editingCard.front.flavorTextEnglish ?? editingCard.front.flavorText ?? ""}
