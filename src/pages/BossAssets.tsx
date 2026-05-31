@@ -16,6 +16,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { AdminPageBadge } from "../components/AdminPageBadge";
 
 const BOSS_ASSETS_COLLECTION = "adminBossAssets";
 
@@ -85,7 +86,7 @@ export function BossAssets() {
   return (
     <div className="page-container boss-assets-page">
       <header className="collection-header">
-        <h1>🛡 Boss Assets</h1>
+        <h1>🛡 Boss Assets<AdminPageBadge /></h1>
         <p className="form-hint">
           Admin-only collection of Boss cards. Previously created Bosses are stored here for easy access during game management.
         </p>

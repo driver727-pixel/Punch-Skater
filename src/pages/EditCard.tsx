@@ -41,6 +41,7 @@ import {
   resolveBoardLayerOrder,
 } from "../lib/boardPlacement";
 import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
+import { AdminPageBadge } from "../components/AdminPageBadge";
 
 const AUTO_PREVIEW_DELAY_MS = 350;
 
@@ -582,7 +583,7 @@ export function EditCard() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Customize Card</h1>
+          <h1 className="page-title">Customize Card<AdminPageBadge /></h1>
           <p className="page-sub">One hub for identity, build, board, layout, stats, and art consistency.</p>
           {original.activeFrameId && (
             <p className="page-sub">Prestige frame active: {original.activeFrameId.replace(/-/g, " ")}</p>

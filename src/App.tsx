@@ -362,7 +362,7 @@ function LegacyRoutes() {
       } />
       <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
       <Route path="/edit/:cardId" element={
-        <ProtectedRoute><EditCard /></ProtectedRoute>
+        <AdminRoute><EditCard /></AdminRoute>
       } />
       <Route path="/trades" element={
         <ProtectedRoute><Trades /></ProtectedRoute>
