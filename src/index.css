@@ -1825,7 +1825,7 @@ body::after {
     scale(1.04);
 }
 .app-parallax__layer--cicada {
-  background: url('/cicada-vending.png') center/cover no-repeat;
+  background: url('/cicada-vending.png') left center / 55% auto no-repeat;
   opacity: 0.09;
   mix-blend-mode: screen;
   transform:
