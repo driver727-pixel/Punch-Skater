@@ -39,6 +39,10 @@ const RARITY_ORDER: Record<Rarity, number> = {
 };
 const UNKNOWN_RARITY_ORDER = 5;
 const COLLECTION_CAROUSEL_SWIPE_THRESHOLD = 40;
+type CarouselCardStyle = CSSProperties & {
+  "--carousel-offset": number;
+  "--carousel-abs-offset": number;
+};
 
 function formatCollectionRewardMeta(track: string, seasonal?: boolean): string {
   return seasonal ? `${track} · seasonal` : track;
@@ -791,6 +795,7 @@ export function Collection() {
             <div
               className="collection-carousel-stage"
               role="list"
+              tabIndex={0}
               aria-live="polite"
               onPointerDown={(event) => {
                 carouselSwipeStartX.current = event.clientX;
@@ -819,35 +824,15 @@ export function Collection() {
                 <div
                   key={card.id}
                   className={`card-thumb collection-carousel-card ${selected?.id === card.id ? "card-thumb--active" : ""} ${isCardSelected ? "card-thumb--selected" : ""} ${isCarouselActive ? "collection-carousel-card--center" : ""}`}
-                  style={{
-                    "--carousel-offset": carouselOffset,
-                    "--carousel-abs-offset": Math.abs(carouselOffset),
-                    zIndex: isCarouselVisible ? 30 - Math.abs(carouselOffset) : 0,
-                  } as CSSProperties}
-                  role="listitem"
-                  aria-current={isCarouselActive ? "true" : undefined}
-                  aria-hidden={!isCarouselVisible}
-                  data-carousel-hidden={!isCarouselVisible ? "true" : undefined}
-                >
-                <div
-                  className="collection-carousel-card__button"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Open ${card.identity.name}`}
-                  onClick={() => {
-                    setCarouselIndex(index);
-                    const next = selected?.id === card.id ? null : card;
-                    if (next) sfxClick();
-                    setSelected(next);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-                    event.preventDefault();
-                    setCarouselIndex(index);
-                    const next = selected?.id === card.id ? null : card;
-                    if (next) sfxClick();
-                    setSelected(next);
-                  }}
+                 style={{
+                   "--carousel-offset": carouselOffset,
+                   "--carousel-abs-offset": Math.abs(carouselOffset),
+                   zIndex: isCarouselVisible ? 30 - Math.abs(carouselOffset) : 0,
+                 } satisfies CarouselCardStyle}
+                 role="listitem"
+                 aria-current={isCarouselActive ? "true" : undefined}
+                 aria-hidden={!isCarouselVisible}
+                 data-carousel-hidden={!isCarouselVisible ? "true" : undefined}
                 >
                  <button
                    type="button"
@@ -860,13 +845,24 @@ export function Collection() {
                  >
                    {isCardSelected ? "✓" : "+"}
                  </button>
+                <button
+                 type="button"
+                 className="collection-carousel-card__button"
+                 aria-label={`Open ${card.identity.name}`}
+                 onClick={() => {
+                   setCarouselIndex(index);
+                   const next = selected?.id === card.id ? null : card;
+                   if (next) sfxClick();
+                   setSelected(next);
+                 }}
+                >
                  <CardThumbnail card={card} width={160} height={224} />
                   <div className="card-thumb-info">
                     <span className="card-name">{card.identity.name}</span>
                     <span className="card-sub">{getDisplayedArchetype(card)} · {card.prompts.rarity}</span>
                     {card.activeFrameId && <span className="card-sub">Prestige frame · {card.activeFrameId.replace(/-/g, " ")}</span>}
                   </div>
-                 </div>
+                 </button>
                 </div>
               );
             })}

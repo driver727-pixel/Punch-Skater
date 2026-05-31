@@ -4566,7 +4566,15 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
     3px 3px 0 rgba(0,204,255,0.26);
 }
 .collection-carousel-card__button {
+  width: 100%;
   min-height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   outline: none;
 }
 .collection-carousel-card__button:focus-visible {
