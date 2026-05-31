@@ -18266,6 +18266,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 .race-wager-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .btn-outline--active { background: rgba(255, 68, 136, 0.25); border-color: #ff4488; }
 
+.forge-objective-popup {
+  max-width: 560px;
+}
+
+.forge-objective-reopen {
+  align-self: flex-start;
+}
+
 .forge-objective-panel {
   width: min(1200px, 100%);
   margin: 0 auto 24px;
