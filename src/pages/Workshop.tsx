@@ -30,6 +30,17 @@ import { generateGouacheBoard, shouldRemoveBoardImageBackground } from "../servi
 import { getStaticFrameBackUrl } from "../services/staticAssets";
 import { removeBackground } from "../services/imageGen";
 import { useAuth } from "../context/AuthContext";
+import {
+  BOARD_PLACEMENT_MAX_SCALE,
+  BOARD_PLACEMENT_MIN_SCALE,
+  BOARD_PLACEMENT_SCALE_STEP,
+  CHARACTER_PLACEMENT_MAX_SCALE,
+  CHARACTER_PLACEMENT_MIN_SCALE,
+  CHARACTER_PLACEMENT_SCALE_STEP,
+  WEAPON_PLACEMENT_MAX_SCALE,
+  WEAPON_PLACEMENT_MIN_SCALE,
+  WEAPON_PLACEMENT_SCALE_STEP,
+} from "../lib/boardPlacement";
 import { WEAPON_ASSETS } from "./cardForge/constants";
 
 async function generateTransparentBoardArt(
@@ -350,6 +361,30 @@ export function Workshop() {
           }
         : current
     ));
+  };
+
+  const updateBoardPlacement = (patch: Partial<BoardPlacement>) => {
+    if (!editingCard) return;
+    handleBoardPlacementChange({
+      ...editingCard.board.placement,
+      ...patch,
+    });
+  };
+
+  const updateCharacterPlacement = (patch: Partial<CharacterPlacement>) => {
+    if (!editingCard?.characterPlacement) return;
+    handleCharacterPlacementChange({
+      ...editingCard.characterPlacement,
+      ...patch,
+    });
+  };
+
+  const updateWeaponPlacement = (patch: Partial<WeaponPlacement>) => {
+    if (!editingCard?.weaponPlacement) return;
+    handleWeaponPlacementChange({
+      ...editingCard.weaponPlacement,
+      ...patch,
+    });
   };
 
   const handleResetCardLayout = () => {
@@ -844,8 +879,115 @@ export function Workshop() {
                   </div>
                 </CardContainer>
                 <p className="form-hint" style={{ marginTop: 12 }}>
-                  Drag the skateboard or weapon on the card face to reposition it. On touch devices, pinch or rotate to scale and turn the layer.
+                  Drag layers on the card face to reposition them, or use the sliders below for precise size and rotation changes.
+                  On touch devices, pinch or rotate to scale and turn the layer.
                 </p>
+                <div className="edit-card-layout-grid">
+                  <div className="blend-control">
+                    <label className="blend-control__label">
+                      <span>Skateboard Size</span>
+                      <span>{Math.round(editingCard.board.placement.scale * 100)}%</span>
+                    </label>
+                    <input
+                      type="range"
+                      className="range-slider"
+                      min={BOARD_PLACEMENT_MIN_SCALE}
+                      max={BOARD_PLACEMENT_MAX_SCALE}
+                      step={BOARD_PLACEMENT_SCALE_STEP}
+                      value={editingCard.board.placement.scale}
+                      onChange={(event) => updateBoardPlacement({ scale: Number(event.target.value) })}
+                      aria-label="Workshop skateboard size"
+                    />
+                  </div>
+                  <div className="blend-control">
+                    <label className="blend-control__label">
+                      <span>Skateboard Rotation</span>
+                      <span>{Math.round(editingCard.board.placement.rotationDeg)}°</span>
+                    </label>
+                    <input
+                      type="range"
+                      className="range-slider"
+                      min={-180}
+                      max={180}
+                      step={1}
+                      value={editingCard.board.placement.rotationDeg}
+                      onChange={(event) => updateBoardPlacement({ rotationDeg: Number(event.target.value) })}
+                      aria-label="Workshop skateboard rotation"
+                    />
+                  </div>
+                  {editingCard.characterPlacement && (
+                    <>
+                      <div className="blend-control">
+                        <label className="blend-control__label">
+                          <span>Character Size</span>
+                          <span>{Math.round(editingCard.characterPlacement.scale * 100)}%</span>
+                        </label>
+                        <input
+                          type="range"
+                          className="range-slider"
+                          min={CHARACTER_PLACEMENT_MIN_SCALE}
+                          max={CHARACTER_PLACEMENT_MAX_SCALE}
+                          step={CHARACTER_PLACEMENT_SCALE_STEP}
+                          value={editingCard.characterPlacement.scale}
+                          onChange={(event) => updateCharacterPlacement({ scale: Number(event.target.value) })}
+                          aria-label="Workshop character size"
+                        />
+                      </div>
+                      <div className="blend-control">
+                        <label className="blend-control__label">
+                          <span>Character Rotation</span>
+                          <span>{Math.round(editingCard.characterPlacement.rotationDeg)}°</span>
+                        </label>
+                        <input
+                          type="range"
+                          className="range-slider"
+                          min={-180}
+                          max={180}
+                          step={1}
+                          value={editingCard.characterPlacement.rotationDeg}
+                          onChange={(event) => updateCharacterPlacement({ rotationDeg: Number(event.target.value) })}
+                          aria-label="Workshop character rotation"
+                        />
+                      </div>
+                    </>
+                  )}
+                  {editingCard.weaponPlacement && (
+                    <>
+                      <div className="blend-control">
+                        <label className="blend-control__label">
+                          <span>Weapon Size</span>
+                          <span>{Math.round(editingCard.weaponPlacement.scale * 100)}%</span>
+                        </label>
+                        <input
+                          type="range"
+                          className="range-slider"
+                          min={WEAPON_PLACEMENT_MIN_SCALE}
+                          max={WEAPON_PLACEMENT_MAX_SCALE}
+                          step={WEAPON_PLACEMENT_SCALE_STEP}
+                          value={editingCard.weaponPlacement.scale}
+                          onChange={(event) => updateWeaponPlacement({ scale: Number(event.target.value) })}
+                          aria-label="Workshop weapon size"
+                        />
+                      </div>
+                      <div className="blend-control">
+                        <label className="blend-control__label">
+                          <span>Weapon Rotation</span>
+                          <span>{Math.round(editingCard.weaponPlacement.rotationDeg)}°</span>
+                        </label>
+                        <input
+                          type="range"
+                          className="range-slider"
+                          min={-180}
+                          max={180}
+                          step={1}
+                          value={editingCard.weaponPlacement.rotationDeg}
+                          onChange={(event) => updateWeaponPlacement({ rotationDeg: Number(event.target.value) })}
+                          aria-label="Workshop weapon rotation"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
                 <div className="workshop-detail__actions">
                   <button className="btn-outline btn-sm" type="button" onClick={handleResetCardLayout}>
                     Reset Card Layout
