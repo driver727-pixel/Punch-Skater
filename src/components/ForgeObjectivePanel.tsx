@@ -1,10 +1,14 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCollection } from "../hooks/useCollection";
 import { DECK_CARD_LIMIT, useDecks } from "../hooks/useDecks";
+import { useModalA11y } from "../hooks/useModalA11y";
 import { computeDeckTotalPower } from "../lib/battle";
 import { getForgeClassOptions } from "../lib/cardClassProgression";
 import { computeCrewOzzies, computeCrewXp } from "../lib/progression";
+
+const DISMISSED_OBJECTIVE_KEY = "forge-objective-popup-dismissed";
 
 interface ForgeObjectivePanelProps {
   onOpenStartHere: () => void;
@@ -136,40 +140,93 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
     hasChallenger: Boolean(primaryDeck?.challengerCardId),
     missionXp,
   });
+
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(DISMISSED_OBJECTIVE_KEY) !== objective.title) {
+        setOpen(true);
+      } else {
+        setOpen(false);
+      }
+    } catch {
+      // ignore
+    }
+  }, [objective.title]);
+
+  const handleDismiss = useCallback(() => {
+    try {
+      localStorage.setItem(DISMISSED_OBJECTIVE_KEY, objective.title);
+    } catch {
+      // ignore
+    }
+    setOpen(false);
+  }, [objective.title]);
+
+  const handleDismissAndStartHere = useCallback(() => {
+    handleDismiss();
+    onOpenStartHere();
+  }, [handleDismiss, onOpenStartHere]);
+
+  const dialogRef = useModalA11y({ onClose: handleDismiss, active: open });
+
   return (
     <section className="forge-objective-panel" aria-label="Current objective and progression">
-      <div className="forge-objective-card forge-objective-card--primary">
-        <span className="forge-objective-eyebrow">Current objective</span>
-        <h2 className="forge-objective-title">{objective.title}</h2>
-        <p className="forge-objective-copy">{objective.description}</p>
-        <div className="forge-objective-actions">
-          {objective.primaryTo ? (
-            <Link className="btn-primary btn-glass" to={objective.primaryTo}>
-              {objective.primaryLabel}
-            </Link>
-          ) : (
-            <button type="button" className="btn-primary btn-glass" onClick={onOpenStartHere}>
-              {objective.primaryLabel}
+      {open && (
+        <div
+          className="modal-overlay forge-objective-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="forge-objective-popup-title"
+          onClick={handleDismiss}
+        >
+          <div
+            className="modal-panel forge-objective-popup"
+            ref={dialogRef}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="close-btn modal-close"
+              aria-label="Dismiss current objective"
+              onClick={handleDismiss}
+            >
+              ✕
             </button>
-          )}
-          {objective.secondaryLabel && (
-            objective.secondaryTo ? (
-              <Link className="btn-outline btn-glass" to={objective.secondaryTo}>
-                {objective.secondaryLabel}
-              </Link>
-            ) : (
-              <button type="button" className="btn-outline btn-glass" onClick={onOpenStartHere}>
-                {objective.secondaryLabel}
-              </button>
-            )
-          )}
+            <span className="forge-objective-eyebrow">Current objective</span>
+            <h2 className="forge-objective-title" id="forge-objective-popup-title">{objective.title}</h2>
+            <p className="forge-objective-copy">{objective.description}</p>
+            <div className="forge-objective-actions">
+              {objective.primaryTo ? (
+                <Link className="btn-primary btn-glass" to={objective.primaryTo} onClick={handleDismiss}>
+                  {objective.primaryLabel}
+                </Link>
+              ) : (
+                <button type="button" className="btn-primary btn-glass" onClick={handleDismissAndStartHere}>
+                  {objective.primaryLabel}
+                </button>
+              )}
+              {objective.secondaryLabel && (
+                objective.secondaryTo ? (
+                  <Link className="btn-outline btn-glass" to={objective.secondaryTo} onClick={handleDismiss}>
+                    {objective.secondaryLabel}
+                  </Link>
+                ) : (
+                  <button type="button" className="btn-outline btn-glass" onClick={handleDismissAndStartHere}>
+                    {objective.secondaryLabel}
+                  </button>
+                )
+              )}
+            </div>
+            <p className="forge-objective-status">
+              {user
+                ? `Cloud progression active${user.email ? ` for ${user.email}` : ""}.`
+                : "Guest forge preview only — account-gated systems stay locked until sign-in."}
+            </p>
+          </div>
         </div>
-        <p className="forge-objective-status">
-          {user
-            ? `Cloud progression active${user.email ? ` for ${user.email}` : ""}.`
-            : "Guest forge preview only — account-gated systems stay locked until sign-in."}
-        </p>
-      </div>
+      )}
 
       <div className="forge-objective-card forge-objective-card--snapshot">
         <span className="forge-objective-eyebrow">Progress snapshot</span>
@@ -219,6 +276,16 @@ export function ForgeObjectivePanel({ onOpenStartHere }: ForgeObjectivePanelProp
         </div>
       </div>
 
+      {!open && (
+        <button
+          type="button"
+          className="forge-objective-reopen btn-outline btn-glass btn-sm"
+          onClick={() => setOpen(true)}
+          aria-label="View current objective"
+        >
+          Current objective
+        </button>
+      )}
     </section>
   );
 }
