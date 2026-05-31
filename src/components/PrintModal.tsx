@@ -11,6 +11,7 @@ interface PrintModalProps {
   backgroundImageUrl?: string;
   characterImageUrl?: string;
   frameImageUrl?: string;
+  weaponImageUrl?: string;
   characterBlend?: number;
   onClose: () => void;
 }
@@ -34,6 +35,7 @@ export function PrintModal({
   backgroundImageUrl,
   characterImageUrl,
   frameImageUrl,
+  weaponImageUrl,
   characterBlend,
   onClose,
 }: PrintModalProps) {
@@ -89,6 +91,7 @@ export function PrintModal({
               backgroundImageUrl={backgroundImageUrl}
               characterImageUrl={characterImageUrl}
               frameImageUrl={frameImageUrl}
+              weaponImageUrl={weaponImageUrl}
               characterBlend={characterBlend}
             />
           </CardContainer>

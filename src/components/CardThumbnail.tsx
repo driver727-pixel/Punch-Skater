@@ -13,8 +13,11 @@ import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 import {
   buildBoardPlacementStyle,
   buildCharacterPlacementStyle,
+  buildWeaponPlacementStyle,
   CHARACTER_LAYER_Z_INDEX,
   getBoardLayerZIndex,
+  normalizeWeaponPlacement,
+  WEAPON_LAYER_Z_INDEX,
 } from "../lib/boardPlacement";
 
 interface CardThumbnailProps {
@@ -52,6 +55,9 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
     ...buildCharacterPlacementStyle(card.characterPlacement),
     zIndex: CHARACTER_LAYER_Z_INDEX,
   };
+  const weaponPlacementStyle = card.weaponImageUrl
+    ? { ...buildWeaponPlacementStyle(normalizeWeaponPlacement(card.weaponPlacement)), zIndex: WEAPON_LAYER_Z_INDEX }
+    : undefined;
 
   if (!hasLayers) {
     return <CardArt card={card} width={width} height={height} />;
@@ -85,6 +91,16 @@ export function CardThumbnail({ card, width = 160, height = 112 }: CardThumbnail
           alt="character"
           className="card-art-layer card-art-layer--character"
           style={characterPlacementStyle}
+          loading="lazy"
+          decoding="async"
+        />
+      )}
+      {card.weaponImageUrl && weaponPlacementStyle && (
+        <img
+          src={card.weaponImageUrl}
+          alt="weapon"
+          className="card-art-layer card-art-layer--weapon"
+          style={weaponPlacementStyle}
           loading="lazy"
           decoding="async"
         />

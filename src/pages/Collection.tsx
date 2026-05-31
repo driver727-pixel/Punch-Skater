@@ -887,6 +887,7 @@ export function Collection() {
                   backgroundImageUrl={selected.backgroundImageUrl}
                   characterImageUrl={selected.characterImageUrl}
                   frameImageUrl={selected.frameImageUrl}
+                  weaponImageUrl={selected.weaponImageUrl}
                   className="print-preview-area--collection"
                 />
               </CardContainer>
@@ -1035,6 +1036,7 @@ export function Collection() {
           backgroundImageUrl={selected.backgroundImageUrl}
           characterImageUrl={selected.characterImageUrl}
           frameImageUrl={selected.frameImageUrl}
+          weaponImageUrl={selected.weaponImageUrl}
           onClose={() => setPrinting(false)}
         />
       )}
