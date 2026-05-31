@@ -462,7 +462,7 @@ function CardDisplayComponent({
           <div className="card-header">
             <span className="card-serial">{card.identity.serialNumber}</span>
             {!hasBuiltInDesignator && (
-              <span className="card-rarity" style={{ color: rarityColor }}>{card.class.badgeLabel.toUpperCase()}</span>
+              <span className="card-rarity" style={{ color: rarityColor }}>{(card.class.badgeLabel ?? '').toUpperCase()}</span>
             )}
           </div>
 
@@ -631,7 +631,7 @@ function CardDisplayComponent({
           <div className="card-header">
             <span className="card-serial">BACKSIDE</span>
             {!hasBuiltInDesignator && (
-              <span className="card-rarity" style={{ color: rarityColor }}>{card.class.badgeLabel.toUpperCase()}</span>
+              <span className="card-rarity" style={{ color: rarityColor }}>{(card.class.badgeLabel ?? '').toUpperCase()}</span>
             )}
           </div>
 
