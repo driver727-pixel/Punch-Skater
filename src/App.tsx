@@ -11,6 +11,7 @@ import { PersistenceErrorToast } from "./components/PersistenceErrorToast";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { TerminalShell } from "./components/TerminalShell";
+import { CurrentObjectivePopup } from "./components/CurrentObjectivePopup";
 import {
   TerminalRouterProvider,
   isTerminalPath,
@@ -461,6 +462,7 @@ function App() {
                     <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                   )}
                   <PlayerRewardBanner />
+                  <CurrentObjectivePopup />
                   <DistrictThemeApplier />
                   <LoreBgPanel />
                   <main id="main-content" className="main" tabIndex={-1}>
