@@ -982,6 +982,14 @@ app.get('/', (_req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Card Forge Proxy running on port ${PORT}`);
 });
+// Prevent ERR_CONNECTION_CLOSED on Render and other cloud reverse-proxies.
+// Node.js's default keepAliveTimeout (5 s) is shorter than most load-balancer
+// idle timeouts (~75 s on Render), so the proxy can reuse a connection that
+// Node.js has already half-closed.  Setting these above the proxy's idle
+// timeout eliminates that race condition.
+// headersTimeout must be strictly greater than keepAliveTimeout.
+server.keepAliveTimeout = 90_000; // 90 s — just above Render's ~75 s idle timeout
+server.headersTimeout = 91_000;   // 91 s — must exceed keepAliveTimeout
