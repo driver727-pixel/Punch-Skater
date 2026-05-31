@@ -4626,11 +4626,14 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   cursor: pointer;
   transition: border-color 0.15s, transform 0.12s, box-shadow 0.12s;
 }
+.card-thumb.collection-carousel-card {
+  position: absolute;
+}
 .card-thumb--selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px rgba(0,255,136,0.25);
 }
-.card-thumb:hover {
+.card-thumb:not(.collection-carousel-card):hover {
   border-color: var(--accent);
   transform: translate(-2px, -2px);
   box-shadow:
