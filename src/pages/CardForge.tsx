@@ -128,6 +128,16 @@ export function CardForge() {
     <div className="page page--forge">
       <span className="build-number">{__BUILD_NUMBER__}</span>
       <section className="forge-hero">
+        <div className="forge-hero__art" aria-hidden="true">
+          <div className="forge-hero__art-frame">
+            <img
+              src="/Welcome-Skater.jpg"
+              alt=""
+              className="forge-hero__art-img"
+            />
+          </div>
+        </div>
+
         <div className="forge-hero__copy">
           <h1 className="page-title forge-hero__title">CARD FORGE</h1>
           <p className="page-sub forge-hero__sub">Forge your skater — then build a 6-card crew, run missions, win jousts, and climb the neon leaderboard</p>
@@ -153,22 +163,12 @@ export function CardForge() {
             </button>
           </div>
           <section className="forge-whats-new" aria-label="Build updates">
-            <p className="forge-whats-new__eyebrow">What’s New</p>
+            <p className="forge-whats-new__eyebrow">What's New</p>
             <p className="forge-whats-new__copy">
               Build {__BUILD_NUMBER__}: smoother collection navigation, improved keyboard access, and refreshed loading UX.
             </p>
           </section>
         </div>
-
-        <aside className="forge-hero__art">
-          <div className="forge-hero__art-frame">
-            <img
-              src="/Welcome-Skater.jpg"
-              alt="Welcome Skater"
-              className="forge-hero__art-img"
-            />
-          </div>
-        </aside>
       </section>
 
       <ForgeWelcomeModal open={showWelcome} onClose={closeWelcome} />
