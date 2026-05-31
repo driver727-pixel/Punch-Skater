@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { CardPayload, Rarity, Archetype, Faction, District } from "../lib/types";
 import { useCollection } from "../hooks/useCollection";
@@ -38,6 +38,12 @@ const RARITY_ORDER: Record<Rarity, number> = {
   "Punch Skater™": 4,
 };
 const UNKNOWN_RARITY_ORDER = 5;
+const COLLECTION_CAROUSEL_SWIPE_THRESHOLD = 40;
+const COLLECTION_CAROUSEL_MAX_Z_INDEX = 30;
+type CarouselCardStyle = CSSProperties & {
+  "--carousel-offset": number;
+  "--carousel-abs-offset": number;
+};
 
 function formatCollectionRewardMeta(track: string, seasonal?: boolean): string {
   return seasonal ? `${track} · seasonal` : track;
@@ -91,6 +97,8 @@ export function Collection() {
   const [rewardMessage, setRewardMessage] = useState("");
   const [rewardError, setRewardError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const carouselSwipeStartX = useRef<number | null>(null);
 
   const existingIds = useMemo(() => new Set(cards.map((c) => c.id)), [cards]);
 
@@ -246,6 +254,7 @@ export function Collection() {
     const start = (currentPageSafe - 1) * pageSize;
     return filteredCards.slice(start, start + pageSize);
   }, [filteredCards, currentPageSafe, pageSize]);
+  const carouselCardCount = pagedCards.length;
   const visibleSelectedCount = useMemo(
     () => pagedCards.reduce((count, card) => count + (selectedIds.has(card.id) ? 1 : 0), 0),
     [pagedCards, selectedIds],
@@ -281,6 +290,10 @@ export function Collection() {
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCarouselIndex(0);
+  }, [currentPageSafe, searchQuery, filterRarity, filterArchetype, filterFaction, filterDistrict, sortBy]);
 
   const handleClaimReward = async (milestoneId: string) => {
     if (!user) return;
@@ -329,6 +342,35 @@ export function Collection() {
       }
       return next;
     });
+  };
+
+  const spinCarousel = (direction: -1 | 1) => {
+    if (carouselCardCount <= 1) return;
+    setCarouselIndex((prev) => (prev + direction + carouselCardCount) % carouselCardCount);
+  };
+
+  const getCarouselOffset = (index: number) => {
+    if (carouselCardCount <= 1) return 0;
+    let offset = index - carouselIndex;
+    const halfway = carouselCardCount / 2;
+    if (offset > halfway) offset -= carouselCardCount;
+    if (offset < -halfway) offset += carouselCardCount;
+    return offset;
+  };
+
+  const handleCarouselSwipeEnd = (clientX: number) => {
+    if (carouselSwipeStartX.current === null) return;
+    const deltaX = clientX - carouselSwipeStartX.current;
+    carouselSwipeStartX.current = null;
+    if (Math.abs(deltaX) < COLLECTION_CAROUSEL_SWIPE_THRESHOLD) return;
+    spinCarousel(deltaX > 0 ? -1 : 1);
+  };
+
+  const openCarouselCard = (card: CardPayload, index: number) => {
+    setCarouselIndex(index);
+    const next = selected?.id === card.id ? null : card;
+    if (next) sfxClick();
+    setSelected(next);
   };
 
   const handleExport = (targetCards: CardPayload[] = cards, filename = "skpd-collection.json") => {
@@ -726,29 +768,70 @@ export function Collection() {
               onClick={() => setSelected(null)}
             />
           )}
-          <div className="collection-layout">
-          <div className="card-grid">
-            {pagedCards.map((card) => {
+          <div className="collection-layout collection-layout--carousel">
+          <section className="collection-carousel-panel" aria-label="Card carousel">
+            <div className="collection-carousel-header">
+              <div>
+                <p className="eyebrow">Card gallery</p>
+                <h2>Spin through your cards</h2>
+                <p>Swipe left or right on mobile, use the arrows, or press arrow keys when a card is focused.</p>
+              </div>
+              <div className="collection-carousel-controls">
+                <button
+                  className="btn-outline collection-carousel-arrow"
+                  type="button"
+                  aria-label="Previous card"
+                  onClick={() => spinCarousel(-1)}
+                  disabled={carouselCardCount <= 1}
+                >
+                  ‹
+                </button>
+                <span className="collection-carousel-count">
+                  {carouselIndex + 1} / {carouselCardCount}
+                </span>
+                <button
+                  className="btn-outline collection-carousel-arrow"
+                  type="button"
+                  aria-label="Next card"
+                  onClick={() => spinCarousel(1)}
+                  disabled={carouselCardCount <= 1}
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+            <div
+              className="collection-carousel-stage"
+              role="list"
+              aria-live="polite"
+              onPointerDown={(event) => {
+                carouselSwipeStartX.current = event.clientX;
+              }}
+              onPointerUp={(event) => handleCarouselSwipeEnd(event.clientX)}
+              onPointerCancel={() => {
+                carouselSwipeStartX.current = null;
+              }}
+            >
+            {pagedCards.map((card, index) => {
               const isCardSelected = selectedIds.has(card.id);
+              const carouselOffset = getCarouselOffset(index);
+              const isCarouselActive = carouselOffset === 0;
+              const carouselAbsOffset = Math.abs(carouselOffset);
+              const isCarouselVisible = carouselAbsOffset <= 3;
+              const cardZIndex = isCarouselVisible ? COLLECTION_CAROUSEL_MAX_Z_INDEX - carouselAbsOffset : 0;
               return (
                 <div
                   key={card.id}
-                  className={`card-thumb ${selected?.id === card.id ? "card-thumb--active" : ""} ${isCardSelected ? "card-thumb--selected" : ""}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Open ${card.identity.name}`}
-                  onClick={() => {
-                    const next = selected?.id === card.id ? null : card;
-                    if (next) sfxClick();
-                    setSelected(next);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-                    event.preventDefault();
-                    const next = selected?.id === card.id ? null : card;
-                    if (next) sfxClick();
-                    setSelected(next);
-                  }}
+                  className={`card-thumb collection-carousel-card ${selected?.id === card.id ? "card-thumb--active" : ""} ${isCardSelected ? "card-thumb--selected" : ""} ${isCarouselActive ? "collection-carousel-card--center" : ""}`}
+                 style={{
+                   "--carousel-offset": carouselOffset,
+                   "--carousel-abs-offset": carouselAbsOffset,
+                   zIndex: cardZIndex,
+                 } satisfies CarouselCardStyle}
+                 role={isCarouselVisible ? "listitem" : "presentation"}
+                 aria-current={isCarouselActive ? "true" : undefined}
+                 aria-hidden={!isCarouselVisible}
+                 data-carousel-hidden={!isCarouselVisible ? "true" : undefined}
                 >
                  <button
                    type="button"
@@ -761,16 +844,38 @@ export function Collection() {
                  >
                    {isCardSelected ? "✓" : "+"}
                  </button>
+                <button
+                 type="button"
+                 className="collection-carousel-card__button"
+                 aria-label={`Open ${card.identity.name}`}
+                 onClick={() => openCarouselCard(card, index)}
+                 onKeyDown={(event) => {
+                   if (event.key === "ArrowLeft") {
+                     event.preventDefault();
+                     spinCarousel(-1);
+                   }
+                   if (event.key === "ArrowRight") {
+                     event.preventDefault();
+                     spinCarousel(1);
+                   }
+                   if (event.key === "Enter" || event.key === " ") {
+                     event.preventDefault();
+                     openCarouselCard(card, index);
+                   }
+                 }}
+                >
                  <CardThumbnail card={card} width={160} height={224} />
                   <div className="card-thumb-info">
                     <span className="card-name">{card.identity.name}</span>
                     <span className="card-sub">{getDisplayedArchetype(card)} · {card.prompts.rarity}</span>
                     {card.activeFrameId && <span className="card-sub">Prestige frame · {card.activeFrameId.replace(/-/g, " ")}</span>}
                   </div>
+                 </button>
                 </div>
               );
             })}
-          </div>
+            </div>
+          </section>
 
           {selected && (
               <div className="card-detail-panel">
