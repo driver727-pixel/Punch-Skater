@@ -1,53 +1,44 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthCard } from "../components/AuthCard";
 import { ForgeStartHere } from "../components/ForgeStartHere";
 import { useAuth } from "../context/AuthContext";
 import { warmRoutes, warmRoutesOnIdle } from "../lib/routePrefetch";
+import {
+  fetchCrewFaceoff,
+  loadCachedCrewFaceoff,
+  preloadCrewFaceoffImages,
+  type CrewFaceoffPayload,
+} from "../services/hypeFaceoff";
 import { resolveUserDisplayName } from "../lib/userIdentity";
-import { ForgeWelcomeModal } from "./cardForge/ForgeWelcomeModal";
-
-const LANDING_GUEST_FACEOFF_KEY = "landing-faceoff-dismissed";
-const LANDING_LOGIN_FACEOFF_PREFIX = "landing-faceoff-login-dismissed";
-const LANDING_LOGIN_SESSION_KEY = "landing-faceoff-login-session";
+import { CrewFaceoffSpotlight } from "./cardForge/ForgeWelcomeModal";
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const { user, userProfile, loading } = useAuth();
-  const [loginFallbackKey] = useState(() => {
-    const existing = sessionStorage.getItem(LANDING_LOGIN_SESSION_KEY);
-    if (existing) return existing;
-    const next = `session:${Date.now()}`;
-    sessionStorage.setItem(LANDING_LOGIN_SESSION_KEY, next);
-    return next;
-  });
-  const [showFaceoff, setShowFaceoff] = useState(false);
-  const lastSignInMs = user?.metadata.lastSignInTime ? Date.parse(user.metadata.lastSignInTime) : NaN;
-  const loginInstanceKey = Number.isFinite(lastSignInMs) ? String(lastSignInMs) : loginFallbackKey;
-  const faceoffDismissalKey = user
-    ? `${LANDING_LOGIN_FACEOFF_PREFIX}:${user.uid}:${loginInstanceKey}`
-    : LANDING_GUEST_FACEOFF_KEY;
-  const closeFaceoff = useCallback(() => {
-    localStorage.setItem(faceoffDismissalKey, "1");
-    setShowFaceoff(false);
-  }, [faceoffDismissalKey]);
+  const { user, userProfile } = useAuth();
+  const [faceoffPayload, setFaceoffPayload] = useState<CrewFaceoffPayload | null>(() => loadCachedCrewFaceoff());
 
   useEffect(() => {
-    if (!showFaceoff) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeFaceoff();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [showFaceoff, closeFaceoff]);
-
-  useEffect(() => {
-    if (loading) {
-      setShowFaceoff(false);
-      return;
+    if (faceoffPayload) {
+      preloadCrewFaceoffImages(faceoffPayload);
     }
-    setShowFaceoff(localStorage.getItem(faceoffDismissalKey) !== "1");
-  }, [loading, faceoffDismissalKey]);
+  }, [faceoffPayload]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCrewFaceoff()
+      .then((payload) => {
+        if (!payload || cancelled) return;
+        setFaceoffPayload(payload);
+        preloadCrewFaceoffImages(payload);
+      })
+      .catch(() => {
+        // The landing hero still works if the face-off payload is unavailable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -76,6 +67,39 @@ export function LandingPage() {
           <p className="landing-hero__lede">
             Start in the forge, build a crew, sign in when you are ready to save progress, and race into the neon districts.
           </p>
+          <div className="landing-hero__actions">
+            <button
+              type="button"
+              className="btn-primary btn-lg"
+              onMouseEnter={handleForgeIntent}
+              onFocus={handleForgeIntent}
+              onClick={() => navigate("/forge")}
+            >
+              Card Forge
+            </button>
+            <button
+              type="button"
+              className="btn-outline btn-lg"
+              onMouseEnter={handleArenaIntent}
+              onFocus={handleArenaIntent}
+              onClick={() => navigate("/arena")}
+            >
+              Arena
+            </button>
+          </div>
+        </div>
+        <div className="landing-hero__spotlight">
+          {faceoffPayload ? (
+            <CrewFaceoffSpotlight payload={faceoffPayload} />
+          ) : (
+            <section className="landing-hero__spotlight-placeholder" aria-label="Featured crew face-off loading">
+              <p className="landing-hero__spotlight-eyebrow">Tonight&apos;s Hype Match</p>
+              <h2 className="landing-hero__spotlight-title">Cassidy&apos;s Crew vs Garibaldi&apos;s Crew</h2>
+              <p className="landing-hero__spotlight-copy">
+                Pulling the featured face-off from cache so the landing page stays hot on every visit.
+              </p>
+            </section>
+          )}
         </div>
         <div className="landing-hero__glow" aria-hidden="true">
           <span className="landing-hero__glow-orb landing-hero__glow-orb--primary" />
@@ -140,11 +164,6 @@ export function LandingPage() {
         )}
       </section>
 
-      <ForgeWelcomeModal
-        open={showFaceoff}
-        onClose={closeFaceoff}
-        title={`Welcome to Punch Skater™, ${userDisplayName}.`}
-      />
     </div>
   );
 }

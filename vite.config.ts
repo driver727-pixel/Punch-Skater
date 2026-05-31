@@ -92,6 +92,22 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: ({ request, url }) =>
+              request.method === 'GET' &&
+              url.pathname === '/api/hype/crew-faceoff',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'landing-faceoff-cache',
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 5 * 60,
+              },
+              cacheableResponse: {
+                statuses: [200],
+              },
+            },
+          },
         ],
       },
       manifest: {
