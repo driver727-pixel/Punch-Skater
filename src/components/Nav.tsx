@@ -13,7 +13,6 @@ import { db } from "../lib/firebase";
 import { TierModal } from "./TierModal";
 import { NotificationBell } from "./NotificationBell";
 import { sfxNavigate } from "../lib/sfx";
-import { GeoAtlas } from "./GeoAtlas";
 import { useAmbience } from "../hooks/useAmbience";
 import { isEnabled } from "../lib/featureFlags";
 import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
@@ -165,13 +164,14 @@ export function Nav() {
       <div className="nav-container" ref={navContainerRef}>
         <nav className="nav">
           <div className="nav-inner">
-          <div className="nav-brand">
-            <span className="nav-title">Punch Skater™</span>
-            <span className="nav-subtitle">CARD GAME</span>
-            <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk™ Game</a>
+          <div className="nav-brand-zone">
+            <img src="/assets/primaryzone.png" alt="Primary Zone" className="nav-brand-zone__bg" aria-hidden="true" />
+            <div className="nav-brand">
+              <span className="nav-title">Punch Skater™</span>
+              <span className="nav-subtitle">CARD GAME</span>
+              <a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer" className="nav-game-badge">A Sk8r Punk™ Game</a>
+            </div>
           </div>
-
-          <GeoAtlas compact section="neon" className="nav-neon-map" />
 
           <div className="nav-links">
             {renderNavLinks()}
