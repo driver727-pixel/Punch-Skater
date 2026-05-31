@@ -18309,6 +18309,43 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  position: relative;
+}
+
+.forge-objective-card--snapshot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(4, 6, 20, 0.72);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.forge-objective-card--snapshot > * {
+  position: relative;
+  z-index: 1;
+}
+
+.forge-objective-card--snapshot .forge-objective-eyebrow {
+  text-shadow:
+    0 0 8px rgba(0, 0, 0, 0.9),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.forge-objective-card--snapshot .forge-objective-stat {
+  background: rgba(4, 6, 20, 0.78);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.forge-objective-card--snapshot .forge-objective-stat-label {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+}
+
+.forge-objective-card--snapshot .forge-objective-stat strong {
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.95);
 }
 
 .forge-objective-eyebrow {
