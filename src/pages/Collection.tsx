@@ -50,11 +50,12 @@ function formatCollectionRewardMeta(track: string, seasonal?: boolean): string {
 }
 
 export function Collection() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { cards, removeCard, addCard, migrationPending, importLocalCards, dismissMigration } = useCollection();
   const { removeCardFromAllDecks } = useDecks();
   const { tier, openUpgradeModal } = useTier();
   const tierData = TIERS[tier];
+  const isAdmin = userProfile?.isAdmin === true;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -897,27 +898,35 @@ export function Collection() {
               <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {tierData.canSave && (
                   <>
-                    <button
-                      className="btn-primary btn-sm"
-                      onClick={() => navigate(`/edit/${selected.id}`)}
-                    >
-                      ✎ Customize Card
-                    </button>
+                    {isAdmin && (
+                      <button
+                        className="btn-primary btn-sm"
+                        onClick={() => navigate(`/edit/${selected.id}`)}
+                      >
+                        ✎ Customize Card
+                      </button>
+                    )}
                     <button
                       className="btn-outline btn-sm"
-                      onClick={() => navigate(`/edit/${selected.id}?mode=identity&focus=name`)}
+                      onClick={() => navigate(`/workshop?card=${selected.id}&focus=rename`)}
                     >
                       Rename
                     </button>
                     <button
                       className="btn-outline btn-sm"
-                      onClick={() => navigate(`/edit/${selected.id}?mode=layout`)}
+                      onClick={() => navigate(`/workshop?card=${selected.id}&focus=bio`)}
+                    >
+                      ✏ Bio
+                    </button>
+                    <button
+                      className="btn-outline btn-sm"
+                      onClick={() => navigate(`/workshop?card=${selected.id}&focus=reposition`)}
                     >
                       ↔ Reposition Art
                     </button>
                     <button
                       className="btn-outline btn-sm"
-                      onClick={() => navigate(`/edit/${selected.id}?mode=art`)}
+                      onClick={() => navigate(`/workshop?card=${selected.id}&focus=refresh`)}
                     >
                       ✨ Refresh Art
                     </button>

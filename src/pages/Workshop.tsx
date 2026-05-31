@@ -59,6 +59,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 const KEYBOARD_PERSIST_DEBOUNCE_MS = 220;
+const FOCUS_SCROLL_DELAY_MS = 60;
 const KEYBOARD_NUDGE_STEP = 0.015;
 const KEYBOARD_NUDGE_STEP_SHIFT = 0.03;
 const DRAG_MOVEMENT_THRESHOLD_PX = 3;
@@ -125,6 +126,12 @@ export function Workshop() {
   const pendingBoardSelectionRef = useRef<string | null>(null);
   const pendingWeaponSelectionRef = useRef<string | null>(null);
   const floorStageRef = useRef<HTMLElement | null>(null);
+  const cardEditorSectionRef = useRef<HTMLElement | null>(null);
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const bioInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const repositionSectionRef = useRef<HTMLDivElement | null>(null);
+  const refreshArtSectionRef = useRef<HTMLDivElement | null>(null);
+  const handledFocusRef = useRef<string | null>(null);
   const keyboardPersistTimersRef = useRef<Record<string, number>>({});
   const activeDragCountsRef = useRef<Record<string, number>>({});
   const dragSessionsRef = useRef<Record<number, {
@@ -296,6 +303,33 @@ export function Workshop() {
     setBoardConfig(normalizeBoardConfig(selectedCard.board.config));
   }, [selectedCard]);
 
+  const focusTarget = searchParams.get("focus");
+
+  useEffect(() => {
+    if (!editingCard || !focusTarget) return;
+    const focusKey = `${editingCard.id}:${focusTarget}`;
+    if (handledFocusRef.current === focusKey) return;
+    handledFocusRef.current = focusKey;
+    const sectionMap: Record<string, React.RefObject<HTMLElement | null>> = {
+      rename: cardEditorSectionRef,
+      bio: cardEditorSectionRef,
+      reposition: repositionSectionRef,
+      refresh: refreshArtSectionRef,
+    };
+    const targetRef = sectionMap[focusTarget];
+    if (!targetRef) return;
+    const scrollTimer = window.setTimeout(() => {
+      targetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (focusTarget === "rename") {
+        renameInputRef.current?.focus();
+        renameInputRef.current?.select();
+      } else if (focusTarget === "bio") {
+        bioInputRef.current?.focus();
+      }
+    }, FOCUS_SCROLL_DELAY_MS);
+    return () => window.clearTimeout(scrollTimer);
+  }, [editingCard, focusTarget]);
+
   const handleBenchSave = async () => {
     setSavingBoard(true);
     setError("");
@@ -408,6 +442,47 @@ export function Workshop() {
     } finally {
       setSavingCardLayout(false);
     }
+  };
+
+  const handleCardNameChange = (name: string) => {
+    setEditingCard((current) => (
+      current ? { ...current, identity: { ...current.identity, name } } : current
+    ));
+  };
+
+  const handleCardAgeChange = (age: string) => {
+    setEditingCard((current) => (
+      current ? { ...current, identity: { ...current.identity, age } } : current
+    ));
+  };
+
+  const handleCardBioChange = (flavorText: string) => {
+    setEditingCard((current) => (
+      current
+        ? {
+            ...current,
+            front: { ...current.front, flavorText, flavorTextEnglish: flavorText },
+          }
+        : current
+    ));
+  };
+
+  const handleRefreshArt = (scope: "all" | "background" | "character" | "frame" | "board") => {
+    sfxClick();
+    setEditingCard((current) => {
+      if (!current) return current;
+      const clearBackground = scope === "all" || scope === "background";
+      const clearCharacter = scope === "all" || scope === "character";
+      const clearFrame = scope === "all" || scope === "frame";
+      const clearBoard = scope === "all" || scope === "board";
+      return {
+        ...current,
+        backgroundImageUrl: clearBackground ? undefined : current.backgroundImageUrl,
+        characterImageUrl: clearCharacter ? undefined : current.characterImageUrl,
+        frameImageUrl: clearFrame ? undefined : current.frameImageUrl,
+        board: clearBoard ? { ...current.board, imageUrl: undefined } : current.board,
+      };
+    });
   };
 
   const handleSelectBoard = (boardId: string) => {
@@ -712,7 +787,7 @@ export function Workshop() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Workshop</h1>
-          <p className="page-sub">Save bench builds, inspect paper-doll gear, and marry new skateboards or weapons to a forged card.</p>
+          <p className="page-sub">Save bench builds, edit forged cards (rename, reposition art, refresh art), and marry new skateboards or weapons to a card.</p>
         </div>
         <button className="btn-outline" type="button" onClick={() => navigate("/forge")}>
           ← Back to Card Forge
@@ -817,13 +892,17 @@ export function Workshop() {
             </div>
           </section>
 
-          <section className="workshop-detail">
+          <section className="workshop-detail" ref={cardEditorSectionRef}>
             <div className="workshop-panel-heading">
               <div>
                 <p className="eyebrow">Card Editor</p>
-                <h2>Edit the selected card in place</h2>
+                <h2>Rename, reposition art, and refresh art</h2>
               </div>
             </div>
+            <p className="form-hint">
+              Everything you need to edit a forged card lives here: rename the courier, reposition each art layer, and
+              refresh stale generated art back to the live render.
+            </p>
 
             <label className="workshop-field">
               <span>Card target</span>
@@ -854,6 +933,41 @@ export function Workshop() {
 
             {editingCard && cardEditorVars && (
               <>
+                <label className="workshop-field">
+                  <span>Rename courier</span>
+                  <input
+                    ref={renameInputRef}
+                    className="input"
+                    type="text"
+                    value={editingCard.identity.name}
+                    onChange={(event) => handleCardNameChange(event.target.value)}
+                    aria-label="Rename courier"
+                    placeholder="Courier name"
+                  />
+                </label>
+                <label className="workshop-field">
+                  <span>Age</span>
+                  <input
+                    className="input"
+                    type="text"
+                    value={editingCard.identity.age ?? ""}
+                    onChange={(event) => handleCardAgeChange(event.target.value)}
+                    aria-label="Courier age"
+                    placeholder="Optional"
+                  />
+                </label>
+                <label className="workshop-field">
+                  <span>Bio</span>
+                  <textarea
+                    ref={bioInputRef}
+                    className="input"
+                    rows={2}
+                    value={editingCard.front.flavorTextEnglish ?? editingCard.front.flavorText ?? ""}
+                    onChange={(event) => handleCardBioChange(event.target.value)}
+                    aria-label="Courier bio"
+                    placeholder="Optional flavor text"
+                  />
+                </label>
                 <CardContainer cardVars={cardEditorVars}>
                   <div className="print-preview-area print-preview-area--workshop">
                     <div className="print-preview-slot">
@@ -868,7 +982,10 @@ export function Workshop() {
                             frameImageUrl={editingCard.frameImageUrl}
                             weaponImageUrl={editingCard.weaponImageUrl}
                             artEditable
-                            metadataEditable={false}
+                            metadataEditable
+                            onNameChange={handleCardNameChange}
+                            onAgeChange={handleCardAgeChange}
+                            onBioChange={handleCardBioChange}
                             onBoardPlacementChange={handleBoardPlacementChange}
                             onCharacterPlacementChange={handleCharacterPlacementChange}
                             onWeaponPlacementChange={handleWeaponPlacementChange}
@@ -878,6 +995,9 @@ export function Workshop() {
                     </div>
                   </div>
                 </CardContainer>
+                <div ref={repositionSectionRef} className="edit-form-section-header" style={{ marginTop: 16 }}>
+                  ↔ Reposition Art
+                </div>
                 <p className="form-hint" style={{ marginTop: 12 }}>
                   Drag layers on the card face to reposition them, or use the sliders below for precise size and rotation changes.
                   On touch devices, pinch or rotate to scale and turn the layer.
@@ -988,9 +1108,53 @@ export function Workshop() {
                     </>
                   )}
                 </div>
+                <div ref={refreshArtSectionRef} className="edit-form-section-header" style={{ marginTop: 16 }}>
+                  ✨ Refresh Art
+                </div>
+                <p className="form-hint" style={{ marginTop: 12 }}>
+                  Drop a stale saved art layer so the card falls back to its live render. Useful when generated art no
+                  longer matches the current build. Save when you are happy with the result.
+                </p>
+                <div className="edit-card-art-actions">
+                  <button className="btn-outline btn-sm" type="button" onClick={() => handleRefreshArt("all")}>
+                    Refresh All Art
+                  </button>
+                  <button
+                    className="btn-outline btn-sm"
+                    type="button"
+                    onClick={() => handleRefreshArt("background")}
+                    disabled={!editingCard.backgroundImageUrl}
+                  >
+                    Refresh Background
+                  </button>
+                  <button
+                    className="btn-outline btn-sm"
+                    type="button"
+                    onClick={() => handleRefreshArt("character")}
+                    disabled={!editingCard.characterImageUrl}
+                  >
+                    Refresh Character
+                  </button>
+                  <button
+                    className="btn-outline btn-sm"
+                    type="button"
+                    onClick={() => handleRefreshArt("frame")}
+                    disabled={!editingCard.frameImageUrl}
+                  >
+                    Refresh Frame
+                  </button>
+                  <button
+                    className="btn-outline btn-sm"
+                    type="button"
+                    onClick={() => handleRefreshArt("board")}
+                    disabled={!editingCard.board.imageUrl}
+                  >
+                    Refresh Board
+                  </button>
+                </div>
                 <div className="workshop-detail__actions">
                   <button className="btn-outline btn-sm" type="button" onClick={handleResetCardLayout}>
-                    Reset Card Layout
+                    Reset Changes
                   </button>
                   <button
                     className="btn-primary btn-sm"
@@ -998,7 +1162,7 @@ export function Workshop() {
                     onClick={handleSaveCardLayout}
                     disabled={savingCardLayout}
                   >
-                    {savingCardLayout ? "Saving…" : "Save Card Layout"}
+                    {savingCardLayout ? "Saving…" : "Save Card"}
                   </button>
                 </div>
               </>
