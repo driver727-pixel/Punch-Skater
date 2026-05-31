@@ -70,7 +70,7 @@ export function LandingPage() {
           <div className="landing-hero__actions">
             <button
               type="button"
-              className="btn-primary landing-cta-button"
+              className="btn-primary landing-cta-button landing-cta-button--forge"
               onMouseEnter={handleForgeIntent}
               onFocus={handleForgeIntent}
               onClick={() => navigate("/forge")}
@@ -79,7 +79,7 @@ export function LandingPage() {
             </button>
             <button
               type="button"
-              className="btn-outline landing-cta-button"
+              className="btn-outline landing-cta-button landing-cta-button--arena"
               onMouseEnter={handleArenaIntent}
               onFocus={handleArenaIntent}
               onClick={() => navigate("/arena")}
