@@ -70,7 +70,7 @@ export function LandingPage() {
           <div className="landing-hero__actions">
             <button
               type="button"
-              className="btn-primary btn-lg"
+              className="btn-primary landing-cta-button"
               onMouseEnter={handleForgeIntent}
               onFocus={handleForgeIntent}
               onClick={() => navigate("/forge")}
@@ -79,7 +79,7 @@ export function LandingPage() {
             </button>
             <button
               type="button"
-              className="btn-outline btn-lg"
+              className="btn-outline landing-cta-button"
               onMouseEnter={handleArenaIntent}
               onFocus={handleArenaIntent}
               onClick={() => navigate("/arena")}
@@ -112,28 +112,6 @@ export function LandingPage() {
         <ForgeStartHere
           className="landing-start-here"
           title="Start Here"
-          actions={(
-            <>
-              <button
-                type="button"
-                className="btn-primary btn-lg"
-                onMouseEnter={handleForgeIntent}
-                onFocus={handleForgeIntent}
-                onClick={() => navigate("/forge")}
-              >
-                Card Forge
-              </button>
-              <button
-                type="button"
-                className="btn-outline btn-lg"
-                onMouseEnter={handleArenaIntent}
-                onFocus={handleArenaIntent}
-                onClick={() => navigate("/arena")}
-              >
-                Arena
-              </button>
-            </>
-          )}
         />
 
         {user ? (
@@ -156,7 +134,7 @@ export function LandingPage() {
               hint="Sign up free to try solo Arena and Joustur Skatur™ runs with house cards, then save cards, build a Crew, run Missions, race rivals, and trade across the districts."
               panelEyebrow="Login"
               panelTitle="Sign in or create your free Punch Skater™ account"
-              panelSubtitle="Email, Google, and phone login all work here — including the free solo house-card trial."
+              panelSubtitle="Email, Google, and phone login all work here."
               showBranding={false}
               showGuestLink={false}
             />
