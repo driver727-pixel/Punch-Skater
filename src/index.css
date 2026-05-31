@@ -1574,13 +1574,10 @@ body::after {
   box-sizing: border-box;
 }
 
-.nav-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 6px 12px;
+/* Combined brand + zone image wrapper */
+.nav-brand-zone {
+  position: relative;
+  flex: 0 0 auto;
   border: 1px solid transparent;
   border-radius: 6px;
   background:
@@ -1590,7 +1587,34 @@ body::after {
     0 0 8px rgba(0, 255, 136, 0.25),
     0 0 16px rgba(0, 204, 255, 0.15),
     0 0 24px rgba(139, 92, 246, 0.1);
+  overflow: hidden;
+  align-self: stretch;
+}
+
+.nav-brand-zone__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.35;
+  border-radius: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+
+.nav-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 12px;
+  height: 100%;
   line-height: 1;
+  z-index: 1;
 }
 .nav-title {
   font-family: var(--font-display);
@@ -1624,55 +1648,11 @@ body::after {
   box-shadow: 0 0 8px rgba(0, 255, 136, 0.4), 0 0 14px rgba(139, 92, 246, 0.3);
 }
 
-/* Compact neon world map displayed in the nav header between the brand and nav links */
-.nav-neon-map {
-  --nav-neon-map-width: clamp(200px, 20vw, 300px);
-  flex: 0 0 var(--nav-neon-map-width);
-  width: var(--nav-neon-map-width);
-  overflow: hidden;
-  align-self: stretch;
-}
-
-.nav-neon-map .geo-atlas__panel {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  box-shadow: none;
-  gap: 0;
-  height: 100%;
-}
-
-.nav-neon-map .geo-atlas__panel-head { display: none; }
-
-.nav-neon-map .geo-atlas__map {
-  height: 100%;
-  aspect-ratio: auto;
-  border-radius: 5px;
-}
-
-.nav-neon-map .geo-atlas__map--world {
-  min-height: 0;
-}
-
-.nav-neon-map .geo-atlas__world-callout {
-  right: 10px;
-  bottom: 10px;
-  padding: 6px 8px;
-  gap: 2px;
-}
-
-.nav-neon-map .geo-atlas__world-callout-label {
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-
-.nav-neon-map .geo-atlas__world-callout-title {
-  font-size: 12px;
-}
 
 @media (max-width: 900px) {
-  .nav-neon-map.geo-atlas { display: none; }
+  .nav-brand-zone {
+    max-width: clamp(180px, 40vw, 260px);
+  }
 }
 
 .nav-links {
@@ -5546,9 +5526,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   .nav-links { display: none; }
   .nav-desktop-only { display: none !important; }
   .nav-mobile-menu { display: grid; }
-  .nav-brand {
+  .nav-brand-zone {
     flex: 1 1 auto;
     min-width: 0;
+    max-width: none;
+  }
+  .nav-brand {
     align-items: flex-start;
     padding: 4px 8px;
   }
@@ -5604,16 +5587,12 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 @media (min-width: 769px) {
   .nav-mobile-menu { display: none; }
   .nav-hamburger { display: none; }
-  .nav-brand,
-  .nav-neon-map,
+  .nav-brand-zone,
   .nav-links {
     min-height: 168px;
   }
-  .nav-brand {
-    flex: 0 0 clamp(150px, 14vw, 180px);
-  }
-  .nav-neon-map {
-    --nav-neon-map-width: clamp(260px, 25vw, 340px);
+  .nav-brand-zone {
+    width: clamp(200px, 22vw, 340px);
   }
   .nav-links {
     grid-auto-rows: 1fr;
@@ -8999,15 +8978,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   min-height: clamp(220px, 27vw, 340px);
 }
 
-.nav-neon-map.geo-atlas--compact .geo-atlas__map--world {
-  min-height: 0;
-}
-
 @media (max-width: 1200px) {
-  .nav-neon-map {
-    --nav-neon-map-width: clamp(180px, 18vw, 240px);
-  }
-
   .geo-atlas__map--world {
     min-height: clamp(260px, 38vw, 420px);
   }
