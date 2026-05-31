@@ -856,7 +856,7 @@ export function Collection() {
                     className="btn-outline btn-sm"
                     onClick={() => navigate(`/workshop?card=${selected.id}`)}
                   >
-                    🛹 Swap Board
+                    🛹 Workshop
                   </button>
                  {tierData.canEditDecks ? (
                    <button
