@@ -61,6 +61,9 @@ export default defineConfig({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{html,js,css,ico,svg,webp,webmanifest,woff2}'],
+        // Keep the large animated loading webp out of the install-time precache;
+        // it is fetched on demand and runtime-cached via the /assets image rule.
+        globIgnores: ['**/loading_2.webp'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/cyber-joust/],
         runtimeCaching: [

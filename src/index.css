@@ -6213,7 +6213,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
 }
 
 /* ── Loading GIF sizing ──────────────────────────────────────────────────────
- * Applied to every <img src="/assets/loading_2.gif"> used inside loading
+ * Applied to every <img src="/assets/loading_2.webp"> used inside loading
  * skeletons and layer-loading divs.  Scales to fit the 5/7 card aspect ratio
  * without cropping so the full animation is always visible.
  */

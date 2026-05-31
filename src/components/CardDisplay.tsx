@@ -232,7 +232,7 @@ function CompositeArt({
         />
       ) : layerLoading?.background ? (
         <div className="card-art-layer card-art-layer--background card-art-layer--loading">
-          <img src="/assets/loading_2.gif" alt="Loading…" className="card-art-loading-gif" />
+          <img src="/assets/loading_2.webp" alt="Loading…" className="card-art-loading-gif" />
         </div>
       ) : null}
       <InsetNeonTube rarity={card.prompts.rarity} accentColor={card.visuals.accentColor} />
@@ -259,7 +259,7 @@ function CompositeArt({
         />
       ) : layerLoading?.character ? (
         <div className="card-art-layer card-art-layer--character card-art-layer--loading">
-          <img src="/assets/loading_2.gif" alt="Loading…" className="card-art-loading-gif" />
+          <img src="/assets/loading_2.webp" alt="Loading…" className="card-art-loading-gif" />
         </div>
       ) : null}
 
@@ -274,7 +274,7 @@ function CompositeArt({
         />
       ) : layerLoading?.frame ? (
         <div className="card-art-layer card-art-layer--frame card-art-layer--loading">
-          <img src="/assets/loading_2.gif" alt="Loading…" className="card-art-loading-gif" />
+          <img src="/assets/loading_2.webp" alt="Loading…" className="card-art-loading-gif" />
         </div>
       ) : null}
 
@@ -416,7 +416,7 @@ function CardDisplayComponent({
       <div className="card-compact">
         {imageLoading && !hasLayeredImages ? (
           <div className="card-art-skeleton">
-            <img src="/assets/loading_2.gif" alt="Loading…" className="card-art-loading-gif" />
+            <img src="/assets/loading_2.webp" alt="Loading…" className="card-art-loading-gif" />
           </div>
         ) : hasLayeredImages || layerLoading ? (
           <CompositeArt
@@ -483,7 +483,7 @@ function CardDisplayComponent({
             />
           ) : imageLoading ? (
             <div className="card-art-skeleton card-art-skeleton--full">
-              <img src="/assets/loading_2.gif" alt="Loading…" className="card-art-loading-gif" />
+              <img src="/assets/loading_2.webp" alt="Loading…" className="card-art-loading-gif" />
             </div>
           ) : (
             <CardArt card={card} width={200} height={140} />

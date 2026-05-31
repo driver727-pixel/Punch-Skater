@@ -521,7 +521,7 @@ function CardBack({
                   const img = e.currentTarget as HTMLImageElement;
                   if (!img.dataset.fallback) {
                     img.dataset.fallback = "1";
-                    img.src = "/assets/loading_2.gif";
+                    img.src = "/assets/loading_2.webp";
                   }
                 }}
               />
