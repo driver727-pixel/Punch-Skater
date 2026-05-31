@@ -6885,7 +6885,7 @@ button { cursor: pointer; font-family: var(--font); transition: all 0.2s ease; }
   background:
     linear-gradient(135deg, rgba(10, 18, 28, 0.82), rgba(26, 11, 34, 0.78)),
     radial-gradient(circle at top right, rgba(0, 204, 255, 0.14), transparent 42%),
-    url("/assets/WIPskateshop.png") center / cover no-repeat;
+    url("/assets/skateshop.png") center / cover no-repeat;
 }
 
 .landing-start-here .forge-welcome__actions {
