@@ -26,11 +26,10 @@
     "firebase": "^12.11.0",
     "firebase-admin": "^13.8.0",
     "helmet": "^8.1.0",
-    "lucide-react": "^0.454.0",
+    "rate-limit-redis": "^4.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.5.0",
-    "rate-limit-redis": "^4.3.0",
     "redis": "^5.8.3",
     "stripe": "^22.0.0"
   },
