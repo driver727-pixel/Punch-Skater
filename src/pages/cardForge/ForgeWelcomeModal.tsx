@@ -17,7 +17,7 @@ interface ForgeWelcomeModalProps {
 
 const FACE_OFF_ROTATION_MS = 7000;
 
-function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
+export function CrewFaceoffSpotlight({ payload }: { payload: CrewFaceoffPayload }) {
   const [tick, setTick] = useState(() => Math.floor(Date.now() / FACE_OFF_ROTATION_MS));
   const cassidyCards = payload.crews.cassidy.cards;
   const garibaldiCards = payload.crews.garibaldi.cards;
