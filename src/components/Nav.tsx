@@ -197,7 +197,7 @@ export function Nav() {
             </button>
             {user && (
               <div className="nav-wallet-badge nav-desktop-only" title="Your current Ozzies balance">
-                💰 {userProfile?.ozziesBalance ?? 0}
+                💰 {userProfile?.ozzies ?? 0}
               </div>
             )}
 
@@ -230,7 +230,7 @@ export function Nav() {
                       🤝 Trades{pendingTrades > 0 && ` (${pendingTrades})`}
                     </button>
                     <div className="user-dropdown-wallet">
-                      💰 Ozzies balance: {userProfile?.ozziesBalance ?? 0}
+                      💰 Ozzies balance: {userProfile?.ozzies ?? 0}
                     </div>
                     <button
                       className="user-dropdown-item"
@@ -296,7 +296,7 @@ export function Nav() {
               </button>
               {user && (
                 <div className="nav-wallet-badge">
-                  💰 {userProfile?.ozziesBalance ?? 0}
+                  💰 {userProfile?.ozzies ?? 0}
                 </div>
               )}
             </div>
