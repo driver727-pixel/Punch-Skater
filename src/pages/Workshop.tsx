@@ -59,6 +59,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 const KEYBOARD_PERSIST_DEBOUNCE_MS = 220;
+const FOCUS_SCROLL_DELAY_MS = 60;
 const KEYBOARD_NUDGE_STEP = 0.015;
 const KEYBOARD_NUDGE_STEP_SHIFT = 0.03;
 const DRAG_MOVEMENT_THRESHOLD_PX = 3;
@@ -315,14 +316,14 @@ export function Workshop() {
     };
     const targetRef = sectionMap[focusTarget];
     if (!targetRef) return;
-    const timer = window.setTimeout(() => {
+    const scrollTimer = window.setTimeout(() => {
       targetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       if (focusTarget === "rename") {
         renameInputRef.current?.focus();
         renameInputRef.current?.select();
       }
-    }, 60);
-    return () => window.clearTimeout(timer);
+    }, FOCUS_SCROLL_DELAY_MS);
+    return () => window.clearTimeout(scrollTimer);
   }, [editingCard, focusTarget]);
 
   const handleBenchSave = async () => {
