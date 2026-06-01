@@ -6,6 +6,7 @@
  * server for future multiplayer. The Phaser scene only reads state to position
  * sprites.
  */
+import * as Phaser from 'phaser';
 import { PHYSICS, NITRO, TRACK, AI, parseRaceConfig } from './raceConfig.js';
 
 // ---------------------------------------------------------------------------
