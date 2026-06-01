@@ -4,7 +4,7 @@
  * Top-down arcade racer inspired by Super Off Road. Camera follows the player,
  * up to 5 AI opponents, nitro boost with cooldown, drift physics.
  */
-import * as Phaser from 'phaser';
+import Phaser from './phaserRuntime.js';
 import { RaceGameScene } from './gameScene.js';
 import { parseRaceConfig } from './raceConfig.js';
 
