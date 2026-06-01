@@ -16,7 +16,7 @@ interface RivalIntel {
   ozzies: number;
 }
 
-const CREW_CARD_TITLES = ["Point Runner", "Rail Ghost", "Signal Bruiser", "Deck Medic", "Data Ace", "Vault Spark"];
+const CREW_MEMBER_ROLES = ["Point Runner", "Rail Ghost", "Signal Bruiser", "Deck Medic", "Data Ace", "Vault Spark"];
 const DEFAULT_USER_RANK = 947;
 const MIN_PROGRESS_PCT = 8;
 const MAX_PROGRESS_PCT = 96;
@@ -169,7 +169,7 @@ export function MissionControlDashboard() {
 
       <section className="comms-intel-grid" aria-label="Comms and intel terminal">
         <article className="intel-terminal">
-          <div className="intel-terminal__chrome">
+          <div className="intel-terminal__chrome" aria-hidden="true">
             <span />
             <span />
             <span />
@@ -182,7 +182,7 @@ Intel: neon districts report fresh Mission Control traffic.`}</pre>
         </article>
 
         <article className="intel-terminal referral-terminal">
-          <div className="intel-terminal__chrome">
+          <div className="intel-terminal__chrome" aria-hidden="true">
             <span />
             <span />
             <span />
@@ -203,7 +203,7 @@ Intel: neon districts report fresh Mission Control traffic.`}</pre>
             <p className="mission-control-eyebrow">Classified dossier</p>
             <h2 id="target-intel-title">TARGET INTEL: {selectedRival.coverIdentity}</h2>
             <div className="target-intel-grid">
-              {CREW_CARD_TITLES.map((title, index) => (
+              {CREW_MEMBER_ROLES.map((title, index) => (
                 <article key={title} className="stolen-intel-card">
                   <span className="stolen-intel-card__rank">Intel {index + 1}/6</span>
                   <strong>{title}</strong>
