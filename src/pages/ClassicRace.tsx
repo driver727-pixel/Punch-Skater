@@ -644,7 +644,7 @@ export function ClassicRace() {
               onClick={() => {
                 sfxBattleReady();
                 const url = `/classic-race/?district=${encodeURIComponent(soloDistrict)}&opponents=${arcadeOpponents}&returnUrl=${encodeURIComponent("/race")}`;
-                window.open(url, '_blank', 'noopener');
+                window.open(url, '_blank', 'noopener,noreferrer');
               }}
             >
               🏁 Launch Race

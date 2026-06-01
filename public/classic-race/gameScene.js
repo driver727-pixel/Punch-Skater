@@ -142,13 +142,13 @@ function updateRacerPhysics(racer, dt, input, waypoints, walls, obstacles, total
   const lateralY = racer.vy - sinA * (racer.vx * cosA + racer.vy * sinA);
 
   // Apply drift damping
-  const driftFactor = Math.abs(steer) > 0 ? PHYSICS.DRIFT_LATERAL_DAMPING : 0.95;
+  const driftFactor = Math.abs(steer) > 0 ? PHYSICS.DRIFT_LATERAL_DAMPING : PHYSICS.DRIFT_NEUTRAL_DAMPING;
   racer.vx = forwardX + lateralX * driftFactor;
   racer.vy = forwardY + lateralY * driftFactor;
 
   // --- Apply grip reduction on turns ---
   if (Math.abs(steer) > 0) {
-    const gripLoss = 1 - (1 - PHYSICS.TURN_GRIP_FACTOR) * Math.abs(racer.angularVel) * 0.3;
+    const gripLoss = 1 - (1 - PHYSICS.TURN_GRIP_FACTOR) * Math.abs(racer.angularVel) * PHYSICS.GRIP_ANGULAR_FACTOR;
     racer.speed *= clamp(gripLoss, 0.85, 1);
   }
 
@@ -179,8 +179,8 @@ function updateRacerPhysics(racer, dt, input, waypoints, walls, obstacles, total
     racer.vx = Math.cos(pushAngle) * Math.abs(racer.speed) * PHYSICS.BOUNCE_FACTOR;
     racer.vy = Math.sin(pushAngle) * Math.abs(racer.speed) * PHYSICS.BOUNCE_FACTOR;
     racer.speed *= PHYSICS.BOUNCE_FACTOR;
-    racer.x += Math.cos(pushAngle) * 8;
-    racer.y += Math.sin(pushAngle) * 8;
+    racer.x += Math.cos(pushAngle) * PHYSICS.BOUNDARY_PUSH;
+    racer.y += Math.sin(pushAngle) * PHYSICS.BOUNDARY_PUSH;
   }
 
   // --- Obstacle collision ---
@@ -191,8 +191,8 @@ function updateRacerPhysics(racer, dt, input, waypoints, walls, obstacles, total
       racer.vx = Math.cos(pushAngle) * PHYSICS.OBSTACLE_BOUNCE;
       racer.vy = Math.sin(pushAngle) * PHYSICS.OBSTACLE_BOUNCE;
       racer.speed *= PHYSICS.OBSTACLE_SLOW;
-      racer.x += Math.cos(pushAngle) * 5;
-      racer.y += Math.sin(pushAngle) * 5;
+      racer.x += Math.cos(pushAngle) * PHYSICS.OBSTACLE_PUSH;
+      racer.y += Math.sin(pushAngle) * PHYSICS.OBSTACLE_PUSH;
     }
   }
 
@@ -254,19 +254,19 @@ function computeAIInput(racer, waypoints) {
     angleTo(target.x, target.y, afterNext.x, afterNext.y) -
     angleTo(racer.x, racer.y, target.x, target.y)
   ));
-  const shouldBrake = cornerAngle > 1.2 && d < 120;
+  const shouldBrake = cornerAngle > AI.CORNER_ANGLE_THRESHOLD && d < AI.CORNER_BRAKE_DISTANCE;
 
   // Nitro usage
   let useNitro = false;
-  if (racer.nitroReady && !racer.nitroActive && Math.abs(diff) < 0.3 && Math.random() < AI.NITRO_CHANCE * 0.02) {
+  if (racer.nitroReady && !racer.nitroActive && Math.abs(diff) < AI.NITRO_ALIGN_THRESHOLD && Math.random() < AI.NITRO_FRAME_CHANCE) {
     useNitro = true;
   }
 
   return {
     up: !shouldBrake,
     down: shouldBrake && racer.speed > PHYSICS.MAX_SPEED * AI.CORNER_SLOWDOWN,
-    left: diff < -0.08,
-    right: diff > 0.08,
+    left: diff < -AI.STEER_DEADZONE,
+    right: diff > AI.STEER_DEADZONE,
     nitro: useNitro,
   };
 }
@@ -603,19 +603,19 @@ export class RaceGameScene extends Phaser.Scene {
         const a = this.racers[i];
         const b = this.racers[j];
         const d = dist(a.x, a.y, b.x, b.y);
-        if (d < 24 && d > 0) {
+        if (d < PHYSICS.RACER_COLLISION_RADIUS && d > 0) {
           const pushAngle = angleTo(a.x, a.y, b.x, b.y);
-          const overlap = (24 - d) / 2;
+          const overlap = (PHYSICS.RACER_COLLISION_RADIUS - d) / 2;
           a.x -= Math.cos(pushAngle) * overlap;
           a.y -= Math.sin(pushAngle) * overlap;
           b.x += Math.cos(pushAngle) * overlap;
           b.y += Math.sin(pushAngle) * overlap;
           // Exchange some momentum
           const av = { x: a.vx, y: a.vy };
-          a.vx = lerp(a.vx, b.vx, 0.3);
-          a.vy = lerp(a.vy, b.vy, 0.3);
-          b.vx = lerp(b.vx, av.x, 0.3);
-          b.vy = lerp(b.vy, av.y, 0.3);
+          a.vx = lerp(a.vx, b.vx, PHYSICS.COLLISION_MOMENTUM_EXCHANGE);
+          a.vy = lerp(a.vy, b.vy, PHYSICS.COLLISION_MOMENTUM_EXCHANGE);
+          b.vx = lerp(b.vx, av.x, PHYSICS.COLLISION_MOMENTUM_EXCHANGE);
+          b.vy = lerp(b.vy, av.y, PHYSICS.COLLISION_MOMENTUM_EXCHANGE);
         }
       }
     }
@@ -763,7 +763,7 @@ export class RaceGameScene extends Phaser.Scene {
       // Post result back to opener if available
       const result = { position: pos, time: this.raceTime, won };
       if (window.opener) {
-        window.opener.postMessage({ type: 'classicRaceResult', ...result }, '*');
+        window.opener.postMessage({ type: 'classicRaceResult', ...result }, window.location.origin);
         window.close();
       } else {
         window.location.href = this.raceConfig.returnUrl || '/race';

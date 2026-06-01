@@ -139,9 +139,15 @@ export const PHYSICS = Object.freeze({
   DRAG: 180,               // natural slowdown
   ANGULAR_DRAG: 6.0,       // how quickly rotation stops
   DRIFT_LATERAL_DAMPING: 0.88, // per-frame multiplier on lateral velocity (< 1 = slide)
+  DRIFT_NEUTRAL_DAMPING: 0.95, // lateral damping when not steering
+  GRIP_ANGULAR_FACTOR: 0.3,    // angular velocity multiplier for grip loss
   BOUNCE_FACTOR: 0.4,      // wall collision bounce
+  BOUNDARY_PUSH: 8,        // px pushed back from wall
   OBSTACLE_SLOW: 0.5,      // speed multiplier on obstacle hit
   OBSTACLE_BOUNCE: 80,     // bounce impulse from obstacles
+  OBSTACLE_PUSH: 5,        // px pushed away from obstacle
+  RACER_COLLISION_RADIUS: 24,  // px for racer-to-racer collision
+  COLLISION_MOMENTUM_EXCHANGE: 0.3, // momentum exchange on racer collision
 });
 
 // ---------------------------------------------------------------------------
@@ -172,6 +178,11 @@ export const AI = Object.freeze({
   CORNER_SLOWDOWN: 0.65,   // AI brakes into tight corners
   STEER_LOOKAHEAD: 1,      // how many waypoints ahead to aim
   NITRO_CHANCE: 0.3,       // probability AI uses nitro when available
+  CORNER_ANGLE_THRESHOLD: 1.2, // radians — above this AI brakes
+  CORNER_BRAKE_DISTANCE: 120,  // px — within this distance AI brakes for corner
+  STEER_DEADZONE: 0.08,    // radians — below this AI doesn't steer
+  NITRO_ALIGN_THRESHOLD: 0.3,  // radians — AI only boosts when aimed straight
+  NITRO_FRAME_CHANCE: 0.02,    // per-frame chance multiplier for AI nitro
 });
 
 // ---------------------------------------------------------------------------
