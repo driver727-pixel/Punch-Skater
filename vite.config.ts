@@ -65,7 +65,7 @@ export default defineConfig({
         // it is fetched on demand and runtime-cached via the /assets image rule.
         globIgnores: ['**/loading_2.webp'],
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/cyber-joust/],
+        navigateFallbackDenylist: [/^\/api/, /^\/cyber-joust/, /^\/streets/],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
