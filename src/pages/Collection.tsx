@@ -23,9 +23,8 @@ import { DeckBuilder } from "./DeckBuilder";
 import {
   evaluateCollectionRewards,
   type CollectionRewardEvaluation,
-  type CollectionRewardFilter,
 } from "../lib/collectionRewards";
-import { claimCollectionReward, fetchCollectionRewards } from "../services/collectionRewards";
+import { fetchCollectionRewards } from "../services/collectionRewards";
 
 type SortOption = "name-asc" | "name-desc" | "newest" | "oldest" | "rarity";
 const COLLECTION_PAGE_SIZE = 24;
@@ -44,10 +43,6 @@ type CarouselCardStyle = CSSProperties & {
   "--carousel-offset": number;
   "--carousel-abs-offset": number;
 };
-
-function formatCollectionRewardMeta(track: string, seasonal?: boolean): string {
-  return seasonal ? `${track} · seasonal` : track;
-}
 
 export function Collection() {
   const { user, userProfile } = useAuth();
@@ -91,12 +86,8 @@ export function Collection() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const [rewardFilter, setRewardFilter] = useState<CollectionRewardFilter>("all");
   const [rewardEvaluation, setRewardEvaluation] = useState<CollectionRewardEvaluation>(() => evaluateCollectionRewards([]));
   const [rewardLoading, setRewardLoading] = useState(false);
-  const [rewardClaimingId, setRewardClaimingId] = useState<string | null>(null);
-  const [rewardMessage, setRewardMessage] = useState("");
-  const [rewardError, setRewardError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const carouselSwipeStartX = useRef<number | null>(null);
@@ -105,8 +96,6 @@ export function Collection() {
 
   useEffect(() => {
     let cancelled = false;
-    setRewardError("");
-    setRewardMessage("");
 
     if (!user) {
       setRewardEvaluation(evaluateCollectionRewards(cards));
@@ -118,10 +107,9 @@ export function Collection() {
       .then((result) => {
         if (!cancelled) setRewardEvaluation(result.evaluation);
       })
-      .catch((error) => {
+      .catch(() => {
         if (!cancelled) {
           setRewardEvaluation(evaluateCollectionRewards(cards));
-          setRewardError(error instanceof Error ? error.message : "Failed to load collection rewards.");
         }
       })
       .finally(() => {
@@ -262,26 +250,6 @@ export function Collection() {
   );
   const hasSelection = selectedIds.size > 0;
   const allPagedSelected = pagedCards.length > 0 && visibleSelectedCount === pagedCards.length;
-  const rewardMilestones = useMemo(() => {
-    const milestones = rewardEvaluation.milestones;
-    switch (rewardFilter) {
-      case "claimable":
-        return milestones.filter((entry) => entry.eligible && !entry.claimed);
-      case "owned":
-        return milestones.filter((entry) => entry.claimed);
-      case "locked":
-        return milestones.filter((entry) => !entry.eligible);
-      case "faction":
-        return milestones.filter((entry) => entry.milestone.track === "faction");
-      case "district":
-        return milestones.filter((entry) => entry.milestone.track === "district");
-      case "seasonal":
-        return milestones.filter((entry) => entry.milestone.seasonal);
-      case "all":
-      default:
-        return milestones;
-    }
-  }, [rewardEvaluation.milestones, rewardFilter]);
   const claimableRewardCount = rewardEvaluation.milestones.filter((entry) => entry.eligible && !entry.claimed).length;
 
   useEffect(() => {
@@ -295,27 +263,6 @@ export function Collection() {
   useEffect(() => {
     setCarouselIndex(0);
   }, [currentPageSafe, searchQuery, filterRarity, filterArchetype, filterFaction, filterDistrict, sortBy]);
-
-  const handleClaimReward = async (milestoneId: string) => {
-    if (!user) return;
-    setRewardClaimingId(milestoneId);
-    setRewardError("");
-    setRewardMessage("");
-    try {
-      const result = await claimCollectionReward(user, milestoneId);
-      setRewardEvaluation(result.evaluation);
-      setRewardMessage(
-        result.claimed
-          ? `Claimed ${result.rewards.map((reward) => reward.name).join(", ")}.`
-          : "Milestone was already claimed.",
-      );
-      if (result.claimed) sfxSuccess();
-    } catch (error) {
-      setRewardError(error instanceof Error ? error.message : "Failed to claim collection reward.");
-    } finally {
-      setRewardClaimingId(null);
-    }
-  };
 
   const clearSelection = () => {
     setSelectedIds(new Set());
@@ -516,10 +463,6 @@ export function Collection() {
               <div>
                 <p className="eyebrow">Cosmetic Prestige</p>
                 <h2>Collection Rewards</h2>
-                <p>
-                  Badges, titles, frames, lore, and capped cosmetic reroll tokens. No stat boosts, rarity guarantees,
-                  Deck Power bonuses, or battle advantages.
-                </p>
               </div>
               <div className="collection-rewards-score">
                 <span>Collection Score</span>
@@ -537,60 +480,11 @@ export function Collection() {
               <span><strong>{claimableRewardCount}</strong> Claimable</span>
             </div>
 
-            <div className="collection-rewards-filters">
-              {(["all", "claimable", "owned", "locked", "faction", "district", "seasonal"] as CollectionRewardFilter[]).map((filter) => (
-                <button
-                  key={filter}
-                  className={rewardFilter === filter ? "btn-primary btn-sm" : "btn-outline btn-sm"}
-                  type="button"
-                  onClick={() => setRewardFilter(filter)}
-                >
-                  {filter[0].toUpperCase() + filter.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {rewardMessage && <div className="collection-rewards-message collection-rewards-message--ok">{rewardMessage}</div>}
-            {rewardError && <div className="collection-rewards-message collection-rewards-message--error">{rewardError}</div>}
             {rewardLoading && <div className="collection-rewards-message app-status-banner">Syncing reward claims…</div>}
 
-            <div className="collection-rewards-list">
-              {rewardMilestones.slice(0, 12).map((entry) => (
-                <article
-                  key={entry.milestone.id}
-                  className={`collection-reward-card${entry.claimed ? " collection-reward-card--owned" : ""}${entry.eligible && !entry.claimed ? " collection-reward-card--claimable" : ""}`}
-                >
-                  <div className="collection-reward-card__top">
-                    <div>
-                      <strong>{entry.milestone.name}</strong>
-                      <span>{formatCollectionRewardMeta(entry.milestone.track, entry.milestone.seasonal)}</span>
-                    </div>
-                    <span className="collection-reward-card__status">
-                      {entry.claimed ? "Owned" : entry.eligible ? "Claimable" : `${entry.percent}%`}
-                    </span>
-                  </div>
-                  <p>{entry.milestone.description}</p>
-                  <div className="collection-reward-progress" aria-label={`${entry.current} of ${entry.target}`}>
-                    <span style={{ width: `${entry.percent}%` }} />
-                  </div>
-                  <div className="collection-reward-card__rewards">
-                    {entry.rewards.map((reward) => (
-                      <span key={reward.id} className={`collection-reward-chip collection-reward-chip--${reward.kind}`}>
-                        {reward.kind.replace(/_/g, " ")} · {reward.name}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    className="btn-primary btn-sm"
-                    type="button"
-                    disabled={!entry.eligible || entry.claimed || rewardClaimingId !== null || !user}
-                    onClick={() => handleClaimReward(entry.milestone.id)}
-                  >
-                    {rewardClaimingId === entry.milestone.id ? "Claiming…" : entry.claimed ? "Claimed" : "Claim"}
-                  </button>
-                </article>
-              ))}
-            </div>
+            <button className="btn-primary btn-sm" type="button" onClick={() => navigate("/collection/rewards")}>
+              View All Rewards →
+            </button>
           </section>
 
           {/* ── Search / Filter / Sort toolbar ─────────────────────────── */}
