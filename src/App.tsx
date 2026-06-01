@@ -85,6 +85,7 @@ function PlayerRewardBanner() {
 const CardForge  = lazy(() => import("./pages/CardForge").then(m => ({ default: m.CardForge })));
 const LandingPage = lazy(() => import("./pages/LandingPage").then(m => ({ default: m.LandingPage })));
 const Collection = lazy(() => import("./pages/Collection").then(m => ({ default: m.Collection })));
+const CollectionRewards = lazy(() => import("./pages/CollectionRewards").then(m => ({ default: m.CollectionRewards })));
 const EditCard   = lazy(() => import("./pages/EditCard").then(m => ({ default: m.EditCard })));
 const Trades     = lazy(() => import("./pages/Trades").then(m => ({ default: m.Trades })));
 const Login      = lazy(() => import("./pages/Login").then(m => ({ default: m.Login })));
@@ -361,6 +362,9 @@ function LegacyRoutes() {
       } />
       <Route path="/collection" element={
         <ProtectedRoute><Collection /></ProtectedRoute>
+      } />
+      <Route path="/collection/rewards" element={
+        <ProtectedRoute><CollectionRewards /></ProtectedRoute>
       } />
       <Route path="/decks" element={<Navigate to="/collection?tab=decks" replace />} />
       <Route path="/edit/:cardId" element={
