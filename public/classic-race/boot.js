@@ -8,7 +8,7 @@ function showLoadError(message) {
   const container = document.getElementById('game-container');
   if (!container) return;
   container.innerHTML = `
-    <div class="fallback" style="position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%); z-index: 2;">
+    <div class="fallback fallback--centered">
       ${message}
     </div>
   `;
@@ -27,7 +27,8 @@ async function loadPhaser() {
     }
   }
 
-  throw lastError ?? new Error('Unable to load Phaser.');
+  const attemptedSources = PHASER_CANDIDATES.join(', ');
+  throw lastError ?? new Error(`Unable to load Phaser from any source: ${attemptedSources}`);
 }
 
 try {
