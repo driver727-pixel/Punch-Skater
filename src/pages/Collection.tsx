@@ -96,8 +96,6 @@ export function Collection() {
 
   useEffect(() => {
     let cancelled = false;
-    setRewardError("");
-    setRewardMessage("");
 
     if (!user) {
       setRewardEvaluation(evaluateCollectionRewards(cards));
@@ -109,10 +107,9 @@ export function Collection() {
       .then((result) => {
         if (!cancelled) setRewardEvaluation(result.evaluation);
       })
-      .catch((error) => {
+      .catch(() => {
         if (!cancelled) {
           setRewardEvaluation(evaluateCollectionRewards(cards));
-          setRewardError(error instanceof Error ? error.message : "Failed to load collection rewards.");
         }
       })
       .finally(() => {
