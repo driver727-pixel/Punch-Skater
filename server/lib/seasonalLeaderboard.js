@@ -1,8 +1,8 @@
 export const ACTIVE_LEADERBOARD_SEASON = {
-  id: 'season-2026-neon-thaw',
-  label: 'Neon Thaw',
-  startsAt: '2026-03-01T00:00:00.000Z',
-  endsAt: '2026-05-31T23:59:59.999Z',
+  id: 'season-2026-summer-blaze',
+  label: 'Summer Blaze',
+  startsAt: '2026-06-01T00:00:00.000Z',
+  endsAt: '2026-08-31T23:59:59.999Z',
 };
 
 export const SEASONAL_SUBMISSION_COOLDOWN_HOURS = 4;
