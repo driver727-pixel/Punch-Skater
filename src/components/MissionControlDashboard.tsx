@@ -174,7 +174,7 @@ export function MissionControlDashboard() {
             <span />
             <span />
           </div>
-          <p className="mission-control-eyebrow">What&apos;s New</p>
+          <p className="mission-control-eyebrow">Patch Notes</p>
           <pre>{`Build 20260531.2115: smoother collection navigation...
 Signal: rivalry board now tracks near-pass targets.
 Patch: forge route warmed for faster card creation.
