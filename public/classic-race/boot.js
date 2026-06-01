@@ -1,4 +1,5 @@
 const PHASER_CANDIDATES = [
+  './vendor/phaser.esm.min.js',
   'https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.esm.js',
   'https://esm.sh/phaser@3.90.0?bundle',
 ];
