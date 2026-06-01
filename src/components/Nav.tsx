@@ -99,6 +99,14 @@ export function Nav() {
     return (
     <>
       <NavLink
+        to="/"
+        end
+        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        onClick={handleNav}
+      >
+        Home
+      </NavLink>
+      <NavLink
         to="/forge"
         className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
         onClick={handleNav}

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthCard } from "../components/AuthCard";
 import { ForgeStartHere } from "../components/ForgeStartHere";
-import { MissionControlDashboard } from "../components/MissionControlDashboard";
 import { useAuth } from "../context/AuthContext";
 import { warmRoutes, warmRoutesOnIdle } from "../lib/routePrefetch";
 import {
@@ -52,9 +51,6 @@ export function LandingPage() {
 
   const handleForgeIntent = () => warmRoutes(["forge"]);
   const handleArenaIntent = () => warmRoutes(["arena", "joustur"]);
-  if (user) {
-    return <MissionControlDashboard />;
-  }
 
   return (
     <div className="page landing-page">
