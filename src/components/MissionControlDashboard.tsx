@@ -16,20 +16,27 @@ interface RivalIntel {
   ozzies: number;
 }
 
-const FALLBACK_RIVALS: RivalIntel[] = [
-  { id: "rival-neon-1", coverIdentity: "Vex Chromakick", rank: 914, xpToPass: 150, score: 18_900, ozzies: 1_260 },
-  { id: "rival-neon-2", coverIdentity: "Static Marlowe", rank: 913, xpToPass: 320, score: 19_070, ozzies: 1_380 },
-  { id: "rival-neon-3", coverIdentity: "Crash Halogen", rank: 912, xpToPass: 610, score: 19_360, ozzies: 1_510 },
-];
-
 const CREW_CARD_TITLES = ["Point Runner", "Rail Ghost", "Signal Bruiser", "Deck Medic", "Data Ace", "Vault Spark"];
+const DEFAULT_USER_RANK = 947;
+const MIN_PROGRESS_PCT = 8;
+const MAX_PROGRESS_PCT = 96;
+const DEFAULT_PROGRESS_PCT = 28;
+
+function buildFallbackRivals(userRank: number): RivalIntel[] {
+  return [
+    { id: "rival-neon-1", coverIdentity: "Vex Chromakick", rank: Math.max(1, userRank - 3), xpToPass: 150, score: 18_900, ozzies: 1_260 },
+    { id: "rival-neon-2", coverIdentity: "Static Marlowe", rank: Math.max(1, userRank - 2), xpToPass: 320, score: 19_070, ozzies: 1_380 },
+    { id: "rival-neon-3", coverIdentity: "Crash Halogen", rank: Math.max(1, userRank - 1), xpToPass: 610, score: 19_360, ozzies: 1_510 },
+  ];
+}
 
 function getEntryScore(entry: LeaderboardEntry): number {
   return Math.round(entry.crewXp ?? entry.seasonalRankScore ?? entry.leaderboardScore ?? entry.deckPower ?? 0);
 }
 
-function buildRivals(entries: LeaderboardEntry[], currentXp: number, uid?: string): RivalIntel[] {
-  if (entries.length === 0) return FALLBACK_RIVALS;
+function buildRivals(entries: LeaderboardEntry[], currentXp: number, userRank: number, uid?: string): RivalIntel[] {
+  const fallbackRivals = buildFallbackRivals(userRank);
+  if (entries.length === 0) return fallbackRivals;
 
   const currentIndex = uid ? entries.findIndex((entry) => entry.uid === uid) : -1;
   const rivalEntries = currentIndex > 0
@@ -45,7 +52,7 @@ function buildRivals(entries: LeaderboardEntry[], currentXp: number, uid?: strin
     ozzies: entry.crewOzzies ?? entry.ozzies ?? 0,
   }));
 
-  return [...FALLBACK_RIVALS.slice(0, Math.max(0, 3 - mapped.length)), ...mapped].slice(-3);
+  return [...fallbackRivals.slice(0, Math.max(0, 3 - mapped.length)), ...mapped].slice(-3);
 }
 
 export function MissionControlDashboard() {
@@ -69,10 +76,13 @@ export function MissionControlDashboard() {
   const initials = resolveUserInitial(displayName);
   const missionXp = userProfile?.missionXp ?? 0;
   const ozzies = userProfile?.ozziesBalance ?? userProfile?.ozzies ?? 0;
-  const userRank = myEntry ? entries.findIndex((entry) => entry.uid === myEntry.uid) + 1 : 947;
-  const rivals = useMemo(() => buildRivals(entries, missionXp, user?.uid), [entries, missionXp, user?.uid]);
+  const userRank = myEntry ? entries.findIndex((entry) => entry.uid === myEntry.uid) + 1 : DEFAULT_USER_RANK;
+  const rivals = useMemo(() => buildRivals(entries, missionXp, userRank, user?.uid), [entries, missionXp, userRank, user?.uid]);
   const nextRivalXp = rivals[rivals.length - 1]?.xpToPass ?? 150;
-  const progressPct = Math.max(8, Math.min(96, Math.round((missionXp / (missionXp + nextRivalXp)) * 100) || 28));
+  const progressPct = Math.max(
+    MIN_PROGRESS_PCT,
+    Math.min(MAX_PROGRESS_PCT, Math.round((missionXp / (missionXp + nextRivalXp)) * 100) || DEFAULT_PROGRESS_PCT),
+  );
   const referralLink = user?.uid
     ? `${window.location.origin}/?ref=${encodeURIComponent(user.uid)}`
     : `${window.location.origin}/?ref=SIGN-IN`;
@@ -195,7 +205,7 @@ Intel: neon districts report fresh Mission Control traffic.`}</pre>
             <div className="target-intel-grid">
               {CREW_CARD_TITLES.map((title, index) => (
                 <article key={title} className="stolen-intel-card">
-                  <span className="stolen-intel-card__rank">#{selectedRival.rank + index}</span>
+                  <span className="stolen-intel-card__rank">Intel {index + 1}/6</span>
                   <strong>{title}</strong>
                   <span>{selectedRival.coverIdentity.split(" ")[0]} Crew</span>
                 </article>
