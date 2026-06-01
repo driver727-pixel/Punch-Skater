@@ -193,7 +193,7 @@ export function parseRaceConfig() {
   const district = params.get('district') || DEFAULT_DISTRICT;
   const track = RACE_TRACKS[district] || RACE_TRACKS[DEFAULT_DISTRICT];
   const opponents = Math.max(1, Math.min(5, parseInt(params.get('opponents') || '3', 10)));
-  const returnUrl = params.get('returnUrl') || '/race';
+  const returnUrl = params.get('returnUrl') || '/arena/classic?tab=arcade';
 
   return { district, track, opponents, returnUrl };
 }

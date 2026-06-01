@@ -767,7 +767,7 @@ export class RaceGameScene extends Phaser.Scene {
         window.opener.postMessage({ type: 'classicRaceResult', ...result }, window.location.origin);
         window.close();
       } else {
-        window.location.href = this.raceConfig.returnUrl || '/race';
+        window.location.href = this.raceConfig.returnUrl || '/arena/classic?tab=arcade';
       }
     });
   }

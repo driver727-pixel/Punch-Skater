@@ -643,7 +643,7 @@ export function ClassicRace() {
               className="btn-primary"
               onClick={() => {
                 sfxBattleReady();
-                const url = `/classic-race/?district=${encodeURIComponent(soloDistrict)}&opponents=${arcadeOpponents}&returnUrl=${encodeURIComponent("/race")}`;
+                const url = `/classic-race/?district=${encodeURIComponent(soloDistrict)}&opponents=${arcadeOpponents}&returnUrl=${encodeURIComponent("/arena/classic?tab=arcade")}`;
                 window.open(url, '_blank', 'noopener,noreferrer');
               }}
             >
