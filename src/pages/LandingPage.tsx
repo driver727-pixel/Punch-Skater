@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthCard } from "../components/AuthCard";
 import { ForgeStartHere } from "../components/ForgeStartHere";
+import { MissionControlDashboard } from "../components/MissionControlDashboard";
 import { useAuth } from "../context/AuthContext";
 import { warmRoutes, warmRoutesOnIdle } from "../lib/routePrefetch";
 import {
@@ -10,12 +11,11 @@ import {
   preloadCrewFaceoffImages,
   type CrewFaceoffPayload,
 } from "../services/hypeFaceoff";
-import { resolveUserDisplayName } from "../lib/userIdentity";
 import { CrewFaceoffSpotlight } from "./cardForge/ForgeWelcomeModal";
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const [faceoffPayload, setFaceoffPayload] = useState<CrewFaceoffPayload | null>(() => loadCachedCrewFaceoff());
 
   useEffect(() => {
@@ -52,11 +52,9 @@ export function LandingPage() {
 
   const handleForgeIntent = () => warmRoutes(["forge"]);
   const handleArenaIntent = () => warmRoutes(["arena", "joustur"]);
-  const userDisplayName = resolveUserDisplayName({
-    profileDisplayName: userProfile?.displayName,
-    authDisplayName: user?.displayName,
-    email: user?.email,
-  });
+  if (user) {
+    return <MissionControlDashboard />;
+  }
 
   return (
     <div className="page landing-page">
@@ -109,32 +107,17 @@ export function LandingPage() {
           title="Start Here"
         />
 
-        {user ? (
-          <aside className="landing-account-card">
-            <p className="landing-account-card__eyebrow">Signed In</p>
-            <h2 className="landing-account-card__title">Welcome back, {userDisplayName}.</h2>
-            <p className="landing-account-card__copy">
-              Your account is live. Jump back into the forge, open your collection, or head straight to the arena.
-            </p>
-            <div className="landing-account-card__actions">
-              <button type="button" className="btn-primary" onClick={() => navigate("/forge")}>Open Card Forge</button>
-              <button type="button" className="btn-outline" onClick={() => navigate("/collection")}>Open Collection</button>
-              <button type="button" className="btn-outline" onClick={() => navigate("/arena")}>Enter Arena</button>
-            </div>
-          </aside>
-        ) : (
-          <div className="landing-auth-shell">
-            <AuthCard
-              className="landing-auth-card"
-              hint="Sign up free to try solo Arena and Joustur Skatur™ runs with house cards, then save cards, build a Crew, run Missions, race rivals, and trade across the districts."
-              panelEyebrow="Login"
-              panelTitle="Sign in or create your free Punch Skater™ account"
-              panelSubtitle="Email, Google, and phone login all work here."
-              showBranding={false}
-              showGuestLink={false}
-            />
-          </div>
-        )}
+        <div className="landing-auth-shell">
+          <AuthCard
+            className="landing-auth-card"
+            hint="Sign up free to try solo Arena and Joustur Skatur™ runs with house cards, then save cards, build a Crew, run Missions, race rivals, and trade across the districts."
+            panelEyebrow="Login"
+            panelTitle="Sign in or create your free Punch Skater™ account"
+            panelSubtitle="Email, Google, and phone login all work here."
+            showBranding={false}
+            showGuestLink={false}
+          />
+        </div>
       </section>
 
     </div>
