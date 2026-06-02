@@ -61,6 +61,25 @@ export function LandingPage() {
           <p className="landing-hero__lede">
             Start in the forge, build a crew, sign in when you are ready to save progress, and race into the neon districts.
           </p>
+          <div className="landing-hero__hud" role="list" aria-label="Punch Skater game flow">
+            <div className="landing-hero__hud-track" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="landing-hero__hud-step" role="listitem">
+              <span>01</span>
+              <strong>Forge Card</strong>
+            </div>
+            <div className="landing-hero__hud-step" role="listitem">
+              <span>02</span>
+              <strong>Build Crew</strong>
+            </div>
+            <div className="landing-hero__hud-step" role="listitem">
+              <span>03</span>
+              <strong>Drop In</strong>
+            </div>
+          </div>
           <div className="landing-hero__actions">
             <button
               type="button"
