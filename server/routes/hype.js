@@ -40,7 +40,7 @@ export function createCrewFaceOffService({ adminDb }) {
       garibaldi: null,
     };
 
-    await Promise.all(
+    await Promise.allSettled(
       adminUids.map(async (uid) => {
         const decksSnap = await adminDb.collection('users').doc(uid).collection('decks').get();
         for (const deckDoc of decksSnap.docs) {

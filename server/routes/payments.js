@@ -13,6 +13,7 @@ export function registerPaymentRoutes(app, {
   normalizeEmail,
   timingSafeEmailMatches,
   sendCheckoutVerificationFailure,
+  getAdminDb,
 }) {
   function timestampToIso(seconds) {
     return Number.isFinite(seconds) && seconds > 0
@@ -48,6 +49,24 @@ export function registerPaymentRoutes(app, {
     }
 
     try {
+      // ── Idempotency guard ────────────────────────────────────────────────
+      // Stripe may deliver the same event more than once (retries on non-2xx).
+      // Record each processed event ID in Firestore so replays are ignored.
+      const adminDb = typeof getAdminDb === 'function' ? getAdminDb() : null;
+      if (adminDb) {
+        const eventRef = adminDb.collection('processedStripeEvents').doc(event.id);
+        const existing = await adminDb.runTransaction(async (tx) => {
+          const snap = await tx.get(eventRef);
+          if (snap.exists) return true;
+          tx.set(eventRef, { processedAt: new Date().toISOString(), type: event.type });
+          return false;
+        });
+        if (existing) {
+          res.json({ received: true });
+          return;
+        }
+      }
+
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         let paidTier = resolveTierFromPriceId(session.metadata?.priceId);
