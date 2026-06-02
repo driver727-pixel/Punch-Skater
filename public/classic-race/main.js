@@ -59,7 +59,7 @@ class BootScene extends Phaser.Scene {
       color: '#00f0ff',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height / 2 + 70, 'WASD / Arrows to steer • SHIFT for Nitro', {
+    this.add.text(width / 2, height / 2 + 70, 'WASD / Arrows to steer • SHIFT for Nitro • Draft + grab ⚡ cells', {
       fontSize: '9px',
       fontFamily: 'Orbitron, sans-serif',
       color: '#888888',

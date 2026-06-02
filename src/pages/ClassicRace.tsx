@@ -610,7 +610,7 @@ export function ClassicRace() {
       {tab === "arcade" && (
         <section className="race-solo-panel">
           <p className="race-solo-description">
-            Top-down arcade racing! Steer your skater through the district, drift corners, and hit nitro to overtake.
+            Top-down arcade racing! Steer your skater through the district, drift corners, draft behind rivals for slipstream speed, and grab nitro cells for extra boosts.
           </p>
 
           <div className="race-challenge-row">
@@ -635,7 +635,7 @@ export function ClassicRace() {
           </div>
 
           <div className="race-challenge-row race-arcade-controls-hint">
-            <span>🎮 Controls: WASD or Arrow Keys to steer • SHIFT / SPACE for Nitro</span>
+            <span>🎮 Controls: WASD or Arrow Keys to steer • SHIFT / SPACE for Nitro • Stay in a rival&apos;s wake for slipstream</span>
           </div>
 
           <div className="modal-actions">
