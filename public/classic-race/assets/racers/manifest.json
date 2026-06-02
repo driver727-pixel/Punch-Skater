@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "grid": {
+    "columns": 4,
+    "rows": 2,
+    "frameCount": 8,
+    "frameWidth": 256,
+    "frameHeight": 256,
+    "fps": 10
+  },
+  "racers": []
+}

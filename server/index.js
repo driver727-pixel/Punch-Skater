@@ -101,6 +101,7 @@ const ALLOWED_REMOTE_IMAGE_HOST_PATTERNS = [
 ];
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 const boardImageJobs = new Map();
+const racerSpriteJobs = new Map();
 const REDIS_URL = process.env.REDIS_URL || '';
 
 // Render (and most PaaS reverse-proxies) add X-Forwarded-For so Express can
@@ -516,10 +517,38 @@ function sanitizeBackgroundRemovalBody(body = {}) {
   return { image_url: imageUrl };
 }
 
+function sanitizeRacerSpriteBody(body = {}) {
+  if (!isPlainObject(body)) {
+    throw Object.assign(new Error('Request body must be a JSON object.'), { statusCode: 400 });
+  }
+  const prompt = sanitizeTextField(body.prompt, {
+    fieldName: 'prompt',
+    required: true,
+    maxLength: MAX_BOARD_PROMPT_LENGTH,
+  });
+  const imageUrl = sanitizeTextField(body.imageUrl, { fieldName: 'imageUrl', required: true });
+  if (!isAllowedRemoteImageUrl(imageUrl)) {
+    throw Object.assign(new Error('imageUrl must point to an approved remote image host.'), { statusCode: 400 });
+  }
+  return {
+    prompt,
+    imageUrl,
+    imageSize: sanitizeFalImageSize(body.imageSize),
+  };
+}
+
 function pruneBoardImageJobs(now = Date.now()) {
   for (const [jobId, entry] of boardImageJobs.entries()) {
     if (!entry || now - entry.createdAt > BOARD_IMAGE_JOB_TTL_MS) {
       boardImageJobs.delete(jobId);
+    }
+  }
+}
+
+function pruneRacerSpriteJobs(now = Date.now()) {
+  for (const [jobId, entry] of racerSpriteJobs.entries()) {
+    if (!entry || now - entry.createdAt > BOARD_IMAGE_JOB_TTL_MS) {
+      racerSpriteJobs.delete(jobId);
     }
   }
 }
@@ -962,11 +991,14 @@ registerImageRoutes(app, {
   sanitizeGenerateImageBody,
   sanitizeBoardImageBody,
   sanitizeBackgroundRemovalBody,
+  sanitizeRacerSpriteBody,
   buildFalImageRequest,
   normalizeFalProfile,
   resolveFalProfile,
   boardImageJobs,
   pruneBoardImageJobs,
+  racerSpriteJobs,
+  pruneRacerSpriteJobs,
   adminStorage,
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
 });

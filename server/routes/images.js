@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { persistImageToStorage } from '../lib/imageStorage.js';
 
 const BOARD_IMAGE_SIZE = { width: 512, height: 512 };
+const RACER_SPRITE_IMAGE_SIZE = { width: 1024, height: 512 };
 const FAL_PROXY_TIMEOUT_MS = 300_000; // 5 minutes — AI generation can be slow
 
 function extractBoardImageUrl(result) {
@@ -32,11 +33,14 @@ export function registerImageRoutes(app, {
   sanitizeGenerateImageBody,
   sanitizeBoardImageBody,
   sanitizeBackgroundRemovalBody,
+  sanitizeRacerSpriteBody,
   buildFalImageRequest,
   normalizeFalProfile,
   resolveFalProfile,
   boardImageJobs,
   pruneBoardImageJobs,
+  racerSpriteJobs,
+  pruneRacerSpriteJobs,
   adminStorage = null,
   storageBucket = '',
 }) {
@@ -179,6 +183,94 @@ export function registerImageRoutes(app, {
     } catch (err) {
       console.error('Board image status error:', err);
       res.status(err.statusCode ?? 500).json({ error: err.message ?? 'Failed to retrieve board image job status.' });
+    }
+  });
+
+  app.post('/api/generate-racer-sprite', imageRateLimit, async (req, res) => {
+    try {
+      if (!FAL_KEY) {
+        res.status(503).json({ error: 'Racer sprite generation is not configured.' });
+        return;
+      }
+
+      const caller = await authenticateFirebaseUser(req);
+      const { prompt, imageUrl, imageSize } = sanitizeRacerSpriteBody(req.body);
+
+      const { request_id: jobId } = await fal.queue.submit('fal-ai/nano-banana-2', {
+        input: {
+          prompt,
+          image_urls: [imageUrl],
+          image_size: imageSize || RACER_SPRITE_IMAGE_SIZE,
+          thinking_level: 'high',
+          enable_web_search: false,
+        },
+      });
+
+      pruneRacerSpriteJobs();
+      racerSpriteJobs.set(jobId, {
+        uid: caller.uid,
+        createdAt: Date.now(),
+      });
+      res.json({ jobId });
+    } catch (err) {
+      console.error('Racer sprite submit error:', err);
+      res.status(err.statusCode ?? 500).json({ error: err.message ?? 'Racer sprite generation submission failed.' });
+    }
+  });
+
+  app.get('/api/racer-sprite-status/:jobId', boardImageStatusRateLimit, async (req, res) => {
+    try {
+      if (!FAL_KEY) {
+        res.status(503).json({ error: 'Racer sprite generation is not configured.' });
+        return;
+      }
+
+      const caller = await authenticateFirebaseUser(req);
+      const { jobId } = req.params;
+      if (!jobId || !/^[a-zA-Z0-9_-]+$/.test(jobId)) {
+        res.status(400).json({ error: 'Invalid jobId.' });
+        return;
+      }
+
+      pruneRacerSpriteJobs();
+      const jobOwner = racerSpriteJobs.get(jobId);
+      if (!jobOwner || jobOwner.uid !== caller.uid) {
+        res.status(404).json({ error: 'Racer sprite job not found.' });
+        return;
+      }
+
+      const status = await fal.queue.status('fal-ai/nano-banana-2', {
+        requestId: jobId,
+        logs: false,
+      });
+
+      if (status.status === 'COMPLETED') {
+        const result = await fal.queue.result('fal-ai/nano-banana-2', { requestId: jobId });
+        const falImageUrl = extractBoardImageUrl(result);
+        if (!falImageUrl) {
+          res.status(502).json({ error: 'Fal.ai did not return a racer sprite image URL.' });
+          return;
+        }
+        racerSpriteJobs.delete(jobId);
+
+        // Persist to Firebase Storage so the stored URL never expires.
+        const storagePath = `generatedImages/racer-sprites/${jobId}.png`;
+        const imageUrl = await persistImageToStorage(adminStorage, falImageUrl, storageBucket, storagePath);
+
+        res.json({ status: 'completed', imageUrl, requestId: jobId });
+        return;
+      }
+
+      if (status.status === 'FAILED' || status.status === 'CANCELLED') {
+        racerSpriteJobs.delete(jobId);
+        res.status(502).json({ status: 'failed', error: 'Racer sprite generation job failed.' });
+        return;
+      }
+
+      res.json({ status: 'pending' });
+    } catch (err) {
+      console.error('Racer sprite status error:', err);
+      res.status(err.statusCode ?? 500).json({ error: err.message ?? 'Failed to retrieve racer sprite job status.' });
     }
   });
 
