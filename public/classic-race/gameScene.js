@@ -784,73 +784,73 @@ export class RaceGameScene extends Phaser.Scene {
         gfx.lineStyle(2, 0x886633, 0.7);
         gfx.strokeRect(obs.x - 12, obs.y - 8, 24, 16);
       }
+    }
+  }
 
-      drawPickups() {
-        for (const pickup of this.pickups) {
-          const ring = this.add.circle(pickup.x, pickup.y, pickup.radius, 0x00f0ff, 0.28).setDepth(6);
-          ring.setStrokeStyle(3, 0xffea00, 0.95);
-          const label = this.add.text(pickup.x, pickup.y, '⚡', {
-            fontSize: '18px',
-            fontFamily: 'Orbitron, sans-serif',
-            color: '#ffffff',
-            stroke: '#000',
-            strokeThickness: 3,
-          }).setOrigin(0.5).setDepth(7);
-          pickup.sprite = ring;
-          pickup.label = label;
+  drawPickups() {
+    for (const pickup of this.pickups) {
+      const ring = this.add.circle(pickup.x, pickup.y, pickup.radius, 0x00f0ff, 0.28).setDepth(6);
+      ring.setStrokeStyle(3, 0xffea00, 0.95);
+      const label = this.add.text(pickup.x, pickup.y, '⚡', {
+        fontSize: '18px',
+        fontFamily: 'Orbitron, sans-serif',
+        color: '#ffffff',
+        stroke: '#000',
+        strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(7);
+      pickup.sprite = ring;
+      pickup.label = label;
+    }
+  }
+
+  setStatusMessage(message, duration = 1600) {
+    this.statusMessage = message;
+    this.statusMessageTimer = duration;
+  }
+
+  updatePickups(delta) {
+    for (const pickup of this.pickups) {
+      pickup.pulse += delta / 240;
+      if (!pickup.active) {
+        pickup.respawnTimer -= delta;
+        if (pickup.respawnTimer <= 0) {
+          pickup.active = true;
         }
       }
 
-      setStatusMessage(message, duration = 1600) {
-        this.statusMessage = message;
-        this.statusMessageTimer = duration;
-      }
-
-      updatePickups(delta) {
-        for (const pickup of this.pickups) {
-          pickup.pulse += delta / 240;
-          if (!pickup.active) {
-            pickup.respawnTimer -= delta;
-            if (pickup.respawnTimer <= 0) {
-              pickup.active = true;
-            }
-          }
-
-          if (pickup.sprite) {
-            const visible = pickup.active;
-            pickup.sprite.setVisible(visible);
-            pickup.label.setVisible(visible);
-            if (visible) {
-              const scale = 1 + Math.sin(pickup.pulse) * 0.08;
-              pickup.sprite.setScale(scale);
-              pickup.sprite.setAlpha(0.2 + ((Math.sin(pickup.pulse) + 1) / 2) * 0.35);
-            }
-          }
+      if (pickup.sprite) {
+        const visible = pickup.active;
+        pickup.sprite.setVisible(visible);
+        pickup.label.setVisible(visible);
+        if (visible) {
+          const scale = 1 + Math.sin(pickup.pulse) * 0.08;
+          pickup.sprite.setScale(scale);
+          pickup.sprite.setAlpha(0.2 + ((Math.sin(pickup.pulse) + 1) / 2) * 0.35);
         }
       }
+    }
+  }
 
-      handlePickupCollisions() {
-        for (const pickup of this.pickups) {
-          if (!pickup.active) continue;
+  handlePickupCollisions() {
+    for (const pickup of this.pickups) {
+      if (!pickup.active) continue;
 
-          for (const racer of this.racers) {
-            if (racer.finished) continue;
-            const collisionDistance = pickup.radius + 14;
-            if (dist(racer.x, racer.y, pickup.x, pickup.y) > collisionDistance) continue;
+      for (const racer of this.racers) {
+        if (racer.finished) continue;
+        const collisionDistance = pickup.radius + 14;
+        if (dist(racer.x, racer.y, pickup.x, pickup.y) > collisionDistance) continue;
 
-            pickup.active = false;
-            pickup.respawnTimer = PICKUP_RESPAWN_MS;
-            racer.nitroActive = true;
-            racer.nitroReady = false;
-            racer.nitroTimer = Math.max(racer.nitroTimer, NITRO.PICKUP_BOOST_DURATION);
-            racer.nitroCooldown = 0;
-            racer.nitroCooldownDuration = NITRO.PICKUP_COOLDOWN;
-            if (racer.isPlayer) {
-              this.setStatusMessage('⚡ Nitro cell collected!');
-            }
-            break;
-          }
+        pickup.active = false;
+        pickup.respawnTimer = PICKUP_RESPAWN_MS;
+        racer.nitroActive = true;
+        racer.nitroReady = false;
+        racer.nitroTimer = Math.max(racer.nitroTimer, NITRO.PICKUP_BOOST_DURATION);
+        racer.nitroCooldown = 0;
+        racer.nitroCooldownDuration = NITRO.PICKUP_COOLDOWN;
+        if (racer.isPlayer) {
+          this.setStatusMessage('⚡ Nitro cell collected!');
         }
+        break;
       }
     }
   }
