@@ -484,8 +484,8 @@ export class StreetsGameScene extends Phaser.Scene {
 
     mk(56, btnY, '◀', 0x00f0ff, () => { this.steer.left = true; }, () => { this.steer.left = false; });
     mk(146, btnY, '▶', 0x00f0ff, () => { this.steer.right = true; }, () => { this.steer.right = false; });
-    mk(width - 236, btnY, '⤒', 0xffea00, () => { this.steer.jump = true; this.tryJump(); }, () => { this.steer.jump = false; });
-    mk(width - 146, btnY, '⇥', 0x39ff14, () => { this.steer.dash = true; this.tryDash(); }, () => { this.steer.dash = false; });
+    mk(width - 236, btnY, '⤒', 0xffea00, () => { this.steer.jump = true; }, () => { this.steer.jump = false; });
+    mk(width - 146, btnY, '⇥', 0x39ff14, () => { this.steer.dash = true; }, () => { this.steer.dash = false; });
     mk(width - 56, btnY, '✊', 0xff007f, () => this.tryAttack());
     mk(width - 56, btnY - 92, '✦', 0x9d00ff, () => this.trySpecial());
 
@@ -542,13 +542,17 @@ export class StreetsGameScene extends Phaser.Scene {
       Phaser.Input.Keyboard.JustDown(this.cursors.up)
       || Phaser.Input.Keyboard.JustDown(this.cursors.space)
       || Phaser.Input.Keyboard.JustDown(this.keys.jump)
+      || this.steer.jump
     ) {
+      this.steer.jump = false;
       this.tryJump();
     }
     if (
       Phaser.Input.Keyboard.JustDown(this.keys.dash)
       || Phaser.Input.Keyboard.JustDown(this.keys.dashAlt)
+      || this.steer.dash
     ) {
+      this.steer.dash = false;
       this.tryDash(time);
     }
     if (
@@ -862,6 +866,7 @@ export class StreetsGameScene extends Phaser.Scene {
       const preferred = profile.preferred + Math.abs(enemy.laneOffset);
       const isLeashed = adx > ENEMY_LEASH_DISTANCE && this.activeGate;
       const shouldRetreat = time < enemy.retreatUntil || (enemy.archetype === 'zagger' && adx < preferred * 0.55);
+      const facingToPlayer = directionToPlayer === -1 ? 'left' : 'right';
 
       if (time >= enemy.thinkAt) {
         enemy.thinkAt = time + Phaser.Math.Between(280, 520);
@@ -877,10 +882,10 @@ export class StreetsGameScene extends Phaser.Scene {
         enemy.body.setAccelerationX(0);
       } else if (shouldRetreat) {
         enemy.body.setAccelerationX(-directionToPlayer * profile.accel * 0.85);
-        faceSkater(enemy, directionToPlayer === -1 ? 'left' : 'right');
+        faceSkater(enemy, facingToPlayer);
       } else if (adx > preferred) {
         enemy.body.setAccelerationX(directionToPlayer * profile.accel);
-        faceSkater(enemy, directionToPlayer === -1 ? 'left' : 'right');
+        faceSkater(enemy, facingToPlayer);
       } else if (adx < range * 0.5) {
         enemy.body.setAccelerationX(-directionToPlayer * profile.accel * 0.55);
         faceSkater(enemy, dx < 0 ? 'left' : 'right');
