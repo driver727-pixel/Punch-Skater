@@ -38,9 +38,31 @@ const SKYLINE_TOWER_WIDTH_RATIO = 0.055;
 const SKYLINE_TOWER_ALPHA = 0.38;
 const SKYLINE_TOWER_MIN_HEIGHT_RATIO = 0.16;
 const SKYLINE_TOWER_MAX_HEIGHT_RATIO = 0.36;
+const BACKDROP_HORIZON_RATIO = 0.62;
 const BACKDROP_NODE_COUNT = 18;
 const BACKDROP_NODE_MIN_Y = 80;
 const BACKDROP_NODE_MAX_HEIGHT_RATIO = 0.55;
+const BOOST_RING_COOLDOWN_MS = 900;
+const PLAYER_THRUST_COOLDOWN_MS = 520;
+const BOT_THRUST_COOLDOWN_MS = 850;
+const BOOST_RING_VELOCITY_DAMPEN = 0.35;
+const AI_TIMER_BASE_MULTIPLIER = 1.1;
+const AI_SKILL_TIMER_INFLUENCE = 0.45;
+const AI_TIMER_MIN_MS = 520;
+const AI_TIMER_MAX_MS = 1450;
+const AI_TILT_DISTANCE_FACTOR = 140;
+const AI_CHASE_X_JITTER = 42;
+const AI_CHASE_Y_OFFSET_MIN = 36;
+const AI_CHASE_Y_OFFSET_MAX = 92;
+const AI_TARGET_MARGIN_X = 50;
+const AI_TARGET_MIN_Y = 70;
+const AI_TARGET_BOTTOM_MARGIN = 120;
+const BOT_THRUST_HORIZONTAL_MIN = 150;
+const BOT_THRUST_HORIZONTAL_MAX = 260;
+
+function colorToHex(colorValue) {
+    return `#${(colorValue >>> 0).toString(16).slice(-6).padStart(6, '0')}`;
+}
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -48,6 +70,7 @@ export class GameScene extends Phaser.Scene {
         this.playersMap = {};
         this.bots = [];
         this.ramps = [];
+        this.boostRings = [];
         this.myPlayerId = null;
         this.room = null;
         this.roomId = null;
@@ -58,8 +81,25 @@ export class GameScene extends Phaser.Scene {
         this.steerLeft = false;
         this.steerRight = false;
         this.tiltDirection = null;
+        this.lastPlayerThrustAt = -PLAYER_THRUST_COOLDOWN_MS;
+        this.boostReadyTimer = null;
         this.myCosmetics = { ...DEFAULT_COSMETICS };
         this.district = DEFAULT_CYBER_JOUST_DISTRICT;
+    }
+
+    showBoostStatus(label, color, readyDelayMs = 0) {
+        if (!this.boostText) {
+            return;
+        }
+        this.boostText.setText(label);
+        this.boostText.setColor(color);
+        this.boostReadyTimer?.remove(false);
+        this.boostReadyTimer = this.time.delayedCall(Math.max(0, readyDelayMs), () => {
+            if (this.boostText?.active && !this.isGameOver) {
+                this.boostText.setText('BOOST: READY');
+                this.boostText.setColor('#39ff14');
+            }
+        });
     }
 
     init(data) {
@@ -77,9 +117,12 @@ export class GameScene extends Phaser.Scene {
         this.bots = [];
         this.playersMap = {};
         this.ramps = [];
+        this.boostRings = [];
         this.steerLeft = false;
         this.steerRight = false;
         this.tiltDirection = null;
+        this.lastPlayerThrustAt = -PLAYER_THRUST_COOLDOWN_MS;
+        this.boostReadyTimer = null;
     }
 
     create() {
@@ -159,6 +202,10 @@ export class GameScene extends Phaser.Scene {
             this.createRamp(width * ramp.x, height * ramp.y, ramp.w, ramp.h, ramp.dir);
         });
 
+        (this.district.boostRings || []).forEach((ring) => {
+            this.createBoostRing(width * ring.x, height * ring.y, ring.r, ring.vx, ring.vy);
+        });
+
         this.hazardY = height - 55;
         const hazardWidth = width * this.district.hazard.widthRatio;
         this.hazard = this.add.rectangle(width / 2, this.hazardY + 20, hazardWidth, 40, this.district.palette.hazard, this.district.hazard.alpha);
@@ -176,6 +223,20 @@ export class GameScene extends Phaser.Scene {
     createDistrictBackdrop(width, height) {
         const palette = this.district.palette;
         this.add.rectangle(width / 2, height / 2, width, height, palette.sky, BACKDROP_ALPHA).setDepth(-2);
+        this.add.rectangle(width / 2, height * BACKDROP_HORIZON_RATIO, width, 2, palette.accent, 0.32).setDepth(-1);
+
+        for (let i = 0; i < 9; i++) {
+            const y = height * 0.68 + i * 26;
+            const line = this.add.rectangle(width / 2, y, width, 1, i % 2 ? palette.primary : palette.secondary, 0.12).setDepth(-1);
+            this.tweens.add({
+                targets: line,
+                alpha: 0.28,
+                duration: 1100 + i * 90,
+                yoyo: true,
+                repeat: -1
+            });
+        }
+
         for (let i = 0; i < SKYLINE_TOWER_COUNT; i++) {
             const x = (width / (SKYLINE_TOWER_COUNT + 1)) * (i + 1);
             const h = Phaser.Math.Between(
@@ -192,6 +253,39 @@ export class GameScene extends Phaser.Scene {
             ).setDepth(-1);
             tower.setStrokeStyle(1, i % 2 ? palette.primary : palette.secondary, 0.35);
             this.add.rectangle(x, height - SKYLINE_BASE_OFFSET - 18 - h, width * 0.04, 3, i % 2 ? palette.accent : palette.primary, 0.6).setDepth(-1);
+        }
+
+        const signText = this.district.backdrop?.label || this.district.name.toUpperCase();
+        const sign = this.add.text(width * 0.08, height * 0.2, signText, {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '10px',
+            color: '#ffffff',
+            backgroundColor: '#05050d',
+            padding: { x: 8, y: 5 }
+        }).setDepth(-1).setAlpha(0.78);
+        sign.setStroke(colorToHex(palette.primary), 2);
+        this.tweens.add({ targets: sign, alpha: 0.36, duration: 700, yoyo: true, repeat: -1 });
+
+        const moon = this.add.circle(width * 0.86, height * 0.16, Math.min(width, height) * 0.045, palette.accent, 0.18).setDepth(-2);
+        moon.setStrokeStyle(2, palette.secondary, 0.45);
+        this.tweens.add({ targets: moon, scale: 1.16, alpha: 0.32, duration: 1800, yoyo: true, repeat: -1 });
+
+        for (let i = 0; i < 5; i++) {
+            const lane = this.add.rectangle(
+                -width * 0.2,
+                height * (0.24 + i * 0.06),
+                width * 0.18,
+                2,
+                this.district.backdrop?.trafficColor || palette.primary,
+                0.45
+            ).setDepth(-1);
+            this.tweens.add({
+                targets: lane,
+                x: width * 1.2,
+                duration: 2200 + i * 360,
+                delay: i * 280,
+                repeat: -1
+            });
         }
 
         for (let i = 0; i < BACKDROP_NODE_COUNT; i++) {
@@ -234,6 +328,27 @@ export class GameScene extends Phaser.Scene {
         const zoneX = direction === 'right' ? x - width / 2 : x + width / 2;
         const rampZone = this.add.zone(zoneX, y - height / 2, width, height);
         this.ramps.push({ zone: rampZone, direction, width, height });
+    }
+
+    createBoostRing(x, y, radius, vx, vy) {
+        const graphics = this.add.graphics();
+        graphics.lineStyle(8, this.district.palette.primary, 0.18);
+        graphics.strokeCircle(x, y, radius);
+        graphics.lineStyle(3, this.district.palette.accent, 0.95);
+        graphics.strokeCircle(x, y, radius);
+        graphics.lineStyle(2, this.district.palette.secondary, 0.65);
+        graphics.strokeCircle(x, y, radius * 0.68);
+        const marker = this.add.text(x, y, 'BOOST', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '7px',
+            color: '#ffffff'
+        }).setOrigin(0.5).setAlpha(0.7);
+        this.tweens.add({ targets: graphics, alpha: 0.48, duration: 700, yoyo: true, repeat: -1 });
+        this.tweens.add({ targets: marker, angle: 360, duration: 4200, repeat: -1 });
+        this.tweens.add({ targets: marker, alpha: 0.28, duration: 650, yoyo: true, repeat: -1 });
+
+        const zone = this.add.zone(x, y, radius * 2, radius * 2);
+        this.boostRings.push({ graphics, marker, zone, radius, vx, vy });
     }
 
     drawRampPath(graphics, x, y, width, height, direction) {
@@ -292,6 +407,8 @@ export class GameScene extends Phaser.Scene {
         skater.facing = 'right';
         skater.weaponRotation = 0;
         skater.victoryFlips = 0;
+        skater.lastBoostRingAt = -BOOST_RING_COOLDOWN_MS;
+        skater.lastAiThrustAt = -BOT_THRUST_COOLDOWN_MS;
         skater.name = isPlayer ? 'You' : 'Rider';
         skater.cosmetics = { ...DEFAULT_COSMETICS };
 
@@ -523,10 +640,14 @@ export class GameScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keys = this.input.keyboard.addKeys({
             thrust: Phaser.Input.Keyboard.KeyCodes.SPACE,
+            thrustAlt: Phaser.Input.Keyboard.KeyCodes.SHIFT,
             tiltUp: Phaser.Input.Keyboard.KeyCodes.W,
             tiltDown: Phaser.Input.Keyboard.KeyCodes.S,
+            tiltUpAlt: Phaser.Input.Keyboard.KeyCodes.Q,
+            tiltDownAlt: Phaser.Input.Keyboard.KeyCodes.E,
             leftAlt: Phaser.Input.Keyboard.KeyCodes.A,
-            rightAlt: Phaser.Input.Keyboard.KeyCodes.D
+            rightAlt: Phaser.Input.Keyboard.KeyCodes.D,
+            brake: Phaser.Input.Keyboard.KeyCodes.CTRL
         });
 
         const { width, height } = this.scale;
@@ -587,9 +708,9 @@ export class GameScene extends Phaser.Scene {
 
         this.mobileControls.add([btnLeft, leftTxt, btnRight, rightTxt, btnThrust, thrustTxt, btnTiltUp, tiltUpTxt, btnTiltDown, tiltDownTxt]);
 
-        const desktopInstructions = this.add.text(width / 2, 45, 'DESKTOP: ARROWS to Skate / SPACE to BOOST / W-S to TILT LANCE', {
+        const desktopInstructions = this.add.text(width / 2, 45, 'ARROWS/A-D: SKATE  SPACE/SHIFT: BOOST  W-S/Q-E: TILT  DOWN/CTRL: BRAKE', {
             fontFamily: '"Press Start 2P"',
-            fontSize: '11px',
+            fontSize: '9px',
             color: '#ffffff'
         }).setOrigin(0.5).setAlpha(0.65).setDepth(99);
 
@@ -648,6 +769,14 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
+        const elapsedSinceThrust = this.time.now - this.lastPlayerThrustAt;
+        if (elapsedSinceThrust < PLAYER_THRUST_COOLDOWN_MS) {
+            const remainingCooldown = PLAYER_THRUST_COOLDOWN_MS - elapsedSinceThrust;
+            this.showBoostStatus('BOOST: WAIT', '#ff0055', remainingCooldown);
+            return;
+        }
+        this.lastPlayerThrustAt = this.time.now;
+
         const speed = this.getWeaponThrustSpeed(this.myCosmetics.weapon) * this.district.thrustMultiplier;
         const upForce = -240;
         const horizForce = this.player.facing === 'right' ? speed * 0.75 : -speed * 0.75;
@@ -659,6 +788,7 @@ export class GameScene extends Phaser.Scene {
         const flareX = this.player.x + (this.player.facing === 'right' ? -25 : 25);
         const flareY = this.player.y + 15;
         this.thrusterEmitter?.emitParticleAt(flareX, flareY, 15);
+        this.showBoostStatus('BOOST: CHARGING', '#00f0ff', PLAYER_THRUST_COOLDOWN_MS);
 
         if (Math.abs(this.player.body.velocity.x) > FLIP_VELOCITY_THRESHOLD) {
             this.tweens.add({
@@ -803,6 +933,9 @@ export class GameScene extends Phaser.Scene {
             this.updateSkaterVisuals(bot);
             bot.aiTimer = 0;
             bot.aiTargetX = Phaser.Math.Between(100, this.scale.width - 100);
+            bot.aiTargetY = Phaser.Math.Between(100, Math.max(160, this.scale.height - 240));
+            bot.aiSkill = Phaser.Math.Clamp((this.district.botSkill || 0.6) + Phaser.Math.FloatBetween(-0.08, 0.08), 0.45, 0.9);
+            bot.aiAggression = Phaser.Math.Clamp((this.district.botChaseProbability || 60) / 100 + Phaser.Math.FloatBetween(-0.1, 0.1), 0.35, 0.95);
             this.physics.add.collider(bot, this.platforms);
             this.bots.push(bot);
         }
@@ -817,6 +950,7 @@ export class GameScene extends Phaser.Scene {
 
         this.handlePlayerMovement();
         this.checkRampLaunches(this.player);
+        this.checkBoostRings(this.player);
         this.handleBotsAI(delta);
         this.checkJoustClashes();
         this.checkHazardFalls();
@@ -853,10 +987,15 @@ export class GameScene extends Phaser.Scene {
             body.setAccelerationX(0);
         }
 
+        if (this.cursors.down.isDown || this.keys.brake.isDown) {
+            body.setVelocityX(body.velocity.x * 0.88);
+        }
+
         if (
             Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
             Phaser.Input.Keyboard.JustDown(this.cursors.space) ||
-            Phaser.Input.Keyboard.JustDown(this.keys.thrust)
+            Phaser.Input.Keyboard.JustDown(this.keys.thrust) ||
+            Phaser.Input.Keyboard.JustDown(this.keys.thrustAlt)
         ) {
             this.triggerThrust();
         }
@@ -864,9 +1003,9 @@ export class GameScene extends Phaser.Scene {
         const tiltSpeed = 0.04;
         const maxTilt = 0.6;
 
-        if (this.keys.tiltUp.isDown || this.tiltDirection === 'up') {
+        if (this.keys.tiltUp.isDown || this.keys.tiltUpAlt.isDown || this.tiltDirection === 'up') {
             this.player.weaponRotation = Phaser.Math.Clamp(this.player.weaponRotation - tiltSpeed, -maxTilt, maxTilt);
-        } else if (this.keys.tiltDown.isDown || this.tiltDirection === 'down') {
+        } else if (this.keys.tiltDown.isDown || this.keys.tiltDownAlt.isDown || this.tiltDirection === 'down') {
             this.player.weaponRotation = Phaser.Math.Clamp(this.player.weaponRotation + tiltSpeed, -maxTilt, maxTilt);
         } else {
             this.player.weaponRotation *= 0.95;
@@ -921,6 +1060,50 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    checkBoostRings(skater) {
+        if (!skater || !skater.body || skater.isDazed) {
+            return;
+        }
+
+        this.boostRings.forEach((ring) => {
+            const distance = Phaser.Math.Distance.Between(skater.x, skater.y, ring.zone.x, ring.zone.y);
+            const canTrigger = this.time.now - skater.lastBoostRingAt >= BOOST_RING_COOLDOWN_MS;
+            if (distance > ring.radius + 24 || !canTrigger) {
+                return;
+            }
+
+            skater.lastBoostRingAt = this.time.now;
+            skater.body.setVelocityX(skater.body.velocity.x * BOOST_RING_VELOCITY_DAMPEN + ring.vx);
+            skater.body.setVelocityY(ring.vy);
+            this.sparkEmitter?.emitParticleAt(ring.zone.x, ring.zone.y, 22);
+            this.playSfx('sfx-boost', skater === this.player ? 0.7 : 0.35);
+            this.tweens.add({
+                targets: ring.marker,
+                scale: 1.18,
+                alpha: 1,
+                duration: 120,
+                yoyo: true
+            });
+            if (skater === this.player) {
+                this.showFeedbackText(ring.zone.x, ring.zone.y - ring.radius - 12, 'RING BOOST!', '#39ff14');
+            }
+        });
+    }
+
+    findNearestBoostRing(skater) {
+        if (!this.boostRings.length) {
+            return null;
+        }
+
+        return this.boostRings.reduce((nearest, ring) => {
+            const distance = Phaser.Math.Distance.Between(skater.x, skater.y, ring.zone.x, ring.zone.y);
+            if (!nearest || distance < nearest.distance) {
+                return { ring, distance };
+            }
+            return nearest;
+        }, null)?.ring || null;
+    }
+
     handleBotsAI(delta) {
         this.bots.forEach((bot) => {
             if (bot.isDazed) {
@@ -931,25 +1114,53 @@ export class GameScene extends Phaser.Scene {
             bot.setAlpha(1);
             bot.aiTimer -= delta;
             if (bot.aiTimer <= 0) {
-                bot.aiTimer = Phaser.Math.Between(800, 2200);
-                const chasePlayer = Phaser.Math.Between(0, 100) < this.district.botChaseProbability;
-                bot.aiTargetX = chasePlayer ? this.player.x : Phaser.Math.Between(50, this.scale.width - 50);
+                bot.aiTimer = Phaser.Math.Between(AI_TIMER_MIN_MS, AI_TIMER_MAX_MS) * (AI_TIMER_BASE_MULTIPLIER - bot.aiSkill * AI_SKILL_TIMER_INFLUENCE);
+                const playerIsVulnerable = this.player.y > bot.y + 20 || this.player.isDazed;
+                const chasePlayer = Phaser.Math.FloatBetween(0, 1) < bot.aiAggression || playerIsVulnerable;
+                const nearestRing = this.findNearestBoostRing(bot);
+                const wantsRing = nearestRing && Phaser.Math.FloatBetween(0, 1) < bot.aiSkill * 0.45;
 
-                const shouldThrust =
-                    (bot.y > this.player.y && Phaser.Math.Between(0, 100) < 50) ||
-                    Phaser.Math.Between(0, 100) < 20;
+                if (wantsRing) {
+                    bot.aiTargetX = nearestRing.zone.x;
+                    bot.aiTargetY = nearestRing.zone.y;
+                } else if (chasePlayer) {
+                    bot.aiTargetX = Phaser.Math.Clamp(
+                        this.player.x + Phaser.Math.Between(-AI_CHASE_X_JITTER, AI_CHASE_X_JITTER),
+                        AI_TARGET_MARGIN_X,
+                        this.scale.width - AI_TARGET_MARGIN_X
+                    );
+                    bot.aiTargetY = Phaser.Math.Clamp(
+                        this.player.y - Phaser.Math.Between(AI_CHASE_Y_OFFSET_MIN, AI_CHASE_Y_OFFSET_MAX),
+                        AI_TARGET_MIN_Y,
+                        this.scale.height - AI_TARGET_BOTTOM_MARGIN
+                    );
+                } else {
+                    bot.aiTargetX = Phaser.Math.Between(AI_TARGET_MARGIN_X, this.scale.width - AI_TARGET_MARGIN_X);
+                    bot.aiTargetY = Phaser.Math.Between(80, Math.max(120, this.scale.height - 260));
+                }
+
+                const lowAltitude = bot.y > this.scale.height - 170;
+                const belowTarget = bot.y > bot.aiTargetY + 36;
+                const canThrust = this.time.now - bot.lastAiThrustAt >= BOT_THRUST_COOLDOWN_MS;
+                const shouldThrust = canThrust && (
+                    lowAltitude ||
+                    belowTarget ||
+                    (bot.y > this.player.y && Phaser.Math.FloatBetween(0, 1) < bot.aiSkill)
+                );
                 if (shouldThrust) {
-                    const upForce = -230;
-                    const horiz = bot.facing === 'right' ? 180 : -180;
+                    bot.lastAiThrustAt = this.time.now;
+                    const upForce = lowAltitude ? -310 : -250;
+                    const targetDir = bot.aiTargetX >= bot.x ? 1 : -1;
+                    const horiz = targetDir * Phaser.Math.Between(BOT_THRUST_HORIZONTAL_MIN, BOT_THRUST_HORIZONTAL_MAX);
                     bot.body.setVelocityY(upForce);
-                    bot.body.setVelocityX(bot.body.velocity.x + horiz);
+                    bot.body.setVelocityX(bot.body.velocity.x * 0.4 + horiz);
                     if (Phaser.Math.Between(0, 10) < 3) {
                         this.thrusterEmitter?.emitParticleAt(bot.x, bot.y + 15, 6);
                     }
                 }
             }
 
-            const acceleration = 240;
+            const acceleration = 220 + bot.aiSkill * 120;
             if (bot.x < bot.aiTargetX - 20) {
                 bot.body.setAccelerationX(acceleration);
                 if (bot.facing !== 'right') {
@@ -966,7 +1177,12 @@ export class GameScene extends Phaser.Scene {
                 bot.body.setAccelerationX(0);
             }
 
+            const desiredTilt = Phaser.Math.Clamp((this.player.y - bot.y) / AI_TILT_DISTANCE_FACTOR, -0.55, 0.55);
+            bot.weaponRotation = Phaser.Math.Linear(bot.weaponRotation, desiredTilt, 0.045 + bot.aiSkill * 0.04);
+            bot.weaponContainer.setRotation(bot.weaponRotation);
+
             this.checkRampLaunches(bot);
+            this.checkBoostRings(bot);
 
             const margin = 30;
             if (bot.x < -margin) {
@@ -1173,6 +1389,12 @@ export class GameScene extends Phaser.Scene {
             fontFamily: '"Press Start 2P"',
             fontSize: '9px',
             color: '#ffffff'
+        }).setScrollFactor(0).setDepth(120);
+
+        this.boostText = this.add.text(24, 90, 'BOOST: READY', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '9px',
+            color: '#39ff14'
         }).setScrollFactor(0).setDepth(120);
 
         this.roomText = this.add.text(this.scale.width - 24, 20, 'ROOM: ' + this.roomId, {
