@@ -13,6 +13,15 @@ import { buildRacerAnimationKey, buildRacerSheetTextureKey } from './racerSprite
 // Target on-screen height (px) for a racer rendered from a sprite sheet. The
 // procedural fallback shape keeps its native 28×16 size (baseScale = 1).
 const RACER_SPRITE_DISPLAY_HEIGHT = 40;
+const PICKUP_RESPAWN_MS = 6000;
+const PICKUP_RADIUS = 16;
+
+const SLIPSTREAM = Object.freeze({
+  RANGE: 120,
+  ANGLE_WINDOW: 0.42,
+  MIN_SPEED: 110,
+  MAX_BONUS: 0.2,
+});
 
 // ---------------------------------------------------------------------------
 // Utility
@@ -25,6 +34,13 @@ function normalizeAngle(a) {
   while (a > Math.PI) a -= 2 * Math.PI;
   while (a < -Math.PI) a += 2 * Math.PI;
   return a;
+}
+
+function formatTimeMs(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 // Convert normalized [0,1] track points to world coordinates
@@ -100,10 +116,73 @@ function createRacer(id, x, y, angle, isPlayer = false) {
     nitroActive: false,
     nitroTimer: 0,
     nitroCooldown: 0,
+    nitroCooldownDuration: NITRO.COOLDOWN,
+    slipstreamBoost: 0,
+    slipstreamTargetId: null,
     // AI-specific
     aiSpeedMult: isPlayer ? 1 : (1 + (Math.random() * 2 - 1) * AI.SPEED_VARIATION),
     aiTargetWaypoint: 1,
   };
+}
+
+function computeSlipstreamBoost(racer, racers) {
+  if (racer.finished || Math.abs(racer.speed) < SLIPSTREAM.MIN_SPEED) {
+    return { boost: 0, targetId: null };
+  }
+
+  let bestBoost = 0;
+  let targetId = null;
+  for (const other of racers) {
+    if (other.id === racer.id || other.finished) continue;
+
+    const dx = other.x - racer.x;
+    const dy = other.y - racer.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance <= 0 || distance > SLIPSTREAM.RANGE) continue;
+
+    const directionToOther = Math.atan2(dy, dx);
+    const alignment = Math.abs(normalizeAngle(directionToOther - racer.angle));
+    if (alignment > SLIPSTREAM.ANGLE_WINDOW) continue;
+
+    const otherForwardAngle = Math.abs(normalizeAngle(other.angle - racer.angle));
+    if (otherForwardAngle > 0.5) continue;
+
+    const closeness = 1 - distance / SLIPSTREAM.RANGE;
+    const angleFactor = 1 - alignment / SLIPSTREAM.ANGLE_WINDOW;
+    const boost = clamp(closeness * angleFactor * SLIPSTREAM.MAX_BONUS, 0, SLIPSTREAM.MAX_BONUS);
+    if (boost > bestBoost) {
+      bestBoost = boost;
+      targetId = other.id;
+    }
+  }
+
+  return { boost: bestBoost, targetId };
+}
+
+function buildNitroPickups(waypoints) {
+  if (!Array.isArray(waypoints) || waypoints.length < 4) return [];
+
+  const desiredCount = Math.min(4, Math.max(3, Math.floor(waypoints.length / 4)));
+  const taken = new Set();
+  const pickups = [];
+  for (let i = 0; i < desiredCount; i += 1) {
+    const index = Math.max(1, Math.floor(((i + 1) * waypoints.length) / (desiredCount + 1)));
+    if (taken.has(index)) continue;
+    taken.add(index);
+    const point = waypoints[index];
+    pickups.push({
+      id: `pickup_${index}`,
+      x: point.x,
+      y: point.y,
+      radius: PICKUP_RADIUS,
+      active: true,
+      respawnTimer: 0,
+      pulse: Math.random() * Math.PI * 2,
+      sprite: null,
+      label: null,
+    });
+  }
+  return pickups;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,7 +192,10 @@ function updateRacerPhysics(racer, dt, input, waypoints, walls, obstacles, total
   if (racer.finished) return;
 
   const dtSec = dt / 1000;
-  const maxSpeed = PHYSICS.MAX_SPEED * (racer.nitroActive ? NITRO.BOOST_SPEED_MULT : 1) * racer.aiSpeedMult;
+  const maxSpeed = PHYSICS.MAX_SPEED
+    * (racer.nitroActive ? NITRO.BOOST_SPEED_MULT : 1)
+    * (1 + (racer.slipstreamBoost || 0))
+    * racer.aiSpeedMult;
 
   // --- Steering ---
   const steer = input.left ? -1 : input.right ? 1 : 0;
@@ -167,7 +249,8 @@ function updateRacerPhysics(racer, dt, input, waypoints, walls, obstacles, total
     racer.nitroTimer -= dt;
     if (racer.nitroTimer <= 0) {
       racer.nitroActive = false;
-      racer.nitroCooldown = NITRO.COOLDOWN;
+      racer.nitroCooldown = racer.nitroCooldownDuration || NITRO.COOLDOWN;
+      racer.nitroCooldownDuration = NITRO.COOLDOWN;
     }
   } else if (!racer.nitroReady) {
     racer.nitroCooldown -= dt;
@@ -302,6 +385,8 @@ export class RaceGameScene extends Phaser.Scene {
     this.countdownTimer = 0;
     this.raceTime = 0;
     this.finishOrder = [];
+    this.statusMessage = '';
+    this.statusMessageTimer = 0;
 
     // Build obstacles in world coords
     this.obstacleData = (track.obstacles || []).map(o => ({
@@ -316,6 +401,10 @@ export class RaceGameScene extends Phaser.Scene {
 
     // --- Draw obstacles ---
     this.drawObstacles();
+
+    // --- Nitro pickups ---
+    this.pickups = buildNitroPickups(this.waypoints);
+    this.drawPickups();
 
     // --- Create racers ---
     this.racers = [];
@@ -445,6 +534,14 @@ export class RaceGameScene extends Phaser.Scene {
       fontSize: '12px',
       fontFamily: 'Press Start 2P, monospace',
       color: '#ffea00',
+      stroke: '#000',
+      strokeThickness: 2,
+    }).setScrollFactor(0).setDepth(100);
+
+    this.statusText = this.add.text(16, 88, '', {
+      fontSize: '11px',
+      fontFamily: 'Orbitron, sans-serif',
+      color: '#7cf7ff',
       stroke: '#000',
       strokeThickness: 2,
     }).setScrollFactor(0).setDepth(100);
@@ -687,6 +784,74 @@ export class RaceGameScene extends Phaser.Scene {
         gfx.lineStyle(2, 0x886633, 0.7);
         gfx.strokeRect(obs.x - 12, obs.y - 8, 24, 16);
       }
+
+      drawPickups() {
+        for (const pickup of this.pickups) {
+          const ring = this.add.circle(pickup.x, pickup.y, pickup.radius, 0x00f0ff, 0.28).setDepth(6);
+          ring.setStrokeStyle(3, 0xffea00, 0.95);
+          const label = this.add.text(pickup.x, pickup.y, '⚡', {
+            fontSize: '18px',
+            fontFamily: 'Orbitron, sans-serif',
+            color: '#ffffff',
+            stroke: '#000',
+            strokeThickness: 3,
+          }).setOrigin(0.5).setDepth(7);
+          pickup.sprite = ring;
+          pickup.label = label;
+        }
+      }
+
+      setStatusMessage(message, duration = 1600) {
+        this.statusMessage = message;
+        this.statusMessageTimer = duration;
+      }
+
+      updatePickups(delta) {
+        for (const pickup of this.pickups) {
+          pickup.pulse += delta / 240;
+          if (!pickup.active) {
+            pickup.respawnTimer -= delta;
+            if (pickup.respawnTimer <= 0) {
+              pickup.active = true;
+            }
+          }
+
+          if (pickup.sprite) {
+            const visible = pickup.active;
+            pickup.sprite.setVisible(visible);
+            pickup.label.setVisible(visible);
+            if (visible) {
+              const scale = 1 + Math.sin(pickup.pulse) * 0.08;
+              pickup.sprite.setScale(scale);
+              pickup.sprite.setAlpha(0.2 + ((Math.sin(pickup.pulse) + 1) / 2) * 0.35);
+            }
+          }
+        }
+      }
+
+      handlePickupCollisions() {
+        for (const pickup of this.pickups) {
+          if (!pickup.active) continue;
+
+          for (const racer of this.racers) {
+            if (racer.finished) continue;
+            const collisionDistance = pickup.radius + 14;
+            if (dist(racer.x, racer.y, pickup.x, pickup.y) > collisionDistance) continue;
+
+            pickup.active = false;
+            pickup.respawnTimer = PICKUP_RESPAWN_MS;
+            racer.nitroActive = true;
+            racer.nitroReady = false;
+            racer.nitroTimer = Math.max(racer.nitroTimer, NITRO.PICKUP_BOOST_DURATION);
+            racer.nitroCooldown = 0;
+            racer.nitroCooldownDuration = NITRO.PICKUP_COOLDOWN;
+            if (racer.isPlayer) {
+              this.setStatusMessage('⚡ Nitro cell collected!');
+            }
+            break;
+          }
+        }
+      }
     }
   }
 
@@ -711,6 +876,14 @@ export class RaceGameScene extends Phaser.Scene {
     if (this.raceOver) return;
 
     this.raceTime += delta;
+    this.updatePickups(delta);
+
+    if (this.statusMessageTimer > 0) {
+      this.statusMessageTimer -= delta;
+      if (this.statusMessageTimer <= 0) {
+        this.statusMessage = '';
+      }
+    }
 
     // --- Player input ---
     const playerInput = {
@@ -727,6 +900,13 @@ export class RaceGameScene extends Phaser.Scene {
       player.nitroActive = true;
       player.nitroReady = false;
       player.nitroTimer = NITRO.BOOST_DURATION;
+      player.nitroCooldownDuration = NITRO.COOLDOWN;
+    }
+
+    for (const racer of this.racers) {
+      const slipstream = computeSlipstreamBoost(racer, this.racers);
+      racer.slipstreamBoost = slipstream.boost;
+      racer.slipstreamTargetId = slipstream.targetId;
     }
 
     // --- Update all racers ---
@@ -743,6 +923,7 @@ export class RaceGameScene extends Phaser.Scene {
           racer.nitroActive = true;
           racer.nitroReady = false;
           racer.nitroTimer = NITRO.BOOST_DURATION;
+          racer.nitroCooldownDuration = NITRO.COOLDOWN;
         }
       }
 
@@ -753,6 +934,8 @@ export class RaceGameScene extends Phaser.Scene {
         racer.finishTime = this.raceTime;
         this.finishOrder.push(racer.id);
       }
+
+      this.handlePickupCollisions();
     }
 
     // --- Racer-to-racer collision ---
@@ -790,6 +973,9 @@ export class RaceGameScene extends Phaser.Scene {
       if (racer.nitroActive) {
         sprite.setTint(0xffea00);
         sprite.setScale(baseScale * 1.1);
+      } else if (racer.slipstreamBoost > 0.04) {
+        sprite.setTint(0x7cf7ff);
+        sprite.setScale(baseScale * (1 + racer.slipstreamBoost * 0.2));
       } else {
         sprite.clearTint();
         sprite.setScale(baseScale);
@@ -840,6 +1026,29 @@ export class RaceGameScene extends Phaser.Scene {
       const cd = Math.ceil(player.nitroCooldown / 1000);
       this.nitroText.setText(`⏳ NITRO ${cd}s`);
       this.nitroText.setColor('#888888');
+    }
+
+    const slipPercent = Math.round((player.slipstreamBoost || 0) * 100);
+    if (this.statusMessage) {
+      this.statusText.setText(this.statusMessage);
+      this.statusText.setColor('#ffea00');
+    } else if (slipPercent > 0) {
+      this.statusText.setText(`🌪️ SLIPSTREAM +${slipPercent}%`);
+      this.statusText.setColor('#7cf7ff');
+    } else {
+      const activePickups = this.pickups.filter((pickup) => pickup.active).length;
+      const nextRespawn = this.pickups.reduce((best, pickup) => (
+        !pickup.active && pickup.respawnTimer > 0 && pickup.respawnTimer < best ? pickup.respawnTimer : best
+      ), Infinity);
+      if (activePickups > 0) {
+        this.statusText.setText(`⚡ Nitro cells on track: ${activePickups}`);
+        this.statusText.setColor('#ffffff');
+      } else if (Number.isFinite(nextRespawn)) {
+        this.statusText.setText(`⚡ Next nitro cell: ${formatTimeMs(nextRespawn)}`);
+        this.statusText.setColor('#ffffff');
+      } else {
+        this.statusText.setText('');
+      }
     }
   }
 

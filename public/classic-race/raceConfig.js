@@ -157,6 +157,8 @@ export const NITRO = Object.freeze({
   BOOST_SPEED_MULT: 1.6,
   BOOST_DURATION: 1200,    // ms
   COOLDOWN: 8000,          // ms between uses
+  PICKUP_BOOST_DURATION: 1800,
+  PICKUP_COOLDOWN: 3500,
 });
 
 // ---------------------------------------------------------------------------
