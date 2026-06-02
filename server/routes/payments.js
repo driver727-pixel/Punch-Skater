@@ -48,23 +48,26 @@ export function registerPaymentRoutes(app, {
       return;
     }
 
+    let processedEventRef = null;
+    let claimedProcessedEvent = false;
     try {
       // ── Idempotency guard ────────────────────────────────────────────────
       // Stripe may deliver the same event more than once (retries on non-2xx).
       // Record each processed event ID in Firestore so replays are ignored.
       const adminDb = typeof getAdminDb === 'function' ? getAdminDb() : null;
       if (adminDb) {
-        const eventRef = adminDb.collection('processedStripeEvents').doc(event.id);
+        processedEventRef = adminDb.collection('processedStripeEvents').doc(event.id);
         const existing = await adminDb.runTransaction(async (tx) => {
-          const snap = await tx.get(eventRef);
+          const snap = await tx.get(processedEventRef);
           if (snap.exists) return true;
-          tx.set(eventRef, { processedAt: new Date().toISOString(), type: event.type });
+          tx.set(processedEventRef, { processedAt: new Date().toISOString(), type: event.type });
           return false;
         });
         if (existing) {
           res.json({ received: true });
           return;
         }
+        claimedProcessedEvent = true;
       } else {
         console.warn('Stripe webhook: Firestore unavailable — event deduplication is disabled. Replayed events may be processed more than once.');
       }
@@ -147,6 +150,13 @@ export function registerPaymentRoutes(app, {
 
       res.json({ received: true });
     } catch (error) {
+      if (claimedProcessedEvent && processedEventRef) {
+        try {
+          await processedEventRef.delete();
+        } catch (cleanupError) {
+          console.error('Stripe webhook cleanup failed:', cleanupError);
+        }
+      }
       console.error('Stripe webhook handling failed:', error);
       res.status(500).json({ error: 'Failed to process Stripe webhook.' });
     }
