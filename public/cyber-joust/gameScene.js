@@ -61,10 +61,13 @@ const BOT_THRUST_HORIZONTAL_MIN = 150;
 const BOT_THRUST_HORIZONTAL_MAX = 260;
 const KO_COMBO_WINDOW_MS = 4200;
 const MAX_COMBO_MULTIPLIER = 5;
+const KO_COMBO_START_MULTIPLIER = 2;
+const COMBO_HIGH_THRESHOLD = 4;
 const BOOST_RING_OVERDRIVE_CHARGE = 26;
 const KO_OVERDRIVE_CHARGE = 42;
 const OVERDRIVE_MAX_CHARGE = 100;
 const OVERDRIVE_DURATION_MS = 6500;
+const OVERDRIVE_EXTENSION_MS_PER_CHARGE = 16;
 const OVERDRIVE_THRUST_COOLDOWN_MULTIPLIER = 0.55;
 const OVERDRIVE_ACCELERATION_BONUS = 90;
 const OVERDRIVE_SCORE_MULTIPLIER = 1.5;
@@ -1490,7 +1493,7 @@ export class GameScene extends Phaser.Scene {
         if (this.time.now <= this.comboExpiresAt) {
             this.comboMultiplier = Math.min(MAX_COMBO_MULTIPLIER, this.comboMultiplier + 1);
         } else {
-            this.comboMultiplier = 2;
+            this.comboMultiplier = KO_COMBO_START_MULTIPLIER;
         }
         this.comboExpiresAt = this.time.now + KO_COMBO_WINDOW_MS;
         this.updateComboText();
@@ -1505,7 +1508,10 @@ export class GameScene extends Phaser.Scene {
 
     addOverdriveCharge(amount) {
         if (this.isOverdriveActive()) {
-            this.overdriveActiveUntil = Math.max(this.overdriveActiveUntil, this.time.now + Math.round(amount * 16));
+            this.overdriveActiveUntil = Math.max(
+                this.overdriveActiveUntil,
+                this.time.now + Math.round(amount * OVERDRIVE_EXTENSION_MS_PER_CHARGE)
+            );
             this.updateOverdriveText();
             return;
         }
@@ -1540,7 +1546,7 @@ export class GameScene extends Phaser.Scene {
 
         const secondsLeft = Math.max(0, (this.comboExpiresAt - this.time.now) / 1000);
         this.comboText.setText(`COMBO: X${this.comboMultiplier} ${secondsLeft.toFixed(1)}S`);
-        this.comboText.setColor(this.comboMultiplier >= 4 ? '#39ff14' : '#ffea00');
+        this.comboText.setColor(this.comboMultiplier >= COMBO_HIGH_THRESHOLD ? '#39ff14' : '#ffea00');
     }
 
     updateOverdriveText() {
