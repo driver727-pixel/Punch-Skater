@@ -44,6 +44,10 @@ const BACKDROP_NODE_MAX_HEIGHT_RATIO = 0.55;
 const BOOST_RING_COOLDOWN_MS = 900;
 const PLAYER_THRUST_COOLDOWN_MS = 520;
 const BOT_THRUST_COOLDOWN_MS = 850;
+const BOOST_RING_VELOCITY_DAMPEN = 0.35;
+const AI_TIMER_BASE_MULTIPLIER = 1.1;
+const AI_SKILL_TIMER_INFLUENCE = 0.45;
+const AI_TILT_DISTANCE_FACTOR = 140;
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -63,17 +67,19 @@ export class GameScene extends Phaser.Scene {
         this.steerRight = false;
         this.tiltDirection = null;
         this.lastPlayerThrustAt = -PLAYER_THRUST_COOLDOWN_MS;
+        this.boostReadyTimer = null;
         this.myCosmetics = { ...DEFAULT_COSMETICS };
         this.district = DEFAULT_CYBER_JOUST_DISTRICT;
     }
 
-    showBoostReady(isReady) {
+    showBoostStatus(label, color, readyDelayMs = 0) {
         if (!this.boostText) {
             return;
         }
-        this.boostText.setText(isReady ? 'BOOST: CHARGING' : 'BOOST: WAIT');
-        this.boostText.setColor(isReady ? '#00f0ff' : '#ff0055');
-        this.time.delayedCall(PLAYER_THRUST_COOLDOWN_MS, () => {
+        this.boostText.setText(label);
+        this.boostText.setColor(color);
+        this.boostReadyTimer?.remove(false);
+        this.boostReadyTimer = this.time.delayedCall(Math.max(0, readyDelayMs), () => {
             if (this.boostText?.active && !this.isGameOver) {
                 this.boostText.setText('BOOST: READY');
                 this.boostText.setColor('#39ff14');
@@ -101,6 +107,7 @@ export class GameScene extends Phaser.Scene {
         this.steerRight = false;
         this.tiltDirection = null;
         this.lastPlayerThrustAt = -PLAYER_THRUST_COOLDOWN_MS;
+        this.boostReadyTimer = null;
     }
 
     create() {
@@ -241,7 +248,7 @@ export class GameScene extends Phaser.Scene {
             backgroundColor: '#05050d',
             padding: { x: 8, y: 5 }
         }).setDepth(-1).setAlpha(0.78);
-        sign.setStroke(`#${palette.primary.toString(16).padStart(6, '0')}`, 2);
+        sign.setStroke(`#${(palette.primary >>> 0).toString(16).slice(-6).padStart(6, '0')}`, 2);
         this.tweens.add({ targets: sign, alpha: 0.36, duration: 700, yoyo: true, repeat: -1 });
 
         const moon = this.add.circle(width * 0.86, height * 0.16, Math.min(width, height) * 0.045, palette.accent, 0.18).setDepth(-2);
@@ -748,7 +755,8 @@ export class GameScene extends Phaser.Scene {
         }
 
         if (this.time.now - this.lastPlayerThrustAt < PLAYER_THRUST_COOLDOWN_MS) {
-            this.showBoostReady(false);
+            const remainingCooldown = PLAYER_THRUST_COOLDOWN_MS - (this.time.now - this.lastPlayerThrustAt);
+            this.showBoostStatus('BOOST: WAIT', '#ff0055', remainingCooldown);
             return;
         }
         this.lastPlayerThrustAt = this.time.now;
@@ -764,7 +772,7 @@ export class GameScene extends Phaser.Scene {
         const flareX = this.player.x + (this.player.facing === 'right' ? -25 : 25);
         const flareY = this.player.y + 15;
         this.thrusterEmitter?.emitParticleAt(flareX, flareY, 15);
-        this.showBoostReady(true);
+        this.showBoostStatus('BOOST: CHARGING', '#00f0ff', PLAYER_THRUST_COOLDOWN_MS);
 
         if (Math.abs(this.player.body.velocity.x) > FLIP_VELOCITY_THRESHOLD) {
             this.tweens.add({
@@ -1049,7 +1057,7 @@ export class GameScene extends Phaser.Scene {
             }
 
             skater.lastBoostRingAt = this.time.now;
-            skater.body.setVelocityX(skater.body.velocity.x * 0.35 + ring.vx);
+            skater.body.setVelocityX(skater.body.velocity.x * BOOST_RING_VELOCITY_DAMPEN + ring.vx);
             skater.body.setVelocityY(ring.vy);
             this.sparkEmitter?.emitParticleAt(ring.zone.x, ring.zone.y, 22);
             this.playSfx('sfx-boost', skater === this.player ? 0.7 : 0.35);
@@ -1090,7 +1098,7 @@ export class GameScene extends Phaser.Scene {
             bot.setAlpha(1);
             bot.aiTimer -= delta;
             if (bot.aiTimer <= 0) {
-                bot.aiTimer = Phaser.Math.Between(520, 1450) * (1.1 - bot.aiSkill * 0.45);
+                bot.aiTimer = Phaser.Math.Between(520, 1450) * (AI_TIMER_BASE_MULTIPLIER - bot.aiSkill * AI_SKILL_TIMER_INFLUENCE);
                 const playerIsVulnerable = this.player.y > bot.y + 20 || this.player.isDazed;
                 const chasePlayer = Phaser.Math.FloatBetween(0, 1) < bot.aiAggression || playerIsVulnerable;
                 const nearestRing = this.findNearestBoostRing(bot);
@@ -1145,7 +1153,7 @@ export class GameScene extends Phaser.Scene {
                 bot.body.setAccelerationX(0);
             }
 
-            const desiredTilt = Phaser.Math.Clamp((this.player.y - bot.y) / 140, -0.55, 0.55);
+            const desiredTilt = Phaser.Math.Clamp((this.player.y - bot.y) / AI_TILT_DISTANCE_FACTOR, -0.55, 0.55);
             bot.weaponRotation = Phaser.Math.Linear(bot.weaponRotation, desiredTilt, 0.045 + bot.aiSkill * 0.04);
             bot.weaponContainer.setRotation(bot.weaponRotation);
 
