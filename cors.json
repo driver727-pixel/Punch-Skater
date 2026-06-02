@@ -6,7 +6,7 @@
       "https://driver727-pixel.github.io",
       "http://localhost:5173"
     ],
-    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "method": ["GET", "HEAD", "PUT", "POST"],
     "responseHeader": [
       "Content-Type",
       "Authorization",

@@ -40,7 +40,7 @@ export function createCrewFaceOffService({ adminDb }) {
       garibaldi: null,
     };
 
-    await Promise.all(
+    const deckResults = await Promise.allSettled(
       adminUids.map(async (uid) => {
         const decksSnap = await adminDb.collection('users').doc(uid).collection('decks').get();
         for (const deckDoc of decksSnap.docs) {
@@ -54,6 +54,10 @@ export function createCrewFaceOffService({ adminDb }) {
         }
       }),
     );
+    const deckFetchErrors = deckResults.filter((r) => r.status === 'rejected');
+    if (deckFetchErrors.length > 0) {
+      console.warn(`Crew face-off: ${deckFetchErrors.length} uid(s) failed to fetch decks.`, deckFetchErrors.map((r) => r.reason?.message));
+    }
 
     const cassidyCards = (Array.isArray(foundDecks.cassidy?.cards) ? foundDecks.cassidy.cards : [])
       .map(sanitizeCrewCard)

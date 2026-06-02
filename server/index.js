@@ -725,6 +725,9 @@ registerPaymentRoutes(app, {
   normalizeEmail,
   timingSafeEmailMatches,
   sendCheckoutVerificationFailure,
+  // Lazy accessor so the reference is resolved at request time, after Firebase Admin is
+  // initialised further down in this file.
+  getAdminDb: () => adminDb,
 });
 
 app.use(compression());
@@ -777,7 +780,7 @@ async function authenticateFirebaseUser(req) {
 
 async function syncAdminClaim(uid, email) {
   if (!adminAuth) return { admin: false, claimsUpdated: false };
-  const adminEmails = getConfiguredAdminEmails(process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '');
+  const adminEmails = getConfiguredAdminEmails(process.env.ADMIN_EMAILS || '');
   const shouldBeAdmin = shouldGrantAdminAccess(email, adminEmails);
   const userRecord = await adminAuth.getUser(uid);
   const currentClaims = userRecord.customClaims ?? {};
@@ -851,7 +854,7 @@ async function upsertUserLookupRecord({ uid, email, displayName }) {
 
 async function authenticateAdminRequest(req) {
   const decodedToken = await authenticateFirebaseUser(req);
-  const adminEmails = getConfiguredAdminEmails(process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '');
+  const adminEmails = getConfiguredAdminEmails(process.env.ADMIN_EMAILS || '');
   if (decodedToken.admin === true) {
     return decodedToken;
   }
@@ -1017,6 +1020,8 @@ const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {
   console.log(`Card Forge Proxy running on port ${PORT}`);
 });
+// Periodically evict expired board-image job entries to prevent unbounded Map growth.
+setInterval(() => pruneBoardImageJobs(), 5 * 60 * 1000).unref();
 // Prevent ERR_CONNECTION_CLOSED on Render and other cloud reverse-proxies.
 // Node.js's default keepAliveTimeout (5 s) is shorter than most load-balancer
 // idle timeouts (~75 s on Render), so the proxy can reuse a connection that

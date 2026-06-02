@@ -22,8 +22,8 @@ if ('serviceWorker' in navigator) {
         updateViaCache: 'none',
       });
 
-      // Check for updates every 60 seconds
-      setInterval(() => { reg.update(); }, 60_000);
+      // Check for updates once per hour (polling too frequently wastes bandwidth)
+      setInterval(() => { reg.update(); }, 3_600_000);
 
       // Also check whenever the user returns to the tab
       document.addEventListener('visibilitychange', () => {
