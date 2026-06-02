@@ -7,6 +7,11 @@
 import Phaser from './phaserRuntime.js';
 import { RaceGameScene } from './gameScene.js';
 import { parseRaceConfig } from './raceConfig.js';
+import {
+  assignRacerSprites,
+  buildRacerSheetTextureKey,
+  loadRacerSpriteManifest,
+} from './racerSprites.js';
 
 // ---------------------------------------------------------------------------
 // Boot Scene — loading screen
@@ -60,9 +65,50 @@ class BootScene extends Phaser.Scene {
       color: '#888888',
     }).setOrigin(0.5);
 
-    // Transition to game after a brief pause
-    this.time.delayedCall(2000, () => {
-      this.scene.start('RaceGameScene', { raceConfig: config });
+    // Load pre-baked racer sprite sheets (if any) while the splash shows, then
+    // hand the loaded assignments to the race scene. Never block on failure.
+    this.loadRacerSpritesThenStart(config);
+  }
+
+  async loadRacerSpritesThenStart(config) {
+    const racerCount = config.opponents + 1;
+    let spriteGrid = null;
+    let spriteAssignments = new Array(racerCount).fill(null);
+
+    try {
+      const { grid, racers } = await loadRacerSpriteManifest();
+      const assignments = assignRacerSprites(racers, racerCount);
+      const sheetsToLoad = new Map();
+      for (const entry of assignments) {
+        if (entry) sheetsToLoad.set(entry.slug, entry);
+      }
+
+      if (sheetsToLoad.size > 0) {
+        for (const entry of sheetsToLoad.values()) {
+          this.load.spritesheet(buildRacerSheetTextureKey(entry.slug), entry.url, {
+            frameWidth: grid.frameWidth,
+            frameHeight: grid.frameHeight,
+          });
+        }
+        await new Promise((resolve) => {
+          this.load.once('complete', resolve);
+          this.load.start();
+        });
+      }
+
+      spriteGrid = grid;
+      // Only keep assignments whose texture actually loaded.
+      spriteAssignments = assignments.map((entry) =>
+        entry && this.textures.exists(buildRacerSheetTextureKey(entry.slug)) ? entry : null,
+      );
+    } catch {
+      spriteGrid = null;
+      spriteAssignments = new Array(racerCount).fill(null);
+    }
+
+    // Brief pause so the track splash is readable, then start the race.
+    this.time.delayedCall(1500, () => {
+      this.scene.start('RaceGameScene', { raceConfig: config, spriteGrid, spriteAssignments });
     });
   }
 }

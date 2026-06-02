@@ -8,6 +8,11 @@
  */
 import Phaser from './phaserRuntime.js';
 import { PHYSICS, NITRO, TRACK, AI, parseRaceConfig } from './raceConfig.js';
+import { buildRacerAnimationKey, buildRacerSheetTextureKey } from './racerSprites.js';
+
+// Target on-screen height (px) for a racer rendered from a sprite sheet. The
+// procedural fallback shape keeps its native 28×16 size (baseScale = 1).
+const RACER_SPRITE_DISPLAY_HEIGHT = 40;
 
 // ---------------------------------------------------------------------------
 // Utility
@@ -282,6 +287,8 @@ export class RaceGameScene extends Phaser.Scene {
 
   init(data) {
     this.raceConfig = data.raceConfig || parseRaceConfig();
+    this.spriteGrid = data.spriteGrid || null;
+    this.spriteAssignments = Array.isArray(data.spriteAssignments) ? data.spriteAssignments : [];
   }
 
   create() {
@@ -353,19 +360,47 @@ export class RaceGameScene extends Phaser.Scene {
 
     // --- Create sprites ---
     this.racerSprites = [];
-    for (const racer of this.racers) {
-      const color = racer.isPlayer ? 0x00f0ff : (racer.color || 0xff007f);
-      const gfx = this.add.graphics();
-      // Draw skater shape (elongated hexagon)
-      gfx.fillStyle(color, 1);
-      gfx.fillRoundedRect(-14, -8, 28, 16, 4);
-      gfx.fillStyle(0xffffff, 0.9);
-      gfx.fillTriangle(10, -4, 14, 0, 10, 4); // direction indicator
-      gfx.generateTexture(`racer_${racer.id}`, 28, 16);
-      gfx.destroy();
+    const grid = this.spriteGrid;
+    for (let i = 0; i < this.racers.length; i += 1) {
+      const racer = this.racers[i];
+      const assignment = this.spriteAssignments[i] || null;
+      const sheetKey = assignment ? buildRacerSheetTextureKey(assignment.slug) : null;
+      const hasSheet = Boolean(sheetKey && grid && this.textures.exists(sheetKey));
 
-      const sprite = this.add.sprite(racer.x, racer.y, `racer_${racer.id}`);
+      let sprite;
+      if (hasSheet) {
+        // Pre-baked animated character sprite sheet.
+        const animKey = buildRacerAnimationKey(assignment.slug);
+        if (!this.anims.exists(animKey)) {
+          this.anims.create({
+            key: animKey,
+            frames: this.anims.generateFrameNumbers(sheetKey, {
+              start: 0,
+              end: Math.max(0, grid.frameCount - 1),
+            }),
+            frameRate: grid.fps,
+            repeat: -1,
+          });
+        }
+        sprite = this.add.sprite(racer.x, racer.y, sheetKey);
+        sprite.baseScale = RACER_SPRITE_DISPLAY_HEIGHT / grid.frameHeight;
+        sprite.play(animKey);
+      } else {
+        // Fallback: procedural skater shape (elongated hexagon).
+        const color = racer.isPlayer ? 0x00f0ff : (racer.color || 0xff007f);
+        const gfx = this.add.graphics();
+        gfx.fillStyle(color, 1);
+        gfx.fillRoundedRect(-14, -8, 28, 16, 4);
+        gfx.fillStyle(0xffffff, 0.9);
+        gfx.fillTriangle(10, -4, 14, 0, 10, 4); // direction indicator
+        gfx.generateTexture(`racer_${racer.id}`, 28, 16);
+        gfx.destroy();
+        sprite = this.add.sprite(racer.x, racer.y, `racer_${racer.id}`);
+        sprite.baseScale = 1;
+      }
+
       sprite.setOrigin(0.5, 0.5);
+      sprite.setScale(sprite.baseScale);
       sprite.setDepth(10);
       this.racerSprites.push(sprite);
 
@@ -629,12 +664,13 @@ export class RaceGameScene extends Phaser.Scene {
       sprite.setRotation(racer.angle);
 
       // Nitro visual
+      const baseScale = sprite.baseScale ?? 1;
       if (racer.nitroActive) {
         sprite.setTint(0xffea00);
-        sprite.setScale(1.1);
+        sprite.setScale(baseScale * 1.1);
       } else {
         sprite.clearTint();
-        sprite.setScale(1);
+        sprite.setScale(baseScale);
       }
 
       // Name label follows AI
@@ -744,7 +780,11 @@ export class RaceGameScene extends Phaser.Scene {
     ).setOrigin(0.5).setScrollFactor(0).setDepth(301).setInteractive({ useHandCursor: true });
 
     restartBtn.on('pointerup', () => {
-      this.scene.restart({ raceConfig: this.raceConfig });
+      this.scene.restart({
+        raceConfig: this.raceConfig,
+        spriteGrid: this.spriteGrid,
+        spriteAssignments: this.spriteAssignments,
+      });
     });
 
     const backBtn = this.add.text(
