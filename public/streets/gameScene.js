@@ -42,6 +42,7 @@ const HAZARD_DAMAGE = 9;
 const HAZARD_COOLDOWN_MS = 900;
 const PICKUP_HEAL_AMOUNT = 22;
 const BOOST_PAD_POWER = 520;
+const COMBO_DECAY_MS = 3200;
 const WAVE_BONUS_THRESHOLD = 0.62;
 const MIN_SIGN_DENSITY = 0.65;
 const SIGN_DENSITY_RANGE = 0.55;
@@ -103,6 +104,9 @@ export class StreetsGameScene extends Phaser.Scene {
     this.score = 0;
     this.special = 0;
     this.specialMax = 100;
+    this.comboCount = 0;
+    this.comboExpiresAt = 0;
+    this.bestCombo = 0;
     this.carryingPackage = false;
     this.packageAvailable = false;
     this.objectiveComplete = false;
@@ -500,6 +504,7 @@ export class StreetsGameScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this.isOver) return;
+    this.updateComboState(time);
     this.handlePlayerInput(time);
     this.handleGates();
     this.updateEnemies(time, delta);
@@ -628,6 +633,28 @@ export class StreetsGameScene extends Phaser.Scene {
         this.damageEnemy(enemy, this.playerKnobs.attackDamage * 2.4, dir, true);
       }
     });
+  }
+
+  updateComboState(time) {
+    if (this.comboCount > 0 && time >= this.comboExpiresAt) {
+      this.resetCombo();
+    }
+  }
+
+  comboMultiplier() {
+    if (this.comboCount <= 1) return 1;
+    return 1 + Math.min(1.5, (this.comboCount - 1) * 0.12);
+  }
+
+  bumpCombo() {
+    this.comboCount += 1;
+    this.comboExpiresAt = this.time.now + COMBO_DECAY_MS;
+    this.bestCombo = Math.max(this.bestCombo, this.comboCount);
+  }
+
+  resetCombo() {
+    this.comboCount = 0;
+    this.comboExpiresAt = 0;
   }
 
   swingWeapon(skater) {
@@ -927,6 +954,7 @@ export class StreetsGameScene extends Phaser.Scene {
   damageEnemy(enemy, amount, dir, heavy = false) {
     if (enemy.isDead) return;
     enemy.hp -= amount;
+    this.bumpCombo();
     this.triggerVfx(enemy.x, enemy.y - 20, heavy ? 'heavy' : 'medium');
     this.flash(enemy);
     enemy.body.setVelocityX(dir * (heavy ? 360 : 220));
@@ -938,7 +966,8 @@ export class StreetsGameScene extends Phaser.Scene {
 
   killEnemy(enemy) {
     enemy.isDead = true;
-    this.score += enemy.isBoss ? 1000 : 150;
+    const baseScore = enemy.isBoss ? 1000 : 150;
+    this.score += Math.round(baseScore * this.comboMultiplier());
     if (enemy === this.boss) this.boss = null;
     enemy.body.setEnable(false);
     this.tweens.add({
@@ -955,6 +984,7 @@ export class StreetsGameScene extends Phaser.Scene {
     if (this.player.isDazed || this.isOver) return;
     const reduced = amount * (1 - this.playerKnobs.damageResist);
     this.player.hp = Math.max(0, this.player.hp - reduced);
+    this.resetCombo();
     this.flash(this.player);
     this.player.body.setVelocityX(dir * 220);
     this.player.body.setVelocityY(-140);
@@ -1037,6 +1067,14 @@ export class StreetsGameScene extends Phaser.Scene {
       fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#ffea00', align: 'right',
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(120);
 
+    this.progressText = this.add.text(this.scale.width - 20, 60, this.objectiveStatusLabel(), {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#ffffff', align: 'right',
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(120);
+
+    this.comboText = this.add.text(this.scale.width - 20, 82, '', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#ff007f', align: 'right',
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(120).setVisible(false);
+
     this.bossBarBg = this.add.rectangle(this.scale.width / 2, 24, 320, 14, 0x111122, 0.85)
       .setScrollFactor(0).setDepth(120).setStrokeStyle(2, 0xff0055).setVisible(false);
     this.bossBar = this.add.rectangle(this.scale.width / 2 - 158, 24, 316, 9, 0xff0055)
@@ -1048,6 +1086,8 @@ export class StreetsGameScene extends Phaser.Scene {
     this.scale.on('resize', (gameSize) => {
       this.scoreText?.setPosition(gameSize.width - 20, 16);
       this.objectiveText?.setPosition(gameSize.width - 20, 38);
+      this.progressText?.setPosition(gameSize.width - 20, 60);
+      this.comboText?.setPosition(gameSize.width - 20, 82);
       this.bossBarBg?.setPosition(gameSize.width / 2, 24);
       this.bossLabel?.setPosition(gameSize.width / 2, 8);
     });
@@ -1056,6 +1096,19 @@ export class StreetsGameScene extends Phaser.Scene {
   objectiveLabel() {
     const obj = STREETS_OBJECTIVES[this.objectiveId] || STREETS_OBJECTIVES.fight_through;
     return obj.blurb.toUpperCase();
+  }
+
+  objectiveStatusLabel() {
+    if (this.objectiveId === STREETS_OBJECTIVES.retrieve.id) {
+      if (this.carryingPackage) return 'PACKAGE SECURED • SKATE TO EXIT';
+      if (this.packageAvailable) return 'PACKAGE DROPPED • PICK IT UP';
+      return `WAVES LEFT ${this.remainingGates}`;
+    }
+    if (this.objectiveId === STREETS_OBJECTIVES.escape.id) {
+      const distance = Math.max(0, Math.ceil((this.exitX - this.player.x) / 100) * 10);
+      return `EXIT ${distance}M • KEEP MOVING`;
+    }
+    return `WAVES LEFT ${this.remainingGates}`;
   }
 
   updateHud() {
@@ -1067,6 +1120,17 @@ export class StreetsGameScene extends Phaser.Scene {
     this.dashPip.setSize(42 * dashFrac, 7);
     this.dashPip.setFillStyle(dashFrac >= 1 ? 0x39ff14 : 0x1f6f5b);
     this.scoreText.setText('SCORE ' + this.score);
+    this.progressText.setText(this.objectiveStatusLabel());
+
+    if (this.comboCount > 1) {
+      const comboAlpha = Phaser.Math.Clamp((this.comboExpiresAt - this.time.now) / COMBO_DECAY_MS, 0.35, 1);
+      this.comboText
+        .setVisible(true)
+        .setAlpha(comboAlpha)
+        .setText(`COMBO ${this.comboCount}  X${this.comboMultiplier().toFixed(1)}`);
+    } else {
+      this.comboText.setVisible(false);
+    }
 
     if (this.boss && this.boss.active && !this.boss.isDead) {
       const frac = Phaser.Math.Clamp(this.boss.hp / this.boss.maxHp, 0, 1);
@@ -1163,6 +1227,9 @@ export class StreetsGameScene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
     this.add.text(width / 2, height * 0.32 + 46, 'SCORE ' + this.score, {
       fontFamily: '"Press Start 2P"', fontSize: '14px', color: '#ffffff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+    this.add.text(width / 2, height * 0.32 + 82, `BEST COMBO ${Math.max(this.bestCombo, this.comboCount)}`, {
+      fontFamily: '"Press Start 2P"', fontSize: '11px', color: '#ffea00',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
     if (this.config.returnTo) {
