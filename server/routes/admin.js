@@ -513,7 +513,7 @@ export function registerAdminRoutes(app, {
 
       const allDecks = [];
 
-      await Promise.allSettled(
+      const deckResults = await Promise.allSettled(
         adminUids.map(async (uid) => {
           const decksSnap = await adminDb.collection('users').doc(uid).collection('decks').get();
           for (const deckDoc of decksSnap.docs) {
@@ -530,6 +530,10 @@ export function registerAdminRoutes(app, {
           }
         }),
       );
+      const deckFetchErrors = deckResults.filter((r) => r.status === 'rejected');
+      if (deckFetchErrors.length > 0) {
+        console.warn(`Admin get all decks: ${deckFetchErrors.length} uid(s) failed to fetch.`, deckFetchErrors.map((r) => r.reason?.message));
+      }
 
       // Sort: primary decks first, then by deck name.
       allDecks.sort((a, b) => {

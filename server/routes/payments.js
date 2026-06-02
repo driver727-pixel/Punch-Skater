@@ -65,6 +65,8 @@ export function registerPaymentRoutes(app, {
           res.json({ received: true });
           return;
         }
+      } else {
+        console.warn('Stripe webhook: Firestore unavailable — event deduplication is disabled. Replayed events may be processed more than once.');
       }
 
       if (event.type === 'checkout.session.completed') {
