@@ -472,9 +472,131 @@ export class RaceGameScene extends Phaser.Scene {
       nitro: Phaser.Input.Keyboard.KeyCodes.SHIFT,
       nitro2: Phaser.Input.Keyboard.KeyCodes.SPACE,
     });
+    this.touchInput = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      nitro: false,
+    };
+    this.mobileControlsEnabled = this.isTouchDevice();
+    if (this.mobileControlsEnabled) {
+      this.createMobileControls();
+      this.onResize = ({ width, height }) => this.layoutMobileControls(width, height);
+      this.scale.on('resize', this.onResize);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        if (this.onResize) {
+          this.scale.off('resize', this.onResize);
+          this.onResize = null;
+        }
+      });
+    }
 
     // --- Start countdown ---
     this.countdownTimer = 0;
+  }
+
+  isTouchDevice() {
+    const coarsePointer = typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: coarse)').matches;
+    return coarsePointer || Boolean(this.sys.game.device.input.touch);
+  }
+
+  createMobileControls() {
+    this.mobileControls = this.add.container(0, 0).setScrollFactor(0).setDepth(120);
+    this.mobileLeft = this.createMobileButton(
+      '◀',
+      0x00f0ff,
+      () => { this.touchInput.left = true; },
+      () => { this.touchInput.left = false; },
+    );
+    this.mobileRight = this.createMobileButton(
+      '▶',
+      0x00f0ff,
+      () => { this.touchInput.right = true; },
+      () => { this.touchInput.right = false; },
+    );
+    this.mobileUp = this.createMobileButton(
+      '▲',
+      0xffea00,
+      () => { this.touchInput.up = true; },
+      () => { this.touchInput.up = false; },
+    );
+    this.mobileDown = this.createMobileButton(
+      '▼',
+      0xffea00,
+      () => { this.touchInput.down = true; },
+      () => { this.touchInput.down = false; },
+    );
+    this.mobileNitro = this.createMobileButton(
+      'N',
+      0xff007f,
+      () => { this.touchInput.nitro = true; },
+      () => { this.touchInput.nitro = false; },
+      { radius: 44, fontSize: '20px' }
+    );
+    this.mobileHint = this.add.text(0, 0, 'TOUCH: STEER • GAS/BRAKE • NITRO', {
+      fontSize: '9px',
+      fontFamily: 'Press Start 2P, monospace',
+      color: '#ffffff',
+      stroke: '#000',
+      strokeThickness: 2,
+    }).setOrigin(0.5).setAlpha(0.75).setScrollFactor(0).setDepth(121);
+
+    this.layoutMobileControls(this.scale.width, this.scale.height);
+  }
+
+  createMobileButton(label, strokeColor, onDown, onUp, options = {}) {
+    const radius = options.radius || 34;
+    const fontSize = options.fontSize || '18px';
+    const circle = this.add.circle(0, 0, radius, 0x101028, 0.78).setScrollFactor(0).setDepth(120);
+    circle.setStrokeStyle(3, strokeColor, 1);
+    const text = this.add.text(0, 0, label, {
+      fontSize,
+      fontFamily: 'Press Start 2P, monospace',
+      color: '#ffffff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(121);
+
+    const reset = () => {
+      circle.setScale(1);
+      circle.setAlpha(0.78);
+      if (onUp) onUp();
+    };
+    circle.setInteractive(new Phaser.Geom.Circle(0, 0, radius), Phaser.Geom.Circle.Contains);
+    circle.on('pointerdown', () => {
+      circle.setScale(0.9);
+      circle.setAlpha(1);
+      if (onDown) onDown();
+    });
+    circle.on('pointerup', reset);
+    circle.on('pointerupoutside', reset);
+    circle.on('pointerout', reset);
+
+    this.mobileControls.add([circle, text]);
+    return { circle, text };
+  }
+
+  layoutMobileControls(width, height) {
+    if (!this.mobileControls) return;
+    const leftX = Math.max(56, Math.min(100, Math.round(width * 0.14)));
+    const leftX2 = leftX + 86;
+    const rightX = Math.max(width - 172, leftX2 + 96);
+    const nitroX = Math.min(width - 62, rightX + 100);
+    const baseY = height - 78;
+
+    this.mobileLeft.circle.setPosition(leftX, baseY);
+    this.mobileLeft.text.setPosition(leftX, baseY);
+    this.mobileRight.circle.setPosition(leftX2, baseY);
+    this.mobileRight.text.setPosition(leftX2, baseY);
+
+    this.mobileUp.circle.setPosition(rightX, baseY - 48);
+    this.mobileUp.text.setPosition(rightX, baseY - 48);
+    this.mobileDown.circle.setPosition(rightX, baseY + 24);
+    this.mobileDown.text.setPosition(rightX, baseY + 24);
+    this.mobileNitro.circle.setPosition(nitroX, baseY - 12);
+    this.mobileNitro.text.setPosition(nitroX, baseY - 12);
+    this.mobileHint.setPosition(width / 2, height - 18);
   }
 
   drawTrack(track) {
@@ -592,11 +714,11 @@ export class RaceGameScene extends Phaser.Scene {
 
     // --- Player input ---
     const playerInput = {
-      up: this.cursors.up.isDown || this.wasd.up.isDown,
-      down: this.cursors.down.isDown || this.wasd.down.isDown,
-      left: this.cursors.left.isDown || this.wasd.left.isDown,
-      right: this.cursors.right.isDown || this.wasd.right.isDown,
-      nitro: this.wasd.nitro.isDown || this.wasd.nitro2.isDown,
+      up: this.cursors.up.isDown || this.wasd.up.isDown || this.touchInput.up,
+      down: this.cursors.down.isDown || this.wasd.down.isDown || this.touchInput.down,
+      left: this.cursors.left.isDown || this.wasd.left.isDown || this.touchInput.left,
+      right: this.cursors.right.isDown || this.wasd.right.isDown || this.touchInput.right,
+      nitro: this.wasd.nitro.isDown || this.wasd.nitro2.isDown || this.touchInput.nitro,
     };
 
     // Handle player nitro activation
@@ -712,7 +834,7 @@ export class RaceGameScene extends Phaser.Scene {
       this.nitroText.setText(`🔥 NITRO ${remaining}s`);
       this.nitroText.setColor('#ffea00');
     } else if (player.nitroReady) {
-      this.nitroText.setText('⚡ NITRO READY [SHIFT]');
+      this.nitroText.setText(this.mobileControlsEnabled ? '⚡ NITRO READY [SHIFT/N]' : '⚡ NITRO READY [SHIFT]');
       this.nitroText.setColor('#00ff66');
     } else {
       const cd = Math.ceil(player.nitroCooldown / 1000);
