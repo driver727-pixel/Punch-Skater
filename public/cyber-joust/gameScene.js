@@ -1033,51 +1033,51 @@ export class GameScene extends Phaser.Scene {
                     skater.isLaunching = false;
                 });
             }
+        });
+    }
 
-            checkBoostRings(skater) {
-                if (!skater || !skater.body || skater.isDazed) {
-                    return;
-                }
+    checkBoostRings(skater) {
+        if (!skater || !skater.body || skater.isDazed) {
+            return;
+        }
 
-                this.boostRings.forEach((ring) => {
-                    const distance = Phaser.Math.Distance.Between(skater.x, skater.y, ring.zone.x, ring.zone.y);
-                    const canTrigger = this.time.now - skater.lastBoostRingAt >= BOOST_RING_COOLDOWN_MS;
-                    if (distance > ring.radius + 24 || !canTrigger) {
-                        return;
-                    }
-
-                    skater.lastBoostRingAt = this.time.now;
-                    skater.body.setVelocityX(skater.body.velocity.x * 0.35 + ring.vx);
-                    skater.body.setVelocityY(ring.vy);
-                    this.sparkEmitter?.emitParticleAt(ring.zone.x, ring.zone.y, 22);
-                    this.playSfx('sfx-boost', skater === this.player ? 0.7 : 0.35);
-                    this.tweens.add({
-                        targets: ring.marker,
-                        scale: 1.18,
-                        alpha: 1,
-                        duration: 120,
-                        yoyo: true
-                    });
-                    if (skater === this.player) {
-                        this.showFeedbackText(ring.zone.x, ring.zone.y - ring.radius - 12, 'RING BOOST!', '#39ff14');
-                    }
-                });
+        this.boostRings.forEach((ring) => {
+            const distance = Phaser.Math.Distance.Between(skater.x, skater.y, ring.zone.x, ring.zone.y);
+            const canTrigger = this.time.now - skater.lastBoostRingAt >= BOOST_RING_COOLDOWN_MS;
+            if (distance > ring.radius + 24 || !canTrigger) {
+                return;
             }
 
-            findNearestBoostRing(skater) {
-                if (!this.boostRings.length) {
-                    return null;
-                }
-
-                return this.boostRings.reduce((nearest, ring) => {
-                    const distance = Phaser.Math.Distance.Between(skater.x, skater.y, ring.zone.x, ring.zone.y);
-                    if (!nearest || distance < nearest.distance) {
-                        return { ring, distance };
-                    }
-                    return nearest;
-                }, null)?.ring || null;
+            skater.lastBoostRingAt = this.time.now;
+            skater.body.setVelocityX(skater.body.velocity.x * 0.35 + ring.vx);
+            skater.body.setVelocityY(ring.vy);
+            this.sparkEmitter?.emitParticleAt(ring.zone.x, ring.zone.y, 22);
+            this.playSfx('sfx-boost', skater === this.player ? 0.7 : 0.35);
+            this.tweens.add({
+                targets: ring.marker,
+                scale: 1.18,
+                alpha: 1,
+                duration: 120,
+                yoyo: true
+            });
+            if (skater === this.player) {
+                this.showFeedbackText(ring.zone.x, ring.zone.y - ring.radius - 12, 'RING BOOST!', '#39ff14');
             }
         });
+    }
+
+    findNearestBoostRing(skater) {
+        if (!this.boostRings.length) {
+            return null;
+        }
+
+        return this.boostRings.reduce((nearest, ring) => {
+            const distance = Phaser.Math.Distance.Between(skater.x, skater.y, ring.zone.x, ring.zone.y);
+            if (!nearest || distance < nearest.distance) {
+                return { ring, distance };
+            }
+            return nearest;
+        }, null)?.ring || null;
     }
 
     handleBotsAI(delta) {
