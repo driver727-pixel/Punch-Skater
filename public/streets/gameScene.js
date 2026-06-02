@@ -43,6 +43,8 @@ const HAZARD_COOLDOWN_MS = 900;
 const PICKUP_HEAL_AMOUNT = 22;
 const BOOST_PAD_POWER = 520;
 const COMBO_DECAY_MS = 3200;
+const COMBO_MAX_BONUS = 1.5;
+const COMBO_MIN_ALPHA = 0.35;
 const WAVE_BONUS_THRESHOLD = 0.62;
 const MIN_SIGN_DENSITY = 0.65;
 const SIGN_DENSITY_RANGE = 0.55;
@@ -643,7 +645,7 @@ export class StreetsGameScene extends Phaser.Scene {
 
   comboMultiplier() {
     if (this.comboCount <= 1) return 1;
-    return 1 + Math.min(1.5, (this.comboCount - 1) * 0.12);
+    return 1 + Math.min(COMBO_MAX_BONUS, (this.comboCount - 1) * 0.12);
   }
 
   bumpCombo() {
@@ -1123,7 +1125,7 @@ export class StreetsGameScene extends Phaser.Scene {
     this.progressText.setText(this.objectiveStatusLabel());
 
     if (this.comboCount > 1) {
-      const comboAlpha = Phaser.Math.Clamp((this.comboExpiresAt - this.time.now) / COMBO_DECAY_MS, 0.35, 1);
+      const comboAlpha = Phaser.Math.Clamp((this.comboExpiresAt - this.time.now) / COMBO_DECAY_MS, COMBO_MIN_ALPHA, 1);
       this.comboText
         .setVisible(true)
         .setAlpha(comboAlpha)
@@ -1228,7 +1230,7 @@ export class StreetsGameScene extends Phaser.Scene {
     this.add.text(width / 2, height * 0.32 + 46, 'SCORE ' + this.score, {
       fontFamily: '"Press Start 2P"', fontSize: '14px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-    this.add.text(width / 2, height * 0.32 + 82, `BEST COMBO ${Math.max(this.bestCombo, this.comboCount)}`, {
+    this.add.text(width / 2, height * 0.32 + 82, `BEST COMBO ${this.bestCombo}`, {
       fontFamily: '"Press Start 2P"', fontSize: '11px', color: '#ffea00',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
 
