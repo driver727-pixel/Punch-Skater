@@ -29,11 +29,19 @@ const GATE_SPACING = 720;
 const ATTACK_DURATION_MS = 230;
 const ATTACK_COOLDOWN_MS = 360;
 const ATTACK_VERTICAL_BAND = 90;
+const DASH_DURATION_MS = 150;
+const DASH_COOLDOWN_MS = 760;
+const DASH_TRAIL_INTERVAL_MS = 38;
 const ENEMY_BASE_HP = 46;
 const ENEMY_BASE_DAMAGE = 8;
 const ENEMY_ATTACK_COOLDOWN_MS = 950;
 const ENEMY_ATTACK_RANGE = 64;
+const ENEMY_LEASH_DISTANCE = 520;
 const HORDE_CAP = 7;
+const HAZARD_DAMAGE = 9;
+const HAZARD_COOLDOWN_MS = 900;
+const PICKUP_HEAL_AMOUNT = 22;
+const BOOST_PAD_POWER = 520;
 const WAVE_BONUS_THRESHOLD = 0.62;
 const MIN_SIGN_DENSITY = 0.65;
 const SIGN_DENSITY_RANGE = 0.55;
@@ -67,6 +75,10 @@ function mulberry32(seed) {
   };
 }
 
+function bodyIsGrounded(body) {
+  return Boolean(body?.blocked?.down || body?.touching?.down);
+}
+
 export class StreetsGameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'StreetsGameScene' });
@@ -94,9 +106,12 @@ export class StreetsGameScene extends Phaser.Scene {
     this.carryingPackage = false;
     this.packageAvailable = false;
     this.objectiveComplete = false;
+    this.hazards = null;
+    this.boostPads = null;
+    this.pickups = null;
     this.barrier = null;
     this.hordeTimer = null;
-    this.steer = { left: false, right: false };
+    this.steer = { left: false, right: false, jump: false, dash: false };
   }
 
   create() {
@@ -112,6 +127,7 @@ export class StreetsGameScene extends Phaser.Scene {
     this.buildBackdrop();
     this.buildGround();
     this.buildSetDressing();
+    this.buildLevelInteractions();
     this.buildParticles();
 
     // Player fighter — stats from the launching card (or sane defaults).
@@ -128,9 +144,15 @@ export class StreetsGameScene extends Phaser.Scene {
     this.player.hp = this.playerKnobs.maxHp;
     this.player.maxHp = this.playerKnobs.maxHp;
     this.player.attackReadyAt = 0;
+    this.player.dashReadyAt = 0;
+    this.player.dashUntil = 0;
+    this.player.nextDashTrailAt = 0;
     this.player.isAttacking = false;
     this.player.isDazed = false;
     this.physics.add.collider(this.player, this.ground);
+    this.physics.add.overlap(this.player, this.hazards, (_, hazard) => this.handleHazardHit(hazard));
+    this.physics.add.overlap(this.player, this.boostPads, (_, pad) => this.handleBoostPad(pad));
+    this.physics.add.overlap(this.player, this.pickups, (_, pickup) => this.handlePickup(pickup));
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setDeadzone(180, 200);
@@ -159,6 +181,9 @@ export class StreetsGameScene extends Phaser.Scene {
       signDensity: MIN_SIGN_DENSITY + this.rng() * SIGN_DENSITY_RANGE,
       propDensity: MIN_PROP_DENSITY + this.rng() * PROP_DENSITY_RANGE,
       railHue: this.rng() > 0.5 ? this.district.groundEdge : this.district.accent,
+      hazardEvery: 780 + Math.floor(this.rng() * 240),
+      boostEvery: 920 + Math.floor(this.rng() * 280),
+      pickupEvery: 1350 + Math.floor(this.rng() * 320),
     };
   }
 
@@ -218,6 +243,25 @@ export class StreetsGameScene extends Phaser.Scene {
       far.fillStyle(this.district.haze, 0.25);
       far.fillCircle(x + 42, y + 10, 2);
     }
+
+    const moon = this.add.graphics().setDepth(-27).setScrollFactor(0.04);
+    moon.fillStyle(this.district.haze, 0.18);
+    moon.fillCircle(width * 0.76, 80, 44);
+    moon.lineStyle(2, this.district.accent, 0.18);
+    moon.strokeCircle(width * 0.76, 80, 62);
+
+    const murals = this.add.graphics().setDepth(-6).setScrollFactor(0.72);
+    for (let x = 240; x < this.levelWidth; x += 520) {
+      const y = this.groundY - 150 - Math.floor(this.rng() * 54);
+      murals.fillStyle(0x050510, 0.55);
+      murals.fillRoundedRect(x - 82, y - 28, 164, 56, 8);
+      murals.lineStyle(2, this.district.accent, 0.55);
+      murals.strokeRoundedRect(x - 82, y - 28, 164, 56, 8);
+      murals.fillStyle(this.district.groundEdge, 0.3);
+      murals.fillCircle(x - 44, y, 17);
+      murals.fillStyle(this.district.haze, 0.28);
+      murals.fillTriangle(x + 8, y + 20, x + 44, y - 18, x + 72, y + 20);
+    }
   }
 
   buildGround() {
@@ -239,6 +283,10 @@ export class StreetsGameScene extends Phaser.Scene {
     const lane = this.add.graphics().setDepth(-5);
     lane.lineStyle(2, this.district.groundEdge, 0.6);
     lane.lineBetween(0, this.groundY, this.levelWidth, this.groundY);
+    lane.lineStyle(1, this.district.haze, 0.28);
+    for (let x = 0; x < this.levelWidth; x += 92) {
+      lane.lineBetween(x, this.groundY + 18, x + 42, this.groundY + 18);
+    }
   }
 
   buildSetDressing() {
@@ -262,6 +310,9 @@ export class StreetsGameScene extends Phaser.Scene {
       props.fillRoundedRect(x - 30, signY - 16, 60, 24, 5);
       props.lineStyle(1, 0xffffff, 0.45);
       props.strokeRoundedRect(x - 30, signY - 16, 60, 24, 5);
+      props.lineStyle(1, this.district.haze, 0.2);
+      props.lineBetween(x - 24, signY + 14, x - 46, signY + 42);
+      props.lineBetween(x + 24, signY + 14, x + 48, signY + 42);
     }
 
     const foreground = this.add.graphics().setScrollFactor(1.18).setDepth(20);
@@ -270,6 +321,53 @@ export class StreetsGameScene extends Phaser.Scene {
       foreground.lineBetween(x, this.groundY + 42, x + 130, this.groundY + 34);
       foreground.fillStyle(0x050510, 0.42);
       foreground.fillRect(x + 35, this.groundY + 38, 18, 50);
+    }
+  }
+
+  buildLevelInteractions() {
+    this.hazards = this.physics.add.staticGroup();
+    this.boostPads = this.physics.add.staticGroup();
+    this.pickups = this.physics.add.staticGroup();
+
+    const hazardArt = this.add.graphics().setDepth(-1);
+    for (let x = 520; x < this.levelWidth - 460; x += this.levelProfile.hazardEvery) {
+      if (Math.abs((this.exitX ?? this.levelWidth) - x) < 220) continue;
+      const hazard = this.add.rectangle(x, this.groundY - 10, 76, 16, this.district.accent, 0.12);
+      hazard.setStrokeStyle(2, this.district.groundEdge, 0.75);
+      hazard.setData('lastHitAt', -Infinity);
+      this.physics.add.existing(hazard, true);
+      this.hazards.add(hazard);
+
+      hazardArt.lineStyle(2, this.district.groundEdge, 0.75);
+      hazardArt.lineBetween(x - 38, this.groundY - 22, x + 38, this.groundY - 22);
+      hazardArt.fillStyle(this.district.haze, 0.18);
+      hazardArt.fillTriangle(x - 32, this.groundY - 22, x - 18, this.groundY - 44, x - 4, this.groundY - 22);
+      hazardArt.fillTriangle(x + 6, this.groundY - 22, x + 20, this.groundY - 44, x + 34, this.groundY - 22);
+    }
+
+    for (let x = 780; x < this.levelWidth - 420; x += this.levelProfile.boostEvery) {
+      const pad = this.add.rectangle(x, this.groundY - 8, 92, 14, 0xffea00, 0.18);
+      pad.setStrokeStyle(2, 0xffea00, 0.8);
+      pad.setData('lastBoostAt', -Infinity);
+      this.physics.add.existing(pad, true);
+      this.boostPads.add(pad);
+      this.add.text(x, this.groundY - 30, 'BOOST', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '7px',
+        color: '#ffea00',
+      }).setOrigin(0.5).setDepth(-1);
+    }
+
+    for (let x = 980; x < this.levelWidth - 560; x += this.levelProfile.pickupEvery) {
+      const pickup = this.add.container(x, this.groundY - 54);
+      const glow = this.add.image(0, 0, 'spark-dot').setScale(1.7).setAlpha(0.48);
+      const core = this.add.circle(0, 0, 10, 0x39ff14, 0.85);
+      const bolt = this.add.text(0, 0, '+', { fontSize: '18px', color: '#050510' }).setOrigin(0.5);
+      pickup.add([glow, core, bolt]);
+      this.physics.add.existing(pickup, true);
+      pickup.body.setCircle(16, -16, -16);
+      this.pickups.add(pickup);
+      this.tweens.add({ targets: pickup, y: pickup.y - 10, yoyo: true, repeat: -1, duration: 720 });
     }
   }
 
@@ -363,6 +461,8 @@ export class StreetsGameScene extends Phaser.Scene {
       attack: Phaser.Input.Keyboard.KeyCodes.J,
       attackAlt: Phaser.Input.Keyboard.KeyCodes.F,
       special: Phaser.Input.Keyboard.KeyCodes.K,
+      dash: Phaser.Input.Keyboard.KeyCodes.SHIFT,
+      dashAlt: Phaser.Input.Keyboard.KeyCodes.L,
     });
     this.createMobileControls();
   }
@@ -384,10 +484,12 @@ export class StreetsGameScene extends Phaser.Scene {
 
     mk(56, btnY, '◀', 0x00f0ff, () => { this.steer.left = true; }, () => { this.steer.left = false; });
     mk(146, btnY, '▶', 0x00f0ff, () => { this.steer.right = true; }, () => { this.steer.right = false; });
+    mk(width - 236, btnY, '⤒', 0xffea00, () => { this.steer.jump = true; }, () => { this.steer.jump = false; });
+    mk(width - 146, btnY, '⇥', 0x39ff14, () => { this.steer.dash = true; }, () => { this.steer.dash = false; });
     mk(width - 56, btnY, '✊', 0xff007f, () => this.tryAttack());
-    mk(width - 146, btnY, '⤒', 0xffea00, () => this.tryJump());
+    mk(width - 56, btnY - 92, '✦', 0x9d00ff, () => this.trySpecial());
 
-    this.add.text(this.scale.width / 2, 70, 'ARROWS / A-D move • W jump • J hit • K nova', {
+    this.add.text(this.scale.width / 2, 70, 'ARROWS/A-D move • W/SPACE jump • SHIFT/L dash • J/F hit • K nova', {
       fontFamily: '"Press Start 2P"',
       fontSize: '10px',
       color: '#ffffff',
@@ -414,6 +516,15 @@ export class StreetsGameScene extends Phaser.Scene {
     }
     this.player.setAlpha(1);
 
+    if (this.player.dashUntil > time) {
+      body.setAccelerationX(0);
+      if (time >= this.player.nextDashTrailAt) {
+        this.player.nextDashTrailAt = time + DASH_TRAIL_INTERVAL_MS;
+        this.spawnDashTrail();
+      }
+      return;
+    }
+
     const accel = this.playerKnobs.accel;
     const left = this.cursors.left.isDown || this.keys.left.isDown || this.steer.left;
     const right = this.cursors.right.isDown || this.keys.right.isDown || this.steer.right;
@@ -431,8 +542,18 @@ export class StreetsGameScene extends Phaser.Scene {
       Phaser.Input.Keyboard.JustDown(this.cursors.up)
       || Phaser.Input.Keyboard.JustDown(this.cursors.space)
       || Phaser.Input.Keyboard.JustDown(this.keys.jump)
+      || this.steer.jump
     ) {
+      this.steer.jump = false;
       this.tryJump();
+    }
+    if (
+      Phaser.Input.Keyboard.JustDown(this.keys.dash)
+      || Phaser.Input.Keyboard.JustDown(this.keys.dashAlt)
+      || this.steer.dash
+    ) {
+      this.steer.dash = false;
+      this.tryDash(time);
     }
     if (
       Phaser.Input.Keyboard.JustDown(this.keys.attack)
@@ -452,6 +573,19 @@ export class StreetsGameScene extends Phaser.Scene {
       body.setVelocityY(-this.playerKnobs.jumpForce);
       this.playSfx('sfx-boost', 0.4);
     }
+  }
+
+  tryDash(time = this.time.now) {
+    if (this.isOver || this.player.isDazed) return;
+    if (time < this.player.dashReadyAt) return;
+    const dir = this.player.facing === 'left' ? -1 : 1;
+    this.player.dashReadyAt = time + DASH_COOLDOWN_MS;
+    this.player.dashUntil = time + DASH_DURATION_MS;
+    this.player.nextDashTrailAt = time;
+    this.player.body.setVelocityX(dir * (this.playerKnobs.moveSpeed + this.playerKnobs.dashBoost));
+    this.player.body.setVelocityY(Math.min(this.player.body.velocity.y, -70));
+    this.triggerVfx(this.player.x - dir * 20, this.player.y + 8, 'light');
+    this.playSfx('sfx-boost', 0.55);
   }
 
   tryAttack(time = this.time.now) {
@@ -509,6 +643,53 @@ export class StreetsGameScene extends Phaser.Scene {
         skater.isAttacking = false;
       },
     });
+  }
+
+  spawnDashTrail() {
+    const ghost = this.add.container(this.player.x, this.player.y).setDepth(this.player.depth - 1);
+    const color = this.player.cosmetics?.color ?? this.district.haze;
+    const silhouette = this.add.rectangle(0, -10, 36, 66, color, 0.16);
+    const board = this.add.rectangle(0, 18, 54, 7, 0xffffff, 0.18);
+    ghost.add([silhouette, board]);
+    ghost.setScale(this.player.scaleX, 1);
+    this.tweens.add({
+      targets: ghost,
+      alpha: 0,
+      x: ghost.x - this.player.scaleX * 34,
+      duration: 220,
+      onComplete: () => ghost.destroy(),
+    });
+  }
+
+  handleHazardHit(hazard) {
+    const now = this.time.now;
+    const lastHitAt = hazard.getData('lastHitAt') ?? -Infinity;
+    if (now - lastHitAt < HAZARD_COOLDOWN_MS || this.player.dashUntil > now) return;
+    hazard.setData('lastHitAt', now);
+    const dir = this.player.x < hazard.x ? -1 : 1;
+    this.damagePlayer(HAZARD_DAMAGE, dir);
+    this.showFloatingText(hazard.x, hazard.y - 42, 'SPILL!', '#ffea00');
+  }
+
+  handleBoostPad(pad) {
+    const now = this.time.now;
+    const lastBoostAt = pad.getData('lastBoostAt') ?? -Infinity;
+    if (now - lastBoostAt < 450) return;
+    pad.setData('lastBoostAt', now);
+    const dir = this.player.facing === 'left' ? -1 : 1;
+    this.player.body.setVelocityX(dir * (this.playerKnobs.moveSpeed + BOOST_PAD_POWER));
+    this.player.body.setVelocityY(-this.playerKnobs.jumpForce * 0.72);
+    this.triggerVfx(pad.x, pad.y - 10, 'medium');
+    this.playSfx('sfx-boost', 0.5);
+  }
+
+  handlePickup(pickup) {
+    if (!pickup.active) return;
+    this.player.hp = Math.min(this.player.maxHp, this.player.hp + PICKUP_HEAL_AMOUNT);
+    this.special = Math.min(this.specialMax, this.special + 18);
+    this.showFloatingText(pickup.x, pickup.y - 24, '+HP', '#39ff14');
+    this.triggerVfx(pickup.x, pickup.y, 'light');
+    pickup.destroy();
   }
 
   // ── Wave gates ─────────────────────────────────────────────────────────────
@@ -587,17 +768,24 @@ export class StreetsGameScene extends Phaser.Scene {
     enemy.body.setSize(50, 72);
     enemy.body.setOffset(-25, -48);
     enemy.body.setDragX(700);
+    enemy.body.setMaxVelocity(this.playerKnobs.moveSpeed * (isBoss ? 0.86 : 0.96), 1400);
     this.physics.add.collider(enemy, this.ground);
+    this.physics.add.overlap(enemy, this.boostPads, (enemyObject, pad) => this.handleEnemyBoostPad(enemyObject, pad));
 
     enemy.isEnemy = true;
     enemy.isBoss = Boolean(isBoss);
     enemy.isDead = false;
     enemy.isDazed = false;
     enemy.attackReadyAt = 0;
+    enemy.thinkAt = 0;
+    enemy.retreatUntil = 0;
+    enemy.laneOffset = Phaser.Math.Between(-24, 24);
+    enemy.archetype = this.pickEnemyArchetype(isBoss);
+    enemy.ai = this.enemyAiProfile(enemy.archetype, isBoss);
     const hpMul = isBoss ? (this.mission?.boss?.hpMultiplier ?? 3) : 1;
-    enemy.maxHp = Math.round(ENEMY_BASE_HP * hpMul);
+    enemy.maxHp = Math.round(ENEMY_BASE_HP * hpMul * enemy.ai.hpMultiplier);
     enemy.hp = enemy.maxHp;
-    enemy.damage = ENEMY_BASE_DAMAGE * (isBoss ? 1.6 : 1);
+    enemy.damage = ENEMY_BASE_DAMAGE * (isBoss ? 1.6 : 1) * enemy.ai.damageMultiplier;
     if (isBoss) {
       enemy.setScale(1.25);
       enemy.bossName = this.mission?.boss?.name ?? 'Boss';
@@ -635,6 +823,29 @@ export class StreetsGameScene extends Phaser.Scene {
     };
   }
 
+  pickEnemyArchetype(isBoss) {
+    if (isBoss) return 'boss';
+    const roll = this.rng();
+    if (roll > 0.78) return 'guard';
+    if (roll > 0.55) return 'zagger';
+    if (roll > 0.3) return 'sprinter';
+    return 'bruiser';
+  }
+
+  enemyAiProfile(archetype, isBoss) {
+    const profiles = {
+      bruiser: { accel: 560, range: 68, preferred: 70, hpMultiplier: 1.25, damageMultiplier: 1.1, cooldown: 1050, jumpChance: 0.08 },
+      sprinter: { accel: 830, range: 58, preferred: 54, hpMultiplier: 0.85, damageMultiplier: 0.9, cooldown: 760, jumpChance: 0.2 },
+      zagger: { accel: 680, range: 62, preferred: 118, hpMultiplier: 1, damageMultiplier: 1, cooldown: 920, jumpChance: 0.16 },
+      guard: { accel: 500, range: 82, preferred: 126, hpMultiplier: 1.15, damageMultiplier: 1.05, cooldown: 1120, jumpChance: 0.04 },
+      boss: { accel: 640, range: 96, preferred: 110, hpMultiplier: 1, damageMultiplier: 1.1, cooldown: 820, jumpChance: 0.18 },
+    };
+    return {
+      ...profiles[archetype],
+      range: profiles[archetype].range + (isBoss ? 18 : 0),
+    };
+  }
+
   updateEnemies(time, delta) {
     let aliveInWave = 0;
     this.enemies.forEach((enemy) => {
@@ -648,15 +859,41 @@ export class StreetsGameScene extends Phaser.Scene {
 
       const dx = this.player.x - enemy.x;
       const adx = Math.abs(dx);
-      const accel = 600;
-      if (adx > ENEMY_ATTACK_RANGE - 8) {
-        enemy.body.setAccelerationX(dx < 0 ? -accel : accel);
+      const verticalGap = this.player.y - enemy.y;
+      const directionToPlayer = dx < 0 ? -1 : 1;
+      const profile = enemy.ai;
+      const range = Math.max(ENEMY_ATTACK_RANGE, profile.range);
+      const preferred = profile.preferred + Math.abs(enemy.laneOffset);
+      const isLeashed = adx > ENEMY_LEASH_DISTANCE && this.activeGate;
+      const shouldRetreat = time < enemy.retreatUntil || (enemy.archetype === 'zagger' && adx < preferred * 0.55);
+      const facingToPlayer = directionToPlayer === -1 ? 'left' : 'right';
+
+      if (time >= enemy.thinkAt) {
+        enemy.thinkAt = time + Phaser.Math.Between(280, 520);
+        if (enemy.archetype === 'guard' && adx < range + 18 && this.rng() > 0.58) {
+          enemy.retreatUntil = time + Phaser.Math.Between(260, 520);
+        }
+        if ((bodyIsGrounded(enemy.body)) && Math.abs(verticalGap) > 34 && this.rng() < profile.jumpChance) {
+          enemy.body.setVelocityY(-360);
+        }
+      }
+
+      if (isLeashed) {
+        enemy.body.setAccelerationX(0);
+      } else if (shouldRetreat) {
+        enemy.body.setAccelerationX(-directionToPlayer * profile.accel * 0.85);
+        faceSkater(enemy, facingToPlayer);
+      } else if (adx > preferred) {
+        enemy.body.setAccelerationX(directionToPlayer * profile.accel);
+        faceSkater(enemy, facingToPlayer);
+      } else if (adx < range * 0.5) {
+        enemy.body.setAccelerationX(-directionToPlayer * profile.accel * 0.55);
         faceSkater(enemy, dx < 0 ? 'left' : 'right');
       } else {
         enemy.body.setAccelerationX(0);
         // In range: attack on cooldown.
-        if (time >= enemy.attackReadyAt && Math.abs(this.player.y - enemy.y) < ATTACK_VERTICAL_BAND) {
-          enemy.attackReadyAt = time + ENEMY_ATTACK_COOLDOWN_MS;
+        if (time >= enemy.attackReadyAt && adx < range && Math.abs(verticalGap) < ATTACK_VERTICAL_BAND) {
+          enemy.attackReadyAt = time + Math.max(560, profile.cooldown || ENEMY_ATTACK_COOLDOWN_MS);
           this.swingWeapon(enemy);
           this.damagePlayer(enemy.damage, dx < 0 ? -1 : 1);
         }
@@ -674,6 +911,17 @@ export class StreetsGameScene extends Phaser.Scene {
 
   cullDeadEnemies() {
     this.enemies = this.enemies.filter((enemy) => enemy.active);
+  }
+
+  handleEnemyBoostPad(enemy, pad) {
+    if (!enemy.active || enemy.isDead || enemy.isDazed) return;
+    const now = this.time.now;
+    const lastBoostAt = enemy.getData('lastBoostAt') ?? -Infinity;
+    if (now - lastBoostAt < 900 || Math.abs(this.player.x - pad.x) > 420) return;
+    enemy.setData('lastBoostAt', now);
+    const dir = this.player.x < enemy.x ? -1 : 1;
+    enemy.body.setVelocityX(dir * (this.playerKnobs.moveSpeed * 0.86 + 180));
+    enemy.body.setVelocityY(-320);
   }
 
   damageEnemy(enemy, amount, dir, heavy = false) {
@@ -778,6 +1026,8 @@ export class StreetsGameScene extends Phaser.Scene {
       .setOrigin(0, 0.5).setScrollFactor(0).setDepth(120).setStrokeStyle(2, 0xffea00);
     this.specialBar = this.add.rectangle(22, 48, 0, 7, 0xffea00)
       .setOrigin(0, 0.5).setScrollFactor(0).setDepth(121);
+    this.dashPip = this.add.rectangle(190, 48, 42, 7, 0x39ff14)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(121);
 
     this.scoreText = this.add.text(this.scale.width - 20, 16, 'SCORE 0', {
       fontFamily: '"Press Start 2P"', fontSize: '12px', color: '#00f0ff',
@@ -813,6 +1063,9 @@ export class StreetsGameScene extends Phaser.Scene {
     this.hpBar.setSize(216 * hpFrac, 12);
     this.hpBar.setFillStyle(hpFrac > 0.5 ? 0x39ff14 : hpFrac > 0.25 ? 0xffea00 : 0xff0055);
     this.specialBar.setSize(156 * Phaser.Math.Clamp(this.special / this.specialMax, 0, 1), 7);
+    const dashFrac = Phaser.Math.Clamp(1 - ((this.player.dashReadyAt - this.time.now) / DASH_COOLDOWN_MS), 0, 1);
+    this.dashPip.setSize(42 * dashFrac, 7);
+    this.dashPip.setFillStyle(dashFrac >= 1 ? 0x39ff14 : 0x1f6f5b);
     this.scoreText.setText('SCORE ' + this.score);
 
     if (this.boss && this.boss.active && !this.boss.isDead) {
@@ -867,6 +1120,23 @@ export class StreetsGameScene extends Phaser.Scene {
 
   flash(target) {
     this.tweens.add({ targets: target, alpha: 0.2, yoyo: true, repeat: 2, duration: 60 });
+  }
+
+  showFloatingText(x, y, label, color) {
+    const text = this.add.text(x, y, label, {
+      fontFamily: '"Press Start 2P"',
+      fontSize: '9px',
+      color,
+      stroke: '#050510',
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(140);
+    this.tweens.add({
+      targets: text,
+      y: y - 28,
+      alpha: 0,
+      duration: 620,
+      onComplete: () => text.destroy(),
+    });
   }
 
   playSfx(key, volume = 1) {
