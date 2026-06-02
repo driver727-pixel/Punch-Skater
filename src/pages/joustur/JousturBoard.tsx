@@ -317,7 +317,7 @@ function getTurnCardLabel(
   return actorState.lineup.find((snapshot) => snapshot.cardId === entry.movedCardId)?.name ?? null;
 }
 
-function formatTurnRoll(entry: JousturTurnLogEntry): string {
+function formatTurnRollDisplay(entry: JousturTurnLogEntry): string {
   return entry.rollResult === 0 ? "0 → 4" : `${entry.rollResult}`;
 }
 
@@ -1583,7 +1583,7 @@ export function JousturBoard() {
         <section className="joustur-board__activity" aria-label="Recent activity">
           <div className="joustur-board__activity-header">
             <h2>Recent Activity</h2>
-            <p>The last six logged turns update whenever the board refreshes.</p>
+            <p>The six newest logged turns update whenever the board refreshes.</p>
           </div>
           <ol className="joustur-board__activity-list">
             {recentTurns.map((entry) => {
@@ -1597,7 +1597,7 @@ export function JousturBoard() {
                   <div className="joustur-board__activity-meta">
                     <span>Turn {entry.turn}</span>
                     <span>{actorLabel}</span>
-                    <span>Roll {formatTurnRoll(entry)}</span>
+                    <span>Roll {formatTurnRollDisplay(entry)}</span>
                   </div>
                   <p className="joustur-board__activity-summary">
                     {cardLabel ? <strong>{cardLabel}</strong> : <strong>{actorLabel}</strong>}
