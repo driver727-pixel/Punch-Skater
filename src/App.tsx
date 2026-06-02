@@ -264,6 +264,7 @@ function AppParallaxBackdrop() {
     const root = document.documentElement;
     const main = document.querySelector(MAIN_CONTENT_SELECTOR);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const coarsePointer = window.matchMedia("(pointer: coarse)");
     let rafId = 0;
 
     const writeScroll = () => {
@@ -299,6 +300,15 @@ function AppParallaxBackdrop() {
       writePointer();
     };
 
+    const handleCoarsePointerChange = () => {
+      if (coarsePointer.matches) {
+        window.removeEventListener("pointermove", writePointer);
+        writePointer(); // reset CSS vars to zero
+      } else {
+        window.addEventListener("pointermove", writePointer, { passive: true });
+      }
+    };
+
     writeScroll();
     writePointer();
 
@@ -307,8 +317,13 @@ function AppParallaxBackdrop() {
     } else {
       window.addEventListener("scroll", requestScrollWrite, { passive: true });
     }
-    window.addEventListener("pointermove", writePointer, { passive: true });
+    // Skip per-frame pointer tracking on touch/coarse-pointer devices —
+    // they lack hover and the listener wastes main-thread time.
+    if (!coarsePointer.matches) {
+      window.addEventListener("pointermove", writePointer, { passive: true });
+    }
     reducedMotion.addEventListener("change", handleReducedMotionChange);
+    coarsePointer.addEventListener("change", handleCoarsePointerChange);
 
     return () => {
       if (rafId) window.cancelAnimationFrame(rafId);
@@ -317,8 +332,11 @@ function AppParallaxBackdrop() {
       } else {
         window.removeEventListener("scroll", requestScrollWrite);
       }
-      window.removeEventListener("pointermove", writePointer);
+      if (!coarsePointer.matches) {
+        window.removeEventListener("pointermove", writePointer);
+      }
       reducedMotion.removeEventListener("change", handleReducedMotionChange);
+      coarsePointer.removeEventListener("change", handleCoarsePointerChange);
       root.style.setProperty("--parallax-scroll", "0");
       root.style.setProperty("--parallax-pointer-x", "0");
       root.style.setProperty("--parallax-pointer-y", "0");

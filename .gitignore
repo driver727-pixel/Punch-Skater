@@ -22,6 +22,9 @@ dist-ssr
 /blob-report/
 /playwright/.cache/
 
+# Binary archives — never commit large tarballs into the repo
+*.tgz
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
