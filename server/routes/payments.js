@@ -53,15 +53,17 @@ export function registerPaymentRoutes(app, {
       // Stripe may deliver the same event more than once (retries on non-2xx).
       // Record each processed event ID in Firestore so replays are ignored.
       const adminDb = typeof getAdminDb === 'function' ? getAdminDb() : null;
-      if (adminDb) {
-        const eventRef = adminDb.collection('processedStripeEvents').doc(event.id);
-        const existing = await adminDb.runTransaction(async (tx) => {
-          const snap = await tx.get(eventRef);
-          if (snap.exists) return true;
-          tx.set(eventRef, { processedAt: new Date().toISOString(), type: event.type });
-          return false;
+      const processedEventRef = adminDb?.collection('processedStripeEvents').doc(event.id) ?? null;
+      const markEventProcessed = async () => {
+        if (!processedEventRef) return;
+        await processedEventRef.set({
+          processedAt: new Date().toISOString(),
+          type: event.type,
         });
-        if (existing) {
+      };
+      if (processedEventRef) {
+        const existing = await processedEventRef.get();
+        if (existing.exists) {
           res.json({ received: true });
           return;
         }
@@ -112,6 +114,7 @@ export function registerPaymentRoutes(app, {
         const priceId = subscription.items?.data?.[0]?.price?.id ?? '';
         const paidTier = resolveTierFromPriceId(priceId);
         if (!paidTier) {
+          await markEventProcessed();
           res.json({ received: true });
           return;
         }
@@ -131,6 +134,7 @@ export function registerPaymentRoutes(app, {
           const priceId = subscription.items?.data?.[0]?.price?.id ?? '';
           const paidTier = resolveTierFromPriceId(priceId);
           if (!paidTier) {
+            await markEventProcessed();
             res.json({ received: true });
             return;
           }
@@ -145,6 +149,7 @@ export function registerPaymentRoutes(app, {
         }
       }
 
+      await markEventProcessed();
       res.json({ received: true });
     } catch (error) {
       console.error('Stripe webhook handling failed:', error);
