@@ -15,6 +15,7 @@ import { buildRacerAnimationKey, buildRacerSheetTextureKey } from './racerSprite
 const RACER_SPRITE_DISPLAY_HEIGHT = 40;
 const PICKUP_RESPAWN_MS = 6000;
 const PICKUP_RADIUS = 16;
+const PICKUP_COLLISION_PADDING = 14;
 
 const SLIPSTREAM = Object.freeze({
   RANGE: 120,
@@ -116,8 +117,7 @@ function createRacer(id, x, y, angle, isPlayer = false) {
     nitroActive: false,
     nitroTimer: 0,
     nitroCooldown: 0,
-    // Lets boosts picked up on-track shorten the cooldown applied after the
-    // current nitro burst ends.
+    // Allows pickup-triggered boosts to apply a shorter post-boost cooldown.
     nitroCooldownDuration: NITRO.COOLDOWN,
     slipstreamBoost: 0,
     slipstreamTargetId: null,
@@ -188,9 +188,12 @@ function buildNitroPickups(waypoints) {
 }
 
 function getNextRespawnTime(pickups) {
-  return pickups.reduce((best, pickup) => (
-    !pickup.active && pickup.respawnTimer > 0 && pickup.respawnTimer < best ? pickup.respawnTimer : best
-  ), Infinity);
+  let best = Infinity;
+  for (const pickup of pickups) {
+    if (pickup.active || pickup.respawnTimer <= 0) continue;
+    if (pickup.respawnTimer < best) best = pickup.respawnTimer;
+  }
+  return best;
 }
 
 // ---------------------------------------------------------------------------
@@ -845,7 +848,7 @@ export class RaceGameScene extends Phaser.Scene {
 
       for (const racer of this.racers) {
         if (racer.finished) continue;
-        const collisionDistance = pickup.radius + 14;
+        const collisionDistance = pickup.radius + PICKUP_COLLISION_PADDING;
         if (dist(racer.x, racer.y, pickup.x, pickup.y) > collisionDistance) continue;
 
         pickup.active = false;
