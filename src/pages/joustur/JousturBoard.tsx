@@ -26,6 +26,7 @@ import type {
   JousturPlayerState,
   JousturRiderSnapshot,
   JousturRiderRuntimeState,
+  JousturTurnLogEntry,
 } from "../../lib/jousturTypes";
 import { JOUSTUR_FACTION_LABELS } from "../../lib/jousturTypes";
 import { CyberpunkD4Dice } from "../../components/CyberpunkD4Dice";
@@ -296,6 +297,28 @@ function describeSupportHint(effect: string): string {
     default:
       return "Activate Support for your once-per-match faction effect.";
   }
+}
+
+function getTurnActorLabel(
+  entry: JousturTurnLogEntry,
+  myUid: string,
+  opponentLabel: string,
+): string {
+  return entry.playerUid === myUid ? "You" : opponentLabel;
+}
+
+function getTurnCardLabel(
+  entry: JousturTurnLogEntry,
+  myState: JousturPlayerState,
+  oppState: JousturPlayerState,
+): string | null {
+  if (!entry.movedCardId) return null;
+  const actorState = entry.playerUid === myState.uid ? myState : oppState;
+  return actorState.lineup.find((snapshot) => snapshot.cardId === entry.movedCardId)?.name ?? null;
+}
+
+function formatTurnRollDisplay(entry: JousturTurnLogEntry): string {
+  return entry.rollResult === 0 ? "0 → 4" : `${entry.rollResult}`;
 }
 
 function RiderCardPiece({
@@ -1344,6 +1367,30 @@ export function JousturBoard() {
         ? `Play the ${clashMiniGameLabel}!`
         : "A joust clash is underway."
     : null;
+  const opponentLabel = match.mode === "solo" ? "House Bot" : "Opponent";
+  const recentTurns = match.recentTurns ?? [];
+  const mySharedRiders = myState.riders.filter((rider) => rider.position >= 5 && rider.position <= 12).length;
+  const oppSharedRiders = oppState.riders.filter((rider) => rider.position >= 5 && rider.position <= 12).length;
+  const myCapturedRiders = myState.riders.filter((rider) => rider.isCaptured && !rider.isScored).length;
+  const oppCapturedRiders = oppState.riders.filter((rider) => rider.isCaptured && !rider.isScored).length;
+  const scoreDelta = myState.scoredCount - oppState.scoredCount;
+  const scoreRaceLabel = scoreDelta === 0 ? "Dead even" : scoreDelta > 0 ? `Up ${scoreDelta}` : `Down ${Math.abs(scoreDelta)}`;
+  const scoreRaceDetail = `${myState.scoredCount} scored · ${oppState.scoredCount} allowed`;
+  const supportDetail = `${myState.supportRuntime.activated ? "Your support spent" : "Your support ready"} · ${oppState.supportRuntime.activated ? `${opponentLabel} support spent` : `${opponentLabel} support ready`}`;
+  const tempoLabel = activeClash
+    ? "Clash live"
+    : isMyTurn
+      ? rollPending
+        ? "Action queued"
+        : "Roll ready"
+      : "Stand by";
+  const tempoDetail = activeClash
+    ? clashStatus ?? "Both riders are battling for the tile."
+    : isMyTurn
+      ? rollPending
+        ? `${myLegalMoves.length} rider move${myLegalMoves.length === 1 ? "" : "s"} live${canActivateSupport.canActivate ? " + support" : ""}`
+        : "Throw the USB Shards to open your turn."
+      : `${opponentLabel} owns the clock until their async turn resolves.`;
 
   return (
     <div className="page joustur-board">
@@ -1388,6 +1435,29 @@ export function JousturBoard() {
           {hintBanner}
         </div>
       )}
+
+      <section className="joustur-board__hud" aria-label="Match pulse">
+        <article className="joustur-board__hud-card">
+          <span className="joustur-board__hud-label">Tempo</span>
+          <strong className="joustur-board__hud-value">{tempoLabel}</strong>
+          <p className="joustur-board__hud-detail">{tempoDetail}</p>
+        </article>
+        <article className="joustur-board__hud-card">
+          <span className="joustur-board__hud-label">Score race</span>
+          <strong className="joustur-board__hud-value">{scoreRaceLabel}</strong>
+          <p className="joustur-board__hud-detail">{scoreRaceDetail}</p>
+        </article>
+        <article className="joustur-board__hud-card">
+          <span className="joustur-board__hud-label">Shared lane</span>
+          <strong className="joustur-board__hud-value">{mySharedRiders} · {oppSharedRiders}</strong>
+          <p className="joustur-board__hud-detail">You pressure {mySharedRiders} tiles, {opponentLabel.toLowerCase()} pressures {oppSharedRiders}.</p>
+        </article>
+        <article className="joustur-board__hud-card">
+          <span className="joustur-board__hud-label">Support / losses</span>
+          <strong className="joustur-board__hud-value">{myCapturedRiders} · {oppCapturedRiders}</strong>
+          <p className="joustur-board__hud-detail">{supportDetail}</p>
+        </article>
+      </section>
 
       {activeClash && (
         <section className="joustur-board__clash-panel" aria-label="Active joust clash">
@@ -1509,10 +1579,42 @@ export function JousturBoard() {
         />
       </div>
 
+      {recentTurns.length > 0 && (
+        <section className="joustur-board__activity" aria-label="Recent activity">
+          <div className="joustur-board__activity-header">
+            <h2>Recent Activity</h2>
+            <p>The six newest logged turns update whenever the board refreshes.</p>
+          </div>
+          <ol className="joustur-board__activity-list">
+            {recentTurns.map((entry) => {
+              const actorLabel = getTurnActorLabel(entry, myUid, opponentLabel);
+              const cardLabel = getTurnCardLabel(entry, myState, oppState);
+              return (
+                <li
+                  key={entry.id}
+                  className={`joustur-board__activity-item${entry.playerUid === myUid ? " joustur-board__activity-item--mine" : ""}`}
+                >
+                  <div className="joustur-board__activity-meta">
+                    <span>Turn {entry.turn}</span>
+                    <span>{actorLabel}</span>
+                    <span>Roll {formatTurnRollDisplay(entry)}</span>
+                  </div>
+                  <p className="joustur-board__activity-summary">
+                    {cardLabel ? <strong>{cardLabel}</strong> : <strong>{actorLabel}</strong>}
+                    {" — "}
+                    {entry.summary}
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
+
       <div className="joustur-board__footer">
         <p className="joustur-board__turn-info">
           Turn {match.board.turn} ·{" "}
-          {match.mode === "friend" ? "👥 Friend match" : "🎮 Casual match"}
+          {match.mode === "friend" ? "👥 Friend match" : match.mode === "solo" ? "🤖 Solo match" : "🎮 Casual match"}
         </p>
         <button
           type="button"

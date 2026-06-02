@@ -668,6 +668,56 @@ body {
   box-shadow: 0 0 18px rgba(0, 255, 136, 0.12);
 }
 
+.joustur-board__hud,
+.joustur-board__activity {
+  width: min(100%, 1040px);
+  margin: 0 auto 18px;
+}
+
+.joustur-board__hud {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.joustur-board__hud-card,
+.joustur-board__activity {
+  border: 1px solid rgba(0, 204, 255, 0.2);
+  border-radius: 18px;
+  background: rgba(7, 10, 24, 0.88);
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 0.22),
+    inset 0 0 20px rgba(255, 255, 255, 0.02);
+}
+
+.joustur-board__hud-card {
+  padding: 16px 18px;
+}
+
+.joustur-board__hud-label {
+  display: block;
+  color: var(--accent2);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.joustur-board__hud-value {
+  display: block;
+  margin-top: 8px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+}
+
+.joustur-board__hud-detail {
+  margin: 10px 0 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .joustur-board__clash-panel {
   border: 1px solid rgba(204, 68, 255, 0.45);
   border-radius: 18px;
@@ -700,6 +750,70 @@ body {
 
 .joustur-board__clash-status {
   margin-top: 10px;
+}
+
+.joustur-board__activity {
+  padding: 18px;
+}
+
+.joustur-board__activity-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.joustur-board__activity-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #e8f8ff;
+}
+
+.joustur-board__activity-header p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.joustur-board__activity-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.joustur-board__activity-item {
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(12, 16, 34, 0.92);
+}
+
+.joustur-board__activity-item--mine {
+  border-color: rgba(0, 255, 136, 0.24);
+  box-shadow: 0 0 18px rgba(0, 255, 136, 0.08);
+}
+
+.joustur-board__activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--accent2);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.joustur-board__activity-summary {
+  margin: 8px 0 0;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.joustur-board__activity-summary strong {
+  color: #ffffff;
 }
 
 .joustur-board__clash-actions {
@@ -1254,6 +1368,15 @@ body {
 }
 
 @media (max-width: 720px) {
+  .joustur-board__hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .joustur-board__activity,
+  .joustur-board__hud-card {
+    border-radius: 14px;
+  }
+
   .joustur-visual-board {
     width: calc(100% + 24px);
     margin-left: -12px;

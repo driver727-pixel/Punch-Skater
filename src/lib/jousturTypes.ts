@@ -242,6 +242,8 @@ export interface JousturMatch {
   legalMoves?: JousturLegalMove[];
   /** Hydrated alongside legalMoves. */
   canActivateSupport?: { canActivate: boolean; reason: string | null };
+  /** Hydrated alongside the match for the board activity feed. */
+  recentTurns?: JousturTurnLogEntry[];
 }
 
 // ── Turn log ──────────────────────────────────────────────────────────────────

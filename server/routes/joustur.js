@@ -1238,6 +1238,13 @@ export function registerJousturRoutes(app, {
         );
       }
 
+      const recentTurnsSnap = await snap.ref
+        .collection(TURNS_SUBCOL)
+        .orderBy('timestamp', 'desc')
+        .limit(6)
+        .get();
+      match.recentTurns = recentTurnsSnap.docs.map((doc) => doc.data());
+
       res.json(sanitizeMatchForCaller(match, caller.uid));
     } catch (e) {
       res.status(e.statusCode ?? 500).json({ error: e.message });
