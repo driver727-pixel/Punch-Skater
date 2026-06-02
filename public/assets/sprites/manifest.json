@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "frameSize": { "width": 128, "height": 128 },
+  "frameCount": 16,
+  "characters": [
+    {
+      "id": "cass",
+      "animations": [
+        {
+          "id": "attack",
+          "path": "cass/attack",
+          "spritesheet": "cass/attack/spritesheet.png",
+          "frames": 16
+        },
+        {
+          "id": "idle",
+          "path": "cass/idle",
+          "spritesheet": "cass/idle/spritesheet.png",
+          "frames": 16
+        },
+        {
+          "id": "iso-idle-up",
+          "path": "cass/iso-idle-up",
+          "spritesheet": "cass/iso-idle-up/spritesheet.png",
+          "frames": 16
+        },
+        {
+          "id": "iso-walk-up",
+          "path": "cass/iso-walk-up",
+          "spritesheet": "cass/iso-walk-up/spritesheet.png",
+          "frames": 16
+        }
+      ]
+    },
+    {
+      "id": "seby",
+      "animations": [
+        {
+          "id": "idle",
+          "path": "seby/idle",
+          "spritesheet": "seby/idle/spritesheet.png",
+          "frames": 16
+        }
+      ]
+    }
+  ]
+}
