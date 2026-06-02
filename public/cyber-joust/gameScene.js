@@ -1569,7 +1569,7 @@ export class GameScene extends Phaser.Scene {
         const intro = this.add.text(
             this.scale.width / 2,
             this.scale.height * 0.16,
-            `${this.district.name.toUpperCase()}\nKO CHAINS BUILD COMBO · RINGS CHARGE OVERDRIVE`,
+            `${this.district.name.toUpperCase()}\nKO CHAINS BUILD COMBO • RINGS CHARGE OVERDRIVE`,
             {
                 fontFamily: '"Press Start 2P"',
                 fontSize: '10px',
