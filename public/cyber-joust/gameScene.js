@@ -1545,7 +1545,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         const secondsLeft = Math.max(0, (this.comboExpiresAt - this.time.now) / 1000);
-        this.comboText.setText(`COMBO: X${this.comboMultiplier} ${secondsLeft.toFixed(1)}S`);
+        this.comboText.setText(`COMBO: X${this.comboMultiplier} ${secondsLeft.toFixed(1)}s`);
         this.comboText.setColor(this.comboMultiplier >= COMBO_HIGH_THRESHOLD ? '#39ff14' : '#ffea00');
     }
 
@@ -1556,7 +1556,7 @@ export class GameScene extends Phaser.Scene {
 
         if (this.isOverdriveActive()) {
             const secondsLeft = Math.max(0, (this.overdriveActiveUntil - this.time.now) / 1000);
-            this.overdriveText.setText(`OVERDRIVE: LIVE ${secondsLeft.toFixed(1)}S`);
+            this.overdriveText.setText(`OVERDRIVE: LIVE ${secondsLeft.toFixed(1)}s`);
             this.overdriveText.setColor('#39ff14');
             return;
         }
