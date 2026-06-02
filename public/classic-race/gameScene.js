@@ -834,7 +834,7 @@ export class RaceGameScene extends Phaser.Scene {
       this.nitroText.setText(`🔥 NITRO ${remaining}s`);
       this.nitroText.setColor('#ffea00');
     } else if (player.nitroReady) {
-      this.nitroText.setText(this.mobileControlsEnabled ? '⚡ NITRO READY [SHIFT/N]' : '⚡ NITRO READY [SHIFT]');
+      this.nitroText.setText(this.mobileControlsEnabled ? '⚡ NITRO READY [TAP N]' : '⚡ NITRO READY [SHIFT/SPACE]');
       this.nitroText.setColor('#00ff66');
     } else {
       const cd = Math.ceil(player.nitroCooldown / 1000);
