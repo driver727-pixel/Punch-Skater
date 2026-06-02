@@ -677,7 +677,7 @@ export class StreetsGameScene extends Phaser.Scene {
     if (now - lastBoostAt < 450) return;
     pad.setData('lastBoostAt', now);
     const dir = this.player.facing === 'left' ? -1 : 1;
-    this.player.body.setVelocityX(dir * Math.max(this.playerKnobs.moveSpeed, BOOST_PAD_POWER));
+    this.player.body.setVelocityX(dir * (this.playerKnobs.moveSpeed + BOOST_PAD_POWER));
     this.player.body.setVelocityY(-this.playerKnobs.jumpForce * 0.72);
     this.triggerVfx(pad.x, pad.y - 10, 'medium');
     this.playSfx('sfx-boost', 0.5);
@@ -920,7 +920,7 @@ export class StreetsGameScene extends Phaser.Scene {
     if (now - lastBoostAt < 900 || Math.abs(this.player.x - pad.x) > 420) return;
     enemy.setData('lastBoostAt', now);
     const dir = this.player.x < enemy.x ? -1 : 1;
-    enemy.body.setVelocityX(dir * Math.max(360, this.playerKnobs.moveSpeed * 0.86));
+    enemy.body.setVelocityX(dir * (this.playerKnobs.moveSpeed * 0.86 + 180));
     enemy.body.setVelocityY(-320);
   }
 
