@@ -116,6 +116,8 @@ function createRacer(id, x, y, angle, isPlayer = false) {
     nitroActive: false,
     nitroTimer: 0,
     nitroCooldown: 0,
+    // Lets boosts picked up on-track shorten the cooldown applied after the
+    // current nitro burst ends.
     nitroCooldownDuration: NITRO.COOLDOWN,
     slipstreamBoost: 0,
     slipstreamTargetId: null,
@@ -183,6 +185,12 @@ function buildNitroPickups(waypoints) {
     });
   }
   return pickups;
+}
+
+function getNextRespawnTime(pickups) {
+  return pickups.reduce((best, pickup) => (
+    !pickup.active && pickup.respawnTimer > 0 && pickup.respawnTimer < best ? pickup.respawnTimer : best
+  ), Infinity);
 }
 
 // ---------------------------------------------------------------------------
@@ -844,7 +852,10 @@ export class RaceGameScene extends Phaser.Scene {
         pickup.respawnTimer = PICKUP_RESPAWN_MS;
         racer.nitroActive = true;
         racer.nitroReady = false;
-        racer.nitroTimer = Math.max(racer.nitroTimer, NITRO.PICKUP_BOOST_DURATION);
+        racer.nitroTimer = Math.min(
+          racer.nitroTimer + NITRO.PICKUP_BOOST_DURATION,
+          NITRO.PICKUP_BOOST_DURATION * 2,
+        );
         racer.nitroCooldown = 0;
         racer.nitroCooldownDuration = NITRO.PICKUP_COOLDOWN;
         if (racer.isPlayer) {
@@ -1037,9 +1048,7 @@ export class RaceGameScene extends Phaser.Scene {
       this.statusText.setColor('#7cf7ff');
     } else {
       const activePickups = this.pickups.filter((pickup) => pickup.active).length;
-      const nextRespawn = this.pickups.reduce((best, pickup) => (
-        !pickup.active && pickup.respawnTimer > 0 && pickup.respawnTimer < best ? pickup.respawnTimer : best
-      ), Infinity);
+      const nextRespawn = getNextRespawnTime(this.pickups);
       if (activePickups > 0) {
         this.statusText.setText(`⚡ Nitro cells on track: ${activePickups}`);
         this.statusText.setColor('#ffffff');
