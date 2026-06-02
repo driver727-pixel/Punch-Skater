@@ -159,6 +159,14 @@ export class MenuScene extends Phaser.Scene {
             fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#00f0ff', align: 'center', wordWrap: { width: w * 0.62 }
         }).setOrigin(0.5);
 
+        this.districtStatsText = this.add.text(controlX, y + optionSpacing * 1.65 + 46, this.describeDistrict(this.getSelectedDistrict()), {
+            fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ffea00', align: 'center', wordWrap: { width: w * 0.62 }
+        }).setOrigin(0.5);
+
+        this.modeHintText = this.add.text(controlX, y + optionSpacing * 1.65 + 82, 'CHAIN KNOCKOUTS FOR COMBO\nBOOST RINGS CHARGE OVERDRIVE', {
+            fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#39ff14', align: 'center', wordWrap: { width: w * 0.62 }
+        }).setOrigin(0.5);
+
         const districtBtn = this.add.rectangle(controlX, y + optionSpacing * 1.65, w * 0.66, 36, 0x000000, 0);
         districtBtn.setInteractive({ cursor: 'pointer' });
         districtBtn.on('pointerdown', () => {
@@ -166,9 +174,14 @@ export class MenuScene extends Phaser.Scene {
             const district = this.getSelectedDistrict();
             this.districtText.setText('DISTRICT: ' + district.name.toUpperCase());
             this.districtHintText.setText(district.tagline.toUpperCase());
+            this.districtStatsText.setText(this.describeDistrict(district));
             this.bgImage?.setTint(district.palette.sky);
             this.playTick();
         });
+    }
+
+    describeDistrict(district) {
+        return `BONUS ${district.scoreBonus}  BOTS ${district.botCount}\nGRAV ${district.gravityY}  THRUST x${district.thrustMultiplier.toFixed(2)}`;
     }
 
     updateWeaponStats() {

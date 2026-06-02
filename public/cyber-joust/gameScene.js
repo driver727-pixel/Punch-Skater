@@ -59,6 +59,18 @@ const AI_TARGET_MIN_Y = 70;
 const AI_TARGET_BOTTOM_MARGIN = 120;
 const BOT_THRUST_HORIZONTAL_MIN = 150;
 const BOT_THRUST_HORIZONTAL_MAX = 260;
+const KO_COMBO_WINDOW_MS = 4200;
+const MAX_COMBO_MULTIPLIER = 5;
+const KO_COMBO_START_MULTIPLIER = 2;
+const COMBO_HIGH_THRESHOLD = 4;
+const BOOST_RING_OVERDRIVE_CHARGE = 26;
+const KO_OVERDRIVE_CHARGE = 42;
+const OVERDRIVE_MAX_CHARGE = 100;
+const OVERDRIVE_DURATION_MS = 6500;
+const OVERDRIVE_EXTENSION_MS_PER_CHARGE = 16;
+const OVERDRIVE_THRUST_COOLDOWN_MULTIPLIER = 0.55;
+const OVERDRIVE_ACCELERATION_BONUS = 90;
+const OVERDRIVE_SCORE_MULTIPLIER = 1.5;
 
 function colorToHex(colorValue) {
     return `#${(colorValue >>> 0).toString(16).slice(-6).padStart(6, '0')}`;
@@ -85,6 +97,11 @@ export class GameScene extends Phaser.Scene {
         this.boostReadyTimer = null;
         this.myCosmetics = { ...DEFAULT_COSMETICS };
         this.district = DEFAULT_CYBER_JOUST_DISTRICT;
+        this.comboMultiplier = 1;
+        this.comboExpiresAt = 0;
+        this.overdriveCharge = 0;
+        this.overdriveActiveUntil = 0;
+        this.wasOverdriveActive = false;
     }
 
     showBoostStatus(label, color, readyDelayMs = 0) {
@@ -123,6 +140,11 @@ export class GameScene extends Phaser.Scene {
         this.tiltDirection = null;
         this.lastPlayerThrustAt = -PLAYER_THRUST_COOLDOWN_MS;
         this.boostReadyTimer = null;
+        this.comboMultiplier = 1;
+        this.comboExpiresAt = 0;
+        this.overdriveCharge = 0;
+        this.overdriveActiveUntil = 0;
+        this.wasOverdriveActive = false;
     }
 
     create() {
@@ -181,6 +203,7 @@ export class GameScene extends Phaser.Scene {
         this.joinMultiplayerRoom();
         this.spawnBots(this.district.botCount);
         this.createHUD();
+        this.showDistrictIntro();
     }
 
     createEnvironment(width, height) {
@@ -769,9 +792,10 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
+        const thrustCooldown = this.getPlayerThrustCooldown();
         const elapsedSinceThrust = this.time.now - this.lastPlayerThrustAt;
-        if (elapsedSinceThrust < PLAYER_THRUST_COOLDOWN_MS) {
-            const remainingCooldown = PLAYER_THRUST_COOLDOWN_MS - elapsedSinceThrust;
+        if (elapsedSinceThrust < thrustCooldown) {
+            const remainingCooldown = thrustCooldown - elapsedSinceThrust;
             this.showBoostStatus('BOOST: WAIT', '#ff0055', remainingCooldown);
             return;
         }
@@ -788,7 +812,7 @@ export class GameScene extends Phaser.Scene {
         const flareX = this.player.x + (this.player.facing === 'right' ? -25 : 25);
         const flareY = this.player.y + 15;
         this.thrusterEmitter?.emitParticleAt(flareX, flareY, 15);
-        this.showBoostStatus('BOOST: CHARGING', '#00f0ff', PLAYER_THRUST_COOLDOWN_MS);
+        this.showBoostStatus(this.isOverdriveActive() ? 'BOOST: OVERDRIVE' : 'BOOST: CHARGING', '#00f0ff', thrustCooldown);
 
         if (Math.abs(this.player.body.velocity.x) > FLIP_VELOCITY_THRESHOLD) {
             this.tweens.add({
@@ -949,6 +973,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.handlePlayerMovement();
+        this.updatePowerStates();
         this.checkRampLaunches(this.player);
         this.checkBoostRings(this.player);
         this.handleBotsAI(delta);
@@ -969,7 +994,8 @@ export class GameScene extends Phaser.Scene {
 
         this.player.setAlpha(1);
         const body = this.player.body;
-        const acceleration = this.myCosmetics.weapon === 'Street Sign' ? 220 : 310;
+        const acceleration = (this.myCosmetics.weapon === 'Street Sign' ? 220 : 310)
+            + (this.isOverdriveActive() ? OVERDRIVE_ACCELERATION_BONUS : 0);
 
         if (this.cursors.left.isDown || this.steerLeft || this.keys.leftAlt.isDown) {
             body.setAccelerationX(-acceleration);
@@ -1085,6 +1111,7 @@ export class GameScene extends Phaser.Scene {
                 yoyo: true
             });
             if (skater === this.player) {
+                this.addOverdriveCharge(BOOST_RING_OVERDRIVE_CHARGE);
                 this.showFeedbackText(ring.zone.x, ring.zone.y - ring.radius - 12, 'RING BOOST!', '#39ff14');
             }
         });
@@ -1263,7 +1290,13 @@ export class GameScene extends Phaser.Scene {
         this.triggerClashVFX(loser.x, loser.y, 'heavy');
 
         if (winner === this.player) {
-            const points = this.district.scoreBonus;
+            this.registerPlayerVictory();
+            this.addOverdriveCharge(KO_OVERDRIVE_CHARGE);
+            const points = Math.round(
+                this.district.scoreBonus
+                * this.comboMultiplier
+                * (this.isOverdriveActive() ? OVERDRIVE_SCORE_MULTIPLIER : 1)
+            );
             this.score += points;
             this.scoreText?.setText('SCORE: ' + this.score);
             this.showFeedbackText(loser.x, loser.y - 40, `+${points}`, '#00f0ff');
@@ -1271,6 +1304,7 @@ export class GameScene extends Phaser.Scene {
             this.lives = Math.max(0, this.lives - 1);
             this.livesText?.setText('LIVES: ' + '⚡'.repeat(this.lives));
             this.showFeedbackText(loser.x, loser.y - 40, 'CRASHED!', '#ff0055');
+            this.resetCombo();
             this.cameras.main.shake(200, 0.012);
             if (this.lives <= 0) {
                 this.triggerGameOver();
@@ -1339,6 +1373,7 @@ export class GameScene extends Phaser.Scene {
                 this.lives = Math.max(0, this.lives - 1);
                 this.livesText?.setText('LIVES: ' + '⚡'.repeat(this.lives));
                 this.showFeedbackText(rider.x, rider.y - 30, 'VOID!', '#ff0055');
+                this.resetCombo();
                 if (this.lives <= 0) {
                     this.triggerGameOver();
                     return;
@@ -1397,6 +1432,18 @@ export class GameScene extends Phaser.Scene {
             color: '#39ff14'
         }).setScrollFactor(0).setDepth(120);
 
+        this.comboText = this.add.text(24, 112, 'COMBO: X1', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '9px',
+            color: '#ffea00'
+        }).setScrollFactor(0).setDepth(120);
+
+        this.overdriveText = this.add.text(24, 134, 'OVERDRIVE: 0%', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '9px',
+            color: '#00f0ff'
+        }).setScrollFactor(0).setDepth(120);
+
         this.roomText = this.add.text(this.scale.width - 24, 20, 'ROOM: ' + this.roomId, {
             fontFamily: '"Press Start 2P"',
             fontSize: '10px',
@@ -1412,6 +1459,135 @@ export class GameScene extends Phaser.Scene {
         }).setOrigin(1, 0).setScrollFactor(0).setDepth(120);
 
         this.updateRoomCount();
+    }
+
+    updatePowerStates() {
+        if (this.comboMultiplier > 1 && this.time.now >= this.comboExpiresAt) {
+            this.resetCombo();
+        }
+
+        const overdriveActive = this.isOverdriveActive();
+        if (overdriveActive && this.boostText) {
+            this.boostText.setText('BOOST: OVERDRIVE');
+            this.boostText.setColor('#39ff14');
+        }
+        if (!overdriveActive && this.wasOverdriveActive) {
+            this.showFeedbackText(this.scale.width / 2, 120, 'OVERDRIVE ENDED', '#ffea00');
+        }
+        this.wasOverdriveActive = overdriveActive;
+        this.updateComboText();
+        this.updateOverdriveText();
+    }
+
+    getPlayerThrustCooldown() {
+        return this.isOverdriveActive()
+            ? Math.round(PLAYER_THRUST_COOLDOWN_MS * OVERDRIVE_THRUST_COOLDOWN_MULTIPLIER)
+            : PLAYER_THRUST_COOLDOWN_MS;
+    }
+
+    isOverdriveActive() {
+        return this.time.now < this.overdriveActiveUntil;
+    }
+
+    registerPlayerVictory() {
+        if (this.time.now <= this.comboExpiresAt) {
+            this.comboMultiplier = Math.min(MAX_COMBO_MULTIPLIER, this.comboMultiplier + 1);
+        } else {
+            this.comboMultiplier = KO_COMBO_START_MULTIPLIER;
+        }
+        this.comboExpiresAt = this.time.now + KO_COMBO_WINDOW_MS;
+        this.updateComboText();
+        this.showFeedbackText(this.player.x, this.player.y - 55, `COMBO X${this.comboMultiplier}`, '#ffea00');
+    }
+
+    resetCombo() {
+        this.comboMultiplier = 1;
+        this.comboExpiresAt = 0;
+        this.updateComboText();
+    }
+
+    addOverdriveCharge(amount) {
+        if (this.isOverdriveActive()) {
+            this.overdriveActiveUntil = Math.max(
+                this.overdriveActiveUntil,
+                this.time.now + Math.round(amount * OVERDRIVE_EXTENSION_MS_PER_CHARGE)
+            );
+            this.updateOverdriveText();
+            return;
+        }
+
+        this.overdriveCharge = Math.min(OVERDRIVE_MAX_CHARGE, this.overdriveCharge + amount);
+        if (this.overdriveCharge >= OVERDRIVE_MAX_CHARGE) {
+            this.activateOverdrive();
+            return;
+        }
+        this.updateOverdriveText();
+    }
+
+    activateOverdrive() {
+        this.overdriveCharge = 0;
+        this.overdriveActiveUntil = this.time.now + OVERDRIVE_DURATION_MS;
+        this.wasOverdriveActive = true;
+        this.showBoostStatus('BOOST: OVERDRIVE', '#ffea00', this.getPlayerThrustCooldown());
+        this.showFeedbackText(this.scale.width / 2, 96, 'OVERDRIVE LIVE!', '#39ff14');
+        this.updateOverdriveText();
+    }
+
+    updateComboText() {
+        if (!this.comboText) {
+            return;
+        }
+
+        if (this.comboMultiplier <= 1 || this.comboExpiresAt <= this.time.now) {
+            this.comboText.setText('COMBO: X1');
+            this.comboText.setColor('#ffea00');
+            return;
+        }
+
+        const secondsLeft = Math.max(0, (this.comboExpiresAt - this.time.now) / 1000);
+        this.comboText.setText(`COMBO: X${this.comboMultiplier} ${secondsLeft.toFixed(1)}s`);
+        this.comboText.setColor(this.comboMultiplier >= COMBO_HIGH_THRESHOLD ? '#39ff14' : '#ffea00');
+    }
+
+    updateOverdriveText() {
+        if (!this.overdriveText) {
+            return;
+        }
+
+        if (this.isOverdriveActive()) {
+            const secondsLeft = Math.max(0, (this.overdriveActiveUntil - this.time.now) / 1000);
+            this.overdriveText.setText(`OVERDRIVE: LIVE ${secondsLeft.toFixed(1)}s`);
+            this.overdriveText.setColor('#39ff14');
+            return;
+        }
+
+        this.overdriveText.setText(`OVERDRIVE: ${Math.round(this.overdriveCharge)}%`);
+        this.overdriveText.setColor(this.overdriveCharge >= 70 ? '#ffea00' : '#00f0ff');
+    }
+
+    showDistrictIntro() {
+        const intro = this.add.text(
+            this.scale.width / 2,
+            this.scale.height * 0.16,
+            `${this.district.name.toUpperCase()}\nKO CHAINS BUILD COMBO • RINGS CHARGE OVERDRIVE`,
+            {
+                fontFamily: '"Press Start 2P"',
+                fontSize: '10px',
+                color: '#ffffff',
+                align: 'center',
+                stroke: '#111122',
+                strokeThickness: 4
+            }
+        ).setOrigin(0.5).setDepth(130).setScrollFactor(0);
+
+        this.tweens.add({
+            targets: intro,
+            alpha: 0,
+            y: intro.y - 18,
+            delay: 1400,
+            duration: 900,
+            onComplete: () => intro.destroy()
+        });
     }
 
     updateRoomCount() {
