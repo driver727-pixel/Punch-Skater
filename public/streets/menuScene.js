@@ -84,7 +84,7 @@ export class StreetsMenuScene extends Phaser.Scene {
         }).setOrigin(0.5);
         card.on('pointerdown', () => {
           this.selectedCharacterId = characterId;
-          this.refreshCharacterButtons();
+          this.updateCharacterButtons();
         });
         this.characterButtons.set(characterId, card);
       });
@@ -93,10 +93,10 @@ export class StreetsMenuScene extends Phaser.Scene {
         fontSize: '11px',
         color: '#ffea00',
       }).setOrigin(0.5);
-      this.refreshCharacterButtons();
+      this.updateCharacterButtons();
     }
 
-    refreshCharacterButtons() {
+    updateCharacterButtons() {
       this.characterButtons?.forEach((card, characterId) => {
         const selected = characterId === this.selectedCharacterId;
         card.setFillStyle(0x0a0a1a, selected ? 0.98 : 0.72);

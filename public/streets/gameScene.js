@@ -45,6 +45,7 @@ const ENEMY_ATTACK_COOLDOWN_MS = 950;
 const ENEMY_ATTACK_RANGE = 64;
 const ENEMY_LEASH_DISTANCE = 520;
 const HORDE_CAP = 7;
+const BOSS_SCALE = 1.32;
 const HAZARD_DAMAGE = 9;
 const HAZARD_COOLDOWN_MS = 900;
 const PICKUP_HEAL_AMOUNT = 22;
@@ -618,7 +619,7 @@ export class StreetsGameScene extends Phaser.Scene {
     mk(width - 56, btnY, '🛹', 0xff6600, () => this.tryHeavyAttack());
     mk(width - 56, btnY - 92, '✦', 0x9d00ff, () => this.trySpecial());
 
-    this.add.text(this.scale.width / 2, 70, 'A/D or ←/→ move • W/S or ↑/↓ lanes • SPACE jump • J/F hit • H/U heavy board swing • K nova', {
+    this.add.text(this.scale.width / 2, 70, 'MOVE A/D+W/S • J HIT • H BOARD • SPACE JUMP • K NOVA', {
       fontFamily: '"Press Start 2P"',
       fontSize: '10px',
       color: '#ffffff',
@@ -1066,7 +1067,7 @@ export class StreetsGameScene extends Phaser.Scene {
     enemy.hp = enemy.maxHp;
     enemy.damage = ENEMY_BASE_DAMAGE * (isBoss ? 1.6 : 1) * enemy.ai.damageMultiplier;
     if (isBoss) {
-      enemy.setScale(1.32);
+      enemy.setScale(BOSS_SCALE);
       enemy.bossName = this.mission?.boss?.name ?? 'Boss';
       this.boss = enemy;
       this.showBanner(enemy.bossName.toUpperCase(), this.mission?.boss?.tactic ?? '');
