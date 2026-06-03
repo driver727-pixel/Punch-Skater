@@ -17,6 +17,11 @@ const PICKUP_RESPAWN_MS = 6000;
 const PICKUP_RADIUS = 16;
 const PICKUP_COLLISION_PADDING = 14;
 
+// Slipstream tint hysteresis thresholds — tint switches on above ENTER and off
+// below EXIT to prevent per-frame flickering when boost hovers at the boundary.
+const SLIPSTREAM_TINT_ENTER = 0.06;
+const SLIPSTREAM_TINT_EXIT = 0.03;
+
 const SLIPSTREAM = Object.freeze({
   RANGE: 120,
   ANGLE_WINDOW: 0.42,
@@ -209,10 +214,21 @@ function updateRacerPhysics(racer, dt, input, waypoints, walls, obstacles, total
     * racer.aiSpeedMult;
 
   // --- Steering ---
+  // Arcade-responsive: lerp angular velocity toward the target rather than
+  // slowly accumulating it, so turns feel instant without killing the drift.
   const steer = input.left ? -1 : input.right ? 1 : 0;
-  const speedFactor = clamp(Math.abs(racer.speed) / 100, 0.2, 1);
-  racer.angularVel += steer * PHYSICS.TURN_RATE * speedFactor * dtSec;
-  racer.angularVel *= (1 - PHYSICS.ANGULAR_DRAG * dtSec);
+  const speedFactor = clamp(Math.abs(racer.speed) / PHYSICS.MAX_SPEED, 0.3, 1.0);
+  const targetAngVel = steer * PHYSICS.TURN_RATE * speedFactor;
+  racer.angularVel = lerp(
+    racer.angularVel,
+    targetAngVel,
+    Math.min(1, PHYSICS.TURN_RESPONSE * dtSec),
+  );
+  // Decay residual angular velocity when not steering
+  if (steer === 0) {
+    racer.angularVel *= (1 - PHYSICS.ANGULAR_DRAG * dtSec);
+    if (Math.abs(racer.angularVel) < 0.001) racer.angularVel = 0;
+  }
   racer.angle += racer.angularVel * dtSec;
   racer.angle = normalizeAngle(racer.angle);
 
@@ -484,19 +500,26 @@ export class RaceGameScene extends Phaser.Scene {
         }
         sprite = this.add.sprite(racer.x, racer.y, sheetKey);
         sprite.baseScale = RACER_SPRITE_DISPLAY_HEIGHT / grid.frameHeight;
+        sprite.isCharacterSprite = true;
         sprite.play(animKey);
       } else {
         // Fallback: procedural skater shape (elongated hexagon).
+        const textureKey = `racer_${racer.id}`;
+        // Clean up any stale texture from a previous scene run to avoid flicker.
+        if (this.textures.exists(textureKey)) {
+          this.textures.remove(textureKey);
+        }
         const color = racer.isPlayer ? 0x00f0ff : (racer.color || 0xff007f);
         const gfx = this.add.graphics();
         gfx.fillStyle(color, 1);
         gfx.fillRoundedRect(-14, -8, 28, 16, 4);
         gfx.fillStyle(0xffffff, 0.9);
         gfx.fillTriangle(10, -4, 14, 0, 10, 4); // direction indicator
-        gfx.generateTexture(`racer_${racer.id}`, 28, 16);
+        gfx.generateTexture(textureKey, 28, 16);
         gfx.destroy();
-        sprite = this.add.sprite(racer.x, racer.y, `racer_${racer.id}`);
+        sprite = this.add.sprite(racer.x, racer.y, textureKey);
         sprite.baseScale = 1;
+        sprite.isCharacterSprite = false;
       }
 
       sprite.setOrigin(0.5, 0.5);
@@ -716,6 +739,64 @@ export class RaceGameScene extends Phaser.Scene {
     gfx.fillStyle(0x111122, 1);
     gfx.fillRect(0, 0, TRACK.WORLD_WIDTH, TRACK.WORLD_HEIGHT);
 
+    // -------------------------------------------------------------------
+    // 2.5D depth: draw "raised curb" wall faces before the road surface.
+    // For each boundary segment, a shadow quad is drawn shifted downward
+    // (+Y) by a wall depth amount, simulating an elevated track seen from
+    // a slight overhead angle.  Only segments whose midpoint faces downward
+    // (toward the viewer) get the effect, preventing double-drawing on the
+    // far side.
+    // -------------------------------------------------------------------
+    const WALL_DEPTH = 10;   // px — height of the visible curb face
+    const WALL_ALPHA = 0.55;
+    const borderColorRaw = Phaser.Display.Color.HexStringToColor(track.colors.border).color;
+
+    // Outer boundary wall face (dark shadow strip)
+    for (let i = 0; i < outer.length; i++) {
+      const curr = outer[i];
+      const next = outer[(i + 1) % outer.length];
+      // Segment normal (pointing away from road centre — outward)
+      const nx = -(next.y - curr.y);
+      const ny = next.x - curr.x;
+      // Only draw the face when it's on the "south" (viewer-facing) side
+      if (ny >= 0) {
+        gfx.fillStyle(0x000000, WALL_ALPHA);
+        gfx.beginPath();
+        gfx.moveTo(curr.x, curr.y);
+        gfx.lineTo(next.x, next.y);
+        gfx.lineTo(next.x, next.y + WALL_DEPTH);
+        gfx.lineTo(curr.x, curr.y + WALL_DEPTH);
+        gfx.closePath();
+        gfx.fillPath();
+        // Highlight top edge of the face with border colour
+        gfx.lineStyle(2, borderColorRaw, 0.45);
+        gfx.beginPath();
+        gfx.moveTo(curr.x, curr.y + WALL_DEPTH);
+        gfx.lineTo(next.x, next.y + WALL_DEPTH);
+        gfx.strokePath();
+      }
+    }
+
+    // Inner boundary wall face (slightly lighter, accent colour)
+    const accentColorRaw = Phaser.Display.Color.HexStringToColor(track.colors.accent).color;
+    for (let i = 0; i < inner.length; i++) {
+      const curr = inner[i];
+      const next = inner[(i + 1) % inner.length];
+      // facingCheck > 0 means this segment's outward normal points downward
+      // (toward the viewer), so its wall face should be visible.
+      const facingCheck = next.x - curr.x;
+      if (facingCheck >= 0) {
+        gfx.fillStyle(accentColorRaw, 0.18);
+        gfx.beginPath();
+        gfx.moveTo(curr.x, curr.y);
+        gfx.lineTo(next.x, next.y);
+        gfx.lineTo(next.x, next.y + WALL_DEPTH);
+        gfx.lineTo(curr.x, curr.y + WALL_DEPTH);
+        gfx.closePath();
+        gfx.fillPath();
+      }
+    }
+
     // Road surface
     gfx.fillStyle(Phaser.Display.Color.HexStringToColor(track.colors.road).color, 1);
     gfx.beginPath();
@@ -727,7 +808,7 @@ export class RaceGameScene extends Phaser.Scene {
     gfx.fillPath();
 
     // Road borders
-    const borderColor = Phaser.Display.Color.HexStringToColor(track.colors.border).color;
+    const borderColor = borderColorRaw;
     gfx.lineStyle(3, borderColor, 0.8);
     gfx.beginPath();
     gfx.moveTo(outer[0].x, outer[0].y);
@@ -742,7 +823,7 @@ export class RaceGameScene extends Phaser.Scene {
     gfx.strokePath();
 
     // Center dashed line
-    const accentColor = Phaser.Display.Color.HexStringToColor(track.colors.accent).color;
+    const accentColor = accentColorRaw;
     gfx.lineStyle(1, accentColor, 0.4);
     for (let i = 0; i < wp.length; i++) {
       if (i % 2 === 0) {
@@ -980,24 +1061,58 @@ export class RaceGameScene extends Phaser.Scene {
       const racer = this.racers[i];
       const sprite = this.racerSprites[i];
       sprite.setPosition(racer.x, racer.y);
-      sprite.setRotation(racer.angle);
 
-      // Nitro visual
+      // 2.5D depth sorting: racers lower on-screen (larger Y) appear in front.
+      sprite.setDepth(10 + (racer.y / TRACK.WORLD_HEIGHT) * 20);
+
+      // Rotation: character sprite sheets stay upright — only flip on X axis so
+      // they never appear upside-down when the racer heads up or left.
+      // cos(angle) < 0 means the racer is heading into the left hemisphere
+      // (angles between π/2 and 3π/2), so mirroring the sprite horizontally
+      // keeps it visually correct without any vertical inversion.
+      // Procedural shapes are direction-symmetric so full rotation is fine.
+      if (sprite.isCharacterSprite) {
+        sprite.setFlipX(Math.cos(racer.angle) < 0);
+      } else {
+        sprite.setRotation(racer.angle);
+      }
+
+      // Nitro / slipstream tint with hysteresis to prevent flickering.
       const baseScale = sprite.baseScale ?? 1;
+      const prevTintState = sprite.tintState ?? 'none';
+      let newTintState;
       if (racer.nitroActive) {
-        sprite.setTint(0xffea00);
+        newTintState = 'nitro';
+      } else if (
+        racer.slipstreamBoost > SLIPSTREAM_TINT_ENTER ||
+        (prevTintState === 'slip' && racer.slipstreamBoost > SLIPSTREAM_TINT_EXIT)
+      ) {
+        newTintState = 'slip';
+      } else {
+        newTintState = 'none';
+      }
+      if (newTintState !== prevTintState) {
+        sprite.tintState = newTintState;
+        if (newTintState === 'nitro') {
+          sprite.setTint(0xffea00);
+        } else if (newTintState === 'slip') {
+          sprite.setTint(0x7cf7ff);
+        } else {
+          sprite.clearTint();
+        }
+      }
+      if (racer.nitroActive) {
         sprite.setScale(baseScale * 1.1);
-      } else if (racer.slipstreamBoost > 0.04) {
-        sprite.setTint(0x7cf7ff);
+      } else if (newTintState === 'slip') {
         sprite.setScale(baseScale * (1 + racer.slipstreamBoost * 0.2));
       } else {
-        sprite.clearTint();
         sprite.setScale(baseScale);
       }
 
       // Name label follows AI
       if (sprite.nameLabel) {
         sprite.nameLabel.setPosition(racer.x, racer.y - 18);
+        sprite.nameLabel.setDepth(sprite.depth + 1);
       }
     }
 
