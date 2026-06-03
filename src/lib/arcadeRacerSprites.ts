@@ -100,15 +100,21 @@ export function buildRacerSpriteSheetPrompt(characterName?: string): string {
     : "the same character shown in the reference image";
   const { columns, rows, frameCount } = RACER_SPRITE_GRID;
   return (
-    `A clean 2D video-game character sprite sheet of ${subject}, preserving their ` +
-    `exact outfit, colors, hair, and proportions. ` +
+    `A crisp 2D arcade-game character sprite sheet of ${subject}. ` +
+    `FIDELITY: replicate the reference image exactly — the character's hair color, ` +
+    `outfit colors (every garment), skin tone, and body proportions must be ` +
+    `pixel-accurate copies of the reference; do NOT invent or alter any color. ` +
+    `These are mature adult characters (mid-20s to 40s); render fully grown adult ` +
+    `anatomy and proportions — NOT chibi, NOT cartoon child, NOT anime-exaggerated ` +
+    `youth, NOT juvenile. ` +
     `LAYOUT: a single image arranged as a strict ${columns}-column by ${rows}-row grid ` +
-    `(${frameCount} evenly spaced, equally sized cells) on a fully transparent background. ` +
+    `(${frameCount} evenly spaced, equally sized cells) on a fully transparent background; ` +
+    `no bleeding between cells, no padding, no border. ` +
     `ANIMATION: the ${frameCount} cells form one smooth looping skateboarding/skating ` +
     `cycle, with the character centered identically in every cell at a consistent scale. ` +
     `PERSPECTIVE: isometric 45-degree top-down 3/4 view, character facing toward the ` +
     `upper-right, suitable for a top-down arcade racer. ` +
-    `STYLE: crisp vector-like game-sprite shading, bold clean outlines, consistent soft ` +
+    `STYLE: semi-realistic game-sprite shading, bold clean outlines, consistent soft ` +
     `top-right lighting, no card frame, no border, no background scenery, no text, no ` +
     `watermark, no UI, no skateboard deck unless worn by the character, no weapons.`
   );
