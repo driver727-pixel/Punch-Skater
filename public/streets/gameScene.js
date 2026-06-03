@@ -26,7 +26,7 @@ import {
   setSkaterJumpOffset,
 } from './skaterFactory.js';
 
-const FAUX_JUMP_GRAVITY = 1500;
+const VISUAL_JUMP_GRAVITY = 1500;
 const LEVEL_PADDING = 900;
 const GATE_SPACING = 980;
 const ATTACK_DURATION_MS = 230;
@@ -90,7 +90,7 @@ function mulberry32(seed) {
   };
 }
 
-function bodyIsGrounded(body) {
+function canPerformGroundedAction(body) {
   return Boolean(body?.gameObject && !body.gameObject.isJumping);
 }
 
@@ -619,7 +619,7 @@ export class StreetsGameScene extends Phaser.Scene {
     mk(width - 56, btnY, '🛹', 0xff6600, () => this.tryHeavyAttack());
     mk(width - 56, btnY - 92, '✦', 0x9d00ff, () => this.trySpecial());
 
-    this.add.text(this.scale.width / 2, 70, 'MOVE A/D+W/S • J HIT • H BOARD • SPACE JUMP • K NOVA', {
+    this.add.text(this.scale.width / 2, 70, 'MOVE A/D+W/S | J HIT | H BOARD | SPACE JUMP | K NOVA', {
       fontFamily: '"Press Start 2P"',
       fontSize: '10px',
       color: '#ffffff',
@@ -730,7 +730,7 @@ export class StreetsGameScene extends Phaser.Scene {
     if (skater.isJumping) {
       const seconds = delta / 1000;
       skater.jumpZ = Math.max(0, (skater.jumpZ || 0) + (skater.jumpVelocity || 0) * seconds);
-      skater.jumpVelocity = (skater.jumpVelocity || 0) - FAUX_JUMP_GRAVITY * seconds;
+      skater.jumpVelocity = (skater.jumpVelocity || 0) - VISUAL_JUMP_GRAVITY * seconds;
       if (skater.jumpZ <= 0 && skater.jumpVelocity < 0) {
         skater.jumpZ = 0;
         skater.jumpVelocity = 0;
@@ -1163,7 +1163,7 @@ export class StreetsGameScene extends Phaser.Scene {
         if (enemy.archetype === 'guard' && adx < range + 18 && this.rng() > 0.58) {
           enemy.retreatUntil = time + Phaser.Math.Between(260, 520);
         }
-        if ((bodyIsGrounded(enemy.body)) && Math.abs(verticalGap) > 34 && this.rng() < profile.jumpChance) {
+        if ((canPerformGroundedAction(enemy.body)) && Math.abs(verticalGap) > 34 && this.rng() < profile.jumpChance) {
           enemy.isJumping = true;
           enemy.jumpVelocity = 330;
           this.playCharacterJumpEffect(enemy, enemy.cosmetics);
