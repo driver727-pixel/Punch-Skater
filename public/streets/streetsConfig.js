@@ -180,6 +180,91 @@ export const STREETS_MISSION_ORDER = Object.freeze([
 
 export const DEFAULT_STREETS_MISSION = 'nightshade-run';
 
+export const STREETS_CHARACTERS = Object.freeze({
+  volt: Object.freeze({
+    id: 'volt',
+    name: 'Volt Vex',
+    tagline: 'Balanced shock striker',
+    bodyVariant: 'striker',
+    colorName: 'Neon Cyan',
+    deck: 'Speedline',
+    weapon: 'Crutch Lance',
+    deckAccentColor: 0xffea00,
+    attackEffect: 'shock',
+    jumpEffect: 'spark-hop',
+    stats: Object.freeze({ attack: 1.08, defense: 1.08, speed: 1, jump: 1, dash: 1 }),
+  }),
+  brick: Object.freeze({
+    id: 'brick',
+    name: 'Brick Battery',
+    tagline: 'Heavy defense bruiser',
+    bodyVariant: 'bruiser',
+    colorName: 'Laser Yellow',
+    deck: 'Gridwave',
+    weapon: 'Street Sign',
+    deckAccentColor: 0xff6600,
+    attackEffect: 'slam',
+    jumpEffect: 'ground-pound',
+    stats: Object.freeze({ attack: 1.22, defense: 1.24, speed: 0.88, jump: 0.9, dash: 0.9 }),
+  }),
+  twist: Object.freeze({
+    id: 'twist',
+    name: 'Twist Night',
+    tagline: 'Spin-jump combo artist',
+    bodyVariant: 'spinner',
+    colorName: 'Cyber Pink',
+    deck: 'Orbit Flip',
+    weapon: 'Hockey Stick',
+    deckAccentColor: 0x9d00ff,
+    attackEffect: 'cyclone',
+    jumpEffect: 'spin',
+    stats: Object.freeze({ attack: 1, defense: 0.98, speed: 1.06, jump: 1.08, dash: 1.06 }),
+  }),
+  luna: Object.freeze({
+    id: 'luna',
+    name: 'Luna Loft',
+    tagline: 'High-jump aerial skater',
+    bodyVariant: 'vault',
+    colorName: 'Toxic Green',
+    deck: 'Moonrail',
+    weapon: 'Crutch Lance',
+    deckAccentColor: 0x39ff14,
+    attackEffect: 'comet',
+    jumpEffect: 'high-arc',
+    stats: Object.freeze({ attack: 1.02, defense: 1, speed: 0.96, jump: 1.32, dash: 0.98 }),
+  }),
+  zip: Object.freeze({
+    id: 'zip',
+    name: 'Zip Zed',
+    tagline: 'Roll-fast lane runner',
+    bodyVariant: 'roller',
+    colorName: 'Neon Cyan',
+    deck: 'Rushline',
+    weapon: 'Hockey Stick',
+    wheelSize: 7,
+    deckAccentColor: 0x00f0ff,
+    attackEffect: 'afterimage',
+    jumpEffect: 'roll',
+    stats: Object.freeze({ attack: 0.92, defense: 0.92, speed: 1.24, jump: 0.98, dash: 1.35 }),
+  }),
+  aegis: Object.freeze({
+    id: 'aegis',
+    name: 'Aegis Ash',
+    tagline: 'Guard stance counterpuncher',
+    bodyVariant: 'shield',
+    colorName: 'Toxic Green',
+    deck: 'Bulwark',
+    weapon: 'Street Sign',
+    deckAccentColor: 0xffffff,
+    attackEffect: 'shield-burst',
+    jumpEffect: 'float',
+    stats: Object.freeze({ attack: 0.98, defense: 1.34, speed: 0.94, jump: 1, dash: 0.92 }),
+  }),
+});
+
+export const STREETS_CHARACTER_ORDER = Object.freeze(['volt', 'brick', 'twist', 'luna', 'zip', 'aegis']);
+export const DEFAULT_STREETS_CHARACTER = 'volt';
+
 const DEFAULT_COSMETICS = Object.freeze({
   colorName: 'Neon Cyan',
   deck: 'Speedline',
@@ -219,23 +304,24 @@ export function mapStatsToFighter(stats = {}, joust = {}) {
   const hype = clampNumber(joust.hype, 0, 100, 50);
 
   return {
-    // Grit is survivability.
-    maxHp: Math.round(80 + grit * 1.4),
+    // Grit is survivability; Streets defaults favor the player so the mode is
+    // winnable before highly tuned forged cards exist.
+    maxHp: Math.round(105 + grit * 1.65),
     // Speed drives top horizontal velocity and acceleration.
-    moveSpeed: Math.round(180 + speed * 1.7),
-    accel: Math.round(900 + speed * 6),
+    moveSpeed: Math.round(205 + speed * 1.9),
+    accel: Math.round(980 + speed * 6.5),
     // Lance drives reach and per-hit damage.
-    attackReach: Math.round(60 + lance * 0.7),
-    attackDamage: Math.round(10 + lance * 0.22),
+    attackReach: Math.round(74 + lance * 0.82),
+    attackDamage: Math.round(15 + lance * 0.28),
     // Shield reduces incoming damage and recovery (dazed) time.
-    damageResist: clampNumber(shield / 220, 0, 0.45, 0.15),
+    damageResist: clampNumber(0.12 + shield / 210, 0, 0.55, 0.22),
     recoverMs: Math.round(900 - shield * 4),
     // Hype fills the special (board-flip nova) meter faster.
     specialChargePerHit: Math.round(14 + hype * 0.22),
     // Stealth slightly improves dash distance (slip the lane).
     dashBoost: Math.round(220 + stealth * 1.3),
     // Range nudges jump strength (more battery = bigger ollies).
-    jumpForce: Math.round(380 + range * 0.6),
+    jumpForce: Math.round(430 + range * 0.75),
   };
 }
 
@@ -320,6 +406,11 @@ export function parseStreetsConfig(search = (typeof window !== 'undefined' ? win
     joust: readJoust(params, 'p'),
   };
 
+  const requestedCharacter = params.get('character');
+  const characterId = requestedCharacter && STREETS_CHARACTERS[requestedCharacter]
+    ? requestedCharacter
+    : DEFAULT_STREETS_CHARACTER;
+
   const playerSpriteUrl = sanitizeMediaUrl(player.cosmetics.characterImageUrl);
   if (playerSpriteUrl) {
     player.cosmetics.characterImageUrl = playerSpriteUrl;
@@ -340,6 +431,7 @@ export function parseStreetsConfig(search = (typeof window !== 'undefined' ? win
     objectiveId,
     districtId,
     player,
+    characterId,
     // Mission-Map round-trip context (echoed back on the result redirect).
     runId: params.get('runId') || null,
     nodeId: params.get('nodeId') || null,

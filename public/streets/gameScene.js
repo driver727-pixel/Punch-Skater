@@ -16,28 +16,36 @@ import {
   STREETS_MISSIONS,
   STREETS_DISTRICTS,
   STREETS_OBJECTIVES,
+  STREETS_CHARACTERS,
+  STREETS_CHARACTER_ORDER,
   mapStatsToFighter,
 } from './streetsConfig.js';
 import {
   createSkater,
   faceSkater,
+  setSkaterJumpOffset,
 } from './skaterFactory.js';
 
-const GRAVITY_Y = 1000;
-const LEVEL_PADDING = 700;
-const GATE_SPACING = 720;
+const VISUAL_JUMP_GRAVITY = 1500;
+const LEVEL_PADDING = 900;
+const GATE_SPACING = 980;
 const ATTACK_DURATION_MS = 230;
 const ATTACK_COOLDOWN_MS = 360;
-const ATTACK_VERTICAL_BAND = 90;
+const HEAVY_ATTACK_DURATION_MS = 420;
+const HEAVY_ATTACK_COOLDOWN_MS = 980;
+const HEAVY_ATTACK_DAMAGE_MULTIPLIER = 2.05;
+const HEAVY_ATTACK_REACH_BONUS = 52;
+const ATTACK_VERTICAL_BAND = 72;
 const DASH_DURATION_MS = 150;
 const DASH_COOLDOWN_MS = 760;
 const DASH_TRAIL_INTERVAL_MS = 38;
-const ENEMY_BASE_HP = 46;
-const ENEMY_BASE_DAMAGE = 8;
+const ENEMY_BASE_HP = 38;
+const ENEMY_BASE_DAMAGE = 6.5;
 const ENEMY_ATTACK_COOLDOWN_MS = 950;
 const ENEMY_ATTACK_RANGE = 64;
 const ENEMY_LEASH_DISTANCE = 520;
 const HORDE_CAP = 7;
+const BOSS_SCALE = 1.32;
 const HAZARD_DAMAGE = 9;
 const HAZARD_COOLDOWN_MS = 900;
 const PICKUP_HEAL_AMOUNT = 22;
@@ -58,6 +66,10 @@ const WINDOW_DENSITY_FACTOR = 3;
 const RAIL_BASE_OFFSET = 18;
 const RAIL_VERTICAL_VARIANCE = 28;
 const TALL_SIGN_THRESHOLD = 0.45;
+const LANE_MOVE_SPEED = 150;
+const LANE_TOP_OFFSET = 160;
+const LANE_BOTTOM_OFFSET = 24;
+const LANE_ATTACK_BAND = 60;
 
 function hashString(value = '') {
   let hash = 2166136261;
@@ -78,8 +90,8 @@ function mulberry32(seed) {
   };
 }
 
-function bodyIsGrounded(body) {
-  return Boolean(body?.blocked?.down || body?.touching?.down);
+function canPerformGroundedAction(body) {
+  return Boolean(body?.gameObject && !body.gameObject.isJumping);
 }
 
 export class StreetsGameScene extends Phaser.Scene {
@@ -117,13 +129,15 @@ export class StreetsGameScene extends Phaser.Scene {
     this.pickups = null;
     this.barrier = null;
     this.hordeTimer = null;
-    this.steer = { left: false, right: false, jump: false, dash: false };
+    this.steer = { left: false, right: false, up: false, down: false, jump: false, dash: false };
   }
 
   create() {
     const { height } = this.scale;
     this.district = STREETS_DISTRICTS[this.districtId] || STREETS_DISTRICTS.nightshade;
     this.groundY = height - 90;
+    this.laneTop = this.groundY - LANE_TOP_OFFSET;
+    this.laneBottom = this.groundY - LANE_BOTTOM_OFFSET;
     this.levelProfile = this.createLevelProfile();
     this.levelWidth = this.computeLevelWidth();
 
@@ -137,25 +151,33 @@ export class StreetsGameScene extends Phaser.Scene {
     this.buildParticles();
 
     // Player fighter — stats from the launching card (or sane defaults).
-    this.playerKnobs = mapStatsToFighter(this.config.player?.stats, this.config.player?.joust);
-    const cosmetics = this.config.player?.cosmetics || {};
-    this.player = createSkater(this, 150, this.groundY - 60, cosmetics);
+    this.playerCharacter = STREETS_CHARACTERS[this.config.characterId] || STREETS_CHARACTERS.volt;
+    this.playerKnobs = this.applyCharacterStats(
+      mapStatsToFighter(this.config.player?.stats, this.config.player?.joust),
+      this.playerCharacter,
+    );
+    const launchCosmetics = this.config.player?.cosmetics || {};
+    const cosmetics = this.resolvePlayerCosmetics(launchCosmetics);
+    this.player = createSkater(this, 150, this.laneBottom, cosmetics);
     this.physics.add.existing(this.player);
     this.player.body.setCollideWorldBounds(true);
-    this.player.body.setGravityY(GRAVITY_Y);
+    this.player.body.setAllowGravity(false);
     this.player.body.setSize(50, 72);
     this.player.body.setOffset(-25, -48);
-    this.player.body.setDragX(900);
-    this.player.body.setMaxVelocity(this.playerKnobs.moveSpeed, 1400);
+    this.player.body.setDrag(900, 1000);
+    this.player.body.setMaxVelocity(this.playerKnobs.moveSpeed, Math.max(LANE_MOVE_SPEED, this.playerKnobs.moveSpeed * 0.72));
     this.player.hp = this.playerKnobs.maxHp;
     this.player.maxHp = this.playerKnobs.maxHp;
     this.player.attackReadyAt = 0;
+    this.player.heavyReadyAt = 0;
     this.player.dashReadyAt = 0;
     this.player.dashUntil = 0;
     this.player.nextDashTrailAt = 0;
     this.player.isAttacking = false;
     this.player.isDazed = false;
-    this.physics.add.collider(this.player, this.ground);
+    this.player.jumpZ = 0;
+    this.player.jumpVelocity = 0;
+    this.player.isJumping = false;
     this.physics.add.overlap(this.player, this.hazards, (_, hazard) => this.handleHazardHit(hazard));
     this.physics.add.overlap(this.player, this.boostPads, (_, pad) => this.handleBoostPad(pad));
     this.physics.add.overlap(this.player, this.pickups, (_, pickup) => this.handlePickup(pickup));
@@ -169,12 +191,42 @@ export class StreetsGameScene extends Phaser.Scene {
     this.showBanner(this.mission ? this.mission.name : 'FREE RUN', this.district.motto);
   }
 
+  resolvePlayerCosmetics(launchCosmetics) {
+    return {
+      ...this.playerCharacter,
+      ...launchCosmetics,
+      // Preserve generated/card sprites when a mission supplies one, but use
+      // the chosen Streets body shape and board palette for vector fallback.
+      name: launchCosmetics.name || this.playerCharacter.name,
+      colorName: launchCosmetics.colorName || this.playerCharacter.colorName,
+      bodyVariant: this.playerCharacter.bodyVariant,
+      deck: this.playerCharacter.deck,
+      weapon: this.playerCharacter.weapon,
+      deckAccentColor: this.playerCharacter.deckAccentColor,
+      wheelSize: this.playerCharacter.wheelSize,
+    };
+  }
+
+  applyCharacterStats(knobs, character) {
+    const stats = character?.stats || {};
+    return {
+      ...knobs,
+      maxHp: Math.round(knobs.maxHp * (stats.defense || 1)),
+      moveSpeed: Math.round(knobs.moveSpeed * (stats.speed || 1)),
+      accel: Math.round(knobs.accel * (stats.speed || 1)),
+      attackDamage: Math.round(knobs.attackDamage * (stats.attack || 1)),
+      damageResist: Phaser.Math.Clamp(knobs.damageResist + ((stats.defense || 1) - 1) * 0.18, 0, 0.66),
+      dashBoost: Math.round(knobs.dashBoost * (stats.dash || 1)),
+      jumpForce: Math.round(knobs.jumpForce * (stats.jump || 1)),
+    };
+  }
+
   computeLevelWidth() {
     const waves = this.getWaveCounts();
     if (this.objectiveId === STREETS_OBJECTIVES.escape.id) {
-      return Math.max(3200 + this.levelProfile.lengthBonus, this.scale.width * 4);
+      return Math.max(4800 + this.levelProfile.lengthBonus, this.scale.width * 5.5);
     }
-    return LEVEL_PADDING + waves.length * GATE_SPACING + LEVEL_PADDING + this.levelProfile.lengthBonus;
+    return LEVEL_PADDING + waves.length * GATE_SPACING + LEVEL_PADDING + this.levelProfile.lengthBonus + 900;
   }
 
   createLevelProfile() {
@@ -182,7 +234,7 @@ export class StreetsGameScene extends Phaser.Scene {
     const variant = variants[Math.floor(this.rng() * variants.length)];
     return {
       variant,
-      lengthBonus: Math.floor(this.rng() * 3) * 160,
+      lengthBonus: 520 + Math.floor(this.rng() * 4) * 240,
       waveBonus: this.rng() > WAVE_BONUS_THRESHOLD ? 1 : 0,
       signDensity: MIN_SIGN_DENSITY + this.rng() * SIGN_DENSITY_RANGE,
       propDensity: MIN_PROP_DENSITY + this.rng() * PROP_DENSITY_RANGE,
@@ -250,6 +302,8 @@ export class StreetsGameScene extends Phaser.Scene {
       far.fillCircle(x + 42, y + 10, 2);
     }
 
+    this.drawDistrictLandmarks(far, mid);
+
     const moon = this.add.graphics().setDepth(-27).setScrollFactor(0.04);
     moon.fillStyle(this.district.haze, 0.18);
     moon.fillCircle(width * 0.76, 80, 44);
@@ -267,6 +321,65 @@ export class StreetsGameScene extends Phaser.Scene {
       murals.fillCircle(x - 44, y, 17);
       murals.fillStyle(this.district.haze, 0.28);
       murals.fillTriangle(x + 8, y + 20, x + 44, y - 18, x + 72, y + 20);
+    }
+  }
+
+  drawDistrictLandmarks(far, mid) {
+    if (this.districtId === 'nightshade') {
+      mid.lineStyle(5, this.district.haze, 0.22);
+      for (let x = 0; x < this.levelWidth; x += 260) {
+        mid.strokeCircle(x + 90, this.groundY - 70, 92);
+        mid.fillStyle(0x050510, 0.44);
+        mid.fillRoundedRect(x + 24, this.groundY - 146, 132, 118, 24);
+        mid.lineStyle(2, this.district.groundEdge, 0.35);
+        mid.lineBetween(x + 18, this.groundY - 112, x + 168, this.groundY - 134);
+      }
+      return;
+    }
+    if (this.districtId === 'glasscity') {
+      for (let x = 40; x < this.levelWidth; x += 180) {
+        const h = 230 + ((x * 13) % 210);
+        mid.fillStyle(0x0b2233, 0.58);
+        mid.fillTriangle(x, this.groundY, x + 64, this.groundY - h, x + 128, this.groundY);
+        mid.lineStyle(2, 0x7dffb6, 0.45);
+        for (let y = this.groundY - h + 34; y < this.groundY - 18; y += 38) {
+          mid.lineBetween(x + 26, y, x + 102, y + 12);
+        }
+      }
+      return;
+    }
+    if (this.districtId === 'batteryville') {
+      for (let x = 100; x < this.levelWidth; x += 320) {
+        mid.fillStyle(0x211006, 0.7);
+        mid.fillRect(x, this.groundY - 160, 96, 150);
+        mid.lineStyle(3, 0xffaa00, 0.55);
+        mid.strokeRect(x, this.groundY - 160, 96, 150);
+        mid.fillStyle(0xff6600, 0.35);
+        mid.fillCircle(x + 48, this.groundY - 88, 32);
+        mid.lineStyle(5, 0xffd166, 0.22);
+        mid.lineBetween(x + 96, this.groundY - 136, x + 210, this.groundY - 190);
+      }
+      return;
+    }
+    if (this.districtId === 'airaway') {
+      far.lineStyle(4, 0xbfeaff, 0.22);
+      for (let x = -60; x < this.levelWidth; x += 300) {
+        const y = this.groundY - 230 - ((x + 600) % 90);
+        far.lineBetween(x, y, x + 240, y - 32);
+        far.fillStyle(0x8ad7ff, 0.18);
+        far.fillEllipse(x + 120, y - 24, 180, 32);
+      }
+      return;
+    }
+    if (this.districtId === 'roads') {
+      for (let x = 70; x < this.levelWidth; x += 240) {
+        mid.lineStyle(3, 0xffea00, 0.35);
+        mid.lineBetween(x, this.groundY - 20, x + 210, this.groundY - 86);
+        mid.fillStyle(0xffc14d, 0.35);
+        mid.fillRoundedRect(x + 42, this.groundY - 118, 96, 34, 4);
+        mid.lineStyle(2, 0xffffff, 0.3);
+        mid.strokeRoundedRect(x + 42, this.groundY - 118, 96, 34, 4);
+      }
     }
   }
 
@@ -292,6 +405,10 @@ export class StreetsGameScene extends Phaser.Scene {
     lane.lineStyle(1, this.district.haze, 0.28);
     for (let x = 0; x < this.levelWidth; x += 92) {
       lane.lineBetween(x, this.groundY + 18, x + 42, this.groundY + 18);
+    }
+    lane.lineStyle(1, this.district.haze, 0.18);
+    for (let y = this.laneTop; y <= this.laneBottom; y += 34) {
+      lane.lineBetween(0, y, this.levelWidth, y);
     }
   }
 
@@ -463,9 +580,13 @@ export class StreetsGameScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys({
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
-      jump: Phaser.Input.Keyboard.KeyCodes.W,
+      up: Phaser.Input.Keyboard.KeyCodes.W,
+      down: Phaser.Input.Keyboard.KeyCodes.S,
+      jump: Phaser.Input.Keyboard.KeyCodes.SPACE,
       attack: Phaser.Input.Keyboard.KeyCodes.J,
       attackAlt: Phaser.Input.Keyboard.KeyCodes.F,
+      heavy: Phaser.Input.Keyboard.KeyCodes.H,
+      heavyAlt: Phaser.Input.Keyboard.KeyCodes.U,
       special: Phaser.Input.Keyboard.KeyCodes.K,
       dash: Phaser.Input.Keyboard.KeyCodes.SHIFT,
       dashAlt: Phaser.Input.Keyboard.KeyCodes.L,
@@ -490,12 +611,15 @@ export class StreetsGameScene extends Phaser.Scene {
 
     mk(56, btnY, '◀', 0x00f0ff, () => { this.steer.left = true; }, () => { this.steer.left = false; });
     mk(146, btnY, '▶', 0x00f0ff, () => { this.steer.right = true; }, () => { this.steer.right = false; });
-    mk(width - 236, btnY, '⤒', 0xffea00, () => { this.steer.jump = true; }, () => { this.steer.jump = false; });
-    mk(width - 146, btnY, '⇥', 0x39ff14, () => { this.steer.dash = true; }, () => { this.steer.dash = false; });
-    mk(width - 56, btnY, '✊', 0xff007f, () => this.tryAttack());
+    mk(236, btnY - 42, '▲', 0x7de7ff, () => { this.steer.up = true; }, () => { this.steer.up = false; });
+    mk(236, btnY + 42, '▼', 0x7de7ff, () => { this.steer.down = true; }, () => { this.steer.down = false; });
+    mk(width - 326, btnY, '⤒', 0xffea00, () => { this.steer.jump = true; }, () => { this.steer.jump = false; });
+    mk(width - 236, btnY, '⇥', 0x39ff14, () => { this.steer.dash = true; }, () => { this.steer.dash = false; });
+    mk(width - 146, btnY, '✊', 0xff007f, () => this.tryAttack());
+    mk(width - 56, btnY, '🛹', 0xff6600, () => this.tryHeavyAttack());
     mk(width - 56, btnY - 92, '✦', 0x9d00ff, () => this.trySpecial());
 
-    this.add.text(this.scale.width / 2, 70, 'ARROWS/A-D move • W/SPACE jump • SHIFT/L dash • J/F hit • K nova', {
+    this.add.text(this.scale.width / 2, 70, 'MOVE A/D+W/S | J HIT | H BOARD | SPACE JUMP | K NOVA', {
       fontFamily: '"Press Start 2P"',
       fontSize: '10px',
       color: '#ffffff',
@@ -507,6 +631,7 @@ export class StreetsGameScene extends Phaser.Scene {
   update(time, delta) {
     if (this.isOver) return;
     this.updateComboState(time);
+    this.updateJumpState(this.player, delta);
     this.handlePlayerInput(time);
     this.handleGates();
     this.updateEnemies(time, delta);
@@ -535,6 +660,8 @@ export class StreetsGameScene extends Phaser.Scene {
     const accel = this.playerKnobs.accel;
     const left = this.cursors.left.isDown || this.keys.left.isDown || this.steer.left;
     const right = this.cursors.right.isDown || this.keys.right.isDown || this.steer.right;
+    const up = this.cursors.up.isDown || this.keys.up.isDown || this.steer.up;
+    const down = this.cursors.down.isDown || this.keys.down.isDown || this.steer.down;
     if (left && !right) {
       body.setAccelerationX(-accel);
       faceSkater(this.player, 'left');
@@ -545,9 +672,18 @@ export class StreetsGameScene extends Phaser.Scene {
       body.setAccelerationX(0);
     }
 
+    if (!this.player.isJumping && up && !down && this.player.y > this.laneTop) {
+      body.setVelocityY(-LANE_MOVE_SPEED);
+    } else if (!this.player.isJumping && down && !up && this.player.y < this.laneBottom) {
+      body.setVelocityY(LANE_MOVE_SPEED);
+    } else if (!this.player.isJumping) {
+      body.setVelocityY(0);
+    }
+    this.player.y = Phaser.Math.Clamp(this.player.y, this.laneTop, this.laneBottom);
+    this.player.setDepth(Math.round(this.player.y));
+
     if (
-      Phaser.Input.Keyboard.JustDown(this.cursors.up)
-      || Phaser.Input.Keyboard.JustDown(this.cursors.space)
+      Phaser.Input.Keyboard.JustDown(this.cursors.space)
       || Phaser.Input.Keyboard.JustDown(this.keys.jump)
       || this.steer.jump
     ) {
@@ -568,6 +704,12 @@ export class StreetsGameScene extends Phaser.Scene {
     ) {
       this.tryAttack(time);
     }
+    if (
+      Phaser.Input.Keyboard.JustDown(this.keys.heavy)
+      || Phaser.Input.Keyboard.JustDown(this.keys.heavyAlt)
+    ) {
+      this.tryHeavyAttack(time);
+    }
     if (Phaser.Input.Keyboard.JustDown(this.keys.special)) {
       this.trySpecial();
     }
@@ -575,10 +717,48 @@ export class StreetsGameScene extends Phaser.Scene {
 
   tryJump() {
     if (this.isOver || this.player.isDazed) return;
-    const body = this.player.body;
-    if (body.blocked.down || body.touching.down) {
-      body.setVelocityY(-this.playerKnobs.jumpForce);
+    if (!this.player.isJumping) {
+      this.player.isJumping = true;
+      this.player.jumpVelocity = this.playerKnobs.jumpForce;
+      this.playCharacterJumpEffect(this.player, this.playerCharacter);
       this.playSfx('sfx-boost', 0.4);
+    }
+  }
+
+  updateJumpState(skater, delta) {
+    if (!skater?.active) return;
+    if (skater.isJumping) {
+      const seconds = delta / 1000;
+      skater.jumpZ = Math.max(0, (skater.jumpZ || 0) + (skater.jumpVelocity || 0) * seconds);
+      skater.jumpVelocity = (skater.jumpVelocity || 0) - VISUAL_JUMP_GRAVITY * seconds;
+      if (skater.jumpZ <= 0 && skater.jumpVelocity < 0) {
+        skater.jumpZ = 0;
+        skater.jumpVelocity = 0;
+        skater.isJumping = false;
+        skater.angle = 0;
+      }
+      setSkaterJumpOffset(skater, skater.jumpZ);
+    } else if (skater.jumpOffset) {
+      setSkaterJumpOffset(skater, 0);
+    }
+    skater.y = Phaser.Math.Clamp(skater.y, this.laneTop, this.laneBottom);
+    skater.setDepth(Math.round(skater.y));
+  }
+
+  playCharacterJumpEffect(skater, character) {
+    const effect = character?.jumpEffect;
+    if (effect === 'spin') {
+      this.tweens.add({ targets: skater.visualRoot, angle: 360, duration: 520, onComplete: () => { skater.visualRoot.angle = 0; } });
+    } else if (effect === 'high-arc') {
+      this.triggerVfx(skater.x, skater.y - 18, 'medium');
+    } else if (effect === 'roll') {
+      this.spawnDashTrail(skater);
+    } else if (effect === 'float') {
+      this.tweens.add({ targets: skater.visualRoot, alpha: 0.72, yoyo: true, duration: 220 });
+    } else if (effect === 'ground-pound') {
+      this.cameras.main.shake(90, 0.004);
+    } else {
+      this.triggerVfx(skater.x, skater.y - 12, 'light');
     }
   }
 
@@ -590,7 +770,6 @@ export class StreetsGameScene extends Phaser.Scene {
     this.player.dashUntil = time + DASH_DURATION_MS;
     this.player.nextDashTrailAt = time;
     this.player.body.setVelocityX(dir * (this.playerKnobs.moveSpeed + this.playerKnobs.dashBoost));
-    this.player.body.setVelocityY(Math.min(this.player.body.velocity.y, -70));
     this.triggerVfx(this.player.x - dir * 20, this.player.y + 8, 'light');
     this.playSfx('sfx-boost', 0.55);
   }
@@ -609,13 +788,39 @@ export class StreetsGameScene extends Phaser.Scene {
       if (!enemy.active || enemy.isDead) return;
       const dx = (enemy.x - this.player.x) * dir;
       const dy = Math.abs(enemy.y - this.player.y);
-      if (dx > -10 && dx < reach && dy < ATTACK_VERTICAL_BAND) {
+      if (dx > -10 && dx < reach && dy < Math.min(ATTACK_VERTICAL_BAND, LANE_ATTACK_BAND)) {
         this.damageEnemy(enemy, this.playerKnobs.attackDamage, dir);
         landed = true;
       }
     });
     if (landed) {
       this.special = Math.min(this.specialMax, this.special + this.playerKnobs.specialChargePerHit);
+    }
+  }
+
+  tryHeavyAttack(time = this.time.now) {
+    if (this.isOver || this.player.isDazed) return;
+    if (time < this.player.heavyReadyAt) return;
+    this.player.heavyReadyAt = time + HEAVY_ATTACK_COOLDOWN_MS;
+    this.player.attackReadyAt = Math.max(this.player.attackReadyAt, time + ATTACK_COOLDOWN_MS * 0.75);
+    this.swingBoard(this.player);
+    this.playSfx('sfx-zap', 0.62);
+
+    const dir = this.player.facing === 'left' ? -1 : 1;
+    const reach = this.playerKnobs.attackReach + HEAVY_ATTACK_REACH_BONUS;
+    let landed = false;
+    this.enemies.forEach((enemy) => {
+      if (!enemy.active || enemy.isDead) return;
+      const dx = (enemy.x - this.player.x) * dir;
+      const dy = Math.abs(enemy.y - this.player.y);
+      if (dx > -22 && dx < reach && dy < LANE_ATTACK_BAND + 16) {
+        this.damageEnemy(enemy, this.playerKnobs.attackDamage * HEAVY_ATTACK_DAMAGE_MULTIPLIER, dir, true);
+        landed = true;
+      }
+    });
+    this.playCharacterAttackEffect(this.playerCharacter, landed);
+    if (landed) {
+      this.special = Math.min(this.specialMax, this.special + this.playerKnobs.specialChargePerHit * 1.6);
     }
   }
 
@@ -674,17 +879,59 @@ export class StreetsGameScene extends Phaser.Scene {
     });
   }
 
-  spawnDashTrail() {
-    const ghost = this.add.container(this.player.x, this.player.y).setDepth(this.player.depth - 1);
-    const color = this.player.cosmetics?.color ?? this.district.haze;
+  swingBoard(skater) {
+    skater.isAttacking = true;
+    const dir = skater.facing === 'left' ? -1 : 1;
+    this.tweens.add({
+      targets: skater.board,
+      angle: dir * 135,
+      x: dir * 18,
+      y: -18,
+      duration: HEAVY_ATTACK_DURATION_MS / 2,
+      yoyo: true,
+      ease: 'Cubic.Out',
+      onComplete: () => {
+        skater.board.angle = 0;
+        skater.board.x = 0;
+        skater.board.y = 18;
+        skater.isAttacking = false;
+      },
+    });
+    this.triggerVfx(skater.x + dir * 58, skater.y - 16, 'heavy');
+  }
+
+  playCharacterAttackEffect(character, landed) {
+    const x = this.player.x + (this.player.facing === 'left' ? -70 : 70);
+    const y = this.player.y - 18;
+    if (character?.attackEffect === 'cyclone') {
+      this.tweens.add({ targets: this.player.visualRoot, angle: 360, duration: 280, onComplete: () => { this.player.visualRoot.angle = 0; } });
+    } else if (character?.attackEffect === 'afterimage') {
+      this.spawnDashTrail(this.player);
+    } else if (character?.attackEffect === 'slam') {
+      this.cameras.main.shake(140, 0.01);
+    } else if (character?.attackEffect === 'shield-burst') {
+      const shield = this.add.circle(this.player.x, this.player.y - 16, 28, 0xffffff, 0.12)
+        .setStrokeStyle(3, 0xffffff)
+        .setDepth(130);
+      this.tweens.add({ targets: shield, scale: 1.8, alpha: 0, duration: 260, onComplete: () => shield.destroy() });
+    } else if (character?.attackEffect === 'comet') {
+      this.triggerVfx(x, y - 18, 'medium');
+    } else {
+      this.triggerVfx(x, y, landed ? 'heavy' : 'medium');
+    }
+  }
+
+  spawnDashTrail(skater = this.player) {
+    const ghost = this.add.container(skater.x, skater.y).setDepth(skater.depth - 1);
+    const color = skater.cosmetics?.color ?? this.district.haze;
     const silhouette = this.add.rectangle(0, -10, 36, 66, color, 0.16);
     const board = this.add.rectangle(0, 18, 54, 7, 0xffffff, 0.18);
     ghost.add([silhouette, board]);
-    ghost.setScale(this.player.scaleX, 1);
+    ghost.setScale(skater.scaleX, 1);
     this.tweens.add({
       targets: ghost,
       alpha: 0,
-      x: ghost.x - this.player.scaleX * 34,
+      x: ghost.x - skater.scaleX * 34,
       duration: 220,
       onComplete: () => ghost.destroy(),
     });
@@ -707,7 +954,8 @@ export class StreetsGameScene extends Phaser.Scene {
     pad.setData('lastBoostAt', now);
     const dir = this.player.facing === 'left' ? -1 : 1;
     this.player.body.setVelocityX(dir * (this.playerKnobs.moveSpeed + BOOST_PAD_POWER));
-    this.player.body.setVelocityY(-this.playerKnobs.jumpForce * 0.72);
+    this.player.isJumping = true;
+    this.player.jumpVelocity = Math.max(this.player.jumpVelocity || 0, this.playerKnobs.jumpForce * 0.72);
     this.triggerVfx(pad.x, pad.y - 10, 'medium');
     this.playSfx('sfx-boost', 0.5);
   }
@@ -790,15 +1038,15 @@ export class StreetsGameScene extends Phaser.Scene {
 
   spawnEnemy(x, isBoss) {
     const cosmetics = this.pickEnemyCosmetics(isBoss);
-    const enemy = createSkater(this, x, this.groundY - 60, cosmetics);
+    const enemyY = Phaser.Math.Between(Math.round(this.laneTop), Math.round(this.laneBottom));
+    const enemy = createSkater(this, x, enemyY, cosmetics);
     this.physics.add.existing(enemy);
     enemy.body.setCollideWorldBounds(false);
-    enemy.body.setGravityY(GRAVITY_Y);
+    enemy.body.setAllowGravity(false);
     enemy.body.setSize(50, 72);
     enemy.body.setOffset(-25, -48);
-    enemy.body.setDragX(700);
-    enemy.body.setMaxVelocity(this.playerKnobs.moveSpeed * (isBoss ? 0.86 : 0.96), 1400);
-    this.physics.add.collider(enemy, this.ground);
+    enemy.body.setDrag(700, 900);
+    enemy.body.setMaxVelocity(this.playerKnobs.moveSpeed * (isBoss ? 0.78 : 0.88), LANE_MOVE_SPEED);
     this.physics.add.overlap(enemy, this.boostPads, (enemyObject, pad) => this.handleEnemyBoostPad(enemyObject, pad));
 
     enemy.isEnemy = true;
@@ -809,6 +1057,9 @@ export class StreetsGameScene extends Phaser.Scene {
     enemy.thinkAt = 0;
     enemy.retreatUntil = 0;
     enemy.laneOffset = Phaser.Math.Between(-24, 24);
+    enemy.jumpZ = 0;
+    enemy.jumpVelocity = 0;
+    enemy.isJumping = false;
     enemy.archetype = this.pickEnemyArchetype(isBoss);
     enemy.ai = this.enemyAiProfile(enemy.archetype, isBoss);
     const hpMul = isBoss ? (this.mission?.boss?.hpMultiplier ?? 3) : 1;
@@ -816,7 +1067,7 @@ export class StreetsGameScene extends Phaser.Scene {
     enemy.hp = enemy.maxHp;
     enemy.damage = ENEMY_BASE_DAMAGE * (isBoss ? 1.6 : 1) * enemy.ai.damageMultiplier;
     if (isBoss) {
-      enemy.setScale(1.25);
+      enemy.setScale(BOSS_SCALE);
       enemy.bossName = this.mission?.boss?.name ?? 'Boss';
       this.boss = enemy;
       this.showBanner(enemy.bossName.toUpperCase(), this.mission?.boss?.tactic ?? '');
@@ -836,19 +1087,28 @@ export class StreetsGameScene extends Phaser.Scene {
   }
 
   pickEnemyCosmetics(isBoss) {
+    const rosterId = Phaser.Utils.Array.GetRandom(STREETS_CHARACTER_ORDER);
+    const roster = STREETS_CHARACTERS[rosterId] || STREETS_CHARACTERS.volt;
     if (isBoss && this.mission?.boss) {
       return {
+        ...roster,
         colorName: this.mission.boss.color,
         weapon: this.mission.boss.weapon,
-        deck: 'Gridwave',
+        deck: 'Rival Gridwave',
+        bodyVariant: 'rival',
+        deckAccentColor: this.district.groundEdge,
       };
     }
     const colors = this.mission?.enemyColors ?? ['Cyber Pink', 'Toxic Green'];
     const weapons = this.mission?.enemyWeapons ?? ['Crutch Lance', 'Street Sign'];
     return {
+      ...roster,
       colorName: Phaser.Utils.Array.GetRandom(colors),
       weapon: Phaser.Utils.Array.GetRandom(weapons),
-      deck: 'Gridwave',
+      deck: 'Rival Gridwave',
+      bodyVariant: this.rng() > 0.5 ? 'rival' : roster.bodyVariant,
+      deckAccentColor: this.district.groundEdge,
+      wheelSize: (roster.wheelSize || 5) + 1,
     };
   }
 
@@ -879,6 +1139,7 @@ export class StreetsGameScene extends Phaser.Scene {
     let aliveInWave = 0;
     this.enemies.forEach((enemy) => {
       if (!enemy.active || enemy.isDead) return;
+      this.updateJumpState(enemy, delta);
       if (!enemy.isDazed) aliveInWave += 1;
       if (enemy.isDazed) {
         enemy.setAlpha(0.5);
@@ -902,8 +1163,10 @@ export class StreetsGameScene extends Phaser.Scene {
         if (enemy.archetype === 'guard' && adx < range + 18 && this.rng() > 0.58) {
           enemy.retreatUntil = time + Phaser.Math.Between(260, 520);
         }
-        if ((bodyIsGrounded(enemy.body)) && Math.abs(verticalGap) > 34 && this.rng() < profile.jumpChance) {
-          enemy.body.setVelocityY(-360);
+        if ((canPerformGroundedAction(enemy.body)) && Math.abs(verticalGap) > 34 && this.rng() < profile.jumpChance) {
+          enemy.isJumping = true;
+          enemy.jumpVelocity = 330;
+          this.playCharacterJumpEffect(enemy, enemy.cosmetics);
         }
       }
 
@@ -921,11 +1184,22 @@ export class StreetsGameScene extends Phaser.Scene {
       } else {
         enemy.body.setAccelerationX(0);
         // In range: attack on cooldown.
-        if (time >= enemy.attackReadyAt && adx < range && Math.abs(verticalGap) < ATTACK_VERTICAL_BAND) {
+        if (time >= enemy.attackReadyAt && adx < range && Math.abs(verticalGap) < LANE_ATTACK_BAND) {
           enemy.attackReadyAt = time + Math.max(560, profile.cooldown || ENEMY_ATTACK_COOLDOWN_MS);
           this.swingWeapon(enemy);
           this.damagePlayer(enemy.damage, dx < 0 ? -1 : 1);
         }
+      }
+
+      if (!enemy.isJumping) {
+        const targetLane = Phaser.Math.Clamp(this.player.y + enemy.laneOffset, this.laneTop, this.laneBottom);
+        const laneDelta = targetLane - enemy.y;
+        if (Math.abs(laneDelta) > 8 && !isLeashed) {
+          enemy.body.setVelocityY(Math.sign(laneDelta) * LANE_MOVE_SPEED * 0.72);
+        } else {
+          enemy.body.setVelocityY(0);
+        }
+        enemy.y = Phaser.Math.Clamp(enemy.y, this.laneTop, this.laneBottom);
       }
     });
 
@@ -950,7 +1224,8 @@ export class StreetsGameScene extends Phaser.Scene {
     enemy.setData('lastBoostAt', now);
     const dir = this.player.x < enemy.x ? -1 : 1;
     enemy.body.setVelocityX(dir * (this.playerKnobs.moveSpeed * 0.86 + 180));
-    enemy.body.setVelocityY(-320);
+    enemy.isJumping = true;
+    enemy.jumpVelocity = 340;
   }
 
   damageEnemy(enemy, amount, dir, heavy = false) {
@@ -960,7 +1235,8 @@ export class StreetsGameScene extends Phaser.Scene {
     this.triggerVfx(enemy.x, enemy.y - 20, heavy ? 'heavy' : 'medium');
     this.flash(enemy);
     enemy.body.setVelocityX(dir * (heavy ? 360 : 220));
-    enemy.body.setVelocityY(-120);
+    enemy.isJumping = true;
+    enemy.jumpVelocity = heavy ? 320 : 220;
     if (enemy.hp <= 0) {
       this.killEnemy(enemy);
     }
@@ -989,7 +1265,8 @@ export class StreetsGameScene extends Phaser.Scene {
     this.resetCombo();
     this.flash(this.player);
     this.player.body.setVelocityX(dir * 220);
-    this.player.body.setVelocityY(-140);
+    this.player.isJumping = true;
+    this.player.jumpVelocity = Math.max(this.player.jumpVelocity || 0, 260);
     this.triggerVfx(this.player.x, this.player.y - 20, 'medium');
     this.cameras.main.shake(120, 0.008);
     if (this.player.hp <= 0) {
@@ -1060,6 +1337,8 @@ export class StreetsGameScene extends Phaser.Scene {
       .setOrigin(0, 0.5).setScrollFactor(0).setDepth(121);
     this.dashPip = this.add.rectangle(190, 48, 42, 7, 0x39ff14)
       .setOrigin(0, 0.5).setScrollFactor(0).setDepth(121);
+    this.heavyPip = this.add.rectangle(238, 48, 42, 7, 0xff6600)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(121);
 
     this.scoreText = this.add.text(this.scale.width - 20, 16, 'SCORE 0', {
       fontFamily: '"Press Start 2P"', fontSize: '12px', color: '#00f0ff',
@@ -1121,6 +1400,9 @@ export class StreetsGameScene extends Phaser.Scene {
     const dashFrac = Phaser.Math.Clamp(1 - ((this.player.dashReadyAt - this.time.now) / DASH_COOLDOWN_MS), 0, 1);
     this.dashPip.setSize(42 * dashFrac, 7);
     this.dashPip.setFillStyle(dashFrac >= 1 ? 0x39ff14 : 0x1f6f5b);
+    const heavyFrac = Phaser.Math.Clamp(1 - ((this.player.heavyReadyAt - this.time.now) / HEAVY_ATTACK_COOLDOWN_MS), 0, 1);
+    this.heavyPip.setSize(42 * heavyFrac, 7);
+    this.heavyPip.setFillStyle(heavyFrac >= 1 ? 0xff6600 : 0x6f351f);
     this.scoreText.setText('SCORE ' + this.score);
     this.progressText.setText(this.objectiveStatusLabel());
 
