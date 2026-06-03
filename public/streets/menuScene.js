@@ -14,6 +14,8 @@ import {
   STREETS_MISSION_ORDER,
   STREETS_OBJECTIVES,
   STREETS_DISTRICTS,
+  STREETS_CHARACTERS,
+  STREETS_CHARACTER_ORDER,
 } from './streetsConfig.js';
 
 export class StreetsMenuScene extends Phaser.Scene {
@@ -24,6 +26,7 @@ export class StreetsMenuScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
     this.config = parseStreetsConfig();
+    this.selectedCharacterId = this.config.characterId;
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x05030f, 1);
     this.add.text(width / 2, height * 0.1, 'STREETS', {
@@ -40,11 +43,68 @@ export class StreetsMenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.setupMusic();
+    this.renderCharacterPicker();
 
     if (this.config.mission && this.config.launchedFromMission) {
       this.renderMissionBriefing();
     } else {
       this.renderMissionPicker();
+    }
+
+    renderCharacterPicker() {
+      const { width, height } = this.scale;
+      const y = height * 0.22;
+      this.add.text(width / 2, y - 32, 'CHOOSE YOUR SKATER', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '9px',
+        color: '#ffffff',
+      }).setOrigin(0.5);
+
+      this.characterButtons = new Map();
+      const cardWidth = Math.min(104, Math.max(72, width / 7.2));
+      const startX = width / 2 - ((STREETS_CHARACTER_ORDER.length - 1) * cardWidth) / 2;
+      STREETS_CHARACTER_ORDER.forEach((characterId, idx) => {
+        const character = STREETS_CHARACTERS[characterId];
+        const x = startX + idx * cardWidth;
+        const selected = characterId === this.selectedCharacterId;
+        const card = this.add.rectangle(x, y, cardWidth - 8, 54, 0x0a0a1a, selected ? 0.98 : 0.72);
+        card.setStrokeStyle(selected ? 3 : 1, selected ? 0xffea00 : 0x00f0ff);
+        card.setInteractive({ cursor: 'pointer' });
+        const color = character.deckAccentColor ? `#${character.deckAccentColor.toString(16).padStart(6, '0')}` : '#00f0ff';
+        this.add.text(x, y - 13, character.name.split(' ')[0].toUpperCase(), {
+          fontFamily: '"Press Start 2P"',
+          fontSize: '7px',
+          color,
+        }).setOrigin(0.5);
+        this.add.text(x, y + 10, `${Math.round((character.stats.attack || 1) * 10)}A ${Math.round((character.stats.defense || 1) * 10)}D`, {
+          fontFamily: 'Orbitron, sans-serif',
+          fontSize: '10px',
+          color: '#ffffff',
+        }).setOrigin(0.5);
+        card.on('pointerdown', () => {
+          this.selectedCharacterId = characterId;
+          this.refreshCharacterButtons();
+        });
+        this.characterButtons.set(characterId, card);
+      });
+      this.characterTagline = this.add.text(width / 2, y + 42, '', {
+        fontFamily: 'Orbitron, sans-serif',
+        fontSize: '11px',
+        color: '#ffea00',
+      }).setOrigin(0.5);
+      this.refreshCharacterButtons();
+    }
+
+    refreshCharacterButtons() {
+      this.characterButtons?.forEach((card, characterId) => {
+        const selected = characterId === this.selectedCharacterId;
+        card.setFillStyle(0x0a0a1a, selected ? 0.98 : 0.72);
+        card.setStrokeStyle(selected ? 3 : 1, selected ? 0xffea00 : 0x00f0ff);
+      });
+      const character = STREETS_CHARACTERS[this.selectedCharacterId];
+      if (character && this.characterTagline) {
+        this.characterTagline.setText(character.tagline.toUpperCase());
+      }
     }
   }
 
@@ -107,14 +167,14 @@ export class StreetsMenuScene extends Phaser.Scene {
 
   renderMissionPicker() {
     const { width, height } = this.scale;
-    this.add.text(width / 2, height * 0.24, 'CHOOSE A RUN', {
+    this.add.text(width / 2, height * 0.31, 'CHOOSE A RUN', {
       fontFamily: '"Press Start 2P"',
       fontSize: '12px',
       color: '#7de7ff',
     }).setOrigin(0.5);
 
-    const startY = height * 0.32;
-    const spacing = Math.min(64, height * 0.1);
+    const startY = height * 0.38;
+    const spacing = Math.min(58, height * 0.087);
     STREETS_MISSION_ORDER.forEach((missionId, idx) => {
       const mission = STREETS_MISSIONS[missionId];
       const district = STREETS_DISTRICTS[mission.district];
@@ -160,7 +220,7 @@ export class StreetsMenuScene extends Phaser.Scene {
     const music = this.sound.get('street-music');
     if (music) music.stop();
     this.scene.start('StreetsGameScene', {
-      config: this.config,
+      config: { ...this.config, characterId: this.selectedCharacterId },
       missionId,
     });
   }
