@@ -134,10 +134,11 @@ export const PHYSICS = Object.freeze({
   ACCELERATION: 280,
   BRAKE_FORCE: 400,
   REVERSE_MAX: 100,
-  TURN_RATE: 3.2,          // radians/sec at max
-  TURN_GRIP_FACTOR: 0.7,   // how much forward speed reduces at full turn (drift)
+  TURN_RATE: 3.5,          // radians/sec at max angular velocity
+  TURN_RESPONSE: 16,       // how quickly angular velocity converges to target (higher = snappier)
+  TURN_GRIP_FACTOR: 0.75,  // how much forward speed reduces at full turn (drift)
   DRAG: 180,               // natural slowdown
-  ANGULAR_DRAG: 6.0,       // how quickly rotation stops
+  ANGULAR_DRAG: 3.0,       // how quickly rotation stops when not steering
   DRIFT_LATERAL_DAMPING: 0.88, // per-frame multiplier on lateral velocity (< 1 = slide)
   DRIFT_NEUTRAL_DAMPING: 0.95, // lateral damping when not steering
   GRIP_ANGULAR_FACTOR: 0.3,    // angular velocity multiplier for grip loss
