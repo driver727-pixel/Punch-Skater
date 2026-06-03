@@ -126,6 +126,14 @@ export const RACE_TRACKS = {
 
 export const DEFAULT_DISTRICT = 'airaway';
 
+export function buildDistrictBackgroundKey(district) {
+  return `district-bg:${district || DEFAULT_DISTRICT}`;
+}
+
+export function getDistrictBackgroundUrl(district) {
+  return new URL(`../assets/backgrounds/${district || DEFAULT_DISTRICT}.jpg`, import.meta.url).href;
+}
+
 // ---------------------------------------------------------------------------
 // Physics tuning — skate feel
 // ---------------------------------------------------------------------------
