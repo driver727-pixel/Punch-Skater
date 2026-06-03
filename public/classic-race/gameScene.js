@@ -488,7 +488,7 @@ export class RaceGameScene extends Phaser.Scene {
       let sprite;
       if (hasSheet) {
         sprite = this.add.sprite(racer.x, racer.y, sheetKey);
-        sprite.setFrame(Math.min(RACER_STATIC_FRAME, Math.max(0, grid.frameCount - 1)));
+        sprite.setFrame(Math.max(0, Math.min(RACER_STATIC_FRAME, grid.frameCount - 1)));
         sprite.baseScale = RACER_SPRITE_DISPLAY_HEIGHT / grid.frameHeight;
         sprite.isCharacterSprite = true;
       } else {
@@ -750,7 +750,6 @@ export class RaceGameScene extends Phaser.Scene {
     gfx.beginPath();
     gfx.moveTo(outer[0].x + 18, outer[0].y + 28);
     for (let i = 1; i < outer.length; i++) gfx.lineTo(outer[i].x + 18, outer[i].y + 28);
-    gfx.closePath();
     for (let i = inner.length - 1; i >= 0; i--) gfx.lineTo(inner[i].x + 18, inner[i].y + 28);
     gfx.closePath();
     gfx.fillPath();
@@ -851,8 +850,8 @@ export class RaceGameScene extends Phaser.Scene {
       const nx = -dy / len;
       const ny = dx / len;
       const postCount = Math.max(1, Math.floor(len / 90));
-      for (let j = 0; j <= postCount; j++) {
-        const t = j / (postCount + 1);
+      for (let j = 0; j < postCount; j++) {
+        const t = (j + 1) / (postCount + 1);
         const cx = lerp(curr.x, nextPoint.x, t);
         const cy = lerp(curr.y, nextPoint.y, t);
         for (const side of [-1, 1]) {
