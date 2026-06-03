@@ -67,9 +67,18 @@ const RAIL_BASE_OFFSET = 18;
 const RAIL_VERTICAL_VARIANCE = 28;
 const TALL_SIGN_THRESHOLD = 0.45;
 const LANE_MOVE_SPEED = 150;
-const LANE_TOP_OFFSET = 160;
+const LANE_TOP_OFFSET = 200;
 const LANE_BOTTOM_OFFSET = 24;
 const LANE_ATTACK_BAND = 60;
+// 2.5D depth scaling: characters appear smaller when near laneTop (far from
+// camera) and full-size at laneBottom (close to camera).
+const DEPTH_SCALE_FAR = 0.74;
+const DEPTH_SCALE_NEAR = 1.0;
+// At this many pixels of jump height the shadow is fully faded (alpha floor 0.3).
+const JUMP_SHADOW_FADE_HEIGHT = 260;
+// Each step toward laneTop the floor-stripe gap is multiplied by this factor,
+// producing classic perspective compression toward the vanishing point.
+const PERSPECTIVE_COMPRESSION = 0.84;
 
 function hashString(value = '') {
   let hash = 2166136261;
@@ -178,6 +187,7 @@ export class StreetsGameScene extends Phaser.Scene {
     this.player.jumpZ = 0;
     this.player.jumpVelocity = 0;
     this.player.isJumping = false;
+    this.player.baseScale = 1.0;
     this.physics.add.overlap(this.player, this.hazards, (_, hazard) => this.handleHazardHit(hazard));
     this.physics.add.overlap(this.player, this.boostPads, (_, pad) => this.handleBoostPad(pad));
     this.physics.add.overlap(this.player, this.pickups, (_, pickup) => this.handlePickup(pickup));
@@ -406,9 +416,37 @@ export class StreetsGameScene extends Phaser.Scene {
     for (let x = 0; x < this.levelWidth; x += 92) {
       lane.lineBetween(x, this.groundY + 18, x + 42, this.groundY + 18);
     }
-    lane.lineStyle(1, this.district.haze, 0.18);
-    for (let y = this.laneTop; y <= this.laneBottom; y += 34) {
-      lane.lineBetween(0, y, this.levelWidth, y);
+
+    // Perspective-compressed lane stripes: stripes crowd together near laneTop
+    // (vanishing point) to simulate a receding ground plane — the key visual
+    // of 2.5D belt-scrollers.
+    let stripY = this.laneBottom;
+    let stripStep = 28;
+    while (stripY >= this.laneTop && stripStep > 2) {
+      const nearFrac = (this.laneBottom - stripY) / (this.laneBottom - this.laneTop);
+      lane.lineStyle(1, this.district.haze, 0.08 + (1 - nearFrac) * 0.1);
+      lane.lineBetween(0, Math.round(stripY), this.levelWidth, Math.round(stripY));
+      stripStep = Math.max(2, stripStep * PERSPECTIVE_COMPRESSION);
+      stripY -= stripStep;
+    }
+
+    // Subtle floor-plane fill: brighter/lighter near camera (laneBottom) and
+    // fades away toward laneTop to reinforce the depth gradient.
+    const floorFill = this.add.graphics().setDepth(-9);
+    const floorSteps = 22;
+    const stepH = (this.laneBottom - this.laneTop) / floorSteps;
+    for (let i = 0; i < floorSteps; i += 1) {
+      const fillY = this.laneBottom - i * stepH;
+      const frac = i / floorSteps;
+      floorFill.fillStyle(this.district.groundEdge, 0.015 + (1 - frac) * 0.03);
+      floorFill.fillRect(0, Math.round(fillY - stepH), this.levelWidth, Math.round(stepH) + 1);
+    }
+
+    // Vertical tile-line marks — read as floor seams receding into the distance.
+    const floorMarks = this.add.graphics().setDepth(-8);
+    for (let x = 200; x < this.levelWidth; x += 380) {
+      floorMarks.lineStyle(1, this.district.groundEdge, 0.07);
+      floorMarks.lineBetween(x, this.laneBottom, x, this.laneTop);
     }
   }
 
@@ -631,8 +669,8 @@ export class StreetsGameScene extends Phaser.Scene {
   update(time, delta) {
     if (this.isOver) return;
     this.updateComboState(time);
-    this.updateJumpState(this.player, delta);
     this.handlePlayerInput(time);
+    this.updateJumpState(this.player, delta);
     this.handleGates();
     this.updateEnemies(time, delta);
     this.handlePackagePickup();
@@ -725,6 +763,34 @@ export class StreetsGameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Apply perspective depth scale to a skater based on its Y position in the
+   * lane. Characters near laneBottom (close to camera) render at full size;
+   * those near laneTop (far from camera) shrink to DEPTH_SCALE_FAR. The
+   * horizontal flip for facing direction is applied here too so faceSkater()
+   * doesn't need to clobber the Y scale.
+   */
+  applyDepthScale(skater) {
+    if (!skater?.active) return;
+    const laneRange = this.laneBottom - this.laneTop;
+    if (laneRange <= 0) return;
+    const laneFrac = Phaser.Math.Clamp((skater.y - this.laneTop) / laneRange, 0, 1);
+    const depthFactor = DEPTH_SCALE_FAR + laneFrac * (DEPTH_SCALE_NEAR - DEPTH_SCALE_FAR);
+    const base = skater.baseScale ?? 1.0;
+    const s = base * depthFactor;
+    const flip = skater.facing === 'left' ? -1 : 1;
+    skater.setScale(flip * s, s);
+
+    const shadow = skater.shadow;
+    if (!shadow) return;
+    const jumpLift = skater.jumpOffset || 0;
+    const jumpFade = Math.max(0.3, 1 - jumpLift / JUMP_SHADOW_FADE_HEIGHT);
+    shadow.setAlpha((0.18 + laneFrac * 0.22) * jumpFade);
+    shadow.setSize((28 + laneFrac * 22) * base, (5 + laneFrac * 6) * base);
+    // Shadow "stays on the ground" — it lifts slightly less than the character.
+    shadow.y = 26 + jumpLift * 0.5;
+  }
+
   updateJumpState(skater, delta) {
     if (!skater?.active) return;
     if (skater.isJumping) {
@@ -743,6 +809,7 @@ export class StreetsGameScene extends Phaser.Scene {
     }
     skater.y = Phaser.Math.Clamp(skater.y, this.laneTop, this.laneBottom);
     skater.setDepth(Math.round(skater.y));
+    this.applyDepthScale(skater);
   }
 
   playCharacterJumpEffect(skater, character) {
@@ -1051,6 +1118,7 @@ export class StreetsGameScene extends Phaser.Scene {
 
     enemy.isEnemy = true;
     enemy.isBoss = Boolean(isBoss);
+    enemy.baseScale = isBoss ? BOSS_SCALE : 1.0;
     enemy.isDead = false;
     enemy.isDazed = false;
     enemy.attackReadyAt = 0;
@@ -1067,7 +1135,6 @@ export class StreetsGameScene extends Phaser.Scene {
     enemy.hp = enemy.maxHp;
     enemy.damage = ENEMY_BASE_DAMAGE * (isBoss ? 1.6 : 1) * enemy.ai.damageMultiplier;
     if (isBoss) {
-      enemy.setScale(BOSS_SCALE);
       enemy.bossName = this.mission?.boss?.name ?? 'Boss';
       this.boss = enemy;
       this.showBanner(enemy.bossName.toUpperCase(), this.mission?.boss?.tactic ?? '');
@@ -1201,6 +1268,8 @@ export class StreetsGameScene extends Phaser.Scene {
         }
         enemy.y = Phaser.Math.Clamp(enemy.y, this.laneTop, this.laneBottom);
       }
+      // Re-apply depth scale after AI may have changed the facing this tick.
+      this.applyDepthScale(enemy);
     });
 
     // Wave cleared check.
