@@ -823,13 +823,16 @@ export class GameScene extends Phaser.Scene {
     layoutMobileControls(width, height) {
         if (!this.mobileControls) return;
         const baseY = height - 85;
+        const leftX  = Math.max(56, Math.min(100, Math.round(width * 0.12)));
+        const rightX = leftX + 100;
+        const brakeX = Math.round((leftX + rightX) / 2);
 
-        this._mbBtnLeft.btn.setPosition(60, baseY);
-        this._mbBtnLeft.txt.setPosition(60, baseY);
-        this._mbBtnRight.btn.setPosition(160, baseY);
-        this._mbBtnRight.txt.setPosition(160, baseY);
-        this._mbBtnBrake.btn.setPosition(110, baseY - 70);
-        this._mbBtnBrake.txt.setPosition(110, baseY - 70);
+        this._mbBtnLeft.btn.setPosition(leftX, baseY);
+        this._mbBtnLeft.txt.setPosition(leftX, baseY);
+        this._mbBtnRight.btn.setPosition(rightX, baseY);
+        this._mbBtnRight.txt.setPosition(rightX, baseY);
+        this._mbBtnBrake.btn.setPosition(brakeX, baseY - 70);
+        this._mbBtnBrake.txt.setPosition(brakeX, baseY - 70);
 
         this._mbBtnThrust.btn.setPosition(width - 70, baseY - 20);
         this._mbBtnThrust.txt.setPosition(width - 70, baseY - 20);
