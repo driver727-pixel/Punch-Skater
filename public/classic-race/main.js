@@ -6,7 +6,11 @@
  */
 import Phaser from './phaserRuntime.js';
 import { RaceGameScene } from './gameScene.js';
-import { parseRaceConfig } from './raceConfig.js';
+import {
+  buildDistrictBackgroundKey,
+  getDistrictBackgroundUrl,
+  parseRaceConfig,
+} from './raceConfig.js';
 import {
   assignRacerSprites,
   buildRacerSheetTextureKey,
@@ -74,8 +78,15 @@ class BootScene extends Phaser.Scene {
     const racerCount = config.opponents + 1;
     let spriteGrid = null;
     let spriteAssignments = new Array(racerCount).fill(null);
+    const backgroundKey = buildDistrictBackgroundKey(config.track.district);
+    let hasPendingLoads = false;
 
     try {
+      if (!this.textures.exists(backgroundKey)) {
+        this.load.image(backgroundKey, getDistrictBackgroundUrl(config.track.district));
+        hasPendingLoads = true;
+      }
+
       const { grid, racers } = await loadRacerSpriteManifest();
       const assignments = assignRacerSprites(racers, racerCount);
       const sheetsToLoad = new Map();
@@ -90,6 +101,10 @@ class BootScene extends Phaser.Scene {
             frameHeight: grid.frameHeight,
           });
         }
+        hasPendingLoads = true;
+      }
+
+      if (hasPendingLoads) {
         await new Promise((resolve) => {
           this.load.once('complete', resolve);
           this.load.start();
@@ -108,7 +123,12 @@ class BootScene extends Phaser.Scene {
 
     // Brief pause so the track splash is readable, then start the race.
     this.time.delayedCall(1500, () => {
-      this.scene.start('RaceGameScene', { raceConfig: config, spriteGrid, spriteAssignments });
+      this.scene.start('RaceGameScene', {
+        raceConfig: config,
+        spriteGrid,
+        spriteAssignments,
+        backgroundKey: this.textures.exists(backgroundKey) ? backgroundKey : null,
+      });
     });
   }
 }

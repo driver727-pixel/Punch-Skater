@@ -8,14 +8,23 @@
  */
 import Phaser from './phaserRuntime.js';
 import { PHYSICS, NITRO, TRACK, AI, parseRaceConfig } from './raceConfig.js';
-import { buildRacerAnimationKey, buildRacerSheetTextureKey } from './racerSprites.js';
+import { buildRacerSheetTextureKey } from './racerSprites.js';
 
 // Target on-screen height (px) for a racer rendered from a sprite sheet. The
 // procedural fallback shape keeps its native 28×16 size (baseScale = 1).
 const RACER_SPRITE_DISPLAY_HEIGHT = 40;
+const RACER_STATIC_FRAME = 0;
 const PICKUP_RESPAWN_MS = 6000;
 const PICKUP_RADIUS = 16;
 const PICKUP_COLLISION_PADDING = 14;
+const TRACK_SHADOW_OFFSET_X = 18;
+const TRACK_SHADOW_OFFSET_Y = 28;
+const LANE_SHADE_WIDTH_RATIO = 0.42;
+const GUARDRAIL_POST_SPACING = 90;
+const GUARDRAIL_POST_WIDTH = 6;
+const GUARDRAIL_POST_HEIGHT = 12;
+const GUARDRAIL_SHADOW_WIDTH = 5;
+const GUARDRAIL_SHADOW_HEIGHT = 8;
 
 // Slipstream tint hysteresis thresholds — tint switches on above ENTER and off
 // below EXIT to prevent per-frame flickering when boost hovers at the boundary.
@@ -399,6 +408,7 @@ export class RaceGameScene extends Phaser.Scene {
     this.raceConfig = data.raceConfig || parseRaceConfig();
     this.spriteGrid = data.spriteGrid || null;
     this.spriteAssignments = Array.isArray(data.spriteAssignments) ? data.spriteAssignments : [];
+    this.backgroundKey = data.backgroundKey || null;
   }
 
   create() {
@@ -485,23 +495,10 @@ export class RaceGameScene extends Phaser.Scene {
 
       let sprite;
       if (hasSheet) {
-        // Pre-baked animated character sprite sheet.
-        const animKey = buildRacerAnimationKey(assignment.slug);
-        if (!this.anims.exists(animKey)) {
-          this.anims.create({
-            key: animKey,
-            frames: this.anims.generateFrameNumbers(sheetKey, {
-              start: 0,
-              end: Math.max(0, grid.frameCount - 1),
-            }),
-            frameRate: grid.fps,
-            repeat: -1,
-          });
-        }
         sprite = this.add.sprite(racer.x, racer.y, sheetKey);
+        sprite.setFrame(clamp(RACER_STATIC_FRAME, 0, grid.frameCount - 1));
         sprite.baseScale = RACER_SPRITE_DISPLAY_HEIGHT / grid.frameHeight;
         sprite.isCharacterSprite = true;
-        sprite.play(animKey);
       } else {
         // Fallback: procedural skater shape (elongated hexagon).
         const textureKey = `racer_${racer.id}`;
@@ -735,8 +732,11 @@ export class RaceGameScene extends Phaser.Scene {
     const wp = this.waypoints;
     const { inner, outer } = this.walls;
 
-    // Ground fill
-    gfx.fillStyle(0x111122, 1);
+    this.drawDistrictBackdrop(track);
+    this.drawTrackEnvironment(track);
+
+    // Ground wash over the district backdrop so the race lane stays readable.
+    gfx.fillStyle(0x050512, this.backgroundKey ? 0.38 : 1);
     gfx.fillRect(0, 0, TRACK.WORLD_WIDTH, TRACK.WORLD_HEIGHT);
 
     // -------------------------------------------------------------------
@@ -747,9 +747,24 @@ export class RaceGameScene extends Phaser.Scene {
     // downward (+Y, toward the viewer) get the effect, preventing
     // double-drawing on the far side.
     // -------------------------------------------------------------------
-    const WALL_DEPTH = 10;   // px — height of the visible curb face
-    const WALL_ALPHA = 0.55;
+    const WALL_DEPTH = 18;   // px — height of the visible curb face
+    const WALL_ALPHA = 0.65;
     const borderColorRaw = Phaser.Display.Color.HexStringToColor(track.colors.border).color;
+    const roadColor = Phaser.Display.Color.HexStringToColor(track.colors.road).color;
+    const accentColorRaw = Phaser.Display.Color.HexStringToColor(track.colors.accent).color;
+
+    // Deep cast shadow under the lifted road deck.
+    gfx.fillStyle(0x000000, 0.32);
+    gfx.beginPath();
+    gfx.moveTo(outer[0].x + TRACK_SHADOW_OFFSET_X, outer[0].y + TRACK_SHADOW_OFFSET_Y);
+    for (let i = 1; i < outer.length; i++) {
+      gfx.lineTo(outer[i].x + TRACK_SHADOW_OFFSET_X, outer[i].y + TRACK_SHADOW_OFFSET_Y);
+    }
+    for (let i = inner.length - 1; i >= 0; i--) {
+      gfx.lineTo(inner[i].x + TRACK_SHADOW_OFFSET_X, inner[i].y + TRACK_SHADOW_OFFSET_Y);
+    }
+    gfx.closePath();
+    gfx.fillPath();
 
     // Outer boundary wall face (dark shadow strip)
     for (let i = 0; i < outer.length; i++) {
@@ -777,7 +792,6 @@ export class RaceGameScene extends Phaser.Scene {
     }
 
     // Inner boundary wall face (slightly lighter, accent colour)
-    const accentColorRaw = Phaser.Display.Color.HexStringToColor(track.colors.accent).color;
     for (let i = 0; i < inner.length; i++) {
       const curr = inner[i];
       const next = inner[(i + 1) % inner.length];
@@ -797,7 +811,7 @@ export class RaceGameScene extends Phaser.Scene {
     }
 
     // Road surface
-    gfx.fillStyle(Phaser.Display.Color.HexStringToColor(track.colors.road).color, 1);
+    gfx.fillStyle(roadColor, 1);
     gfx.beginPath();
     gfx.moveTo(outer[0].x, outer[0].y);
     for (let i = 1; i < outer.length; i++) gfx.lineTo(outer[i].x, outer[i].y);
@@ -805,6 +819,29 @@ export class RaceGameScene extends Phaser.Scene {
     for (let i = inner.length - 1; i >= 0; i--) gfx.lineTo(inner[i].x, inner[i].y);
     gfx.closePath();
     gfx.fillPath();
+
+    // Subtle lane shading bands along each track segment for pavement depth.
+    for (let i = 0; i < wp.length; i++) {
+      const curr = wp[i];
+      const nextPoint = wp[(i + 1) % wp.length];
+      const dx = nextPoint.x - curr.x;
+      const dy = nextPoint.y - curr.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const shadeWidth = TRACK.ROAD_HALF_WIDTH * LANE_SHADE_WIDTH_RATIO;
+      const alpha = i % 2 === 0 ? 0.12 : 0.07;
+      gfx.lineStyle(18, 0xffffff, alpha);
+      gfx.beginPath();
+      gfx.moveTo(curr.x + nx * shadeWidth, curr.y + ny * shadeWidth);
+      gfx.lineTo(nextPoint.x + nx * shadeWidth, nextPoint.y + ny * shadeWidth);
+      gfx.strokePath();
+      gfx.lineStyle(12, 0x000000, alpha * 0.75);
+      gfx.beginPath();
+      gfx.moveTo(curr.x - nx * shadeWidth, curr.y - ny * shadeWidth);
+      gfx.lineTo(nextPoint.x - nx * shadeWidth, nextPoint.y - ny * shadeWidth);
+      gfx.strokePath();
+    }
 
     // Road borders
     const borderColor = borderColorRaw;
@@ -814,6 +851,41 @@ export class RaceGameScene extends Phaser.Scene {
     for (let i = 1; i < outer.length; i++) gfx.lineTo(outer[i].x, outer[i].y);
     gfx.closePath();
     gfx.strokePath();
+
+    // Repeating guardrail posts sell the scale and vertical edge of the track.
+    for (let i = 0; i < wp.length; i++) {
+      const curr = wp[i];
+      const nextPoint = wp[(i + 1) % wp.length];
+      const dx = nextPoint.x - curr.x;
+      const dy = nextPoint.y - curr.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const postCount = Math.max(1, Math.floor(len / GUARDRAIL_POST_SPACING));
+      for (let j = 0; j < postCount; j++) {
+        const t = (j + 1) / (postCount + 1);
+        const cx = lerp(curr.x, nextPoint.x, t);
+        const cy = lerp(curr.y, nextPoint.y, t);
+        for (const side of [-1, 1]) {
+          const px = cx + nx * TRACK.ROAD_HALF_WIDTH * side;
+          const py = cy + ny * TRACK.ROAD_HALF_WIDTH * side;
+          gfx.fillStyle(borderColor, 0.62);
+          gfx.fillRect(
+            px - GUARDRAIL_POST_WIDTH / 2,
+            py - GUARDRAIL_POST_WIDTH / 2,
+            GUARDRAIL_POST_WIDTH,
+            GUARDRAIL_POST_HEIGHT,
+          );
+          gfx.fillStyle(0x000000, 0.28);
+          gfx.fillRect(
+            px - GUARDRAIL_SHADOW_WIDTH / 2,
+            py + GUARDRAIL_POST_HEIGHT - GUARDRAIL_SHADOW_HEIGHT + 3,
+            GUARDRAIL_SHADOW_WIDTH,
+            GUARDRAIL_SHADOW_HEIGHT,
+          );
+        }
+      }
+    }
 
     gfx.beginPath();
     gfx.moveTo(inner[0].x, inner[0].y);
@@ -858,6 +930,97 @@ export class RaceGameScene extends Phaser.Scene {
     }
 
     gfx.setDepth(1);
+  }
+
+  drawDistrictBackdrop(track) {
+    if (this.backgroundKey && this.textures.exists(this.backgroundKey)) {
+      this.add.image(TRACK.WORLD_WIDTH / 2, TRACK.WORLD_HEIGHT / 2, this.backgroundKey)
+        .setDisplaySize(TRACK.WORLD_WIDTH, TRACK.WORLD_HEIGHT)
+        .setAlpha(0.68)
+        .setDepth(-5);
+    }
+
+    const overlay = this.add.graphics().setDepth(-4);
+    overlay.fillStyle(0x02020b, 0.36);
+    overlay.fillRect(0, 0, TRACK.WORLD_WIDTH, TRACK.WORLD_HEIGHT);
+    const borderColor = Phaser.Display.Color.HexStringToColor(track.colors.border).color;
+    overlay.lineStyle(2, borderColor, 0.15);
+    for (let x = 0; x <= TRACK.WORLD_WIDTH; x += 160) {
+      overlay.beginPath();
+      overlay.moveTo(x, 0);
+      overlay.lineTo(x, TRACK.WORLD_HEIGHT);
+      overlay.strokePath();
+    }
+    for (let y = 0; y <= TRACK.WORLD_HEIGHT; y += 160) {
+      overlay.beginPath();
+      overlay.moveTo(0, y);
+      overlay.lineTo(TRACK.WORLD_WIDTH, y);
+      overlay.strokePath();
+    }
+  }
+
+  drawTrackEnvironment(track) {
+    const gfx = this.add.graphics().setDepth(0);
+    const borderColor = Phaser.Display.Color.HexStringToColor(track.colors.border).color;
+    const accentColor = Phaser.Display.Color.HexStringToColor(track.colors.accent).color;
+    const district = track.district || '';
+
+    const propsByDistrict = {
+      airaway: [
+        { x: 250, y: 210, w: 180, h: 50, label: 'SKY BUS' },
+        { x: 1450, y: 240, w: 260, h: 34, label: 'WIND GATE' },
+        { x: 260, y: 1510, w: 210, h: 42, label: 'SERVICE DECK' },
+      ],
+      batteryville: [
+        { x: 240, y: 300, w: 170, h: 120, label: 'CAP' },
+        { x: 1500, y: 420, w: 220, h: 90, label: 'VOLT' },
+        { x: 500, y: 1560, w: 260, h: 70, label: 'FOUNDRY' },
+      ],
+      'the-grid': [
+        { x: 280, y: 250, w: 150, h: 150, label: 'NODE' },
+        { x: 1500, y: 270, w: 190, h: 100, label: 'SCAN' },
+        { x: 330, y: 1540, w: 220, h: 80, label: 'CACHE' },
+      ],
+      nightshade: [
+        { x: 250, y: 250, w: 210, h: 90, label: 'MARKET' },
+        { x: 1470, y: 310, w: 180, h: 130, label: 'UMBRA' },
+        { x: 430, y: 1600, w: 260, h: 64, label: 'ALLEY' },
+      ],
+      'the-forest': [
+        { x: 250, y: 300, w: 210, h: 100, label: 'ROOTS' },
+        { x: 1480, y: 290, w: 170, h: 170, label: 'CANOPY' },
+        { x: 400, y: 1580, w: 230, h: 74, label: 'MOSS' },
+      ],
+      'glass-city': [
+        { x: 250, y: 250, w: 180, h: 160, label: 'TOWER' },
+        { x: 1450, y: 300, w: 210, h: 120, label: 'PRISM' },
+        { x: 420, y: 1600, w: 260, h: 70, label: 'MIRROR' },
+      ],
+    };
+
+    const props = propsByDistrict[district] || propsByDistrict.airaway;
+    for (const prop of props) {
+      gfx.fillStyle(0x000000, 0.32);
+      gfx.fillRoundedRect(prop.x + 14, prop.y + 18, prop.w, prop.h, 10);
+      gfx.fillStyle(0x081026, 0.78);
+      gfx.fillRoundedRect(prop.x, prop.y, prop.w, prop.h, 10);
+      gfx.lineStyle(2, borderColor, 0.48);
+      gfx.strokeRoundedRect(prop.x, prop.y, prop.w, prop.h, 10);
+      gfx.lineStyle(1, accentColor, 0.28);
+      for (let y = prop.y + 18; y < prop.y + prop.h; y += 22) {
+        gfx.beginPath();
+        gfx.moveTo(prop.x + 14, y);
+        gfx.lineTo(prop.x + prop.w - 14, y);
+        gfx.strokePath();
+      }
+      this.add.text(prop.x + prop.w / 2, prop.y + prop.h / 2, prop.label, {
+        fontSize: '12px',
+        fontFamily: 'Press Start 2P, monospace',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 3,
+      }).setOrigin(0.5).setAlpha(0.72).setDepth(0.5);
+    }
   }
 
   drawObstacles() {
