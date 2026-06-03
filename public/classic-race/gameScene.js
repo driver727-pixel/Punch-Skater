@@ -226,7 +226,7 @@ function updateRacerPhysics(racer, dt, input, waypoints, walls, obstacles, total
   );
   // Decay residual angular velocity when not steering
   if (steer === 0) {
-    racer.angularVel *= (1 - PHYSICS.ANGULAR_DRAG * dtSec);
+    racer.angularVel *= Math.exp(-PHYSICS.ANGULAR_DRAG * dtSec);
     if (Math.abs(racer.angularVel) < 0.001) racer.angularVel = 0;
   }
   racer.angle += racer.angularVel * dtSec;
@@ -743,9 +743,9 @@ export class RaceGameScene extends Phaser.Scene {
     // 2.5D depth: draw "raised curb" wall faces before the road surface.
     // For each boundary segment, a shadow quad is drawn shifted downward
     // (+Y) by a wall depth amount, simulating an elevated track seen from
-    // a slight overhead angle.  Only segments whose midpoint faces downward
-    // (toward the viewer) get the effect, preventing double-drawing on the
-    // far side.
+    // a slight overhead angle. Only segments whose outward normal points
+    // downward (+Y, toward the viewer) get the effect, preventing
+    // double-drawing on the far side.
     // -------------------------------------------------------------------
     const WALL_DEPTH = 10;   // px — height of the visible curb face
     const WALL_ALPHA = 0.55;
@@ -755,11 +755,10 @@ export class RaceGameScene extends Phaser.Scene {
     for (let i = 0; i < outer.length; i++) {
       const curr = outer[i];
       const next = outer[(i + 1) % outer.length];
-      // Segment normal (pointing away from road centre — outward)
-      const nx = -(next.y - curr.y);
-      const ny = next.x - curr.x;
+      // Segment normal Y component (pointing away from road centre — outward)
+      const outwardNormalY = next.x - curr.x;
       // Only draw the face when it's on the "south" (viewer-facing) side
-      if (ny >= 0) {
+      if (outwardNormalY >= 0) {
         gfx.fillStyle(0x000000, WALL_ALPHA);
         gfx.beginPath();
         gfx.moveTo(curr.x, curr.y);
