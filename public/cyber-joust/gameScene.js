@@ -93,6 +93,7 @@ export class GameScene extends Phaser.Scene {
         this.steerLeft = false;
         this.steerRight = false;
         this.tiltDirection = null;
+        this.brakeActive = false;
         this.lastPlayerThrustAt = -PLAYER_THRUST_COOLDOWN_MS;
         this.boostReadyTimer = null;
         this.myCosmetics = { ...DEFAULT_COSMETICS };
@@ -138,6 +139,7 @@ export class GameScene extends Phaser.Scene {
         this.steerLeft = false;
         this.steerRight = false;
         this.tiltDirection = null;
+        this.brakeActive = false;
         this.lastPlayerThrustAt = -PLAYER_THRUST_COOLDOWN_MS;
         this.boostReadyTimer = null;
         this.comboMultiplier = 1;
@@ -659,6 +661,13 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    isTouchDevice() {
+        const coarsePointer = typeof window !== 'undefined'
+            && typeof window.matchMedia === 'function'
+            && window.matchMedia('(pointer: coarse)').matches;
+        return coarsePointer || Boolean(this.sys.game.device.input.touch);
+    }
+
     setupControls() {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keys = this.input.keyboard.addKeys({
@@ -674,35 +683,91 @@ export class GameScene extends Phaser.Scene {
         });
 
         const { width, height } = this.scale;
-        this.createMobileControls(width, height);
+        if (this.isTouchDevice()) {
+            this.createMobileControls(width, height);
+            this.onResize = (gameSize) => {
+                const { width: w, height: h } = gameSize;
+                this.layoutMobileControls(w, h);
+            };
+            this.scale.on('resize', this.onResize);
+            this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+                if (this.onResize) {
+                    this.scale.off('resize', this.onResize);
+                    this.onResize = null;
+                }
+            });
+        } else {
+            this.add.text(width / 2, 45, 'ARROWS/A-D: SKATE  SPACE/SHIFT: BOOST  W-S/Q-E: TILT  DOWN/CTRL: BRAKE', {
+                fontFamily: '"Press Start 2P"',
+                fontSize: '9px',
+                color: '#ffffff'
+            }).setOrigin(0.5).setAlpha(0.65).setDepth(99);
+        }
+    }
+
+    makeInteractive(buttonShape, onDown, onUp, tapOnly = false) {
+        buttonShape.setInteractive(new Phaser.Geom.Circle(0, 0, buttonShape.radius), Phaser.Geom.Circle.Contains);
+        buttonShape.input.cursor = 'pointer';
+        const reset = () => {
+            buttonShape.setScale(1);
+            buttonShape.setAlpha(0.75);
+            if (onUp) onUp();
+        };
+        buttonShape.on('pointerdown', () => {
+            buttonShape.setScale(0.9);
+            buttonShape.setAlpha(1);
+            if (onDown) onDown();
+        });
+        if (!tapOnly) {
+            buttonShape.on('pointerup', reset);
+            buttonShape.on('pointerupoutside', reset);
+            buttonShape.on('pointerout', reset);
+        } else {
+            buttonShape.on('pointerup', () => {
+                buttonShape.setScale(1);
+                buttonShape.setAlpha(0.75);
+            });
+        }
     }
 
     createMobileControls(width, height) {
         this.mobileControls = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
         const btnRadius = 40;
-        const btnY = height - 85;
 
-        const btnLeft = this.add.circle(60, btnY, btnRadius, 0x111122, 0.75);
+        const btnLeft = this.add.circle(0, 0, btnRadius, 0x111122, 0.75);
         btnLeft.setStrokeStyle(3, 0x00f0ff);
-        const leftTxt = this.add.text(60, btnY, '◀', { fontSize: '24px', color: '#00f0ff' }).setOrigin(0.5);
+        const leftTxt = this.add.text(0, 0, '◀', { fontSize: '24px', color: '#00f0ff' }).setOrigin(0.5);
         this.makeInteractive(btnLeft, () => {
             this.steerLeft = true;
         }, () => {
             this.steerLeft = false;
         });
 
-        const btnRight = this.add.circle(160, btnY, btnRadius, 0x111122, 0.75);
+        const btnRight = this.add.circle(0, 0, btnRadius, 0x111122, 0.75);
         btnRight.setStrokeStyle(3, 0x00f0ff);
-        const rightTxt = this.add.text(160, btnY, '▶', { fontSize: '24px', color: '#00f0ff' }).setOrigin(0.5);
+        const rightTxt = this.add.text(0, 0, '▶', { fontSize: '24px', color: '#00f0ff' }).setOrigin(0.5);
         this.makeInteractive(btnRight, () => {
             this.steerRight = true;
         }, () => {
             this.steerRight = false;
         });
 
-        const btnThrust = this.add.circle(width - 70, btnY - 20, btnRadius + 10, 0x111122, 0.75);
+        const btnBrake = this.add.circle(0, 0, btnRadius - 8, 0x111122, 0.75);
+        btnBrake.setStrokeStyle(2, 0xff4400);
+        const brakeTxt = this.add.text(0, 0, 'BRAKE', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '9px',
+            color: '#ff4400'
+        }).setOrigin(0.5);
+        this.makeInteractive(btnBrake, () => {
+            this.brakeActive = true;
+        }, () => {
+            this.brakeActive = false;
+        });
+
+        const btnThrust = this.add.circle(0, 0, btnRadius + 10, 0x111122, 0.75);
         btnThrust.setStrokeStyle(4, 0xff007f);
-        const thrustTxt = this.add.text(width - 70, btnY - 20, 'BOOST', {
+        const thrustTxt = this.add.text(0, 0, 'BOOST', {
             fontFamily: '"Press Start 2P"',
             fontSize: '13px',
             color: '#ff007f'
@@ -711,80 +776,69 @@ export class GameScene extends Phaser.Scene {
             this.triggerThrust();
         }, null, true);
 
-        const btnTiltUp = this.add.circle(width - 180, btnY - 45, btnRadius - 5, 0x111122, 0.75);
+        const btnTiltUp = this.add.circle(0, 0, btnRadius - 5, 0x111122, 0.75);
         btnTiltUp.setStrokeStyle(2, 0xffea00);
-        const tiltUpTxt = this.add.text(width - 180, btnY - 45, '▲ TILT', { fontSize: '14px', color: '#ffea00' }).setOrigin(0.5);
+        const tiltUpTxt = this.add.text(0, 0, '▲ TILT', { fontSize: '14px', color: '#ffea00' }).setOrigin(0.5);
         this.makeInteractive(btnTiltUp, () => {
             this.tiltLance('up');
         }, () => {
             this.stopTilt();
         });
 
-        const btnTiltDown = this.add.circle(width - 180, btnY + 25, btnRadius - 5, 0x111122, 0.75);
+        const btnTiltDown = this.add.circle(0, 0, btnRadius - 5, 0x111122, 0.75);
         btnTiltDown.setStrokeStyle(2, 0xffea00);
-        const tiltDownTxt = this.add.text(width - 180, btnY + 25, '▼ TILT', { fontSize: '14px', color: '#ffea00' }).setOrigin(0.5);
+        const tiltDownTxt = this.add.text(0, 0, '▼ TILT', { fontSize: '14px', color: '#ffea00' }).setOrigin(0.5);
         this.makeInteractive(btnTiltDown, () => {
             this.tiltLance('down');
         }, () => {
             this.stopTilt();
         });
 
-        this.mobileControls.add([btnLeft, leftTxt, btnRight, rightTxt, btnThrust, thrustTxt, btnTiltUp, tiltUpTxt, btnTiltDown, tiltDownTxt]);
+        this.mobileControls.add([
+            btnLeft, leftTxt, btnRight, rightTxt,
+            btnBrake, brakeTxt,
+            btnThrust, thrustTxt,
+            btnTiltUp, tiltUpTxt, btnTiltDown, tiltDownTxt
+        ]);
 
-        const desktopInstructions = this.add.text(width / 2, 45, 'ARROWS/A-D: SKATE  SPACE/SHIFT: BOOST  W-S/Q-E: TILT  DOWN/CTRL: BRAKE', {
+        this._mbBtnLeft    = { btn: btnLeft,    txt: leftTxt    };
+        this._mbBtnRight   = { btn: btnRight,   txt: rightTxt   };
+        this._mbBtnBrake   = { btn: btnBrake,   txt: brakeTxt   };
+        this._mbBtnThrust  = { btn: btnThrust,  txt: thrustTxt  };
+        this._mbBtnTiltUp  = { btn: btnTiltUp,  txt: tiltUpTxt  };
+        this._mbBtnTiltDown = { btn: btnTiltDown, txt: tiltDownTxt };
+
+        this.mobileHint = this.add.text(0, 0, '◀▶ SKATE  BOOST  BRAKE  ▲▼ TILT LANCE', {
             fontFamily: '"Press Start 2P"',
-            fontSize: '9px',
-            color: '#ffffff'
-        }).setOrigin(0.5).setAlpha(0.65).setDepth(99);
+            fontSize: '7px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 2,
+        }).setOrigin(0.5).setAlpha(0.75).setScrollFactor(0).setDepth(99);
+        this.mobileControls.add(this.mobileHint);
 
-        this.scale.on('resize', (gameSize) => {
-            const { width: w, height: h } = gameSize;
-            btnThrust.setPosition(w - 70, h - 105);
-            thrustTxt.setPosition(w - 70, h - 105);
-            btnTiltUp.setPosition(w - 180, h - 130);
-            tiltUpTxt.setPosition(w - 180, h - 130);
-            btnTiltDown.setPosition(w - 180, h - 60);
-            tiltDownTxt.setPosition(w - 180, h - 60);
-            btnLeft.setPosition(60, h - 85);
-            leftTxt.setPosition(60, h - 85);
-            btnRight.setPosition(160, h - 85);
-            rightTxt.setPosition(160, h - 85);
-            desktopInstructions.setPosition(w / 2, 45);
-        });
+        this.layoutMobileControls(width, height);
     }
 
-    makeInteractive(buttonShape, onDown, onUp, tapOnly = false) {
-        buttonShape.setInteractive(new Phaser.Geom.Circle(0, 0, buttonShape.radius), Phaser.Geom.Circle.Contains);
-        buttonShape.input.cursor = 'pointer';
-        buttonShape.on('pointerdown', () => {
-            buttonShape.setScale(0.9);
-            buttonShape.setAlpha(1);
-            if (onDown) {
-                onDown();
-            }
-        });
+    layoutMobileControls(width, height) {
+        if (!this.mobileControls) return;
+        const baseY = height - 85;
 
-        if (!tapOnly) {
-            buttonShape.on('pointerup', () => {
-                buttonShape.setScale(1);
-                buttonShape.setAlpha(0.75);
-                if (onUp) {
-                    onUp();
-                }
-            });
-            buttonShape.on('pointerout', () => {
-                buttonShape.setScale(1);
-                buttonShape.setAlpha(0.75);
-                if (onUp) {
-                    onUp();
-                }
-            });
-        } else {
-            buttonShape.on('pointerup', () => {
-                buttonShape.setScale(1);
-                buttonShape.setAlpha(0.75);
-            });
-        }
+        this._mbBtnLeft.btn.setPosition(60, baseY);
+        this._mbBtnLeft.txt.setPosition(60, baseY);
+        this._mbBtnRight.btn.setPosition(160, baseY);
+        this._mbBtnRight.txt.setPosition(160, baseY);
+        this._mbBtnBrake.btn.setPosition(110, baseY - 70);
+        this._mbBtnBrake.txt.setPosition(110, baseY - 70);
+
+        this._mbBtnThrust.btn.setPosition(width - 70, baseY - 20);
+        this._mbBtnThrust.txt.setPosition(width - 70, baseY - 20);
+        this._mbBtnTiltUp.btn.setPosition(width - 180, baseY - 45);
+        this._mbBtnTiltUp.txt.setPosition(width - 180, baseY - 45);
+        this._mbBtnTiltDown.btn.setPosition(width - 180, baseY + 25);
+        this._mbBtnTiltDown.txt.setPosition(width - 180, baseY + 25);
+
+        this.mobileHint.setPosition(width / 2, height - 16);
     }
 
     triggerThrust() {
@@ -1013,7 +1067,7 @@ export class GameScene extends Phaser.Scene {
             body.setAccelerationX(0);
         }
 
-        if (this.cursors.down.isDown || this.keys.brake.isDown) {
+        if (this.cursors.down.isDown || this.keys.brake.isDown || this.brakeActive) {
             body.setVelocityX(body.velocity.x * 0.88);
         }
 
