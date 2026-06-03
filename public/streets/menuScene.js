@@ -50,8 +50,9 @@ export class StreetsMenuScene extends Phaser.Scene {
     } else {
       this.renderMissionPicker();
     }
+  }
 
-    renderCharacterPicker() {
+  renderCharacterPicker() {
       const { width, height } = this.scale;
       const y = height * 0.22;
       this.add.text(width / 2, y - 32, 'CHOOSE YOUR SKATER', {
@@ -105,7 +106,6 @@ export class StreetsMenuScene extends Phaser.Scene {
       if (character && this.characterTagline) {
         this.characterTagline.setText(character.tagline.toUpperCase());
       }
-    }
   }
 
   setupMusic() {
