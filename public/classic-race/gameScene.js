@@ -17,6 +17,14 @@ const RACER_STATIC_FRAME = 0;
 const PICKUP_RESPAWN_MS = 6000;
 const PICKUP_RADIUS = 16;
 const PICKUP_COLLISION_PADDING = 14;
+const TRACK_SHADOW_OFFSET_X = 18;
+const TRACK_SHADOW_OFFSET_Y = 28;
+const LANE_SHADE_WIDTH_RATIO = 0.42;
+const GUARDRAIL_POST_SPACING = 90;
+const GUARDRAIL_POST_WIDTH = 6;
+const GUARDRAIL_POST_HEIGHT = 12;
+const GUARDRAIL_SHADOW_WIDTH = 5;
+const GUARDRAIL_SHADOW_HEIGHT = 8;
 
 // Slipstream tint hysteresis thresholds — tint switches on above ENTER and off
 // below EXIT to prevent per-frame flickering when boost hovers at the boundary.
@@ -488,7 +496,7 @@ export class RaceGameScene extends Phaser.Scene {
       let sprite;
       if (hasSheet) {
         sprite = this.add.sprite(racer.x, racer.y, sheetKey);
-        sprite.setFrame(Math.max(0, Math.min(RACER_STATIC_FRAME, grid.frameCount - 1)));
+        sprite.setFrame(clamp(RACER_STATIC_FRAME, 0, grid.frameCount - 1));
         sprite.baseScale = RACER_SPRITE_DISPLAY_HEIGHT / grid.frameHeight;
         sprite.isCharacterSprite = true;
       } else {
@@ -748,9 +756,13 @@ export class RaceGameScene extends Phaser.Scene {
     // Deep cast shadow under the lifted road deck.
     gfx.fillStyle(0x000000, 0.32);
     gfx.beginPath();
-    gfx.moveTo(outer[0].x + 18, outer[0].y + 28);
-    for (let i = 1; i < outer.length; i++) gfx.lineTo(outer[i].x + 18, outer[i].y + 28);
-    for (let i = inner.length - 1; i >= 0; i--) gfx.lineTo(inner[i].x + 18, inner[i].y + 28);
+    gfx.moveTo(outer[0].x + TRACK_SHADOW_OFFSET_X, outer[0].y + TRACK_SHADOW_OFFSET_Y);
+    for (let i = 1; i < outer.length; i++) {
+      gfx.lineTo(outer[i].x + TRACK_SHADOW_OFFSET_X, outer[i].y + TRACK_SHADOW_OFFSET_Y);
+    }
+    for (let i = inner.length - 1; i >= 0; i--) {
+      gfx.lineTo(inner[i].x + TRACK_SHADOW_OFFSET_X, inner[i].y + TRACK_SHADOW_OFFSET_Y);
+    }
     gfx.closePath();
     gfx.fillPath();
 
@@ -817,7 +829,7 @@ export class RaceGameScene extends Phaser.Scene {
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const nx = -dy / len;
       const ny = dx / len;
-      const shadeWidth = TRACK.ROAD_HALF_WIDTH * 0.42;
+      const shadeWidth = TRACK.ROAD_HALF_WIDTH * LANE_SHADE_WIDTH_RATIO;
       const alpha = i % 2 === 0 ? 0.12 : 0.07;
       gfx.lineStyle(18, 0xffffff, alpha);
       gfx.beginPath();
@@ -849,7 +861,7 @@ export class RaceGameScene extends Phaser.Scene {
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const nx = -dy / len;
       const ny = dx / len;
-      const postCount = Math.max(1, Math.floor(len / 90));
+      const postCount = Math.max(1, Math.floor(len / GUARDRAIL_POST_SPACING));
       for (let j = 0; j < postCount; j++) {
         const t = (j + 1) / (postCount + 1);
         const cx = lerp(curr.x, nextPoint.x, t);
@@ -858,9 +870,19 @@ export class RaceGameScene extends Phaser.Scene {
           const px = cx + nx * TRACK.ROAD_HALF_WIDTH * side;
           const py = cy + ny * TRACK.ROAD_HALF_WIDTH * side;
           gfx.fillStyle(borderColor, 0.62);
-          gfx.fillRect(px - 3, py - 3, 6, 12);
+          gfx.fillRect(
+            px - GUARDRAIL_POST_WIDTH / 2,
+            py - GUARDRAIL_POST_WIDTH / 2,
+            GUARDRAIL_POST_WIDTH,
+            GUARDRAIL_POST_HEIGHT,
+          );
           gfx.fillStyle(0x000000, 0.28);
-          gfx.fillRect(px - 2, py + 7, 5, 8);
+          gfx.fillRect(
+            px - GUARDRAIL_SHADOW_WIDTH / 2,
+            py + GUARDRAIL_POST_HEIGHT - GUARDRAIL_SHADOW_HEIGHT + 3,
+            GUARDRAIL_SHADOW_WIDTH,
+            GUARDRAIL_SHADOW_HEIGHT,
+          );
         }
       }
     }
