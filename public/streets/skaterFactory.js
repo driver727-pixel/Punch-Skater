@@ -135,6 +135,11 @@ export function createSkater(scene, x, y, cosmetics = {}) {
   const bodyVariant = BODY_VARIANTS[merged.bodyVariant] || BODY_VARIANTS.striker;
 
   const container = scene.add.container(x, y);
+
+  // Shadow ellipse sits on the ground plane — it lives in the container (not
+  // the visual root) so it stays at feet level when the character jumps.
+  const shadow = scene.add.ellipse(0, 26, 44, 9, 0x000000, 0.28);
+
   const visualRoot = scene.add.container(0, 0);
 
   const board = scene.add.rectangle(0, 18, 54 * bodyVariant.board, 8, 0x222233);
@@ -152,7 +157,8 @@ export function createSkater(scene, x, y, cosmetics = {}) {
   weaponContainer.add([weaponSprite, weaponGraphics]);
 
   visualRoot.add([bodySprite, board, wheelL, wheelR, deckAccent, bodyGraphics, weaponContainer]);
-  container.add(visualRoot);
+  container.add([shadow, visualRoot]);
+  container.shadow = shadow;
 
   container.cosmetics = merged;
   container.facing = 'right';
@@ -219,9 +225,10 @@ export function setSkaterJumpOffset(skater, offset = 0) {
   }
 }
 
-/** Flip a skater to face a direction without mirroring its physics body. */
+/** Flip a skater to face a direction. Actual scale (including depth factor) is
+ *  applied each frame by the game scene's applyDepthScale(), so we only store
+ *  the new facing here without clobbering the Y depth-scale. */
 export function faceSkater(skater, direction) {
   if (skater.facing === direction) return;
   skater.facing = direction;
-  skater.setScale(direction === 'left' ? -1 : 1, 1);
 }
