@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "generatedAt": "2026-06-03T15:33:34.812Z",
   "grid": {
     "columns": 4,
     "rows": 2,
@@ -9,5 +9,55 @@
     "frameHeight": 256,
     "fps": 10
   },
-  "racers": []
+  "racers": [
+    {
+      "slug": "forge-008w085-c5af41d58be623939b5691b6",
+      "cardId": "forge-008w085-c5af41d58be623939b5691b6",
+      "name": "Cassidy Cloud",
+      "deck": "Cassidy's Crew",
+      "file": "racer-forge-008w085-c5af41d58be623939b5691b6.png"
+    },
+    {
+      "slug": "forge-03q2ul0-f5e64d918fda88ad82d147a7",
+      "cardId": "forge-03q2ul0-f5e64d918fda88ad82d147a7",
+      "name": "Seby Baltisar",
+      "deck": "Cassidy's Crew",
+      "file": "racer-forge-03q2ul0-f5e64d918fda88ad82d147a7.png"
+    },
+    {
+      "slug": "forge-09yn52d-aa0f4c0486bd8e552374a5ac",
+      "cardId": "forge-09yn52d-aa0f4c0486bd8e552374a5ac",
+      "name": "Rosa Bluntside",
+      "deck": "Cassidy's Crew",
+      "file": "racer-forge-09yn52d-aa0f4c0486bd8e552374a5ac.png"
+    },
+    {
+      "slug": "forge-0lcud4k-289c435ca008e3d708109ee2",
+      "cardId": "forge-0lcud4k-289c435ca008e3d708109ee2",
+      "name": "Ben Shushka",
+      "deck": "Cassidy's Crew",
+      "file": "racer-forge-0lcud4k-289c435ca008e3d708109ee2.png"
+    },
+    {
+      "slug": "forge-0lw9g7c-e61c4675b1de17c31a5e8137",
+      "cardId": "forge-0lw9g7c-e61c4675b1de17c31a5e8137",
+      "name": "Guy Kaleb",
+      "deck": "Cassidy's Crew",
+      "file": "racer-forge-0lw9g7c-e61c4675b1de17c31a5e8137.png"
+    },
+    {
+      "slug": "forge-0xh6h40-b9814fbda7d25d3e7c9a1461",
+      "cardId": "forge-0xh6h40-b9814fbda7d25d3e7c9a1461",
+      "name": "Emjay",
+      "deck": "Cassidy's Crew",
+      "file": "racer-forge-0xh6h40-b9814fbda7d25d3e7c9a1461.png"
+    },
+    {
+      "slug": "forge-0btc2il-f55d4eb3b9fd15d201f5860b",
+      "cardId": "forge-0btc2il-f55d4eb3b9fd15d201f5860b",
+      "name": "Captain Garibaldi",
+      "deck": "Garibaldi's Crew",
+      "file": "racer-forge-0btc2il-f55d4eb3b9fd15d201f5860b.png"
+    }
+  ]
 }
