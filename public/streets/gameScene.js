@@ -613,6 +613,13 @@ export class StreetsGameScene extends Phaser.Scene {
 
   // ── Controls ───────────────────────────────────────────────────────────────
 
+  isTouchDevice() {
+    const coarsePointer = typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: coarse)').matches;
+    return coarsePointer || Boolean(this.sys.game.device.input.touch);
+  }
+
   setupControls() {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys({
@@ -629,39 +636,109 @@ export class StreetsGameScene extends Phaser.Scene {
       dash: Phaser.Input.Keyboard.KeyCodes.SHIFT,
       dashAlt: Phaser.Input.Keyboard.KeyCodes.L,
     });
-    this.createMobileControls();
+    this.mobileControlsEnabled = this.isTouchDevice();
+    if (this.mobileControlsEnabled) {
+      this.createMobileControls();
+      this.onResize = ({ width, height }) => this.layoutMobileControls(width, height);
+      this.scale.on('resize', this.onResize);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        if (this.onResize) {
+          this.scale.off('resize', this.onResize);
+          this.onResize = null;
+        }
+      });
+    } else {
+      this.add.text(this.scale.width / 2, 70, 'MOVE A/D+W/S | J HIT | H BOARD | SPACE JUMP | K NOVA', {
+        fontFamily: '"Press Start 2P"',
+        fontSize: '10px',
+        color: '#ffffff',
+      }).setOrigin(0.5).setAlpha(0.6).setScrollFactor(0).setDepth(99);
+    }
+  }
+
+  createMobileButton(label, strokeColor, onDown, onUp, options = {}) {
+    const radius = options.radius || 38;
+    const fontSize = options.fontSize || '16px';
+    const circle = this.add.circle(0, 0, radius, 0x111122, 0.7).setScrollFactor(0).setDepth(100);
+    circle.setStrokeStyle(3, strokeColor);
+    const text = this.add.text(0, 0, label, { fontSize, color: '#ffffff' })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(101);
+    const reset = () => {
+      circle.setScale(1);
+      circle.setAlpha(0.7);
+      if (onUp) onUp();
+    };
+    circle.setInteractive(new Phaser.Geom.Circle(0, 0, radius), Phaser.Geom.Circle.Contains);
+    circle.on('pointerdown', () => { circle.setScale(0.9); circle.setAlpha(1); onDown(); });
+    circle.on('pointerup', reset);
+    circle.on('pointerupoutside', reset);
+    circle.on('pointerout', reset);
+    return { circle, text };
   }
 
   createMobileControls() {
-    const { width, height } = this.scale;
-    const btnY = height - 70;
-    const mk = (x, y, label, color, onDown, onUp) => {
-      const c = this.add.circle(x, y, 38, 0x111122, 0.7).setScrollFactor(0).setDepth(100);
-      c.setStrokeStyle(3, color);
-      const t = this.add.text(x, y, label, { fontSize: '16px', color: '#ffffff' })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(101);
-      c.setInteractive(new Phaser.Geom.Circle(0, 0, 38), Phaser.Geom.Circle.Contains);
-      c.on('pointerdown', () => { c.setAlpha(1); onDown(); });
-      c.on('pointerup', () => { c.setAlpha(0.7); if (onUp) onUp(); });
-      c.on('pointerout', () => { c.setAlpha(0.7); if (onUp) onUp(); });
-      return { c, t };
-    };
+    this.mobileControls = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
 
-    mk(56, btnY, '◀', 0x00f0ff, () => { this.steer.left = true; }, () => { this.steer.left = false; });
-    mk(146, btnY, '▶', 0x00f0ff, () => { this.steer.right = true; }, () => { this.steer.right = false; });
-    mk(236, btnY - 42, '▲', 0x7de7ff, () => { this.steer.up = true; }, () => { this.steer.up = false; });
-    mk(236, btnY + 42, '▼', 0x7de7ff, () => { this.steer.down = true; }, () => { this.steer.down = false; });
-    mk(width - 326, btnY, '⤒', 0xffea00, () => { this.steer.jump = true; }, () => { this.steer.jump = false; });
-    mk(width - 236, btnY, '⇥', 0x39ff14, () => { this.steer.dash = true; }, () => { this.steer.dash = false; });
-    mk(width - 146, btnY, '✊', 0xff007f, () => this.tryAttack());
-    mk(width - 56, btnY, '🛹', 0xff6600, () => this.tryHeavyAttack());
-    mk(width - 56, btnY - 92, '✦', 0x9d00ff, () => this.trySpecial());
+    this.mobileLeft  = this.createMobileButton('◀', 0x00f0ff, () => { this.steer.left  = true;  }, () => { this.steer.left  = false; });
+    this.mobileRight = this.createMobileButton('▶', 0x00f0ff, () => { this.steer.right = true;  }, () => { this.steer.right = false; });
+    this.mobileUp    = this.createMobileButton('▲', 0x7de7ff, () => { this.steer.up    = true;  }, () => { this.steer.up    = false; });
+    this.mobileDown  = this.createMobileButton('▼', 0x7de7ff, () => { this.steer.down  = true;  }, () => { this.steer.down  = false; });
+    this.mobileJump  = this.createMobileButton('⤒', 0xffea00, () => { this.steer.jump  = true;  }, () => { this.steer.jump  = false; });
+    this.mobileDash  = this.createMobileButton('⇥', 0x39ff14, () => { this.steer.dash  = true;  }, () => { this.steer.dash  = false; });
+    this.mobileHit   = this.createMobileButton('✊', 0xff007f, () => this.tryAttack(),   null,   { radius: 42 });
+    this.mobileBoard = this.createMobileButton('🛹', 0xff6600, () => this.tryHeavyAttack(), null, { radius: 42 });
+    this.mobileNova  = this.createMobileButton('✦', 0x9d00ff, () => this.trySpecial(),  null,   { radius: 34 });
 
-    this.add.text(this.scale.width / 2, 70, 'MOVE A/D+W/S | J HIT | H BOARD | SPACE JUMP | K NOVA', {
+    this.mobileHint = this.add.text(0, 0, '◀▶ MOVE  ▲▼ LANE  ⤒ JUMP  ⇥ DASH  ✊ HIT  🛹 BOARD  ✦ NOVA', {
       fontFamily: '"Press Start 2P"',
-      fontSize: '10px',
+      fontSize: '7px',
       color: '#ffffff',
-    }).setOrigin(0.5).setAlpha(0.6).setScrollFactor(0).setDepth(99);
+      stroke: '#000000',
+      strokeThickness: 2,
+    }).setOrigin(0.5).setAlpha(0.75).setScrollFactor(0).setDepth(99);
+
+    [this.mobileLeft, this.mobileRight, this.mobileUp, this.mobileDown,
+      this.mobileJump, this.mobileDash, this.mobileHit, this.mobileBoard, this.mobileNova].forEach(({ circle, text }) => {
+      this.mobileControls.add([circle, text]);
+    });
+    this.mobileControls.add(this.mobileHint);
+
+    this.layoutMobileControls(this.scale.width, this.scale.height);
+  }
+
+  layoutMobileControls(width, height) {
+    if (!this.mobileControls) return;
+    const baseY = height - 72;
+    const leftX  = Math.max(52,  Math.round(width * 0.07));
+    const leftX2 = leftX + 90;
+    const upX    = leftX2 + 72;
+    const jumpX  = Math.round(width * 0.55);
+    const dashX  = jumpX + 84;
+    const hitX   = Math.max(jumpX + 168, width - 148);
+    const boardX = Math.max(hitX  + 84,  width - 64);
+    const novaX  = boardX;
+
+    this.mobileLeft.circle.setPosition(leftX, baseY);
+    this.mobileLeft.text.setPosition(leftX, baseY);
+    this.mobileRight.circle.setPosition(leftX2, baseY);
+    this.mobileRight.text.setPosition(leftX2, baseY);
+    this.mobileUp.circle.setPosition(upX, baseY - 44);
+    this.mobileUp.text.setPosition(upX, baseY - 44);
+    this.mobileDown.circle.setPosition(upX, baseY + 44);
+    this.mobileDown.text.setPosition(upX, baseY + 44);
+
+    this.mobileJump.circle.setPosition(jumpX, baseY);
+    this.mobileJump.text.setPosition(jumpX, baseY);
+    this.mobileDash.circle.setPosition(dashX, baseY);
+    this.mobileDash.text.setPosition(dashX, baseY);
+    this.mobileHit.circle.setPosition(hitX, baseY);
+    this.mobileHit.text.setPosition(hitX, baseY);
+    this.mobileBoard.circle.setPosition(boardX, baseY - 88);
+    this.mobileBoard.text.setPosition(boardX, baseY - 88);
+    this.mobileNova.circle.setPosition(novaX - 84, baseY - 44);
+    this.mobileNova.text.setPosition(novaX - 84, baseY - 44);
+
+    this.mobileHint.setPosition(width / 2, height - 16);
   }
 
   // ── Main loop ──────────────────────────────────────────────────────────────
