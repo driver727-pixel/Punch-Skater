@@ -132,6 +132,9 @@ export function Nav() {
       <NavLink to="/lore" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
         Codex
       </NavLink>
+      <NavLink to="/wiki" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
+        Wiki
+      </NavLink>
       {user && (
         <NavLink to="/leaderboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
           Rankings

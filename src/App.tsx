@@ -92,6 +92,7 @@ const Login      = lazy(() => import("./pages/Login").then(m => ({ default: m.Lo
 const Credits         = lazy(() => import("./pages/Credits").then(m => ({ default: m.Credits })));
 const Factions        = lazy(() => import("./pages/Factions").then(m => ({ default: m.Factions })));
 const Lore            = lazy(() => import("./pages/Lore").then(m => ({ default: m.Lore })));
+const Wiki            = lazy(() => import("./pages/Wiki").then(m => ({ default: m.Wiki })));
 const PrivacyPolicy   = lazy(() => import("./pages/PrivacyPolicy").then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService  = lazy(() => import("./pages/TermsOfService").then(m => ({ default: m.TermsOfService })));
 const ResetPassword   = lazy(() => import("./pages/ResetPassword").then(m => ({ default: m.ResetPassword })));
@@ -372,6 +373,7 @@ function LegacyRoutes() {
       <Route path="/credits" element={<Credits />} />
       <Route path="/factions" element={<Factions />} />
       <Route path="/lore" element={<Lore />} />
+      <Route path="/wiki" element={<Wiki />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/reset-password" element={<ResetPassword />} />
