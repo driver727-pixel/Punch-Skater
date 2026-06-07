@@ -32,8 +32,8 @@ export function BattleArena() {
           </Link>
         )}
         {showCyberJoust && (
-          <a href="/cyber-joust/" className="btn-outline">
-            ⚡ Cyber Joust - based on the classic video game Joust
+          <a href="https://rosebud.ai/play/neon-skater-clash" className="btn-outline">
+            ⚡ Cyber Joust
           </a>
         )}
         {showStreets && (
