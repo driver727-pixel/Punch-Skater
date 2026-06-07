@@ -461,10 +461,10 @@ export function Wiki() {
         )
         .map((sub) => ({
           ...sub,
-          titleHighlight: sub.title.toLowerCase().includes(query),
+          titleMatch: sub.title.toLowerCase().includes(query),
           contentMatch: sub.content.toLowerCase().includes(query),
         }))
-        .sort((a, b) => (b.titleHighlight ? 1 : -1));
+        .sort((a, b) => Number(b.titleMatch) - Number(a.titleMatch));
 
       if (titleMatch || contentMatch || (filteredSubsections && filteredSubsections.length > 0)) {
         return {
