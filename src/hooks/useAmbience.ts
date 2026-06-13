@@ -31,6 +31,9 @@ export function useAmbience(): [boolean, () => void] {
     const audio = new Audio(AMBIENCE_SRC);
     audio.loop = true;
     audio.volume = 0.25;
+    // Silently ignore network/decode errors so a missing file doesn't surface
+    // as an unhandled error event in the console.
+    audio.addEventListener('error', () => {});
     audioRef.current = audio;
 
     if (enabledRef.current) {
