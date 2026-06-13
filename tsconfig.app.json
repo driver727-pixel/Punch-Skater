@@ -25,5 +25,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // sw.ts uses WebWorker globals (ServiceWorkerGlobalScope) which conflict with
+  // the DOM lib used by the rest of the app.  It is compiled separately by
+  // vite-plugin-pwa so it can be excluded from the main TypeScript project.
+  "exclude": ["src/sw.ts"]
 }
