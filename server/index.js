@@ -740,9 +740,8 @@ if (!FAL_KEY) {
 }
 if (!stripe) {
   console.warn('⚠️  STRIPE_SECRET_KEY environment variable is not set — checkout sessions will be unavailable.');
-}
-if (!stripeWebhookSecret) {
-  console.warn('⚠️  STRIPE_WEBHOOK_SECRET environment variable is not set — Stripe webhooks will be unavailable.');
+} else if (!stripeWebhookSecret) {
+  console.info('ℹ️  STRIPE_WEBHOOK_SECRET is not set — webhook delivery is disabled. Purchases are still verified via /api/verify-checkout-session.');
 }
 
 const { adminAuth, adminDb, adminStorage } = createFirebaseAdminServices({
