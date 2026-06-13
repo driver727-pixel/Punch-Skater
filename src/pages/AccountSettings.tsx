@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { sfxClick } from "../lib/sfx";
 import { resolveCraftlinguaShareCode } from "../services/craftlingua";
+import { CRAFTLINGUA_ENABLED } from "../lib/craftlingua";
 import {
   isStrongPassword,
   PASSWORD_REQUIREMENTS_MESSAGE,
@@ -299,59 +300,61 @@ export function AccountSettings() {
           </section>
         )}
 
-        <section className="account-section">
-          <h2 className="account-section-title">CraftLingua Language Link</h2>
-          <p className="account-section-copy">
-            Link one of the Codex district languages to use its share code for Rare and Legendary flavor text.
-          </p>
-          {userProfile?.craftlinguaLink && (
-            <div className="account-info-row">
-              <span className="account-info-label">Current language</span>
-              <span className="account-info-value">
-                {userProfile.craftlinguaLink.languageName} ({userProfile.craftlinguaLink.languageCode})
-              </span>
-            </div>
-          )}
-          <form className="account-form" onSubmit={handleCraftlinguaSubmit}>
-            <div className="form-group">
-              <label>CraftLingua Share Code</label>
-              <input
-                className="input"
-                type="text"
-                value={shareCode}
-                onChange={(e) => { setShareCode(e.target.value); setShareCodeError(""); setShareCodeSuccess(""); }}
-                placeholder="CL-GRID-MESH"
-                autoCapitalize="characters"
-                maxLength={64}
-              />
-            </div>
-            {userProfile?.craftlinguaLink?.exploreUrl && (
-              <p className="account-help-text">
-                Explore current link:{" "}
-                <a href={userProfile.craftlinguaLink.exploreUrl} target="_blank" rel="noopener noreferrer">
-                  {userProfile.craftlinguaLink.languageName} ↗
-                </a>
-              </p>
+        {CRAFTLINGUA_ENABLED && (
+          <section className="account-section">
+            <h2 className="account-section-title">CraftLingua Language Link</h2>
+            <p className="account-section-copy">
+              Link one of the Codex district languages to use its share code for Rare and Legendary flavor text.
+            </p>
+            {userProfile?.craftlinguaLink && (
+              <div className="account-info-row">
+                <span className="account-info-label">Current language</span>
+                <span className="account-info-value">
+                  {userProfile.craftlinguaLink.languageName} ({userProfile.craftlinguaLink.languageCode})
+                </span>
+              </div>
             )}
-            {shareCodeError && <p className="login-error">{shareCodeError}</p>}
-            {shareCodeSuccess && <p className="login-success">{shareCodeSuccess}</p>}
-            <div className="account-inline-actions">
-              <button className="btn-primary" type="submit" disabled={shareCodeLoading}>
-                {shareCodeLoading ? "⏳ Validating…" : "Link Language"}
-              </button>
-              {userProfile?.craftlinguaLink && (
-                <button
-                  type="button"
-                  className="btn-outline"
-                  onClick={() => { sfxClick(); void handleCraftlinguaClear(); }}
-                  disabled={shareCodeLoading}
-                >
-                  Clear Link
-                </button>
+            <form className="account-form" onSubmit={handleCraftlinguaSubmit}>
+              <div className="form-group">
+                <label>CraftLingua Share Code</label>
+                <input
+                  className="input"
+                  type="text"
+                  value={shareCode}
+                  onChange={(e) => { setShareCode(e.target.value); setShareCodeError(""); setShareCodeSuccess(""); }}
+                  placeholder="CL-GRID-MESH"
+                  autoCapitalize="characters"
+                  maxLength={64}
+                />
+              </div>
+              {userProfile?.craftlinguaLink?.exploreUrl && (
+                <p className="account-help-text">
+                  Explore current link:{" "}
+                  <a href={userProfile.craftlinguaLink.exploreUrl} target="_blank" rel="noopener noreferrer">
+                    {userProfile.craftlinguaLink.languageName} ↗
+                  </a>
+                </p>
               )}
-            </div>
-          </form>
-        </section>
+              {shareCodeError && <p className="login-error">{shareCodeError}</p>}
+              {shareCodeSuccess && <p className="login-success">{shareCodeSuccess}</p>}
+              <div className="account-inline-actions">
+                <button className="btn-primary" type="submit" disabled={shareCodeLoading}>
+                  {shareCodeLoading ? "⏳ Validating…" : "Link Language"}
+                </button>
+                {userProfile?.craftlinguaLink && (
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={() => { sfxClick(); void handleCraftlinguaClear(); }}
+                    disabled={shareCodeLoading}
+                  >
+                    Clear Link
+                  </button>
+                )}
+              </div>
+            </form>
+          </section>
+        )}
 
         {/* Danger Zone */}
         <section className="account-section account-section--danger">

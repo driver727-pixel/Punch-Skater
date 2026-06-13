@@ -13,6 +13,7 @@ import { SkateboardStatsPanel } from "./SkateboardStatsPanel";
 import { computeCardWorth } from "../lib/battle";
 import { CARD_STAT_LABELS } from "../lib/statLabels";
 import { InsetNeonTube } from "./InsetNeonTube";
+import { CRAFTLINGUA_ENABLED } from "../lib/craftlingua";
 import { hasBuiltInFrameDesignator, RARITY_COLORS } from "../lib/cardRarityVisuals";
 import {
   getFrameBlendMode,
@@ -612,7 +613,7 @@ function CardDisplayComponent({
                     {card.front.flavorTextConlang}
                   </span>
                 )}
-                {card.front.craftlingua?.exploreUrl && (
+                {CRAFTLINGUA_ENABLED && card.front.craftlingua?.exploreUrl && (
                   <a
                     className="card-craftlingua-link"
                     href={card.front.craftlingua.exploreUrl}
