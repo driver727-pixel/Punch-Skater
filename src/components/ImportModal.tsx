@@ -98,7 +98,7 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
             <h2 className="modal-title">IMPORT JSON</h2>
             <p className="modal-sub">
               Drop a <code>.json</code> file, click to browse, or paste JSON below.
-              Accepts a Craftlingua export, a collection export, or a raw card array.
+              Accepts a collection export or a raw card array.
             </p>
             <div className="collection-rewards-message">
               Advanced path: imported JSON can alter stats, layout, saved art, and other card fields outside the regular Customize Card flow.
@@ -138,7 +138,7 @@ export function ImportModal({ existingIds, onImport, onClose }: ImportModalProps
             <textarea
               id="import-paste"
               className="import-textarea"
-              placeholder={`{\n  "source": "craftlingua",\n  "language": { "name": "...", "code": "..." },\n  "cards": [...]\n}`}
+              placeholder={`[\n  { "id": "...", "front": { ... }, ... }\n]`}
               value={pasteText}
               onChange={(e) => { setPasteText(e.target.value); setParseError(""); }}
               rows={8}

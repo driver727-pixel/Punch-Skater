@@ -1,6 +1,12 @@
 import type { CraftlinguaDistrictLanguage, District } from "./types";
 import craftlinguaDistrictsRaw from "./craftlinguaDistricts.json";
 
+/**
+ * Master switch for the CraftLingua integration.
+ * Set to true to re-enable all user-facing CraftLingua UI and links.
+ */
+export const CRAFTLINGUA_ENABLED = false;
+
 const CRAFTLINGUA_BASE_URL = "https://craftlingua.app";
 
 export const CRAFTLINGUA_ATTRIBUTION = "Language system powered by CraftLingua.";

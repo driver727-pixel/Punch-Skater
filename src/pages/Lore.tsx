@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import {
   WORLD_LORE,
   DISTRICT_LORE,
@@ -7,25 +7,11 @@ import {
 } from "../lib/lore";
 import { GeoAtlas } from "../components/GeoAtlas";
 import { DistrictBadge } from "../components/DistrictBadge";
-import { CODEX_CIPHER_CHALLENGE } from "../lib/craftlingua";
-import { fetchCraftlinguaDistricts } from "../services/craftlingua";
-import type { CraftlinguaDistrictLanguage } from "../lib/types";
+import { CODEX_CIPHER_CHALLENGE, CRAFTLINGUA_ENABLED } from "../lib/craftlingua";
 
 export function Lore() {
-  const [districtLanguages, setDistrictLanguages] = useState<CraftlinguaDistrictLanguage[]>([]);
   const [cipherGuess, setCipherGuess] = useState("");
   const [cipherSolved, setCipherSolved] = useState(false);
-
-  useEffect(() => {
-    fetchCraftlinguaDistricts()
-      .then(setDistrictLanguages)
-      .catch(() => setDistrictLanguages([]));
-  }, []);
-
-  const craftlinguaChallenge = useMemo(
-    () => districtLanguages.find((entry) => entry.shareCode === CODEX_CIPHER_CHALLENGE.shareCode) ?? null,
-    [districtLanguages],
-  );
 
   return (
     <div className="page lore-page">
@@ -125,54 +111,6 @@ export function Lore() {
         </div>
       </section>
 
-      <section className="lore-section">
-        <h2 className="lore-heading">CraftLingua District Language Library</h2>
-        <p className="lore-body">
-          Each live district now carries a public courier language shard in the Codex. Open a language in CraftLingua, follow its slang, and use the linked share code to drive Rare and Legendary flavor text.
-        </p>
-        <div className="lore-grid">
-          {districtLanguages.map((entry) => (
-            <div key={entry.shareCode} className="lore-card lore-card--language">
-              <div className="lore-card-header">
-                <span className="lore-card-name">{entry.language.name}</span>
-                <span className="lore-card-control">{entry.language.code}</span>
-              </div>
-              <p className="lore-tagline">"{entry.descriptor}"</p>
-              <p className="lore-body">{entry.summary}</p>
-              <div className="lore-card-meta">
-                <span className="lore-meta-label">District</span>
-                <span className="lore-meta-value">{entry.district}</span>
-              </div>
-              <div className="lore-card-meta">
-                <span className="lore-meta-label">Share code</span>
-                <span className="lore-meta-value">{entry.shareCode}</span>
-              </div>
-              <blockquote className="lore-flavor">{entry.sample}</blockquote>
-              <div className="lore-language-actions">
-                <a className="btn-outline btn-sm" href={entry.exploreUrl} target="_blank" rel="noopener noreferrer">
-                  Explore This Language ↗
-                </a>
-              </div>
-            </div>
-          ))}
-          <div className="lore-card lore-card--language">
-            <div className="lore-card-header">
-              <span className="lore-card-name">Build Your Own</span>
-              <span className="lore-card-control">CraftLingua</span>
-            </div>
-            <p className="lore-body">
-              Want a private courier language instead of a district canon? Build one from scratch, export the profile, and load it into the forge.
-            </p>
-            <div className="lore-language-actions">
-              <a className="btn-primary btn-sm" href="https://craftlingua.app" target="_blank" rel="noopener noreferrer">
-                Open CraftLingua ↗
-              </a>
-            </div>
-          </div>
-        </div>
-        <p className="lore-body lore-body--sm">Language system powered by CraftLingua.</p>
-      </section>
-
       {/* ── Factions / Crews ────────────────────────────────────────────── */}
       <section className="lore-section">
         <h2 className="lore-heading">Crews &amp; Factions</h2>
@@ -196,22 +134,24 @@ export function Lore() {
           <p className="lore-body">{CODEX_CIPHER_CHALLENGE.prompt}</p>
           <div className="lore-card-meta">
             <span className="lore-meta-label">District language</span>
-            <span className="lore-meta-value">{craftlinguaChallenge?.language.name ?? "Cipher Mesh"}</span>
+            <span className="lore-meta-value">Cipher Mesh</span>
           </div>
           <div className="lore-card-meta">
             <span className="lore-meta-label">Cipher text</span>
             <span className="lore-meta-value">{CODEX_CIPHER_CHALLENGE.translatedCipherText}</span>
           </div>
-          <div className="lore-language-actions">
-            <a
-              className="btn-outline btn-sm"
-              href={craftlinguaChallenge?.exploreUrl ?? `https://craftlingua.app/share/${CODEX_CIPHER_CHALLENGE.shareCode}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open language shard ↗
-            </a>
-          </div>
+          {CRAFTLINGUA_ENABLED && (
+            <div className="lore-language-actions">
+              <a
+                className="btn-outline btn-sm"
+                href={`https://craftlingua.app/share/${CODEX_CIPHER_CHALLENGE.shareCode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open language shard ↗
+              </a>
+            </div>
+          )}
           <form
             className="account-form lore-cipher-form"
             onSubmit={(e) => {
@@ -235,7 +175,7 @@ export function Lore() {
             <button className="btn-primary btn-sm" type="submit">Check Answer</button>
           </form>
           {cipherSolved ? (
-            <p className="login-success">Decoded. The stash marker means “{CODEX_CIPHER_CHALLENGE.englishAnswer}”.</p>
+            <p className="login-success">Decoded. The stash marker means "{CODEX_CIPHER_CHALLENGE.englishAnswer}".</p>
           ) : (
             <p className="lore-body lore-body--sm">{CODEX_CIPHER_CHALLENGE.loreNote}</p>
           )}
