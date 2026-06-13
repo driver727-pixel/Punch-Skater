@@ -54,77 +54,20 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // Use the hand-written src/sw.ts so we can add custom error handling
+      // (e.g. returning a 404 stub for missing images instead of letting
+      // Workbox throw an unhandled "no-response" rejection).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
       injectRegister: null,
       includeAssets: ['favicon.svg', 'robots.txt', 'LICENSE.txt', 'pwa-192x192.png', 'pwa-512x512.png'],
       workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
-        cleanupOutdatedCaches: true,
-        globPatterns: ['**/*.{html,js,css,ico,svg,webp,webmanifest,woff2}'],
         // Keep the large animated loading webp out of the install-time precache;
         // it is fetched on demand and runtime-cached via the /assets image rule.
+        globPatterns: ['**/*.{html,js,css,ico,svg,webp,webmanifest,woff2}'],
         globIgnores: ['**/loading_2.webp'],
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/classic-race/, /^\/streets/],
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'html-cache',
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 3600,
-              },
-            },
-          },
-          {
-            urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'static-image-assets',
-              expiration: {
-                maxEntries: 120,
-                maxAgeSeconds: 30 * 24 * 60 * 60,
-              },
-              cacheableResponse: {
-                statuses: [200],
-              },
-            },
-          },
-          {
-            urlPattern: ({ request }) => request.destination === 'audio',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'audio-assets',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 30 * 24 * 60 * 60,
-              },
-              cacheableResponse: {
-                statuses: [200],
-              },
-            },
-          },
-          {
-            urlPattern: ({ request, url }) =>
-              request.method === 'GET' &&
-              url.pathname === '/api/hype/crew-faceoff',
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'landing-faceoff-cache',
-              expiration: {
-                maxEntries: 1,
-                maxAgeSeconds: 5 * 60,
-              },
-              cacheableResponse: {
-                statuses: [200],
-              },
-            },
-          },
-        ],
       },
       manifest: {
         name: 'Punch Skater™',
