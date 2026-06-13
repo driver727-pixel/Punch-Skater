@@ -132,6 +132,7 @@ export function CardForge() {
               src="/Welcome-Skater.jpg"
               alt=""
               className="forge-hero__art-img"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
             />
           </div>
         </div>

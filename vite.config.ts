@@ -81,14 +81,26 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: ({ request, url }) =>
-              request.destination === 'image' &&
-              url.pathname.startsWith('/assets/'),
+            urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {
               cacheName: 'static-image-assets',
               expiration: {
                 maxEntries: 120,
+                maxAgeSeconds: 30 * 24 * 60 * 60,
+              },
+              cacheableResponse: {
+                statuses: [200],
+              },
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'audio',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'audio-assets',
+              expiration: {
+                maxEntries: 10,
                 maxAgeSeconds: 30 * 24 * 60 * 60,
               },
               cacheableResponse: {

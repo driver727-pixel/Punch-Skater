@@ -23,12 +23,12 @@ if ('serviceWorker' in navigator) {
       });
 
       // Check for updates once per hour (polling too frequently wastes bandwidth)
-      setInterval(() => { reg.update(); }, 3_600_000);
+      setInterval(() => { reg.update().catch(() => {}); }, 3_600_000);
 
       // Also check whenever the user returns to the tab
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-          reg.update();
+          reg.update().catch(() => {});
         }
       });
     } catch (e) {
