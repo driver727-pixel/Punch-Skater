@@ -23,7 +23,6 @@ import type { CraftlinguaEnvelope } from "../lib/types";
 import { CRAFTLINGUA_ENABLED } from "../lib/craftlingua";
 
 export function LanguageProfilePanel() {
-  if (!CRAFTLINGUA_ENABLED) return null;
   const { profile, vocabulary, useCraftlingua, loadProfile, clearProfile, setUseCraftlingua } = useLanguage();
   const { tier, openUpgradeModal } = useTier();
   const canUseCraftlingua = TIERS[tier].canUseCraftlingua;
