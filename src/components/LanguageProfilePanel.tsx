@@ -68,6 +68,8 @@ export function LanguageProfilePanel() {
     }
   }, [pasteText, applyProfile]);
 
+  if (!CRAFTLINGUA_ENABLED) return null;
+
   // ── Locked state (free tier) ─────────────────────────────────────────────────
 
   if (!canUseCraftlingua) {
