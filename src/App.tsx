@@ -103,6 +103,7 @@ const BattleArena     = lazy(() => import("./pages/BattleArena").then(m => ({ de
 const RaceTrack       = lazy(() => import("./pages/RaceTrack").then(m => ({ default: m.RaceTrack })));
 const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ default: m.FramePreview })));
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
+const FlashCourier   = lazy(() => import("./pages/FlashCourier").then(m => ({ default: m.FlashCourier })));
 const Workshop        = lazy(() => import("./pages/Workshop").then(m => ({ default: m.Workshop })));
 const UserProfile     = lazy(() => import("./pages/UserProfile").then(m => ({ default: m.UserProfile })));
 const Leaderboard     = lazy(() => import("./pages/Leaderboard").then(m => ({ default: m.Leaderboard })));
@@ -404,6 +405,9 @@ function LegacyRoutes() {
       } />
       <Route path="/missions" element={
         <ProtectedRoute><Missions /></ProtectedRoute>
+      } />
+      <Route path="/flash-courier" element={
+        <ProtectedRoute><FlashCourier /></ProtectedRoute>
       } />
       <Route path="/joustur" element={
         <ProtectedRoute><JousturGate><JousturHome /></JousturGate></ProtectedRoute>
