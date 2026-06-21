@@ -193,7 +193,7 @@ export function FlashCourier() {
   const handleCompileComplete = useCallback(() => {
     if (!slots.vector || !slots.ghost || !slots.payload || !archetype || !district) return;
     const deck: CompiledNavDeck = {
-      navDeckId: `${user?.uid ?? "anon"}_${Date.now()}`,
+      navDeckId: crypto.randomUUID(),
       uid: user?.uid ?? "",
       archetype: archetype as Archetype,
       district: district as District,

@@ -266,6 +266,7 @@ export function SplicerTerminal({
   );
 
   const availableShards = ALL_SHARDS[activeKind];
+  const missingCount = kinds.filter((k) => slots[k] === null).length;
 
   return (
     <div className="splicer-terminal">
@@ -354,10 +355,10 @@ export function SplicerTerminal({
             </span>
           ) : (
             <span className="splicer-compile-btn__label">
-              {allFilled ? "⚡ COMPILE BURN ROUTE" : (() => {
-                const missingCount = kinds.filter((k) => slots[k] === null).length;
-                return `${missingCount} SHARD${missingCount !== 1 ? "S" : ""} MISSING`;
-              })()}
+              {allFilled
+                ? "⚡ COMPILE BURN ROUTE"
+                : `${missingCount} SHARD${missingCount !== 1 ? "S" : ""} MISSING`
+              }
             </span>
           )}
         </button>
@@ -421,13 +422,13 @@ export function useCompileAnimation(onComplete: () => void): CompileAnimationSta
       }
     }, COMPILE_STEP_INTERVAL_MS);
 
-    const progressRaf = { id: 0 };
+    let progressRafId = 0;
     const tick = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / COMPILE_TOTAL_DURATION_MS, 1);
       setCompileProgress(progress);
       if (progress < 1) {
-        progressRaf.id = requestAnimationFrame(tick);
+        progressRafId = requestAnimationFrame(tick);
       } else {
         clearInterval(lineInterval);
         cleanupRef.current = null;
@@ -435,11 +436,11 @@ export function useCompileAnimation(onComplete: () => void): CompileAnimationSta
         onCompleteRef.current();
       }
     };
-    progressRaf.id = requestAnimationFrame(tick);
+    progressRafId = requestAnimationFrame(tick);
 
     cleanupRef.current = () => {
       clearInterval(lineInterval);
-      cancelAnimationFrame(progressRaf.id);
+      cancelAnimationFrame(progressRafId);
     };
   }, []);
 
