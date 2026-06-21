@@ -61,6 +61,13 @@ export const featureFlags = {
 
   /** Punch Skater™ Streets side-scrolling beat-em-up mission mode. @owner gamma */
   STREETS: envFlag("VITE_FF_STREETS", true),
+
+  /**
+   * Flash Courier — narrative-driven run-briefing mechanic with Data Shard
+   * slotting (Splicer Terminal) and a branching story engine (RunBriefing).
+   * @owner gamma
+   */
+  FLASH_COURIER: envFlag("VITE_FF_FLASH_COURIER", true),
 } as const;
 
 export type FeatureFlagKey = keyof typeof featureFlags;
