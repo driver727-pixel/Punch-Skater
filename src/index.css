@@ -20997,7 +20997,7 @@ textarea:focus-visible,
 }
 
 .splicer-slot--drag-over {
-  background: rgba(var(--shard-color-rgb, 0, 255, 136), 0.08);
+  background: rgba(0, 255, 136, 0.08);
   border-color: var(--shard-color);
   outline: 1px dashed var(--shard-color);
   outline-offset: -3px;

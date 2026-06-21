@@ -41,7 +41,7 @@ export interface StoryNode {
   title: string;
   /**
    * Multi-paragraph prose briefing (plain text; newlines are rendered as
-   * paragraph breaks by the RunBriefing component).
+   * paragraph breaks by the RunBriefingPanel component).
    */
   prose: string[];
   /**

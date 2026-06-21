@@ -381,8 +381,9 @@ export interface CompileAnimationState {
 }
 
 /**
- * Drives the 3–5 second compile animation.
+ * Drives the ~4-second compile animation (COMPILE_TOTAL_DURATION_MS = 4200 ms).
  * Call `triggerCompile()` to start; `onComplete` fires when the animation ends.
+ * Any in-flight timers and rAF loops are cancelled on unmount.
  */
 export function useCompileAnimation(onComplete: () => void): CompileAnimationState {
   const [compiling, setCompiling] = useState(false);
@@ -391,7 +392,19 @@ export function useCompileAnimation(onComplete: () => void): CompileAnimationSta
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
+  // Stores the active cleanup function so it can be called on unmount.
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
+
   const triggerCompile = useCallback(() => {
+    // Cancel any previous animation that may still be running.
+    cleanupRef.current?.();
+
     setCompiling(true);
     setCompileProgress(0);
     setCompileLog([]);
@@ -414,13 +427,14 @@ export function useCompileAnimation(onComplete: () => void): CompileAnimationSta
         progressRaf.id = requestAnimationFrame(tick);
       } else {
         clearInterval(lineInterval);
+        cleanupRef.current = null;
         setCompiling(false);
         onCompleteRef.current();
       }
     };
     progressRaf.id = requestAnimationFrame(tick);
 
-    return () => {
+    cleanupRef.current = () => {
       clearInterval(lineInterval);
       cancelAnimationFrame(progressRaf.id);
     };
