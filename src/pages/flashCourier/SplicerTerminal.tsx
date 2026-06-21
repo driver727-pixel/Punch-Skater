@@ -389,6 +389,7 @@ export interface CompileAnimationState {
  * Call `triggerCompile()` to start; `onComplete` fires when the animation ends.
  * Any in-flight timers and rAF loops are cancelled on unmount.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCompileAnimation(onComplete: () => void): CompileAnimationState {
   const [compiling, setCompiling] = useState(false);
   const [compileProgress, setCompileProgress] = useState(0);
