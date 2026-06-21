@@ -14,6 +14,7 @@
  */
 
 import type { CompiledNavDeck } from "./flashCourier";
+import type { District } from "./types";
 
 // ── Output types ──────────────────────────────────────────────────────────────
 
@@ -61,9 +62,7 @@ function hasTags(tags: string[], ...checks: string[]): boolean {
 
 // ── District-level prose blocks ───────────────────────────────────────────────
 
-type DistrictKey = "Airaway" | "Batteryville" | "The Grid" | "Nightshade" | "The Forest" | "Glass City";
-
-const DISTRICT_OPEN_LINES: Record<DistrictKey, string> = {
+const DISTRICT_OPEN_LINES: Partial<Record<District, string>> = {
   Airaway:
     "The thermals over Airaway are rough tonight — the transit drones are running offset patterns to avoid a pressure ridge stalling across the elevated freight lane. Amber hazard strobes blink in loose sequence eight stories below your drop point.",
   Batteryville:
@@ -78,7 +77,7 @@ const DISTRICT_OPEN_LINES: Record<DistrictKey, string> = {
     "Glass City doesn't hide anything — it puts it all in a display case. Every surface is reflective, every corner is archived to a cloud. The paradox is that the surveillance is so dense it folds on itself. Too much data reads as noise.",
 };
 
-const DISTRICT_CLOSE_LINES: Record<DistrictKey, string> = {
+const DISTRICT_CLOSE_LINES: Partial<Record<District, string>> = {
   Airaway:
     "The wind shear at this altitude will cover a lot of sound. That's the only advantage the approach has given you.",
   Batteryville:
@@ -279,10 +278,9 @@ function getChoices(payloadTags: string[], district: string): BriefingChoice[] {
 export function resolveRunBriefing(deck: CompiledNavDeck): StoryNode {
   const { archetype, district, vector, ghost, payload } = deck;
 
-  const districtKey = district as DistrictKey;
-  const openLine = DISTRICT_OPEN_LINES[districtKey]
+  const openLine = DISTRICT_OPEN_LINES[district]
     ?? `The district stretches out ahead of you — ${district} never sleeps.`;
-  const closeLine = DISTRICT_CLOSE_LINES[districtKey]
+  const closeLine = DISTRICT_CLOSE_LINES[district]
     ?? "The window is tight. You know what needs to happen.";
 
   const vectorLine = getVectorProse(vector.tags);

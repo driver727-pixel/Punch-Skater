@@ -354,7 +354,10 @@ export function SplicerTerminal({
             </span>
           ) : (
             <span className="splicer-compile-btn__label">
-              {allFilled ? "⚡ COMPILE BURN ROUTE" : `${kinds.filter((k) => slots[k] === null).length} SHARD${kinds.filter((k) => slots[k] === null).length !== 1 ? "S" : ""} MISSING`}
+              {allFilled ? "⚡ COMPILE BURN ROUTE" : (() => {
+                const missingCount = kinds.filter((k) => slots[k] === null).length;
+                return `${missingCount} SHARD${missingCount !== 1 ? "S" : ""} MISSING`;
+              })()}
             </span>
           )}
         </button>
