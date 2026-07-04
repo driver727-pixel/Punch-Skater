@@ -18,15 +18,29 @@ live in `package.json` `scripts` and `README.md` (`## Local Development` /
 
 ### Secrets / degraded mode (important)
 
-- No secrets are required to run and demo the app. Without them the app runs in
-  **guest mode**: Firebase auth, Fal.ai image generation, and Stripe checkout are
-  unavailable but the Card Forge builder is fully interactive.
-- Because there is no Firebase config, you **cannot complete a login or actually
-  save a forged card**. Clicking "Forge Card" as a guest opens the "Choose your
-  tier" upgrade modal instead of minting a card (this is expected, not a bug).
-  To exercise auth/forge/Stripe end-to-end, provide `VITE_FIREBASE_*` client
-  vars plus server secrets (`FAL_KEY`, `STRIPE_SECRET_KEY`,
-  `FIREBASE_SERVICE_ACCOUNT_JSON`, etc.) documented in `.env.example`.
+- The app runs with **no secrets** in **guest mode**: Firebase auth, Fal.ai image
+  generation, and Stripe checkout are unavailable but the Card Forge builder is
+  fully interactive. As a guest, clicking "Forge Card" opens the "Choose your
+  tier" upgrade modal instead of minting a card (expected, not a bug).
+- When the documented secrets are present (see `.env.example`) the server reads
+  them straight from `process.env` and Vite exposes the `VITE_*` ones, so **no
+  `.env` file is required** — a session where the secrets are injected as real
+  environment variables just works. The server startup warnings about missing
+  `FAL_KEY` / `STRIPE_*` / Firebase Admin disappear when they are set.
+- Non-secret client gate: **in-app image generation only turns on when
+  `VITE_IMAGE_API_URL=/api/generate-image` is set** (see `README.md` local-dev
+  section and `src/services/imageGen.ts` `isImageGenConfigured`). This is config,
+  not a secret, so it is NOT auto-injected — set it (e.g. in a local `.env`) if
+  you need the forge to render AI art. Vite proxies `/api/*` to the server.
+- `FIREBASE_SERVICE_ACCOUNT_JSON` is multi-line JSON. If you put it in a local
+  `.env` (which the server's `dotenv` reads), base64-encode it onto one line —
+  the loader in `server/lib/firebaseAdmin.js` accepts base64. Injected env vars
+  don't have this problem.
+- Verified end-to-end with real secrets: Email/Password sign-in, forging a card,
+  and Fal image generation (which uploads the result to Firebase Storage) all
+  work. Note: **saving a forged card to the Collection is gated behind a paid
+  tier** — a free-tier signed-in user can forge but sees an "upgrade to save"
+  paywall. That is product behavior, not a setup problem.
 
 ### Known non-blocking gotchas
 
