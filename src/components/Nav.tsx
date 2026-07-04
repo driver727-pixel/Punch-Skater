@@ -14,7 +14,6 @@ import { TierModal } from "./TierModal";
 import { NotificationBell } from "./NotificationBell";
 import { sfxNavigate } from "../lib/sfx";
 import { useAmbience } from "../hooks/useAmbience";
-import { isEnabled } from "../lib/featureFlags";
 import { resolveUserDisplayName, resolveUserInitial } from "../lib/userIdentity";
 import { warmRoutes, type RoutePrefetchKey } from "../lib/routePrefetch";
 import menuButtonImage from "../assets/menu-button.png";
@@ -124,7 +123,7 @@ export function Nav() {
           Arena
         </NavLink>
       )}
-      {isEnabled("MISSIONS", user) && (
+      {isAdmin && (
         <NavLink to="/missions" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} onClick={handleNav}>
           Missions
         </NavLink>

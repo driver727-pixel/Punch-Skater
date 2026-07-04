@@ -403,7 +403,7 @@ function LegacyRoutes() {
         <ProtectedRoute><RaceTrack /></ProtectedRoute>
       } />
       <Route path="/missions" element={
-        <ProtectedRoute><Missions /></ProtectedRoute>
+        <AdminRoute><Missions /></AdminRoute>
       } />
       <Route path="/joustur" element={
         <ProtectedRoute><JousturGate><JousturHome /></JousturGate></ProtectedRoute>
