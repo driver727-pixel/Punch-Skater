@@ -6564,8 +6564,22 @@ textarea:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: none;
   min-height: 100vh;
   padding: 24px 16px;
+  margin: 0;
+  isolation: isolate;
+}
+.login-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(22, 8, 1, 0.86), rgba(17, 7, 3, 0.92)),
+    url("/cicada-vending.png") center 18% / min(1100px, 95vw) auto no-repeat;
+  pointer-events: none;
+  z-index: -1;
 }
 .login-card {
   background: var(--bg2);
