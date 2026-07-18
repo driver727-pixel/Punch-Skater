@@ -137,15 +137,13 @@ function resolvePlay(card: CardPayload, state: ClashState): {
   );
   const cooldowns = { ...decrementedCooldowns, [card.id]: 2 };
   const ended = nextRivalHp <= 0 || nextPlayerHp <= 0 || state.turn === MAX_TURNS;
-  const result = ended
-    ? nextRivalHp === nextPlayerHp ? "draw" : nextRivalHp < nextPlayerHp ? "win" : "loss"
-    : undefined;
+  const result = ended ? resolveResult(nextRivalHp, nextPlayerHp) : undefined;
   const entry: ClashLogEntry = {
     turn: state.turn,
     title: `${card.identity.name} vs ${rival.name}`,
     body: [
       `${counter.label}: ${playerDamage} hype damage.`,
-      rivalDamage > 0 ? `${rival.name} answers for ${rivalDamage}.` : "Perfect block — no damage taken.",
+      rivalDamage > 0 ? `${rival.name} answers for ${rivalDamage}.` : "Perfect block—no damage taken.",
       crit ? "CRIT spark!" : "",
       slip ? "Rival feint lands!" : "",
     ].filter(Boolean).join(" "),
@@ -179,6 +177,12 @@ function getResultLabel(result: ClashState["result"]): string {
   if (result === "win") return "Victory";
   if (result === "draw") return "Draw";
   return "Defeat";
+}
+
+function resolveResult(nextRivalHp: number, nextPlayerHp: number): ClashState["result"] {
+  if (nextRivalHp === nextPlayerHp) return "draw";
+  if (nextRivalHp < nextPlayerHp) return "win";
+  return "loss";
 }
 
 export function ForgeClash() {
