@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { useCollection } from "../hooks/useCollection";
+import { clamp, getCardRarityBonus, getCardStat } from "../lib/forgeClashMetrics";
 import type { CardPayload, StatKey } from "../lib/types";
 import { buildArenaDeckSummary, computeCardWorth } from "../lib/battle";
 
@@ -42,8 +43,6 @@ const MAX_HAND_SIZE = 5;
 const MAX_DRAFT_CARDS = 18;
 const MAX_TURNS = 8;
 const MAX_HP = 100;
-const RARITY_STEP_BONUS = 2;
-const LEGENDARY_EXTRA_BONUS = 1;
 const CRIT_STEALTH_DIVISOR = 120;
 const COMBO_CRIT_BONUS = 0.025;
 const MIN_CRIT_CHANCE = 0.05;
@@ -53,13 +52,6 @@ const SLIP_SPEED_DIVISOR = 260;
 const MIN_SLIP_CHANCE = 0.02;
 const MAX_SLIP_CHANCE = 0.25;
 const STAT_KEYS: StatKey[] = ["speed", "range", "stealth", "grit"];
-const RARITY_BONUS: Record<CardPayload["prompts"]["rarity"], number> = {
-  "Punch Skater™": RARITY_STEP_BONUS,
-  Apprentice: RARITY_STEP_BONUS * 2,
-  Master: RARITY_STEP_BONUS * 3,
-  Rare: RARITY_STEP_BONUS * 4,
-  Legendary: RARITY_STEP_BONUS * 5 + LEGENDARY_EXTRA_BONUS,
-};
 
 const RIVAL_MOVES: RivalMove[] = [
   { name: "Rail Gnawer", intent: "Rush", speed: 23, range: 12, stealth: 8, grit: 13 },
@@ -83,26 +75,12 @@ function initialClashState(): ClashState {
   };
 }
 
-function clamp(value: number, min: number, max: number): number {
-  const numericValue = Number.isFinite(value) ? value : min;
-  return Math.max(min, Math.min(max, numericValue));
-}
-
-function toFiniteNumber(value: unknown, fallback = 0): number {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value !== "number" && typeof value !== "string") return fallback;
-  if (typeof value === "string" && value.trim() === "") return fallback;
-
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : fallback;
-}
-
 function getStat(card: CardPayload, stat: StatKey): number {
-  return toFiniteNumber(card.stats[stat]);
+  return getCardStat(card, stat);
 }
 
 function getRarityBonus(card: CardPayload): number {
-  return toFiniteNumber(RARITY_BONUS[card.prompts.rarity]);
+  return getCardRarityBonus(card);
 }
 
 function getStrongestStat(card: CardPayload): StatKey {
