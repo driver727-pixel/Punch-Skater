@@ -84,11 +84,21 @@ function initialClashState(): ClashState {
 }
 
 function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+  const numericValue = Number.isFinite(value) ? value : min;
+  return Math.max(min, Math.min(max, numericValue));
+}
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
 function getStat(card: CardPayload, stat: StatKey): number {
-  return card.stats[stat] ?? 0;
+  return toFiniteNumber(card.stats[stat]);
+}
+
+function getRarityBonus(card: CardPayload): number {
+  return RARITY_BONUS[card.prompts.rarity] ?? 0;
 }
 
 function getStrongestStat(card: CardPayload): StatKey {
@@ -121,7 +131,7 @@ function resolvePlay(card: CardPayload, state: ClashState): {
     MAX_SLIP_CHANCE,
   );
   const shield = Math.round(getStat(card, "grit") * 0.42 + state.combo);
-  const playerBase = getStat(card, "range") + getStat(card, "speed") * 0.62 + RARITY_BONUS[card.prompts.rarity];
+  const playerBase = getStat(card, "range") + getStat(card, "speed") * 0.62 + getRarityBonus(card);
   const playerDamage = Math.max(4, Math.round(playerBase + counter.value + state.heat * 0.7 + (crit ? 12 : 0) - rival.grit * 0.28));
   const rivalBase = rival.range + rival.speed * 0.58 + (rival.intent === "Rush" ? 5 : 0) + (rival.intent === "Trick" ? 3 : 0);
   const rivalDamage = slip ? Math.round(rivalBase + 8) : Math.max(0, Math.round(rivalBase - shield));
@@ -170,7 +180,7 @@ function resolvePlay(card: CardPayload, state: ClashState): {
 }
 
 function healthLabel(value: number): string {
-  return `${Math.round(value)}%`;
+  return `${Math.round(clamp(value, 0, MAX_HP))}%`;
 }
 
 function getResultLabel(result: ClashState["result"]): string {
