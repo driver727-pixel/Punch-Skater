@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { useCollection } from "../hooks/useCollection";
+import { clamp, getCardRarityBonus, getCardStat } from "../lib/forgeClashMetrics";
 import type { CardPayload, StatKey } from "../lib/types";
 import { buildArenaDeckSummary, computeCardWorth } from "../lib/battle";
 
@@ -42,8 +43,6 @@ const MAX_HAND_SIZE = 5;
 const MAX_DRAFT_CARDS = 18;
 const MAX_TURNS = 8;
 const MAX_HP = 100;
-const RARITY_STEP_BONUS = 2;
-const LEGENDARY_EXTRA_BONUS = 1;
 const CRIT_STEALTH_DIVISOR = 120;
 const COMBO_CRIT_BONUS = 0.025;
 const MIN_CRIT_CHANCE = 0.05;
@@ -53,13 +52,6 @@ const SLIP_SPEED_DIVISOR = 260;
 const MIN_SLIP_CHANCE = 0.02;
 const MAX_SLIP_CHANCE = 0.25;
 const STAT_KEYS: StatKey[] = ["speed", "range", "stealth", "grit"];
-const RARITY_BONUS: Record<CardPayload["prompts"]["rarity"], number> = {
-  "Punch Skater™": RARITY_STEP_BONUS,
-  Apprentice: RARITY_STEP_BONUS * 2,
-  Master: RARITY_STEP_BONUS * 3,
-  Rare: RARITY_STEP_BONUS * 4,
-  Legendary: RARITY_STEP_BONUS * 5 + LEGENDARY_EXTRA_BONUS,
-};
 
 const RIVAL_MOVES: RivalMove[] = [
   { name: "Rail Gnawer", intent: "Rush", speed: 23, range: 12, stealth: 8, grit: 13 },
@@ -83,12 +75,12 @@ function initialClashState(): ClashState {
   };
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+function getStat(card: CardPayload, stat: StatKey): number {
+  return getCardStat(card, stat);
 }
 
-function getStat(card: CardPayload, stat: StatKey): number {
-  return card.stats[stat] ?? 0;
+function getRarityBonus(card: CardPayload): number {
+  return getCardRarityBonus(card);
 }
 
 function getStrongestStat(card: CardPayload): StatKey {
@@ -121,7 +113,7 @@ function resolvePlay(card: CardPayload, state: ClashState): {
     MAX_SLIP_CHANCE,
   );
   const shield = Math.round(getStat(card, "grit") * 0.42 + state.combo);
-  const playerBase = getStat(card, "range") + getStat(card, "speed") * 0.62 + RARITY_BONUS[card.prompts.rarity];
+  const playerBase = getStat(card, "range") + getStat(card, "speed") * 0.62 + getRarityBonus(card);
   const playerDamage = Math.max(4, Math.round(playerBase + counter.value + state.heat * 0.7 + (crit ? 12 : 0) - rival.grit * 0.28));
   const rivalBase = rival.range + rival.speed * 0.58 + (rival.intent === "Rush" ? 5 : 0) + (rival.intent === "Trick" ? 3 : 0);
   const rivalDamage = slip ? Math.round(rivalBase + 8) : Math.max(0, Math.round(rivalBase - shield));
@@ -170,7 +162,7 @@ function resolvePlay(card: CardPayload, state: ClashState): {
 }
 
 function healthLabel(value: number): string {
-  return `${Math.round(value)}%`;
+  return `${Math.round(clamp(value, 0, MAX_HP))}%`;
 }
 
 function getResultLabel(result: ClashState["result"]): string {
