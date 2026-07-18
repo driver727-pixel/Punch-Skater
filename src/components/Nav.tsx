@@ -118,7 +118,7 @@ export function Nav() {
           to="/arena"
           className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
           onClick={handleNav}
-          {...bindIntentWarm(["arena", "joustur"])}
+          {...bindIntentWarm(["arena", "forgeClash", "joustur"])}
         >
           Arena
         </NavLink>
