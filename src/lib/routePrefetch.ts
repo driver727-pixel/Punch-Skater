@@ -2,6 +2,7 @@ export type RoutePrefetchKey =
   | "forge"
   | "login"
   | "arena"
+  | "forgeClash"
   | "collection"
   | "missions"
   | "leaderboard"
@@ -17,6 +18,7 @@ const routeWarmers: Record<RoutePrefetchKey, () => Promise<unknown>> = {
   forge: () => import("../pages/CardForge"),
   login: () => import("../pages/Login"),
   arena: () => import("../pages/BattleArena"),
+  forgeClash: () => import("../pages/ForgeClash"),
   collection: () => import("../pages/Collection"),
   missions: () => import("../pages/Missions"),
   leaderboard: () => import("../pages/Leaderboard"),

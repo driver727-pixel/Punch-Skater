@@ -100,6 +100,7 @@ const AccountSettings = lazy(() => import("./pages/AccountSettings").then(m => (
 const Admin           = lazy(() => import("./pages/Admin").then(m => ({ default: m.Admin })));
 const AssetGenerator  = lazy(() => import("./pages/AssetGenerator").then(m => ({ default: m.AssetGenerator })));
 const BattleArena     = lazy(() => import("./pages/BattleArena").then(m => ({ default: m.BattleArena })));
+const ForgeClash      = lazy(() => import("./pages/ForgeClash").then(m => ({ default: m.ForgeClash })));
 const RaceTrack       = lazy(() => import("./pages/RaceTrack").then(m => ({ default: m.RaceTrack })));
 const FramePreview    = lazy(() => import("./pages/FramePreview").then(m => ({ default: m.FramePreview })));
 const Missions        = lazy(() => import("./pages/Missions").then(m => ({ default: m.Missions })));
@@ -398,6 +399,9 @@ function LegacyRoutes() {
       } />
       <Route path="/arena/classic" element={
         <ProtectedRoute><ClassicRace /></ProtectedRoute>
+      } />
+      <Route path="/arena/forge-clash" element={
+        <ProtectedRoute><ForgeClash /></ProtectedRoute>
       } />
       <Route path="/race/:raceId" element={
         <ProtectedRoute><RaceTrack /></ProtectedRoute>

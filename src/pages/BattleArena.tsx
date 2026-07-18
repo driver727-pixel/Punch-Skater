@@ -44,6 +44,9 @@ export function BattleArena() {
         <Link to="/arena/classic" className="btn-outline">
           🏁 Classic Race - stat based race against computer, or online opponents
         </Link>
+        <Link to="/arena/forge-clash" className="btn-outline">
+          🃏 Forge Clash - animated card duel using the cards you forge
+        </Link>
       </div>
     </div>
   );
