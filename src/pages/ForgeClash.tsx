@@ -38,10 +38,12 @@ interface ClashState {
   log: ClashLogEntry[];
 }
 
-const HAND_SIZE = 5;
+const MAX_HAND_SIZE = 5;
 const MAX_DRAFT_CARDS = 18;
 const MAX_TURNS = 8;
 const MAX_HP = 100;
+const RARITY_STEP_BONUS = 2;
+const LEGENDARY_EXTRA_BONUS = 1;
 const CRIT_STEALTH_DIVISOR = 120;
 const COMBO_CRIT_BONUS = 0.025;
 const MIN_CRIT_CHANCE = 0.05;
@@ -52,11 +54,11 @@ const MIN_SLIP_CHANCE = 0.02;
 const MAX_SLIP_CHANCE = 0.25;
 const STAT_KEYS: StatKey[] = ["speed", "range", "stealth", "grit"];
 const RARITY_BONUS: Record<CardPayload["prompts"]["rarity"], number> = {
-  "Punch Skater™": 2,
-  Apprentice: 4,
-  Master: 6,
-  Rare: 8,
-  Legendary: 11,
+  "Punch Skater™": RARITY_STEP_BONUS,
+  Apprentice: RARITY_STEP_BONUS * 2,
+  Master: RARITY_STEP_BONUS * 3,
+  Rare: RARITY_STEP_BONUS * 4,
+  Legendary: RARITY_STEP_BONUS * 5 + LEGENDARY_EXTRA_BONUS,
 };
 
 const RIVAL_MOVES: RivalMove[] = [
@@ -134,7 +136,7 @@ function resolvePlay(card: CardPayload, state: ClashState): {
       .filter(([, value]) => value > 0),
   );
   const cooldowns = { ...decrementedCooldowns, [card.id]: 2 };
-  const ended = nextRivalHp <= 0 || nextPlayerHp <= 0 || state.turn >= MAX_TURNS;
+  const ended = nextRivalHp <= 0 || nextPlayerHp <= 0 || state.turn === MAX_TURNS;
   const result = ended
     ? nextRivalHp === nextPlayerHp ? "draw" : nextRivalHp < nextPlayerHp ? "win" : "loss"
     : undefined;
@@ -173,6 +175,12 @@ function healthLabel(value: number): string {
   return `${Math.round(value)}%`;
 }
 
+function getResultLabel(result: ClashState["result"]): string {
+  if (result === "win") return "Victory";
+  if (result === "draw") return "Draw";
+  return "Defeat";
+}
+
 export function ForgeClash() {
   const { cards } = useCollection();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -190,12 +198,16 @@ export function ForgeClash() {
   );
   const deckSummary = useMemo(() => buildArenaDeckSummary(selectedCards), [selectedCards]);
   const currentRival = RIVAL_MOVES[(clash.turn - 1) % RIVAL_MOVES.length];
+  const activeCard = useMemo(
+    () => selectedCards.find((card) => card.id === clash.activeCardId),
+    [clash.activeCardId, selectedCards],
+  );
 
   const toggleCard = (cardId: string) => {
     if (clash.phase !== "draft") return;
     setSelectedIds((current) => {
       if (current.includes(cardId)) return current.filter((id) => id !== cardId);
-      if (current.length >= HAND_SIZE) return current;
+      if (current.length >= MAX_HAND_SIZE) return current;
       return [...current, cardId];
     });
   };
@@ -248,7 +260,7 @@ export function ForgeClash() {
               </div>
               <div className="forge-clash-turn">
                 <span>Turn {clash.turn}/{MAX_TURNS}</span>
-                <strong>{clash.phase === "ended" ? (clash.result === "win" ? "Victory" : clash.result === "draw" ? "Draw" : "Defeat") : currentRival.intent}</strong>
+                <strong>{clash.phase === "ended" ? getResultLabel(clash.result) : currentRival.intent}</strong>
               </div>
               <div className="forge-clash-health forge-clash-health--rival">
                 <span>Rival Heat</span>
@@ -260,7 +272,7 @@ export function ForgeClash() {
             <div className="forge-clash-stage">
               <div className={`forge-clash-combatant forge-clash-combatant--player${clash.activeCardId ? " is-striking" : ""}`} key={clash.activeCardId ?? "crew"}>
                 <span>⚡</span>
-                <strong>{clash.activeCardId ? selectedCards.find((card) => card.id === clash.activeCardId)?.identity.name : "Your hand is loaded"}</strong>
+                <strong>{activeCard?.identity.name ?? "Your hand is loaded"}</strong>
               </div>
               <div className="forge-clash-impact">
                 <span>COMBO x{clash.combo}</span>
@@ -286,7 +298,7 @@ export function ForgeClash() {
                     <CardThumbnail card={card} width={150} height={105} />
                     <span>{card.identity.name}</span>
                     <small>
-                      {cooldown > 0 ? `Cooling ${cooldown}` : `${getStrongestStat(card).toUpperCase()} lead`}
+                      {cooldown > 0 ? `Cooldown: ${cooldown}` : `${getStrongestStat(card).toUpperCase()} lead`}
                     </small>
                   </button>
                 );
@@ -314,7 +326,7 @@ export function ForgeClash() {
           <aside className="forge-clash-side">
             <section className="forge-clash-panel">
               <h2>Draft forged cards</h2>
-              <p>{selectedCards.length}/{HAND_SIZE} selected. Strong hands rotate between damage, blocks, and counters.</p>
+              <p>{selectedCards.length}/{MAX_HAND_SIZE} selected. Strong hands rotate between damage, blocks, and counters.</p>
               <div className="forge-clash-draft-grid">
                 {sortedCards.slice(0, MAX_DRAFT_CARDS).map((card) => {
                   const selected = selectedIds.includes(card.id);
@@ -324,7 +336,7 @@ export function ForgeClash() {
                       type="button"
                       className={`forge-clash-draft-card${selected ? " is-selected" : ""}`}
                       onClick={() => toggleCard(card.id)}
-                      disabled={!selected && selectedIds.length >= HAND_SIZE}
+                      disabled={!selected && selectedIds.length >= MAX_HAND_SIZE}
                     >
                       <CardThumbnail card={card} width={118} height={82} />
                       <span>{card.identity.name}</span>
