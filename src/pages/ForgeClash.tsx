@@ -89,7 +89,11 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function toFiniteNumber(value: unknown, fallback = 0): number {
-  const numericValue = typeof value === "number" ? value : Number(value);
+  if (value === null || value === undefined) return fallback;
+  if (typeof value !== "number" && typeof value !== "string") return fallback;
+  if (typeof value === "string" && value.trim() === "") return fallback;
+
+  const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
@@ -98,7 +102,7 @@ function getStat(card: CardPayload, stat: StatKey): number {
 }
 
 function getRarityBonus(card: CardPayload): number {
-  return RARITY_BONUS[card.prompts.rarity] ?? 0;
+  return toFiniteNumber(RARITY_BONUS[card.prompts.rarity]);
 }
 
 function getStrongestStat(card: CardPayload): StatKey {
