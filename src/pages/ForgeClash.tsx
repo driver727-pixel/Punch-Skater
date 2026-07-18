@@ -34,13 +34,22 @@ interface ClashState {
   cooldowns: Record<string, number>;
   activeCardId?: string;
   activeRival?: string;
-  result?: "win" | "loss";
+  result?: "win" | "loss" | "draw";
   log: ClashLogEntry[];
 }
 
 const HAND_SIZE = 5;
+const MAX_DRAFT_CARDS = 18;
 const MAX_TURNS = 8;
 const MAX_HP = 100;
+const CRIT_STEALTH_DIVISOR = 120;
+const COMBO_CRIT_BONUS = 0.025;
+const MIN_CRIT_CHANCE = 0.05;
+const MAX_CRIT_CHANCE = 0.42;
+const SLIP_STEALTH_DIVISOR = 150;
+const SLIP_SPEED_DIVISOR = 260;
+const MIN_SLIP_CHANCE = 0.02;
+const MAX_SLIP_CHANCE = 0.25;
 const STAT_KEYS: StatKey[] = ["speed", "range", "stealth", "grit"];
 const RARITY_BONUS: Record<CardPayload["prompts"]["rarity"], number> = {
   "Punch Skater™": 2,
@@ -99,8 +108,16 @@ function resolvePlay(card: CardPayload, state: ClashState): {
 } {
   const rival = RIVAL_MOVES[(state.turn - 1) % RIVAL_MOVES.length];
   const counter = getCounterBonus(card, rival.intent);
-  const crit = Math.random() < clamp(getStat(card, "stealth") / 120 + state.combo * 0.025, 0.05, 0.42);
-  const slip = Math.random() < clamp(rival.stealth / 150 - getStat(card, "speed") / 260, 0.02, 0.25);
+  const crit = Math.random() < clamp(
+    getStat(card, "stealth") / CRIT_STEALTH_DIVISOR + state.combo * COMBO_CRIT_BONUS,
+    MIN_CRIT_CHANCE,
+    MAX_CRIT_CHANCE,
+  );
+  const slip = Math.random() < clamp(
+    rival.stealth / SLIP_STEALTH_DIVISOR - getStat(card, "speed") / SLIP_SPEED_DIVISOR,
+    MIN_SLIP_CHANCE,
+    MAX_SLIP_CHANCE,
+  );
   const shield = Math.round(getStat(card, "grit") * 0.42 + state.combo);
   const playerBase = getStat(card, "range") + getStat(card, "speed") * 0.62 + RARITY_BONUS[card.prompts.rarity];
   const playerDamage = Math.max(4, Math.round(playerBase + counter.value + state.heat * 0.7 + (crit ? 12 : 0) - rival.grit * 0.28));
@@ -119,7 +136,7 @@ function resolvePlay(card: CardPayload, state: ClashState): {
   const cooldowns = { ...decrementedCooldowns, [card.id]: 2 };
   const ended = nextRivalHp <= 0 || nextPlayerHp <= 0 || state.turn >= MAX_TURNS;
   const result = ended
-    ? nextRivalHp <= nextPlayerHp ? "win" : "loss"
+    ? nextRivalHp === nextPlayerHp ? "draw" : nextRivalHp < nextPlayerHp ? "win" : "loss"
     : undefined;
   const entry: ClashLogEntry = {
     turn: state.turn,
@@ -231,7 +248,7 @@ export function ForgeClash() {
               </div>
               <div className="forge-clash-turn">
                 <span>Turn {clash.turn}/{MAX_TURNS}</span>
-                <strong>{clash.phase === "ended" ? (clash.result === "win" ? "Victory" : "Defeat") : currentRival.intent}</strong>
+                <strong>{clash.phase === "ended" ? (clash.result === "win" ? "Victory" : clash.result === "draw" ? "Draw" : "Defeat") : currentRival.intent}</strong>
               </div>
               <div className="forge-clash-health forge-clash-health--rival">
                 <span>Rival Heat</span>
@@ -299,7 +316,7 @@ export function ForgeClash() {
               <h2>Draft forged cards</h2>
               <p>{selectedCards.length}/{HAND_SIZE} selected. Strong hands rotate between damage, blocks, and counters.</p>
               <div className="forge-clash-draft-grid">
-                {sortedCards.slice(0, 18).map((card) => {
+                {sortedCards.slice(0, MAX_DRAFT_CARDS).map((card) => {
                   const selected = selectedIds.includes(card.id);
                   return (
                     <button
