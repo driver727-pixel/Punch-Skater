@@ -272,7 +272,7 @@ export function ForgeClash() {
     if (!clash.activeRival) return currentRival;
     const move = RIVAL_MOVES.find((rivalMove) => rivalMove.name === clash.activeRival);
     if (!move) {
-      console.warn(`Forge Clash received unknown active rival "${clash.activeRival}". Valid rival names come from RIVAL_MOVES; using current turn rival "${currentRival.name}".`);
+      console.warn(`Forge Clash received unknown active rival "${clash.activeRival}". Check RIVAL_MOVES; valid names are ${RIVAL_MOVES.map((rivalMove) => rivalMove.name).join(", ")}. Using current turn rival "${currentRival.name}".`);
     }
     return move ?? currentRival;
   }, [clash.activeRival, currentRival]);

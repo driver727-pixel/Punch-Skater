@@ -21607,7 +21607,7 @@ textarea:focus-visible,
 }
 
 .forge-clash-impact__shield {
-  /* Percentage points define the block-impact shield silhouette. */
+  /* Creates a hexagonal block-impact shield with a pointed top and tapered lower edge. */
   --forge-clash-shield-clip: polygon(50% 0, 91% 18%, 82% 72%, 50% 100%, 18% 72%, 9% 18%);
   position: absolute;
   inset: 18px;
