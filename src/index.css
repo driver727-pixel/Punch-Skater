@@ -21348,7 +21348,7 @@ textarea:focus-visible,
 }
 
 @keyframes forgeClashImpactRing {
-  0%, 100% { transform: scale(0.9); opacity: 0.42; }
+  0% { transform: scale(0.9); opacity: 0.42; }
   50% { transform: scale(1.08); opacity: 0.82; }
 }
 

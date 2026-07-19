@@ -188,7 +188,6 @@ function getClashStateKey(clash: ClashState): string {
   return [
     clash.phase,
     `turn-${clash.turn}`,
-    `heat-${clash.heat}`,
     clash.activeCardId ? `card-${clash.activeCardId}` : "card-none",
   ].join("|");
 }
