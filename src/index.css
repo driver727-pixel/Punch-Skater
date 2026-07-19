@@ -21672,7 +21672,12 @@ body {
 @media (hover: none), (pointer: coarse) {
   .nav-link:hover,
   .btn-primary:hover:not(:disabled),
-  .btn-outline:hover:not(:disabled) {
+  .btn-outline:hover:not(:disabled),
+  .pill:hover,
+  .user-avatar-btn:hover,
+  .nav-hamburger:hover,
+  .ambience-btn:hover,
+  .tier-badge-btn:hover {
     transform: none;
   }
 }

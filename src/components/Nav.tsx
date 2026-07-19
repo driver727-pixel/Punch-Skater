@@ -181,11 +181,19 @@ export function Nav() {
         <span aria-hidden="true">⚡</span>
         <strong>Forge</strong>
       </NavLink>
-      <NavLink to={user ? "/arena" : "/login"} className={({ isActive }) => getDockItemClass(isActive)}>
+      <NavLink
+        to={user ? "/arena" : "/login"}
+        className={({ isActive }) => getDockItemClass(isActive)}
+        aria-label={user ? "Open Arena" : "Sign in to open Arena"}
+      >
         <span aria-hidden="true">🛹</span>
         <strong>Arena</strong>
       </NavLink>
-      <NavLink to={user ? "/collection" : "/login"} className={({ isActive }) => getDockItemClass(isActive)}>
+      <NavLink
+        to={user ? "/collection" : "/login"}
+        className={({ isActive }) => getDockItemClass(isActive)}
+        aria-label={user ? "Open Crew collection" : "Sign in to open Crew collection"}
+      >
         <span aria-hidden="true">🃏</span>
         <strong>Crew</strong>
       </NavLink>
