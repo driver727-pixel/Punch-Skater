@@ -60,7 +60,7 @@ export function LandingPage() {
           <p className="landing-hero__subtitle">a Sk8r Punk™ Card Game!</p>
           <p className="landing-hero__lede">
             A pocket arcade deck-builder where rooftop gardens, cassette tech, and neon rivals collide.
-            Forge a skater, build a crew, then drop into fast taps, bold choices, and district runs.
+            Forge a skater, build a crew. Then drop into fast taps, bold choices, and district runs.
           </p>
           <div className="landing-hero__mode-strip" role="list" aria-label="Punch Skater experience pillars">
             <span role="listitem">Solarpunk streets</span>
