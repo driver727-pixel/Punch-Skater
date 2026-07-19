@@ -169,21 +169,23 @@ export function Nav() {
     );
   };
 
+  const getDockItemClass = (isActive: boolean) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item";
+
   const renderMobileDock = () => (
     <nav className="mobile-game-dock" aria-label="Quick game actions">
-      <NavLink to="/" end className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+      <NavLink to="/" end className={({ isActive }) => getDockItemClass(isActive)}>
         <span aria-hidden="true">🏠</span>
         <strong>Hub</strong>
       </NavLink>
-      <NavLink to="/forge" className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+      <NavLink to="/forge" className={({ isActive }) => getDockItemClass(isActive)}>
         <span aria-hidden="true">⚡</span>
         <strong>Forge</strong>
       </NavLink>
-      <NavLink to={user ? "/arena" : "/login"} className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+      <NavLink to={user ? "/arena" : "/login"} className={({ isActive }) => getDockItemClass(isActive)}>
         <span aria-hidden="true">🛹</span>
         <strong>Arena</strong>
       </NavLink>
-      <NavLink to={user ? "/collection" : "/login"} className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+      <NavLink to={user ? "/collection" : "/login"} className={({ isActive }) => getDockItemClass(isActive)}>
         <span aria-hidden="true">🃏</span>
         <strong>Crew</strong>
       </NavLink>

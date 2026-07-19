@@ -21633,6 +21633,7 @@ body {
   }
 
   .landing-hero {
+    min-height: calc(100vh - 164px);
     min-height: calc(100dvh - 164px);
     align-content: center;
     border-radius: 24px;
