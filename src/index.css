@@ -21395,6 +21395,7 @@ textarea:focus-visible,
   --glass-panel: rgba(6, 12, 24, 0.78);
   --glass-panel-strong: rgba(6, 12, 24, 0.92);
   --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-panel-inset: 4px;
   --touch-target: 48px;
 }
 
@@ -21535,7 +21536,7 @@ body {
 
 .landing-hero__quick-stats strong {
   color: var(--solar-leaf);
-  margin-right: 5px;
+  margin-right: 8px;
   text-shadow: 0 0 10px rgba(141, 255, 92, 0.42);
 }
 
@@ -21551,7 +21552,7 @@ body {
 
   .page::after {
     border-radius: 18px;
-    inset: 4px;
+    inset: var(--mobile-panel-inset);
   }
 
   .nav {

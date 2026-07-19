@@ -63,8 +63,8 @@ export function LandingPage() {
             Forge a skater, build a crew, then drop into fast taps, bold choices, and district runs.
           </p>
           <div className="landing-hero__mode-strip" aria-label="Punch Skater experience pillars">
-            <span>Solar punk streets</span>
-            <span>Cyber punk rivals</span>
+            <span>Solarpunk streets</span>
+            <span>Cyberpunk rivals</span>
             <span>Mobile-first runs</span>
           </div>
           <div className="landing-hero__hud" role="list" aria-label="Punch Skater game flow">
