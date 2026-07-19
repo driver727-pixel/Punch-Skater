@@ -272,7 +272,7 @@ export function ForgeClash() {
     if (!clash.activeRival) return currentRival;
     const move = RIVAL_MOVES.find((rivalMove) => rivalMove.name === clash.activeRival);
     if (!move) {
-      console.warn(`Forge Clash active rival "${clash.activeRival}" was not found in RIVAL_MOVES; using current turn rival "${currentRival.name}".`);
+      console.warn(`Forge Clash active rival "${clash.activeRival}" was not found in RIVAL_MOVES. Using current turn rival "${currentRival.name}".`);
     }
     return move ?? currentRival;
   }, [clash.activeRival, currentRival]);
@@ -452,8 +452,8 @@ export function ForgeClash() {
 
             <div className="forge-clash-opponent-row" aria-label="Upcoming opponent cards">
               <span>Rival deck</span>
-              {rivalPreviewMoves.map((move, index) => (
-                <RivalCard key={`${clash.turn}:${index}`} move={move} size="mini" />
+              {rivalPreviewMoves.map((move) => (
+                <RivalCard key={move.name} move={move} size="mini" />
               ))}
             </div>
 
