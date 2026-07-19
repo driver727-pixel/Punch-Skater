@@ -21041,13 +21041,14 @@ textarea:focus-visible,
 }
 
 .forge-clash-stage__sparks i {
+  --forge-clash-spark-rotation: 38deg;
   width: 12px;
   height: 112px;
   border-radius: 999px;
   background: linear-gradient(180deg, transparent, #fff, var(--accent2), transparent);
   filter: blur(0.4px) drop-shadow(0 0 14px var(--accent2));
   opacity: 0;
-  transform: rotate(38deg) scaleY(0.3);
+  transform: rotate(var(--forge-clash-spark-rotation)) scaleY(0.3);
 }
 
 .forge-clash-stage--player .forge-clash-stage__sparks i,
@@ -21057,12 +21058,12 @@ textarea:focus-visible,
 }
 
 .forge-clash-stage__sparks i:nth-child(2) {
-  transform: rotate(90deg) scaleY(0.3);
+  --forge-clash-spark-rotation: 90deg;
   animation-delay: 70ms;
 }
 
 .forge-clash-stage__sparks i:nth-child(3) {
-  transform: rotate(142deg) scaleY(0.3);
+  --forge-clash-spark-rotation: 142deg;
   animation-delay: 120ms;
 }
 
@@ -21338,9 +21339,9 @@ textarea:focus-visible,
 }
 
 @keyframes forgeClashSparkBurst {
-  0% { opacity: 0; transform: rotate(38deg) scaleY(0.2); }
+  0% { opacity: 0; transform: rotate(var(--forge-clash-spark-rotation)) scaleY(0.2); }
   30% { opacity: 1; }
-  100% { opacity: 0; transform: rotate(38deg) scaleY(1.35); }
+  100% { opacity: 0; transform: rotate(var(--forge-clash-spark-rotation)) scaleY(1.35); }
 }
 
 @keyframes forgeClashCombatantAura {
@@ -21350,6 +21351,7 @@ textarea:focus-visible,
 @keyframes forgeClashImpactRing {
   0% { transform: scale(0.9); opacity: 0.42; }
   50% { transform: scale(1.08); opacity: 0.82; }
+  100% { transform: scale(1.18); opacity: 0; }
 }
 
 @media (max-width: 980px) {

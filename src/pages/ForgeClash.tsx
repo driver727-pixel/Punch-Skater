@@ -181,7 +181,8 @@ function getSwingMessage(entry?: ClashLogEntry): string {
   if (!entry) return "Ready";
   if (entry.swing === "player") return "Advantage!";
   if (entry.swing === "rival") return "Rival surge!";
-  return "Clash tie!";
+  if (entry.swing === "neutral") return "Clash tie!";
+  return "Ready";
 }
 
 function getClashStateKey(clash: ClashState): string {
