@@ -18564,6 +18564,10 @@ textarea:focus-visible,
   transform: scale(1.08);
   box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 42%, transparent);
 }
+.race-arena-mode-link {
+  justify-content: flex-start;
+  text-align: left;
+}
 .race-arena-self {
   display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
   padding: 0.6rem 0.9rem; border: 1px solid rgba(255,255,255,0.12);
