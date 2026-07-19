@@ -21396,6 +21396,7 @@ textarea:focus-visible,
   --glass-panel-strong: rgba(6, 12, 24, 0.92);
   --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
   --mobile-panel-inset: 4px;
+  --mobile-action-gutter: 8px;
   --touch-target: 48px;
 }
 
@@ -21536,7 +21537,7 @@ body {
 
 .landing-hero__quick-stats strong {
   color: var(--solar-leaf);
-  margin-right: 8px;
+  margin-inline-end: 8px;
   text-shadow: 0 0 10px rgba(141, 255, 92, 0.42);
 }
 
@@ -21622,7 +21623,7 @@ body {
   }
 
   .mobile-game-dock__item strong {
-    font-size: 0.62rem;
+    font-size: 0.75rem;
   }
 
   .mobile-game-dock__item.active {
@@ -21659,8 +21660,8 @@ body {
     position: sticky;
     bottom: calc(84px + var(--mobile-safe-bottom));
     z-index: 3;
-    padding: 8px;
-    margin-inline: -8px;
+    padding: var(--mobile-action-gutter);
+    margin-inline: calc(var(--mobile-action-gutter) * -1);
     border: 1px solid rgba(143, 251, 255, 0.16);
     border-radius: 18px;
     background: rgba(4, 8, 18, 0.72);
