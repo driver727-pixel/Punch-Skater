@@ -21082,6 +21082,7 @@ textarea:focus-visible,
   width: 34%;
   aspect-ratio: 1;
   border-radius: 50%;
+  /* Soft radial stops keep the smoke readable over noisy card art without hiding it. */
   background:
     radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(120, 255, 220, 0.08) 38%, transparent 66%);
   opacity: 0;
@@ -21122,6 +21123,7 @@ textarea:focus-visible,
   width: 3px;
   height: 72%;
   background: linear-gradient(180deg, transparent, #fff, #6ffcff, #fff, transparent);
+  /* Jagged polygon creates the bolt silhouette while keeping the effect pure CSS. */
   clip-path: polygon(48% 0, 100% 30%, 60% 30%, 96% 68%, 28% 42%, 66% 42%);
   filter: drop-shadow(0 0 8px #5cf9ff) drop-shadow(0 0 20px var(--accent));
   transform: rotate(-18deg) scaleY(0);
@@ -21291,7 +21293,10 @@ textarea:focus-visible,
 }
 
 .forge-clash-3d-card--1 {
-  transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg);
+  --forge-card-x: 58deg;
+  --forge-card-y: -18deg;
+  --forge-card-z: -8deg;
+  transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z));
   animation: forgeClashCardHover 2.8s ease-in-out infinite;
 }
 
@@ -21511,14 +21516,14 @@ textarea:focus-visible,
 }
 
 @keyframes forgeClash3DCardStrike {
-  0% { transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg) scale(1); }
+  0% { transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z)) scale(1); }
   46% { transform: translate(-8%, -62%) rotateX(50deg) rotateY(28deg) rotateZ(16deg) scale(1.16); filter: saturate(1.55) brightness(1.25); }
   64% { transform: translate(18%, -46%) rotateX(64deg) rotateY(-10deg) rotateZ(-16deg) scale(1.04); }
-  100% { transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg) scale(1); }
+  100% { transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z)) scale(1); }
 }
 
 @keyframes forgeClashCardHover {
-  0%, 100% { transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg) translateY(0); }
+  0%, 100% { transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z)) translateY(0); }
   50% { transform: translate(-50%, -56%) rotateX(54deg) rotateY(-8deg) rotateZ(-5deg) translateY(-6px); }
 }
 
