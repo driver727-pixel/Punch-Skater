@@ -202,6 +202,10 @@ function getIntentIcon(intent: ClashIntent): string {
   return "👁️";
 }
 
+function buildClassName(...parts: Array<string | false | undefined>): string {
+  return parts.filter(Boolean).join(" ");
+}
+
 function RivalCard({ move, size = "standard" }: { move: RivalMove; size?: "standard" | "mini" }) {
   return (
     <div className={`forge-clash-rival-card forge-clash-rival-card--${move.intent.toLowerCase()} forge-clash-rival-card--${size}`}>
@@ -258,24 +262,46 @@ export function ForgeClash() {
   const deckSummary = useMemo(() => buildArenaDeckSummary(selectedCards), [selectedCards]);
   const currentRival = RIVAL_MOVES[(clash.turn - 1) % RIVAL_MOVES.length];
   const latestEntry = clash.log[0];
-  const activeRivalMove = RIVAL_MOVES.find((move) => move.name === clash.activeRival) ?? currentRival;
+  const activeRivalMove = useMemo(() => {
+    if (!clash.activeRival) return currentRival;
+    const move = RIVAL_MOVES.find((rivalMove) => rivalMove.name === clash.activeRival);
+    if (!move) {
+      console.warn(`Forge Clash active rival "${clash.activeRival}" was not found; using current rival.`);
+    }
+    return move ?? currentRival;
+  }, [clash.activeRival, currentRival]);
   const rivalPreviewMoves = Array.from(
     { length: 3 },
     (_, index) => RIVAL_MOVES[(clash.turn + index) % RIVAL_MOVES.length],
   );
-  const stageClassName = [
+  const stageClassName = buildClassName(
     "forge-clash-stage",
-    clash.phase === "playing" ? "is-live" : "",
+    clash.phase === "playing" && "is-live",
     buildIntentModifierClassName(activeRivalMove.intent),
-    latestEntry ? `forge-clash-stage--${latestEntry.swing}` : "",
-    latestEntry ? `forge-clash-stage--player-${latestEntry.playerAction}` : "",
-    latestEntry ? `forge-clash-stage--rival-${latestEntry.rivalAction}` : "",
-    latestEntry?.blocked ? "forge-clash-stage--block" : "",
-    clash.phase === "ended" && clash.result ? `forge-clash-stage--${clash.result}` : "",
-  ].filter(Boolean).join(" ");
+    latestEntry && `forge-clash-stage--${latestEntry.swing}`,
+    latestEntry && `forge-clash-stage--player-${latestEntry.playerAction}`,
+    latestEntry && `forge-clash-stage--rival-${latestEntry.rivalAction}`,
+    latestEntry?.blocked && "forge-clash-stage--block",
+    clash.phase === "ended" && clash.result ? `forge-clash-stage--${clash.result}` : undefined,
+  );
   const activeCard = useMemo(
     () => selectedCards.find((card) => card.id === clash.activeCardId),
     [clash.activeCardId, selectedCards],
+  );
+  const playerCombatantClassName = buildClassName(
+    "forge-clash-combatant",
+    "forge-clash-combatant--player",
+    clash.activeCardId && "is-striking",
+    clash.phase === "ended" && clash.result === "win" && "is-winning",
+    clash.phase === "ended" && clash.result === "loss" && "is-losing",
+  );
+  const rivalCombatantClassName = buildClassName(
+    "forge-clash-combatant",
+    "forge-clash-combatant--rival",
+    clash.activeRival && "is-recoiling",
+    latestEntry?.rivalAction === "block" && "is-blocking",
+    clash.phase === "ended" && clash.result === "loss" && "is-winning",
+    clash.phase === "ended" && clash.result === "win" && "is-losing",
   );
 
   const toggleCard = (cardId: string) => {
@@ -382,7 +408,7 @@ export function ForgeClash() {
               <div className="forge-clash-stage__status" aria-hidden="true">
                 {getStageStatusLabel(clash)}
               </div>
-              <div className={`forge-clash-combatant forge-clash-combatant--player${clash.activeCardId ? " is-striking" : ""}${clash.phase === "ended" && clash.result === "win" ? " is-winning" : ""}${clash.phase === "ended" && clash.result === "loss" ? " is-losing" : ""}`} key={clash.activeCardId ?? "crew"}>
+              <div className={playerCombatantClassName} key={clash.activeCardId ?? "crew"}>
                 <div className="forge-clash-card-showcase" aria-hidden="true">
                   {(activeCard ? [activeCard] : selectedCards.slice(0, 3)).map((card, index) => (
                     <div
@@ -409,7 +435,7 @@ export function ForgeClash() {
                 <strong>HEAT {clash.heat}</strong>
                 <em>{getSwingMessage(latestEntry)}</em>
               </div>
-              <div className={`forge-clash-combatant forge-clash-combatant--rival${clash.activeRival ? " is-recoiling" : ""}${latestEntry?.rivalAction === "block" ? " is-blocking" : ""}${clash.phase === "ended" && clash.result === "loss" ? " is-winning" : ""}${clash.phase === "ended" && clash.result === "win" ? " is-losing" : ""}`} key={clash.activeRival ?? currentRival.name}>
+              <div className={rivalCombatantClassName} key={clash.activeRival ?? currentRival.name}>
                 <div className="forge-clash-rival-showcase" aria-hidden="true">
                   <RivalCard move={activeRivalMove} />
                 </div>
