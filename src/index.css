@@ -21298,16 +21298,21 @@ textarea:focus-visible,
 }
 
 @keyframes forgeClashStrike {
+  /* anticipation */
   0% { transform: translateX(0) scale(1) rotate(0); filter: saturate(1); }
   28% { transform: translateX(8%) translateY(-8px) scale(1.05) rotate(-3deg); filter: saturate(1.45) brightness(1.2); }
+  /* impact */
   56% { transform: translateX(34%) scale(1.14) rotate(-7deg); filter: saturate(1.8) brightness(1.45); }
+  /* recovery */
   72% { transform: translateX(18%) scale(1.06) rotate(2deg); }
   100% { transform: translateX(0) scale(1); }
 }
 
 @keyframes forgeClashRecoil {
+  /* impact */
   0% { transform: translateX(0) rotate(0); filter: brightness(1); }
   38% { transform: translateX(10%) rotate(3deg) skewX(-3deg); filter: brightness(1.85) saturate(1.55); }
+  /* recovery */
   58% { transform: translateX(-5%) rotate(-2deg); filter: brightness(1.35); }
   76% { transform: translateX(3%) rotate(1deg); }
   100% { transform: translateX(0); filter: brightness(1); }

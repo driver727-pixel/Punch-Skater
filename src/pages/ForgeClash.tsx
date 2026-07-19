@@ -185,7 +185,7 @@ function getSwingMessage(entry?: ClashLogEntry): string {
   return "Ready";
 }
 
-function getClashStateKey(clash: ClashState): string {
+function getClashRenderKey(clash: ClashState): string {
   return [
     clash.phase,
     `turn-${clash.turn}`,
@@ -294,7 +294,7 @@ export function ForgeClash() {
               </div>
             </div>
 
-            <div className={stageClassName} key={getClashStateKey(clash)}>
+            <div className={stageClassName} key={getClashRenderKey(clash)}>
               <div className="forge-clash-stage__grid" aria-hidden="true" />
               <div className="forge-clash-stage__sparks" aria-hidden="true">
                 <i />
