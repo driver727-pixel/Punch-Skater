@@ -25,27 +25,38 @@ export function BattleArena() {
         </p>
       </header>
 
+      <div className="race-arena-featured-mode">
+        <div>
+          <p className="app-status-eyebrow">Featured Core Mode</p>
+          <h2>Forge Clash</h2>
+          <p>
+            The main arena experience: draft forged cards, read rival intent, and chain
+            animated combo strikes with the skaters you create.
+          </p>
+        </div>
+        <Link to="/arena/forge-clash" className="btn-primary race-arena-featured-mode__cta">
+          🃏 Enter Forge Clash
+        </Link>
+      </div>
+
       <div className="race-arena-modes">
         {showJousturEntry && (
-          <Link to="/joustur" className="btn-outline">
+          <Link to="/joustur" className="btn-outline race-arena-mode-link">
             🛹 Joustur Skatur™ - based on the classic Royal Game of Ur
           </Link>
         )}
         {showCyberJoust && (
-          <a href="https://rosebud.ai/play/neon-skater-clash" className="btn-outline">
+          <a href="https://rosebud.ai/play/neon-skater-clash" className="btn-outline race-arena-mode-link">
             ⚡ Cyber Joust
           </a>
         )}
         {showStreets && (
-          <a href="/streets/" className="btn-outline">
+          <a href="/streets/" className="btn-outline race-arena-mode-link">
             🛹 Punch Skater™ Streets - side-scrolling arcade beat-em-up
           </a>
         )}
-        <Link to="/arena/classic" className="btn-outline">
+        <Link to="/arena/classic" className="btn-outline race-arena-mode-link">
           🏁 Classic Race - stat based race against computer, or online opponents
-        </Link>
-        <Link to="/arena/forge-clash" className="btn-outline">
-          🃏 Forge Clash - animated card duel using the cards you forge
         </Link>
       </div>
     </div>
