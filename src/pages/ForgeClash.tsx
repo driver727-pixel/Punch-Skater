@@ -189,6 +189,10 @@ function getSwingMessage(entry?: ClashLogEntry): string {
   }
 }
 
+function getIntentEffectClass(intent: ClashIntent): string {
+  return `forge-clash-stage--intent-${intent.toLowerCase()}`;
+}
+
 function getClashRenderKey(clash: ClashState): string {
   return [
     clash.phase,
@@ -224,6 +228,7 @@ export function ForgeClash() {
   const stageClassName = [
     "forge-clash-stage",
     clash.phase === "playing" ? "is-live" : "",
+    getIntentEffectClass(currentRival.intent),
     latestEntry ? `forge-clash-stage--${latestEntry.swing}` : "",
     clash.phase === "ended" && clash.result ? `forge-clash-stage--${clash.result}` : "",
   ].filter(Boolean).join(" ");
@@ -305,16 +310,45 @@ export function ForgeClash() {
                 <i />
                 <i />
               </div>
+              <div className="forge-clash-stage__smoke" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="forge-clash-stage__lightning" aria-hidden="true">
+                <i />
+                <i />
+              </div>
+              <div className="forge-clash-stage__fire" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </div>
               <div className="forge-clash-stage__status" aria-hidden="true">
                 {getStageStatusLabel(clash)}
               </div>
               <div className={`forge-clash-combatant forge-clash-combatant--player${clash.activeCardId ? " is-striking" : ""}`} key={clash.activeCardId ?? "crew"}>
-                <span>⚡</span>
+                <div className="forge-clash-card-showcase" aria-hidden="true">
+                  {(activeCard ? [activeCard] : selectedCards.slice(0, 3)).map((card, index) => (
+                    <div
+                      key={card.id}
+                      className={`forge-clash-3d-card forge-clash-3d-card--${index + 1}`}
+                    >
+                      <CardThumbnail card={card} width={168} height={118} />
+                    </div>
+                  ))}
+                  {!activeCard && selectedCards.length === 0 && <span className="forge-clash-card-showcase__empty">⚡</span>}
+                </div>
                 <strong>{activeCard?.identity.name ?? "Your hand is loaded"}</strong>
                 <small>{activeCard ? `${getStrongestStat(activeCard).toUpperCase()} charge` : "Draft a five-card crew"}</small>
               </div>
               <div className="forge-clash-impact">
                 <span className="forge-clash-impact__ring" aria-hidden="true" />
+                {activeCard && (
+                  <div className="forge-clash-impact-card" aria-hidden="true">
+                    <CardThumbnail card={activeCard} width={126} height={88} />
+                  </div>
+                )}
                 <span>COMBO x{clash.combo}</span>
                 <strong>HEAT {clash.heat}</strong>
                 <em>{getSwingMessage(latestEntry)}</em>

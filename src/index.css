@@ -20995,7 +20995,10 @@ textarea:focus-visible,
 .forge-clash-stage::before,
 .forge-clash-stage::after,
 .forge-clash-stage__grid,
-.forge-clash-stage__sparks {
+.forge-clash-stage__sparks,
+.forge-clash-stage__smoke,
+.forge-clash-stage__lightning,
+.forge-clash-stage__fire {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -21067,6 +21070,115 @@ textarea:focus-visible,
   animation-delay: 120ms;
 }
 
+.forge-clash-stage__smoke {
+  z-index: 1;
+  overflow: hidden;
+  filter: blur(0.4px);
+}
+
+.forge-clash-stage__smoke i {
+  position: absolute;
+  bottom: -18%;
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(120, 255, 220, 0.08) 38%, transparent 66%);
+  opacity: 0;
+  transform: translate3d(0, 34%, 0) scale(0.48);
+  animation: forgeClashSmoke 4.8s ease-in-out infinite;
+}
+
+.forge-clash-stage__smoke i:nth-child(1) {
+  left: 6%;
+}
+
+.forge-clash-stage__smoke i:nth-child(2) {
+  left: 36%;
+  animation-delay: 1.1s;
+  background:
+    radial-gradient(circle, rgba(255, 180, 80, 0.2), rgba(255, 0, 128, 0.08) 42%, transparent 68%);
+}
+
+.forge-clash-stage__smoke i:nth-child(3) {
+  right: 4%;
+  animation-delay: 2.2s;
+}
+
+.forge-clash-stage__lightning {
+  z-index: 4;
+  opacity: 0;
+}
+
+.forge-clash-stage--player .forge-clash-stage__lightning,
+.forge-clash-stage--neutral .forge-clash-stage__lightning {
+  opacity: 1;
+}
+
+.forge-clash-stage__lightning i {
+  position: absolute;
+  top: 8%;
+  left: 44%;
+  width: 3px;
+  height: 72%;
+  background: linear-gradient(180deg, transparent, #fff, #6ffcff, #fff, transparent);
+  clip-path: polygon(48% 0, 100% 30%, 60% 30%, 96% 68%, 28% 42%, 66% 42%);
+  filter: drop-shadow(0 0 8px #5cf9ff) drop-shadow(0 0 20px var(--accent));
+  transform: rotate(-18deg) scaleY(0);
+}
+
+.forge-clash-stage--player .forge-clash-stage__lightning i,
+.forge-clash-stage--neutral .forge-clash-stage__lightning i {
+  animation: forgeClashLightning 720ms steps(2, end);
+}
+
+.forge-clash-stage__lightning i:nth-child(2) {
+  left: 56%;
+  animation-delay: 90ms;
+  transform: rotate(20deg) scaleY(0);
+}
+
+.forge-clash-stage__fire {
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10%;
+  padding-bottom: 10px;
+  opacity: 0;
+}
+
+.forge-clash-stage.is-live .forge-clash-stage__fire,
+.forge-clash-stage--rival .forge-clash-stage__fire,
+.forge-clash-stage--win .forge-clash-stage__fire {
+  opacity: 1;
+}
+
+.forge-clash-stage__fire i {
+  width: 56px;
+  height: 82px;
+  border-radius: 50% 50% 42% 42%;
+  background:
+    radial-gradient(circle at 50% 72%, #fff5a8 0 12%, transparent 24%),
+    radial-gradient(circle at 50% 60%, #ffec66 0 26%, transparent 42%),
+    radial-gradient(circle at 48% 46%, #ff7b1f 0 38%, transparent 62%),
+    radial-gradient(circle at 50% 42%, #ff165d 0 48%, transparent 70%);
+  filter: blur(0.2px) drop-shadow(0 0 18px #ff7b1f);
+  mix-blend-mode: screen;
+  transform-origin: center bottom;
+  animation: forgeClashFire 780ms ease-in-out infinite alternate;
+}
+
+.forge-clash-stage__fire i:nth-child(2) {
+  width: 42px;
+  height: 64px;
+  animation-delay: 120ms;
+}
+
+.forge-clash-stage__fire i:nth-child(3) {
+  animation-delay: 240ms;
+}
+
 .forge-clash-stage__status {
   position: absolute;
   top: 14px;
@@ -21130,6 +21242,80 @@ textarea:focus-visible,
 .forge-clash-combatant span {
   font-size: 54px;
   filter: drop-shadow(0 0 18px var(--accent));
+}
+
+.forge-clash-card-showcase {
+  position: relative;
+  width: min(100%, 230px);
+  min-height: 132px;
+  perspective: 850px;
+}
+
+.forge-clash-card-showcase__empty {
+  display: inline-grid;
+  place-items: center;
+  min-height: 132px;
+}
+
+.forge-clash-3d-card,
+.forge-clash-impact-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 12px;
+  transform-style: preserve-3d;
+  box-shadow:
+    0 18px 28px rgba(0, 0, 0, 0.45),
+    0 0 24px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.forge-clash-3d-card::before,
+.forge-clash-impact-card::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), var(--accent), var(--accent2));
+  filter: blur(8px);
+  opacity: 0.48;
+}
+
+.forge-clash-3d-card .card-art-composite,
+.forge-clash-3d-card .card-art,
+.forge-clash-impact-card .card-art-composite,
+.forge-clash-impact-card .card-art {
+  border-radius: 11px;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+.forge-clash-3d-card--1 {
+  transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg);
+  animation: forgeClashCardHover 2.8s ease-in-out infinite;
+}
+
+.forge-clash-3d-card--2 {
+  transform: translate(-40%, -47%) rotateX(56deg) rotateY(10deg) rotateZ(9deg) scale(0.9);
+  opacity: 0.72;
+}
+
+.forge-clash-3d-card--3 {
+  transform: translate(-62%, -42%) rotateX(62deg) rotateY(-28deg) rotateZ(-22deg) scale(0.82);
+  opacity: 0.56;
+}
+
+.forge-clash-combatant--player.is-striking .forge-clash-3d-card--1 {
+  animation: forgeClash3DCardStrike 640ms cubic-bezier(.16, .96, .28, 1);
+}
+
+.forge-clash-impact-card {
+  z-index: 0;
+  width: 126px;
+  height: 88px;
+  transform: translate(-50%, -50%) rotateX(60deg) rotateY(0deg) rotateZ(-10deg);
+  opacity: 0.34;
+  animation: forgeClashImpactCard 640ms ease-out;
 }
 
 .forge-clash-combatant strong,
@@ -21324,6 +21510,24 @@ textarea:focus-visible,
   100% { transform: translateY(0) scale(1); }
 }
 
+@keyframes forgeClash3DCardStrike {
+  0% { transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg) scale(1); }
+  46% { transform: translate(-8%, -62%) rotateX(50deg) rotateY(28deg) rotateZ(16deg) scale(1.16); filter: saturate(1.55) brightness(1.25); }
+  64% { transform: translate(18%, -46%) rotateX(64deg) rotateY(-10deg) rotateZ(-16deg) scale(1.04); }
+  100% { transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg) scale(1); }
+}
+
+@keyframes forgeClashCardHover {
+  0%, 100% { transform: translate(-50%, -50%) rotateX(58deg) rotateY(-18deg) rotateZ(-8deg) translateY(0); }
+  50% { transform: translate(-50%, -56%) rotateX(54deg) rotateY(-8deg) rotateZ(-5deg) translateY(-6px); }
+}
+
+@keyframes forgeClashImpactCard {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotateX(70deg) rotateY(-40deg) rotateZ(-34deg) scale(0.62); }
+  42% { opacity: 0.9; transform: translate(-50%, -50%) rotateX(48deg) rotateY(18deg) rotateZ(12deg) scale(1.2); }
+  100% { opacity: 0.16; transform: translate(-50%, -50%) rotateX(60deg) rotateY(0deg) rotateZ(-10deg) scale(0.92); }
+}
+
 @keyframes forgeClashFeaturedSweep {
   to { transform: rotate(1turn); }
 }
@@ -21359,6 +21563,26 @@ textarea:focus-visible,
   100% { transform: scale(1.18); opacity: 0; }
 }
 
+@keyframes forgeClashSmoke {
+  0% { opacity: 0; transform: translate3d(-8%, 34%, 0) scale(0.48); }
+  18% { opacity: 0.5; }
+  70% { opacity: 0.18; }
+  100% { opacity: 0; transform: translate3d(12%, -42%, 0) scale(1.35); }
+}
+
+@keyframes forgeClashLightning {
+  0%, 100% { opacity: 0; transform: rotate(-18deg) scaleY(0); }
+  18% { opacity: 1; transform: rotate(-18deg) scaleY(1); }
+  34% { opacity: 0.2; }
+  52% { opacity: 1; transform: rotate(-12deg) scaleY(0.86); }
+  72% { opacity: 0; transform: rotate(-18deg) scaleY(0.2); }
+}
+
+@keyframes forgeClashFire {
+  from { transform: scaleY(0.72) scaleX(0.92) rotate(-4deg); opacity: 0.42; }
+  to { transform: scaleY(1.08) scaleX(1.06) rotate(5deg); opacity: 0.86; }
+}
+
 @media (max-width: 980px) {
   .forge-clash-layout,
   .forge-clash-scorebar,
@@ -21372,6 +21596,10 @@ textarea:focus-visible,
 
   .forge-clash-stage {
     min-height: auto;
+  }
+
+  .forge-clash-card-showcase {
+    min-height: 116px;
   }
 
   .race-arena-featured-mode {
