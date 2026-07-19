@@ -59,8 +59,14 @@ export function LandingPage() {
           <h1 className="landing-hero__title">Punch Skater™</h1>
           <p className="landing-hero__subtitle">a Sk8r Punk™ Card Game!</p>
           <p className="landing-hero__lede">
-            Start in the forge, build a crew, sign in when you are ready to save progress, and race into the neon districts.
+            A pocket arcade deck-builder where rooftop gardens, cassette tech, and neon rivals collide.
+            Forge a skater, build a crew. Then drop into fast taps, bold choices, and district runs.
           </p>
+          <div className="landing-hero__mode-strip" role="list" aria-label="Punch Skater experience pillars">
+            <span role="listitem">Solarpunk streets</span>
+            <span role="listitem">Cyberpunk rivals</span>
+            <span role="listitem">Mobile-first runs</span>
+          </div>
           <div className="landing-hero__hud" role="list" aria-label="Punch Skater game flow">
             <div className="landing-hero__hud-track" aria-hidden="true">
               <span />
@@ -79,6 +85,11 @@ export function LandingPage() {
               <span>03</span>
               <strong>Drop In</strong>
             </div>
+          </div>
+          <div className="landing-hero__quick-stats" role="list" aria-label="Mobile game loop highlights">
+            <span role="listitem"><strong>Tap</strong> to forge</span>
+            <span role="listitem"><strong>Swipe</strong> the districts</span>
+            <span role="listitem"><strong>Claim</strong> daily hype</span>
           </div>
           <div className="landing-hero__actions">
             <button

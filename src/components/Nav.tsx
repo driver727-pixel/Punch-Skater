@@ -169,6 +169,39 @@ export function Nav() {
     );
   };
 
+  const getDockItemClass = (isActive: boolean) => (
+    ["mobile-game-dock__item", isActive ? "active" : ""].filter(Boolean).join(" ")
+  );
+
+  const renderMobileDock = () => (
+    <nav className="mobile-game-dock" aria-label="Quick game actions">
+      <NavLink to="/" end className={({ isActive }) => getDockItemClass(isActive)}>
+        <span aria-hidden="true">🏠</span>
+        <strong>Hub</strong>
+      </NavLink>
+      <NavLink to="/forge" className={({ isActive }) => getDockItemClass(isActive)}>
+        <span aria-hidden="true">⚡</span>
+        <strong>Forge</strong>
+      </NavLink>
+      <NavLink
+        to={user ? "/arena" : "/login"}
+        className={({ isActive }) => getDockItemClass(isActive)}
+        aria-label={user ? "Open Arena" : "Sign in to open Arena"}
+      >
+        <span aria-hidden="true">🛹</span>
+        <strong>Arena</strong>
+      </NavLink>
+      <NavLink
+        to={user ? "/collection" : "/login"}
+        className={({ isActive }) => getDockItemClass(isActive)}
+        aria-label={user ? "Open Crew collection" : "Sign in to open Crew collection"}
+      >
+        <span aria-hidden="true">🃏</span>
+        <strong>Crew</strong>
+      </NavLink>
+    </nav>
+  );
+
   return (
     <>
       <div className="nav-container" ref={navContainerRef}>
@@ -313,6 +346,8 @@ export function Nav() {
           </div>
         )}
       </div>
+
+      {renderMobileDock()}
 
       {showUpgradeModal && <TierModal onClose={closeUpgradeModal} />}
     </>
