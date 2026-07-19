@@ -171,6 +171,19 @@ function getResultLabel(result: ClashState["result"]): string {
   return "Defeat";
 }
 
+function getStageStatusLabel(clash: ClashState): string {
+  if (clash.phase === "draft") return "LOCK HAND";
+  if (clash.phase === "ended") return getResultLabel(clash.result);
+  return "LIVE CLASH";
+}
+
+function getSwingMessage(entry?: ClashLogEntry): string {
+  if (!entry) return "Ready";
+  if (entry.swing === "player") return "Advantage!";
+  if (entry.swing === "rival") return "Rival surge!";
+  return "Clash tie!";
+}
+
 function resolveResult(nextRivalHp: number, nextPlayerHp: number): ClashState["result"] {
   if (nextRivalHp === nextPlayerHp) return "draw";
   if (nextRivalHp < nextPlayerHp) return "win";
@@ -280,7 +293,7 @@ export function ForgeClash() {
                 <i />
               </div>
               <div className="forge-clash-stage__status" aria-hidden="true">
-                {clash.phase === "draft" ? "LOCK HAND" : clash.phase === "ended" ? getResultLabel(clash.result) : "LIVE CLASH"}
+                {getStageStatusLabel(clash)}
               </div>
               <div className={`forge-clash-combatant forge-clash-combatant--player${clash.activeCardId ? " is-striking" : ""}`} key={clash.activeCardId ?? "crew"}>
                 <span>⚡</span>
@@ -291,7 +304,7 @@ export function ForgeClash() {
                 <span className="forge-clash-impact__ring" aria-hidden="true" />
                 <span>COMBO x{clash.combo}</span>
                 <strong>HEAT {clash.heat}</strong>
-                <em>{latestEntry ? latestEntry.swing === "player" ? "Advantage!" : latestEntry.swing === "rival" ? "Rival surge!" : "Clash tie!" : "Ready"}</em>
+                <em>{getSwingMessage(latestEntry)}</em>
               </div>
               <div className={`forge-clash-combatant forge-clash-combatant--rival${clash.activeRival ? " is-recoiling" : ""}`} key={clash.activeRival ?? currentRival.name}>
                 <span>{currentRival.intent === "Rush" ? "💥" : currentRival.intent === "Guard" ? "🛡️" : "👁️"}</span>

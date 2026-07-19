@@ -18531,7 +18531,12 @@ textarea:focus-visible,
   position: absolute;
   inset: -45%;
   pointer-events: none;
-  background: conic-gradient(from 90deg, transparent, color-mix(in srgb, var(--accent2) 34%, transparent), transparent 28%);
+  background: conic-gradient(
+    from 90deg,
+    transparent 0 35%,
+    color-mix(in srgb, var(--accent2) 34%, transparent) 50%,
+    transparent 65% 100%
+  );
   animation: forgeClashFeaturedSweep 7s linear infinite;
   opacity: 0.48;
 }
