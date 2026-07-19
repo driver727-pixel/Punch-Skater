@@ -189,7 +189,7 @@ function getSwingMessage(entry?: ClashLogEntry): string {
   }
 }
 
-function getIntentClassName(intent: ClashIntent): string {
+function buildIntentModifierClassName(intent: ClashIntent): string {
   return `forge-clash-stage--intent-${intent.toLowerCase()}`;
 }
 
@@ -228,7 +228,7 @@ export function ForgeClash() {
   const stageClassName = [
     "forge-clash-stage",
     clash.phase === "playing" ? "is-live" : "",
-    getIntentClassName(currentRival.intent),
+    buildIntentModifierClassName(currentRival.intent),
     latestEntry ? `forge-clash-stage--${latestEntry.swing}` : "",
     clash.phase === "ended" && clash.result ? `forge-clash-stage--${clash.result}` : "",
   ].filter(Boolean).join(" ");

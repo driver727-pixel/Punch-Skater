@@ -21073,7 +21073,7 @@ textarea:focus-visible,
 .forge-clash-stage__smoke {
   z-index: 1;
   overflow: hidden;
-  filter: blur(0.4px);
+  filter: blur(1px);
 }
 
 .forge-clash-stage__smoke i {
@@ -21165,7 +21165,7 @@ textarea:focus-visible,
     radial-gradient(circle at 50% 60%, #ffec66 0 26%, transparent 42%),
     radial-gradient(circle at 48% 46%, #ff7b1f 0 38%, transparent 62%),
     radial-gradient(circle at 50% 42%, #ff165d 0 48%, transparent 70%);
-  filter: blur(0.2px) drop-shadow(0 0 18px #ff7b1f);
+  filter: blur(1px) drop-shadow(0 0 18px #ff7b1f);
   mix-blend-mode: screen;
   transform-origin: center bottom;
   animation: forgeClashFire 780ms ease-in-out infinite alternate;
