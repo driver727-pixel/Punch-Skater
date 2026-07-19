@@ -169,7 +169,9 @@ export function Nav() {
     );
   };
 
-  const getDockItemClass = (isActive: boolean) => `mobile-game-dock__item${isActive ? " active" : ""}`;
+  const getDockItemClass = (isActive: boolean) => (
+    ["mobile-game-dock__item", isActive ? "active" : ""].filter(Boolean).join(" ")
+  );
 
   const renderMobileDock = () => (
     <nav className="mobile-game-dock" aria-label="Quick game actions">
