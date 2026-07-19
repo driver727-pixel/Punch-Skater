@@ -169,6 +169,27 @@ export function Nav() {
     );
   };
 
+  const renderMobileDock = () => (
+    <nav className="mobile-game-dock" aria-label="Quick game actions">
+      <NavLink to="/" end className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+        <span aria-hidden="true">🏠</span>
+        <strong>Hub</strong>
+      </NavLink>
+      <NavLink to="/forge" className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+        <span aria-hidden="true">⚡</span>
+        <strong>Forge</strong>
+      </NavLink>
+      <NavLink to={user ? "/arena" : "/login"} className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+        <span aria-hidden="true">🛹</span>
+        <strong>Arena</strong>
+      </NavLink>
+      <NavLink to={user ? "/collection" : "/login"} className={({ isActive }) => isActive ? "mobile-game-dock__item active" : "mobile-game-dock__item"}>
+        <span aria-hidden="true">🃏</span>
+        <strong>Crew</strong>
+      </NavLink>
+    </nav>
+  );
+
   return (
     <>
       <div className="nav-container" ref={navContainerRef}>
@@ -313,6 +334,8 @@ export function Nav() {
           </div>
         )}
       </div>
+
+      {renderMobileDock()}
 
       {showUpgradeModal && <TierModal onClose={closeUpgradeModal} />}
     </>
