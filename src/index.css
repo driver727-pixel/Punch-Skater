@@ -21918,6 +21918,22 @@ textarea:focus-visible,
   to { transform: scaleY(1.08) scaleX(1.06) rotate(5deg); opacity: 0.86; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .forge-clash-combatant.is-winning,
+  .forge-clash-combatant.is-losing,
+  .forge-clash-stage--win .forge-clash-stage__status,
+  .forge-clash-stage--loss .forge-clash-stage__status,
+  .forge-clash-action-banner,
+  .forge-clash-stage__finish-burst i {
+    animation: none;
+  }
+
+  .forge-clash-combatant.is-losing {
+    transform: none;
+    filter: grayscale(0.35) brightness(0.82);
+  }
+}
+
 @media (max-width: 980px) {
   .forge-clash-layout,
   .forge-clash-scorebar,

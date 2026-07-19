@@ -259,7 +259,10 @@ export function ForgeClash() {
   const currentRival = RIVAL_MOVES[(clash.turn - 1) % RIVAL_MOVES.length];
   const latestEntry = clash.log[0];
   const activeRivalMove = RIVAL_MOVES.find((move) => move.name === clash.activeRival) ?? currentRival;
-  const rivalPreviewMoves = RIVAL_MOVES.slice(clash.turn, clash.turn + 3).map((_, index) => RIVAL_MOVES[(clash.turn + index) % RIVAL_MOVES.length]);
+  const rivalPreviewMoves = Array.from(
+    { length: 3 },
+    (_, index) => RIVAL_MOVES[(clash.turn + index) % RIVAL_MOVES.length],
+  );
   const stageClassName = [
     "forge-clash-stage",
     clash.phase === "playing" ? "is-live" : "",
@@ -417,8 +420,8 @@ export function ForgeClash() {
 
             <div className="forge-clash-opponent-row" aria-label="Upcoming opponent cards">
               <span>Rival deck</span>
-              {rivalPreviewMoves.map((move) => (
-                <RivalCard key={`${clash.turn}:${move.name}`} move={move} size="mini" />
+              {rivalPreviewMoves.map((move, index) => (
+                <RivalCard key={`${clash.turn}:${index}`} move={move} size="mini" />
               ))}
             </div>
 
