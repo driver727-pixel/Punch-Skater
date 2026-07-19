@@ -8,6 +8,7 @@ import { buildArenaDeckSummary, computeCardWorth } from "../lib/battle";
 
 type ClashPhase = "draft" | "playing" | "ended";
 type ClashIntent = "Rush" | "Guard" | "Trick";
+type ClashAction = "strike" | "block" | "counter";
 
 interface RivalMove {
   name: string;
@@ -23,6 +24,9 @@ interface ClashLogEntry {
   title: string;
   body: string;
   swing: "player" | "rival" | "neutral";
+  playerAction: ClashAction;
+  rivalAction: ClashAction;
+  blocked: boolean;
 }
 
 interface ClashState {
@@ -140,6 +144,9 @@ function resolvePlay(card: CardPayload, state: ClashState): {
       slip ? "Rival feint lands!" : "",
     ].filter(Boolean).join(" "),
     swing: playerDamage > rivalDamage ? "player" : playerDamage < rivalDamage ? "rival" : "neutral",
+    playerAction: counter.value > 0 ? "counter" : "strike",
+    rivalAction: rivalDamage > 0 ? "strike" : "block",
+    blocked: rivalDamage === 0,
   };
 
   return {
@@ -189,6 +196,32 @@ function getSwingMessage(entry?: ClashLogEntry): string {
   }
 }
 
+function getIntentIcon(intent: ClashIntent): string {
+  if (intent === "Rush") return "💥";
+  if (intent === "Guard") return "🛡️";
+  return "👁️";
+}
+
+function RivalCard({ move, size = "standard" }: { move: RivalMove; size?: "standard" | "mini" }) {
+  return (
+    <div className={`forge-clash-rival-card forge-clash-rival-card--${move.intent.toLowerCase()} forge-clash-rival-card--${size}`}>
+      <div className="forge-clash-rival-card__art" aria-hidden="true">
+        <span>{getIntentIcon(move.intent)}</span>
+      </div>
+      <div className="forge-clash-rival-card__body">
+        <strong>{move.name}</strong>
+        <small>{move.intent} rival</small>
+        <dl>
+          <div><dt>SPD</dt><dd>{move.speed}</dd></div>
+          <div><dt>RNG</dt><dd>{move.range}</dd></div>
+          <div><dt>STL</dt><dd>{move.stealth}</dd></div>
+          <div><dt>GRT</dt><dd>{move.grit}</dd></div>
+        </dl>
+      </div>
+    </div>
+  );
+}
+
 function buildIntentModifierClassName(intent: ClashIntent): string {
   return `forge-clash-stage--intent-${intent.toLowerCase()}`;
 }
@@ -225,11 +258,16 @@ export function ForgeClash() {
   const deckSummary = useMemo(() => buildArenaDeckSummary(selectedCards), [selectedCards]);
   const currentRival = RIVAL_MOVES[(clash.turn - 1) % RIVAL_MOVES.length];
   const latestEntry = clash.log[0];
+  const activeRivalMove = RIVAL_MOVES.find((move) => move.name === clash.activeRival) ?? currentRival;
+  const rivalPreviewMoves = RIVAL_MOVES.slice(clash.turn, clash.turn + 3).map((_, index) => RIVAL_MOVES[(clash.turn + index) % RIVAL_MOVES.length]);
   const stageClassName = [
     "forge-clash-stage",
     clash.phase === "playing" ? "is-live" : "",
-    buildIntentModifierClassName(currentRival.intent),
+    buildIntentModifierClassName(activeRivalMove.intent),
     latestEntry ? `forge-clash-stage--${latestEntry.swing}` : "",
+    latestEntry ? `forge-clash-stage--player-${latestEntry.playerAction}` : "",
+    latestEntry ? `forge-clash-stage--rival-${latestEntry.rivalAction}` : "",
+    latestEntry?.blocked ? "forge-clash-stage--block" : "",
     clash.phase === "ended" && clash.result ? `forge-clash-stage--${clash.result}` : "",
   ].filter(Boolean).join(" ");
   const activeCard = useMemo(
@@ -324,17 +362,31 @@ export function ForgeClash() {
                 <i />
                 <i />
               </div>
+              {clash.phase === "ended" && (
+                <div className="forge-clash-stage__finish-burst" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </div>
+              )}
+              <div className="forge-clash-action-banner forge-clash-action-banner--player" aria-hidden="true">
+                {latestEntry?.playerAction === "counter" ? "COUNTER" : "STRIKE"}
+              </div>
+              <div className="forge-clash-action-banner forge-clash-action-banner--rival" aria-hidden="true">
+                {latestEntry?.rivalAction === "block" ? "BLOCK" : "STRIKE"}
+              </div>
               <div className="forge-clash-stage__status" aria-hidden="true">
                 {getStageStatusLabel(clash)}
               </div>
-              <div className={`forge-clash-combatant forge-clash-combatant--player${clash.activeCardId ? " is-striking" : ""}`} key={clash.activeCardId ?? "crew"}>
+              <div className={`forge-clash-combatant forge-clash-combatant--player${clash.activeCardId ? " is-striking" : ""}${clash.phase === "ended" && clash.result === "win" ? " is-winning" : ""}${clash.phase === "ended" && clash.result === "loss" ? " is-losing" : ""}`} key={clash.activeCardId ?? "crew"}>
                 <div className="forge-clash-card-showcase" aria-hidden="true">
                   {(activeCard ? [activeCard] : selectedCards.slice(0, 3)).map((card, index) => (
                     <div
                       key={card.id}
                       className={`forge-clash-3d-card forge-clash-3d-card--${index + 1}`}
                     >
-                      <CardThumbnail card={card} width={168} height={118} />
+                      <CardThumbnail card={card} width={208} height={146} />
                     </div>
                   ))}
                   {!activeCard && selectedCards.length === 0 && <span className="forge-clash-card-showcase__empty">⚡</span>}
@@ -344,20 +396,30 @@ export function ForgeClash() {
               </div>
               <div className="forge-clash-impact">
                 <span className="forge-clash-impact__ring" aria-hidden="true" />
+                <span className="forge-clash-impact__shield" aria-hidden="true" />
                 {activeCard && (
                   <div className="forge-clash-impact-card" aria-hidden="true">
-                    <CardThumbnail card={activeCard} width={126} height={88} />
+                    <CardThumbnail card={activeCard} width={158} height={111} />
                   </div>
                 )}
                 <span>COMBO x{clash.combo}</span>
                 <strong>HEAT {clash.heat}</strong>
                 <em>{getSwingMessage(latestEntry)}</em>
               </div>
-              <div className={`forge-clash-combatant forge-clash-combatant--rival${clash.activeRival ? " is-recoiling" : ""}`} key={clash.activeRival ?? currentRival.name}>
-                <span>{currentRival.intent === "Rush" ? "💥" : currentRival.intent === "Guard" ? "🛡️" : "👁️"}</span>
-                <strong>{clash.activeRival ?? currentRival.name}</strong>
-                <small>{currentRival.intent} intent incoming</small>
+              <div className={`forge-clash-combatant forge-clash-combatant--rival${clash.activeRival ? " is-recoiling" : ""}${latestEntry?.rivalAction === "block" ? " is-blocking" : ""}${clash.phase === "ended" && clash.result === "loss" ? " is-winning" : ""}${clash.phase === "ended" && clash.result === "win" ? " is-losing" : ""}`} key={clash.activeRival ?? currentRival.name}>
+                <div className="forge-clash-rival-showcase" aria-hidden="true">
+                  <RivalCard move={activeRivalMove} />
+                </div>
+                <strong>{activeRivalMove.name}</strong>
+                <small>{activeRivalMove.intent} intent incoming</small>
               </div>
+            </div>
+
+            <div className="forge-clash-opponent-row" aria-label="Upcoming opponent cards">
+              <span>Rival deck</span>
+              {rivalPreviewMoves.map((move) => (
+                <RivalCard key={`${clash.turn}:${move.name}`} move={move} size="mini" />
+              ))}
             </div>
 
             <div className="forge-clash-hand">
@@ -371,7 +433,7 @@ export function ForgeClash() {
                     onClick={() => playCard(card)}
                     disabled={clash.phase !== "playing" || cooldown > 0}
                   >
-                    <CardThumbnail card={card} width={150} height={105} />
+                    <CardThumbnail card={card} width={184} height={129} />
                     <span>{card.identity.name}</span>
                     <small>
                       {cooldown > 0 ? `Cooldown: ${cooldown}` : `${getStrongestStat(card).toUpperCase()} lead`}
@@ -414,7 +476,7 @@ export function ForgeClash() {
                       onClick={() => toggleCard(card.id)}
                       disabled={!selected && selectedIds.length >= MAX_HAND_SIZE}
                     >
-                      <CardThumbnail card={card} width={118} height={82} />
+                      <CardThumbnail card={card} width={142} height={99} />
                       <span>{card.identity.name}</span>
                     </button>
                   );

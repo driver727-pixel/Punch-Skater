@@ -20998,7 +20998,8 @@ textarea:focus-visible,
 .forge-clash-stage__sparks,
 .forge-clash-stage__smoke,
 .forge-clash-stage__lightning,
-.forge-clash-stage__fire {
+.forge-clash-stage__fire,
+.forge-clash-stage__finish-burst {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -21201,10 +21202,94 @@ textarea:focus-visible,
 
 .forge-clash-stage--win .forge-clash-stage__status {
   color: var(--accent2);
+  animation: forgeClashVictoryPulse 900ms ease-in-out infinite alternate;
 }
 
 .forge-clash-stage--loss .forge-clash-stage__status {
   color: #ff4b8b;
+  animation: forgeClashDefeatPulse 860ms ease-in-out infinite alternate;
+}
+
+.forge-clash-stage__finish-burst {
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.forge-clash-stage__finish-burst i {
+  --forge-finish-rotation: 0deg;
+  position: absolute;
+  width: 10px;
+  height: 150%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.95), var(--accent2), transparent);
+  filter: drop-shadow(0 0 16px var(--accent2));
+  opacity: 0;
+  transform: rotate(var(--forge-finish-rotation)) scaleY(0.2);
+  animation: forgeClashFinishBurst 1.2s ease-out both;
+}
+
+.forge-clash-stage--loss .forge-clash-stage__finish-burst i {
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.88), #ff4b8b, transparent);
+  filter: drop-shadow(0 0 16px #ff4b8b);
+}
+
+.forge-clash-stage__finish-burst i:nth-child(2) {
+  --forge-finish-rotation: 45deg;
+  animation-delay: 80ms;
+}
+
+.forge-clash-stage__finish-burst i:nth-child(3) {
+  --forge-finish-rotation: 90deg;
+  animation-delay: 150ms;
+}
+
+.forge-clash-stage__finish-burst i:nth-child(4) {
+  --forge-finish-rotation: 135deg;
+  animation-delay: 220ms;
+}
+
+.forge-clash-action-banner {
+  position: absolute;
+  z-index: 6;
+  top: 66px;
+  padding: 8px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.68);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4vw, 54px);
+  line-height: 0.9;
+  letter-spacing: 0.04em;
+  text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.86), 0 0 18px currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.forge-clash-action-banner--player {
+  --forge-stamp-rotation: -8deg;
+  left: 18%;
+  color: var(--accent2);
+  transform: rotate(-8deg) scale(0.7);
+}
+
+.forge-clash-action-banner--rival {
+  --forge-stamp-rotation: 8deg;
+  right: 18%;
+  color: #ff4b8b;
+  transform: rotate(8deg) scale(0.7);
+}
+
+.forge-clash-stage--player-strike .forge-clash-action-banner--player,
+.forge-clash-stage--player-counter .forge-clash-action-banner--player {
+  animation: forgeClashActionStamp 760ms cubic-bezier(.16, .96, .28, 1);
+}
+
+.forge-clash-stage--rival-strike .forge-clash-action-banner--rival,
+.forge-clash-stage--rival-block .forge-clash-action-banner--rival {
+  animation: forgeClashActionStamp 760ms cubic-bezier(.16, .96, .28, 1) 110ms;
 }
 
 .forge-clash-combatant,
@@ -21248,8 +21333,8 @@ textarea:focus-visible,
 
 .forge-clash-card-showcase {
   position: relative;
-  width: min(100%, 230px);
-  min-height: 132px;
+  width: min(100%, 292px);
+  min-height: 174px;
   perspective: 850px;
 }
 
@@ -21267,8 +21352,8 @@ textarea:focus-visible,
   border-radius: 12px;
   transform-style: preserve-3d;
   box-shadow:
-    0 18px 28px rgba(0, 0, 0, 0.45),
-    0 0 24px color-mix(in srgb, var(--accent) 24%, transparent);
+    0 24px 38px rgba(0, 0, 0, 0.52),
+    0 0 34px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 .forge-clash-3d-card::before,
@@ -21316,11 +21401,157 @@ textarea:focus-visible,
 
 .forge-clash-impact-card {
   z-index: 0;
-  width: 126px;
-  height: 88px;
+  width: 158px;
+  height: 111px;
   transform: translate(-50%, -50%) rotateX(60deg) rotateY(0deg) rotateZ(-10deg);
   opacity: 0.34;
   animation: forgeClashImpactCard 640ms ease-out;
+}
+
+.forge-clash-rival-showcase {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 198px;
+  perspective: 820px;
+}
+
+.forge-clash-rival-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  width: 176px;
+  min-height: 226px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 18px;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12), transparent 32%),
+    radial-gradient(circle at 50% 14%, rgba(255, 255, 255, 0.22), transparent 30%),
+    linear-gradient(160deg, rgba(26, 8, 32, 0.98), rgba(4, 4, 12, 0.98));
+  box-shadow:
+    0 24px 36px rgba(0, 0, 0, 0.54),
+    0 0 30px rgba(255, 75, 139, 0.24),
+    inset 0 0 22px rgba(255, 255, 255, 0.08);
+  transform: rotateX(52deg) rotateY(16deg) rotateZ(7deg);
+  transform-style: preserve-3d;
+}
+
+.forge-clash-rival-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), #ff4b8b, var(--accent2));
+  opacity: 0.28;
+  filter: blur(10px);
+  z-index: -1;
+}
+
+.forge-clash-rival-card--rush {
+  --rival-card-glow: #ff4b8b;
+}
+
+.forge-clash-rival-card--guard {
+  --rival-card-glow: #ffd45a;
+}
+
+.forge-clash-rival-card--trick {
+  --rival-card-glow: #8d5cff;
+}
+
+.forge-clash-rival-card__art {
+  display: grid;
+  place-items: center;
+  min-height: 106px;
+  margin: 10px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--rival-card-glow, #ff4b8b) 46%, transparent), transparent 58%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0 2px, transparent 2px 9px);
+  box-shadow: inset 0 0 26px color-mix(in srgb, var(--rival-card-glow, #ff4b8b) 28%, transparent);
+}
+
+.forge-clash-rival-card__art span {
+  font-size: 54px;
+  filter: drop-shadow(0 0 20px var(--rival-card-glow, #ff4b8b));
+}
+
+.forge-clash-rival-card__body {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.34);
+  text-transform: uppercase;
+}
+
+.forge-clash-rival-card__body strong {
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.forge-clash-rival-card__body small {
+  color: var(--rival-card-glow, #ff4b8b);
+}
+
+.forge-clash-rival-card__body dl {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin: 0;
+}
+
+.forge-clash-rival-card__body div {
+  display: grid;
+  place-items: center;
+  padding: 4px 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.forge-clash-rival-card__body dt,
+.forge-clash-rival-card__body dd {
+  margin: 0;
+}
+
+.forge-clash-rival-card__body dt {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.forge-clash-rival-card__body dd {
+  color: var(--text);
+  font-weight: 900;
+}
+
+.forge-clash-rival-card--mini {
+  width: 118px;
+  min-height: 154px;
+  transform: none;
+  border-radius: 14px;
+}
+
+.forge-clash-rival-card--mini .forge-clash-rival-card__art {
+  min-height: 62px;
+  margin: 7px;
+}
+
+.forge-clash-rival-card--mini .forge-clash-rival-card__art span {
+  font-size: 32px;
+}
+
+.forge-clash-rival-card--mini .forge-clash-rival-card__body {
+  gap: 4px;
+  padding: 7px;
+}
+
+.forge-clash-rival-card--mini .forge-clash-rival-card__body strong {
+  font-size: 11px;
+}
+
+.forge-clash-rival-card--mini .forge-clash-rival-card__body dl {
+  display: none;
 }
 
 .forge-clash-combatant strong,
@@ -21347,6 +21578,18 @@ textarea:focus-visible,
   animation: forgeClashRecoil 640ms cubic-bezier(.16, .96, .28, 1);
 }
 
+.forge-clash-combatant--rival.is-blocking {
+  animation: forgeClashBlock 720ms cubic-bezier(.16, .96, .28, 1);
+}
+
+.forge-clash-combatant.is-winning {
+  animation: forgeClashWin 1.3s ease-in-out infinite alternate;
+}
+
+.forge-clash-combatant.is-losing {
+  animation: forgeClashLose 1.1s ease-in-out both;
+}
+
 .forge-clash-impact {
   min-height: 132px;
   color: var(--accent2);
@@ -21363,6 +21606,20 @@ textarea:focus-visible,
   animation: forgeClashImpactRing 1.4s ease-in-out infinite;
 }
 
+.forge-clash-impact__shield {
+  position: absolute;
+  inset: 18px;
+  border: 4px solid color-mix(in srgb, var(--accent2) 72%, white 12%);
+  border-radius: 50% 50% 46% 46%;
+  clip-path: polygon(50% 0, 91% 18%, 82% 72%, 50% 100%, 18% 72%, 9% 18%);
+  opacity: 0;
+  filter: drop-shadow(0 0 18px var(--accent2));
+}
+
+.forge-clash-stage--block .forge-clash-impact__shield {
+  animation: forgeClashShieldBlock 760ms cubic-bezier(.16, .96, .28, 1);
+}
+
 .forge-clash-hand,
 .forge-clash-draft-grid {
   display: grid;
@@ -21370,7 +21627,31 @@ textarea:focus-visible,
 }
 
 .forge-clash-hand {
-  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(174px, 1fr));
+}
+
+.forge-clash-opponent-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -8px 0 18px;
+  padding: 12px;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 75, 139, 0.22);
+  border-radius: 20px;
+  background:
+    linear-gradient(90deg, rgba(255, 75, 139, 0.13), transparent),
+    rgba(0, 0, 0, 0.24);
+  box-shadow: inset 0 0 22px rgba(255, 75, 139, 0.08);
+}
+
+.forge-clash-opponent-row > span {
+  flex: 0 0 auto;
+  color: #ff8fba;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .forge-clash-card,
@@ -21387,7 +21668,7 @@ textarea:focus-visible,
   display: grid;
   justify-items: center;
   gap: 8px;
-  padding: 10px;
+  padding: 12px;
 }
 
 .forge-clash-card:hover:not(:disabled),
@@ -21444,7 +21725,7 @@ textarea:focus-visible,
 }
 
 .forge-clash-draft-grid {
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(146px, 1fr));
   max-height: 560px;
   overflow: auto;
   padding-right: 4px;
@@ -21509,6 +21790,25 @@ textarea:focus-visible,
   100% { transform: translateX(0) rotate(0); filter: brightness(1); }
 }
 
+@keyframes forgeClashBlock {
+  0% { transform: translateX(0) scale(1); filter: brightness(1); }
+  28% { transform: translateX(-4%) scale(1.06); filter: brightness(1.65) saturate(1.4); }
+  44% { transform: translateX(2%) scale(0.96); filter: brightness(2) saturate(1.7); }
+  68% { transform: translateX(-2%) scale(1.03); }
+  100% { transform: translateX(0) scale(1); filter: brightness(1); }
+}
+
+@keyframes forgeClashWin {
+  from { transform: translateY(0) scale(1); filter: brightness(1.08) saturate(1.25); }
+  to { transform: translateY(-10px) scale(1.04); filter: brightness(1.35) saturate(1.7); }
+}
+
+@keyframes forgeClashLose {
+  0% { transform: translateY(0) rotate(0); filter: grayscale(0) brightness(1); opacity: 1; }
+  46% { transform: translateY(12px) rotate(-2deg); filter: grayscale(0.45) brightness(0.72); opacity: 0.84; }
+  100% { transform: translateY(8px) rotate(1deg); filter: grayscale(0.6) brightness(0.68); opacity: 0.78; }
+}
+
 @keyframes forgeClashCardPop {
   0% { transform: translateY(0) scale(1); }
   45% { transform: translateY(-12px) scale(1.05); }
@@ -21566,6 +21866,36 @@ textarea:focus-visible,
   0% { transform: scale(0.9); opacity: 0.42; }
   50% { transform: scale(1.08); opacity: 0.82; }
   100% { transform: scale(1.18); opacity: 0; }
+}
+
+@keyframes forgeClashShieldBlock {
+  0% { opacity: 0; transform: scale(0.56) rotate(0deg); }
+  28% { opacity: 1; transform: scale(1.08) rotate(-4deg); }
+  54% { opacity: 0.82; transform: scale(0.96) rotate(3deg); }
+  100% { opacity: 0; transform: scale(1.26) rotate(0deg); }
+}
+
+@keyframes forgeClashActionStamp {
+  0% { opacity: 0; transform: translateY(-18px) rotate(var(--forge-stamp-rotation, -8deg)) scale(0.45); }
+  22% { opacity: 1; transform: translateY(0) rotate(var(--forge-stamp-rotation, -8deg)) scale(1.18); }
+  46% { opacity: 1; transform: translateY(2px) rotate(var(--forge-stamp-rotation, -8deg)) scale(0.96); }
+  100% { opacity: 0; transform: translateY(-8px) rotate(var(--forge-stamp-rotation, -8deg)) scale(1.08); }
+}
+
+@keyframes forgeClashFinishBurst {
+  0% { opacity: 0; transform: rotate(var(--forge-finish-rotation)) scaleY(0.08); }
+  24% { opacity: 0.95; }
+  100% { opacity: 0; transform: rotate(var(--forge-finish-rotation)) scaleY(1.16); }
+}
+
+@keyframes forgeClashVictoryPulse {
+  from { box-shadow: 0 0 16px color-mix(in srgb, var(--accent2) 26%, transparent); transform: translateX(-50%) scale(1); }
+  to { box-shadow: 0 0 34px color-mix(in srgb, var(--accent2) 56%, transparent); transform: translateX(-50%) scale(1.06); }
+}
+
+@keyframes forgeClashDefeatPulse {
+  from { box-shadow: 0 0 16px rgba(255, 75, 139, 0.22); transform: translateX(-50%) skewX(0); }
+  to { box-shadow: 0 0 32px rgba(255, 75, 139, 0.48); transform: translateX(-50%) skewX(-6deg); }
 }
 
 @keyframes forgeClashSmoke {
