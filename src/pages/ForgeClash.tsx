@@ -196,6 +196,12 @@ function getSwingMessage(entry?: ClashLogEntry): string {
   }
 }
 
+function getActionLabel(action?: ClashAction): string {
+  if (action === "counter") return "COUNTER";
+  if (action === "block") return "BLOCK";
+  return "STRIKE";
+}
+
 function getIntentIcon(intent: ClashIntent): string {
   if (intent === "Rush") return "💥";
   if (intent === "Guard") return "🛡️";
@@ -266,7 +272,7 @@ export function ForgeClash() {
     if (!clash.activeRival) return currentRival;
     const move = RIVAL_MOVES.find((rivalMove) => rivalMove.name === clash.activeRival);
     if (!move) {
-      console.warn(`Forge Clash active rival "${clash.activeRival}" was not found; using current rival.`);
+      console.warn(`Forge Clash active rival "${clash.activeRival}" was not found in RIVAL_MOVES; using current turn rival "${currentRival.name}".`);
     }
     return move ?? currentRival;
   }, [clash.activeRival, currentRival]);
@@ -400,10 +406,10 @@ export function ForgeClash() {
                 </div>
               )}
               <div className="forge-clash-action-banner forge-clash-action-banner--player" aria-hidden="true">
-                {latestEntry?.playerAction === "counter" ? "COUNTER" : "STRIKE"}
+                {getActionLabel(latestEntry?.playerAction)}
               </div>
               <div className="forge-clash-action-banner forge-clash-action-banner--rival" aria-hidden="true">
-                {latestEntry?.rivalAction === "block" ? "BLOCK" : "STRIKE"}
+                {getActionLabel(latestEntry?.rivalAction)}
               </div>
               <div className="forge-clash-stage__status" aria-hidden="true">
                 {getStageStatusLabel(clash)}
