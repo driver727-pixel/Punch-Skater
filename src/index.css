@@ -21305,7 +21305,7 @@ textarea:focus-visible,
   56% { transform: translateX(34%) scale(1.14) rotate(-7deg); filter: saturate(1.8) brightness(1.45); }
   /* recovery */
   72% { transform: translateX(18%) scale(1.06) rotate(2deg); }
-  100% { transform: translateX(0) scale(1); }
+  100% { transform: translateX(0) scale(1); filter: saturate(1); }
 }
 
 @keyframes forgeClashRecoil {
@@ -21315,7 +21315,7 @@ textarea:focus-visible,
   /* recovery */
   58% { transform: translateX(-5%) rotate(-2deg); filter: brightness(1.35); }
   76% { transform: translateX(3%) rotate(1deg); }
-  100% { transform: translateX(0); filter: brightness(1); }
+  100% { transform: translateX(0) rotate(0); filter: brightness(1); }
 }
 
 @keyframes forgeClashCardPop {

@@ -179,10 +179,14 @@ function getStageStatusLabel(clash: ClashState): string {
 
 function getSwingMessage(entry?: ClashLogEntry): string {
   if (!entry) return "Ready";
-  if (entry.swing === "player") return "Advantage!";
-  if (entry.swing === "rival") return "Rival surge!";
-  if (entry.swing === "neutral") return "Clash tie!";
-  return "Ready";
+  switch (entry.swing) {
+    case "player":
+      return "Advantage!";
+    case "rival":
+      return "Rival surge!";
+    case "neutral":
+      return "Clash tie!";
+  }
 }
 
 function getClashRenderKey(clash: ClashState): string {
