@@ -18507,6 +18507,65 @@ textarea:focus-visible,
 }
 .race-arena-header h1 { margin: 0 0 0.25rem; }
 .race-arena-subtitle { margin: 0 0 0.5rem; opacity: 0.85; }
+.race-arena-featured-mode {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: clamp(1rem, 3vw, 1.6rem);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 12% 16%, color-mix(in srgb, var(--accent) 40%, transparent), transparent 30%),
+    radial-gradient(circle at 88% 20%, rgba(255, 64, 188, 0.34), transparent 30%),
+    linear-gradient(135deg, rgba(8, 10, 26, 0.94), rgba(28, 6, 32, 0.88));
+  box-shadow:
+    0 0 38px color-mix(in srgb, var(--accent) 24%, transparent),
+    inset 0 0 42px rgba(255, 255, 255, 0.06);
+}
+.race-arena-featured-mode::before {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  pointer-events: none;
+  background: conic-gradient(from 90deg, transparent, color-mix(in srgb, var(--accent2) 34%, transparent), transparent 28%);
+  animation: forgeClashFeaturedSweep 7s linear infinite;
+  opacity: 0.48;
+}
+.race-arena-featured-mode > * {
+  position: relative;
+  z-index: 1;
+}
+.race-arena-featured-mode h2 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(2rem, 5vw, 4.75rem);
+  line-height: 0.9;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 68%, transparent);
+}
+.race-arena-featured-mode p:not(.app-status-eyebrow) {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.race-arena-featured-mode__cta {
+  white-space: nowrap;
+  transform: scale(1.08);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 42%, transparent);
+}
+.race-arena-mode-link--forge-clash {
+  order: -1;
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), rgba(255, 255, 255, 0.06));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent);
+}
 .race-arena-self {
   display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
   padding: 0.6rem 0.9rem; border: 1px solid rgba(255,255,255,0.12);
@@ -20925,10 +20984,116 @@ textarea:focus-visible,
   background:
     linear-gradient(90deg, rgba(0, 255, 180, 0.08), rgba(255, 0, 180, 0.08)),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 64px);
+  box-shadow:
+    inset 0 0 44px rgba(0, 0, 0, 0.5),
+    0 0 32px color-mix(in srgb, var(--accent) 14%, transparent);
+  isolation: isolate;
+}
+
+.forge-clash-stage::before,
+.forge-clash-stage::after,
+.forge-clash-stage__grid,
+.forge-clash-stage__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.forge-clash-stage::before {
+  content: "";
+  z-index: -1;
+  background:
+    radial-gradient(circle at 18% 50%, color-mix(in srgb, var(--accent) 32%, transparent), transparent 28%),
+    radial-gradient(circle at 82% 50%, rgba(255, 56, 152, 0.28), transparent 28%),
+    linear-gradient(90deg, transparent 44%, rgba(255, 255, 255, 0.16) 49%, transparent 54%);
+  animation: forgeClashStagePulse 3.4s ease-in-out infinite;
+}
+
+.forge-clash-stage::after {
+  content: "";
+  z-index: 0;
+  background:
+    linear-gradient(115deg, transparent 0 42%, rgba(255, 255, 255, 0.24) 48%, transparent 54%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0 2px, transparent 2px 12px);
+  mix-blend-mode: screen;
+  opacity: 0.34;
+  animation: forgeClashScanline 2.6s linear infinite;
+}
+
+.forge-clash-stage__grid {
+  background:
+    linear-gradient(color-mix(in srgb, var(--accent) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent2) 14%, transparent) 1px, transparent 1px);
+  background-size: 42px 42px;
+  transform: perspective(460px) rotateX(58deg) translateY(22%);
+  transform-origin: center bottom;
+  opacity: 0.42;
+  animation: forgeClashGridRun 1.8s linear infinite;
+}
+
+.forge-clash-stage__sparks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.forge-clash-stage__sparks i {
+  width: 12px;
+  height: 112px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent, #fff, var(--accent2), transparent);
+  filter: blur(0.4px) drop-shadow(0 0 14px var(--accent2));
+  opacity: 0;
+  transform: rotate(38deg) scaleY(0.3);
+}
+
+.forge-clash-stage--player .forge-clash-stage__sparks i,
+.forge-clash-stage--rival .forge-clash-stage__sparks i,
+.forge-clash-stage--neutral .forge-clash-stage__sparks i {
+  animation: forgeClashSparkBurst 640ms ease-out;
+}
+
+.forge-clash-stage__sparks i:nth-child(2) {
+  transform: rotate(90deg) scaleY(0.3);
+  animation-delay: 70ms;
+}
+
+.forge-clash-stage__sparks i:nth-child(3) {
+  transform: rotate(142deg) scaleY(0.3);
+  animation-delay: 120ms;
+}
+
+.forge-clash-stage__status {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, transparent);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.52);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.forge-clash-stage--win .forge-clash-stage__status {
+  color: var(--accent2);
+}
+
+.forge-clash-stage--loss .forge-clash-stage__status {
+  color: #ff4b8b;
 }
 
 .forge-clash-combatant,
 .forge-clash-impact {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   min-height: 174px;
@@ -20936,6 +21101,27 @@ textarea:focus-visible,
   border-radius: 22px;
   background: rgba(0, 0, 0, 0.36);
   text-align: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 28px rgba(255, 255, 255, 0.05);
+}
+
+.forge-clash-combatant::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  background: conic-gradient(from 180deg, transparent, color-mix(in srgb, var(--accent) 28%, transparent), transparent 35%);
+  opacity: 0.38;
+  animation: forgeClashCombatantAura 6s linear infinite;
+}
+
+.forge-clash-combatant--rival::before {
+  background: conic-gradient(from 0deg, transparent, rgba(255, 75, 139, 0.34), transparent 35%);
+}
+
+.forge-clash-combatant > *,
+.forge-clash-impact > * {
+  position: relative;
+  z-index: 1;
 }
 
 .forge-clash-combatant span {
@@ -20949,18 +21135,38 @@ textarea:focus-visible,
   color: var(--text);
 }
 
+.forge-clash-combatant small,
+.forge-clash-impact em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .forge-clash-combatant--player.is-striking {
-  animation: forgeClashStrike 480ms cubic-bezier(.2, .9, .2, 1);
+  animation: forgeClashStrike 640ms cubic-bezier(.16, 1.15, .28, 1);
 }
 
 .forge-clash-combatant--rival.is-recoiling {
-  animation: forgeClashRecoil 480ms cubic-bezier(.2, .9, .2, 1);
+  animation: forgeClashRecoil 640ms cubic-bezier(.16, 1.15, .28, 1);
 }
 
 .forge-clash-impact {
   min-height: 132px;
   color: var(--accent2);
   box-shadow: inset 0 0 28px color-mix(in srgb, var(--accent2) 16%, transparent);
+}
+
+.forge-clash-impact__ring {
+  position: absolute;
+  inset: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent2) 55%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent2) 32%, transparent);
+  opacity: 0.62;
+  animation: forgeClashImpactRing 1.4s ease-in-out infinite;
 }
 
 .forge-clash-hand,
@@ -21089,14 +21295,18 @@ textarea:focus-visible,
 }
 
 @keyframes forgeClashStrike {
-  0% { transform: translateX(0) scale(1); }
-  52% { transform: translateX(18%) scale(1.08) rotate(-2deg); }
+  0% { transform: translateX(0) scale(1) rotate(0); filter: saturate(1); }
+  28% { transform: translateX(8%) translateY(-8px) scale(1.05) rotate(-3deg); filter: saturate(1.45) brightness(1.2); }
+  56% { transform: translateX(34%) scale(1.14) rotate(-7deg); filter: saturate(1.8) brightness(1.45); }
+  72% { transform: translateX(18%) scale(1.06) rotate(2deg); }
   100% { transform: translateX(0) scale(1); }
 }
 
 @keyframes forgeClashRecoil {
-  0% { transform: translateX(0); filter: brightness(1); }
-  52% { transform: translateX(8%) rotate(2deg); filter: brightness(1.55); }
+  0% { transform: translateX(0) rotate(0); filter: brightness(1); }
+  38% { transform: translateX(10%) rotate(3deg) skewX(-3deg); filter: brightness(1.85) saturate(1.55); }
+  58% { transform: translateX(-5%) rotate(-2deg); filter: brightness(1.35); }
+  76% { transform: translateX(3%) rotate(1deg); }
   100% { transform: translateX(0); filter: brightness(1); }
 }
 
@@ -21104,6 +21314,40 @@ textarea:focus-visible,
   0% { transform: translateY(0) scale(1); }
   45% { transform: translateY(-12px) scale(1.05); }
   100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes forgeClashFeaturedSweep {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes forgeClashStagePulse {
+  0%, 100% { opacity: 0.64; filter: hue-rotate(0deg); }
+  50% { opacity: 1; filter: hue-rotate(24deg); }
+}
+
+@keyframes forgeClashScanline {
+  from { transform: translateX(-22%); }
+  to { transform: translateX(22%); }
+}
+
+@keyframes forgeClashGridRun {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 42px, 42px 0; }
+}
+
+@keyframes forgeClashSparkBurst {
+  0% { opacity: 0; transform: rotate(38deg) scaleY(0.2); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(38deg) scaleY(1.35); }
+}
+
+@keyframes forgeClashCombatantAura {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes forgeClashImpactRing {
+  0%, 100% { transform: scale(0.9); opacity: 0.42; }
+  50% { transform: scale(1.08); opacity: 0.82; }
 }
 
 @media (max-width: 980px) {
@@ -21119,5 +21363,14 @@ textarea:focus-visible,
 
   .forge-clash-stage {
     min-height: auto;
+  }
+
+  .race-arena-featured-mode {
+    grid-template-columns: 1fr;
+  }
+
+  .race-arena-featured-mode__cta {
+    justify-self: start;
+    transform: none;
   }
 }

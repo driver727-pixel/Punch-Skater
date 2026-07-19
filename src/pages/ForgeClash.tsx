@@ -194,6 +194,13 @@ export function ForgeClash() {
   );
   const deckSummary = useMemo(() => buildArenaDeckSummary(selectedCards), [selectedCards]);
   const currentRival = RIVAL_MOVES[(clash.turn - 1) % RIVAL_MOVES.length];
+  const latestEntry = clash.log[0];
+  const stageClassName = [
+    "forge-clash-stage",
+    clash.phase === "playing" ? "is-live" : "",
+    latestEntry ? `forge-clash-stage--${latestEntry.swing}` : "",
+    clash.phase === "ended" && clash.result ? `forge-clash-stage--${clash.result}` : "",
+  ].filter(Boolean).join(" ");
   const activeCard = useMemo(
     () => selectedCards.find((card) => card.id === clash.activeCardId),
     [clash.activeCardId, selectedCards],
@@ -265,18 +272,31 @@ export function ForgeClash() {
               </div>
             </div>
 
-            <div className="forge-clash-stage">
+            <div className={stageClassName} key={`${clash.activeCardId ?? "draft"}:${clash.turn}:${clash.heat}`}>
+              <div className="forge-clash-stage__grid" aria-hidden="true" />
+              <div className="forge-clash-stage__sparks" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="forge-clash-stage__status" aria-hidden="true">
+                {clash.phase === "draft" ? "LOCK HAND" : clash.phase === "ended" ? getResultLabel(clash.result) : "LIVE CLASH"}
+              </div>
               <div className={`forge-clash-combatant forge-clash-combatant--player${clash.activeCardId ? " is-striking" : ""}`} key={clash.activeCardId ?? "crew"}>
                 <span>⚡</span>
                 <strong>{activeCard?.identity.name ?? "Your hand is loaded"}</strong>
+                <small>{activeCard ? `${getStrongestStat(activeCard).toUpperCase()} charge` : "Draft a five-card crew"}</small>
               </div>
               <div className="forge-clash-impact">
+                <span className="forge-clash-impact__ring" aria-hidden="true" />
                 <span>COMBO x{clash.combo}</span>
                 <strong>HEAT {clash.heat}</strong>
+                <em>{latestEntry ? latestEntry.swing === "player" ? "Advantage!" : latestEntry.swing === "rival" ? "Rival surge!" : "Clash tie!" : "Ready"}</em>
               </div>
               <div className={`forge-clash-combatant forge-clash-combatant--rival${clash.activeRival ? " is-recoiling" : ""}`} key={clash.activeRival ?? currentRival.name}>
                 <span>{currentRival.intent === "Rush" ? "💥" : currentRival.intent === "Guard" ? "🛡️" : "👁️"}</span>
                 <strong>{clash.activeRival ?? currentRival.name}</strong>
+                <small>{currentRival.intent} intent incoming</small>
               </div>
             </div>
 
