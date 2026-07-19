@@ -18564,13 +18564,6 @@ textarea:focus-visible,
   transform: scale(1.08);
   box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 42%, transparent);
 }
-.race-arena-mode-link--forge-clash {
-  order: -1;
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), rgba(255, 255, 255, 0.06));
-  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent);
-}
 .race-arena-self {
   display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
   padding: 0.6rem 0.9rem; border: 1px solid rgba(255,255,255,0.12);
@@ -21151,11 +21144,11 @@ textarea:focus-visible,
 }
 
 .forge-clash-combatant--player.is-striking {
-  animation: forgeClashStrike 640ms cubic-bezier(.16, 1.15, .28, 1);
+  animation: forgeClashStrike 640ms cubic-bezier(.16, .96, .28, 1);
 }
 
 .forge-clash-combatant--rival.is-recoiling {
-  animation: forgeClashRecoil 640ms cubic-bezier(.16, 1.15, .28, 1);
+  animation: forgeClashRecoil 640ms cubic-bezier(.16, .96, .28, 1);
 }
 
 .forge-clash-impact {

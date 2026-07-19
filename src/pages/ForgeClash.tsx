@@ -184,6 +184,15 @@ function getSwingMessage(entry?: ClashLogEntry): string {
   return "Clash tie!";
 }
 
+function getClashAnimationKey(clash: ClashState): string {
+  return [
+    clash.phase,
+    `turn-${clash.turn}`,
+    `heat-${clash.heat}`,
+    clash.activeCardId ? `card-${clash.activeCardId}` : "card-none",
+  ].join("|");
+}
+
 function resolveResult(nextRivalHp: number, nextPlayerHp: number): ClashState["result"] {
   if (nextRivalHp === nextPlayerHp) return "draw";
   if (nextRivalHp < nextPlayerHp) return "win";
@@ -285,7 +294,7 @@ export function ForgeClash() {
               </div>
             </div>
 
-            <div className={stageClassName} key={`${clash.activeCardId ?? "draft"}:${clash.turn}:${clash.heat}`}>
+            <div className={stageClassName} key={getClashAnimationKey(clash)}>
               <div className="forge-clash-stage__grid" aria-hidden="true" />
               <div className="forge-clash-stage__sparks" aria-hidden="true">
                 <i />

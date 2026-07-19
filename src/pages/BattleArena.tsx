@@ -40,9 +40,6 @@ export function BattleArena() {
       </div>
 
       <div className="race-arena-modes">
-        <Link to="/arena/forge-clash" className="btn-outline race-arena-mode-link race-arena-mode-link--forge-clash">
-          🃏 Forge Clash - featured animated card duel using the cards you forge
-        </Link>
         {showJousturEntry && (
           <Link to="/joustur" className="btn-outline race-arena-mode-link">
             🛹 Joustur Skatur™ - based on the classic Royal Game of Ur
