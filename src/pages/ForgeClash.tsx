@@ -450,7 +450,7 @@ export function ForgeClash() {
               </div>
             </div>
 
-            <div className="forge-clash-opponent-row" aria-label="Upcoming opponent hand">
+            <div className="forge-clash-opponent-row" aria-label="Rival hand">
               <span>Rival hand</span>
               <div className="forge-clash-opponent-hand">
                 {rivalPreviewMoves.map((move) => (
