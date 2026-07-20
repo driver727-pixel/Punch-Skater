@@ -4,31 +4,42 @@ import { loadAdminLoanerCards } from '../lib/adminLoaners.js';
 const DEFAULT_COMPUTER_RIVALS_COUNT = 6;
 const MAX_COMPUTER_RIVALS_COUNT = 12;
 
+function badRequest(message) {
+  return Object.assign(new Error(message), { statusCode: 400 });
+}
+
+function parseComputerRivalsCount(rawCount) {
+  if (rawCount == null || rawCount === '') return DEFAULT_COMPUTER_RIVALS_COUNT;
+  const count = Number(rawCount);
+  if (!Number.isInteger(count) || count < 1 || count > MAX_COMPUTER_RIVALS_COUNT) {
+    throw badRequest(`count must be an integer from 1 to ${MAX_COMPUTER_RIVALS_COUNT}.`);
+  }
+  return count;
+}
+
 export function registerForgeRoutes(app, {
   adminDb,
   forgeRateLimit,
   authenticateFirebaseUser,
   FieldValue,
 }) {
-  app.use('/api/forge/computer-rivals', forgeRateLimit);
-  app.get('/api/forge/computer-rivals', async (req, res) => {
+  async function authenticateComputerRivalsRequest(req, res, next) {
+    try {
+      await authenticateFirebaseUser(req);
+      next();
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
+    }
+  }
+
+  app.get('/api/forge/computer-rivals', forgeRateLimit, authenticateComputerRivalsRequest, async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Computer rivals are not configured on this server.' });
       return;
     }
 
     try {
-      await authenticateFirebaseUser(req);
-    } catch (error) {
-      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Authentication failed.' });
-      return;
-    }
-
-    try {
-      const requestedCount = Math.min(
-        MAX_COMPUTER_RIVALS_COUNT,
-        Math.max(1, Math.floor(Number(req.query?.count) || DEFAULT_COMPUTER_RIVALS_COUNT)),
-      );
+      const requestedCount = parseComputerRivalsCount(req.query?.count);
       const cards = await loadAdminLoanerCards(adminDb, {
         count: requestedCount,
         allowPartial: true,

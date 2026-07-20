@@ -231,7 +231,7 @@ function RivalCard({ move, size = "standard", card }: { move: RivalMove; size?: 
       </div>
       <div className="forge-clash-rival-card__body">
         <strong>{card?.identity.name ?? move.name}</strong>
-        <small>{move.intent} computer rival</small>
+        <small>{move.intent} computer opponent</small>
         <dl>
           <div><dt>SPD</dt><dd>{move.speed}</dd></div>
           <div><dt>RNG</dt><dd>{move.range}</dd></div>

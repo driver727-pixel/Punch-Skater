@@ -65,5 +65,5 @@ export async function loadAdminLoanerCards(db, { count, rng = Math.random, allow
     return shuffleArray(selected, rng).slice(0, desiredCount);
   }
 
-  throw badRequest(`Only ${selected.length} admin loaner card${selected.length === 1 ? ' is' : 's are'} available right now.`, 503);
+  throw badRequest(`Admin loaner request requires ${desiredCount} cards, but only ${selected.length} admin loaner card${selected.length === 1 ? ' is' : 's are'} available right now.`, 503);
 }
