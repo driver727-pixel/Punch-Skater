@@ -21708,7 +21708,7 @@ textarea:focus-visible,
   flex: 0 0 168px;
   gap: 9px;
   padding: 14px 14px 12px;
-  margin-inline: -18px;
+  margin-inline: -8px;
   transform-origin: center 112%;
   transform: rotateZ(var(--hand-rotate, 0deg)) translateY(var(--hand-y, 0)) rotateX(9deg);
   box-shadow:
@@ -21806,7 +21806,8 @@ textarea:focus-visible,
 
 .forge-clash-card:hover:not(:disabled),
 .forge-clash-card:focus-visible:not(:disabled) {
-  transform: rotateZ(var(--hand-rotate, 0deg)) translateY(calc(var(--hand-y, 0px) - 22px)) rotateX(2deg) scale(1.1);
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
   z-index: 12;
   box-shadow:
     0 30px 46px rgba(0, 0, 0, 0.5),
@@ -21825,7 +21826,11 @@ textarea:focus-visible,
 }
 
 .forge-clash-card.is-active {
-  animation: forgeClashCardPop 520ms ease;
+  outline: 3px solid var(--accent2);
+  outline-offset: 3px;
+  box-shadow:
+    0 30px 46px rgba(0, 0, 0, 0.5),
+    0 0 30px color-mix(in srgb, var(--accent2) 38%, transparent);
 }
 
 .forge-clash-card span,
@@ -22101,7 +22106,7 @@ textarea:focus-visible,
 
   .forge-clash-card {
     flex-basis: 148px;
-    margin-inline: -12px;
+    margin-inline: -4px;
   }
 
   .race-arena-featured-mode {
