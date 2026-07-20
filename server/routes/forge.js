@@ -1,13 +1,17 @@
 import { claimFreeForge, getFreeForgeState } from '../lib/freeForge.js';
 import { loadAdminLoanerCards } from '../lib/adminLoaners.js';
 
+const DEFAULT_COMPUTER_RIVALS_COUNT = 6;
+const MAX_COMPUTER_RIVALS_COUNT = 12;
+
 export function registerForgeRoutes(app, {
   adminDb,
   forgeRateLimit,
   authenticateFirebaseUser,
   FieldValue,
 }) {
-  app.get('/api/forge/computer-rivals', forgeRateLimit, async (req, res) => {
+  app.use('/api/forge/computer-rivals', forgeRateLimit);
+  app.get('/api/forge/computer-rivals', async (req, res) => {
     if (!adminDb) {
       res.status(503).json({ error: 'Computer rivals are not configured on this server.' });
       return;
@@ -21,7 +25,10 @@ export function registerForgeRoutes(app, {
     }
 
     try {
-      const requestedCount = Math.min(12, Math.max(1, Math.floor(Number(req.query?.count) || 6)));
+      const requestedCount = Math.min(
+        MAX_COMPUTER_RIVALS_COUNT,
+        Math.max(1, Math.floor(Number(req.query?.count) || DEFAULT_COMPUTER_RIVALS_COUNT)),
+      );
       const cards = await loadAdminLoanerCards(adminDb, {
         count: requestedCount,
         allowPartial: true,

@@ -67,6 +67,7 @@ const RIVAL_MOVES: RivalMove[] = [
   { name: "Neon Jackal", intent: "Rush", speed: 26, range: 14, stealth: 18, grit: 11 },
   { name: "Static Saint", intent: "Trick", speed: 16, range: 17, stealth: 23, grit: 15 },
 ];
+const RIVAL_MOVE_INDEX_BY_NAME = new Map(RIVAL_MOVES.map((move, index) => [move.name, index]));
 
 function initialClashState(): ClashState {
   return {
@@ -310,8 +311,8 @@ export function ForgeClash() {
   }, [clash.activeRival, currentRival]);
   const getRivalCardForMove = (move: RivalMove): CardPayload | undefined => {
     if (rivalCards.length === 0) return undefined;
-    const moveIndex = RIVAL_MOVES.findIndex((rivalMove) => rivalMove.name === move.name);
-    return rivalCards[(moveIndex < 0 ? 0 : moveIndex) % rivalCards.length];
+    const moveIndex = RIVAL_MOVE_INDEX_BY_NAME.get(move.name) ?? 0;
+    return rivalCards[moveIndex % rivalCards.length];
   };
   const activeRivalCard = getRivalCardForMove(activeRivalMove);
   const rivalPreviewMoves = Array.from(
