@@ -117,6 +117,22 @@ test('loadAdminLoanerCards fails when there are not enough admin cards', async (
 
   await assert.rejects(
     () => loadAdminLoanerCards(db, { count: 2, rng: () => 0 }),
-    /Only 1 admin loaner card is available right now/,
+    /requires 2 cards, but only 1 admin loaner card is available right now/,
   );
+});
+
+test('loadAdminLoanerCards can return partial admin-owned card assortments', async () => {
+  const db = createAdminLoanerDb({
+    profiles: {
+      'admin-a': { isAdmin: true },
+    },
+    cardsByUser: {
+      'admin-a': [{ id: 'card-a1', identity: { name: 'A1' } }],
+    },
+  });
+
+  const cards = await loadAdminLoanerCards(db, { count: 2, allowPartial: true, rng: () => 0 });
+
+  assert.equal(cards.length, 1);
+  assert.equal(cards[0].id, 'card-a1');
 });

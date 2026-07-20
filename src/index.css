@@ -21434,7 +21434,7 @@ textarea:focus-visible,
     0 24px 36px rgba(0, 0, 0, 0.54),
     0 0 30px rgba(255, 75, 139, 0.24),
     inset 0 0 22px rgba(255, 255, 255, 0.08);
-  transform: rotateX(52deg) rotateY(16deg) rotateZ(7deg);
+  transform: rotateZ(4deg);
   transform-style: preserve-3d;
 }
 
@@ -21476,6 +21476,20 @@ textarea:focus-visible,
 .forge-clash-rival-card__art span {
   font-size: 54px;
   filter: drop-shadow(0 0 20px var(--rival-card-glow, #ff4b8b));
+}
+
+.forge-clash-rival-card--forged .forge-clash-rival-card__art {
+  min-height: auto;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow:
+    inset 0 0 24px color-mix(in srgb, var(--rival-card-glow, #ff4b8b) 18%, transparent),
+    0 12px 22px rgba(0, 0, 0, 0.32);
+}
+
+.forge-clash-rival-card--forged .card-art,
+.forge-clash-rival-card--forged .card-art-composite {
+  border-radius: 11px;
+  overflow: hidden;
 }
 
 .forge-clash-rival-card__body {
@@ -21540,6 +21554,10 @@ textarea:focus-visible,
 
 .forge-clash-rival-card--mini .forge-clash-rival-card__art span {
   font-size: 32px;
+}
+
+.forge-clash-rival-card--mini.forge-clash-rival-card--forged .forge-clash-rival-card__art {
+  margin: 6px;
 }
 
 .forge-clash-rival-card--mini .forge-clash-rival-card__body {

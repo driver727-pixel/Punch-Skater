@@ -1,5 +1,6 @@
 import type { User } from "firebase/auth";
 import { resolveApiUrl } from "../lib/apiUrls";
+import type { CardPayload } from "../lib/types";
 
 const FREE_FORGE_STATUS_API_URL = resolveApiUrl(
   import.meta.env.VITE_FREE_FORGE_STATUS_API_URL as string | undefined,
@@ -8,6 +9,10 @@ const FREE_FORGE_STATUS_API_URL = resolveApiUrl(
 const FREE_FORGE_CLAIM_API_URL = resolveApiUrl(
   import.meta.env.VITE_FREE_FORGE_CLAIM_API_URL as string | undefined,
   "/api/forge/free-claim",
+);
+const FORGE_COMPUTER_RIVALS_API_URL = resolveApiUrl(
+  import.meta.env.VITE_FORGE_COMPUTER_RIVALS_API_URL as string | undefined,
+  "/api/forge/computer-rivals",
 );
 
 export interface FreeForgeState {
@@ -61,4 +66,11 @@ export function fetchFreeForgeStatus(user: User): Promise<FreeForgeState> {
  */
 export function claimFreeForge(user: User): Promise<FreeForgeState> {
   return callForgeApi<FreeForgeState>(user, FREE_FORGE_CLAIM_API_URL, { method: "POST" });
+}
+
+export async function fetchForgeComputerRivals(user: User, count = 6): Promise<CardPayload[]> {
+  const url = new URL(FORGE_COMPUTER_RIVALS_API_URL, window.location.origin);
+  url.searchParams.set("count", String(count));
+  const payload = await callForgeApi<{ cards?: CardPayload[] }>(user, url.toString());
+  return Array.isArray(payload.cards) ? payload.cards : [];
 }

@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CardThumbnail } from "../components/CardThumbnail";
 import { useCollection } from "../hooks/useCollection";
+import { useAuth } from "../context/AuthContext";
 import { clamp, getCardRarityBonus, getCardStat } from "../lib/forgeClashMetrics";
 import type { CardPayload, StatKey } from "../lib/types";
 import { buildArenaDeckSummary, computeCardWorth } from "../lib/battle";
+import { fetchForgeComputerRivals } from "../services/forge";
 
 type ClashPhase = "draft" | "playing" | "ended";
 type ClashIntent = "Rush" | "Guard" | "Trick";
@@ -65,6 +67,7 @@ const RIVAL_MOVES: RivalMove[] = [
   { name: "Neon Jackal", intent: "Rush", speed: 26, range: 14, stealth: 18, grit: 11 },
   { name: "Static Saint", intent: "Trick", speed: 16, range: 17, stealth: 23, grit: 15 },
 ];
+const RIVAL_MOVE_INDEX_BY_NAME = new Map(RIVAL_MOVES.map((move, index) => [move.name, index]));
 
 function initialClashState(): ClashState {
   return {
@@ -212,15 +215,23 @@ function buildClassName(...parts: Array<string | false | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
-function RivalCard({ move, size = "standard" }: { move: RivalMove; size?: "standard" | "mini" }) {
+function RivalCard({ move, size = "standard", card }: { move: RivalMove; size?: "standard" | "mini"; card?: CardPayload }) {
+  const thumbnailSize = size === "mini"
+    ? { width: 92, height: 129 }
+    : { width: 144, height: 202 };
+
   return (
-    <div className={`forge-clash-rival-card forge-clash-rival-card--${move.intent.toLowerCase()} forge-clash-rival-card--${size}`}>
+    <div className={`forge-clash-rival-card forge-clash-rival-card--${move.intent.toLowerCase()} forge-clash-rival-card--${size}${card ? " forge-clash-rival-card--forged" : ""}`}>
       <div className="forge-clash-rival-card__art" aria-hidden="true">
-        <span>{getIntentIcon(move.intent)}</span>
+        {card ? (
+          <CardThumbnail card={card} width={thumbnailSize.width} height={thumbnailSize.height} />
+        ) : (
+          <span>{getIntentIcon(move.intent)}</span>
+        )}
       </div>
       <div className="forge-clash-rival-card__body">
-        <strong>{move.name}</strong>
-        <small>{move.intent} rival</small>
+        <strong>{card?.identity.name ?? move.name}</strong>
+        <small>{move.intent} computer opponent</small>
         <dl>
           <div><dt>SPD</dt><dd>{move.speed}</dd></div>
           <div><dt>RNG</dt><dd>{move.range}</dd></div>
@@ -252,8 +263,30 @@ function resolveResult(nextRivalHp: number, nextPlayerHp: number): ClashState["r
 
 export function ForgeClash() {
   const { cards } = useCollection();
+  const { user } = useAuth();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [rivalCards, setRivalCards] = useState<CardPayload[]>([]);
   const [clash, setClash] = useState<ClashState>(() => initialClashState());
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!user) {
+      setRivalCards([]);
+      return;
+    }
+
+    fetchForgeComputerRivals(user, RIVAL_MOVES.length)
+      .then((cards) => {
+        if (isMounted) setRivalCards(cards);
+      })
+      .catch(() => {
+        if (isMounted) setRivalCards([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const sortedCards = useMemo(
     () => [...cards].sort((a, b) => computeCardWorth(b) - computeCardWorth(a)),
@@ -276,9 +309,18 @@ export function ForgeClash() {
     }
     return move ?? currentRival;
   }, [clash.activeRival, currentRival]);
+  const getRivalCardForMove = (move: RivalMove): CardPayload | undefined => {
+    if (rivalCards.length === 0) return undefined;
+    const moveIndex = RIVAL_MOVE_INDEX_BY_NAME.get(move.name) ?? 0;
+    return rivalCards[moveIndex % rivalCards.length];
+  };
+  const activeRivalCard = getRivalCardForMove(activeRivalMove);
   const rivalPreviewMoves = Array.from(
     { length: MAX_HAND_SIZE },
-    (_, index) => RIVAL_MOVES[(clash.turn + index) % RIVAL_MOVES.length],
+    (_, index) => {
+      const move = RIVAL_MOVES[(clash.turn + index) % RIVAL_MOVES.length];
+      return { move, card: getRivalCardForMove(move) };
+    },
   );
   const stageClassName = buildClassName(
     "forge-clash-stage",
@@ -443,9 +485,9 @@ export function ForgeClash() {
               </div>
               <div className={rivalCombatantClassName} key={clash.activeRival ?? currentRival.name}>
                 <div className="forge-clash-rival-showcase" aria-hidden="true">
-                  <RivalCard move={activeRivalMove} />
+                  <RivalCard move={activeRivalMove} card={activeRivalCard} />
                 </div>
-                <strong>{activeRivalMove.name}</strong>
+                <strong>{activeRivalCard?.identity.name ?? activeRivalMove.name}</strong>
                 <small>{activeRivalMove.intent} intent incoming</small>
               </div>
             </div>
@@ -453,8 +495,8 @@ export function ForgeClash() {
             <div className="forge-clash-opponent-row" aria-label="Rival hand">
               <span>Rival hand</span>
               <div className="forge-clash-opponent-hand">
-                {rivalPreviewMoves.map((move) => (
-                  <RivalCard key={move.name} move={move} size="mini" />
+                {rivalPreviewMoves.map(({ move, card }) => (
+                  <RivalCard key={move.name} move={move} card={card} size="mini" />
                 ))}
               </div>
             </div>
