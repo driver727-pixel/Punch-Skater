@@ -12,7 +12,7 @@
     <meta name="copyright" content="© 2025 SP Digital LLC. All Rights Reserved." />
     <meta name="robots" content="index, follow" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.gstatic.com https://*.google.com https://*.fal.media https://firebasestorage.googleapis.com https://storage.googleapis.com https://card-forge-proxy.onrender.com; font-src 'self' https://fonts.gstatic.com data:; form-action 'self'; frame-src 'self' https://www.google.com https://www.gstatic.com https://*.firebaseapp.com; img-src 'self' data: blob: https://*.fal.media https://*.firebaseapp.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.google.com https://www.gstatic.com https://github.com https://*.s3.amazonaws.com; manifest-src 'self'; object-src 'none'; script-src 'self' 'sha256-dFmzZw2dNt7Rq+OpIkmDfs6RUrHYXZRIQdHZpYiSDV8=' 'sha256-r8bNWrpkIDvMNsFCL+L+aLZcivrgV5xZspHe/SnTZiw=' 'sha256-S1ECDZFwPNsVLznEjcbi1rimJokim9bgmCvNDYYBQRk=' https://static.cloudflareinsights.com https://www.google.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; worker-src 'self' blob:; upgrade-insecure-requests" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.gstatic.com https://*.google.com https://*.fal.media https://firebasestorage.googleapis.com https://storage.googleapis.com https://card-forge-proxy.onrender.com; font-src 'self' https://fonts.gstatic.com data:; form-action 'self'; frame-src 'self' https://www.google.com https://www.gstatic.com https://*.firebaseapp.com; img-src 'self' data: blob: https://*.fal.media https://*.firebaseapp.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.google.com https://www.gstatic.com https://github.com https://*.s3.amazonaws.com; manifest-src 'self'; object-src 'none'; script-src 'self' https://static.cloudflareinsights.com https://www.google.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; worker-src 'self' blob:; upgrade-insecure-requests" />
     <link rel="canonical" href="https://punchskater.com/" />
 
     <!-- ── Fonts ────────────────────────────────────────────────────────── -->
@@ -47,13 +47,13 @@
     <meta name="twitter:image" content="https://punchskater.com/pwa-512x512.png" />
     <meta name="twitter:image:alt" content="Punch Skater™ — Cyberpunk Card Deck Builder" />
 
-    <!-- ── Inline bootstrap scripts (formerly 3 deferred HTTP requests) ── -->
+    <!-- ── Bootstrap scripts ──────────────────────────────────────────────── -->
     <!-- SPA redirect: restores deep-link URLs encoded by the 404.html trick -->
-    <script>(function(l){if(l.search[1]==='/'){var d=l.search.slice(1).split('&').map(function(s){return s.replace(/~and~/g,'&');}).join('?');window.history.replaceState(null,null,l.pathname.slice(0,-1)+d+l.hash);}}(window.location));</script>
+    <script src="/assets/security/spa-redirect.js"></script>
     <!-- Runtime-correct origin: updates canonical/OG/Twitter meta from window.location; also loads font CSS async (non-blocking) -->
-    <script>(function(){var o=window.location&&typeof window.location.origin==='string'?window.location.origin.trim():'';if(!o||o==='null')return;function sa(sel,attr,path){var n=document.querySelector(sel);if(!n)return;try{n.setAttribute(attr,new URL(path,o).toString());}catch(e){}}sa('link[rel="canonical"]','href','/');sa('meta[property="og:url"]','content','/');sa('meta[property="og:image"]','content','/pwa-512x512.png');sa('meta[name="twitter:image"]','content','/pwa-512x512.png');var fl=document.createElement('link');fl.rel='stylesheet';fl.href='https://fonts.googleapis.com/css2?family=Bangers&display=swap';document.head.appendChild(fl);}());</script>
+    <script src="/assets/security/site-origin.js"></script>
     <!-- Structured data / JSON-LD -->
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Punch Skater™","alternateName":"Skater Punk™ Deck Builder","description":"Punch Skater™ is a free cyberpunk card game where you forge unique AI-powered courier trading cards, build competitive decks, and trade with other skaters across five dystopian city districts.","url":"https://punchskater.com/","applicationCategory":"GameApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript. Requires a modern browser.","inLanguage":"en-US","offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock"},"author":{"@type":"Organization","name":"SP Digital LLC"},"copyrightHolder":{"@type":"Organization","name":"SP Digital LLC"},"copyrightYear":"2025","keywords":"cyberpunk, card game, deck builder, trading cards, AI art, skater punk","screenshot":"https://punchskater.com/pwa-512x512.png"}</script>
+    <script src="/assets/security/structured-data.js"></script>
   </head>
   <body>
     <div id="root"></div>

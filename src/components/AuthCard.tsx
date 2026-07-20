@@ -305,8 +305,10 @@ export function AuthCard({
           <form className="login-form" onSubmit={handleForgotPassword}>
             <p className="login-hint">Enter your email to receive a password reset link.</p>
             <div className="form-group">
-              <label>Email</label>
+              <label htmlFor="forgot-email">Email</label>
               <input
+                id="forgot-email"
+                name="email"
                 className="input"
                 type="email"
                 placeholder="your@email.com"
@@ -337,8 +339,10 @@ export function AuthCard({
             <form className="login-form" onSubmit={handleSendSms}>
               <p className="login-hint">Enter your phone number with country code (e.g. +1 555 000 1234).</p>
               <div className="form-group">
-                <label>Phone Number</label>
+                <label htmlFor="phone-number">Phone Number</label>
                 <input
+                  id="phone-number"
+                  name="phone"
                   className="input"
                   type="tel"
                   placeholder="+1 555 000 1234"
@@ -359,8 +363,10 @@ export function AuthCard({
             <form className="login-form" onSubmit={handleVerifyCode}>
               <p className="login-hint">Enter the 6-digit code sent to {phone}.</p>
               <div className="form-group">
-                <label>Verification Code</label>
+                <label htmlFor="verification-code">Verification Code</label>
                 <input
+                  id="verification-code"
+                  name="verificationCode"
                   className="input"
                   type="text"
                   placeholder="123456"
@@ -390,8 +396,10 @@ export function AuthCard({
         ) : (
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Email</label>
+              <label htmlFor="login-email">Email</label>
               <input
+                id="login-email"
+                name="email"
                 className="input"
                 type="email"
                 placeholder="your@email.com"
@@ -403,9 +411,11 @@ export function AuthCard({
               />
             </div>
             <div className="form-group">
-              <label>Password</label>
+              <label htmlFor="login-password">Password</label>
               <div className="password-input-wrapper">
                 <input
+                  id="login-password"
+                  name="password"
                   className="input"
                   type={showPassword ? "text" : "password"}
                   placeholder={mode === "signup" ? PASSWORD_REQUIREMENTS_PLACEHOLDER : "Password"}
@@ -440,9 +450,11 @@ export function AuthCard({
             </div>
             {mode === "signup" && (
               <div className="form-group">
-                <label>Confirm Password</label>
+                <label htmlFor="confirm-password">Confirm Password</label>
                 <div className="password-input-wrapper">
                   <input
+                    id="confirm-password"
+                    name="confirmPassword"
                     className="input"
                     type={showConfirm ? "text" : "password"}
                     placeholder="Repeat password"

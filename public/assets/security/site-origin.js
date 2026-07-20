@@ -19,4 +19,8 @@
   setAttribute('meta[property="og:url"]', 'content', '/');
   setAttribute('meta[property="og:image"]', 'content', '/pwa-512x512.png');
   setAttribute('meta[name="twitter:image"]', 'content', '/pwa-512x512.png');
+  var fontLink = document.createElement('link');
+  fontLink.rel = 'stylesheet';
+  fontLink.href = 'https://fonts.googleapis.com/css2?family=Bangers&display=swap';
+  document.head.appendChild(fontLink);
 }());
