@@ -43,7 +43,7 @@ interface ClashState {
   log: ClashLogEntry[];
 }
 
-const MAX_HAND_SIZE = 5;
+const MAX_HAND_SIZE = 6;
 const MAX_DRAFT_CARDS = 18;
 const MAX_TURNS = 8;
 const MAX_HP = 100;
@@ -277,7 +277,7 @@ export function ForgeClash() {
     return move ?? currentRival;
   }, [clash.activeRival, currentRival]);
   const rivalPreviewMoves = Array.from(
-    { length: 3 },
+    { length: MAX_HAND_SIZE },
     (_, index) => RIVAL_MOVES[(clash.turn + index) % RIVAL_MOVES.length],
   );
   const stageClassName = buildClassName(
@@ -340,7 +340,7 @@ export function ForgeClash() {
         <p className="app-status-eyebrow">Core Game Prototype</p>
         <h1>Forge Clash</h1>
         <p>
-          Pick up to five forged cards, read the rival intent, then slam animated cards into
+          Pick six forged cards, read the rival intent, then slam animated cards into
           a fast combo duel. Speed builds tempo, Range hits hard, Stealth spikes crits, and
           Grit blocks rushes.
         </p>
@@ -421,20 +421,20 @@ export function ForgeClash() {
                       key={card.id}
                       className={`forge-clash-3d-card forge-clash-3d-card--${index + 1}`}
                     >
-                      <CardThumbnail card={card} width={208} height={146} />
+                      <CardThumbnail card={card} width={150} height={210} />
                     </div>
                   ))}
                   {!activeCard && selectedCards.length === 0 && <span className="forge-clash-card-showcase__empty">⚡</span>}
                 </div>
                 <strong>{activeCard?.identity.name ?? "Your hand is loaded"}</strong>
-                <small>{activeCard ? `${getStrongestStat(activeCard).toUpperCase()} charge` : "Draft a five-card crew"}</small>
+                <small>{activeCard ? `${getStrongestStat(activeCard).toUpperCase()} charge` : "Draft a six-card crew"}</small>
               </div>
               <div className="forge-clash-impact">
                 <span className="forge-clash-impact__ring" aria-hidden="true" />
                 <span className="forge-clash-impact__shield" aria-hidden="true" />
                 {activeCard && (
                   <div className="forge-clash-impact-card" aria-hidden="true">
-                    <CardThumbnail card={activeCard} width={158} height={111} />
+                    <CardThumbnail card={activeCard} width={112} height={158} />
                   </div>
                 )}
                 <span>COMBO x{clash.combo}</span>
@@ -450,11 +450,13 @@ export function ForgeClash() {
               </div>
             </div>
 
-            <div className="forge-clash-opponent-row" aria-label="Upcoming opponent cards">
-              <span>Rival deck</span>
-              {rivalPreviewMoves.map((move) => (
-                <RivalCard key={move.name} move={move} size="mini" />
-              ))}
+            <div className="forge-clash-opponent-row" aria-label="Rival hand">
+              <span>Rival hand</span>
+              <div className="forge-clash-opponent-hand">
+                {rivalPreviewMoves.map((move) => (
+                  <RivalCard key={move.name} move={move} size="mini" />
+                ))}
+              </div>
             </div>
 
             <div className="forge-clash-hand">
@@ -468,7 +470,7 @@ export function ForgeClash() {
                     onClick={() => playCard(card)}
                     disabled={clash.phase !== "playing" || cooldown > 0}
                   >
-                    <CardThumbnail card={card} width={184} height={129} />
+                    <CardThumbnail card={card} width={138} height={194} />
                     <span>{card.identity.name}</span>
                     <small>
                       {cooldown > 0 ? `Cooldown: ${cooldown}` : `${getStrongestStat(card).toUpperCase()} lead`}
@@ -511,7 +513,7 @@ export function ForgeClash() {
                       onClick={() => toggleCard(card.id)}
                       disabled={!selected && selectedIds.length >= MAX_HAND_SIZE}
                     >
-                      <CardThumbnail card={card} width={142} height={99} />
+                      <CardThumbnail card={card} width={110} height={154} />
                       <span>{card.identity.name}</span>
                     </button>
                   );
