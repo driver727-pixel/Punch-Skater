@@ -21334,7 +21334,7 @@ textarea:focus-visible,
 .forge-clash-card-showcase {
   position: relative;
   width: min(100%, 292px);
-  min-height: 174px;
+  min-height: 248px;
   perspective: 850px;
 }
 
@@ -21351,6 +21351,7 @@ textarea:focus-visible,
   top: 50%;
   border-radius: 12px;
   transform-style: preserve-3d;
+  transform-origin: center 82%;
   box-shadow:
     0 24px 38px rgba(0, 0, 0, 0.52),
     0 0 34px color-mix(in srgb, var(--accent) 32%, transparent);
@@ -21378,20 +21379,20 @@ textarea:focus-visible,
 }
 
 .forge-clash-3d-card--1 {
-  --forge-card-x: 58deg;
-  --forge-card-y: -18deg;
-  --forge-card-z: -8deg;
+  --forge-card-x: 14deg;
+  --forge-card-y: -10deg;
+  --forge-card-z: -7deg;
   transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z));
   animation: forgeClashCardHover 2.8s ease-in-out infinite;
 }
 
 .forge-clash-3d-card--2 {
-  transform: translate(-40%, -47%) rotateX(56deg) rotateY(10deg) rotateZ(9deg) scale(0.9);
+  transform: translate(-32%, -48%) rotateX(16deg) rotateY(8deg) rotateZ(10deg) scale(0.9);
   opacity: 0.72;
 }
 
 .forge-clash-3d-card--3 {
-  transform: translate(-62%, -42%) rotateX(62deg) rotateY(-28deg) rotateZ(-22deg) scale(0.82);
+  transform: translate(-68%, -44%) rotateX(18deg) rotateY(-12deg) rotateZ(-22deg) scale(0.82);
   opacity: 0.56;
 }
 
@@ -21401,9 +21402,9 @@ textarea:focus-visible,
 
 .forge-clash-impact-card {
   z-index: 0;
-  width: 158px;
-  height: 111px;
-  transform: translate(-50%, -50%) rotateX(60deg) rotateY(0deg) rotateZ(-10deg);
+  width: 112px;
+  height: 158px;
+  transform: translate(-50%, -50%) rotateX(18deg) rotateY(0deg) rotateZ(-10deg);
   opacity: 0.34;
   animation: forgeClashImpactCard 640ms ease-out;
 }
@@ -21622,23 +21623,30 @@ textarea:focus-visible,
   animation: forgeClashShieldBlock 760ms cubic-bezier(.16, .96, .28, 1);
 }
 
-.forge-clash-hand,
 .forge-clash-draft-grid {
   display: grid;
   gap: 12px;
 }
 
 .forge-clash-hand {
-  grid-template-columns: repeat(auto-fit, minmax(174px, 1fr));
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 292px;
+  margin: 24px auto 8px;
+  padding: 30px clamp(8px, 3vw, 36px) 22px;
+  overflow: visible;
+  perspective: 1100px;
+  transform-style: preserve-3d;
 }
 
 .forge-clash-opponent-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  gap: 6px;
   margin: -8px 0 18px;
-  padding: 12px;
-  overflow-x: auto;
+  padding: 12px 12px 4px;
+  overflow: visible;
   border: 1px solid rgba(255, 75, 139, 0.22);
   border-radius: 20px;
   background:
@@ -21648,12 +21656,22 @@ textarea:focus-visible,
 }
 
 .forge-clash-opponent-row > span {
-  flex: 0 0 auto;
   color: #ff8fba;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.16em;
+  text-align: center;
   text-transform: uppercase;
+}
+
+.forge-clash-opponent-hand {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 184px;
+  padding-top: 6px;
+  perspective: 900px;
+  transform-style: preserve-3d;
 }
 
 .forge-clash-card,
@@ -21669,16 +21687,117 @@ textarea:focus-visible,
 .forge-clash-card {
   display: grid;
   justify-items: center;
-  gap: 8px;
-  padding: 12px;
+  flex: 0 0 168px;
+  gap: 9px;
+  padding: 14px 14px 12px;
+  margin-inline: -18px;
+  transform-origin: center 112%;
+  transform: rotateZ(var(--hand-rotate, 0deg)) translateY(var(--hand-y, 0)) rotateX(9deg);
+  box-shadow:
+    0 22px 34px rgba(0, 0, 0, 0.42),
+    inset 0 0 18px rgba(255, 255, 255, 0.05);
+  will-change: transform;
+}
+
+.forge-clash-card:nth-child(1) {
+  --hand-rotate: -20deg;
+  --hand-y: 42px;
+  z-index: 1;
+}
+
+.forge-clash-card:nth-child(2) {
+  --hand-rotate: -12deg;
+  --hand-y: 18px;
+  z-index: 2;
+}
+
+.forge-clash-card:nth-child(3) {
+  --hand-rotate: -4deg;
+  --hand-y: 4px;
+  z-index: 3;
+}
+
+.forge-clash-card:nth-child(4) {
+  --hand-rotate: 4deg;
+  --hand-y: 4px;
+  z-index: 4;
+}
+
+.forge-clash-card:nth-child(5) {
+  --hand-rotate: 12deg;
+  --hand-y: 18px;
+  z-index: 5;
+}
+
+.forge-clash-card:nth-child(6) {
+  --hand-rotate: 20deg;
+  --hand-y: 42px;
+  z-index: 6;
+}
+
+.forge-clash-opponent-hand .forge-clash-rival-card--mini {
+  flex: 0 0 104px;
+  margin-inline: -12px;
+  transform-origin: center -18%;
+  transform: rotateZ(var(--rival-hand-rotate, 0deg)) translateY(var(--rival-hand-y, 0)) rotateX(-8deg) scale(0.94);
+  will-change: transform;
+}
+
+.forge-clash-opponent-hand .forge-clash-rival-card--mini:nth-child(1) {
+  --rival-hand-rotate: 18deg;
+  --rival-hand-y: 30px;
+  z-index: 1;
+}
+
+.forge-clash-opponent-hand .forge-clash-rival-card--mini:nth-child(2) {
+  --rival-hand-rotate: 10deg;
+  --rival-hand-y: 12px;
+  z-index: 2;
+}
+
+.forge-clash-opponent-hand .forge-clash-rival-card--mini:nth-child(3) {
+  --rival-hand-rotate: 3deg;
+  --rival-hand-y: 0;
+  z-index: 3;
+}
+
+.forge-clash-opponent-hand .forge-clash-rival-card--mini:nth-child(4) {
+  --rival-hand-rotate: -3deg;
+  --rival-hand-y: 0;
+  z-index: 4;
+}
+
+.forge-clash-opponent-hand .forge-clash-rival-card--mini:nth-child(5) {
+  --rival-hand-rotate: -10deg;
+  --rival-hand-y: 12px;
+  z-index: 5;
+}
+
+.forge-clash-opponent-hand .forge-clash-rival-card--mini:nth-child(6) {
+  --rival-hand-rotate: -18deg;
+  --rival-hand-y: 30px;
+  z-index: 6;
 }
 
 .forge-clash-card:hover:not(:disabled),
 .forge-clash-draft-card:hover:not(:disabled),
 .forge-clash-draft-card.is-selected {
-  transform: translateY(-3px);
   border-color: var(--accent);
   box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.forge-clash-card:hover:not(:disabled),
+.forge-clash-card:focus-visible:not(:disabled) {
+  transform: rotateZ(var(--hand-rotate, 0deg)) translateY(calc(var(--hand-y, 0px) - 22px)) rotateX(2deg) scale(1.1);
+  z-index: 12;
+  box-shadow:
+    0 30px 46px rgba(0, 0, 0, 0.5),
+    0 0 30px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.forge-clash-draft-card:hover:not(:disabled),
+.forge-clash-draft-card.is-selected {
+  transform: translateY(-3px);
 }
 
 .forge-clash-card:disabled,
@@ -21819,20 +21938,20 @@ textarea:focus-visible,
 
 @keyframes forgeClash3DCardStrike {
   0% { transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z)) scale(1); }
-  46% { transform: translate(-8%, -62%) rotateX(50deg) rotateY(28deg) rotateZ(16deg) scale(1.16); filter: saturate(1.55) brightness(1.25); }
-  64% { transform: translate(18%, -46%) rotateX(64deg) rotateY(-10deg) rotateZ(-16deg) scale(1.04); }
+  46% { transform: translate(-8%, -62%) rotateX(10deg) rotateY(18deg) rotateZ(16deg) scale(1.16); filter: saturate(1.55) brightness(1.25); }
+  64% { transform: translate(18%, -46%) rotateX(18deg) rotateY(-8deg) rotateZ(-16deg) scale(1.04); }
   100% { transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z)) scale(1); }
 }
 
 @keyframes forgeClashCardHover {
   0%, 100% { transform: translate(-50%, -50%) rotateX(var(--forge-card-x)) rotateY(var(--forge-card-y)) rotateZ(var(--forge-card-z)) translateY(0); }
-  50% { transform: translate(-50%, -56%) rotateX(54deg) rotateY(-8deg) rotateZ(-5deg) translateY(-6px); }
+  50% { transform: translate(-50%, -56%) rotateX(8deg) rotateY(-7deg) rotateZ(-5deg) translateY(-6px); }
 }
 
 @keyframes forgeClashImpactCard {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotateX(70deg) rotateY(-40deg) rotateZ(-34deg) scale(0.62); }
-  42% { opacity: 0.9; transform: translate(-50%, -50%) rotateX(48deg) rotateY(18deg) rotateZ(12deg) scale(1.2); }
-  100% { opacity: 0.16; transform: translate(-50%, -50%) rotateX(60deg) rotateY(0deg) rotateZ(-10deg) scale(0.92); }
+  0% { opacity: 0; transform: translate(-50%, -50%) rotateX(28deg) rotateY(-26deg) rotateZ(-34deg) scale(0.62); }
+  42% { opacity: 0.9; transform: translate(-50%, -50%) rotateX(8deg) rotateY(14deg) rotateZ(12deg) scale(1.2); }
+  100% { opacity: 0.16; transform: translate(-50%, -50%) rotateX(18deg) rotateY(0deg) rotateZ(-10deg) scale(0.92); }
 }
 
 @keyframes forgeClashFeaturedSweep {
@@ -21952,7 +22071,19 @@ textarea:focus-visible,
   }
 
   .forge-clash-card-showcase {
-    min-height: 116px;
+    min-height: 224px;
+  }
+
+  .forge-clash-hand,
+  .forge-clash-opponent-hand {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .forge-clash-card {
+    flex-basis: 148px;
+    margin-inline: -12px;
   }
 
   .race-arena-featured-mode {
