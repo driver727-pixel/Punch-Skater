@@ -122,7 +122,7 @@ app.use(helmet({
       imgSrc: ["'self'", 'data:', 'https://*.fal.media', 'https://*.firebaseapp.com', 'https://firebasestorage.googleapis.com'],
       manifestSrc: ["'self'"],
       objectSrc: ["'none'"],
-      scriptSrc: ["'self'", 'https://static.cloudflareinsights.com'],
+      scriptSrc: ["'self'", "'sha256-s8mYx8CQz2Jg7Fh4CNUZQX1bU/ywmO8t/eireIThnhI='", 'https://static.cloudflareinsights.com'],
       scriptSrcAttr: ["'none'"],
       styleSrc: ["'self'", 'https://fonts.googleapis.com'],
       workerSrc: ["'self'", 'blob:'],
