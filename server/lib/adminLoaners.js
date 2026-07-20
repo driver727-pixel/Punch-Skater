@@ -35,7 +35,7 @@ export async function requireFreeTierCaller(db, caller) {
   }
 }
 
-export async function loadAdminLoanerCards(db, { count, rng = Math.random }) {
+export async function loadAdminLoanerCards(db, { count, rng = Math.random, allowPartial = false }) {
   const desiredCount = Math.max(1, Math.floor(Number(count) || 0));
   const adminProfilesSnap = await db.collection('userProfiles').where('isAdmin', '==', true).get();
   const adminUids = shuffleArray(adminProfilesSnap.docs.map((docSnap) => docSnap.id).filter(Boolean), rng);
@@ -59,6 +59,10 @@ export async function loadAdminLoanerCards(db, { count, rng = Math.random }) {
         return shuffleArray(selected, rng).slice(0, desiredCount);
       }
     }
+  }
+
+  if (allowPartial && selected.length > 0) {
+    return shuffleArray(selected, rng).slice(0, desiredCount);
   }
 
   throw badRequest(`Only ${selected.length} admin loaner card${selected.length === 1 ? ' is' : 's are'} available right now.`, 503);
