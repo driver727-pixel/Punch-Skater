@@ -11,8 +11,28 @@ const CRAFTLINGUA_BASE_URL = "https://craftlingua.app";
 
 export const CRAFTLINGUA_ATTRIBUTION = "Language system powered by CraftLingua.";
 
-export const CRAFTLINGUA_DISTRICT_LANGUAGES =
-  craftlinguaDistrictsRaw as CraftlinguaDistrictLanguage[];
+const CRAFTLINGUA_DISTRICT_NAMES = new Set<string>([
+  "Airaway",
+  "Batteryville",
+  "The Grid",
+  "Nightshade",
+  "The Forest",
+  "Glass City",
+] satisfies District[]);
+
+function isCraftlinguaDistrict(value: string): value is District {
+  return CRAFTLINGUA_DISTRICT_NAMES.has(value);
+}
+
+export const CRAFTLINGUA_DISTRICT_LANGUAGES: CraftlinguaDistrictLanguage[] =
+  craftlinguaDistrictsRaw.flatMap((entry) => {
+    if (!isCraftlinguaDistrict(entry.district)) return [];
+    const phrasebook: Record<string, string> = {};
+    for (const [phrase, translation] of Object.entries(entry.phrasebook)) {
+      if (typeof translation === "string") phrasebook[phrase] = translation;
+    }
+    return [{ ...entry, district: entry.district, phrasebook }];
+  });
 
 export function buildCraftlinguaExploreUrl(shareCode: string): string {
   return `${CRAFTLINGUA_BASE_URL}/share/${encodeURIComponent(shareCode)}`;

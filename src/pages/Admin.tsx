@@ -414,6 +414,7 @@ export function Admin() {
 
   // ── Fetch user count ───────────────────────────────────────────────────────
   useEffect(() => {
+    if (!db) return;
     getCountFromServer(collection(db, "userProfiles"))
       .then((snap) => setTotalUsers(snap.data().count))
       .catch(() => {});
@@ -421,6 +422,7 @@ export function Admin() {
 
   // ── Load first page ────────────────────────────────────────────────────────
   const loadUsers = useCallback(async (after?: DocumentSnapshot) => {
+    if (!db) return;
     setLoading(true);
     setError("");
     try {
@@ -463,6 +465,7 @@ export function Admin() {
 
   // ── Set tier for a user ────────────────────────────────────────────────────
   const handleSetTier = async (uid: string, newTier: TierLevel) => {
+    if (!db) return;
     setSavingUid(uid);
     setSuccessUid(null);
     try {

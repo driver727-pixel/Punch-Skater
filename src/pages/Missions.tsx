@@ -1150,14 +1150,14 @@ function MissionsWorldView({ uid, userEmail }: { uid: string; userEmail?: string
     try {
       const launchRunner = selectedRunner.runnerType === "card"
         ? {
-          runnerType: "card",
+          runnerType: "card" as const,
           cardId: selectedRunner.card?.id ?? null,
           cardName: selectedRunner.label,
           deckId: null,
           deckName: null,
         }
         : {
-          runnerType: "deck",
+          runnerType: "deck" as const,
           deckId: selectedRunner.deck?.id ?? null,
           deckName: selectedRunner.label,
           cardId: null,

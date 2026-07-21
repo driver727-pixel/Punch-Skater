@@ -135,7 +135,9 @@ const SLUG_BY_NAME = new Map<string, RaceDistrictSlug>(
     [option.displayName.toLowerCase().replace(/\s+/g, "-"), option.slug],
   ]),
 );
-const DISTRICT_LORE_BY_NAME = new Map(DISTRICT_LORE.map((entry) => [entry.name, entry] as const));
+const DISTRICT_LORE_BY_NAME = new Map<string, (typeof DISTRICT_LORE)[number]>(
+  DISTRICT_LORE.map((entry) => [entry.name, entry] as const),
+);
 const DISTRICT_LANGUAGE_BY_SLUG = new Map(CRAFTLINGUA_DISTRICT_LANGUAGES.map((entry) => [entry.slug, entry] as const));
 
 export function normalizeDistrictSlug(district?: string | null): RaceDistrictSlug {

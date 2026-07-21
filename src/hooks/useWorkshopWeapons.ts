@@ -41,6 +41,8 @@ export function useWorkshopWeapons() {
       return;
     }
 
+    if (!db) return;
+
     setIsLoading(true);
     guestHydratingRef.current = false;
     initialGuestWeaponsRef.current = null;
@@ -70,7 +72,7 @@ export function useWorkshopWeapons() {
   }, [weapons, uid]);
 
   const saveWeapon = useCallback(async (weapon: WorkshopWeaponPayload) => {
-    if (uid) {
+    if (uid && db) {
       await setDoc(doc(db, "users", uid, "workshopWeapons", weapon.id), weapon, { merge: true });
       return;
     }
@@ -86,7 +88,7 @@ export function useWorkshopWeapons() {
   }, [saveWeapon]);
 
   const removeWeapon = useCallback(async (weaponId: string) => {
-    if (uid) {
+    if (uid && db) {
       await deleteDoc(doc(db, "users", uid, "workshopWeapons", weaponId));
       return;
     }

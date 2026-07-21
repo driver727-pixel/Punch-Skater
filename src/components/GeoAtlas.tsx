@@ -63,6 +63,12 @@ const PLAYABLE_DISTRICTS: District[] = [
   "Glass City",
 ];
 
+const PLAYABLE_DISTRICT_SET = new Set<WorldLocation>(PLAYABLE_DISTRICTS);
+
+function isPlayableDistrict(name: WorldLocation): name is District {
+  return PLAYABLE_DISTRICT_SET.has(name);
+}
+
 const AUSTRALIA_DISTRICT_LAYOUT: Record<WorldLocation, { x: number; y: number; tone: string }> = {
   Airaway: { x: 68, y: 57, tone: "sky" },
   Electropolis: { x: 74, y: 40, tone: "signal" },
@@ -271,13 +277,16 @@ export const GeoAtlas = memo(function GeoAtlas({
   const hasFocus = focusDistrictSet.size > 0 || focusCorridorSet.size > 0;
   const districtEntries = useMemo(
     () =>
-      DISTRICT_LORE.map((entry) => ({
-        ...entry,
-        layout: AUSTRALIA_DISTRICT_LAYOUT[entry.name],
-        slug: entry.name.toLowerCase().replace(/\s+/g, "-"),
-        weather: entry.kind === "district" ? weatherByDistrict[entry.name] ?? null : null,
-        location: entry.kind === "district" ? DISTRICT_WEATHER_LOCATIONS[entry.name] : null,
-      })),
+      DISTRICT_LORE.map((entry) => {
+        const districtName = entry.kind === "district" && isPlayableDistrict(entry.name) ? entry.name : null;
+        return {
+          ...entry,
+          layout: AUSTRALIA_DISTRICT_LAYOUT[entry.name],
+          slug: entry.name.toLowerCase().replace(/\s+/g, "-"),
+          weather: districtName ? weatherByDistrict[districtName] ?? null : null,
+          location: districtName ? DISTRICT_WEATHER_LOCATIONS[districtName] : null,
+        };
+      }),
     [weatherByDistrict],
   );
   const { activeDistrictEntry } = useMemo(() => {
@@ -303,7 +312,7 @@ export const GeoAtlas = memo(function GeoAtlas({
       ).length
     : null;
   const inspectionCopy = activeDistrictEntry
-    ? activeDistrictEntry.kind === "district"
+    ? activeDistrictEntry.kind === "district" && isPlayableDistrict(activeDistrictEntry.name)
       ? {
           name: activeDistrictEntry.name,
           weatherSummary: getDistrictWeatherSummary({
@@ -482,9 +491,10 @@ export const GeoAtlas = memo(function GeoAtlas({
 
                 {districtEntries.filter((district) => district.kind !== "hidden").map((district) => {
                   const accessRestricted =
-                    district.kind === "district" && hasDistrictAccessRestriction(district.name, district.weather);
+                    district.kind === "district" && isPlayableDistrict(district.name)
+                      && hasDistrictAccessRestriction(district.name, district.weather);
                   const boardAccessible =
-                    boardConfig && district.kind === "district"
+                    boardConfig && district.kind === "district" && isPlayableDistrict(district.name)
                       ? isDistrictAccessibleWithBoardType(
                           district.name,
                           district.weather,
@@ -493,7 +503,7 @@ export const GeoAtlas = memo(function GeoAtlas({
                         )
                       : null;
                   const detailText =
-                    district.kind === "district"
+                    district.kind === "district" && isPlayableDistrict(district.name)
                       ? `${district.name}. ${getDistrictWeatherSummary({
                           district: district.name,
                           weatherSummary: district.weather?.summary ?? null,
@@ -539,7 +549,7 @@ export const GeoAtlas = memo(function GeoAtlas({
                         {...commonProps}
                         onClick={() => {
                           inspectDistrict();
-                          if (district.kind === "district" && onDistrictSelect) {
+                          if (district.kind === "district" && isPlayableDistrict(district.name) && onDistrictSelect) {
                             onDistrictSelect(district.name);
                           }
                         }}

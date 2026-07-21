@@ -75,12 +75,15 @@ export function useDecks() {
       return;
     }
 
+    if (!db) return;
+    const firestore = db;
+
     guestHydratingRef.current = false;
     initialGuestDecksRef.current = null;
     lastSavedDecksRef.current = [];
     setDecks([]);
 
-    const colRef = collection(db, "users", uid, "decks");
+    const colRef = collection(firestore, "users", uid, "decks");
     const unsub = onSnapshot(colRef, (snap) => {
       const incoming = snap.docs.map((d) => d.data() as DeckPayload);
       const normalized = normalizeDeckOrder(incoming);
@@ -93,7 +96,7 @@ export function useDecks() {
       });
 
       if (changedDecks.length > 0) {
-        void Promise.all(changedDecks.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
+        void Promise.all(changedDecks.map((deck) => setDoc(doc(firestore, "users", uid, "decks", deck.id), deck))).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
       }
     });
     return unsub;
@@ -120,7 +123,7 @@ export function useDecks() {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const saveDeck = useCallback((deck: DeckPayload) => {
-    if (uid) {
+    if (uid && db) {
       setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => prev.map((d) => (d.id === deck.id ? deck : d)));
@@ -139,7 +142,7 @@ export function useDecks() {
       updatedAt: new Date().toISOString(),
       sortOrder: nextSortOrder,
     };
-    if (uid) {
+    if (uid && db) {
       setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => normalizeDeckOrder([...prev, deck]));
@@ -148,7 +151,7 @@ export function useDecks() {
   }, [uid]);
 
   const deleteDeck = useCallback((id: string) => {
-    if (uid) {
+    if (uid && db) {
       deleteDoc(doc(db, "users", uid, "decks", id)).catch((error) => reportPersistenceError("Couldn't delete that deck — check your connection and try again.", error));
     } else {
       setDecks((prev) => prev.filter((d) => d.id !== id));
@@ -242,8 +245,9 @@ export function useDecks() {
 
     setDecks(normalized);
 
-    if (uid) {
-      void Promise.all(normalized.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck))).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
+    if (uid && db) {
+      const firestore = db;
+      void Promise.all(normalized.map((deck) => setDoc(doc(firestore, "users", uid, "decks", deck.id), deck))).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     }
   }, [uid]);
 
@@ -272,7 +276,7 @@ export function useDecks() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    if (uid) {
+    if (uid && db) {
       setDoc(doc(db, "users", uid, "decks", deck.id), deck).catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => [...prev, deck]);
@@ -286,10 +290,11 @@ export function useDecks() {
       const shouldBePrimary = deck.id === deckId;
       if (Boolean(deck.isPrimary) === shouldBePrimary) return null;
       return { ...deck, isPrimary: shouldBePrimary, updatedAt: now };
-    }).filter((d): d is DeckPayload => d !== null);
+    }).filter((d): d is NonNullable<typeof d> => d !== null);
     if (updates.length === 0) return;
-    if (uid) {
-      void Promise.all(updates.map((deck) => setDoc(doc(db, "users", uid, "decks", deck.id), deck)))
+    if (uid && db) {
+      const firestore = db;
+      void Promise.all(updates.map((deck) => setDoc(doc(firestore, "users", uid, "decks", deck.id), deck)))
         .catch((error) => reportPersistenceError("Couldn't save your deck changes — check your connection and try again.", error));
     } else {
       setDecks((prev) => prev.map((d) => {

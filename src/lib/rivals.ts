@@ -531,9 +531,11 @@ export function createDistrictRivalBattleCardSnapshot(
 ): BattleCardSnapshot | undefined {
   const rival = typeof rivalOrId === "string" ? getDistrictRival(rivalOrId) : rivalOrId;
   if (!rival) return undefined;
+  const { archetype } = rival.signatureCard;
+  if (!archetype) return undefined;
   return {
     id: rival.signatureCard.id,
-    archetype: rival.signatureCard.archetype,
+    archetype,
     stats: { ...rival.signatureCard.stats },
   };
 }

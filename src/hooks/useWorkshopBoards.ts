@@ -41,6 +41,8 @@ export function useWorkshopBoards() {
       return;
     }
 
+    if (!db) return;
+
     setIsLoading(true);
     guestHydratingRef.current = false;
     initialGuestBoardsRef.current = null;
@@ -70,7 +72,7 @@ export function useWorkshopBoards() {
   }, [boards, uid]);
 
   const saveBoard = useCallback(async (board: WorkshopBoardPayload) => {
-    if (uid) {
+    if (uid && db) {
       await setDoc(doc(db, "users", uid, "workshopBoards", board.id), board, { merge: true });
       return;
     }
@@ -86,7 +88,7 @@ export function useWorkshopBoards() {
   }, [saveBoard]);
 
   const removeBoard = useCallback(async (boardId: string) => {
-    if (uid) {
+    if (uid && db) {
       await deleteDoc(doc(db, "users", uid, "workshopBoards", boardId));
       return;
     }
@@ -102,15 +104,16 @@ export function useWorkshopBoards() {
           const board = byId.get(id);
           return board ? { ...board, sortOrder: index } : null;
         })
-        .filter((b): b is WorkshopBoardPayload => b !== null);
+        .filter((b): b is NonNullable<typeof b> => b !== null);
       // Preserve any boards whose IDs were not in orderedIds (append after reordered ones)
       const trailing = prev.filter((b) => !orderedSet.has(b.id));
       return [...reordered, ...trailing];
     });
-    if (uid) {
+    if (uid && db) {
+      const firestore = db;
       await Promise.all(
         orderedIds.map((id, index) => {
-          const ref = doc(db, "users", uid, "workshopBoards", id);
+          const ref = doc(firestore, "users", uid, "workshopBoards", id);
           return setDoc(ref, { sortOrder: index }, { merge: true });
         }),
       );

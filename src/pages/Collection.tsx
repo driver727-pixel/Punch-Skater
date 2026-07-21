@@ -722,7 +722,7 @@ export function Collection() {
                    "--carousel-offset": carouselOffset,
                    "--carousel-abs-offset": carouselAbsOffset,
                    zIndex: cardZIndex,
-                 } satisfies CarouselCardStyle}
+                 } as CarouselCardStyle}
                  role={isCarouselVisible ? "listitem" : "presentation"}
                  aria-current={isCarouselActive ? "true" : undefined}
                  aria-hidden={!isCarouselVisible}

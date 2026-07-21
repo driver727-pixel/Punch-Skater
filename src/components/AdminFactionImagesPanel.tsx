@@ -29,7 +29,7 @@ function getLegacyFactionStoragePath(slug: string, ext?: string): string | null 
 }
 
 export function AdminFactionImagesPanel() {
-  const [selectedFaction, setSelectedFaction] = useState(FACTION_LORE[0].name);
+  const [selectedFaction, setSelectedFaction] = useState<string>(FACTION_LORE[0].name);
   const [factionImageFile, setFactionImageFile] = useState<File | null>(null);
   const [factionImagePreview, setFactionImagePreview] = useState<string | null>(null);
   const [factionCurrentImages, setFactionCurrentImages] = useState<Record<string, string>>({});

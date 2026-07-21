@@ -36,30 +36,35 @@ function fetchDistrictWeather(): Promise<DistrictWeatherResponse> {
 
 async function requestDistrictWeather(forceRefresh = false): Promise<DistrictWeatherResponse> {
   const now = Date.now();
+  const cachedResponse = cachedWeatherResponse;
   const hasFreshCache =
     !forceRefresh &&
-    cachedWeatherResponse &&
+    cachedResponse &&
     now - cachedWeatherFetchedAt < DISTRICT_WEATHER_REFRESH_MS;
 
   if (hasFreshCache) {
-    return cachedWeatherResponse;
+    return cachedResponse;
   }
 
   if (inFlightWeatherRequest) {
     return inFlightWeatherRequest;
   }
 
-  if (!queuedWeatherRequest) {
-    queuedWeatherRequest = new Promise((resolve, reject) => {
-      window.setTimeout(() => {
-        fetchDistrictWeather().then(resolve, reject);
-      }, DISTRICT_WEATHER_DEBOUNCE_MS);
-    }).finally(() => {
-      queuedWeatherRequest = null;
-    });
+  const pendingRequest = queuedWeatherRequest;
+  if (pendingRequest) {
+    return pendingRequest;
   }
 
-  return queuedWeatherRequest;
+  const nextRequest = new Promise<DistrictWeatherResponse>((resolve, reject) => {
+    window.setTimeout(() => {
+      fetchDistrictWeather().then(resolve, reject);
+    }, DISTRICT_WEATHER_DEBOUNCE_MS);
+  }).finally(() => {
+    queuedWeatherRequest = null;
+  });
+  queuedWeatherRequest = nextRequest;
+
+  return nextRequest;
 }
 
 function getErrorMessage(error: unknown): string {

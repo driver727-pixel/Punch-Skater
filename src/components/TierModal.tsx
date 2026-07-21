@@ -169,7 +169,7 @@ export function TierModal({ onClose }: TierModalProps) {
           <div className="tier-signup">
             <button className="btn-outline tier-back" onClick={() => setSignupStep(null)}>← Back</button>
             <h3 className="tier-signup-title">
-              {signupStep === "seasonPass" ? `Buy ${SEASON_PASS.name}` : `Sign up for ${signupTier.name}`}
+              {signupTier ? `Sign up for ${signupTier.name}` : `Buy ${SEASON_PASS.name}`}
             </h3>
             <p className="tier-signup-desc">
               {signupStep === "seasonPass"
@@ -208,7 +208,7 @@ export function TierModal({ onClose }: TierModalProps) {
               {loading
                 ? "Redirecting to payment…"
                 : `Continue to Payment — ${
-                  signupStep === "seasonPass"
+                  !signupTier
                     ? SEASON_PASS.price
                     : billingPeriod === "annual"
                       ? signupTier.annualPrice ?? signupTier.price

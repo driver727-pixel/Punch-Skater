@@ -76,7 +76,7 @@ export function useForgeSave({
   }, [addCard, cards.length, generated, layers, openUpgradeModal, tierData]);
 
   const handleSaveToAdminAssets = useCallback(async () => {
-    if (!generated || !uid) return;
+    if (!generated || !uid || !db) return;
 
     setSaving(true);
     setSaveError(null);

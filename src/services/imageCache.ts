@@ -51,6 +51,7 @@ function encodeKey(key: string): string {
  * Errors are swallowed so a cache miss never blocks generation.
  */
 export async function getCachedImage(cacheKey: string): Promise<string | null> {
+  if (!db) return null;
   try {
     const ref = doc(db, COLLECTION, encodeKey(cacheKey));
     const snap = await getDoc(ref);
@@ -99,6 +100,7 @@ export async function setCachedImage(
  * @throws If the delete operation fails (e.g. permission denied).
  */
 export async function deleteCachedImage(encodedId: string): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured.");
   const ref = doc(db, COLLECTION, encodedId);
   await deleteDoc(ref);
 }
@@ -112,6 +114,7 @@ const CACHE_LIST_PAGE_SIZE = 24;
 export async function listCachedImages(
   after?: DocumentSnapshot,
 ): Promise<{ entries: CacheEntry[]; lastDoc: DocumentSnapshot | null; hasMore: boolean }> {
+  if (!db) return { entries: [], lastDoc: null, hasMore: false };
   const col = collection(db, COLLECTION);
   const q = after
     ? query(col, orderBy("createdAt", "desc"), startAfter(after), limit(CACHE_LIST_PAGE_SIZE))
