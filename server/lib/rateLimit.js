@@ -30,7 +30,10 @@ export function shouldSkipRateLimitRequest(req) {
   return req?.method === 'OPTIONS';
 }
 
-export function buildRateLimiter({ windowMs, max, message, store }) {
+// passOnStoreError defaults to true so a Redis outage does not take down the
+// whole API. Expensive endpoints (paid AI inference) should pass false so they
+// fail closed instead of becoming unlimited while the store is unavailable.
+export function buildRateLimiter({ windowMs, max, message, store, passOnStoreError = true }) {
   return rateLimit({
     windowMs,
     max,
@@ -38,7 +41,7 @@ export function buildRateLimiter({ windowMs, max, message, store }) {
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message,
-    passOnStoreError: true,
+    passOnStoreError,
     ...(store ? { store } : {}),
   });
 }

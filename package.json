@@ -12,7 +12,7 @@
     "deploy": "gh-pages -d dist",
     "start": "node server/index.js",
     "optimize:assets": "node scripts/optimize-assets.mjs",
-    "test:server": "node --test server/test/*.test.js",
+    "test:server": "node --experimental-strip-types --test server/test/*.test.js",
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report"
   },
@@ -45,7 +45,7 @@
     "gh-pages": "^6.2.0",
     "globals": "^15.11.0",
     "sharp": "^0.34.4",
-    "typescript": "~5.6.2",
+    "typescript": "~5.8.3",
     "typescript-eslint": "^8.11.0",
     "vite": "^6.4.2",
     "vite-plugin-pwa": "^0.21.1"

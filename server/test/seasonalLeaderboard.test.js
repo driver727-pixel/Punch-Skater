@@ -50,6 +50,25 @@ test('seasonal cooldown is four hours', () => {
   assert.equal(SEASONAL_SUBMISSION_COOLDOWN_HOURS, 4);
 });
 
+test('forged oversized card stats are clamped to the live per-stat cap', () => {
+  const forgedCards = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) =>
+    makeCard(id, 'Courier', { speed: 999999, range: 500000, stealth: 123456, grit: 777777 }),
+  );
+  const legitMaxCards = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => makeCard(id));
+  const forgedSummary = buildLeaderboardDeckSummary(forgedCards);
+  const legitSummary = buildLeaderboardDeckSummary(legitMaxCards);
+  assert.equal(forgedSummary.deckPower, legitSummary.deckPower);
+});
+
+test('legacy 1-200 scale stats are rescaled instead of dominating', () => {
+  const legacyCards = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) =>
+    makeCard(id, 'Courier', { speed: 100, range: 100, stealth: 100, grit: 100 }),
+  );
+  const summary = buildLeaderboardDeckSummary(legacyCards);
+  // Legacy 100 maps to ~5.5 -> 5 per stat on the live scale.
+  assert.ok(summary.deckPower <= 276, 'legacy decks must not exceed the live max deck power');
+});
+
 test('non-numeric card stats do not poison deck score with NaN', () => {
   const cards = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) =>
     makeCard(id, 'Courier', { speed: 'oops', range: null, stealth: undefined, grit: 10 }),

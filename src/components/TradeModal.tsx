@@ -49,14 +49,15 @@ export function TradeModal({ cards, onClose, preselectedCard }: TradeModalProps)
   const senderReputation = user ? createTradeReputationSnapshot(sentTrades, user.uid) : null;
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !db) return;
+    const firestore = db;
     let cancelled = false;
 
     const loadPendingOffers = async () => {
       setLoadingPendingOffers(true);
       try {
         const sentTradesSnap = await getDocs(
-          query(collection(db, "trades"), where("fromUid", "==", user.uid))
+          query(collection(firestore, "trades"), where("fromUid", "==", user.uid))
         );
         if (cancelled) return;
         setSentTrades(sentTradesSnap.docs.map((docSnap) => docSnap.data() as TradePayload));

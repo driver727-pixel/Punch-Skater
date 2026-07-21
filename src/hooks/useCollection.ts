@@ -104,6 +104,8 @@ export function useCollection() {
       return;
     }
 
+    if (!db) return;
+
     guestHydratingRef.current = false;
     initialGuestCardsRef.current = null;
     lastSavedCardsRef.current = [];
@@ -149,7 +151,7 @@ export function useCollection() {
   // ── Card mutations ────────────────────────────────────────────────────────
   const addCard = useCallback(async (card: CardPayload): Promise<void> => {
     const normalizedCard = normalizeCardPayload(card);
-    if (uid) {
+    if (uid && db) {
       await setDoc(doc(db, "users", uid, "cards", normalizedCard.id), normalizedCard);
     } else {
       setCards((prev) => (prev.some((c) => c.id === normalizedCard.id) ? prev : [...prev, normalizedCard]));
@@ -157,7 +159,7 @@ export function useCollection() {
   }, [uid]);
 
   const removeCard = useCallback((id: string) => {
-    if (uid) {
+    if (uid && db) {
       deleteDoc(doc(db, "users", uid, "cards", id)).catch((error) => reportPersistenceError("Couldn't remove that card — check your connection and try again.", error));
     } else {
       setCards((prev) => prev.filter((c) => c.id !== id));
@@ -166,7 +168,7 @@ export function useCollection() {
 
   const updateCard = useCallback((card: CardPayload) => {
     const normalizedCard = normalizeCardPayload(card);
-    if (uid) {
+    if (uid && db) {
       setDoc(doc(db, "users", uid, "cards", normalizedCard.id), normalizedCard).catch((error) => reportPersistenceError("Couldn't save your card changes — check your connection and try again.", error));
     } else {
       setCards((prev) => prev.map((c) => (c.id === normalizedCard.id ? normalizedCard : c)));
@@ -178,7 +180,7 @@ export function useCollection() {
 
   // ── Migration helpers ─────────────────────────────────────────────────────
   const importLocalCards = useCallback(async () => {
-    if (!uid) return;
+    if (!uid || !db) return;
     const local = loadCollection();
     if (local.length > 0) {
       const batch = writeBatch(db);

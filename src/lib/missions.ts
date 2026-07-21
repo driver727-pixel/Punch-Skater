@@ -97,8 +97,8 @@ const MISSION_JOUST_RIVAL_FALLBACKS: Partial<Record<District, MissionJoustRivalC
     rival: {
       id: "forest-rootline-guide",
       name: "Knot Runner",
-      archetype: "Wooders",
-      crew: "Wooders",
+      archetype: "The Team",
+      crew: "The Wooders",
       district: "The Forest",
       stats: { speed: 6, range: 5, rangeNm: 5, stealth: 5, grit: 8 },
       joust: {
@@ -616,7 +616,6 @@ function buildMissionStoryBeats({
 }
 
 function buildMissionRewardSignals(
-  mission: MissionBoardEntry,
   activeRun: MissionActiveRunState | null | undefined,
   selectedOption: MissionEncounterOption | null,
   joustResult: MissionJoustResult | null,
@@ -1584,7 +1583,7 @@ export function resolveMissionCounterChoice(
   }
   if (selectedOption.encounterType === "joust") {
     const joustResult = resolveMissionJoust(mission, deck, activeRun, playerTactic);
-    const rewardSignals = buildMissionRewardSignals(mission, activeRun, selectedOption, joustResult);
+    const rewardSignals = buildMissionRewardSignals(activeRun, selectedOption, joustResult);
     const signalTotals = getMissionRewardSignalTotals(rewardSignals);
     const rewards = joustResult ? getMissionJoustRewards(joustResult) : MISSION_JOUST_BASE_REWARDS.loss;
     const rivalPressure = activeRun?.rivalPressure ?? null;
@@ -1615,7 +1614,7 @@ export function resolveMissionCounterChoice(
       rivalPressure,
     };
   }
-  const rewardSignals = buildMissionRewardSignals(mission, activeRun, selectedOption, null);
+  const rewardSignals = buildMissionRewardSignals(activeRun, selectedOption, null);
   const signalTotals = getMissionRewardSignalTotals(rewardSignals);
   const rivalPressure = activeRun?.rivalPressure ?? null;
   return {

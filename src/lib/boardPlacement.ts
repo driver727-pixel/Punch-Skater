@@ -19,7 +19,7 @@ interface PlacementBox {
   heightPercent: number;
 }
 
-interface PlacementPreset<TPlacement extends LayerPlacement> extends PlacementBox, TPlacement {}
+type PlacementPreset<TPlacement extends LayerPlacement> = PlacementBox & TPlacement;
 
 const BOARD_PLACEMENT_PRESETS: Record<BoardPoseSceneKey, PlacementPreset<BoardPlacement>> = {
   workshop: { xPercent: 38, yPercent: 77.5, scale: 1, rotationDeg: -9, widthPercent: 68, heightPercent: 25 },
@@ -58,12 +58,12 @@ function getValidNumberOrDefault(value: number | null | undefined, fallback: num
   return Number.isFinite(value) ? Number(value) : fallback;
 }
 
-function normalizePlacement<TPlacement extends LayerPlacement>(
-  preset: PlacementPreset<TPlacement>,
-  placement: Partial<TPlacement> | undefined,
+function normalizePlacement(
+  preset: PlacementPreset<LayerPlacement>,
+  placement: Partial<LayerPlacement> | undefined,
   minScale: number,
   maxScale: number,
-): TPlacement {
+): LayerPlacement {
   const scale = clampPlacementValue(
     getValidNumberOrDefault(placement?.scale, preset.scale),
     minScale,

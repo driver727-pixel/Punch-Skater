@@ -165,6 +165,9 @@ const imageRateLimit = buildRateLimiter({
   max: 20,
   message: { error: 'Too many image requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
+  // Image generation spends real Fal.ai budget — fail closed rather than
+  // becoming unlimited if the Redis rate-limit store errors out.
+  passOnStoreError: false,
 });
 
 // Status-check polling is cheap (no AI inference), so allow a higher burst.
@@ -294,6 +297,15 @@ const craftlinguaRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 60,
   message: { error: 'Too many CraftLingua requests — please slow down.' },
+  store: sharedRateLimitStore,
+});
+
+// The hype face-off endpoint is unauthenticated and backed by Firestore reads,
+// so rate-limit it to keep scrapers from hammering the Admin SDK.
+const hypeRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many hype requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -902,6 +914,7 @@ registerWeatherRoutes(app, {
 
 registerHypeRoutes(app, {
   adminDb,
+  hypeRateLimit,
 });
 
 registerCraftlinguaRoutes(app, {

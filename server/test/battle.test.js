@@ -27,6 +27,27 @@ test('resolveBattleWithEffects is deterministic for a given seed', () => {
   assert.equal(first.winnerSide, 'challenger');
 });
 
+test('createBattleCardSnapshot clamps forged and legacy stats onto the live 1-10 scale', () => {
+  assert.deepEqual(
+    createBattleCardSnapshot({
+      id: 'card-forged',
+      prompts: {},
+      stats: { speed: 999999, stealth: 200, tech: 100, grit: -5, rep: 'not-a-number' },
+    }),
+    {
+      id: 'card-forged',
+      archetype: undefined,
+      stats: {
+        speed: 10,
+        stealth: 10,
+        tech: 5, // legacy 1-200 scale value rescaled like the client
+        grit: 1,
+        rep: 1,
+      },
+    },
+  );
+});
+
 test('createBattleCardSnapshot clamps missing stats to minimum numeric values', () => {
   assert.deepEqual(
     createBattleCardSnapshot({ id: 'card-1', stats: { speed: 9 }, prompts: {} }),

@@ -37,10 +37,12 @@ import {
   CHARACTER_PLACEMENT_MAX_SCALE,
   CHARACTER_PLACEMENT_MIN_SCALE,
   CHARACTER_PLACEMENT_SCALE_STEP,
+  normalizeBoardPlacement,
   WEAPON_PLACEMENT_MAX_SCALE,
   WEAPON_PLACEMENT_MIN_SCALE,
   WEAPON_PLACEMENT_SCALE_STEP,
 } from "../lib/boardPlacement";
+import { resolveBoardPoseScene } from "../lib/boardPoseScenes";
 import { WEAPON_ASSETS } from "./cardForge/constants";
 
 async function generateTransparentBoardArt(
@@ -82,7 +84,7 @@ function getWorkshopAssetKey(kind: WorkshopAssetKind, id: string): string {
 function isValidFloorPlacement(
   placement: WorkshopFloorPlacement | undefined,
 ): placement is WorkshopFloorPlacement {
-  return Boolean(placement)
+  return placement != null
     && Number.isFinite(placement.x)
     && Number.isFinite(placement.y);
 }
@@ -397,10 +399,14 @@ export function Workshop() {
     ));
   };
 
+  const editingBoardPlacement = editingCard
+    ? normalizeBoardPlacement(resolveBoardPoseScene(editingCard.characterSeed).key, editingCard.board.placement)
+    : null;
+
   const updateBoardPlacement = (patch: Partial<BoardPlacement>) => {
-    if (!editingCard) return;
+    if (!editingCard || !editingBoardPlacement) return;
     handleBoardPlacementChange({
-      ...editingCard.board.placement,
+      ...editingBoardPlacement,
       ...patch,
     });
   };
@@ -931,7 +937,7 @@ export function Workshop() {
               </div>
             )}
 
-            {editingCard && cardEditorVars && (
+            {editingCard && editingBoardPlacement && cardEditorVars && (
               <>
                 <label className="workshop-field">
                   <span>Rename courier</span>
@@ -1006,7 +1012,7 @@ export function Workshop() {
                   <div className="blend-control">
                     <label className="blend-control__label">
                       <span>Skateboard Size</span>
-                      <span>{Math.round(editingCard.board.placement.scale * 100)}%</span>
+                      <span>{Math.round(editingBoardPlacement.scale * 100)}%</span>
                     </label>
                     <input
                       type="range"
@@ -1014,7 +1020,7 @@ export function Workshop() {
                       min={BOARD_PLACEMENT_MIN_SCALE}
                       max={BOARD_PLACEMENT_MAX_SCALE}
                       step={BOARD_PLACEMENT_SCALE_STEP}
-                      value={editingCard.board.placement.scale}
+                      value={editingBoardPlacement.scale}
                       onChange={(event) => updateBoardPlacement({ scale: Number(event.target.value) })}
                       aria-label="Workshop skateboard size"
                     />
@@ -1022,7 +1028,7 @@ export function Workshop() {
                   <div className="blend-control">
                     <label className="blend-control__label">
                       <span>Skateboard Rotation</span>
-                      <span>{Math.round(editingCard.board.placement.rotationDeg)}°</span>
+                      <span>{Math.round(editingBoardPlacement.rotationDeg)}°</span>
                     </label>
                     <input
                       type="range"
@@ -1030,7 +1036,7 @@ export function Workshop() {
                       min={-180}
                       max={180}
                       step={1}
-                      value={editingCard.board.placement.rotationDeg}
+                      value={editingBoardPlacement.rotationDeg}
                       onChange={(event) => updateBoardPlacement({ rotationDeg: Number(event.target.value) })}
                       aria-label="Workshop skateboard rotation"
                     />

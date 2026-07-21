@@ -228,7 +228,7 @@ function ChallengeModal({
 }) {
   const [defenderCardId, setDefenderCardId] = useState(state.defenderCardId);
   const [wager, setWager] = useState(0);
-  const [district, setDistrict] = useState(DEFAULT_RACE_DISTRICT);
+  const [district, setDistrict] = useState<string>(DEFAULT_RACE_DISTRICT);
   const defenderCard = state.opponent.cards.find((c) => c.id === defenderCardId);
   const cap = Math.max(0, Math.min(myOzzies, 10_000));
   const dialogRef = useModalA11y<HTMLDivElement>({ onClose, active: true });

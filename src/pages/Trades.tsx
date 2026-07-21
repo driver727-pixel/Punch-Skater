@@ -53,7 +53,7 @@ export function Trades() {
     setMarket([]);
     setSelectedLeaderboardDeckId(null);
     setLeaderboardSuccess(false);
-    if (!uid) return;
+    if (!uid || !db) return;
 
     setError("");
 
@@ -97,7 +97,7 @@ export function Trades() {
   }, [uid, refreshKey]);
 
   const handleAccept = async (trade: TradePayload) => {
-    if (!user) return;
+    if (!user || !db) return;
     setActionLoading(trade.id);
     setError("");
     try {
@@ -162,6 +162,7 @@ export function Trades() {
     expectedActorUid: string,
     ownershipError: string,
   ) => {
+    if (!db) return;
     const tradeRef = doc(db, "trades", trade.id);
     await runTransaction(db, async (tx) => {
       const tradeSnap = await tx.get(tradeRef);

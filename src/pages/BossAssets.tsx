@@ -35,7 +35,7 @@ export function BossAssets() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!user?.uid || userProfile?.isAdmin !== true) return;
+    if (!user?.uid || userProfile?.isAdmin !== true || !db) return;
 
     const collRef = collection(db, BOSS_ASSETS_COLLECTION);
     const unsubscribe = onSnapshot(collRef, (snapshot) => {
@@ -65,6 +65,7 @@ export function BossAssets() {
   }, []);
 
   const handleRemove = useCallback(async (card: CardPayload) => {
+    if (!db) return;
     if (!confirm(`Remove "${card.identity.name}" from Boss Assets?`)) return;
     sfxRemove();
     try {
@@ -118,11 +119,14 @@ export function BossAssets() {
         <div className="collection-grid">
           {filteredCards.map((card) => (
             <div key={card.id} className="collection-grid__item">
-              <CardThumbnail
-                card={card}
+              <button
+                type="button"
+                className={`card-thumb${selected?.id === card.id ? " card-thumb--selected" : ""}`}
                 onClick={() => handleSelect(card)}
-                selected={selected?.id === card.id}
-              />
+                aria-label={`View ${card.identity.name}`}
+              >
+                <CardThumbnail card={card} />
+              </button>
               <button
                 className="btn-outline btn-sm btn-danger"
                 onClick={() => handleRemove(card)}

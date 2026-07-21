@@ -53,6 +53,22 @@ function toFiniteNonNegative(value) {
   return num;
 }
 
+// Live cards cap each stat at 10 (legacy saves used a 1–200 scale). Deck docs
+// are client-writable, so scoring must clamp per-stat values onto the live
+// scale — otherwise a forged deck with e.g. speed: 999999 tops the leaderboard.
+const MAX_SINGLE_STAT = 10;
+const LEGACY_MAX_SINGLE_STAT = 200;
+
+function toBoundedStat(value) {
+  const num = toFiniteNonNegative(value);
+  if (num <= MAX_SINGLE_STAT) return num;
+
+  const scaled = 1
+    + ((Math.min(num, LEGACY_MAX_SINGLE_STAT) - 1) * (MAX_SINGLE_STAT - 1))
+      / (LEGACY_MAX_SINGLE_STAT - 1);
+  return Math.min(MAX_SINGLE_STAT, Math.round(scaled));
+}
+
 function getCardArchetype(card) {
   return card?.prompts?.archetype ?? card?.archetype ?? 'Unknown';
 }
@@ -78,7 +94,7 @@ function getSynergyMultiplier(cards) {
 export function computeDeckScore(cards) {
   if (!Array.isArray(cards) || cards.length === 0) return 0;
   const raw = cards.reduce(
-    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + toFiniteNonNegative(card?.stats?.[key]), 0),
+    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + toBoundedStat(card?.stats?.[key]), 0),
     0,
   );
   return Math.round(raw * getSynergyMultiplier(cards));
@@ -87,7 +103,7 @@ export function computeDeckScore(cards) {
 export function computeDeckWorth(cards) {
   if (!Array.isArray(cards)) return 0;
   return cards.reduce(
-    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + toFiniteNonNegative(card?.stats?.[key]), 0),
+    (sum, card) => sum + STAT_KEYS.reduce((cardSum, key) => cardSum + toBoundedStat(card?.stats?.[key]), 0),
     0,
   );
 }
@@ -116,7 +132,7 @@ export function buildLeaderboardDeckSummary(cards) {
   const statTotals = Object.fromEntries(STAT_KEYS.map((key) => [key, 0]));
   for (const card of cards) {
     for (const key of STAT_KEYS) {
-      statTotals[key] += toFiniteNonNegative(card?.stats?.[key]);
+      statTotals[key] += toBoundedStat(card?.stats?.[key]);
     }
   }
   const strongestStat = STAT_KEYS.reduce((best, key) => (statTotals[key] > statTotals[best] ? key : best), STAT_KEYS[0]);

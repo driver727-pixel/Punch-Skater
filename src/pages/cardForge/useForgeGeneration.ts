@@ -222,6 +222,7 @@ export function useForgeGeneration() {
         seed: card.frameSeed,
         generationOptions: { loras: [] },
       },
+      weapon: null,
     };
   }, []);
 
@@ -295,7 +296,7 @@ export function useForgeGeneration() {
     setRevealedFaction(null);
     setRevealedRarity(null);
     setLayers({
-      loading: { background: false, character: false, frame: false },
+      loading: { background: false, character: false, frame: false, weapon: false },
       errors: [],
       ...(session?.backgroundUrl != null ? { backgroundUrl: session.backgroundUrl } : {}),
       ...(session?.characterUrl != null ? { characterUrl: session.characterUrl } : {}),
@@ -523,7 +524,7 @@ export function useForgeGeneration() {
     const { signal } = controller;
     const variationKey = buildVariationKey(actionId);
     const nextLayerParams = buildForgeLayerParams(generated, variationKey);
-    const layersToClear = action.targets.filter((target): target is ForgeLayer => target === "character");
+    const layersToClear = action.targets.filter((target): target is "character" => target === "character");
 
     setRerollingActionId(actionId);
     clearRecoveryIssues(layersToClear, action.targets.includes("board"));

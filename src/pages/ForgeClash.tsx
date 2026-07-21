@@ -131,7 +131,7 @@ function resolvePlay(card: CardPayload, state: ClashState): {
   const nextHeat = clamp(state.heat + (crit ? 9 : 5) + counter.value / 2 - (slip ? 4 : 0), 0, 30);
   const decrementedCooldowns = Object.fromEntries(
     Object.entries(state.cooldowns)
-      .map(([id, value]) => [id, Math.max(0, value - 1)])
+      .map(([id, value]) => [id, Math.max(0, value - 1)] as const)
       .filter(([, value]) => value > 0),
   );
   const cooldowns = { ...decrementedCooldowns, [card.id]: 2 };
