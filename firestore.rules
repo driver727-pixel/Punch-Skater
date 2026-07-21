@@ -2,6 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Email fields written by clients must match the verified Firebase Auth
+    // token. Otherwise a player could claim another player's email and hijack
+    // Stripe purchase syncs or trade-recipient lookups keyed by emailLower.
+    function authEmail() {
+      return ('email' in request.auth.token) ? request.auth.token.email : '';
+    }
+
+    function writesVerifiedEmail() {
+      return request.resource.data.get('email', '') == authEmail();
+    }
+
+    function writesVerifiedEmailLower() {
+      return request.resource.data.get('emailLower', '') == authEmail().lower();
+    }
+
+    function keepsOrVerifiesEmailFields() {
+      return (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['email'])
+          || writesVerifiedEmail())
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['emailLower'])
+          || writesVerifiedEmailLower());
+    }
+
     // ── Per-user cards ───────────────────────────────────────────────────────
     match /users/{uid}/cards/{cardId} {
       allow read, write: if request.auth != null
@@ -39,33 +61,41 @@ service cloud.firestore {
         (request.auth.uid == uid
           && request.resource.data.keys().hasOnly([
             'uid', 'email', 'emailLower', 'displayName', 'discoveredFactions', 'updatedAt'
-          ]))
+          ])
+          && writesVerifiedEmail()
+          && writesVerifiedEmailLower())
         || request.auth.token.admin == true
       );
       allow update: if request.auth != null && (
         (request.auth.uid == uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'email', 'emailLower', 'displayName', 'discoveredFactions', 'updatedAt'
-          ]))
+          ])
+          && keepsOrVerifiesEmailFields())
         || request.auth.token.admin == true
       );
       allow delete: if request.auth != null && request.auth.token.admin == true;
     }
 
     // ── Public user lookup (trade/address book) ──────────────────────────────
-    // Minimal directory used for recipient lookup during trades.
+    // Minimal directory used for recipient lookup during trades. Individual
+    // docs may be fetched by ID, but listing is blocked so the collection
+    // cannot be scraped as a sitewide email directory.
     match /userLookup/{uid} {
-      allow read: if request.auth != null;
+      allow get: if request.auth != null;
+      allow list: if request.auth != null && request.auth.token.admin == true;
       allow create: if request.auth != null && (
         (request.auth.uid == uid
-          && request.resource.data.keys().hasOnly(['uid', 'emailLower', 'displayName', 'updatedAt']))
+          && request.resource.data.keys().hasOnly(['uid', 'emailLower', 'displayName', 'updatedAt'])
+          && writesVerifiedEmailLower())
         || request.auth.token.admin == true
       );
       allow update: if request.auth != null && (
         (request.auth.uid == uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'emailLower', 'displayName', 'updatedAt'
-          ]))
+          ])
+          && keepsOrVerifiesEmailFields())
         || request.auth.token.admin == true
       );
       allow delete: if request.auth != null && (

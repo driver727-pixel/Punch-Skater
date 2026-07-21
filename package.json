@@ -12,7 +12,7 @@
     "deploy": "gh-pages -d dist",
     "start": "node server/index.js",
     "optimize:assets": "node scripts/optimize-assets.mjs",
-    "test:server": "node --test server/test/*.test.js",
+    "test:server": "node --experimental-strip-types --test server/test/*.test.js",
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report"
   },

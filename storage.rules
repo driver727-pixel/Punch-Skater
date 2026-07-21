@@ -1,11 +1,11 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Admin authority comes from Firebase Auth custom claims (set by the
+    // server's ADMIN_EMAILS sync), matching firestore.rules. This avoids
+    // trusting a Firestore document that could drift out of sync.
     function isAdmin() {
-      return request.auth != null
-        && firestore.get(
-          /databases/(default)/documents/userProfiles/$(request.auth.uid)
-        ).data.isAdmin == true;
+      return request.auth != null && request.auth.token.admin == true;
     }
 
     function isFactionImageAdmin() {

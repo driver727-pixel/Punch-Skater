@@ -1,8 +1,29 @@
 const MIN_SINGLE_STAT = 1;
 const MAX_SINGLE_STAT = 10;
+// Older saved cards used a 1–200 stat scale; mirror the client's
+// normalizeLegacyCardStat so legacy decks resolve the same everywhere.
+const LEGACY_MAX_SINGLE_STAT = 200;
 const WAGER_POINTS = 6;
 const WINNER_BONUS = WAGER_POINTS * 2;
 const STAT_KEYS = ["speed", "stealth", "tech", "grit", "rep"];
+
+function clampCardStat(value) {
+  return Math.max(MIN_SINGLE_STAT, Math.min(MAX_SINGLE_STAT, Math.round(value)));
+}
+
+// Card docs and deck snapshots are client-writable per firestore.rules, so a
+// hostile payload can carry arbitrary stat values. Normalize every stat onto
+// the live 1–10 scale before battle resolution instead of trusting the client.
+export function normalizeBattleCardStat(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return MIN_SINGLE_STAT;
+  if (num <= MAX_SINGLE_STAT) return clampCardStat(num);
+
+  const scaled = MIN_SINGLE_STAT
+    + ((Math.min(num, LEGACY_MAX_SINGLE_STAT) - MIN_SINGLE_STAT) * (MAX_SINGLE_STAT - MIN_SINGLE_STAT))
+      / (LEGACY_MAX_SINGLE_STAT - MIN_SINGLE_STAT);
+  return clampCardStat(scaled);
+}
 
 function seedFromString(seed) {
   let hash = 2166136261;
@@ -113,11 +134,11 @@ export function createBattleCardSnapshot(card) {
     id: card.id,
     archetype: card.prompts?.archetype ?? card.archetype,
     stats: {
-      speed: Number(card.stats?.speed ?? MIN_SINGLE_STAT),
-      stealth: Number(card.stats?.stealth ?? MIN_SINGLE_STAT),
-      tech: Number(card.stats?.tech ?? MIN_SINGLE_STAT),
-      grit: Number(card.stats?.grit ?? MIN_SINGLE_STAT),
-      rep: Number(card.stats?.rep ?? MIN_SINGLE_STAT),
+      speed: normalizeBattleCardStat(card.stats?.speed ?? MIN_SINGLE_STAT),
+      stealth: normalizeBattleCardStat(card.stats?.stealth ?? MIN_SINGLE_STAT),
+      tech: normalizeBattleCardStat(card.stats?.tech ?? MIN_SINGLE_STAT),
+      grit: normalizeBattleCardStat(card.stats?.grit ?? MIN_SINGLE_STAT),
+      rep: normalizeBattleCardStat(card.stats?.rep ?? MIN_SINGLE_STAT),
     },
   };
 }

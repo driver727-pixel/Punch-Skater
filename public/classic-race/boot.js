@@ -7,11 +7,10 @@ const PHASER_CANDIDATES = [
 function showLoadError(message) {
   const container = document.getElementById('game-container');
   if (!container) return;
-  container.innerHTML = `
-    <div class="fallback fallback--centered">
-      ${message}
-    </div>
-  `;
+  const fallback = document.createElement('div');
+  fallback.className = 'fallback fallback--centered';
+  fallback.textContent = message;
+  container.replaceChildren(fallback);
 }
 
 async function loadPhaser() {
