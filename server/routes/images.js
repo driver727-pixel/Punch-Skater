@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { getFreeForgeState } from '../lib/freeForge.js';
+import { resolveHigherPaidTier } from '../lib/payments.js';
 import { persistImageToStorage } from '../lib/imageStorage.js';
 
 const BOARD_IMAGE_SIZE = { width: 512, height: 512 };
@@ -37,6 +39,7 @@ export function registerImageRoutes(app, {
   buildFalImageRequest,
   normalizeFalProfile,
   resolveFalProfile,
+  adminDb = null,
   boardImageJobs,
   pruneBoardImageJobs,
   racerSpriteJobs,
@@ -44,6 +47,32 @@ export function registerImageRoutes(app, {
   adminStorage = null,
   storageBucket = '',
 }) {
+  async function ensureImageGenerationEntitlement(uid) {
+    if (!adminDb) {
+      return;
+    }
+
+    const profileSnap = await adminDb.collection('userProfiles').doc(uid).get();
+    const profileData = profileSnap.exists ? profileSnap.data() : null;
+    const persistedTier = typeof profileData?.tier === 'string' ? profileData.tier : 'free';
+    // The first argument is intentionally null; we only need the tier ranking from the persisted tier value.
+    const resolvedTier = resolveHigherPaidTier(null, persistedTier);
+    const hasPaidTier = Boolean(resolvedTier && resolvedTier !== 'free');
+    if (hasPaidTier) {
+      return;
+    }
+
+    const freeForgeState = await getFreeForgeState(adminDb, uid);
+    if (freeForgeState?.canForge) {
+      return;
+    }
+
+    throw Object.assign(
+      new Error('Image generation requires an active paid tier or an available free forge entitlement.'),
+      { statusCode: 403 },
+    );
+  }
+
   app.post('/api/generate-image', imageRateLimit, async (req, res) => {
     try {
       if (!FAL_KEY) {
@@ -51,7 +80,8 @@ export function registerImageRoutes(app, {
         return;
       }
 
-      await authenticateFirebaseUser(req);
+      const caller = await authenticateFirebaseUser(req);
+      await ensureImageGenerationEntitlement(caller.uid);
       const sanitizedBody = sanitizeGenerateImageBody(req.body);
       const profileSettings = resolveFalProfile(normalizeFalProfile(sanitizedBody.fal_profile));
       const upstream = await fetch(profileSettings.modelUrl, {
@@ -102,6 +132,7 @@ export function registerImageRoutes(app, {
       }
 
       const caller = await authenticateFirebaseUser(req);
+      await ensureImageGenerationEntitlement(caller.uid);
       const { prompt, imageUrls } = sanitizeBoardImageBody(req.body);
       if (!prompt || !imageUrls) {
         res.status(400).json({ error: 'A prompt and exactly five Punch Skater™ board image URLs are required.' });
@@ -194,6 +225,7 @@ export function registerImageRoutes(app, {
       }
 
       const caller = await authenticateFirebaseUser(req);
+      await ensureImageGenerationEntitlement(caller.uid);
       const { prompt, imageUrl, imageSize } = sanitizeRacerSpriteBody(req.body);
 
       const { request_id: jobId } = await fal.queue.submit('fal-ai/nano-banana-2', {
@@ -281,7 +313,8 @@ export function registerImageRoutes(app, {
         return;
       }
 
-      await authenticateFirebaseUser(req);
+      const caller = await authenticateFirebaseUser(req);
+      await ensureImageGenerationEntitlement(caller.uid);
       const sanitizedBody = sanitizeBackgroundRemovalBody(req.body);
       const upstream = await fetch(BIREFNET_URL, {
         method: 'POST',

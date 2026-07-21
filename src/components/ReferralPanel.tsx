@@ -28,7 +28,7 @@ export function ReferralPanel() {
     if (!user) return;
     setCreditsLoading(true);
     setCreditsError(false);
-    getReferralCreditCount(user.uid)
+    getReferralCreditCount()
       .then((count) => {
         setFirestoreCredits(count);
         setCreditsLoading(false);

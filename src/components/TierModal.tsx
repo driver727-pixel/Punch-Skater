@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SEASON_PASS, TIERS, saveEmail, type PaidBillingPeriod, type TierLevel } from "../lib/tiers";
 import { useTier } from "../context/TierContext";
 import { resolveApiUrl } from "../lib/apiUrls";
+import { auth } from "../lib/firebase";
 import { ReferralPanel } from "./ReferralPanel";
 import { useModalA11y } from "../hooks/useModalA11y";
 
@@ -68,9 +69,18 @@ export function TierModal({ onClose }: TierModalProps) {
     setLoading(true);
     setError("");
     try {
+      const idToken = await auth?.currentUser?.getIdToken();
+      if (!idToken) {
+        setError("Sign in to continue to checkout.");
+        return;
+      }
+
       const resp = await fetch(CHECKOUT_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + idToken,
+        },
         body: JSON.stringify({
           email: emailVal,
           priceId: selectedPriceId,

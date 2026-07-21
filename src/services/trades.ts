@@ -32,3 +32,42 @@ export async function createTradeOffer(user: User, input: CreateTradeOfferInput)
   }
   return payload as CreateTradeOfferResponse;
 }
+
+export interface TradeStatusUpdateResponse {
+  trade: TradePayload;
+}
+
+export async function getTradeMarket(user: User): Promise<TradePayload[]> {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${TRADES_API_URL}/market`, {
+    headers: {
+      Authorization: "Bearer " + idToken,
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof payload.error === "string" ? payload.error : "Failed to load the community market.");
+  }
+  return Array.isArray(payload.trades) ? (payload.trades as TradePayload[]) : [];
+}
+
+export async function resolveTradeStatus(
+  user: User,
+  tradeId: string,
+  status: "accepted" | "declined" | "cancelled",
+): Promise<TradeStatusUpdateResponse> {
+  const idToken = await user.getIdToken();
+  const response = await fetch(`${TRADES_API_URL}/${encodeURIComponent(tradeId)}/status`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + idToken,
+    },
+    body: JSON.stringify({ status }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof payload.error === "string" ? payload.error : "Failed to update trade status.");
+  }
+  return payload as TradeStatusUpdateResponse;
+}

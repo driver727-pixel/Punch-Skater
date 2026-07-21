@@ -141,9 +141,7 @@ service cloud.firestore {
 
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.fromUid ||
-        request.auth.uid == resource.data.toUid ||
-        // Community Market: any signed-in player may browse pending listings
-        resource.data.status == 'pending'
+        request.auth.uid == resource.data.toUid
       );
       allow create: if false;
       allow update: if request.auth != null && (
@@ -169,17 +167,7 @@ service cloud.firestore {
     match /referralClaims/{claimId} {
       allow read: if request.auth != null
         && resource.data.referrerUid == request.auth.uid;
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasOnly(['referrerUid', 'visitorKey', 'claimedAt'])
-        && request.resource.data.referrerUid is string
-        && request.resource.data.visitorKey is string
-        // The claim must be attributed to the authenticated visitor's own uid so
-        // it can only be counted once per account.
-        && request.resource.data.visitorKey == request.auth.uid
-        // Prevent self-referral.
-        && request.auth.uid != request.resource.data.referrerUid
-        // Pin the deterministic doc ID so an account cannot fan out claims.
-        && claimId == request.resource.data.referrerUid + '_' + request.auth.uid;
+      allow create: if false;
       allow update, delete: if false;
     }
 

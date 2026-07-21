@@ -4,9 +4,6 @@ import {
   query,
   where,
   onSnapshot,
-  doc,
-  runTransaction,
-  limit,
 } from "firebase/firestore";
 import type { TradePayload } from "../lib/types";
 import { db } from "../lib/firebase";
@@ -25,6 +22,7 @@ import {
 } from "../lib/seasonalLeaderboard";
 import { estimateCardTradeValue, formatTradeValue, getTradeValueBand } from "../lib/tradeEconomy";
 import { sfxSuccess, sfxClick, sfxTradeAccepted, sfxTradeDeclined } from "../lib/sfx";
+import { getTradeMarket, resolveTradeStatus } from "../services/trades";
 
 type Tab = "inbox" | "outbox" | "market" | "leaderboard";
 
@@ -62,92 +60,64 @@ export function Trades() {
       setError("Failed to load trades. Please try refreshing.");
     };
 
+    let cancelled = false;
+
     const inboxUnsub = onSnapshot(
       query(collection(db, "trades"), where("toUid", "==", uid), where("status", "==", "pending")),
-      (snap) => setInbox(snap.docs.map((d) => d.data() as TradePayload)),
+      (snap) => {
+        if (!cancelled) {
+          setInbox(snap.docs.map((d) => d.data() as TradePayload));
+        }
+      },
       handleSnapshotError,
     );
 
     const outboxUnsub = onSnapshot(
       query(collection(db, "trades"), where("fromUid", "==", uid)),
-      (snap) => setOutbox(snap.docs.map((d) => d.data() as TradePayload)),
-      handleSnapshotError,
-    );
-
-    const marketUnsub = onSnapshot(
-      query(
-        collection(db, "trades"),
-        where("status", "==", "pending"),
-        limit(50)
-      ),
       (snap) => {
-        const all = snap.docs.map((d) => d.data() as TradePayload);
-        // Exclude the current user's own listings (already in Inbox / Sent),
-        // then sort by most recent first (client-side, avoids composite index).
-        setMarket(
-          all
-            .filter((t) => t.fromUid !== uid && t.toUid !== uid)
-            .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0)),
-        );
+        if (!cancelled) {
+          setOutbox(snap.docs.map((d) => d.data() as TradePayload));
+        }
       },
       handleSnapshotError,
     );
 
-    return () => { inboxUnsub(); outboxUnsub(); marketUnsub(); };
+    void getTradeMarket(user)
+      .then((marketOffers) => {
+        if (cancelled || !uid) return;
+        setMarket(
+          marketOffers
+            .filter((t) => t.fromUid !== uid && t.toUid !== uid)
+            .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0)),
+        );
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error("Market load error:", err);
+          setError("Failed to load the community market. Please try refreshing.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      inboxUnsub();
+      outboxUnsub();
+    };
   }, [uid, refreshKey]);
 
+  const applyTradeMutation = (updatedTrade: TradePayload) => {
+    setInbox((prev) => prev.map((trade) => (trade.id === updatedTrade.id ? updatedTrade : trade)));
+    setOutbox((prev) => prev.map((trade) => (trade.id === updatedTrade.id ? updatedTrade : trade)));
+    setMarket((prev) => prev.filter((trade) => trade.id !== updatedTrade.id));
+  };
+
   const handleAccept = async (trade: TradePayload) => {
-    if (!user || !db) return;
+    if (!user) return;
     setActionLoading(trade.id);
     setError("");
     try {
-      const offeredCardId = trade.offeredCardId ?? trade.offeredCard.id;
-      const tradeRef = doc(db, "trades", trade.id);
-      const fromCardRef = doc(db, "users", trade.fromUid, "cards", offeredCardId);
-      const toCardRef = doc(db, "users", trade.toUid, "cards", offeredCardId);
-
-      await runTransaction(db, async (tx) => {
-        const [tradeSnap, fromCardSnap, toCardSnap] = await Promise.all([
-          tx.get(tradeRef),
-          tx.get(fromCardRef),
-          tx.get(toCardRef),
-        ]);
-
-        if (!tradeSnap.exists()) {
-          throw new Error("This offer no longer exists.");
-        }
-
-        const currentTrade = tradeSnap.data() as TradePayload;
-
-        if (currentTrade.status !== "pending") {
-          throw new Error("This offer is no longer pending.");
-        }
-
-        if (currentTrade.toUid !== user.uid) {
-          throw new Error("This offer is no longer assigned to your account.");
-        }
-
-        if (!fromCardSnap.exists()) {
-          throw new Error("The sender no longer owns this card.");
-        }
-
-        if (toCardSnap.exists()) {
-          throw new Error("You already have this card in your collection.");
-        }
-
-        const currentOfferedCard = fromCardSnap.data() as TradePayload["offeredCard"];
-
-        tx.delete(fromCardRef);
-        tx.set(toCardRef, currentOfferedCard);
-        tx.update(tradeRef, {
-          status: "accepted",
-          confirmations: {
-            ...(currentTrade.confirmations ?? {}),
-            recipient: ["estimated-value-reviewed", "sender-reputation-reviewed", "card-only-trade"],
-          },
-          updatedAt: new Date().toISOString(),
-        });
-      });
+      const { trade: updatedTrade } = await resolveTradeStatus(user, trade.id, "accepted");
+      applyTradeMutation(updatedTrade);
       sfxTradeAccepted();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept trade.");
@@ -156,48 +126,13 @@ export function Trades() {
     }
   };
 
-  const updatePendingTradeStatus = async (
-    trade: TradePayload,
-    nextStatus: "declined" | "cancelled",
-    expectedActorUid: string,
-    ownershipError: string,
-  ) => {
-    if (!db) return;
-    const tradeRef = doc(db, "trades", trade.id);
-    await runTransaction(db, async (tx) => {
-      const tradeSnap = await tx.get(tradeRef);
-      if (!tradeSnap.exists()) {
-        throw new Error("This offer no longer exists.");
-      }
-
-      const currentTrade = tradeSnap.data() as TradePayload;
-      if (currentTrade.status !== "pending") {
-        throw new Error("This offer is no longer pending.");
-      }
-
-      const actorUid = nextStatus === "declined" ? currentTrade.toUid : currentTrade.fromUid;
-      if (actorUid !== expectedActorUid) {
-        throw new Error(ownershipError);
-      }
-
-      tx.update(tradeRef, {
-        status: nextStatus,
-        updatedAt: new Date().toISOString(),
-      });
-    });
-  };
-
   const handleDecline = async (trade: TradePayload) => {
     if (!user) return;
     setActionLoading(trade.id);
     setError("");
     try {
-      await updatePendingTradeStatus(
-        trade,
-        "declined",
-        user.uid,
-        "This offer is no longer assigned to your account.",
-      );
+      const { trade: updatedTrade } = await resolveTradeStatus(user, trade.id, "declined");
+      applyTradeMutation(updatedTrade);
       sfxTradeDeclined();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to decline trade.");
@@ -211,12 +146,8 @@ export function Trades() {
     setActionLoading(trade.id);
     setError("");
     try {
-      await updatePendingTradeStatus(
-        trade,
-        "cancelled",
-        user.uid,
-        "This offer is no longer owned by your account.",
-      );
+      const { trade: updatedTrade } = await resolveTradeStatus(user, trade.id, "cancelled");
+      applyTradeMutation(updatedTrade);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to cancel trade.");
     } finally {

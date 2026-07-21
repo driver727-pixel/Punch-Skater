@@ -53,6 +53,7 @@ import { registerBattlePassRoutes } from './battlePass.js';
 import { registerLeaderboardRoutes } from './routes/leaderboard.js';
 import { registerRewardRoutes } from './routes/rewards.js';
 import { registerTradeRoutes } from './routes/trades.js';
+import { registerReferralRoutes } from './routes/referrals.js';
 import { registerCraftlinguaRoutes } from './routes/craftlingua.js';
 import { createDistrictWeatherService, registerWeatherRoutes } from './routes/weather.js';
 import { registerJousturRoutes } from './routes/joustur.js';
@@ -290,6 +291,13 @@ const tradeRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 30,
   message: { error: 'Too many trade requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
+const referralRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many referral requests — please wait a moment and try again.' },
   store: sharedRateLimitStore,
 });
 
@@ -569,6 +577,7 @@ function pruneRacerSpriteJobs(now = Date.now()) {
 async function syncPurchasedTier({
   tier,
   email,
+  uid,
   sessionId,
   checkoutMode,
   stripeCustomerId,
@@ -585,18 +594,35 @@ async function syncPurchasedTier({
   const exactEmail = getTrimmedString(email, 320);
   // Prefer the normalized field, but fall back to legacy exact-email queries so
   // purchases still sync for older profiles that predate emailLower.
-  const snapshots = await Promise.all([
-    adminDb.collection('userProfiles').where('emailLower', '==', normalizedEmail).limit(25).get(),
-    exactEmail ? adminDb.collection('userProfiles').where('email', '==', exactEmail).limit(25).get() : null,
-    exactEmail && exactEmail !== normalizedEmail
-      ? adminDb.collection('userProfiles').where('email', '==', normalizedEmail).limit(25).get()
-      : null,
-  ]);
+  const profileRefs = [];
+  if (typeof uid === 'string' && uid.trim()) {
+    profileRefs.push(adminDb.collection('userProfiles').doc(uid));
+  }
+  const snapshotPromises = [];
+  if (profileRefs.length > 0) {
+    snapshotPromises.push(profileRefs[0].get());
+  }
+  if (normalizedEmail) {
+    snapshotPromises.push(adminDb.collection('userProfiles').where('emailLower', '==', normalizedEmail).limit(25).get());
+  }
+  if (exactEmail) {
+    snapshotPromises.push(adminDb.collection('userProfiles').where('email', '==', exactEmail).limit(25).get());
+  }
+  if (exactEmail && exactEmail !== normalizedEmail) {
+    snapshotPromises.push(adminDb.collection('userProfiles').where('email', '==', normalizedEmail).limit(25).get());
+  }
+  const snapshots = await Promise.all(snapshotPromises);
   const matchingDocs = new Map();
   snapshots.filter(Boolean).forEach((snap) => {
-    snap.docs.forEach((docSnap) => {
-      matchingDocs.set(docSnap.ref.path, docSnap);
-    });
+    if (snap && typeof snap.docs !== 'undefined') {
+      snap.docs.forEach((docSnap) => {
+        matchingDocs.set(docSnap.ref.path, docSnap);
+      });
+      return;
+    }
+    if (snap && snap.exists) {
+      matchingDocs.set(snap.ref.path, snap);
+    }
   });
   const batch = adminDb.batch();
 
@@ -741,6 +767,7 @@ registerPaymentRoutes(app, {
   // Lazy accessor so the reference is resolved at request time, after Firebase Admin is
   // initialised further down in this file.
   getAdminDb: () => adminDb,
+  authenticateFirebaseUser,
 });
 
 app.use(compression());
@@ -945,6 +972,14 @@ registerTradeRoutes(app, {
   randomUUID,
 });
 
+registerReferralRoutes(app, {
+  adminDb,
+  referralRateLimit,
+  authenticateFirebaseUser,
+  FieldValue,
+  referralClaimCap: Number.parseInt(process.env.REFERRAL_CREDIT_CAP || '3', 10),
+});
+
 registerBattleRoutes(app, {
   adminDb,
   battleRateLimit,
@@ -1006,6 +1041,7 @@ registerImageRoutes(app, {
   boardImageStatusRateLimit,
   authenticateFirebaseUser,
   sanitizeGenerateImageBody,
+  adminDb,
   sanitizeBoardImageBody,
   sanitizeBackgroundRemovalBody,
   sanitizeRacerSpriteBody,

@@ -230,7 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return tokenResult?.claims.admin === true;
       });
       setAdminClaim(admin);
-      syncReferralCredits(u.uid).catch(() => {/* non-fatal */});
+      syncReferralCredits().catch(() => {/* non-fatal */});
       syncPlayerRewards(u)
         .then((result) => {
           setPlayerRewards(result);

@@ -14,6 +14,7 @@ export function registerPaymentRoutes(app, {
   timingSafeEmailMatches,
   sendCheckoutVerificationFailure,
   getAdminDb,
+  authenticateFirebaseUser,
 }) {
   function timestampToIso(seconds) {
     return Number.isFinite(seconds) && seconds > 0
@@ -168,6 +169,14 @@ export function registerPaymentRoutes(app, {
       return;
     }
 
+    let caller;
+    try {
+      caller = await authenticateFirebaseUser(req);
+    } catch (error) {
+      res.status(error.statusCode ?? 401).json({ error: error.message ?? 'Authentication failed.' });
+      return;
+    }
+
     const { priceId, successUrl, cancelUrl, email } = req.body ?? {};
     const normalizedEmail = normalizeEmail(email);
     const paidTier = resolveTierFromPriceId(priceId);
@@ -193,6 +202,7 @@ export function registerPaymentRoutes(app, {
         priceId,
         checkoutMode,
         billingPeriod,
+        uid: caller.uid,
         ...(paidTier ? { paidTier } : {}),
         ...(normalizedEmail ? { emailLower: normalizedEmail } : {}),
       };
