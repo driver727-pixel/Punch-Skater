@@ -22191,9 +22191,14 @@ textarea:focus-visible,
     grid-template-columns: 1fr;
   }
 
+  .forge-clash-board {
+    --forge-clash-hud-top: 72px;
+    --forge-clash-hud-height: 92px;
+  }
+
   .forge-clash-scorebar {
     position: sticky;
-    top: 72px;
+    top: var(--forge-clash-hud-top);
     z-index: 10;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 8px;
@@ -22243,7 +22248,7 @@ textarea:focus-visible,
 
   .forge-clash-last-result {
     position: sticky;
-    top: 164px;
+    top: calc(var(--forge-clash-hud-top) + var(--forge-clash-hud-height));
     z-index: 9;
     margin-inline: -4px;
     box-shadow:

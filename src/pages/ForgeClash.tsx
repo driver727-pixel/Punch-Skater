@@ -190,7 +190,7 @@ function getStageStatusLabel(clash: ClashState): string {
 function getTurnPrompt(clash: ClashState, selectedCardCount: number): string {
   if (clash.phase === "ended") return "Clash complete — rebuild your hand to play again.";
   if (clash.phase === "playing") return "Your turn — choose a ready card from your hand.";
-  if (selectedCardCount === 0) return "Your turn — choose cards for your crew.";
+  if (selectedCardCount === 0) return "Draft phase — choose cards for your crew.";
   if (selectedCardCount === MAX_HAND_SIZE) return "Crew locked — start the clash.";
   return `Crew ready — start the clash or add ${MAX_HAND_SIZE - selectedCardCount} more.`;
 }
@@ -450,7 +450,7 @@ export function ForgeClash() {
                 role="status"
               >
                 <span>Turn {latestEntry.turn} result</span>
-                <strong>{getSwingMessage(latestEntry)} {latestEntry.title}</strong>
+                <strong>{`${getSwingMessage(latestEntry)} ${latestEntry.title}`.trim()}</strong>
                 <p>{latestEntry.body}</p>
               </div>
             )}
