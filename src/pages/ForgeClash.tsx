@@ -413,7 +413,16 @@ export function ForgeClash() {
               <div className="forge-clash-health">
                 <span>Your Crew</span>
                 <strong>{healthLabel(clash.playerHp)}</strong>
-                <div className="forge-clash-meter"><span style={{ width: `${clash.playerHp}%` }} /></div>
+                <div
+                  className="forge-clash-meter"
+                  role="progressbar"
+                  aria-label="Your crew health"
+                  aria-valuemin={0}
+                  aria-valuemax={MAX_HP}
+                  aria-valuenow={clash.playerHp}
+                >
+                  <span style={{ width: `${clash.playerHp}%` }} />
+                </div>
               </div>
               <div className="forge-clash-turn">
                 <span>Turn {clash.turn}/{MAX_TURNS}</span>
@@ -422,9 +431,29 @@ export function ForgeClash() {
               <div className="forge-clash-health forge-clash-health--rival">
                 <span>Rival Heat</span>
                 <strong>{healthLabel(clash.rivalHp)}</strong>
-                <div className="forge-clash-meter"><span style={{ width: `${clash.rivalHp}%` }} /></div>
+                <div
+                  className="forge-clash-meter"
+                  role="progressbar"
+                  aria-label="Rival health"
+                  aria-valuemin={0}
+                  aria-valuemax={MAX_HP}
+                  aria-valuenow={clash.rivalHp}
+                >
+                  <span style={{ width: `${clash.rivalHp}%` }} />
+                </div>
               </div>
             </div>
+
+            {latestEntry && (
+              <div
+                className={`forge-clash-last-result forge-clash-last-result--${latestEntry.swing}`}
+                role="status"
+              >
+                <span>Turn {latestEntry.turn} result</span>
+                <strong>{getSwingMessage(latestEntry)} {latestEntry.title}</strong>
+                <p>{latestEntry.body}</p>
+              </div>
+            )}
 
             <div className={stageClassName} key={getClashRenderKey(clash)}>
               <div className="forge-clash-stage__grid" aria-hidden="true" />

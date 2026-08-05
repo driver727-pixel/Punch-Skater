@@ -22,6 +22,13 @@ test.describe('Forge Clash mobile hand', () => {
     await page.goto('/arena/forge-clash');
 
     await expect(page.getByRole('heading', { name: /forge clash/i })).toBeVisible();
+    const progressBars = page.getByRole('progressbar');
+    await expect(progressBars).toHaveCount(2);
+    const progressBarTops = await progressBars.evaluateAll((nodes) => (
+      nodes.map((node) => Math.round(node.getBoundingClientRect().top))
+    ));
+    expect(Math.abs(progressBarTops[0] - progressBarTops[1])).toBeLessThanOrEqual(2);
+
     const draftCards = page.locator('.forge-clash-draft-card');
     await expect(draftCards).toHaveCount(6);
     for (let index = 0; index < 6; index += 1) {
@@ -40,5 +47,9 @@ test.describe('Forge Clash mobile hand', () => {
     await page.getByRole('button', { name: /start clash/i }).click();
     await expect(page.locator('.forge-clash-turn-prompt')).toHaveText(/choose a ready card/i);
     await expect(page.locator('.forge-clash-hand')).toHaveClass(/is-actionable/);
+
+    await handCards.nth(2).click();
+    await expect(page.locator('.forge-clash-last-result')).toContainText(/turn 1 result/i);
+    await expect(page.locator('.forge-clash-last-result')).toContainText(/clash runner 3/i);
   });
 });
