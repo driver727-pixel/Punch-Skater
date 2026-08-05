@@ -187,6 +187,14 @@ function getStageStatusLabel(clash: ClashState): string {
   return "LIVE CLASH";
 }
 
+function getTurnPrompt(clash: ClashState, selectedCardCount: number): string {
+  if (clash.phase === "ended") return "Clash complete — rebuild your hand to play again.";
+  if (clash.phase === "playing") return "Your turn — choose a ready card from your hand.";
+  if (selectedCardCount === 0) return "Draft phase — choose cards for your crew.";
+  if (selectedCardCount === MAX_HAND_SIZE) return "Crew locked — start the clash.";
+  return `Crew ready — start the clash or add ${MAX_HAND_SIZE - selectedCardCount} more.`;
+}
+
 function getSwingMessage(entry?: ClashLogEntry): string {
   if (!entry) return "Ready";
   switch (entry.swing) {
@@ -405,7 +413,16 @@ export function ForgeClash() {
               <div className="forge-clash-health">
                 <span>Your Crew</span>
                 <strong>{healthLabel(clash.playerHp)}</strong>
-                <div className="forge-clash-meter"><span style={{ width: `${clash.playerHp}%` }} /></div>
+                <div
+                  className="forge-clash-meter"
+                  role="progressbar"
+                  aria-label="Your crew health"
+                  aria-valuemin={0}
+                  aria-valuemax={MAX_HP}
+                  aria-valuenow={clash.playerHp}
+                >
+                  <span style={{ width: `${clash.playerHp}%` }} />
+                </div>
               </div>
               <div className="forge-clash-turn">
                 <span>Turn {clash.turn}/{MAX_TURNS}</span>
@@ -414,9 +431,29 @@ export function ForgeClash() {
               <div className="forge-clash-health forge-clash-health--rival">
                 <span>Rival Heat</span>
                 <strong>{healthLabel(clash.rivalHp)}</strong>
-                <div className="forge-clash-meter"><span style={{ width: `${clash.rivalHp}%` }} /></div>
+                <div
+                  className="forge-clash-meter"
+                  role="progressbar"
+                  aria-label="Rival health"
+                  aria-valuemin={0}
+                  aria-valuemax={MAX_HP}
+                  aria-valuenow={clash.rivalHp}
+                >
+                  <span style={{ width: `${clash.rivalHp}%` }} />
+                </div>
               </div>
             </div>
+
+            {latestEntry && (
+              <div
+                className={`forge-clash-last-result forge-clash-last-result--${latestEntry.swing}`}
+                role="status"
+              >
+                <span>Turn {latestEntry.turn} result</span>
+                <strong>{`${getSwingMessage(latestEntry)} ${latestEntry.title}`.trim()}</strong>
+                <p>{latestEntry.body}</p>
+              </div>
+            )}
 
             <div className={stageClassName} key={getClashRenderKey(clash)}>
               <div className="forge-clash-stage__grid" aria-hidden="true" />
@@ -501,14 +538,25 @@ export function ForgeClash() {
               </div>
             </div>
 
-            <div className="forge-clash-hand">
+            <p className="forge-clash-turn-prompt" role="status">
+              {getTurnPrompt(clash, selectedCards.length)}
+            </p>
+
+            <div
+              className={buildClassName("forge-clash-hand", clash.phase === "playing" && "is-actionable")}
+              aria-label="Your selected card hand"
+            >
               {selectedCards.map((card) => {
                 const cooldown = clash.cooldowns[card.id] ?? 0;
                 return (
                   <button
                     key={card.id}
                     type="button"
-                    className={`forge-clash-card${clash.activeCardId === card.id ? " is-active" : ""}`}
+                    className={buildClassName(
+                      "forge-clash-card",
+                      clash.activeCardId === card.id && "is-active",
+                      cooldown > 0 && "is-cooling-down",
+                    )}
                     onClick={() => playCard(card)}
                     disabled={clash.phase !== "playing" || cooldown > 0}
                   >
@@ -522,7 +570,11 @@ export function ForgeClash() {
               })}
             </div>
 
-            <div className="forge-clash-controls">
+            <div className={buildClassName(
+              "forge-clash-controls",
+              clash.phase === "draft" && selectedCards.length > 0 && "is-actionable",
+              clash.phase === "ended" && "is-actionable",
+            )}>
               {clash.phase === "draft" ? (
                 <button type="button" className="btn-primary" onClick={startClash} disabled={selectedCards.length === 0}>
                   Start Clash
@@ -541,7 +593,10 @@ export function ForgeClash() {
           </section>
 
           <aside className="forge-clash-side">
-            <section className="forge-clash-panel">
+            <section className={buildClassName(
+              "forge-clash-panel",
+              clash.phase === "draft" && selectedCards.length === 0 && "is-actionable",
+            )}>
               <h2>Draft forged cards</h2>
               <p>{selectedCards.length}/{MAX_HAND_SIZE} selected. Strong hands rotate between damage, blocks, and counters.</p>
               <div className="forge-clash-draft-grid">
@@ -553,7 +608,7 @@ export function ForgeClash() {
                       type="button"
                       className={`forge-clash-draft-card${selected ? " is-selected" : ""}`}
                       onClick={() => toggleCard(card.id)}
-                      disabled={!selected && selectedIds.length >= MAX_HAND_SIZE}
+                      disabled={clash.phase !== "draft" || (!selected && selectedIds.length >= MAX_HAND_SIZE)}
                     >
                       <CardThumbnail card={card} width={110} height={154} />
                       <span>{card.identity.name}</span>
