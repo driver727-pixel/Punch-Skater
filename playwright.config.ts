@@ -10,7 +10,8 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: 'https://localhost:4173',
+    ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -58,7 +59,6 @@ export default defineConfig({
       testMatch: visualSpec,
       use: {
         browserName: 'webkit',
-        bypassCSP: true,
         colorScheme: 'dark',
         hasTouch: true,
         isMobile: true,
@@ -83,7 +83,6 @@ export default defineConfig({
       testMatch: visualSpec,
       use: {
         browserName: 'webkit',
-        bypassCSP: true,
         colorScheme: 'dark',
         hasTouch: true,
         isMobile: true,
@@ -93,8 +92,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npm run preview',
-    url: 'http://localhost:4173',
+    command: 'rm -rf /tmp/punch-skater-playwright && mkdir -p /tmp/punch-skater-playwright && openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/punch-skater-playwright/key.pem -out /tmp/punch-skater-playwright/cert.pem -subj /CN=localhost -days 1 >/dev/null 2>&1 && PLAYWRIGHT_HTTPS=1 npm run build && PLAYWRIGHT_HTTPS=1 npm run preview',
+    url: 'https://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

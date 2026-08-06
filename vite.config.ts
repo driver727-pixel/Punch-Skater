@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'node:fs'
 
 const _buildDate = new Date();
 const _buildNumber = [
@@ -11,6 +12,12 @@ const _buildNumber = [
   String(_buildDate.getUTCHours()).padStart(2, '0'),
   String(_buildDate.getUTCMinutes()).padStart(2, '0'),
 ].join('');
+const previewHttps = process.env.PLAYWRIGHT_HTTPS === '1'
+  ? {
+      key: readFileSync('/tmp/punch-skater-playwright/key.pem'),
+      cert: readFileSync('/tmp/punch-skater-playwright/cert.pem'),
+    }
+  : undefined;
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -28,6 +35,9 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+    },
+    preview: {
+      https: previewHttps,
     },
   },
   build: {
