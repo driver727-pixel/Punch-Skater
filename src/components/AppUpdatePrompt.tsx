@@ -9,6 +9,7 @@ export function AppUpdatePrompt() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const handleUpdate = (event: Event) => {
       const updateEvent = event as CustomEvent<ServiceWorkerRegistration>;
       if (updateEvent.detail?.waiting) {
@@ -16,8 +17,21 @@ export function AppUpdatePrompt() {
       }
     };
 
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistration()
+        .then((existingRegistration) => {
+          if (active && existingRegistration?.waiting) {
+            setRegistration(existingRegistration);
+          }
+        })
+        .catch(() => {});
+    }
+
     window.addEventListener(SERVICE_WORKER_UPDATE_READY_EVENT, handleUpdate);
-    return () => window.removeEventListener(SERVICE_WORKER_UPDATE_READY_EVENT, handleUpdate);
+    return () => {
+      active = false;
+      window.removeEventListener(SERVICE_WORKER_UPDATE_READY_EVENT, handleUpdate);
+    };
   }, []);
 
   const refresh = () => {
