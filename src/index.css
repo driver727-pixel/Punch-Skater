@@ -1687,7 +1687,7 @@ body::after {
 
 .nav-inner {
   width: 100%;
-  max-width: min(1200px, 95vw);
+  max-width: min(1440px, 98vw);
   margin: 0 auto;
   display: flex;
   align-items: stretch;
@@ -5736,14 +5736,14 @@ textarea:focus-visible,
   .nav-hamburger { display: none; }
   .nav-brand-zone,
   .nav-links {
-    min-height: 168px;
+    min-height: 112px;
   }
   .nav-brand-zone {
-    width: clamp(200px, 22vw, 340px);
+    width: clamp(180px, 20vw, 280px);
   }
   .nav-links {
     grid-auto-rows: 1fr;
-    min-width: min(100%, 420px);
+    min-width: min(100%, 320px);
   }
 }
 
