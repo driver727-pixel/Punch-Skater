@@ -58,6 +58,7 @@ export default defineConfig({
       testMatch: visualSpec,
       use: {
         browserName: 'webkit',
+        bypassCSP: true,
         colorScheme: 'dark',
         hasTouch: true,
         isMobile: true,
@@ -82,6 +83,7 @@ export default defineConfig({
       testMatch: visualSpec,
       use: {
         browserName: 'webkit',
+        bypassCSP: true,
         colorScheme: 'dark',
         hasTouch: true,
         isMobile: true,
