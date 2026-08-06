@@ -22381,7 +22381,7 @@ textarea:focus-visible,
     justify-self: center;
   }
 
-  .forge-clash-card:nth-child(n) {
+  .forge-clash-hand .forge-clash-card {
     --hand-rotate: 0deg;
     --hand-y: 0px;
   }
