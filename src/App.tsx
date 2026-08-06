@@ -12,6 +12,9 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { TerminalShell } from "./components/TerminalShell";
 import { CurrentObjectivePopup } from "./components/CurrentObjectivePopup";
+import { AppInstallPrompt } from "./components/AppInstallPrompt";
+import { AppUpdatePrompt } from "./components/AppUpdatePrompt";
+import { useRuntimeProfile } from "./hooks/useRuntimeProfile";
 import {
   TerminalRouterProvider,
   isTerminalPath,
@@ -44,6 +47,23 @@ function ThemeApplier() {
     const interval = setInterval(applyTime, 60_000);
     return () => clearInterval(interval);
   }, [tier]);
+
+  return null;
+}
+
+function RuntimeProfileApplier({ reduceEffects }: { reduceEffects: boolean }) {
+  useEffect(() => {
+    const root = document.documentElement;
+    if (reduceEffects) {
+      root.dataset.effects = "reduced";
+    } else {
+      delete root.dataset.effects;
+    }
+
+    return () => {
+      delete root.dataset.effects;
+    };
+  }, [reduceEffects]);
 
   return null;
 }
@@ -257,15 +277,21 @@ function DistrictThemeApplier() {
   return null;
 }
 
-function AppParallaxBackdrop() {
+function AppParallaxBackdrop({ reduceEffects }: { reduceEffects: boolean }) {
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") {
       return undefined;
     }
 
     const root = document.documentElement;
+    if (reduceEffects) {
+      root.style.setProperty("--parallax-scroll", "0");
+      root.style.setProperty("--parallax-pointer-x", "0");
+      root.style.setProperty("--parallax-pointer-y", "0");
+      return undefined;
+    }
+
     const main = document.querySelector(MAIN_CONTENT_SELECTOR);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const coarsePointer = window.matchMedia("(pointer: coarse)");
     let rafId = 0;
 
@@ -276,12 +302,12 @@ function AppParallaxBackdrop() {
     };
 
     const requestScrollWrite = () => {
-      if (reducedMotion.matches || rafId) return;
+      if (rafId) return;
       rafId = window.requestAnimationFrame(writeScroll);
     };
 
     const writePointer = (event?: PointerEvent) => {
-      if (reducedMotion.matches || !event) {
+      if (!event) {
         root.style.setProperty("--parallax-pointer-x", "0");
         root.style.setProperty("--parallax-pointer-y", "0");
         return;
@@ -291,15 +317,6 @@ function AppParallaxBackdrop() {
       const y = (event.clientY / window.innerHeight - 0.5) * 2;
       root.style.setProperty("--parallax-pointer-x", x.toFixed(3));
       root.style.setProperty("--parallax-pointer-y", y.toFixed(3));
-    };
-
-    const handleReducedMotionChange = () => {
-      if (reducedMotion.matches) {
-        if (rafId) window.cancelAnimationFrame(rafId);
-        rafId = 0;
-      }
-      writeScroll();
-      writePointer();
     };
 
     const handleCoarsePointerChange = () => {
@@ -324,7 +341,6 @@ function AppParallaxBackdrop() {
     if (!coarsePointer.matches) {
       window.addEventListener("pointermove", writePointer, { passive: true });
     }
-    reducedMotion.addEventListener("change", handleReducedMotionChange);
     coarsePointer.addEventListener("change", handleCoarsePointerChange);
 
     return () => {
@@ -337,13 +353,14 @@ function AppParallaxBackdrop() {
       if (!coarsePointer.matches) {
         window.removeEventListener("pointermove", writePointer);
       }
-      reducedMotion.removeEventListener("change", handleReducedMotionChange);
       coarsePointer.removeEventListener("change", handleCoarsePointerChange);
       root.style.setProperty("--parallax-scroll", "0");
       root.style.setProperty("--parallax-pointer-x", "0");
       root.style.setProperty("--parallax-pointer-y", "0");
     };
-  }, []);
+  }, [reduceEffects]);
+
+  if (reduceEffects) return null;
 
   return (
     <div className="app-parallax" aria-hidden="true">
@@ -473,19 +490,24 @@ function AppContent() {
 }
 
 function App() {
+  const runtimeProfile = useRuntimeProfile();
+
   return (
     <BrowserRouter>
       <AuthProvider>
         <WalletProvider>
           <TierProvider>
             <ThemeApplier />
+            <RuntimeProfileApplier reduceEffects={runtimeProfile.reduceEffects} />
             <LanguageProvider>
               <ErrorBoundary>
                 <div className="app">
-                  <AppParallaxBackdrop />
+                  <AppParallaxBackdrop reduceEffects={runtimeProfile.reduceEffects} />
                   <a className="skip-link" href="#main-content">Skip to main content</a>
                   <ScrollToTopOnRouteChange />
                   <Nav />
+                  <AppInstallPrompt />
+                  <AppUpdatePrompt />
                   {!isFirebaseConfigured && (
                     <div className="firebase-banner">{firebaseUnavailableMessage}</div>
                   )}
