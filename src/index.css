@@ -1687,7 +1687,7 @@ body::after {
 
 .nav-inner {
   width: 100%;
-  max-width: min(1200px, 95vw);
+  max-width: min(1440px, 98vw);
   margin: 0 auto;
   display: flex;
   align-items: stretch;
@@ -5731,19 +5731,86 @@ textarea:focus-visible,
   }
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1101px) {
   .nav-mobile-menu { display: none; }
   .nav-hamburger { display: none; }
   .nav-brand-zone,
   .nav-links {
-    min-height: 168px;
+    min-height: 112px;
   }
   .nav-brand-zone {
-    width: clamp(200px, 22vw, 340px);
+    width: clamp(180px, 20vw, 280px);
   }
   .nav-links {
     grid-auto-rows: 1fr;
-    min-width: min(100%, 420px);
+    min-width: min(100%, 320px);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .nav-inner {
+    min-height: 64px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .nav-brand-zone {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    min-height: 64px;
+    max-width: none;
+  }
+
+  .nav-brand {
+    align-items: flex-start;
+    padding: 4px 8px;
+  }
+
+  .nav-title {
+    font-size: 15px;
+    letter-spacing: 2px;
+  }
+
+  .nav-subtitle {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .nav-game-badge {
+    max-width: 100%;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .nav-links,
+  .nav-desktop-only {
+    display: none;
+  }
+
+  .nav-hamburger {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+  }
+
+  .nav-mobile-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 8px;
+    left: 8px;
+    z-index: 30;
+    display: grid;
+    border: 1px solid rgba(143, 251, 255, 0.26);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(5, 11, 24, 0.98), rgba(16, 8, 28, 0.96)),
+      radial-gradient(circle at top left, rgba(141, 255, 92, 0.14), transparent 28%);
+    box-shadow:
+      0 18px 42px rgba(0, 0, 0, 0.44),
+      0 0 24px rgba(32, 244, 255, 0.12);
   }
 }
 
@@ -22185,10 +22252,23 @@ textarea:focus-visible,
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
   .forge-clash-layout,
   .forge-clash-stage {
     grid-template-columns: 1fr;
+  }
+
+  .forge-clash-hero {
+    padding: clamp(18px, 3vw, 30px);
+    margin-bottom: 16px;
+  }
+
+  .forge-clash-hero h1 {
+    font-size: clamp(36px, 7vw, 68px);
+  }
+
+  .forge-clash-hero p {
+    font-size: 16px;
   }
 
   .forge-clash-board {
@@ -22280,59 +22360,34 @@ textarea:focus-visible,
   .forge-clash-hand {
     --forge-clash-mobile-card-width: clamp(108px, 34vw, 148px);
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    align-items: end;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
     justify-content: stretch;
+    gap: 10px;
     width: 100%;
-    min-height: clamp(238px, 68vw, 302px);
+    min-height: 0;
     margin-top: 18px;
-    padding: 30px clamp(78px, 24vw, 108px) 18px;
+    padding: 18px 12px 14px;
     overflow: visible;
   }
 
   .forge-clash-card {
-    grid-row: 1;
-    width: var(--forge-clash-mobile-card-width);
+    grid-row: auto;
+    width: 100%;
+    max-width: var(--forge-clash-mobile-card-width);
     min-width: 0;
     margin: 0;
     padding: 8px;
     justify-self: center;
   }
 
-  .forge-clash-card:nth-child(1) {
-    grid-column: 1;
-    --hand-rotate: -11deg;
-    --hand-y: 26px;
+  .forge-clash-hand .forge-clash-card {
+    --hand-rotate: 0deg;
+    --hand-y: 0;
   }
 
-  .forge-clash-card:nth-child(2) {
-    grid-column: 2;
-    --hand-rotate: -7deg;
-    --hand-y: 11px;
-  }
-
-  .forge-clash-card:nth-child(3) {
-    grid-column: 3;
-    --hand-rotate: -2deg;
-    --hand-y: 2px;
-  }
-
-  .forge-clash-card:nth-child(4) {
-    grid-column: 4;
-    --hand-rotate: 2deg;
-    --hand-y: 2px;
-  }
-
-  .forge-clash-card:nth-child(5) {
-    grid-column: 5;
-    --hand-rotate: 7deg;
-    --hand-y: 11px;
-  }
-
-  .forge-clash-card:nth-child(6) {
-    grid-column: 6;
-    --hand-rotate: 11deg;
-    --hand-y: 26px;
+  .forge-clash-draft-card {
+    padding: 10px;
   }
 
   .forge-clash-card > .card-art-composite,
@@ -22351,6 +22406,13 @@ textarea:focus-visible,
     white-space: nowrap;
   }
 
+  .forge-clash-draft-card > .card-art-composite,
+  .forge-clash-draft-card > svg,
+  .forge-clash-card > .card-art-composite,
+  .forge-clash-card > svg {
+    pointer-events: none;
+  }
+
   .race-arena-featured-mode {
     grid-template-columns: 1fr;
   }
@@ -22358,6 +22420,12 @@ textarea:focus-visible,
   .race-arena-featured-mode__cta {
     justify-self: start;
     transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .forge-clash-hand {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

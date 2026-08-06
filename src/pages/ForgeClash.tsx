@@ -609,6 +609,7 @@ export function ForgeClash() {
                       className={`forge-clash-draft-card${selected ? " is-selected" : ""}`}
                       onClick={() => toggleCard(card.id)}
                       disabled={clash.phase !== "draft" || (!selected && selectedIds.length >= MAX_HAND_SIZE)}
+                      aria-pressed={selected}
                     >
                       <CardThumbnail card={card} width={110} height={154} />
                       <span>{card.identity.name}</span>
