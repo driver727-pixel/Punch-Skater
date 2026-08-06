@@ -13,8 +13,15 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<PrecacheEntry | string>;
 };
 
+// The app asks an installed update to activate only after the player confirms
+// the refresh, so a new build cannot interrupt an active game session.
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "punch-skater:skip-waiting") {
+    void self.skipWaiting();
+  }
+});
+
 // Take control of all open clients immediately after activation.
-self.skipWaiting();
 clientsClaim();
 
 // Remove caches from previous Workbox versions that are no longer needed.

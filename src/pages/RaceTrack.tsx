@@ -51,6 +51,7 @@ import { RaceCard3D } from "../components/RaceCard3D";
 import { getRaceDistrictDisplayName } from "../lib/raceDistricts";
 import { getRaceTrackDefinition } from "../lib/raceTracks";
 import { announceActiveDistrict } from "../lib/districtTheme";
+import { useRuntimeProfile } from "../hooks/useRuntimeProfile";
 
 const CANVAS_WIDTH = 720;
 const CANVAS_HEIGHT = 360;
@@ -528,6 +529,7 @@ type RacePhase = "idle" | "countdown" | "running" | "completed";
 export function RaceTrack() {
   const { raceId } = useParams<{ raceId: string }>();
   const { user } = useAuth();
+  const { reduceEffects } = useRuntimeProfile();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cameraRef = useRef<HTMLDivElement | null>(null);
@@ -536,6 +538,7 @@ export function RaceTrack() {
   // Animation clocks driven by the unified render loop.
   const lastFrameRef = useRef<number>(0);
   const raceClockRef = useRef<number>(0);
+  const displayedTickRef = useRef<number>(0);
   const phaseRef = useRef<number>(0);
   const timeScaleRef = useRef<number>(1);
   const slowMoUntilRef = useRef<number>(0);
@@ -606,6 +609,7 @@ export function RaceTrack() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d") ?? null;
     let cancelled = false;
+    let staticSceneRendered = false;
 
     const loop = (now: number) => {
       if (cancelled) return;
@@ -627,24 +631,31 @@ export function RaceTrack() {
           race.timeline.length - 1,
           Math.floor(raceClockRef.current / race.tickMs),
         );
-        setTickIndex(idx);
+        if (idx !== displayedTickRef.current) {
+          displayedTickRef.current = idx;
+          setTickIndex(idx);
+        }
         if (idx >= race.timeline.length - 1) {
+          phaseStateRef.current = "completed";
           setRacePhase("completed");
         }
       }
 
       // Parallax/lane flow speed: idle drifts gently, racing tracks the leader.
-      const baseFlow = phaseNow === "running" ? 0.04 : 0.012;
-      const flow = baseFlow + leaderIntensityRef.current * 0.5;
-      phaseRef.current += flow * dt * timeScaleRef.current;
+      if (!reduceEffects) {
+        const baseFlow = phaseNow === "running" ? 0.04 : 0.012;
+        const flow = baseFlow + leaderIntensityRef.current * 0.5;
+        phaseRef.current += flow * dt * timeScaleRef.current;
+      }
 
-      if (ctx) {
+      if (ctx && (!reduceEffects || !staticSceneRendered)) {
         renderScene({
           ctx,
           district: race.district ?? "",
           phase: phaseRef.current,
           intensity: phaseNow === "running" ? leaderIntensityRef.current : 0.12,
         });
+        staticSceneRendered = true;
       }
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -654,7 +665,7 @@ export function RaceTrack() {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [race]);
+  }, [race, reduceEffects]);
 
   // Manage the wheels/engine roll loop alongside the running state.
   useEffect(() => {
@@ -675,6 +686,7 @@ export function RaceTrack() {
 
   const beginTimeline = useCallback(() => {
     raceClockRef.current = 0;
+    displayedTickRef.current = 0;
     timeScaleRef.current = 1;
     slowMoUntilRef.current = 0;
     leaderSideRef.current = null;
@@ -849,6 +861,7 @@ export function RaceTrack() {
     setRacePhase("idle");
     setTickIndex(0);
     raceClockRef.current = 0;
+    displayedTickRef.current = 0;
     // Defer to next frame so the idle state settles before the countdown.
     window.setTimeout(() => startCountdown(), 30);
   }, [startCountdown]);

@@ -22727,3 +22727,194 @@ body {
     transform: none;
   }
 }
+
+/* ===== App shell: device-safe PWA consistency ===== */
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg);
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body,
+#root,
+.app {
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+body {
+  overflow-x: clip;
+}
+
+.nav {
+  padding-top: var(--safe-area-top);
+}
+
+.page {
+  padding-left: max(18px, calc(var(--safe-area-left) + 12px));
+  padding-right: max(18px, calc(var(--safe-area-right) + 12px));
+}
+
+img,
+video,
+canvas {
+  max-inline-size: 100%;
+}
+
+img,
+video {
+  block-size: auto;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+html[data-effects="reduced"] body {
+  --crt-overlay-opacity: 0.3;
+  --crt-track-animation: none;
+}
+
+html[data-effects="reduced"] .app::before,
+html[data-effects="reduced"] .app-parallax {
+  display: none;
+}
+
+html[data-effects="reduced"] .nav-container,
+html[data-effects="reduced"] .mobile-game-dock,
+html[data-effects="reduced"] .landing-hero__actions {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-effects="reduced"] .viewer3d-card {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.app-install-prompt,
+.app-update-prompt {
+  position: fixed;
+  right: max(16px, calc(var(--safe-area-right) + 12px));
+  bottom: max(16px, calc(var(--safe-area-bottom) + 12px));
+  z-index: 50;
+  display: grid;
+  gap: 12px;
+  width: min(360px, calc(100vw - 32px - var(--safe-area-left) - var(--safe-area-right)));
+  padding: 16px;
+  border: 1px solid rgba(143, 251, 255, 0.44);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(5, 14, 27, 0.98), rgba(20, 8, 35, 0.96)),
+    radial-gradient(circle at top right, rgba(141, 255, 92, 0.2), transparent 42%);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.48),
+    0 0 28px rgba(32, 244, 255, 0.14);
+}
+
+.app-install-prompt__copy,
+.app-update-prompt > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.app-install-prompt__copy strong,
+.app-update-prompt strong {
+  color: #f3ffd6;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-install-prompt__copy span,
+.app-update-prompt span,
+.app-install-prompt__ios-steps {
+  color: #d1e8f2;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.app-install-prompt__actions,
+.app-update-prompt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-install-prompt__install,
+.app-update-prompt__refresh {
+  min-height: var(--touch-target);
+  padding: 8px 13px;
+  border: 1px solid rgba(141, 255, 92, 0.68);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(141, 255, 92, 0.9), rgba(255, 212, 90, 0.88));
+  color: #071207;
+  font-weight: 900;
+}
+
+.app-install-prompt__dismiss,
+.app-update-prompt__later {
+  min-height: var(--touch-target);
+  padding: 8px 10px;
+  border: 1px solid rgba(143, 251, 255, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e4f5ff;
+}
+
+.app-install-prompt__ios-steps {
+  padding-top: 10px;
+  border-top: 1px solid rgba(143, 251, 255, 0.16);
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding-left: max(12px, calc(var(--safe-area-left) + 12px));
+    padding-right: max(12px, calc(var(--safe-area-right) + 12px));
+  }
+
+  .mobile-game-dock {
+    left: max(10px, calc(var(--safe-area-left) + 10px));
+    right: max(10px, calc(var(--safe-area-right) + 10px));
+  }
+
+  .app-install-prompt,
+  .app-update-prompt {
+    right: max(10px, calc(var(--safe-area-right) + 10px));
+    bottom: calc(92px + var(--safe-area-bottom));
+    left: max(10px, calc(var(--safe-area-left) + 10px));
+    width: auto;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+}

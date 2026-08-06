@@ -39,6 +39,60 @@ See [`docs/PROGRESSION.md`](docs/PROGRESSION.md) for the full progression model.
 - Express proxy for Fal.ai, Stripe, admin, weather, and battle endpoints
 - Playwright for end-to-end coverage
 
+## Installed App and Cross-Device Quality
+
+Punch Skater ships as an installable Progressive Web App (PWA). On Chrome or
+Edge, use the in-game **Install app** prompt (or the browser install control).
+On iPhone and iPad, open the game in Safari, tap **Share**, then select
+**Add to Home Screen**. The installed app opens in standalone mode, has
+home-screen shortcuts for Forge, Crew, and Arena, and retains the app shell
+and cached game assets for offline revisits.
+
+The supported experience targets:
+
+- **Browsers:** current Chrome, Edge, Firefox, and Safari releases.
+- **Screen sizes:** 320 CSS pixels wide and up; responsive layouts are checked
+  at desktop 1280×720, phone 390×844 / 412×915, and tablet 834×1112 viewports.
+- **Input:** keyboard/mouse, touch, and touch-plus-keyboard. Primary game
+  actions maintain 48px touch targets on compact screens.
+- **Motion and effects:** `prefers-reduced-motion`, data-saving preferences,
+  and constrained devices disable nonessential parallax, automatic card spin,
+  heavy backdrop filters, and continuously redrawn race decoration. Race
+  outcomes still follow their server-authored fixed timeline ticks.
+
+Performance targets for release builds are a responsive initial shell on
+mid-range phones, a steady 60fps where effects are enabled, and graceful
+static presentation rather than dropped input or unstable layouts when the
+device asks to reduce effects. Treat the static app shell, route transitions,
+and touch responsiveness as higher priority than decorative animation.
+
+### Device QA
+
+`e2e/app-shell.visual.spec.ts` maintains screenshot baselines for desktop
+Chrome, Edge, Firefox, iOS Safari, Android Chrome, and iPad Safari:
+
+```bash
+npx playwright install chromium firefox webkit
+npx playwright test app-shell.visual.spec.ts
+# Deliberately refresh the approved baselines after a reviewed visual change:
+npx playwright test app-shell.visual.spec.ts --update-snapshots
+```
+
+Before a release, also verify a real Android device and a real iPhone/iPad:
+
+1. Install the app, close the browser, and launch it from the home screen.
+2. Load the home screen online, disable connectivity, then relaunch to confirm
+   the cached shell and game art remain usable.
+3. Deploy a newer build, reopen the installed app, and verify the **Refresh
+   now** prompt appears without interrupting an active session.
+4. Check portrait and landscape layouts, keyboard navigation, touch targets,
+   and reduced-motion mode.
+
+Native wrappers such as Capacitor, Tauri, or Electron are only needed for
+store distribution or native platform APIs; they do not replace this
+cross-browser QA matrix. A Unity or Godot rewrite is reserved for future
+engine-level rendering or performance requirements.
+
 ## Core Game Systems
 
 - **Card Forge** — deterministic card generation, layered art, factions, charge-up access, and joust-ready card identity including lance, shield, hype, gear, and traits

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'node:fs'
 
 const _buildDate = new Date();
 const _buildNumber = [
@@ -11,6 +12,12 @@ const _buildNumber = [
   String(_buildDate.getUTCHours()).padStart(2, '0'),
   String(_buildDate.getUTCMinutes()).padStart(2, '0'),
 ].join('');
+const previewHttps = process.env.PLAYWRIGHT_HTTPS === '1'
+  ? {
+      key: readFileSync('/tmp/punch-skater-playwright/key.pem'),
+      cert: readFileSync('/tmp/punch-skater-playwright/cert.pem'),
+    }
+  : undefined;
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -29,6 +36,9 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  preview: {
+    https: previewHttps,
   },
   build: {
     minify: 'esbuild',
@@ -78,6 +88,7 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         id: 'com.spdigital.punchskater',
+        categories: ['games', 'entertainment'],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -91,7 +102,30 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           }
-        ]
+        ],
+        shortcuts: [
+          {
+            name: 'Forge a Skater',
+            short_name: 'Forge',
+            description: 'Create a new Punch Skater card',
+            url: '/forge',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Open Crew',
+            short_name: 'Crew',
+            description: 'Review your Punch Skater collection',
+            url: '/collection',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Enter Arena',
+            short_name: 'Arena',
+            description: 'Play a Punch Skater arena match',
+            url: '/arena',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
       }
     })
   ]

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { notifyServiceWorkerUpdateReady } from './lib/serviceWorkerUpdates'
 
 // ─── Service Worker: aggressive update strategy ────────────────────────────
 // Ensures users always get the latest build without Ctrl+F5 or clearing cache.
@@ -20,6 +21,22 @@ if ('serviceWorker' in navigator) {
     try {
       const reg = await navigator.serviceWorker.register('/sw.js', {
         updateViaCache: 'none',
+      });
+      const notifyIfUpdateReady = () => {
+        if (navigator.serviceWorker.controller && reg.waiting) {
+          notifyServiceWorkerUpdateReady(reg);
+        }
+      };
+
+      notifyIfUpdateReady();
+      reg.addEventListener('updatefound', () => {
+        const installing = reg.installing;
+        if (!installing) return;
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'installed') {
+            notifyIfUpdateReady();
+          }
+        });
       });
 
       // Check for updates once per hour (polling too frequently wastes bandwidth)
