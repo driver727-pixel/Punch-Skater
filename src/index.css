@@ -22382,7 +22382,7 @@ textarea:focus-visible,
   }
 
   .forge-clash-card:nth-child(1) {
-    --hand-rotate: -3deg;
+    --hand-rotate: 0deg;
     --hand-y: 0;
   }
 
@@ -22392,12 +22392,12 @@ textarea:focus-visible,
   }
 
   .forge-clash-card:nth-child(3) {
-    --hand-rotate: 3deg;
+    --hand-rotate: 0deg;
     --hand-y: 0;
   }
 
   .forge-clash-card:nth-child(4) {
-    --hand-rotate: -3deg;
+    --hand-rotate: 0deg;
     --hand-y: 0;
   }
 
@@ -22407,7 +22407,7 @@ textarea:focus-visible,
   }
 
   .forge-clash-card:nth-child(6) {
-    --hand-rotate: 3deg;
+    --hand-rotate: 0deg;
     --hand-y: 0;
   }
 
