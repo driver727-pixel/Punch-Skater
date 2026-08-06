@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Progressive web app shell', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem('current-objective-popup-shown', '1');
+    });
+  });
+
   test('publishes a standalone manifest and registers its service worker', async ({ page }) => {
     await page.goto('/');
 

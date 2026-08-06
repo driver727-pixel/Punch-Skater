@@ -6,6 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('forge-welcome-dismissed', '1');
     localStorage.setItem('punch-skater-install-prompt-dismissed-at', String(Date.now()));
+    sessionStorage.setItem('current-objective-popup-shown', '1');
   });
 });
 
