@@ -22799,6 +22799,10 @@ html[data-effects="reduced"] .landing-hero__actions {
   backdrop-filter: none;
 }
 
+html[data-effects="reduced"] .viewer3d-card {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html:focus-within {
     scroll-behavior: auto;

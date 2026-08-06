@@ -3,6 +3,7 @@ import type { CardPayload } from "../lib/types";
 import { SkaterCardFace } from "./SkaterCardFace";
 import { getStaticFrameBackUrl } from "../services/staticAssets";
 import { buildCardVars } from "../lib/cardVars";
+import { useRuntimeProfile } from "../hooks/useRuntimeProfile";
 
 interface CardViewer3DBaseProps {
   card: CardPayload;
@@ -29,6 +30,7 @@ export function CardViewer3D({
   inline = false,
   onClose,
 }: CardViewer3DProps) {
+  const { reduceEffects } = useRuntimeProfile();
   const [rotateX, setRotateX] = useState(NEUTRAL_X);
   const [rotateY, setRotateY] = useState(NEUTRAL_Y);
   const [autoSpin, setAutoSpin] = useState(false);
@@ -63,7 +65,7 @@ export function CardViewer3D({
 
   // ── Auto-spin ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (autoSpin) {
+    if (autoSpin && !reduceEffects) {
       const tick = () => {
         setRotateY((y) => y + 0.6);
         spinRef.current = requestAnimationFrame(tick);
@@ -73,7 +75,11 @@ export function CardViewer3D({
       if (spinRef.current !== null) cancelAnimationFrame(spinRef.current);
     }
     return () => { if (spinRef.current !== null) cancelAnimationFrame(spinRef.current); };
-  }, [autoSpin]);
+  }, [autoSpin, reduceEffects]);
+
+  useEffect(() => {
+    if (reduceEffects) setAutoSpin(false);
+  }, [reduceEffects]);
 
   // ── Mouse drag ───────────────────────────────────────────────────────────────
   const onMouseDown = useCallback((e: React.MouseEvent) => {
@@ -143,6 +149,7 @@ export function CardViewer3D({
   };
 
   const handleAutoSpin = () => {
+    if (reduceEffects) return;
     setAutoSpin((v) => !v);
   };
 
@@ -196,7 +203,8 @@ export function CardViewer3D({
         <button
           className={`viewer3d-btn${autoSpin ? " viewer3d-btn--active" : ""}`}
           onClick={handleAutoSpin}
-          title="Toggle auto-spin"
+          title={reduceEffects ? "Auto-spin is disabled by device motion settings" : "Toggle auto-spin"}
+          disabled={reduceEffects}
         >
           ◎ Spin
         </button>
@@ -207,7 +215,11 @@ export function CardViewer3D({
         )}
       </div>
 
-      <p className="viewer3d-hint">{autoSpin ? "Click Spin to stop" : "Drag to rotate · Flip to see card back"}</p>
+      <p className="viewer3d-hint">
+        {reduceEffects
+          ? "Motion effects are reduced by your device settings. Drag to rotate · Flip to see card back"
+          : autoSpin ? "Click Spin to stop" : "Drag to rotate · Flip to see card back"}
+      </p>
     </div>
   );
 
@@ -239,4 +251,3 @@ export function CardViewer3D({
     </div>
   );
 }
-
