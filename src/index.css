@@ -22381,38 +22381,12 @@ textarea:focus-visible,
     justify-self: center;
   }
 
-  .forge-clash-card:nth-child(1) {
-    --hand-rotate: 0deg;
-    --hand-y: 0;
-  }
-
-  .forge-clash-card:nth-child(2) {
-    --hand-rotate: 0deg;
-    --hand-y: 0;
-  }
-
-  .forge-clash-card:nth-child(3) {
-    --hand-rotate: 0deg;
-    --hand-y: 0;
-  }
-
-  .forge-clash-card:nth-child(4) {
-    --hand-rotate: 0deg;
-    --hand-y: 0;
-  }
-
-  .forge-clash-card:nth-child(5) {
-    --hand-rotate: 0deg;
-    --hand-y: 0;
-  }
-
-  .forge-clash-card:nth-child(6) {
+  .forge-clash-card:nth-child(n) {
     --hand-rotate: 0deg;
     --hand-y: 0;
   }
 
   .forge-clash-draft-card {
-    min-height: 100%;
     padding: 10px;
   }
 
