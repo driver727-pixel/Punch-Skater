@@ -36,9 +36,9 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    preview: {
-      https: previewHttps,
-    },
+  },
+  preview: {
+    https: previewHttps,
   },
   build: {
     minify: 'esbuild',
