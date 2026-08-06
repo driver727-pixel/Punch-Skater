@@ -22432,8 +22432,10 @@ textarea:focus-visible,
     white-space: nowrap;
   }
 
-  .forge-clash-draft-card > *,
-  .forge-clash-card > * {
+  .forge-clash-draft-card > .card-art-composite,
+  .forge-clash-draft-card > svg,
+  .forge-clash-card > .card-art-composite,
+  .forge-clash-card > svg {
     pointer-events: none;
   }
 
