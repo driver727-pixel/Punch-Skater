@@ -5786,7 +5786,7 @@ textarea:focus-visible,
 
   .nav-links,
   .nav-desktop-only {
-    display: none !important;
+    display: none;
   }
 
   .nav-hamburger {
