@@ -22383,7 +22383,7 @@ textarea:focus-visible,
 
   .forge-clash-hand .forge-clash-card {
     --hand-rotate: 0deg;
-    --hand-y: 0px;
+    --hand-y: 0;
   }
 
   .forge-clash-draft-card {
