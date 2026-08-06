@@ -78,6 +78,7 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         id: 'com.spdigital.punchskater',
+        categories: ['games', 'entertainment'],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -91,7 +92,30 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           }
-        ]
+        ],
+        shortcuts: [
+          {
+            name: 'Forge a Skater',
+            short_name: 'Forge',
+            description: 'Create a new Punch Skater card',
+            url: '/forge',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Open Crew',
+            short_name: 'Crew',
+            description: 'Review your Punch Skater collection',
+            url: '/collection',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Enter Arena',
+            short_name: 'Arena',
+            description: 'Play a Punch Skater arena match',
+            url: '/arena',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
       }
     })
   ]

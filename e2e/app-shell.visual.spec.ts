@@ -1,0 +1,18 @@
+import { expect, test } from '@playwright/test';
+
+test.use({ colorScheme: 'dark', reducedMotion: 'reduce' });
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('forge-welcome-dismissed', '1');
+    localStorage.setItem('punch-skater-install-prompt-dismissed-at', String(Date.now()));
+  });
+});
+
+test('keeps the installed-app shell visually stable', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.nav-title')).toBeVisible();
+  await expect(page).toHaveScreenshot('home-shell.png', {
+    animations: 'disabled',
+  });
+});
