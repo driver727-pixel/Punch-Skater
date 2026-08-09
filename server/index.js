@@ -1002,6 +1002,7 @@ registerImageRoutes(app, {
   fal,
   FAL_KEY,
   BIREFNET_URL,
+  adminAuth,
   imageRateLimit,
   boardImageStatusRateLimit,
   authenticateFirebaseUser,
