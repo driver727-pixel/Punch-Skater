@@ -18635,6 +18635,120 @@ textarea:focus-visible,
   justify-content: flex-start;
   text-align: left;
 }
+
+/* ── Arena: core + early-access sections ───────────────────────── */
+.arena-core-section {
+  margin-bottom: 2rem;
+}
+
+.arena-core-section > .app-status-eyebrow {
+  margin-bottom: 0.75rem;
+}
+
+.arena-featured--forge {
+  margin-bottom: 1rem;
+  border-color: color-mix(in srgb, var(--accent2) 60%, transparent);
+  background:
+    radial-gradient(circle at 12% 16%, color-mix(in srgb, var(--accent2) 28%, transparent), transparent 32%),
+    radial-gradient(circle at 88% 20%, rgba(64, 200, 255, 0.24), transparent 30%),
+    linear-gradient(135deg, rgba(6, 8, 24, 0.96), rgba(4, 16, 26, 0.9));
+  box-shadow:
+    0 0 28px color-mix(in srgb, var(--accent2) 18%, transparent),
+    inset 0 0 30px rgba(255, 255, 255, 0.04);
+}
+
+.arena-early-access-section {
+  margin-top: 1.5rem;
+}
+
+.race-arena-modes {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.arena-early-access-header {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(255, 200, 70, 0.28);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 8% 50%, rgba(255, 200, 70, 0.12), transparent 40%),
+    rgba(12, 10, 22, 0.72);
+}
+
+.arena-early-access-title {
+  margin: 0.35rem 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 220, 120, 0.9);
+}
+
+.arena-early-access-desc {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.arena-coming-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 200, 70, 0.45);
+  border-radius: 999px;
+  background: rgba(255, 200, 70, 0.12);
+  color: rgba(255, 220, 120, 0.92);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.arena-coming-soon-badge--inline {
+  display: block;
+  width: fit-content;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+}
+
+.arena-mode-link--early {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  opacity: 0.88;
+}
+
+.arena-mode-link--locked {
+  pointer-events: none;
+  cursor: default;
+  opacity: 0.55;
+}
+
+.arena-mode-link__desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+@media (max-width: 640px) {
+  .race-arena-featured-mode {
+    grid-template-columns: 1fr;
+  }
+
+  .race-arena-featured-mode__cta {
+    transform: none;
+    width: 100%;
+  }
+}
+
 .race-arena-self {
   display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
   padding: 0.6rem 0.9rem; border: 1px solid rgba(255,255,255,0.12);

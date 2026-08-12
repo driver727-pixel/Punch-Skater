@@ -106,9 +106,9 @@ export function LandingPage() {
               className="btn-outline landing-cta-button landing-cta-button--arena"
               onMouseEnter={handleArenaIntent}
               onFocus={handleArenaIntent}
-              onClick={() => navigate("/arena")}
+              onClick={() => navigate("/arena/forge-clash")}
             >
-              Arena
+              Forge Clash
             </button>
           </div>
         </div>
@@ -136,7 +136,7 @@ export function LandingPage() {
         <div className="landing-auth-shell">
           <AuthCard
             className="landing-auth-card"
-            hint="Sign up free to try solo Arena and Joustur Skatur™ runs with house cards, then save cards, build a Crew, run Missions, race rivals, and trade across the districts."
+            hint="Sign up free — forge your first skater card and drop into Forge Clash. Save your Crew, earn daily rewards, and trade cards across the districts."
             panelEyebrow="Login"
             panelTitle="Sign in or create your free Punch Skater™ account"
             panelSubtitle="Email, Google, and phone login all work here."
