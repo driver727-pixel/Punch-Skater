@@ -5577,14 +5577,14 @@ textarea:focus-visible,
   display: none;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 56px;
+  height: 56px;
   background: rgba(0, 0, 0, 0.24);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 22px;
+  font-size: 26px;
   line-height: 1;
-  padding: 2px;
+  padding: 3px;
   border-radius: 4px;
   cursor: pointer;
   font-family: var(--font);
@@ -5593,8 +5593,8 @@ textarea:focus-visible,
 .nav-hamburger:hover { border-color: var(--accent); color: var(--accent); }
 .nav-hamburger-icon {
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
 }
 
@@ -5633,11 +5633,11 @@ textarea:focus-visible,
 }
 .nav-mobile-menu .nav-link {
   display: inline-flex;
-  padding: 8px 10px;
+  padding: 12px 14px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 15px;
   letter-spacing: 0.8px;
-  min-height: 36px;
+  min-height: 52px;
 }
 .nav-mobile-menu-footer {
   grid-column: 1 / -1;
@@ -5653,9 +5653,14 @@ textarea:focus-visible,
 .nav-mobile-menu-footer .tier-badge-btn,
 .nav-mobile-menu-footer .nav-wallet-badge {
   width: 100%;
-  min-height: 34px;
+  min-height: 52px;
   justify-content: center;
   text-align: center;
+}
+.nav-mobile-menu-footer .ambience-btn,
+.nav-mobile-menu-footer .tier-badge-btn {
+  padding: 10px 12px;
+  font-size: 14px;
 }
 .nav-mobile-menu-footer .nav-wallet-badge:last-child:nth-child(odd) {
   grid-column: 1 / -1;
@@ -5706,12 +5711,12 @@ textarea:focus-visible,
     font-size: 12px;
   }
   .nav-hamburger {
-    width: 44px;
-    height: 44px;
+    width: 56px;
+    height: 56px;
   }
   .nav-mobile-menu .nav-link {
-    min-height: 36px;
-    font-size: 13px;
+    min-height: 52px;
+    font-size: 15px;
   }
   body {
     --crt-overlay-opacity: 0;
@@ -5792,8 +5797,8 @@ textarea:focus-visible,
   .nav-hamburger {
     display: inline-flex;
     flex: 0 0 auto;
-    width: 44px;
-    height: 44px;
+    width: 56px;
+    height: 56px;
   }
 
   .nav-mobile-menu {

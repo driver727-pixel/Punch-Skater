@@ -665,7 +665,7 @@ export class RaceGameScene extends Phaser.Scene {
       { radius: 44, fontSize: '20px' }
     );
     this.mobileHint = this.add.text(0, 0, 'TOUCH: STEER • GAS/BRAKE • NITRO', {
-      fontSize: '9px',
+      fontSize: '11px',
       fontFamily: 'Press Start 2P, monospace',
       color: '#ffffff',
       stroke: '#000',
@@ -676,8 +676,8 @@ export class RaceGameScene extends Phaser.Scene {
   }
 
   createMobileButton(label, strokeColor, onDown, onUp, options = {}) {
-    const radius = options.radius || 34;
-    const fontSize = options.fontSize || '18px';
+    const radius = options.radius || 42;
+    const fontSize = options.fontSize || '22px';
     const circle = this.add.circle(0, 0, radius, 0x101028, 0.78).setScrollFactor(0).setDepth(120);
     circle.setStrokeStyle(3, strokeColor, 1);
     const text = this.add.text(0, 0, label, {
@@ -707,11 +707,11 @@ export class RaceGameScene extends Phaser.Scene {
 
   layoutMobileControls(width, height) {
     if (!this.mobileControls) return;
-    const leftX = Math.max(56, Math.min(100, Math.round(width * 0.14)));
-    const leftX2 = leftX + 86;
-    const rightX = Math.max(width - 172, leftX2 + 96);
-    const nitroX = Math.min(width - 62, rightX + 100);
-    const baseY = height - 78;
+    const leftX = Math.max(60, Math.min(104, Math.round(width * 0.14)));
+    const leftX2 = leftX + 96;
+    const rightX = Math.max(172, width - 150);
+    const nitroX = Math.min(width - 58, rightX + 110);
+    const baseY = height - 100;
 
     this.mobileLeft.circle.setPosition(leftX, baseY);
     this.mobileLeft.text.setPosition(leftX, baseY);

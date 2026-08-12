@@ -657,8 +657,8 @@ export class StreetsGameScene extends Phaser.Scene {
   }
 
   createMobileButton(label, strokeColor, onDown, onUp, options = {}) {
-    const radius = options.radius || 38;
-    const fontSize = options.fontSize || '16px';
+    const radius = options.radius || 44;
+    const fontSize = options.fontSize || '20px';
     const circle = this.add.circle(0, 0, radius, 0x111122, 0.7).setScrollFactor(0).setDepth(100);
     circle.setStrokeStyle(3, strokeColor);
     const text = this.add.text(0, 0, label, { fontSize, color: '#ffffff' })
@@ -685,13 +685,13 @@ export class StreetsGameScene extends Phaser.Scene {
     this.mobileDown  = this.createMobileButton('▼', 0x7de7ff, () => { this.steer.down  = true;  }, () => { this.steer.down  = false; });
     this.mobileJump  = this.createMobileButton('⤒', 0xffea00, () => { this.steer.jump  = true;  }, () => { this.steer.jump  = false; });
     this.mobileDash  = this.createMobileButton('⇥', 0x39ff14, () => { this.steer.dash  = true;  }, () => { this.steer.dash  = false; });
-    this.mobileHit   = this.createMobileButton('✊', 0xff007f, () => this.tryAttack(),   null,   { radius: 42 });
-    this.mobileBoard = this.createMobileButton('🛹', 0xff6600, () => this.tryHeavyAttack(), null, { radius: 42 });
-    this.mobileNova  = this.createMobileButton('✦', 0x9d00ff, () => this.trySpecial(),  null,   { radius: 34 });
+    this.mobileHit   = this.createMobileButton('✊', 0xff007f, () => this.tryAttack(),   null,   { radius: 48, fontSize: '22px' });
+    this.mobileBoard = this.createMobileButton('🛹', 0xff6600, () => this.tryHeavyAttack(), null, { radius: 48, fontSize: '22px' });
+    this.mobileNova  = this.createMobileButton('✦', 0x9d00ff, () => this.trySpecial(),  null,   { radius: 40, fontSize: '22px' });
 
     this.mobileHint = this.add.text(0, 0, '◀▶ MOVE  ▲▼ LANE  ⤒ JUMP  ⇥ DASH  ✊ HIT  🛹 BOARD  ✦ NOVA', {
       fontFamily: '"Press Start 2P"',
-      fontSize: '7px',
+      fontSize: '9px',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 2,
@@ -708,15 +708,15 @@ export class StreetsGameScene extends Phaser.Scene {
 
   layoutMobileControls(width, height) {
     if (!this.mobileControls) return;
-    const baseY = height - 72;
+    const baseY = height - 112;
     const leftX  = Math.max(52,  Math.round(width * 0.07));
-    const leftX2 = leftX + 90;
+    const leftX2 = leftX + 96;
     const upX    = leftX2 + 72;
-    const jumpX  = Math.round(width * 0.55);
-    const dashX  = jumpX + 84;
-    const hitX   = Math.max(jumpX + 168, width - 148);
-    const boardX = Math.max(hitX  + 84,  width - 64);
-    const novaX  = boardX;
+    const jumpX  = Math.max(164, width - 154);
+    const dashX  = Math.max(jumpX + 96, width - 56);
+    const hitX   = dashX;
+    const boardX = dashX;
+    const novaX  = jumpX;
 
     this.mobileLeft.circle.setPosition(leftX, baseY);
     this.mobileLeft.text.setPosition(leftX, baseY);
@@ -731,12 +731,12 @@ export class StreetsGameScene extends Phaser.Scene {
     this.mobileJump.text.setPosition(jumpX, baseY);
     this.mobileDash.circle.setPosition(dashX, baseY);
     this.mobileDash.text.setPosition(dashX, baseY);
-    this.mobileHit.circle.setPosition(hitX, baseY);
-    this.mobileHit.text.setPosition(hitX, baseY);
-    this.mobileBoard.circle.setPosition(boardX, baseY - 88);
-    this.mobileBoard.text.setPosition(boardX, baseY - 88);
-    this.mobileNova.circle.setPosition(novaX - 84, baseY - 44);
-    this.mobileNova.text.setPosition(novaX - 84, baseY - 44);
+    this.mobileHit.circle.setPosition(hitX, baseY + 44);
+    this.mobileHit.text.setPosition(hitX, baseY + 44);
+    this.mobileBoard.circle.setPosition(boardX, baseY - 92);
+    this.mobileBoard.text.setPosition(boardX, baseY - 92);
+    this.mobileNova.circle.setPosition(novaX, baseY - 92);
+    this.mobileNova.text.setPosition(novaX, baseY - 92);
 
     this.mobileHint.setPosition(width / 2, height - 16);
   }
