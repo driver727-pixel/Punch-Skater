@@ -50,7 +50,7 @@ export function LandingPage() {
   }, [user]);
 
   const handleForgeIntent = () => warmRoutes(["forge"]);
-  const handleArenaIntent = () => warmRoutes(["arena", "joustur"]);
+  const handleArenaIntent = () => warmRoutes(["forgeClash"]);
 
   return (
     <div className="page landing-page">
