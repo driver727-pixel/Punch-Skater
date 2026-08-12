@@ -38,8 +38,8 @@
   --accent2: var(--theme-accent2);
   --purple: var(--theme-purple);
   --danger: var(--theme-danger);
-  --font: 'Courier New', Courier, monospace;
-  --font-display: 'Bangers', 'Impact', 'Arial Black', cursive;
+  --font: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-display: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   /* Canonical poker-card aspect ratio used by .print-card, .viewer3d-card, and
      the forge preview variant.  Update once here to change all three. */
   --card-aspect-ratio: 2.5 / 3.5;
@@ -6695,7 +6695,15 @@ textarea:focus-visible,
   color: var(--text-dim);
   line-height: 1.5;
 }
-.login-logo { font-size: 48px; margin-bottom: 4px; animation: login-logo-pulse 2.8s ease-in-out infinite; }
+.login-logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 0 18px rgba(0, 255, 136, 0.38));
+  animation: login-logo-pulse 2.8s ease-in-out infinite;
+}
 .login-title {
   font-family: var(--font-display);
   font-size: 28px;
