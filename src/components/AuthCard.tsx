@@ -233,7 +233,7 @@ export function AuthCard({
     <div className={`login-card${className ? ` ${className}` : ""}`}>
       {showBranding ? (
         <>
-          <div className="login-logo">⚡</div>
+          <img className="login-logo" src="/favicon.svg" alt="Punch Skater logo" />
           <HeadingTag className="login-title">Punch Skater™</HeadingTag>
           <p className="login-subtitle">CARD GAME</p>
           <p className="login-game-badge"><a href="https://sk8rpunk.com" target="_blank" rel="noopener noreferrer">A Sk8r Punk™ Game</a></p>
