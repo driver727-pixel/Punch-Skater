@@ -184,12 +184,12 @@ export function Nav() {
         <strong>Forge</strong>
       </NavLink>
       <NavLink
-        to={user ? "/arena" : "/login"}
+        to={user ? "/arena/forge-clash" : "/login"}
         className={({ isActive }) => getDockItemClass(isActive)}
-        aria-label={user ? "Open Arena" : "Sign in to open Arena"}
+        aria-label={user ? "Open Forge Clash" : "Sign in to play Forge Clash"}
       >
-        <span aria-hidden="true">🛹</span>
-        <strong>Arena</strong>
+        <span aria-hidden="true">⚔️</span>
+        <strong>Clash</strong>
       </NavLink>
       <NavLink
         to={user ? "/collection" : "/login"}
