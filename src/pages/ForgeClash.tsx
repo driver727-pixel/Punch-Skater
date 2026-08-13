@@ -7,6 +7,17 @@ import { clamp, getCardRarityBonus, getCardStat } from "../lib/forgeClashMetrics
 import type { CardPayload, StatKey } from "../lib/types";
 import { buildArenaDeckSummary, computeCardWorth } from "../lib/battle";
 import { fetchForgeComputerRivals } from "../services/forge";
+import {
+  sfxForgeClashBlock,
+  sfxForgeClashCounter,
+  sfxForgeClashCrit,
+  sfxForgeClashDraw,
+  sfxForgeClashLoss,
+  sfxForgeClashSlip,
+  sfxForgeClashStart,
+  sfxForgeClashStrike,
+  sfxForgeClashWin,
+} from "../lib/sfx";
 
 type ClashPhase = "draft" | "playing" | "ended";
 type ClashIntent = "Rush" | "Guard" | "Trick";
@@ -29,6 +40,8 @@ interface ClashLogEntry {
   playerAction: ClashAction;
   rivalAction: ClashAction;
   blocked: boolean;
+  crit: boolean;
+  slip: boolean;
 }
 
 interface ClashState {
@@ -150,6 +163,8 @@ function resolvePlay(card: CardPayload, state: ClashState): {
     playerAction: counter.value > 0 ? "counter" : "strike",
     rivalAction: rivalDamage > 0 ? "strike" : "block",
     blocked: rivalDamage === 0,
+    crit,
+    slip,
   };
 
   return {
@@ -371,12 +386,30 @@ export function ForgeClash() {
 
   const startClash = () => {
     if (selectedCards.length === 0) return;
+    sfxForgeClashStart();
     setClash({ ...initialClashState(), phase: "playing" });
   };
 
   const playCard = (card: CardPayload) => {
     if (clash.phase !== "playing" || clash.cooldowns[card.id]) return;
-    const { nextState } = resolvePlay(card, clash);
+    const { nextState, entry } = resolvePlay(card, clash);
+    if (nextState.result === "win") {
+      sfxForgeClashWin();
+    } else if (nextState.result === "loss") {
+      sfxForgeClashLoss();
+    } else if (nextState.result === "draw") {
+      sfxForgeClashDraw();
+    } else {
+      if (entry.crit) sfxForgeClashCrit();
+      if (entry.slip) sfxForgeClashSlip();
+      if (entry.blocked) {
+        sfxForgeClashBlock();
+      } else if (entry.playerAction === "counter") {
+        sfxForgeClashCounter();
+      } else {
+        sfxForgeClashStrike();
+      }
+    }
     setClash(nextState);
   };
 

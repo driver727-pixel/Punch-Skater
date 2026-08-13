@@ -743,6 +743,90 @@ export function sfxBattleResultReveal() {
   layeredTone("triangle", 0.32, 0.2, 660, 0.1, 880);
 }
 
+// ── Forge Clash SFX ──────────────────────────────────────────────────────────
+
+/** Forge Clash – countdown to first card play: punchy electro-metal ready signal. */
+export function sfxForgeClashStart() {
+  // Charging build-up
+  layeredTone("sawtooth", 0, 0.14, 220, 0.14, 440);
+  layeredTone("square", 0.06, 0.14, 440, 0.1, 880);
+  // Impact hit
+  layeredTone("sawtooth", 0.2, 0.18, 110, 0.2, 55);
+  layeredTone("square", 0.22, 0.16, 660, 0.12, 330);
+  // Rising siren accent
+  layeredTone("triangle", 0.28, 0.22, 880, 0.09, 1320);
+}
+
+/** Forge Clash – standard card strike: short aggressive impact. */
+export function sfxForgeClashStrike() {
+  layeredTone("sawtooth", 0, 0.12, 180, 0.18, 80);
+  layeredTone("square", 0.02, 0.1, 440, 0.1, 220);
+  layeredTone("triangle", 0.06, 0.08, 900, 0.06, 450);
+}
+
+/** Forge Clash – counter move: snappier upward punch conveying a read. */
+export function sfxForgeClashCounter() {
+  layeredTone("sawtooth", 0, 0.08, 300, 0.16, 600);
+  layeredTone("square", 0.04, 0.12, 600, 0.13, 1200);
+  layeredTone("triangle", 0.1, 0.14, 1200, 0.1, 1800);
+  layeredTone("sine", 0.18, 0.12, 1800, 0.06, 2400);
+}
+
+/** Forge Clash – rival fully blocked (perfect shield): metallic thunk. */
+export function sfxForgeClashBlock() {
+  layeredTone("triangle", 0, 0.16, 280, 0.16, 140);
+  layeredTone("square", 0.02, 0.12, 560, 0.1, 280);
+  layeredTone("sawtooth", 0.06, 0.1, 1100, 0.06, 550);
+}
+
+/** Forge Clash – crit spark: bright electric crackle layered over a strike. */
+export function sfxForgeClashCrit() {
+  layeredTone("square", 0, 0.06, 2200, 0.12, 3300);
+  layeredTone("sawtooth", 0.03, 0.06, 3300, 0.1, 1650);
+  layeredTone("triangle", 0.07, 0.1, 1650, 0.08, 3300);
+  layeredTone("sine", 0.1, 0.08, 4400, 0.04, 2200);
+}
+
+/** Forge Clash – rival slip feint lands: dissonant skidding blip. */
+export function sfxForgeClashSlip() {
+  layeredTone("sawtooth", 0, 0.1, 800, 0.1, 300);
+  layeredTone("square", 0.04, 0.08, 600, 0.07, 200);
+}
+
+/** Forge Clash – player wins: triumphant neon-metal victory phrase. */
+export function sfxForgeClashWin() {
+  // Bass punch
+  layeredTone("sawtooth", 0, 0.14, 110, 0.2, 55);
+  // Rising power chords
+  layeredTone("square", 0, 0.22, 523, 0.14);
+  layeredTone("square", 0.1, 0.22, 659, 0.13);
+  layeredTone("square", 0.2, 0.24, 784, 0.13);
+  layeredTone("square", 0.3, 0.22, 1047, 0.11);
+  // High shimmer
+  layeredTone("triangle", 0.1, 0.5, 880, 0.08, 1319);
+  layeredTone("sine", 0.36, 0.3, 1319, 0.06, 1760);
+  layeredTone("sine", 0.46, 0.24, 2637, 0.04, 3136);
+  // Triumphant accent
+  layeredTone("square", 0.42, 0.28, 1319, 0.09, 1760);
+}
+
+/** Forge Clash – player loses: ominous heavy-metal defeat sting. */
+export function sfxForgeClashLoss() {
+  layeredTone("sawtooth", 0, 0.22, 200, 0.2, 70);
+  layeredTone("triangle", 0, 0.45, 440, 0.16, 220);
+  layeredTone("square", 0.08, 0.4, 330, 0.1, 130);
+  layeredTone("sawtooth", 0.14, 0.35, 260, 0.08, 90);
+  layeredTone("triangle", 0.3, 0.4, 80, 0.1, 40);
+}
+
+/** Forge Clash – draw: tense unresolved stalemate chord. */
+export function sfxForgeClashDraw() {
+  layeredTone("triangle", 0, 0.28, 370, 0.12);
+  layeredTone("sine", 0, 0.28, 440, 0.1);
+  layeredTone("triangle", 0.06, 0.26, 494, 0.09);
+  layeredTone("sawtooth", 0.18, 0.14, 247, 0.06, 185);
+}
+
 // ── District Ambience Loop ───────────────────────────────────────────────────
 
 /**
