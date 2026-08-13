@@ -50,10 +50,10 @@ test.describe('Forge Clash mobile hand', () => {
     await expect(page.locator('.forge-clash-coach')).toContainText(/read the signal/i);
 
     await handCards.nth(2).click();
-    await expect(page.getByRole('heading', { name: /choose a tactic/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /clash runner 3/i })).toBeVisible();
     await page.locator('.forge-clash-tactic').filter({ hasText: /^Charge/ }).click();
-    await page.getByRole('button', { name: /lock tactic/i }).click();
-    await expect(page.locator('.forge-clash-last-result')).toContainText(/turn 1 result/i);
+    await page.getByRole('button', { name: /lock in charge/i }).click();
+    await expect(page.locator('.forge-clash-last-result')).toContainText(/round 1/i);
     await expect(page.locator('.forge-clash-last-result')).toContainText(/clash runner 3/i);
   });
 });
