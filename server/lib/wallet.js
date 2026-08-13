@@ -267,6 +267,71 @@ export function creditWallet(adminDb, params) {
   });
 }
 
+/**
+ * Credit a wallet inside an existing Firestore transaction.
+ * The ledger idempotency key makes verified game rewards safe to retry.
+ */
+export async function creditWalletInTransaction(tx, adminDb, {
+  uid,
+  amount,
+  sourceType,
+  sourceId,
+  description,
+  metadata = {},
+  idempotencyKey,
+  FieldValue,
+}) {
+  validateWalletMutationInput({ uid, amount, sourceType, sourceId, description, idempotencyKey });
+  if (!adminDb) {
+    throw Object.assign(new Error('Wallet service is not configured on this server.'), { statusCode: 503 });
+  }
+
+  const walletRef = adminDb.collection('wallets').doc(uid);
+  const ledgerRef = walletRef.collection('ledger').doc(idempotencyKey);
+  const [walletSnap, ledgerSnap] = await Promise.all([
+    tx.get(walletRef),
+    tx.get(ledgerRef),
+  ]);
+
+  if (ledgerSnap.exists) {
+    return {
+      wallet: normalizeWalletData(walletSnap.exists ? walletSnap.data() : { uid }),
+      transaction: ledgerSnap.data(),
+      duplicate: true,
+    };
+  }
+
+  const currentWallet = normalizeWalletData(walletSnap.exists ? walletSnap.data() : { uid });
+  const nextWallet = buildWalletRecord({
+    uid,
+    currentBalance: currentWallet.currentBalance + amount,
+    lifetimeEarned: currentWallet.lifetimeEarned + amount,
+    lifetimeSpent: currentWallet.lifetimeSpent,
+    FieldValue,
+  });
+  const transaction = buildTransactionRecord({
+    uid,
+    idempotencyKey,
+    amount,
+    direction: 'credit',
+    balanceBefore: currentWallet.currentBalance,
+    balanceAfter: nextWallet.currentBalance,
+    sourceType,
+    sourceId,
+    description,
+    metadata,
+    FieldValue,
+  });
+
+  tx.set(walletRef, nextWallet, { merge: true });
+  tx.set(ledgerRef, transaction);
+  return {
+    wallet: normalizeWalletData(nextWallet),
+    transaction,
+    duplicate: false,
+  };
+}
+
 export function spendWallet(adminDb, params) {
   return mutateWallet(adminDb, {
     ...params,
