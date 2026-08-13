@@ -67,19 +67,21 @@ function buildClassName(...parts: Array<string | false | null | undefined>): str
   return parts.filter(Boolean).join(" ");
 }
 
-function pickSeededValue<T>(seed: string, values: readonly T[]): T {
+function computeStringHash(seed: string): number {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {
     hash = (hash * 33 + seed.charCodeAt(index)) >>> 0;
   }
+  return hash;
+}
+
+function pickSeededValue<T>(seed: string, values: readonly T[]): T {
+  const hash = computeStringHash(seed);
   return values[hash % values.length];
 }
 
 function getSeededStableTimestamp(seed: string): string {
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 33 + seed.charCodeAt(index)) >>> 0;
-  }
+  const hash = computeStringHash(seed);
   const day = (hash % 28) + 1;
   return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
 }
@@ -192,6 +194,13 @@ function buildForgeClashRivalDisplayCard(
     wheels: "Street",
     battery: "High-Output Pack",
   } as CardPayload["board"]["config"];
+  const boardComponents = {
+    boardType: boardConfig.boardType,
+    drivetrain: boardConfig.drivetrain,
+    motor: boardConfig.motor,
+    wheels: boardConfig.wheels,
+    battery: boardConfig.battery,
+  };
   return {
     id: rival.id,
     version: "forge-clash-rival-display",
@@ -249,7 +258,7 @@ function buildForgeClashRivalDisplayCard(
       config: boardConfig,
       totalWeight: 0,
       tuned: true,
-      components: boardConfig,
+      components: boardComponents,
       loadoutSummary: `${boardType} clash setup`,
       accessProfile: district,
     },
