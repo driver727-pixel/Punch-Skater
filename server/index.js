@@ -974,6 +974,7 @@ registerForgeRoutes(app, {
   forgeRateLimit,
   authenticateFirebaseUser,
   FieldValue,
+  randomUUID,
 });
 
 registerRaceRoutes(app, {
