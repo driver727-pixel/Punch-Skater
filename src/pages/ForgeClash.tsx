@@ -400,6 +400,7 @@ export function ForgeClash() {
     } else if (nextState.result === "draw") {
       sfxForgeClashDraw();
     } else {
+      // Crit and slip are accents that layer on top of the base action sound.
       if (entry.crit) sfxForgeClashCrit();
       if (entry.slip) sfxForgeClashSlip();
       if (entry.blocked) {
