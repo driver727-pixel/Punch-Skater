@@ -23229,6 +23229,10 @@ body {
     padding-bottom: calc(82px + var(--mobile-safe-bottom));
   }
 
+  .login-page {
+    padding-bottom: calc(96px + var(--mobile-safe-bottom));
+  }
+
   .page {
     max-width: 100%;
     padding: 14px 12px 22px;
@@ -23268,6 +23272,7 @@ body {
     right: 10px;
     bottom: calc(10px + var(--mobile-safe-bottom));
     z-index: 40;
+    will-change: transform;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 7px;
@@ -23282,6 +23287,7 @@ body {
       0 18px 44px rgba(0, 0, 0, 0.5),
       0 0 30px rgba(32, 244, 255, 0.14),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
     backdrop-filter: blur(18px) saturate(150%);
   }
 
