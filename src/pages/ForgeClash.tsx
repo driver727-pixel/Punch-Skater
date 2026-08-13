@@ -16,6 +16,7 @@ import {
   getAvailableJoustTactics,
 } from "../lib/joust";
 import { normalizeJoustProfile } from "../lib/jousting";
+import { getDistrictTheme } from "../lib/districtTheme";
 import type {
   CardPayload,
   JoustCardSnapshot,
@@ -143,6 +144,114 @@ function getRoundBreakdown(round: ForgeClashRound): string {
   return `${advantage} · Lance ${round.breakdown.attack} vs Shield ${round.breakdown.defense} · Lane roll ${laneRoll}${finisher} · Strike ${round.effectiveStrike}`;
 }
 
+function buildForgeClashRivalDisplayCard(
+  rival: ForgeClashMatch["rival"] | null,
+): CardPayload | null {
+  if (!rival) return null;
+  const district = rival.district ?? "Batteryville";
+  const theme = getDistrictTheme(district);
+  const archetype = rival.archetype ?? "Iron Curtains";
+  const crew = rival.crew ?? "Iron Curtains";
+  const seedBase = `${rival.id}:${rival.name}`;
+  const layeredRival = rival as Partial<CardPayload>;
+  const boardType = rival.joust.gear.boardType || "Street";
+  return {
+    id: rival.id,
+    version: "forge-clash-rival-display",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    seed: `${seedBase}::frame::background::character`,
+    frameSeed: `${seedBase}:frame`,
+    backgroundSeed: `${seedBase}:background`,
+    characterSeed: `${seedBase}:character`,
+    prompts: {
+      archetype,
+      rarity: "Rare",
+      style: "Street",
+      district,
+      accentColor: theme.accent2,
+      gender: "Non-binary",
+      ageGroup: "Adult",
+      bodyType: "Athletic",
+      hairLength: "Short",
+      skinTone: "Medium",
+      faceCharacter: "Rugged",
+      shoeStyle: "Work Boots",
+    },
+    class: {
+      rarity: "Rare",
+      multiplier: 1,
+      badgeLabel: "Boss",
+    },
+    identity: {
+      name: rival.name,
+      crew,
+      serialNumber: "RIVAL-01",
+    },
+    role: {
+      archetype,
+      label: "Forge Clash Rival",
+      coverRole: "Boss rider",
+      passiveName: rival.signatureTrait,
+      passiveDescription: `${rival.signatureTrait} specialist`,
+      roleBonuses: {
+        speed: 0,
+        range: 0,
+        stealth: 0,
+        grit: 0,
+      },
+    },
+    variance: {
+      speed: 0,
+      range: 0,
+      stealth: 0,
+      grit: 0,
+    },
+    stats: rival.stats,
+    joust: rival.joust,
+    board: {
+      config: {
+        boardType,
+        drivetrain: "Direct Drive",
+        motor: "Outrunner",
+        wheels: "Street",
+        battery: "High-Output Pack",
+      } as CardPayload["board"]["config"],
+      totalWeight: 0,
+      tuned: true,
+      components: {
+        boardType,
+        drivetrain: "Direct Drive",
+        motor: "Outrunner",
+        wheels: "Street",
+        battery: "High-Output Pack",
+      },
+      loadoutSummary: `${boardType} clash setup`,
+      accessProfile: district,
+    },
+    maintenance: {
+      state: "active",
+      chargePct: 100,
+      repairMinutes: 0,
+    },
+    visuals: {
+      helmetStyle: "Breaker helmet",
+      jacketStyle: "Rail jacket",
+      colorScheme: "Industrial neon",
+      accentColor: theme.accent2,
+      storagePackStyle: "Battery sling",
+    },
+    front: {},
+    back: {},
+    backgroundImageUrl: layeredRival.backgroundImageUrl,
+    characterImageUrl: layeredRival.characterImageUrl,
+    frameImageUrl: layeredRival.frameImageUrl,
+    weaponImageUrl: layeredRival.weaponImageUrl,
+    characterPlacement: layeredRival.characterPlacement,
+    weaponPlacement: layeredRival.weaponPlacement,
+    activeFrameId: layeredRival.activeFrameId,
+  } as CardPayload;
+}
+
 function RivalCard({
   rival,
   telegraph,
@@ -151,10 +260,20 @@ function RivalCard({
   telegraph: ForgeClashTelegraph | null;
 }) {
   const intent = telegraph?.intent ?? "rush";
+  const rivalCard = buildForgeClashRivalDisplayCard(rival);
   return (
-    <div className={`forge-clash-rival-card forge-clash-rival-card--${intent} forge-clash-rival-card--standard`}>
+    <div className={buildClassName(
+      "forge-clash-rival-card",
+      `forge-clash-rival-card--${intent}`,
+      "forge-clash-rival-card--standard",
+      rivalCard && "forge-clash-rival-card--forged",
+    )}>
       <div className="forge-clash-rival-card__art" aria-hidden="true">
-        <span>{getTelegraphIcon(telegraph)}</span>
+        {rivalCard ? (
+          <CardThumbnail card={rivalCard} width={150} height={210} />
+        ) : (
+          <span>{getTelegraphIcon(telegraph)}</span>
+        )}
       </div>
       <div className="forge-clash-rival-card__body">
         <strong>{rival?.name ?? "Jax Voltage"}</strong>
