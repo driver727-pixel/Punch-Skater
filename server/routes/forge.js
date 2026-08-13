@@ -286,7 +286,7 @@ async function settleForgeClash(tx, adminDb, match, FieldValue) {
     newCodexIds: progressionAward
       ? progressionAward.codexEntryIds.filter((id) => !currentCodexIds.includes(id))
       : [],
-    frameId: reward.frameId && !frameAlreadyUnlocked ? reward.frameId : null,
+    frameId: reward.frameId && mvpSlot && !frameAlreadyUnlocked ? reward.frameId : null,
     wallet: walletResult.wallet,
   };
 }
