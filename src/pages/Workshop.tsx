@@ -864,10 +864,12 @@ export function Workshop() {
               </div>
             </div>
 
-            <label className="workshop-field">
+            <label className="workshop-field" htmlFor="workshop-weapon-target">
               <span>Weapon target</span>
               <div className="workshop-select">
                 <select
+                  id="workshop-weapon-target"
+                  name="weaponTarget"
                   className="input workshop-select__control"
                   value={selectedWeaponAssetUrl}
                   onChange={(event) => setSelectedWeaponAssetUrl(event.target.value)}
@@ -910,10 +912,12 @@ export function Workshop() {
               refresh stale generated art back to the live render.
             </p>
 
-            <label className="workshop-field">
+            <label className="workshop-field" htmlFor="workshop-card-target">
               <span>Card target</span>
               <div className="workshop-select">
                 <select
+                  id="workshop-card-target"
+                  name="cardTarget"
                   className="input workshop-select__control"
                   value={selectedCardId}
                   onChange={(event) => handleSelectCard(event.target.value)}
@@ -939,9 +943,11 @@ export function Workshop() {
 
             {editingCard && editingBoardPlacement && cardEditorVars && (
               <>
-                <label className="workshop-field">
+                <label className="workshop-field" htmlFor="workshop-courier-name">
                   <span>Rename courier</span>
                   <input
+                    id="workshop-courier-name"
+                    name="courierName"
                     ref={renameInputRef}
                     className="input"
                     type="text"
@@ -951,9 +957,11 @@ export function Workshop() {
                     placeholder="Courier name"
                   />
                 </label>
-                <label className="workshop-field">
+                <label className="workshop-field" htmlFor="workshop-courier-age">
                   <span>Age</span>
                   <input
+                    id="workshop-courier-age"
+                    name="courierAge"
                     className="input"
                     type="text"
                     value={editingCard.identity.age ?? ""}
@@ -962,9 +970,11 @@ export function Workshop() {
                     placeholder="Optional"
                   />
                 </label>
-                <label className="workshop-field">
+                <label className="workshop-field" htmlFor="workshop-courier-bio">
                   <span>Bio</span>
                   <textarea
+                    id="workshop-courier-bio"
+                    name="courierBio"
                     ref={bioInputRef}
                     className="input"
                     rows={2}
@@ -1010,11 +1020,13 @@ export function Workshop() {
                 </p>
                 <div className="edit-card-layout-grid">
                   <div className="blend-control">
-                    <label className="blend-control__label">
+                    <label className="blend-control__label" htmlFor="workshop-board-scale">
                       <span>Skateboard Size</span>
                       <span>{Math.round(editingBoardPlacement.scale * 100)}%</span>
                     </label>
                     <input
+                      id="workshop-board-scale"
+                      name="boardScale"
                       type="range"
                       className="range-slider"
                       min={BOARD_PLACEMENT_MIN_SCALE}
@@ -1026,11 +1038,13 @@ export function Workshop() {
                     />
                   </div>
                   <div className="blend-control">
-                    <label className="blend-control__label">
+                    <label className="blend-control__label" htmlFor="workshop-board-rotation">
                       <span>Skateboard Rotation</span>
                       <span>{Math.round(editingBoardPlacement.rotationDeg)}°</span>
                     </label>
                     <input
+                      id="workshop-board-rotation"
+                      name="boardRotation"
                       type="range"
                       className="range-slider"
                       min={-180}
@@ -1044,11 +1058,13 @@ export function Workshop() {
                   {editingCard.characterPlacement && (
                     <>
                       <div className="blend-control">
-                        <label className="blend-control__label">
+                        <label className="blend-control__label" htmlFor="workshop-character-scale">
                           <span>Character Size</span>
                           <span>{Math.round(editingCard.characterPlacement.scale * 100)}%</span>
                         </label>
                         <input
+                          id="workshop-character-scale"
+                          name="characterScale"
                           type="range"
                           className="range-slider"
                           min={CHARACTER_PLACEMENT_MIN_SCALE}
@@ -1060,11 +1076,13 @@ export function Workshop() {
                         />
                       </div>
                       <div className="blend-control">
-                        <label className="blend-control__label">
+                        <label className="blend-control__label" htmlFor="workshop-character-rotation">
                           <span>Character Rotation</span>
                           <span>{Math.round(editingCard.characterPlacement.rotationDeg)}°</span>
                         </label>
                         <input
+                          id="workshop-character-rotation"
+                          name="characterRotation"
                           type="range"
                           className="range-slider"
                           min={-180}
@@ -1080,11 +1098,13 @@ export function Workshop() {
                   {editingCard.weaponPlacement && (
                     <>
                       <div className="blend-control">
-                        <label className="blend-control__label">
+                        <label className="blend-control__label" htmlFor="workshop-weapon-scale">
                           <span>Weapon Size</span>
                           <span>{Math.round(editingCard.weaponPlacement.scale * 100)}%</span>
                         </label>
                         <input
+                          id="workshop-weapon-scale"
+                          name="weaponScale"
                           type="range"
                           className="range-slider"
                           min={WEAPON_PLACEMENT_MIN_SCALE}
@@ -1096,11 +1116,13 @@ export function Workshop() {
                         />
                       </div>
                       <div className="blend-control">
-                        <label className="blend-control__label">
+                        <label className="blend-control__label" htmlFor="workshop-weapon-rotation">
                           <span>Weapon Rotation</span>
                           <span>{Math.round(editingCard.weaponPlacement.rotationDeg)}°</span>
                         </label>
                         <input
+                          id="workshop-weapon-rotation"
+                          name="weaponRotation"
                           type="range"
                           className="range-slider"
                           min={-180}
