@@ -153,8 +153,17 @@ function buildForgeClashRivalDisplayCard(
   const archetype = rival.archetype ?? "Iron Curtains";
   const crew = rival.crew ?? "Iron Curtains";
   const seedBase = `${rival.id}:${rival.name}`;
-  const layeredRival = rival as Partial<CardPayload>;
+  const rivalLayers = rival as Partial<Pick<CardPayload,
+    | "backgroundImageUrl"
+    | "characterImageUrl"
+    | "frameImageUrl"
+    | "weaponImageUrl"
+    | "characterPlacement"
+    | "weaponPlacement"
+    | "activeFrameId"
+  >>;
   const boardType = rival.joust.gear.boardType || "Street";
+  const serialNumber = rival.id.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(-10) || "RIVAL";
   return {
     id: rival.id,
     version: "forge-clash-rival-display",
@@ -185,7 +194,7 @@ function buildForgeClashRivalDisplayCard(
     identity: {
       name: rival.name,
       crew,
-      serialNumber: "RIVAL-01",
+      serialNumber,
     },
     role: {
       archetype,
@@ -242,13 +251,13 @@ function buildForgeClashRivalDisplayCard(
     },
     front: {},
     back: {},
-    backgroundImageUrl: layeredRival.backgroundImageUrl,
-    characterImageUrl: layeredRival.characterImageUrl,
-    frameImageUrl: layeredRival.frameImageUrl,
-    weaponImageUrl: layeredRival.weaponImageUrl,
-    characterPlacement: layeredRival.characterPlacement,
-    weaponPlacement: layeredRival.weaponPlacement,
-    activeFrameId: layeredRival.activeFrameId,
+    backgroundImageUrl: typeof rivalLayers.backgroundImageUrl === "string" ? rivalLayers.backgroundImageUrl : undefined,
+    characterImageUrl: typeof rivalLayers.characterImageUrl === "string" ? rivalLayers.characterImageUrl : undefined,
+    frameImageUrl: typeof rivalLayers.frameImageUrl === "string" ? rivalLayers.frameImageUrl : undefined,
+    weaponImageUrl: typeof rivalLayers.weaponImageUrl === "string" ? rivalLayers.weaponImageUrl : undefined,
+    characterPlacement: rivalLayers.characterPlacement,
+    weaponPlacement: rivalLayers.weaponPlacement,
+    activeFrameId: typeof rivalLayers.activeFrameId === "string" ? rivalLayers.activeFrameId : undefined,
   } as CardPayload;
 }
 
