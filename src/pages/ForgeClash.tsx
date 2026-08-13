@@ -75,6 +75,15 @@ function pickSeededValue<T>(seed: string, values: readonly T[]): T {
   return values[hash % values.length];
 }
 
+function getSeededStableTimestamp(seed: string): string {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 33 + seed.charCodeAt(index)) >>> 0;
+  }
+  const day = (hash % 28) + 1;
+  return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
+}
+
 function formatTactic(tactic?: JoustTactic | null): string {
   if (!tactic) return "Choose tactic";
   return tactic === "trickStrike"
@@ -172,9 +181,17 @@ function buildForgeClashRivalDisplayCard(
   >>;
   const boardType = rival.joust.gear.boardType || "Street";
   const serialNumber = rival.id.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(-10) || "RIVAL";
+  const signatureTrait = rival.signatureTrait?.trim() || "Boost Charge";
   const createdAt = typeof (rival as { createdAt?: string }).createdAt === "string"
     ? (rival as { createdAt: string }).createdAt
-    : new Date().toISOString();
+    : getSeededStableTimestamp(seedBase);
+  const boardConfig = {
+    boardType,
+    drivetrain: "Direct Drive",
+    motor: "Outrunner",
+    wheels: "Street",
+    battery: "High-Output Pack",
+  } as CardPayload["board"]["config"];
   return {
     id: rival.id,
     version: "forge-clash-rival-display",
@@ -211,8 +228,8 @@ function buildForgeClashRivalDisplayCard(
       archetype,
       label: "Forge Clash Rival",
       coverRole: "Boss rider",
-      passiveName: rival.signatureTrait,
-      passiveDescription: `${rival.signatureTrait} specialist`,
+      passiveName: signatureTrait,
+      passiveDescription: `${signatureTrait} specialist`,
       roleBonuses: {
         speed: 0,
         range: 0,
@@ -229,22 +246,10 @@ function buildForgeClashRivalDisplayCard(
     stats: rival.stats,
     joust: rival.joust,
     board: {
-      config: {
-        boardType,
-        drivetrain: "Direct Drive",
-        motor: "Outrunner",
-        wheels: "Street",
-        battery: "High-Output Pack",
-      } as CardPayload["board"]["config"],
+      config: boardConfig,
       totalWeight: 0,
       tuned: true,
-      components: {
-        boardType,
-        drivetrain: "Direct Drive",
-        motor: "Outrunner",
-        wheels: "Street",
-        battery: "High-Output Pack",
-      },
+      components: boardConfig,
       loadoutSummary: `${boardType} clash setup`,
       accessProfile: district,
     },
