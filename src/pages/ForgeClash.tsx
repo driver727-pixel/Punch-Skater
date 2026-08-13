@@ -67,6 +67,14 @@ function buildClassName(...parts: Array<string | false | null | undefined>): str
   return parts.filter(Boolean).join(" ");
 }
 
+function pickSeededValue<T>(seed: string, values: readonly T[]): T {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 33 + seed.charCodeAt(index)) >>> 0;
+  }
+  return values[hash % values.length];
+}
+
 function formatTactic(tactic?: JoustTactic | null): string {
   if (!tactic) return "Choose tactic";
   return tactic === "trickStrike"
@@ -164,10 +172,13 @@ function buildForgeClashRivalDisplayCard(
   >>;
   const boardType = rival.joust.gear.boardType || "Street";
   const serialNumber = rival.id.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(-10) || "RIVAL";
+  const createdAt = typeof (rival as { createdAt?: string }).createdAt === "string"
+    ? (rival as { createdAt: string }).createdAt
+    : new Date().toISOString();
   return {
     id: rival.id,
     version: "forge-clash-rival-display",
-    createdAt: "2026-01-01T00:00:00.000Z",
+    createdAt,
     seed: `${seedBase}::frame::background::character`,
     frameSeed: `${seedBase}:frame`,
     backgroundSeed: `${seedBase}:background`,
@@ -178,13 +189,13 @@ function buildForgeClashRivalDisplayCard(
       style: "Street",
       district,
       accentColor: theme.accent2,
-      gender: "Non-binary",
-      ageGroup: "Adult",
-      bodyType: "Athletic",
-      hairLength: "Short",
-      skinTone: "Medium",
-      faceCharacter: "Rugged",
-      shoeStyle: "Work Boots",
+      gender: pickSeededValue(`${seedBase}:gender`, ["Woman", "Man", "Non-binary"] as const),
+      ageGroup: pickSeededValue(`${seedBase}:age`, ["Young Adult", "Adult", "Middle-aged"] as const),
+      bodyType: pickSeededValue(`${seedBase}:body`, ["Slim", "Athletic", "Average", "Stocky"] as const),
+      hairLength: pickSeededValue(`${seedBase}:hair`, ["Bald", "Short", "Medium", "Long"] as const),
+      skinTone: pickSeededValue(`${seedBase}:skin`, ["Light", "Medium Light", "Medium", "Medium Dark", "Dark"] as const),
+      faceCharacter: pickSeededValue(`${seedBase}:face`, ["Conventional", "Weathered", "Scarred", "Rugged"] as const),
+      shoeStyle: pickSeededValue(`${seedBase}:shoes`, ["Skate Shoes", "High Tops", "Chunky Sneakers", "Work Boots"] as const),
     },
     class: {
       rarity: "Rare",
