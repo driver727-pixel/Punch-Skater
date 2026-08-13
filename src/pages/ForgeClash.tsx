@@ -16,6 +16,7 @@ import {
   getAvailableJoustTactics,
 } from "../lib/joust";
 import { normalizeJoustProfile } from "../lib/jousting";
+import { getDistrictTheme } from "../lib/districtTheme";
 import type {
   CardPayload,
   JoustCardSnapshot,
@@ -64,6 +65,25 @@ function buildCrewKey(cardId: string, ownerUid: string, callerUid: string): stri
 
 function buildClassName(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
+}
+
+function computeStringHash(seed: string): number {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 33 + seed.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
+function pickSeededValue<T>(seed: string, values: readonly T[]): T {
+  const hash = computeStringHash(seed);
+  return values[hash % values.length];
+}
+
+function getSeededStableTimestamp(seed: string): string {
+  const hash = computeStringHash(seed);
+  const day = (hash % 28) + 1;
+  return `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`;
 }
 
 function formatTactic(tactic?: JoustTactic | null): string {
@@ -143,6 +163,129 @@ function getRoundBreakdown(round: ForgeClashRound): string {
   return `${advantage} · Lance ${round.breakdown.attack} vs Shield ${round.breakdown.defense} · Lane roll ${laneRoll}${finisher} · Strike ${round.effectiveStrike}`;
 }
 
+function buildForgeClashRivalDisplayCard(
+  rival: ForgeClashMatch["rival"] | null,
+): CardPayload | null {
+  if (!rival) return null;
+  const district = rival.district ?? "Batteryville";
+  const theme = getDistrictTheme(district);
+  const archetype = rival.archetype ?? "Iron Curtains";
+  const crew = rival.crew ?? "Iron Curtains";
+  const seedBase = `${rival.id}:${rival.name}`;
+  const rivalLayers = rival as Partial<Pick<CardPayload,
+    | "backgroundImageUrl"
+    | "characterImageUrl"
+    | "frameImageUrl"
+    | "weaponImageUrl"
+    | "characterPlacement"
+    | "weaponPlacement"
+    | "activeFrameId"
+  >>;
+  const boardType = rival.joust.gear.boardType || "Street";
+  const serialNumber = rival.id.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(-10) || "RIVAL";
+  const signatureTrait = rival.signatureTrait?.trim() || "Boost Charge";
+  const createdAt = typeof (rival as { createdAt?: string }).createdAt === "string"
+    ? (rival as { createdAt: string }).createdAt
+    : getSeededStableTimestamp(seedBase);
+  const boardConfig = {
+    boardType,
+    drivetrain: "Direct Drive",
+    motor: "Outrunner",
+    wheels: "Street",
+    battery: "High-Output Pack",
+  } as CardPayload["board"]["config"];
+  const boardComponents = {
+    boardType: boardConfig.boardType,
+    drivetrain: boardConfig.drivetrain,
+    motor: boardConfig.motor,
+    wheels: boardConfig.wheels,
+    battery: boardConfig.battery,
+  };
+  return {
+    id: rival.id,
+    version: "forge-clash-rival-display",
+    createdAt,
+    seed: `${seedBase}::frame::background::character`,
+    frameSeed: `${seedBase}:frame`,
+    backgroundSeed: `${seedBase}:background`,
+    characterSeed: `${seedBase}:character`,
+    prompts: {
+      archetype,
+      rarity: "Rare",
+      style: "Street",
+      district,
+      accentColor: theme.accent2,
+      gender: pickSeededValue(`${seedBase}:gender`, ["Woman", "Man", "Non-binary"] as const),
+      ageGroup: pickSeededValue(`${seedBase}:age`, ["Young Adult", "Adult", "Middle-aged"] as const),
+      bodyType: pickSeededValue(`${seedBase}:body`, ["Slim", "Athletic", "Average", "Stocky"] as const),
+      hairLength: pickSeededValue(`${seedBase}:hair`, ["Bald", "Short", "Medium", "Long"] as const),
+      skinTone: pickSeededValue(`${seedBase}:skin`, ["Light", "Medium Light", "Medium", "Medium Dark", "Dark"] as const),
+      faceCharacter: pickSeededValue(`${seedBase}:face`, ["Conventional", "Weathered", "Scarred", "Rugged"] as const),
+      shoeStyle: pickSeededValue(`${seedBase}:shoes`, ["Skate Shoes", "High Tops", "Chunky Sneakers", "Work Boots"] as const),
+    },
+    class: {
+      rarity: "Rare",
+      multiplier: 1,
+      badgeLabel: "Boss",
+    },
+    identity: {
+      name: rival.name,
+      crew,
+      serialNumber,
+    },
+    role: {
+      archetype,
+      label: "Forge Clash Rival",
+      coverRole: "Boss rider",
+      passiveName: signatureTrait,
+      passiveDescription: `${signatureTrait} specialist`,
+      roleBonuses: {
+        speed: 0,
+        range: 0,
+        stealth: 0,
+        grit: 0,
+      },
+    },
+    variance: {
+      speed: 0,
+      range: 0,
+      stealth: 0,
+      grit: 0,
+    },
+    stats: rival.stats,
+    joust: rival.joust,
+    board: {
+      config: boardConfig,
+      totalWeight: 0,
+      tuned: true,
+      components: boardComponents,
+      loadoutSummary: `${boardType} clash setup`,
+      accessProfile: district,
+    },
+    maintenance: {
+      state: "active",
+      chargePct: 100,
+      repairMinutes: 0,
+    },
+    visuals: {
+      helmetStyle: "Breaker helmet",
+      jacketStyle: "Rail jacket",
+      colorScheme: "Industrial neon",
+      accentColor: theme.accent2,
+      storagePackStyle: "Battery sling",
+    },
+    front: {},
+    back: {},
+    backgroundImageUrl: typeof rivalLayers.backgroundImageUrl === "string" ? rivalLayers.backgroundImageUrl : undefined,
+    characterImageUrl: typeof rivalLayers.characterImageUrl === "string" ? rivalLayers.characterImageUrl : undefined,
+    frameImageUrl: typeof rivalLayers.frameImageUrl === "string" ? rivalLayers.frameImageUrl : undefined,
+    weaponImageUrl: typeof rivalLayers.weaponImageUrl === "string" ? rivalLayers.weaponImageUrl : undefined,
+    characterPlacement: rivalLayers.characterPlacement,
+    weaponPlacement: rivalLayers.weaponPlacement,
+    activeFrameId: typeof rivalLayers.activeFrameId === "string" ? rivalLayers.activeFrameId : undefined,
+  } as CardPayload;
+}
+
 function RivalCard({
   rival,
   telegraph,
@@ -151,10 +294,20 @@ function RivalCard({
   telegraph: ForgeClashTelegraph | null;
 }) {
   const intent = telegraph?.intent ?? "rush";
+  const rivalCard = buildForgeClashRivalDisplayCard(rival);
   return (
-    <div className={`forge-clash-rival-card forge-clash-rival-card--${intent} forge-clash-rival-card--standard`}>
+    <div className={buildClassName(
+      "forge-clash-rival-card",
+      `forge-clash-rival-card--${intent}`,
+      "forge-clash-rival-card--standard",
+      rivalCard && "forge-clash-rival-card--forged",
+    )}>
       <div className="forge-clash-rival-card__art" aria-hidden="true">
-        <span>{getTelegraphIcon(telegraph)}</span>
+        {rivalCard ? (
+          <CardThumbnail card={rivalCard} width={150} height={210} />
+        ) : (
+          <span>{getTelegraphIcon(telegraph)}</span>
+        )}
       </div>
       <div className="forge-clash-rival-card__body">
         <strong>{rival?.name ?? "Jax Voltage"}</strong>
