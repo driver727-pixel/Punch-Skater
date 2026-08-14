@@ -22364,6 +22364,42 @@ textarea:focus-visible,
   color: var(--accent2);
 }
 
+.forge-clash-damage--combo {
+  top: 52%;
+  right: 4%;
+  color: #ffcf33;
+  font-size: clamp(16px, 3vw, 28px);
+  letter-spacing: 0.08em;
+  animation-delay: 120ms;
+}
+
+.forge-clash-combo-meter {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: color 220ms ease, text-shadow 220ms ease;
+}
+
+.forge-clash-combo-meter.is-hot {
+  color: #ffcf33;
+  background: rgba(255, 207, 51, 0.12);
+  text-shadow: 0 0 14px rgba(255, 207, 51, 0.65);
+}
+
+.forge-clash-combo-meter.is-blazing {
+  color: #ff6b1a;
+  background: rgba(255, 107, 26, 0.16);
+  text-shadow: 0 0 18px rgba(255, 107, 26, 0.85);
+  animation: forgeClashComboBlaze 720ms ease-in-out infinite alternate;
+}
+
+@keyframes forgeClashComboBlaze {
+  from { transform: scale(1); text-shadow: 0 0 12px rgba(255, 107, 26, 0.6); }
+  to { transform: scale(1.08); text-shadow: 0 0 26px rgba(255, 207, 51, 0.95); }
+}
+
 .forge-clash-rival-queue {
   display: grid;
   grid-template-columns: repeat(6, minmax(62px, 1fr));
@@ -22638,6 +22674,26 @@ textarea:focus-visible,
   color: var(--accent2);
 }
 
+.forge-clash-reward-grid .forge-clash-reward-bonus {
+  border: 1px solid rgba(255, 207, 51, 0.44);
+  background: rgba(255, 207, 51, 0.1);
+}
+
+.forge-clash-reward-grid .forge-clash-reward-bonus strong {
+  color: #ffcf33;
+}
+
+.forge-clash-reward-streak {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 107, 26, 0.5);
+  border-radius: 12px;
+  background: rgba(255, 107, 26, 0.1);
+  color: #ffcf8a;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
 .forge-clash-error {
   margin: 14px 0 0;
   padding: 12px;
@@ -22835,6 +22891,7 @@ textarea:focus-visible,
   .forge-clash-stage.is-impacting,
   .forge-clash-stage.is-impacting .forge-clash-card-trail i,
   .forge-clash-damage,
+  .forge-clash-combo-meter.is-blazing,
   .forge-clash-overdrive.is-armed,
   .forge-clash-stage--win .forge-clash-stage__status,
   .forge-clash-stage--loss .forge-clash-stage__status,

@@ -83,6 +83,7 @@ export interface ForgeClashRound {
   effectiveStrike: number;
   outcome: "win" | "loss" | "draw";
   correctRead: boolean;
+  comboBonusDamage?: number;
   playerDamage: number;
   rivalDamage: number;
   playerHpBefore: number;
@@ -98,12 +99,21 @@ export interface ForgeClashRound {
   resolvedAt: string;
 }
 
+export interface ForgeClashRewardBonus {
+  id: string;
+  label: string;
+  xp: number;
+  ozzies: number;
+}
+
 export interface ForgeClashRewards {
   xp: number;
   ozzies: number;
   cardXp: number;
   cardOzzies: number;
   districtReputation: number;
+  bonuses?: ForgeClashRewardBonus[];
+  winStreak?: number;
   firstClear: boolean;
   frameId: string | null;
   mvpCardId: string | null;
