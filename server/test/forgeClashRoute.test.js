@@ -402,7 +402,7 @@ test('Forge Clash start enriches the rival card with forged skater art layers', 
   assert.equal(rival.joust.shield, 5);
 });
 
-test('Forge Clash start falls back to the static rival card when no forged art exists', async () => {
+test('Forge Clash start does not apply art from a rival card whose name does not match', async () => {
   const harness = createHarness();
   harness.adminDb.write('rivalCards/airaway-mina-chrome', {
     ...buildCard('airaway-mina-chrome', { name: 'Mina Chrome' }),

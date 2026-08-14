@@ -93,9 +93,8 @@ async function loadRivalArtLayers(adminDb, rivalDefinition) {
     const rivalCardsRef = adminDb.collection('rivalCards');
     const byIdentity = await queryRivalArtCard(rivalCardsRef, 'identity.name', rival);
     const byName = byIdentity ?? await queryRivalArtCard(rivalCardsRef, 'name', rival);
-    const forged = byName;
-    if (forged) {
-      return pickRivalArtLayers(forged);
+    if (byName) {
+      return pickRivalArtLayers(byName);
     }
   }
   return pickRivalArtLayers(rival);
