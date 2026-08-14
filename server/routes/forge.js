@@ -24,9 +24,76 @@ import { creditWalletInTransaction } from '../lib/wallet.js';
 
 const DEFAULT_COMPUTER_RIVALS_COUNT = 6;
 const MAX_COMPUTER_RIVALS_COUNT = 12;
+const MAX_RIVAL_ART_CANDIDATES = 24;
 const FORGE_CLASH_MATCHES_COLLECTION = 'forgeClashMatches';
 const PROFILE_COLLECTION = 'userProfiles';
 const USERS_COLLECTION = 'users';
+
+const RIVAL_ART_LAYER_KEYS = [
+  'backgroundImageUrl',
+  'characterImageUrl',
+  'frameImageUrl',
+  'weaponImageUrl',
+  'characterPlacement',
+  'weaponPlacement',
+  'activeFrameId',
+];
+
+function normalizeRivalName(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function pickRivalArtLayers(card) {
+  const layers = {};
+  for (const key of RIVAL_ART_LAYER_KEYS) {
+    if (card?.[key] !== undefined && card?.[key] !== null) {
+      layers[key] = card[key];
+    }
+  }
+  if (card?.board?.imageUrl !== undefined && card?.board?.imageUrl !== null) {
+    layers.board = { imageUrl: card.board.imageUrl };
+  }
+  return layers;
+}
+
+function cardHasRivalArt(card) {
+  return Boolean(
+    card?.characterImageUrl
+    || card?.backgroundImageUrl
+    || card?.frameImageUrl
+    || card?.board?.imageUrl,
+  );
+}
+
+/**
+ * Resolves the forged-card art layers for a Forge Clash rival so the clash
+ * stage can render the rival with its actual skater imagery instead of the
+ * procedural placeholder. Prefers an admin-forged card named after the rival
+ * (the same pool that supplies official loaners); falls back to the static
+ * rival catalogue when no forged art is available.
+ */
+async function loadRivalArtLayers(adminDb, rivalDefinition) {
+  const rivalName = normalizeRivalName(rivalDefinition?.name);
+  const staticCard = rivalDefinition?.signatureCard;
+  if (rivalName && adminDb) {
+    try {
+      const cards = await loadAdminLoanerCards(adminDb, {
+        count: MAX_RIVAL_ART_CANDIDATES,
+        allowPartial: true,
+      });
+      const match = cards.find((card) => (
+        normalizeRivalName(card?.identity?.name ?? card?.name) === rivalName
+        && cardHasRivalArt(card)
+      ));
+      if (match) {
+        return pickRivalArtLayers(match);
+      }
+    } catch {
+      // Loaner pool unavailable — fall back to the static rival catalogue.
+    }
+  }
+  return pickRivalArtLayers(staticCard);
+}
 
 function badRequest(message) {
   return Object.assign(new Error(message), { statusCode: 400 });
@@ -391,10 +458,12 @@ export function registerForgeRoutes(app, {
         throw Object.assign(new Error('Jax Voltage is unavailable.'), { statusCode: 503 });
       }
       const now = new Date().toISOString();
+      const rivalArtLayers = await loadRivalArtLayers(adminDb, rivalDefinition);
       const match = await adminDb.runTransaction(async (tx) => {
         const roster = await loadValidatedClashRoster(tx, adminDb, rosterRefs, caller.uid);
         const rival = {
           ...rivalDefinition.signatureCard,
+          ...rivalArtLayers,
           id: rivalDefinition.id,
           tagline: rivalDefinition.tagline,
           signatureTrait: rivalDefinition.signatureTrait,

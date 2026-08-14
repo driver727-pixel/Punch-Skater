@@ -48,6 +48,31 @@ function createFakeDb() {
     doc(id) {
       return new FakeDocRef(`${this.path}/${id}`);
     }
+
+    where(field, op, value) {
+      if (op !== '==') {
+        throw new Error(`Unsupported query operator: ${op}`);
+      }
+      const docs = this.listDocs().filter((snap) => snap.data()?.[field] === value);
+      return {
+        async get() {
+          return { docs };
+        },
+      };
+    }
+
+    listDocs() {
+      return [...store.entries()]
+        .filter(([path]) => (
+          path.startsWith(`${this.path}/`)
+          && path.split('/').length === this.path.split('/').length + 1
+        ))
+        .map(([path]) => createSnapshot(path, store.get(path)));
+    }
+
+    async get() {
+      return { docs: this.listDocs() };
+    }
   }
 
   return {
@@ -347,6 +372,53 @@ test('a completed Forge Clash pays first-clear rewards exactly once', async () =
   assert.equal(harness.adminDb.read('wallets/player-1').currentBalance, 34);
   assert.equal(harness.adminDb.read('userProfiles/player-1').battleParticipationCount, 1);
   assert.equal(harness.adminDb.read('users/player-1/cards/card-1').xp, 45);
+});
+
+test('Forge Clash start enriches the rival card with forged skater art layers', async () => {
+  const harness = createHarness();
+  harness.adminDb.write('userProfiles/art-admin', { isAdmin: true });
+  harness.adminDb.write('users/art-admin/cards/jax-art-card', {
+    ...buildCard('jax-art-card', { name: 'Jax Voltage' }),
+    characterImageUrl: 'https://cdn.example.com/jax-character.png',
+    backgroundImageUrl: 'https://cdn.example.com/jax-background.png',
+    frameImageUrl: 'https://cdn.example.com/jax-frame.png',
+    weaponImageUrl: 'https://cdn.example.com/jax-weapon.png',
+    board: { imageUrl: 'https://cdn.example.com/jax-board.png' },
+  });
+  const roster = seedCards(harness.adminDb, 'player-1');
+
+  const started = await harness.invoke('POST', '/api/forge/clash/start', { body: { roster } });
+
+  assert.equal(started.statusCode, 201);
+  const { rival } = started.body.match;
+  assert.equal(rival.id, 'batteryville-jax-voltage');
+  assert.equal(rival.name, 'Jax Voltage');
+  assert.equal(rival.characterImageUrl, 'https://cdn.example.com/jax-character.png');
+  assert.equal(rival.backgroundImageUrl, 'https://cdn.example.com/jax-background.png');
+  assert.equal(rival.frameImageUrl, 'https://cdn.example.com/jax-frame.png');
+  assert.equal(rival.weaponImageUrl, 'https://cdn.example.com/jax-weapon.png');
+  assert.equal(rival.board.imageUrl, 'https://cdn.example.com/jax-board.png');
+  // Stat snapshot stays server-authoritative — art layers must not leak stats.
+  assert.equal(rival.joust.lance, 8);
+  assert.equal(rival.joust.shield, 5);
+});
+
+test('Forge Clash start falls back to the static rival card when no forged art exists', async () => {
+  const harness = createHarness();
+  harness.adminDb.write('userProfiles/art-admin', { isAdmin: true });
+  harness.adminDb.write('users/art-admin/cards/other-rider', {
+    ...buildCard('other-rider', { name: 'Mina Chrome' }),
+    characterImageUrl: 'https://cdn.example.com/mina-character.png',
+  });
+  const roster = seedCards(harness.adminDb, 'player-1');
+
+  const started = await harness.invoke('POST', '/api/forge/clash/start', { body: { roster } });
+
+  assert.equal(started.statusCode, 201);
+  const { rival } = started.body.match;
+  assert.equal(rival.name, 'Jax Voltage');
+  assert.equal(rival.characterImageUrl, undefined);
+  assert.equal(rival.joust.lance, 8);
 });
 
 test('official all-loaner Crews can play without claiming a card cosmetic', async () => {

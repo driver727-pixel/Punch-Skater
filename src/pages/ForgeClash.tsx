@@ -189,7 +189,7 @@ function buildForgeClashRivalDisplayCard(
     | "characterPlacement"
     | "weaponPlacement"
     | "activeFrameId"
-  >>;
+  >> & { board?: { imageUrl?: string } };
   const boardType = rival.joust.gear.boardType || "Street";
   const serialNumber = rival.id.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(-10) || "RIVAL";
   const signatureTrait = rival.signatureTrait?.trim() || "Boost Charge";
@@ -265,6 +265,7 @@ function buildForgeClashRivalDisplayCard(
     joust: rival.joust,
     board: {
       config: boardConfig,
+      ...(typeof rivalLayers.board?.imageUrl === "string" ? { imageUrl: rivalLayers.board.imageUrl } : {}),
       totalWeight: 0,
       tuned: true,
       components: boardComponents,

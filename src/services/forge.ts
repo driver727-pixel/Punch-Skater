@@ -146,6 +146,16 @@ export interface ForgeClashMatch {
       loss: string;
       draw: string;
     };
+  } & Partial<Pick<CardPayload,
+    | "backgroundImageUrl"
+    | "characterImageUrl"
+    | "frameImageUrl"
+    | "weaponImageUrl"
+    | "characterPlacement"
+    | "weaponPlacement"
+    | "activeFrameId"
+  >> & {
+    board?: { imageUrl?: string };
   };
   roster: ForgeClashRosterSlot[];
   rounds: ForgeClashRound[];
