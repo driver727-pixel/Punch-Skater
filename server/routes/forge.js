@@ -28,6 +28,78 @@ const FORGE_CLASH_MATCHES_COLLECTION = 'forgeClashMatches';
 const PROFILE_COLLECTION = 'userProfiles';
 const USERS_COLLECTION = 'users';
 
+const RIVAL_ART_LAYER_KEYS = [
+  'backgroundImageUrl',
+  'characterImageUrl',
+  'frameImageUrl',
+  'weaponImageUrl',
+  'characterPlacement',
+  'weaponPlacement',
+  'activeFrameId',
+];
+
+function normalizeRivalName(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function pickRivalArtLayers(card) {
+  const layers = {};
+  for (const key of RIVAL_ART_LAYER_KEYS) {
+    if (card?.[key] !== undefined && card?.[key] !== null) {
+      layers[key] = card[key];
+    }
+  }
+  if (card?.board?.imageUrl !== undefined && card?.board?.imageUrl !== null) {
+    layers.board = { imageUrl: card.board.imageUrl };
+  }
+  return layers;
+}
+
+function cardHasRivalArt(card) {
+  return Boolean(
+    card?.characterImageUrl
+    || card?.backgroundImageUrl
+    || card?.frameImageUrl
+    || card?.board?.imageUrl,
+  );
+}
+
+function cardMatchesRivalName(card, rivalName) {
+  return normalizeRivalName(card?.identity?.name ?? card?.name) === rivalName;
+}
+
+async function queryRivalArtCard(collectionRef, field, rival) {
+  try {
+    const snap = await collectionRef.where(field, '==', rival.name).get();
+    return snap.docs
+      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      .find((card) => cardMatchesRivalName(card, normalizeRivalName(rival.name)) && cardHasRivalArt(card));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolves the forged-card art layers for a Forge Clash rival so the clash
+ * stage can render the rival with its actual skater imagery instead of the
+ * procedural placeholder. Looks for a forged card named after the rival in
+ * the dedicated `rivalCards` collection, then falls back to the static rival
+ * catalogue when no forged art is available.
+ */
+async function loadRivalArtLayers(adminDb, rivalDefinition) {
+  const rival = rivalDefinition?.signatureCard;
+  const rivalName = normalizeRivalName(rivalDefinition?.name);
+  if (rival && rivalName && adminDb) {
+    const rivalCardsRef = adminDb.collection('rivalCards');
+    const byIdentity = await queryRivalArtCard(rivalCardsRef, 'identity.name', rival);
+    const byName = byIdentity ?? await queryRivalArtCard(rivalCardsRef, 'name', rival);
+    if (byName) {
+      return pickRivalArtLayers(byName);
+    }
+  }
+  return pickRivalArtLayers(rival);
+}
+
 function badRequest(message) {
   return Object.assign(new Error(message), { statusCode: 400 });
 }
@@ -391,10 +463,12 @@ export function registerForgeRoutes(app, {
         throw Object.assign(new Error('Jax Voltage is unavailable.'), { statusCode: 503 });
       }
       const now = new Date().toISOString();
+      const rivalArtLayers = await loadRivalArtLayers(adminDb, rivalDefinition);
       const match = await adminDb.runTransaction(async (tx) => {
         const roster = await loadValidatedClashRoster(tx, adminDb, rosterRefs, caller.uid);
         const rival = {
           ...rivalDefinition.signatureCard,
+          ...rivalArtLayers,
           id: rivalDefinition.id,
           tagline: rivalDefinition.tagline,
           signatureTrait: rivalDefinition.signatureTrait,
