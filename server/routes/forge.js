@@ -24,7 +24,6 @@ import { creditWalletInTransaction } from '../lib/wallet.js';
 
 const DEFAULT_COMPUTER_RIVALS_COUNT = 6;
 const MAX_COMPUTER_RIVALS_COUNT = 12;
-const MAX_RIVAL_ART_CANDIDATES = 24;
 const FORGE_CLASH_MATCHES_COLLECTION = 'forgeClashMatches';
 const PROFILE_COLLECTION = 'userProfiles';
 const USERS_COLLECTION = 'users';
@@ -65,34 +64,41 @@ function cardHasRivalArt(card) {
   );
 }
 
+function cardMatchesRivalName(card, rivalName) {
+  return normalizeRivalName(card?.identity?.name ?? card?.name) === rivalName;
+}
+
+async function queryRivalArtCard(collectionRef, field, rival) {
+  try {
+    const snap = await collectionRef.where(field, '==', rival.name).get();
+    return snap.docs
+      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      .find((card) => cardMatchesRivalName(card, normalizeRivalName(rival.name)) && cardHasRivalArt(card));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Resolves the forged-card art layers for a Forge Clash rival so the clash
  * stage can render the rival with its actual skater imagery instead of the
- * procedural placeholder. Prefers an admin-forged card named after the rival
- * (the same pool that supplies official loaners); falls back to the static
- * rival catalogue when no forged art is available.
+ * procedural placeholder. Looks for a forged card named after the rival in
+ * the dedicated `rivalCards` collection, then falls back to the static rival
+ * catalogue when no forged art is available.
  */
 async function loadRivalArtLayers(adminDb, rivalDefinition) {
+  const rival = rivalDefinition?.signatureCard;
   const rivalName = normalizeRivalName(rivalDefinition?.name);
-  const staticCard = rivalDefinition?.signatureCard;
-  if (rivalName && adminDb) {
-    try {
-      const cards = await loadAdminLoanerCards(adminDb, {
-        count: MAX_RIVAL_ART_CANDIDATES,
-        allowPartial: true,
-      });
-      const match = cards.find((card) => (
-        normalizeRivalName(card?.identity?.name ?? card?.name) === rivalName
-        && cardHasRivalArt(card)
-      ));
-      if (match) {
-        return pickRivalArtLayers(match);
-      }
-    } catch {
-      // Loaner pool unavailable — fall back to the static rival catalogue.
+  if (rival && rivalName && adminDb) {
+    const rivalCardsRef = adminDb.collection('rivalCards');
+    const byIdentity = await queryRivalArtCard(rivalCardsRef, 'identity.name', rival);
+    const byName = byIdentity ?? await queryRivalArtCard(rivalCardsRef, 'name', rival);
+    const forged = byName;
+    if (forged) {
+      return pickRivalArtLayers(forged);
     }
   }
-  return pickRivalArtLayers(staticCard);
+  return pickRivalArtLayers(rival);
 }
 
 function badRequest(message) {

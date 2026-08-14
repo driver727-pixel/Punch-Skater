@@ -376,9 +376,8 @@ test('a completed Forge Clash pays first-clear rewards exactly once', async () =
 
 test('Forge Clash start enriches the rival card with forged skater art layers', async () => {
   const harness = createHarness();
-  harness.adminDb.write('userProfiles/art-admin', { isAdmin: true });
-  harness.adminDb.write('users/art-admin/cards/jax-art-card', {
-    ...buildCard('jax-art-card', { name: 'Jax Voltage' }),
+  harness.adminDb.write('rivalCards/batteryville-jax-voltage', {
+    ...buildCard('batteryville-jax-voltage', { name: 'Jax Voltage' }),
     characterImageUrl: 'https://cdn.example.com/jax-character.png',
     backgroundImageUrl: 'https://cdn.example.com/jax-background.png',
     frameImageUrl: 'https://cdn.example.com/jax-frame.png',
@@ -405,9 +404,8 @@ test('Forge Clash start enriches the rival card with forged skater art layers', 
 
 test('Forge Clash start falls back to the static rival card when no forged art exists', async () => {
   const harness = createHarness();
-  harness.adminDb.write('userProfiles/art-admin', { isAdmin: true });
-  harness.adminDb.write('users/art-admin/cards/other-rider', {
-    ...buildCard('other-rider', { name: 'Mina Chrome' }),
+  harness.adminDb.write('rivalCards/airaway-mina-chrome', {
+    ...buildCard('airaway-mina-chrome', { name: 'Mina Chrome' }),
     characterImageUrl: 'https://cdn.example.com/mina-character.png',
   });
   const roster = seedCards(harness.adminDb, 'player-1');
