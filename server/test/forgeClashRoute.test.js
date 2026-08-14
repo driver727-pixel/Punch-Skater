@@ -303,7 +303,7 @@ test('a completed Forge Clash pays first-clear rewards exactly once', async () =
   harness.adminDb.write(matchPath, {
     ...harness.adminDb.read(matchPath),
     turn: 6,
-    playerHp: 60,
+    playerHp: 59,
     rivalHp: 10,
     cooldowns: {},
   });
@@ -322,12 +322,15 @@ test('a completed Forge Clash pays first-clear rewards exactly once', async () =
   assert.equal(completed.body.match.rewards.xp, 80);
   assert.equal(completed.body.match.rewards.frameId, 'breaker-crown');
   assert.equal(completed.body.match.rewards.wallet.currentBalance, 34);
+  assert.equal(completed.body.match.rewards.winStreak, 1);
+  assert.deepEqual(completed.body.match.rewards.bonuses, []);
 
   const profile = harness.adminDb.read('userProfiles/player-1');
   assert.equal(profile.missionXp, 80);
   assert.equal(profile.missionOzzies, 24);
   assert.equal(profile.battleParticipationCount, 1);
   assert.equal(profile.districtReputation, 40);
+  assert.equal(profile.forgeClashWinStreak, 1);
   assert.deepEqual(profile.defeatedRivalIds, ['batteryville-jax-voltage']);
   assert.deepEqual(profile.codexUnlockIds, ['codex-rival-jax-voltage']);
   assert.equal(profile.unlocked_frames[0].cardId, 'card-1');

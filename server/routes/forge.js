@@ -5,6 +5,7 @@ import {
   FORGE_CLASH_MAX_HP,
   FORGE_CLASH_MAX_ROUNDS,
   FORGE_CLASH_RIVAL_ID,
+  buildForgeClashPerformance,
   buildForgeClashRewards,
   createForgeClashMatch,
   getForgeClashTelegraph,
@@ -202,7 +203,12 @@ async function settleForgeClash(tx, adminDb, match, FieldValue) {
   const profile = profileSnap.exists ? profileSnap.data() : {};
   const defeatedRivalIds = normalizeStringArray(profile.defeatedRivalIds);
   const firstClear = match.result === 'win' && !defeatedRivalIds.includes(match.rivalId);
-  const reward = buildForgeClashRewards(match.result, firstClear);
+  const previousWinStreak = Math.max(0, Math.floor(Number(profile.forgeClashWinStreak) || 0));
+  const nextWinStreak = match.result === 'win' ? previousWinStreak + 1 : 0;
+  const reward = buildForgeClashRewards(match.result, firstClear, {
+    ...buildForgeClashPerformance(match),
+    winStreak: nextWinStreak,
+  });
   const walletResult = await creditWalletInTransaction(tx, adminDb, {
     uid: match.uid,
     amount: reward.ozzies,
@@ -252,6 +258,7 @@ async function settleForgeClash(tx, adminDb, match, FieldValue) {
     missionOzzies: Math.max(0, Number(profile.missionOzzies) || 0) + reward.ozzies,
     battleParticipationCount: Math.max(0, Number(profile.battleParticipationCount) || 0) + 1,
     districtReputation: Math.max(0, Number(profile.districtReputation) || 0) + reward.districtReputation,
+    forgeClashWinStreak: nextWinStreak,
     defeatedRivalIds: progressionAward
       ? [...new Set([...defeatedRivalIds, match.rivalId])]
       : defeatedRivalIds,

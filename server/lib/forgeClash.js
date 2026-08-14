@@ -6,6 +6,11 @@ export const FORGE_CLASH_MAX_HP = 60;
 export const FORGE_CLASH_MAX_HEAT = 100;
 export const FORGE_CLASH_FINISHER_BONUS = 4;
 export const FORGE_CLASH_FIRST_CLEAR_FRAME_ID = 'breaker-crown';
+export const FORGE_CLASH_MAX_COMBO = 4;
+export const FORGE_CLASH_COMBO_DAMAGE_STEP = 2;
+export const FORGE_CLASH_STREAK_BONUS_STEP_XP = 10;
+export const FORGE_CLASH_STREAK_BONUS_STEP_OZZIES = 4;
+export const FORGE_CLASH_STREAK_BONUS_CAP = 5;
 
 const FORGE_CLASH_TACTICS = ['charge', 'guard', 'feint', 'counter', 'boost', 'trickStrike'];
 const TELEGRAPH_BY_TACTIC = {
@@ -74,12 +79,15 @@ function resolveMatchResult(playerHp, rivalHp) {
   return playerHp > rivalHp ? 'win' : 'loss';
 }
 
-function buildRoundNarration({ outcome, finisher, cardName, rivalName, resolution }) {
+function buildRoundNarration({ outcome, finisher, cardName, rivalName, resolution, combo = 0 }) {
   if (finisher && outcome === 'win') {
     return `${cardName} cashes in full Heat and blows open ${rivalName}'s line.`;
   }
   if (finisher && outcome === 'loss') {
     return `${rivalName} survives the Overdrive and sends ${cardName} wide.`;
+  }
+  if (outcome === 'win' && combo >= 2) {
+    return `${cardName} keeps the chain alive — combo x${combo} hits ${rivalName} even harder.`;
   }
   return resolution.narration;
 }
@@ -179,11 +187,15 @@ export function resolveForgeClashRound(match, {
   const outcome = effectiveStrike > 0 ? 'win' : effectiveStrike < 0 ? 'loss' : 'draw';
   const correctRead = resolution.breakdown.advantage > 0;
   const impact = Math.min(5, Math.abs(effectiveStrike));
+  const nextCombo = correctRead && outcome === 'win'
+    ? clamp(match.combo + 1, 0, FORGE_CLASH_MAX_COMBO)
+    : 0;
+  const comboBonusDamage = nextCombo * FORGE_CLASH_COMBO_DAMAGE_STEP;
   let playerDamage = 0;
   let rivalDamage = 0;
 
   if (outcome === 'win') {
-    rivalDamage = 10 + impact * 3 + (finisher ? 6 : 0);
+    rivalDamage = 10 + impact * 3 + comboBonusDamage + (finisher ? 6 : 0);
   } else if (outcome === 'loss') {
     playerDamage = 10 + impact * 3;
   } else {
@@ -193,9 +205,6 @@ export function resolveForgeClashRound(match, {
 
   const nextPlayerHp = clamp(match.playerHp - playerDamage, 0, FORGE_CLASH_MAX_HP);
   const nextRivalHp = clamp(match.rivalHp - rivalDamage, 0, FORGE_CLASH_MAX_HP);
-  const nextCombo = correctRead && outcome === 'win'
-    ? clamp(match.combo + 1, 0, 4)
-    : 0;
   const heatGain = correctRead && outcome === 'win'
     ? 38 + nextCombo * 2
     : outcome === 'win'
@@ -225,6 +234,7 @@ export function resolveForgeClashRound(match, {
     effectiveStrike,
     outcome,
     correctRead,
+    comboBonusDamage,
     playerDamage,
     rivalDamage,
     playerHpBefore: match.playerHp,
@@ -241,6 +251,7 @@ export function resolveForgeClashRound(match, {
       cardName: slot.name,
       rivalName: match.rival.name,
       resolution,
+      combo: nextCombo,
     }),
     breakdown: resolution.breakdown,
     resolvedAt: now,
@@ -276,14 +287,56 @@ export function resolveForgeClashRound(match, {
   };
 }
 
-export function buildForgeClashRewards(result, firstClear = false) {
+export function buildForgeClashPerformance(match) {
+  const rounds = Array.isArray(match?.rounds) ? match.rounds : [];
+  const bestCombo = rounds.reduce(
+    (best, round) => Math.max(best, Number(round?.comboAfter) || 0),
+    0,
+  );
+  const won = match?.result === 'win';
+  return {
+    flawless: won && Number(match?.playerHp) >= FORGE_CLASH_MAX_HP,
+    comboMaster: won && bestCombo >= FORGE_CLASH_MAX_COMBO,
+    overdriveFinish: won && rounds.some((round) => round?.finisher === true && round?.outcome === 'win'),
+  };
+}
+
+export function buildForgeClashRewards(result, firstClear = false, performance = null) {
   const rewards = result === 'win'
     ? { xp: 80, ozzies: 24, cardXp: 40, cardOzzies: 10, districtReputation: firstClear ? 40 : 8 }
     : result === 'draw'
       ? { xp: 35, ozzies: 8, cardXp: 18, cardOzzies: 3, districtReputation: 2 }
       : { xp: 20, ozzies: 4, cardXp: 10, cardOzzies: 1, districtReputation: 1 };
+  const winStreak = Math.max(0, Math.floor(Number(performance?.winStreak) || 0));
+  const bonuses = [];
+  if (result === 'win' && performance) {
+    if (performance.flawless) {
+      bonuses.push({ id: 'flawless', label: 'Flawless Victory', xp: 30, ozzies: 12 });
+    }
+    if (performance.comboMaster) {
+      bonuses.push({ id: 'combo-master', label: `Combo Master x${FORGE_CLASH_MAX_COMBO}`, xp: 20, ozzies: 8 });
+    }
+    if (performance.overdriveFinish) {
+      bonuses.push({ id: 'overdrive-finish', label: 'Overdrive Finish', xp: 15, ozzies: 6 });
+    }
+    if (winStreak >= 2) {
+      const streakStep = Math.min(winStreak, FORGE_CLASH_STREAK_BONUS_CAP) - 1;
+      bonuses.push({
+        id: 'win-streak',
+        label: `Win Streak x${winStreak}`,
+        xp: streakStep * FORGE_CLASH_STREAK_BONUS_STEP_XP,
+        ozzies: streakStep * FORGE_CLASH_STREAK_BONUS_STEP_OZZIES,
+      });
+    }
+  }
+  const bonusXp = bonuses.reduce((total, bonus) => total + bonus.xp, 0);
+  const bonusOzzies = bonuses.reduce((total, bonus) => total + bonus.ozzies, 0);
   return {
     ...rewards,
+    xp: rewards.xp + bonusXp,
+    ozzies: rewards.ozzies + bonusOzzies,
+    bonuses,
+    winStreak: result === 'win' ? winStreak : 0,
     firstClear: result === 'win' && firstClear,
     frameId: result === 'win' && firstClear ? FORGE_CLASH_FIRST_CLEAR_FRAME_ID : null,
   };

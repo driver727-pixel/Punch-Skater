@@ -32,6 +32,7 @@ import {
   type ForgeLoanerCard,
 } from "../services/forge";
 import {
+  sfxForgeClashBlock,
   sfxForgeClashCounter,
   sfxForgeClashCrit,
   sfxForgeClashDraw,
@@ -41,6 +42,8 @@ import {
   sfxForgeClashStrike,
   sfxForgeClashWin,
 } from "../lib/sfx";
+import { spawnCelebrationBurst } from "../lib/celebration";
+import { useRuntimeProfile } from "../hooks/useRuntimeProfile";
 
 type TurnStage = "choose" | "locked" | "reveal" | "impact" | "result";
 
@@ -119,6 +122,9 @@ function getRoundSwing(round?: ForgeClashRound | null): "player" | "rival" | "ne
 
 function getRoundHeadline(round: ForgeClashRound): string {
   if (round.finisher) return round.outcome === "win" ? "OVERDRIVE LANDS!" : "OVERDRIVE DENIED!";
+  if (round.correctRead && round.outcome === "win" && round.comboAfter >= 2) {
+    return `COMBO x${round.comboAfter}${round.comboAfter >= 3 ? " — ON FIRE!" : "!"}`;
+  }
   if (round.correctRead && round.outcome === "win") return "CLEAN READ!";
   if (round.outcome === "win") return "LINE WON!";
   if (round.outcome === "loss") return "JAX READS IT!";
@@ -144,7 +150,7 @@ function getGuidedOpening(turn: number, maxHeat: number): { step: string; title:
     return {
       step: "3/3",
       title: "Cash in Heat",
-      body: `Correct reads build Heat. At ${maxHeat}, arm Overdrive for a risky +4 Strike finisher.`,
+      body: `Correct reads stack Combo damage and build Heat. At ${maxHeat}, arm Overdrive for a risky +4 Strike finisher.`,
     };
   }
   return null;
@@ -160,7 +166,10 @@ function getRoundBreakdown(round: ForgeClashRound): string {
     ? `+${round.breakdown.randomRoll}`
     : String(round.breakdown.randomRoll);
   const finisher = round.finisher ? ` · Overdrive +${round.finisherBonus}` : "";
-  return `${advantage} · Lance ${round.breakdown.attack} vs Shield ${round.breakdown.defense} · Lane roll ${laneRoll}${finisher} · Strike ${round.effectiveStrike}`;
+  const comboBonus = (round.comboBonusDamage ?? 0) > 0
+    ? ` · Combo +${round.comboBonusDamage} dmg`
+    : "";
+  return `${advantage} · Lance ${round.breakdown.attack} vs Shield ${round.breakdown.defense} · Lane roll ${laneRoll}${finisher}${comboBonus} · Strike ${round.effectiveStrike}`;
 }
 
 function buildForgeClashRivalDisplayCard(
@@ -353,10 +362,18 @@ export function ForgeClash() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const { reduceEffects } = useRuntimeProfile();
 
   useEffect(() => () => {
     mountedRef.current = false;
   }, []);
+
+  useEffect(() => {
+    if (match?.status !== "completed" || match.result !== "win") return;
+    if (reduceEffects || !stageRef.current) return;
+    spawnCelebrationBurst(stageRef.current, { particles: 96, spreadX: 420, spreadY: 320 });
+  }, [match?.status, match?.result, reduceEffects]);
 
   useEffect(() => {
     let active = true;
@@ -506,6 +523,8 @@ export function ForgeClash() {
     if (round.finisher) sfxForgeClashCrit();
     if (round.outcome === "loss") {
       sfxForgeClashSlip();
+    } else if (round.outcome === "draw") {
+      sfxForgeClashBlock();
     } else if (round.playerTactic === "counter") {
       sfxForgeClashCounter();
     } else {
@@ -605,8 +624,9 @@ export function ForgeClash() {
         <p className="app-status-eyebrow">Core Game · Tactical Crew Duel</p>
         <h1>Forge Clash</h1>
         <p>
-          Read Jax Voltage, choose a rider and tactic, then turn clean reads into Combo and Heat.
-          Six rounds. One Overdrive. Every forged card brings its own lance, shield, gear, and traits.
+          Read Jax Voltage, choose a rider and tactic, then chain clean reads into Combo damage,
+          Heat, and streak payouts. Six rounds. One Overdrive. Every forged card brings its own
+          lance, shield, gear, and traits.
         </p>
         <div className="forge-clash-hero__actions">
           <Link to="/forge" className="btn-primary">Forge a Card</Link>
@@ -678,6 +698,7 @@ export function ForgeClash() {
             )}
 
             <div
+              ref={stageRef}
               className={stageClassName}
               style={{ "--forge-clash-arena-bg": `url("${BATTERYVILLE_BACKGROUND}")` } as React.CSSProperties}
               key={`${match?.id ?? "draft"}:${latestRound?.turn ?? 0}:${turnStage}`}
@@ -735,9 +756,18 @@ export function ForgeClash() {
                   <>
                     {latestRound.rivalDamage > 0 && <b className="forge-clash-damage forge-clash-damage--rival">-{latestRound.rivalDamage}</b>}
                     {latestRound.playerDamage > 0 && <b className="forge-clash-damage forge-clash-damage--player">-{latestRound.playerDamage}</b>}
+                    {(latestRound.comboBonusDamage ?? 0) > 0 && (
+                      <b className="forge-clash-damage forge-clash-damage--combo">COMBO +{latestRound.comboBonusDamage}</b>
+                    )}
                   </>
                 )}
-                <span>COMBO x{match?.combo ?? 0}</span>
+                <span className={buildClassName(
+                  "forge-clash-combo-meter",
+                  (match?.combo ?? 0) >= 2 && "is-hot",
+                  (match?.combo ?? 0) >= 3 && "is-blazing",
+                )}>
+                  COMBO x{match?.combo ?? 0}{(match?.combo ?? 0) >= 3 ? " · ON FIRE" : ""}
+                </span>
                 <strong>HEAT {match?.heat ?? 0}/{match?.maxHeat ?? 100}</strong>
                 <em>{latestRound ? getRoundHeadline(latestRound) : "Build the read"}</em>
               </div>
@@ -909,7 +939,21 @@ export function ForgeClash() {
                     <span><strong>{match.rewards.mvpCardName ?? "Crew"}</strong> MVP</span>
                     {match.rewards.frameId && <span><strong>Breaker Crown</strong> Frame unlocked</span>}
                     {match.rewards.newCodexIds.length > 0 && <span><strong>Jax dossier</strong> Codex unlocked</span>}
+                    {(match.rewards.bonuses ?? []).map((bonus) => (
+                      <span key={bonus.id} className="forge-clash-reward-bonus">
+                        <strong>{bonus.label}</strong> +{bonus.xp} XP · +{bonus.ozzies} Ozzies
+                      </span>
+                    ))}
                   </div>
+                )}
+                {(match.rewards?.winStreak ?? 0) >= 1 && (
+                  <p className="forge-clash-reward-streak">
+                    🔥 Win streak x{match.rewards?.winStreak}
+                    {" — "}
+                    {(match.rewards?.winStreak ?? 0) < 5
+                      ? "win the rematch to grow the streak payout."
+                      : "streak payout maxed. Keep the run alive!"}
+                  </p>
                 )}
                 <div className="forge-clash-controls is-actionable">
                   <button type="button" className="btn-primary" disabled={busy} onClick={() => void beginMatch(match.id)}>

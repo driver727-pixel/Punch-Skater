@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  FORGE_CLASH_COMBO_DAMAGE_STEP,
   FORGE_CLASH_FINISHER_BONUS,
+  FORGE_CLASH_MAX_COMBO,
   FORGE_CLASH_MAX_HEAT,
   FORGE_CLASH_MAX_ROUNDS,
+  buildForgeClashPerformance,
   buildForgeClashRewards,
   buildForgeClashRivalPattern,
   createForgeClashMatch,
@@ -207,10 +210,121 @@ test('wins, draws, and losses grant distinct authoritative rewards', () => {
     cardXp: 40,
     cardOzzies: 10,
     districtReputation: 40,
+    bonuses: [],
+    winStreak: 0,
     firstClear: true,
     frameId: 'breaker-crown',
   });
   assert.equal(buildForgeClashRewards('draw').xp, 35);
   assert.equal(buildForgeClashRewards('loss').xp, 20);
   assert.equal(buildForgeClashRewards('loss').ozzies, 4);
+});
+
+test('chained clean reads add escalating combo damage', () => {
+  const dominantRoster = buildRoster({
+    stats: { speed: 10, range: 10, rangeNm: 10, stealth: 10, grit: 10 },
+    joust: { lance: 10, shield: 10, hype: 10 },
+  });
+  const weakRival = buildCard('batteryville-jax-voltage', {
+    name: 'Jax Voltage',
+    stats: { speed: 1, range: 1, rangeNm: 1, stealth: 1, grit: 1 },
+    joust: { lance: 1, shield: 1, hype: 1 },
+  });
+  const playCounterOpen = (combo) => resolveForgeClashRound(
+    buildMatch('combo-seed', { roster: dominantRoster, rival: weakRival, combo }),
+    { slotId: dominantRoster[0].slotId, tactic: 'counter' },
+  );
+
+  const opening = playCounterOpen(0);
+  assert.equal(opening.round.outcome, 'win');
+  assert.equal(opening.round.correctRead, true);
+  assert.equal(opening.round.comboAfter, 1);
+  assert.equal(opening.round.comboBonusDamage, 1 * FORGE_CLASH_COMBO_DAMAGE_STEP);
+  assert.equal(opening.round.rivalDamage, 10 + 5 * 3 + opening.round.comboBonusDamage);
+
+  const chained = playCounterOpen(3);
+  assert.equal(chained.round.comboAfter, FORGE_CLASH_MAX_COMBO);
+  assert.equal(chained.round.comboBonusDamage, FORGE_CLASH_MAX_COMBO * FORGE_CLASH_COMBO_DAMAGE_STEP);
+  assert.equal(chained.round.rivalDamage, 10 + 5 * 3 + chained.round.comboBonusDamage);
+  assert.match(chained.round.narration, /combo x4/i);
+
+  const capped = playCounterOpen(FORGE_CLASH_MAX_COMBO);
+  assert.equal(capped.round.comboAfter, FORGE_CLASH_MAX_COMBO);
+  assert.equal(capped.round.comboBonusDamage, FORGE_CLASH_MAX_COMBO * FORGE_CLASH_COMBO_DAMAGE_STEP);
+});
+
+test('match performance flags flawless, combo master, and overdrive finishes', () => {
+  const performance = buildForgeClashPerformance({
+    result: 'win',
+    playerHp: 60,
+    rounds: [
+      { comboAfter: 2, finisher: false, outcome: 'win' },
+      { comboAfter: 4, finisher: true, outcome: 'win' },
+    ],
+  });
+  assert.deepEqual(performance, {
+    flawless: true,
+    comboMaster: true,
+    overdriveFinish: true,
+  });
+
+  const scrappy = buildForgeClashPerformance({
+    result: 'win',
+    playerHp: 31,
+    rounds: [
+      { comboAfter: 1, finisher: true, outcome: 'loss' },
+      { comboAfter: 0, finisher: false, outcome: 'win' },
+    ],
+  });
+  assert.deepEqual(scrappy, {
+    flawless: false,
+    comboMaster: false,
+    overdriveFinish: false,
+  });
+
+  assert.deepEqual(buildForgeClashPerformance({ result: 'loss', playerHp: 60, rounds: [] }), {
+    flawless: false,
+    comboMaster: false,
+    overdriveFinish: false,
+  });
+});
+
+test('performance and win streaks stack authoritative payout bonuses', () => {
+  const stacked = buildForgeClashRewards('win', false, {
+    flawless: true,
+    comboMaster: true,
+    overdriveFinish: true,
+    winStreak: 3,
+  });
+  assert.equal(stacked.xp, 80 + 30 + 20 + 15 + 20);
+  assert.equal(stacked.ozzies, 24 + 12 + 8 + 6 + 8);
+  assert.equal(stacked.winStreak, 3);
+  assert.deepEqual(stacked.bonuses.map((bonus) => bonus.id), [
+    'flawless',
+    'combo-master',
+    'overdrive-finish',
+    'win-streak',
+  ]);
+
+  const firstWin = buildForgeClashRewards('win', false, { winStreak: 1 });
+  assert.equal(firstWin.xp, 80);
+  assert.equal(firstWin.ozzies, 24);
+  assert.deepEqual(firstWin.bonuses, []);
+  assert.equal(firstWin.winStreak, 1);
+
+  const cappedStreak = buildForgeClashRewards('win', false, { winStreak: 9 });
+  assert.equal(cappedStreak.xp, 80 + 40);
+  assert.equal(cappedStreak.ozzies, 24 + 16);
+  assert.equal(cappedStreak.winStreak, 9);
+
+  const loss = buildForgeClashRewards('loss', false, {
+    flawless: true,
+    comboMaster: true,
+    overdriveFinish: true,
+    winStreak: 4,
+  });
+  assert.equal(loss.xp, 20);
+  assert.equal(loss.ozzies, 4);
+  assert.deepEqual(loss.bonuses, []);
+  assert.equal(loss.winStreak, 0);
 });
