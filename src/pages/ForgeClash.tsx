@@ -120,6 +120,109 @@ function getRoundSwing(round?: ForgeClashRound | null): "player" | "rival" | "ne
   return "neutral";
 }
 
+type ForgeClashPopupVariant =
+  | "damage-rival"
+  | "damage-player"
+  | "strike"
+  | "read"
+  | "combo"
+  | "heat"
+  | "finisher"
+  | "xp"
+  | "ozzies"
+  | "rep"
+  | "streak";
+
+interface ForgeClashPopup {
+  id: string;
+  text: string;
+  variant: ForgeClashPopupVariant;
+  left: number;
+  top: number;
+  delay: number;
+}
+
+function seededJitter(seed: string, range: number): number {
+  return (computeStringHash(seed) % (range * 2 + 1)) - range;
+}
+
+function buildRoundPopups(round: ForgeClashRound): ForgeClashPopup[] {
+  const popups: ForgeClashPopup[] = [];
+  const seedBase = `${round.turn}:${round.slotId}`;
+  const push = (
+    variant: ForgeClashPopupVariant,
+    text: string,
+    left: number,
+    top: number,
+    delay: number,
+  ) => popups.push({
+    id: `${seedBase}:${variant}:${text}`,
+    text,
+    variant,
+    left: left + seededJitter(`${seedBase}:${variant}:x`, 6),
+    top: top + seededJitter(`${seedBase}:${variant}:y`, 4),
+    delay,
+  });
+  if (round.rivalDamage > 0) push("damage-rival", `-${round.rivalDamage} HP`, 74, 20, 0);
+  if (round.playerDamage > 0) push("damage-player", `-${round.playerDamage} HP`, 16, 20, 80);
+  if (round.outcome === "win") push("strike", `STRIKE ${round.effectiveStrike}`, 48, 38, 140);
+  if (round.correctRead && round.breakdown.advantage > 0) {
+    push("read", `READ +${round.breakdown.advantage}`, 26, 52, 200);
+  }
+  if ((round.comboBonusDamage ?? 0) > 0) push("combo", `COMBO +${round.comboBonusDamage}`, 68, 52, 240);
+  if (round.comboAfter >= 2 && round.outcome === "win") push("combo", `COMBO x${round.comboAfter}`, 40, 30, 280);
+  const heatGain = round.heatAfter - round.heatBefore;
+  if (heatGain > 0) push("heat", `+${heatGain} HEAT`, 58, 62, 320);
+  if (round.finisher) push("finisher", `OVERDRIVE +${round.finisherBonus}`, 50, 14, 100);
+  return popups;
+}
+
+function buildRewardPopups(match: ForgeClashMatch): ForgeClashPopup[] {
+  if (!match.rewards) return [];
+  const popups: ForgeClashPopup[] = [];
+  const push = (
+    variant: ForgeClashPopupVariant,
+    text: string,
+    left: number,
+    top: number,
+    delay: number,
+  ) => popups.push({ id: `reward:${match.id}:${variant}:${text}`, text, variant, left, top, delay });
+  push("xp", `+${match.rewards.xp} XP`, 30, 22, 0);
+  push("ozzies", `+${match.rewards.ozzies} OZZIES`, 62, 18, 160);
+  push("rep", `+${match.rewards.districtReputation} REP`, 44, 38, 320);
+  if ((match.rewards.winStreak ?? 0) >= 1) {
+    push("streak", `WIN STREAK x${match.rewards.winStreak}`, 55, 52, 480);
+  }
+  (match.rewards.bonuses ?? []).slice(0, 3).forEach((bonus, index) => {
+    push("xp", `${bonus.label} +${bonus.xp} XP`, 22 + index * 24, 62 - index * 8, 620 + index * 150);
+  });
+  return popups;
+}
+
+function ForgeClashPopups({ popups, rewards }: { popups: ForgeClashPopup[]; rewards?: boolean }) {
+  if (popups.length === 0) return null;
+  return (
+    <div
+      className={buildClassName("forge-clash-popups", rewards && "forge-clash-popups--rewards")}
+      aria-hidden="true"
+    >
+      {popups.map((popup) => (
+        <b
+          key={popup.id}
+          className={`forge-clash-pop forge-clash-pop--${popup.variant}`}
+          style={{
+            left: `${popup.left}%`,
+            top: `${popup.top}%`,
+            animationDelay: `${popup.delay}ms`,
+          }}
+        >
+          {popup.text}
+        </b>
+      ))}
+    </div>
+  );
+}
+
 function getRoundHeadline(round: ForgeClashRound): string {
   if (round.finisher) return round.outcome === "win" ? "OVERDRIVE LANDS!" : "OVERDRIVE DENIED!";
   if (round.correctRead && round.outcome === "win" && round.comboAfter >= 2) {
@@ -463,6 +566,18 @@ export function ForgeClash() {
   );
   const canUseFinisher = Boolean(match && match.heat >= match.maxHeat);
   const roundSwing = getRoundSwing(latestRound);
+  const roundPopups = useMemo(
+    () => (!reduceEffects && latestRound && (turnStage === "impact" || turnStage === "result"))
+      ? buildRoundPopups(latestRound)
+      : [],
+    [latestRound, turnStage, reduceEffects],
+  );
+  const rewardPopups = useMemo(
+    () => (!reduceEffects && match?.status === "completed" && match.result === "win" && match.rewards)
+      ? buildRewardPopups(match)
+      : [],
+    [match, reduceEffects],
+  );
   const stageClassName = buildClassName(
     "forge-clash-stage",
     `forge-clash-stage--intent-${match?.telegraph?.intent ?? "rush"}`,
@@ -710,9 +825,11 @@ export function ForgeClash() {
               <div className="forge-clash-stage__lightning" aria-hidden="true"><i /><i /></div>
               <div className="forge-clash-stage__fire" aria-hidden="true"><i /><i /><i /></div>
               <div className="forge-clash-card-trail" aria-hidden="true"><i /><i /><i /></div>
+              <ForgeClashPopups popups={roundPopups} />
               {match?.status === "completed" && (
                 <div className="forge-clash-stage__finish-burst" aria-hidden="true"><i /><i /><i /><i /></div>
               )}
+              <ForgeClashPopups popups={rewardPopups} rewards />
               <div className="forge-clash-action-banner forge-clash-action-banner--player" aria-hidden="true">
                 {formatTactic(latestRound?.playerTactic)}
               </div>
