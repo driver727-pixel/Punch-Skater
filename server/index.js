@@ -322,6 +322,12 @@ const hypeRateLimit = buildRateLimiter({
 const FAL_KEY = process.env.FAL_KEY || '';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
+const configuredCollectionStyleLoraScale = Number.parseFloat(process.env.FAL_COLLECTION_STYLE_LORA_SCALE || '');
+const collectionStyleLoraScale = Number.isFinite(configuredCollectionStyleLoraScale)
+  && configuredCollectionStyleLoraScale > 0
+  && configuredCollectionStyleLoraScale <= 2
+  ? configuredCollectionStyleLoraScale
+  : 0.9;
 const falRequestConfig = readFalRequestConfig(process.env, console);
 const getRemoteFalRequestConfig = createFalRequestConfigLoader({
   cacheTtlMs: falRequestConfig.cacheTtlMs,
@@ -919,7 +925,7 @@ registerCollectionStyleRoutes(app, {
   buildFalImageRequest,
   resolveFalProfile,
   trainingModel: process.env.FAL_COLLECTION_STYLE_TRAINING_MODEL || 'fal-ai/flux-lora-fast-training',
-  defaultLoraScale: process.env.FAL_COLLECTION_STYLE_LORA_SCALE || 0.9,
+  defaultLoraScale: collectionStyleLoraScale,
 });
 
 registerAccountRoutes(app, {

@@ -12,9 +12,7 @@ export const MAX_COLLECTION_STYLE_IMAGE_BYTES = 12 * 1024 * 1024;
 
 const ALLOWED_CHARACTER_IMAGE_HOSTS = [
   /(^|\.)fal\.media$/i,
-  /^firebasestorage\.googleapis\.com$/i,
   /(^|\.)firebasestorage\.googleapis\.com$/i,
-  /^storage\.googleapis\.com$/i,
   /(^|\.)storage\.googleapis\.com$/i,
 ];
 
@@ -202,7 +200,7 @@ function badRequest(message) {
   return Object.assign(new Error(message), { statusCode: 400 });
 }
 
-function seedFromString(value) {
+export function seedFromString(value) {
   let hash = 0;
   for (let index = 0; index < value.length; index += 1) {
     hash = (hash << 5) - hash + value.charCodeAt(index);
@@ -520,6 +518,9 @@ function dosDateTime(value) {
 export function buildTrainingDatasetZip(entries, createdAt = new Date()) {
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new Error('At least one training dataset entry is required.');
+  }
+  if (entries.length > 0xffff) {
+    throw new Error('Training datasets cannot contain more than 65,535 ZIP entries.');
   }
 
   const { date, time } = dosDateTime(createdAt);

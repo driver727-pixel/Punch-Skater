@@ -16,6 +16,7 @@ import {
   isAllowedCharacterLayerUrl,
   normalizeCollectionStyleSourceIds,
   normalizeCollectionStyleToken,
+  seedFromString,
 } from '../lib/collectionStyle.js';
 import { persistImageToStorage as persistImageToFirebaseStorage } from '../lib/imageStorage.js';
 
@@ -242,7 +243,7 @@ async function generateCollectionCharacter({
     fal_profile: 'character',
     prompt: buildCollectionStyleCharacterPrompt(card, profile.triggerToken),
     negative_prompt: COLLECTION_STYLE_NEGATIVE_PROMPT,
-    seed: Math.abs(card.characterSeed.split('').reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0)),
+    seed: seedFromString(card.characterSeed),
     image_size: { width: 750, height: 1050 },
     num_inference_steps: 28,
     guidance_scale: 4,
