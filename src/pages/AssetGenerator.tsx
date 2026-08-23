@@ -6,6 +6,7 @@ import { AdminImageCachePanel } from "../components/AdminImageCachePanel";
 import { AdminDeckLayersPanel } from "../components/AdminDeckLayersPanel";
 import { AdminCyberJoustSpritesPanel } from "../components/AdminCyberJoustSpritesPanel";
 import { AdminArcadeRacerSpritesPanel } from "../components/AdminArcadeRacerSpritesPanel";
+import { AdminCollectionStylePanel } from "../components/AdminCollectionStylePanel";
 import { AdminPageBadge } from "../components/AdminPageBadge";
 import {
   getDistrictTheme,
@@ -122,7 +123,7 @@ interface ItemState {
 }
 
 export function AssetGenerator() {
-  const [activeTab, setActiveTab] = useState<"generator" | "transitions" | "factions" | "cache" | "decks" | "cyberJoust" | "arcadeRacer">("generator");
+  const [activeTab, setActiveTab] = useState<"generator" | "transitions" | "factions" | "cache" | "decks" | "collectionStyle" | "cyberJoust" | "arcadeRacer">("generator");
   const [states, setStates] = useState<Record<string, ItemState>>(
     Object.fromEntries(ALL_ITEMS.map((i) => [i.seedKey, { status: "idle" }]))
   );
@@ -244,6 +245,12 @@ export function AssetGenerator() {
           onClick={() => setActiveTab("decks")}
         >
           🃏 Decks &amp; Bosses
+        </button>
+        <button
+          className={`admin-tab${activeTab === "collectionStyle" ? " admin-tab--active" : ""}`}
+          onClick={() => setActiveTab("collectionStyle")}
+        >
+          ✨ Collection Style
         </button>
         <button
           className={`admin-tab${activeTab === "cyberJoust" ? " admin-tab--active" : ""}`}
@@ -413,6 +420,8 @@ export function AssetGenerator() {
         <AdminFactionImagesPanel />
       ) : activeTab === "decks" ? (
         <AdminDeckLayersPanel />
+      ) : activeTab === "collectionStyle" ? (
+        <AdminCollectionStylePanel />
       ) : activeTab === "cyberJoust" ? (
         <AdminCyberJoustSpritesPanel />
       ) : activeTab === "arcadeRacer" ? (

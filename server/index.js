@@ -40,6 +40,7 @@ import {
 import { buildRateLimiter, createRateLimitStore } from './lib/rateLimit.js';
 import { deleteUserData, migrateUserCards } from './lib/userDeletion.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerCollectionStyleRoutes } from './routes/collectionStyle.js';
 import { registerAccountRoutes } from './routes/account.js';
 import { registerBattleRoutes } from './routes/battle.js';
 import { registerRaceRoutes } from './routes/race.js';
@@ -209,6 +210,15 @@ const adminUserRateLimit = buildRateLimiter({
   store: sharedRateLimitStore,
 });
 
+// Collection-style training and character generation can incur substantial Fal
+// costs, so keep the admin workflow intentionally low-volume.
+const collectionStyleRateLimit = buildRateLimiter({
+  windowMs: 60 * 1000,
+  max: 12,
+  message: { error: 'Too many collection-style requests — please wait a moment and try again.' },
+  store: sharedRateLimitStore,
+});
+
 const accountDeleteRateLimit = buildRateLimiter({
   windowMs: 60 * 1000,
   max: 5,
@@ -312,6 +322,12 @@ const hypeRateLimit = buildRateLimiter({
 const FAL_KEY = process.env.FAL_KEY || '';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const BIREFNET_URL = 'https://fal.run/fal-ai/birefnet';
+const configuredCollectionStyleLoraScale = Number.parseFloat(process.env.FAL_COLLECTION_STYLE_LORA_SCALE || '');
+const collectionStyleLoraScale = Number.isFinite(configuredCollectionStyleLoraScale)
+  && configuredCollectionStyleLoraScale > 0
+  && configuredCollectionStyleLoraScale <= 2
+  ? configuredCollectionStyleLoraScale
+  : 0.9;
 const falRequestConfig = readFalRequestConfig(process.env, console);
 const getRemoteFalRequestConfig = createFalRequestConfigLoader({
   cacheTtlMs: falRequestConfig.cacheTtlMs,
@@ -895,6 +911,21 @@ registerAdminRoutes(app, {
   deleteUserData,
   migrateUserCards,
   FieldValue,
+});
+
+registerCollectionStyleRoutes(app, {
+  adminDb,
+  adminStorage,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  FAL_KEY,
+  BIREFNET_URL,
+  fal,
+  collectionStyleRateLimit,
+  authenticateAdminRequest,
+  buildFalImageRequest,
+  resolveFalProfile,
+  trainingModel: process.env.FAL_COLLECTION_STYLE_TRAINING_MODEL || 'fal-ai/flux-lora-fast-training',
+  defaultLoraScale: collectionStyleLoraScale,
 });
 
 registerAccountRoutes(app, {

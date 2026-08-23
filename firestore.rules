@@ -266,7 +266,38 @@ service cloud.firestore {
         && request.auth.token.admin == true;
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+      // ── Admin Boss Assets + collection-style workflow ─────────────────────────
+      // Boss Assets are the owned source library for collection-style LoRA
+      // training and the durable destination for successful batch cards.
+      match /adminBossAssets/{assetId} {
+        allow read, write: if request.auth != null
+          && request.auth.token.admin == true;
+      }
+
+      // These workflow records are written exclusively by the authenticated
+      // server routes. Admin clients may inspect progress but cannot alter model
+      // URLs, training datasets, batch state, or generated card payloads.
+      match /adminCollectionStyleProfiles/{profileId} {
+        allow read: if request.auth != null && request.auth.token.admin == true;
+        allow create, update, delete: if false;
+      }
+
+      match /adminCollectionStyleTrainingJobs/{jobId} {
+        allow read: if request.auth != null && request.auth.token.admin == true;
+        allow create, update, delete: if false;
+      }
+
+      match /adminCollectionStyleBatches/{batchId} {
+        allow read: if request.auth != null && request.auth.token.admin == true;
+        allow create, update, delete: if false;
+
+        match /cards/{cardId} {
+          allow read: if request.auth != null && request.auth.token.admin == true;
+          allow create, update, delete: if false;
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════════════════
     // New collections — read-only stubs (Sprint 0)
     // Client reads allowed for authenticated users; all writes are server-only
     // until the corresponding feature passes QA and the flag is enabled.

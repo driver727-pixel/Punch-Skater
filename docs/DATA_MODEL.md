@@ -22,6 +22,10 @@
 | `leaderboard` | Top-level | `uid` | Any authed read; server write |
 | `leaderboardSeasons/{seasonId}/entries` | Sub-collection | `uid` | Any authed read; server write |
 | `factionImages` | Top-level | `factionKey` (slug) | Public read; admin write/delete |
+| `adminBossAssets` | Top-level | `cardId` | Admin read/write; owned character-layer source library and completed collection cards |
+| `adminCollectionStyleProfiles` | Top-level | `collection-style` | Admin read; server-only LoRA URL/version writes |
+| `adminCollectionStyleTrainingJobs` | Top-level | `jobId` | Admin read; server-only training state |
+| `adminCollectionStyleBatches/{batchId}/cards` | Sub-collection | `cardId` | Admin read; server-only resumable batch state |
 
 ---
 
@@ -384,6 +388,52 @@ Faction background images. Public read, admin write.
   updatedAt?: Timestamp,
 }
 ```
+
+### `adminBossAssets/{cardId}`
+
+Admin-only full `CardPayload` records. The collection-style workflow accepts
+only each record's persisted `characterImageUrl` as training input; it never
+uses a background, frame, board, weapon, or card screenshot. Successfully
+generated collection cards are written back here under their deterministic
+batch card IDs.
+
+### `adminCollectionStyleProfiles/collection-style`
+
+Server-authored active collection style configuration.
+
+```
+{
+  id: "collection-style",
+  status: "ready",
+  kind: "character-style-lora",
+  version: string,
+  loraUrl: string,
+  loraScale: number,
+  triggerToken: string,
+  modelUrl: string,             // must match the Forge character model
+  trainingModel: string,
+  trainingJobId: string,
+  sourceCount: number,
+  sourceCardIds: string[],
+  activatedAt: string,
+  updatedAt: string,
+}
+```
+
+### `adminCollectionStyleTrainingJobs/{jobId}`
+
+Server-owned LoRA training state. Each job records the curated Boss Asset IDs,
+generated captions, owned-source confirmations, Fal request ID, and lifecycle
+(`preparing`, `training`, `completed`, or `failed`).
+
+### `adminCollectionStyleBatches/{batchId}`
+
+Server-owned 64-card collection release. It snapshots the active LoRA URL,
+version, token, and Forge model URL, starts in `phase: "approval"` with four
+cards, and changes to `phase: "production"` only after an explicit admin
+approval. `cards/{cardId}` subdocuments preserve deterministic card plans,
+generation attempts, leases, failures, and completion receipts so reruns can
+recover idempotently without regenerating persisted Boss Assets.
 
 ---
 

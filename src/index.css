@@ -14404,6 +14404,165 @@ textarea:focus-visible,
   }
 }
 
+/* ===== Collection Style LoRA admin workflow ===== */
+.collection-style-panel { padding-bottom: 48px; }
+.collection-style-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.collection-style-panel__header .asset-gen-section-title { margin-bottom: 8px; }
+.collection-style-profile,
+.collection-style-batch {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg2);
+  padding: 12px 14px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.collection-style-profile--ready {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  color: var(--accent);
+}
+.collection-style-token {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+  margin-bottom: 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+.collection-style-token input { width: 100%; }
+.collection-style-confirmations {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.collection-style-confirmations label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.collection-style-confirmations input { margin-top: 3px; }
+.collection-style-selection-count {
+  margin: 0 0 10px;
+  color: var(--accent2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+.collection-style-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  max-height: 480px;
+  overflow: auto;
+  margin: 0 0 16px;
+  padding: 2px;
+}
+.collection-style-source {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg2);
+  cursor: pointer;
+}
+.collection-style-source:hover { border-color: var(--accent2); }
+.collection-style-source--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.collection-style-source--ineligible { cursor: not-allowed; opacity: 0.55; }
+.collection-style-source input {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+.collection-style-source img,
+.collection-style-source__missing {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: 5px;
+  background: var(--bg3);
+}
+.collection-style-source__missing {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 11px;
+}
+.collection-style-source strong,
+.collection-style-source small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-style-source strong { color: var(--text); font-size: 12px; }
+.collection-style-source small { color: var(--text-muted); font-size: 10px; }
+.collection-style-job,
+.collection-style-batch__summary,
+.collection-style-batch__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.collection-style-job {
+  margin-top: 12px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.collection-style-batch { display: grid; gap: 12px; }
+.collection-style-batch__summary { justify-content: space-between; }
+.collection-style-batch__summary span { color: var(--text-dim); font-size: 13px; }
+.collection-style-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+.collection-style-result {
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+}
+.collection-style-result img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: 4px;
+  background: var(--bg3);
+}
+.collection-style-result strong { color: var(--text); font-size: 12px; }
+.collection-style-result small { color: var(--text-muted); font-size: 10px; }
+.collection-style-failures {
+  margin: 0;
+  padding-left: 20px;
+  color: #ff8d8d;
+  font-size: 12px;
+}
+@media (max-width: 620px) {
+  .collection-style-panel__header { flex-direction: column; }
+  .collection-style-panel__header > .btn-primary,
+  .collection-style-panel__header > .btn-outline { width: 100%; }
+}
+
 /* ===== Admin Deck Layers Panel (.adlp-*) ===== */
 .adlp-panel { padding-bottom: 48px; }
 

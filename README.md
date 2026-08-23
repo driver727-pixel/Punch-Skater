@@ -133,6 +133,8 @@ Copy `.env.example` to `.env` for local client config.
 - `FAL_CHARACTER_CONFIG_URL` (optional; remote JSON defaults for character image requests)
 - `FAL_CHARACTER_LORA_PATH` (optional; server-side default character LoRA path)
 - `FAL_CHARACTER_LORA_SCALE` (optional; server-side default character LoRA scale)
+- `FAL_COLLECTION_STYLE_TRAINING_MODEL` (optional; admin-only Fal style-LoRA trainer, defaults to `fal-ai/flux-lora-fast-training`)
+- `FAL_COLLECTION_STYLE_LORA_SCALE` (optional; collection-style inference scale, defaults to `0.9`)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `ADMIN_EMAILS`
@@ -142,6 +144,11 @@ Copy `.env.example` to `.env` for local client config.
 - `FIREBASE_SERVICE_ACCOUNT_JSON` or (`FIREBASE_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`), or platform-provided application default credentials
 
 Do not commit server secrets.
+
+The admin **Collection Style** tab packages only selected, persisted Boss Asset
+character layers for training. Configure the training endpoint to output a LoRA
+compatible with `FAL_CHARACTER_IMAGE_MODEL_URL`; the generated profile and each
+64-card batch snapshot that model URL to prevent an incompatible inference run.
 
 ## Project Assets
 
