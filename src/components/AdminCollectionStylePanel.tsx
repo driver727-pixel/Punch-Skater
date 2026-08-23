@@ -372,7 +372,7 @@ export function AdminCollectionStylePanel() {
               <div className="collection-style-result-grid">
                 {completedItems.map((item) => (
                   <article key={item.id} className="collection-style-result">
-                    {item.card?.characterImageUrl && <img src={item.card.characterImageUrl} alt="" />}
+                    {item.card?.characterImageUrl && <img src={item.card.characterImageUrl} alt={item.name} />}
                     <strong>{item.name}</strong>
                     <small>{item.card?.prompts?.district ?? "Collection"} · persisted to Boss Assets</small>
                   </article>

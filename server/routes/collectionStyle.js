@@ -4,6 +4,7 @@ import {
   COLLECTION_STYLE_CARD_COUNT,
   COLLECTION_STYLE_NEGATIVE_PROMPT,
   COLLECTION_STYLE_PROFILE_ID,
+  MAX_COLLECTION_STYLE_SOURCES,
   MAX_COLLECTION_STYLE_IMAGE_BYTES,
   assertCollectionStyleSourceVariety,
   buildCollectionStyleCaption,
@@ -260,7 +261,7 @@ async function generateCollectionCharacter({
     signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
   });
   if (!generated.ok) {
-    throw badRequest(`Collection character generation failed: ${parseFalErrorBody(await generated.text())}`, generated.status);
+    throw badRequest(`Collection character generation failed: ${parseFalErrorBody(await generated.text())}`, 502);
   }
   const rawImageUrl = extractFalImageUrl(await generated.json());
   if (!rawImageUrl || !isAllowedCharacterLayerUrl(rawImageUrl)) {
@@ -277,7 +278,7 @@ async function generateCollectionCharacter({
     signal: AbortSignal.timeout(FAL_PROXY_TIMEOUT_MS),
   });
   if (!backgroundRemoval.ok) {
-    throw badRequest(`Collection background removal failed: ${parseFalErrorBody(await backgroundRemoval.text())}`, backgroundRemoval.status);
+    throw badRequest(`Collection background removal failed: ${parseFalErrorBody(await backgroundRemoval.text())}`, 502);
   }
   const transparentImageUrl = extractFalImageUrl(await backgroundRemoval.json());
   if (!transparentImageUrl || !isAllowedCharacterLayerUrl(transparentImageUrl)) {
@@ -395,17 +396,13 @@ export function registerCollectionStyleRoutes(app, {
     try {
       const [profileSnap, jobsSnap, batchesSnap] = await Promise.all([
         adminDb.collection(PROFILE_COLLECTION).doc(COLLECTION_STYLE_PROFILE_ID).get(),
-        adminDb.collection(TRAINING_JOBS_COLLECTION).get(),
-        adminDb.collection(BATCHES_COLLECTION).get(),
+        adminDb.collection(TRAINING_JOBS_COLLECTION).orderBy('submittedAt', 'desc').limit(8).get(),
+        adminDb.collection(BATCHES_COLLECTION).orderBy('createdAt', 'desc').limit(8).get(),
       ]);
       const trainingJobs = jobsSnap.docs
-        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-        .sort((left, right) => String(right.submittedAt ?? '').localeCompare(String(left.submittedAt ?? '')))
-        .slice(0, 8);
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
       const batches = batchesSnap.docs
-        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-        .sort((left, right) => String(right.createdAt ?? '').localeCompare(String(left.createdAt ?? '')))
-        .slice(0, 8);
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
       res.json({
         profile: profileSnap.exists ? { id: profileSnap.id, ...profileSnap.data() } : null,
         trainingJobs,
@@ -420,10 +417,13 @@ export function registerCollectionStyleRoutes(app, {
   app.get('/api/admin/collection-style/source-assets', async (req, res) => {
     if (!await authenticate(req, res) || !requireDatabase(res)) return;
     try {
-      const snap = await adminDb.collection(BOSS_ASSETS_COLLECTION).get();
+      const snap = await adminDb
+        .collection(BOSS_ASSETS_COLLECTION)
+        .orderBy('createdAt', 'desc')
+        .limit(MAX_COLLECTION_STYLE_SOURCES)
+        .get();
       const assets = snap.docs
-        .map(toSourceAssetSummary)
-        .sort((left, right) => String(right.createdAt ?? '').localeCompare(String(left.createdAt ?? '')));
+        .map(toSourceAssetSummary);
       res.json({ assets });
     } catch (error) {
       logUnexpectedError('Collection-style source asset lookup failed:', error);

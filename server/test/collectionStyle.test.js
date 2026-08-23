@@ -7,6 +7,7 @@ import {
   buildTrainingDatasetZip,
   extractFalLoraUrl,
   normalizeCollectionStyleSourceIds,
+  seedFromString,
 } from '../lib/collectionStyle.js';
 import { registerCollectionStyleRoutes } from '../routes/collectionStyle.js';
 
@@ -65,6 +66,28 @@ function createFakeDb() {
             const ref = new FakeDocRef(path);
             return createSnapshot(ref, store.get(path));
           }),
+      };
+    }
+
+    orderBy(field, direction = 'asc') {
+      const collection = this;
+      let maxResults = Infinity;
+      return {
+        limit(value) {
+          maxResults = value;
+          return this;
+        },
+        async get() {
+          const snapshot = await collection.get();
+          const multiplier = direction === 'desc' ? -1 : 1;
+          return {
+            docs: snapshot.docs
+              .sort((left, right) => (
+                String(left.data()?.[field] ?? '').localeCompare(String(right.data()?.[field] ?? '')) * multiplier
+              ))
+              .slice(0, maxResults),
+          };
+        },
       };
     }
   }
@@ -191,6 +214,7 @@ test('collection-style curation requires enough unique sources and varied attrib
     }))),
     /at least three archetypes, districts, and styles/,
   );
+  assert.throws(() => seedFromString(''), /non-empty seed/);
 });
 
 test('training dataset ZIP contains paired image and caption entries', () => {
@@ -369,6 +393,9 @@ test('batch generation gates production on approval and recovers persisted Boss 
   const batchId = create.body.batch.id;
   assert.equal(create.body.batch.totalCards, 64);
   assert.equal(adminDb.list(`adminCollectionStyleBatches/${batchId}/cards`).length, 64);
+  const overview = await invoke(app, 'GET /api/admin/collection-style');
+  assert.equal(overview.statusCode, 200);
+  assert.equal(overview.body.batches.length, 1);
 
   const firstGeneration = await invoke(
     app,
