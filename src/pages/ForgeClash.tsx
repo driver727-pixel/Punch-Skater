@@ -24,10 +24,12 @@ import type {
   JoustTactic,
 } from "../lib/types";
 import {
+  fetchForgeClashRival,
   fetchForgeComputerRivals,
   playForgeClashTurn,
   startForgeClash,
   type ForgeClashMatch,
+  type ForgeClashRival,
   type ForgeClashRound,
   type ForgeClashTelegraph,
   type ForgeLoanerCard,
@@ -277,8 +279,18 @@ function getRoundBreakdown(round: ForgeClashRound): string {
   return `${advantage} · Lance ${round.breakdown.attack} vs Shield ${round.breakdown.defense} · Lane roll ${laneRoll}${finisher}${comboBonus} · Strike ${round.effectiveStrike}`;
 }
 
+function hasRivalArt(rival: ForgeClashRival | null): boolean {
+  if (!rival) return false;
+  return Boolean(
+    rival.characterImageUrl
+    || rival.backgroundImageUrl
+    || rival.frameImageUrl
+    || rival.board?.imageUrl,
+  );
+}
+
 function buildForgeClashRivalDisplayCard(
-  rival: ForgeClashMatch["rival"] | null,
+  rival: ForgeClashRival | null,
 ): CardPayload | null {
   if (!rival) return null;
   const district = rival.district ?? "Batteryville";
@@ -405,7 +417,7 @@ function RivalCard({
   rival,
   telegraph,
 }: {
-  rival: ForgeClashMatch["rival"] | null;
+  rival: ForgeClashRival | null;
   telegraph: ForgeClashTelegraph | null;
 }) {
   const intent = telegraph?.intent ?? "rush";
@@ -456,6 +468,7 @@ export function ForgeClash() {
   const { user } = useAuth();
   const { refreshWallet } = useWallet();
   const [loanerCards, setLoanerCards] = useState<ForgeLoanerCard[]>([]);
+  const [rivalPreview, setRivalPreview] = useState<ForgeClashRival | null>(null);
   const [loanersLoading, setLoanersLoading] = useState(true);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [draftTouched, setDraftTouched] = useState(false);
@@ -498,6 +511,24 @@ export function ForgeClash() {
       })
       .finally(() => {
         if (active) setLoanersLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setRivalPreview(null);
+      return;
+    }
+    fetchForgeClashRival(user)
+      .then((rival) => {
+        if (active) setRivalPreview(rival);
+      })
+      .catch(() => {
+        if (active) setRivalPreview(null);
       });
     return () => {
       active = false;
@@ -560,8 +591,27 @@ export function ForgeClash() {
   const guidedOpening = match?.status === "playing"
     ? getGuidedOpening(match.turn, match.maxHeat)
     : null;
-  const rivalForDisplay = useMemo<ForgeClashMatch["rival"] | null>(() => {
-    if (match?.rival) return match.rival;
+  const rivalForDisplay = useMemo<ForgeClashRival | null>(() => {
+    const liveRival = match?.rival ?? null;
+    if (liveRival) {
+      // Matches started before the rival art was forged keep an art-less
+      // snapshot, so top the live rival up with the latest forged layers.
+      if (hasRivalArt(liveRival) || !hasRivalArt(rivalPreview) || rivalPreview?.id !== liveRival.id) {
+        return liveRival;
+      }
+      return {
+        ...liveRival,
+        backgroundImageUrl: rivalPreview.backgroundImageUrl,
+        characterImageUrl: rivalPreview.characterImageUrl,
+        frameImageUrl: rivalPreview.frameImageUrl,
+        weaponImageUrl: rivalPreview.weaponImageUrl,
+        characterPlacement: rivalPreview.characterPlacement,
+        weaponPlacement: rivalPreview.weaponPlacement,
+        activeFrameId: rivalPreview.activeFrameId,
+        board: rivalPreview.board,
+      };
+    }
+    if (rivalPreview) return rivalPreview;
     const rivalDef = getDistrictRival(FORGE_CLASH_RIVAL_ID);
     if (!rivalDef) return null;
     return {
@@ -569,8 +619,8 @@ export function ForgeClash() {
       tagline: rivalDef.tagline,
       signatureTrait: rivalDef.signatureTrait,
       dialogue: rivalDef.dialogue,
-    } as ForgeClashMatch["rival"];
-  }, [match?.rival]);
+    } as ForgeClashRival;
+  }, [match?.rival, rivalPreview]);
   const canStart = Boolean(
     user
     && selectedCrew.length === CREW_SIZE
