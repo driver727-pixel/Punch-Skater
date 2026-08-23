@@ -81,7 +81,7 @@ async function getHeaders(): Promise<HeadersInit> {
   if (!token) throw new Error("Sign in with an admin account to use collection-style generation.");
   return {
     "Content-Type": "application/json",
-    Authorization: `******
+    Authorization: ["Bearer", token].join(" "),
   };
 }
 

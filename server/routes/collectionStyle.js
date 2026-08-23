@@ -63,6 +63,12 @@ function getErrorMessage(error, fallback) {
   return (message || fallback).slice(0, 500);
 }
 
+function logUnexpectedError(context, error) {
+  if ((error?.statusCode ?? 500) >= 500) {
+    console.error(context, error);
+  }
+}
+
 function numericScale(value, fallback = 0.9) {
   const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value ?? ''));
   return Number.isFinite(parsed) && parsed > 0 && parsed <= 2 ? parsed : fallback;
@@ -405,7 +411,7 @@ export function registerCollectionStyleRoutes(app, {
         batches,
       });
     } catch (error) {
-      console.error('Collection-style overview failed:', error);
+      logUnexpectedError('Collection-style overview failed:', error);
       res.status(error.statusCode ?? 500).json({ error: getErrorMessage(error, 'Failed to load collection-style workflow.') });
     }
   });
@@ -419,7 +425,7 @@ export function registerCollectionStyleRoutes(app, {
         .sort((left, right) => String(right.createdAt ?? '').localeCompare(String(left.createdAt ?? '')));
       res.json({ assets });
     } catch (error) {
-      console.error('Collection-style source asset lookup failed:', error);
+      logUnexpectedError('Collection-style source asset lookup failed:', error);
       res.status(error.statusCode ?? 500).json({ error: getErrorMessage(error, 'Failed to load Boss Asset character layers.') });
     }
   });
@@ -547,7 +553,7 @@ export function registerCollectionStyleRoutes(app, {
       }, { merge: true });
       res.status(202).json({ jobId, status: 'training' });
     } catch (error) {
-      console.error('Collection-style training submission failed:', error);
+      logUnexpectedError('Collection-style training submission failed:', error);
       if (jobRef) {
         const failedAt = toIso(now());
         await Promise.all([
@@ -645,7 +651,7 @@ export function registerCollectionStyleRoutes(app, {
 
       res.json({ job: { ...job, queueStatus: status?.status ?? 'IN_QUEUE' } });
     } catch (error) {
-      console.error('Collection-style training status failed:', error);
+      logUnexpectedError('Collection-style training status failed:', error);
       res.status(error.statusCode ?? 500).json({ error: getErrorMessage(error, 'Failed to refresh collection-style training.') });
     }
   });
@@ -705,7 +711,7 @@ export function registerCollectionStyleRoutes(app, {
       await writeBatch.commit();
       res.status(201).json({ batch: summarizeBatch(batch) });
     } catch (error) {
-      console.error('Collection-style batch creation failed:', error);
+      logUnexpectedError('Collection-style batch creation failed:', error);
       res.status(error.statusCode ?? 500).json({ error: getErrorMessage(error, 'Failed to create collection batch.') });
     }
   });
@@ -725,7 +731,7 @@ export function registerCollectionStyleRoutes(app, {
         .sort((left, right) => left.index - right.index);
       res.json({ batch: summarizeBatch({ id: batchSnap.id, ...batchSnap.data() }, items), items });
     } catch (error) {
-      console.error('Collection-style batch lookup failed:', error);
+      logUnexpectedError('Collection-style batch lookup failed:', error);
       res.status(error.statusCode ?? 500).json({ error: getErrorMessage(error, 'Failed to load collection batch.') });
     }
   });
@@ -759,7 +765,7 @@ export function registerCollectionStyleRoutes(app, {
       }, { merge: true });
       res.json({ batch: { ...batch, status: 'production', phase: 'production', approvedAt } });
     } catch (error) {
-      console.error('Collection-style batch approval failed:', error);
+      logUnexpectedError('Collection-style batch approval failed:', error);
       res.status(error.statusCode ?? 500).json({ error: getErrorMessage(error, 'Failed to approve collection batch.') });
     }
   });
@@ -817,17 +823,28 @@ export function registerCollectionStyleRoutes(app, {
         return;
       }
 
-      const characterImageUrl = await generateCollectionCharacter({
-        batch,
-        card,
-        FAL_KEY,
-        BIREFNET_URL,
-        buildFalImageRequest,
-        fetchImpl,
-        persistImageToStorage,
-        adminStorage,
-        storageBucket,
-      });
+      let characterImageUrl = isPermanentStorageUrl(item.generatedCharacterImageUrl)
+        ? item.generatedCharacterImageUrl
+        : null;
+      if (!characterImageUrl) {
+        characterImageUrl = await generateCollectionCharacter({
+          batch,
+          card,
+          FAL_KEY,
+          BIREFNET_URL,
+          buildFalImageRequest,
+          fetchImpl,
+          persistImageToStorage,
+          adminStorage,
+          storageBucket,
+        });
+        const generatedAt = toIso(now());
+        await itemRef.set({
+          generatedCharacterImageUrl: characterImageUrl,
+          generatedAt,
+          updatedAt: generatedAt,
+        }, { merge: true });
+      }
       const completedAt = toIso(now());
       const completedCard = {
         ...card,
@@ -856,7 +873,7 @@ export function registerCollectionStyleRoutes(app, {
         item: { ...item, status: 'completed', resultCardId: card.id, card: completedCard },
       });
     } catch (error) {
-      console.error('Collection-style card generation failed:', error);
+      logUnexpectedError('Collection-style card generation failed:', error);
       if (claimed?.itemRef) {
         const failedAt = toIso(now());
         await Promise.all([
