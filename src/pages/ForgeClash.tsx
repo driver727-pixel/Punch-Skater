@@ -17,6 +17,7 @@ import {
 } from "../lib/joust";
 import { normalizeJoustProfile } from "../lib/jousting";
 import { getDistrictTheme } from "../lib/districtTheme";
+import { getDistrictRivalByDistrict } from "../lib/rivals";
 import type {
   CardPayload,
   JoustCardSnapshot,
@@ -558,6 +559,17 @@ export function ForgeClash() {
   const guidedOpening = match?.status === "playing"
     ? getGuidedOpening(match.turn, match.maxHeat)
     : null;
+  const rivalForDisplay = useMemo<ForgeClashMatch["rival"] | null>(() => {
+    if (match?.rival) return match.rival;
+    const rivalDef = getDistrictRivalByDistrict("Batteryville");
+    if (!rivalDef) return null;
+    return {
+      ...rivalDef.signatureCard,
+      tagline: rivalDef.tagline,
+      signatureTrait: rivalDef.signatureTrait,
+      dialogue: rivalDef.dialogue,
+    } as ForgeClashMatch["rival"];
+  }, [match?.rival]);
   const canStart = Boolean(
     user
     && selectedCrew.length === CREW_SIZE
@@ -899,10 +911,10 @@ export function ForgeClash() {
                 match?.status === "completed" && match.result === "win" && "is-losing",
               )}>
                 <div className="forge-clash-rival-showcase" aria-hidden="true">
-                  <RivalCard rival={match?.rival ?? null} telegraph={match?.telegraph ?? null} />
+                  <RivalCard rival={rivalForDisplay} telegraph={match?.telegraph ?? null} />
                 </div>
-                <strong>{match?.rival.name ?? "Jax Voltage"}</strong>
-                <small>{match?.telegraph?.hint ?? "Boost Charge specialist"}</small>
+                <strong>{rivalForDisplay?.name ?? "Jax Voltage"}</strong>
+                <small>{match?.telegraph?.hint ?? (rivalForDisplay?.signatureTrait ? `${rivalForDisplay.signatureTrait} specialist` : "Boost Charge specialist")}</small>
               </div>
             </div>
 
