@@ -11,6 +11,8 @@ import {
 } from '../lib/collectionStyle.js';
 import { registerCollectionStyleRoutes } from '../routes/collectionStyle.js';
 
+const passThroughRateLimit = (_req, _res, next) => next();
+
 function createSnapshot(ref, value) {
   return {
     id: ref.id,
@@ -278,6 +280,7 @@ test('training only packages selected character layers and stores the completed 
     },
     storageBucket: 'test-bucket',
     FAL_KEY: 'test-key',
+    collectionStyleRateLimit: passThroughRateLimit,
     fal: {
       queue: {
         async submit(_model, request) {
@@ -363,6 +366,7 @@ test('batch generation gates production on approval and recovers persisted Boss 
     adminStorage: {},
     storageBucket: 'test-bucket',
     FAL_KEY: 'test-key',
+    collectionStyleRateLimit: passThroughRateLimit,
     fal: { queue: {} },
     authenticateAdminRequest: async () => ({ uid: 'admin-user' }),
     resolveFalProfile: () => ({ modelUrl: 'https://fal.run/test-character' }),
