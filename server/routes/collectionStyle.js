@@ -583,7 +583,11 @@ export function registerCollectionStyleRoutes(app, {
       if (!jobSnap.exists) throw badRequest('Collection training job not found.', 404);
       const job = { id: jobSnap.id, ...jobSnap.data() };
       if (job.status !== 'training' || !job.falRequestId) {
-        res.json({ job });
+        const profileSnap = await adminDb.collection(PROFILE_COLLECTION).doc(COLLECTION_STYLE_PROFILE_ID).get();
+        res.json({
+          job,
+          profile: profileSnap.exists ? { id: profileSnap.id, ...profileSnap.data() } : null,
+        });
         return;
       }
 
@@ -663,7 +667,11 @@ export function registerCollectionStyleRoutes(app, {
     try {
       if (!isPlainObject(req.body ?? {})) throw badRequest('Request body must be a JSON object.');
       const requestedCount = req.body?.totalCards;
-      if (requestedCount != null && Number(requestedCount) !== COLLECTION_STYLE_CARD_COUNT) {
+      if (
+        requestedCount !== undefined
+        && requestedCount !== null
+        && Number(requestedCount) !== COLLECTION_STYLE_CARD_COUNT
+      ) {
         throw badRequest(`Collection batches must contain exactly ${COLLECTION_STYLE_CARD_COUNT} cards.`);
       }
       const profileSnap = await adminDb.collection(PROFILE_COLLECTION).doc(COLLECTION_STYLE_PROFILE_ID).get();

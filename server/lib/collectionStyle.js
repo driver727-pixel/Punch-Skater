@@ -10,6 +10,14 @@ export const MIN_COLLECTION_STYLE_SOURCES = 12;
 export const MAX_COLLECTION_STYLE_SOURCES = 64;
 export const MAX_COLLECTION_STYLE_IMAGE_BYTES = 12 * 1024 * 1024;
 
+const LORE_CHARACTER_NAME_SET = new Set(LORE_CHARACTER_NAMES);
+if (LORE_CHARACTER_NAMES.length < COLLECTION_STYLE_CARD_COUNT) {
+  throw new Error('The lore character-name pool is too small for a unique collection batch.');
+}
+if (LORE_CHARACTER_NAME_SET.size !== LORE_CHARACTER_NAMES.length) {
+  throw new Error('The lore character-name pool contains duplicates and cannot guarantee a unique collection batch.');
+}
+
 const ALLOWED_CHARACTER_IMAGE_HOSTS = [
   /(^|\.)fal\.media$/i,
   /(^|\.)firebasestorage\.googleapis\.com$/i,
@@ -298,13 +306,6 @@ export function buildCollectionStyleCards({
   if (!Number.isInteger(totalCards) || totalCards !== COLLECTION_STYLE_CARD_COUNT) {
     throw badRequest(`Collection batches must contain exactly ${COLLECTION_STYLE_CARD_COUNT} cards.`);
   }
-  if (LORE_CHARACTER_NAMES.length < totalCards) {
-    throw new Error('The lore character-name pool is too small for a unique collection batch.');
-  }
-  if (new Set(LORE_CHARACTER_NAMES).size !== LORE_CHARACTER_NAMES.length) {
-    throw new Error('The lore character-name pool contains duplicates and cannot guarantee a unique collection batch.');
-  }
-
   return uniqueShuffledNames(batchId).slice(0, totalCards).map((name, index) => {
     const random = createSeededRandom(`${batchId}:${index}:${name}`);
     const archetype = pick(random, ARCHETYPES);

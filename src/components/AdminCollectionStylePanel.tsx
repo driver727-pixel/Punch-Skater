@@ -374,7 +374,7 @@ export function AdminCollectionStylePanel() {
                   <article key={item.id} className="collection-style-result">
                     {item.card?.characterImageUrl && <img src={item.card.characterImageUrl} alt="" />}
                     <strong>{item.name}</strong>
-                    <small>{item.card?.prompts.district ?? "Collection"} · persisted to Boss Assets</small>
+                    <small>{item.card?.prompts?.district ?? "Collection"} · persisted to Boss Assets</small>
                   </article>
                 ))}
               </div>
