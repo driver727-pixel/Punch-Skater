@@ -17,7 +17,7 @@ import {
 } from "../lib/joust";
 import { normalizeJoustProfile } from "../lib/jousting";
 import { getDistrictTheme } from "../lib/districtTheme";
-import { getDistrictRivalByDistrict } from "../lib/rivals";
+import { getDistrictRival } from "../lib/rivals";
 import type {
   CardPayload,
   JoustCardSnapshot,
@@ -58,6 +58,7 @@ interface CrewCardEntry {
 const CREW_SIZE = 6;
 const MAX_DRAFT_CARDS = 18;
 const BATTERYVILLE_BACKGROUND = "/assets/backgrounds/batteryville.jpg";
+const FORGE_CLASH_RIVAL_ID = "batteryville-jax-voltage";
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -561,7 +562,7 @@ export function ForgeClash() {
     : null;
   const rivalForDisplay = useMemo<ForgeClashMatch["rival"] | null>(() => {
     if (match?.rival) return match.rival;
-    const rivalDef = getDistrictRivalByDistrict("Batteryville");
+    const rivalDef = getDistrictRival(FORGE_CLASH_RIVAL_ID);
     if (!rivalDef) return null;
     return {
       ...rivalDef.signatureCard,
