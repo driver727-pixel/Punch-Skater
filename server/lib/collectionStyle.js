@@ -301,6 +301,9 @@ export function buildCollectionStyleCards({
   if (LORE_CHARACTER_NAMES.length < totalCards) {
     throw new Error('The lore character-name pool is too small for a unique collection batch.');
   }
+  if (new Set(LORE_CHARACTER_NAMES).size !== LORE_CHARACTER_NAMES.length) {
+    throw new Error('The lore character-name pool contains duplicates and cannot guarantee a unique collection batch.');
+  }
 
   return uniqueShuffledNames(batchId).slice(0, totalCards).map((name, index) => {
     const random = createSeededRandom(`${batchId}:${index}:${name}`);
@@ -519,8 +522,8 @@ export function buildTrainingDatasetZip(entries, createdAt = new Date()) {
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new Error('At least one training dataset entry is required.');
   }
-  if (entries.length > 0xffff) {
-    throw new Error('Training datasets cannot contain more than 65,535 ZIP entries.');
+  if (entries.length > 0xfffe) {
+    throw new Error('Training datasets cannot contain more than 65,534 ZIP entries.');
   }
 
   const { date, time } = dosDateTime(createdAt);

@@ -301,7 +301,7 @@ async function claimNextBatchItem({ adminDb, batchRef, retryFailed, now }) {
   if (!batchSnap.exists) {
     throw badRequest('Collection batch not found.', 404);
   }
-  const batch = batchSnap.data() ?? {};
+  const batch = { id: batchSnap.id, ...(batchSnap.data() ?? {}) };
   const itemsSnap = await batchRef.collection(BATCH_CARDS_COLLECTION).get();
   const approvalCount = Number.isInteger(batch.approvalCount)
     ? batch.approvalCount

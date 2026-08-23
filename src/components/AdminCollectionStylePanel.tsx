@@ -26,6 +26,11 @@ function statusLabel(status: string): string {
   return status.replace(/-/g, " ").replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
+function promptValue(prompts: Record<string, unknown>, key: string): string {
+  const value = prompts[key];
+  return typeof value === "string" && value.trim() ? value : "Unknown";
+}
+
 export function AdminCollectionStylePanel() {
   const [profile, setProfile] = useState<CollectionStyleProfile | null>(null);
   const [trainingJobs, setTrainingJobs] = useState<CollectionStyleTrainingJob[]>([]);
@@ -286,7 +291,7 @@ export function AdminCollectionStylePanel() {
                   <span className="collection-style-source__missing">No character layer</span>
                 )}
                 <strong>{asset.name}</strong>
-                <small>{asset.eligible ? `${asset.prompts.archetype ?? "Unknown"} · ${asset.prompts.district ?? "Unknown"}` : "Ineligible source"}</small>
+                <small>{asset.eligible ? `${promptValue(asset.prompts, "archetype")} · ${promptValue(asset.prompts, "district")}` : "Ineligible source"}</small>
               </label>
             ))}
           </div>

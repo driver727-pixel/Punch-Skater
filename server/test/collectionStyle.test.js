@@ -322,6 +322,7 @@ test('batch generation gates production on approval and recovers persisted Boss 
     return now;
   };
   let generationCalls = 0;
+  const persistedStoragePaths = [];
 
   adminDb.write('adminCollectionStyleProfiles/collection-style', {
     id: 'collection-style',
@@ -344,7 +345,10 @@ test('batch generation gates production on approval and recovers persisted Boss 
     buildFalImageRequest: async (body) => body,
     randomUUID,
     now: nextNow,
-    persistImageToStorage: async () => 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/character.png?token=stable',
+    persistImageToStorage: async (_storage, _sourceUrl, _bucket, storagePath) => {
+      persistedStoragePaths.push(storagePath);
+      return 'https://firebasestorage.googleapis.com/v0/b/test-bucket/o/character.png?token=stable';
+    },
     fetchImpl: async (url) => {
       generationCalls += 1;
       if (url === 'https://fal.run/test-character') {
@@ -375,6 +379,10 @@ test('batch generation gates production on approval and recovers persisted Boss 
   assert.equal(firstGeneration.body.status, 'completed');
   const firstCardId = firstGeneration.body.item.resultCardId;
   assert.ok(adminDb.read(`adminBossAssets/${firstCardId}`).characterImageUrl);
+  assert.deepEqual(
+    persistedStoragePaths[0],
+    `generatedImages/collection-style/${batchId}/${firstCardId}.png`,
+  );
 
   const callsBeforeRecovery = generationCalls;
   const firstItemPath = `adminCollectionStyleBatches/${batchId}/cards/${firstCardId}`;
