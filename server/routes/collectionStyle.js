@@ -1,4 +1,5 @@
 import { randomUUID as createRandomUuid } from 'node:crypto';
+import rateLimit from 'express-rate-limit';
 import {
   COLLECTION_STYLE_APPROVAL_COUNT,
   COLLECTION_STYLE_CARD_COUNT,
@@ -31,6 +32,15 @@ const FAL_PROXY_TIMEOUT_MS = 300_000;
 const GENERATION_LEASE_MS = 15 * 60 * 1000;
 const FIREBASE_STORAGE_BASE_URL = 'https://firebasestorage.googleapis.com';
 const FIREBASE_STORAGE_CACHE_CONTROL = 'private, max-age=0, no-transform';
+const fallbackCollectionStyleRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 12,
+  skip: (req) => req?.method === 'OPTIONS',
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many collection-style requests — please wait a moment and try again.' },
+  passOnStoreError: false,
+});
 
 function badRequest(message, statusCode = 400) {
   return Object.assign(new Error(message), { statusCode });
@@ -372,9 +382,10 @@ export function registerCollectionStyleRoutes(app, {
   randomUUID = createRandomUuid,
   now = () => Date.now(),
 } = {}) {
-  if (typeof collectionStyleRateLimit !== 'function') {
+  if (collectionStyleRateLimit != null && typeof collectionStyleRateLimit !== 'function') {
     throw new TypeError('collectionStyleRateLimit must be configured.');
   }
+  const limiter = collectionStyleRateLimit ?? fallbackCollectionStyleRateLimit;
 
   async function authenticate(req, res) {
     try {
@@ -391,7 +402,7 @@ export function registerCollectionStyleRoutes(app, {
     return false;
   }
 
-  app.get('/api/admin/collection-style', collectionStyleRateLimit, async (req, res) => {
+  app.get('/api/admin/collection-style', limiter, async (req, res) => {
     if (!await authenticate(req, res) || !requireDatabase(res)) return;
     try {
       const [profileSnap, jobsSnap, batchesSnap] = await Promise.all([
@@ -414,7 +425,7 @@ export function registerCollectionStyleRoutes(app, {
     }
   });
 
-  app.get('/api/admin/collection-style/source-assets', collectionStyleRateLimit, async (req, res) => {
+  app.get('/api/admin/collection-style/source-assets', limiter, async (req, res) => {
     if (!await authenticate(req, res) || !requireDatabase(res)) return;
     try {
       const snap = await adminDb
@@ -431,7 +442,7 @@ export function registerCollectionStyleRoutes(app, {
     }
   });
 
-  app.post('/api/admin/collection-style/training', collectionStyleRateLimit, async (req, res) => {
+  app.post('/api/admin/collection-style/training', limiter, async (req, res) => {
     const caller = await authenticate(req, res);
     if (!caller || !requireDatabase(res)) return;
     if (!FAL_KEY) {
@@ -573,7 +584,7 @@ export function registerCollectionStyleRoutes(app, {
     }
   });
 
-  app.get('/api/admin/collection-style/training/:jobId', collectionStyleRateLimit, async (req, res) => {
+  app.get('/api/admin/collection-style/training/:jobId', limiter, async (req, res) => {
     if (!await authenticate(req, res) || !requireDatabase(res)) return;
     try {
       if (!FAL_KEY) throw Object.assign(new Error('Fal LoRA training is not configured.'), { statusCode: 503 });
@@ -661,7 +672,7 @@ export function registerCollectionStyleRoutes(app, {
     }
   });
 
-  app.post('/api/admin/collection-style/batches', collectionStyleRateLimit, async (req, res) => {
+  app.post('/api/admin/collection-style/batches', limiter, async (req, res) => {
     const caller = await authenticate(req, res);
     if (!caller || !requireDatabase(res)) return;
     try {
@@ -725,7 +736,7 @@ export function registerCollectionStyleRoutes(app, {
     }
   });
 
-  app.get('/api/admin/collection-style/batches/:batchId', collectionStyleRateLimit, async (req, res) => {
+  app.get('/api/admin/collection-style/batches/:batchId', limiter, async (req, res) => {
     if (!await authenticate(req, res) || !requireDatabase(res)) return;
     try {
       const batchId = normalizeBatchId(req.params.batchId);
@@ -745,7 +756,7 @@ export function registerCollectionStyleRoutes(app, {
     }
   });
 
-  app.post('/api/admin/collection-style/batches/:batchId/approve', collectionStyleRateLimit, async (req, res) => {
+  app.post('/api/admin/collection-style/batches/:batchId/approve', limiter, async (req, res) => {
     const caller = await authenticate(req, res);
     if (!caller || !requireDatabase(res)) return;
     try {
@@ -779,7 +790,7 @@ export function registerCollectionStyleRoutes(app, {
     }
   });
 
-  app.post('/api/admin/collection-style/batches/:batchId/generate-next', collectionStyleRateLimit, async (req, res) => {
+  app.post('/api/admin/collection-style/batches/:batchId/generate-next', limiter, async (req, res) => {
     const caller = await authenticate(req, res);
     if (!caller || !requireDatabase(res)) return;
     if (!FAL_KEY) {
