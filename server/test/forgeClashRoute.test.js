@@ -419,6 +419,48 @@ test('Forge Clash start does not apply art from a rival card whose name does not
   assert.equal(rival.joust.lance, 8);
 });
 
+test('Forge Clash start falls back to the Boss Assets library for rival art', async () => {
+  const harness = createHarness();
+  harness.adminDb.write('adminBossAssets/forged-jax-voltage', {
+    ...buildCard('forged-jax-voltage', { name: 'Jax Voltage' }),
+    characterImageUrl: 'https://cdn.example.com/boss-jax-character.png',
+    backgroundImageUrl: 'https://cdn.example.com/boss-jax-background.png',
+    board: { imageUrl: 'https://cdn.example.com/boss-jax-board.png' },
+  });
+  const roster = seedCards(harness.adminDb, 'player-1');
+
+  const started = await harness.invoke('POST', '/api/forge/clash/start', { body: { roster } });
+
+  assert.equal(started.statusCode, 201);
+  const { rival } = started.body.match;
+  assert.equal(rival.characterImageUrl, 'https://cdn.example.com/boss-jax-character.png');
+  assert.equal(rival.backgroundImageUrl, 'https://cdn.example.com/boss-jax-background.png');
+  assert.equal(rival.board.imageUrl, 'https://cdn.example.com/boss-jax-board.png');
+  assert.equal(rival.joust.lance, 8);
+});
+
+test('Forge Clash rival endpoint returns the rival with its forged art layers', async () => {
+  const harness = createHarness();
+  harness.adminDb.write('adminBossAssets/forged-jax-voltage', {
+    ...buildCard('forged-jax-voltage', { name: 'Jax Voltage' }),
+    characterImageUrl: 'https://cdn.example.com/boss-jax-character.png',
+  });
+
+  const unauthenticated = await harness.invoke('GET', '/api/forge/clash/rival', { authorization: '' });
+  assert.equal(unauthenticated.statusCode, 401);
+
+  const response = await harness.invoke('GET', '/api/forge/clash/rival');
+
+  assert.equal(response.statusCode, 200);
+  const { rival } = response.body;
+  assert.equal(rival.id, 'batteryville-jax-voltage');
+  assert.equal(rival.name, 'Jax Voltage');
+  assert.equal(rival.signatureTrait, 'Boost Charge');
+  assert.equal(rival.characterImageUrl, 'https://cdn.example.com/boss-jax-character.png');
+  assert.equal(rival.joust.lance, 8);
+  assert.equal(rival.joust.shield, 5);
+});
+
 test('official all-loaner Crews can play without claiming a card cosmetic', async () => {
   const harness = createHarness();
   harness.adminDb.write('userProfiles/admin-crew', { isAdmin: true });

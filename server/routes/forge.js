@@ -28,6 +28,13 @@ const FORGE_CLASH_MATCHES_COLLECTION = 'forgeClashMatches';
 const PROFILE_COLLECTION = 'userProfiles';
 const USERS_COLLECTION = 'users';
 
+/**
+ * Collections that can hold the forged art for a Forge Clash rival, in
+ * lookup order. `rivalCards` is the dedicated rival art collection, while
+ * `adminBossAssets` is the Boss Assets library the Card Forge writes to when
+ * an admin saves a boss card (see `src/pages/cardForge/useForgeSave.ts`).
+ */
+const RIVAL_ART_COLLECTIONS = ['rivalCards', 'adminBossAssets'];
 const RIVAL_ART_LAYER_KEYS = [
   'backgroundImageUrl',
   'characterImageUrl',
@@ -83,21 +90,39 @@ async function queryRivalArtCard(collectionRef, field, rival) {
  * Resolves the forged-card art layers for a Forge Clash rival so the clash
  * stage can render the rival with its actual skater imagery instead of the
  * procedural placeholder. Looks for a forged card named after the rival in
- * the dedicated `rivalCards` collection, then falls back to the static rival
- * catalogue when no forged art is available.
+ * every rival art collection, then falls back to the static rival catalogue
+ * when no forged art is available.
  */
 async function loadRivalArtLayers(adminDb, rivalDefinition) {
   const rival = rivalDefinition?.signatureCard;
   const rivalName = normalizeRivalName(rivalDefinition?.name);
   if (rival && rivalName && adminDb) {
-    const rivalCardsRef = adminDb.collection('rivalCards');
-    const byIdentity = await queryRivalArtCard(rivalCardsRef, 'identity.name', rival);
-    const byName = byIdentity ?? await queryRivalArtCard(rivalCardsRef, 'name', rival);
-    if (byName) {
-      return pickRivalArtLayers(byName);
+    for (const collectionName of RIVAL_ART_COLLECTIONS) {
+      const collectionRef = adminDb.collection(collectionName);
+      const byIdentity = await queryRivalArtCard(collectionRef, 'identity.name', rival);
+      const artCard = byIdentity ?? await queryRivalArtCard(collectionRef, 'name', rival);
+      if (artCard) {
+        return pickRivalArtLayers(artCard);
+      }
     }
   }
   return pickRivalArtLayers(rival);
+}
+
+/**
+ * Builds the rival payload the Forge Clash stage renders: the
+ * server-authoritative stat snapshot plus any forged art layers and the
+ * rival's flavour copy.
+ */
+function buildClashRival(rivalDefinition, rivalArtLayers) {
+  return {
+    ...rivalDefinition.signatureCard,
+    ...rivalArtLayers,
+    id: rivalDefinition.id,
+    tagline: rivalDefinition.tagline,
+    signatureTrait: rivalDefinition.signatureTrait,
+    dialogue: rivalDefinition.dialogue,
+  };
 }
 
 function badRequest(message) {
@@ -443,6 +468,19 @@ export function registerForgeRoutes(app, {
     }
   });
 
+  app.get('/api/forge/clash/rival', forgeRateLimit, authenticateForgeRequest, async (req, res) => {
+    try {
+      const rivalDefinition = getDistrictRival(FORGE_CLASH_RIVAL_ID);
+      if (!rivalDefinition) {
+        throw Object.assign(new Error('Jax Voltage is unavailable.'), { statusCode: 503 });
+      }
+      const rivalArtLayers = await loadRivalArtLayers(adminDb, rivalDefinition);
+      res.json({ rival: buildClashRival(rivalDefinition, rivalArtLayers) });
+    } catch (error) {
+      res.status(error.statusCode ?? 500).json({ error: error.message ?? 'Failed to load the Forge Clash rival.' });
+    }
+  });
+
   app.post('/api/forge/clash/start', forgeRateLimit, authenticateForgeRequest, async (req, res) => {
     if (!adminDb || typeof randomUUID !== 'function') {
       res.status(503).json({ error: 'Forge Clash is not configured on this server.' });
@@ -466,14 +504,7 @@ export function registerForgeRoutes(app, {
       const rivalArtLayers = await loadRivalArtLayers(adminDb, rivalDefinition);
       const match = await adminDb.runTransaction(async (tx) => {
         const roster = await loadValidatedClashRoster(tx, adminDb, rosterRefs, caller.uid);
-        const rival = {
-          ...rivalDefinition.signatureCard,
-          ...rivalArtLayers,
-          id: rivalDefinition.id,
-          tagline: rivalDefinition.tagline,
-          signatureTrait: rivalDefinition.signatureTrait,
-          dialogue: rivalDefinition.dialogue,
-        };
+        const rival = buildClashRival(rivalDefinition, rivalArtLayers);
         const createdMatch = createForgeClashMatch({
           id: matchId,
           uid: caller.uid,

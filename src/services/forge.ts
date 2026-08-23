@@ -23,6 +23,10 @@ const FORGE_CLASH_START_API_URL = resolveApiUrl(
   import.meta.env.VITE_FORGE_CLASH_START_API_URL as string | undefined,
   "/api/forge/clash/start",
 );
+const FORGE_CLASH_RIVAL_API_URL = resolveApiUrl(
+  import.meta.env.VITE_FORGE_CLASH_RIVAL_API_URL as string | undefined,
+  "/api/forge/clash/rival",
+);
 const FORGE_CLASH_PLAY_API_URL = resolveApiUrl(
   import.meta.env.VITE_FORGE_CLASH_PLAY_API_URL as string | undefined,
   "/api/forge/clash/play",
@@ -124,6 +128,27 @@ export interface ForgeClashRewards {
   };
 }
 
+export type ForgeClashRival = JoustCardSnapshot & {
+  tagline: string;
+  signatureTrait: string;
+  dialogue: {
+    intro: string;
+    win: string;
+    loss: string;
+    draw: string;
+  };
+} & Partial<Pick<CardPayload,
+  | "backgroundImageUrl"
+  | "characterImageUrl"
+  | "frameImageUrl"
+  | "weaponImageUrl"
+  | "characterPlacement"
+  | "weaponPlacement"
+  | "activeFrameId"
+>> & {
+  board?: { imageUrl?: string };
+};
+
 export interface ForgeClashMatch {
   id: string;
   status: "playing" | "completed";
@@ -137,26 +162,7 @@ export interface ForgeClashMatch {
   heat: number;
   cooldowns: Record<string, number>;
   result: "win" | "loss" | "draw" | null;
-  rival: JoustCardSnapshot & {
-    tagline: string;
-    signatureTrait: string;
-    dialogue: {
-      intro: string;
-      win: string;
-      loss: string;
-      draw: string;
-    };
-  } & Partial<Pick<CardPayload,
-    | "backgroundImageUrl"
-    | "characterImageUrl"
-    | "frameImageUrl"
-    | "weaponImageUrl"
-    | "characterPlacement"
-    | "weaponPlacement"
-    | "activeFrameId"
-  >> & {
-    board?: { imageUrl?: string };
-  };
+  rival: ForgeClashRival;
   roster: ForgeClashRosterSlot[];
   rounds: ForgeClashRound[];
   telegraph: ForgeClashTelegraph | null;
@@ -209,6 +215,11 @@ export async function fetchForgeComputerRivals(user: User, count = 6): Promise<F
   url.searchParams.set("count", String(count));
   const payload = await callForgeApi<{ cards?: ForgeLoanerCard[] }>(user, url.toString());
   return Array.isArray(payload.cards) ? payload.cards : [];
+}
+
+export async function fetchForgeClashRival(user: User): Promise<ForgeClashRival | null> {
+  const payload = await callForgeApi<{ rival?: ForgeClashRival }>(user, FORGE_CLASH_RIVAL_API_URL);
+  return payload.rival ?? null;
 }
 
 export async function startForgeClash(
